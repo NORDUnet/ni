@@ -1,0 +1,9 @@
+Installed dependencies
+- Django trunk
+- Jython 2.5.1
+    - OpenJDK
+- neo4j-python trunk
+
+Installed tools
+- neo4j webadmin
+    - Maven2
