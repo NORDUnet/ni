@@ -1,9 +1,10 @@
-Installed dependencies
+Dependencies
 - Django trunk
-- Jython 2.5.1
-    - OpenJDK
-- neo4j-python trunk
+- neo4j-rest-client
+(- greatlemers-django-tools)
 
-Installed tools
+Tools
 - neo4j webadmin
     - Maven2
+- django-debug-toolbar
+    - python-setuptools
