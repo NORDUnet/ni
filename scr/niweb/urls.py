@@ -13,4 +13,17 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
+
+    # Static serve
+    (r'^site_media/(?P<path>.*)$', 'django.views.static.serve',
+        {'document_root': '/home/lundberg/norduni/scr/niweb/media'}),
+
+    # Django Generic Login
+    (r'^accounts/login/$', 'django.contrib.auth.views.login'),
+
+    # Django Generic Comments
+    (r'^comments/', include('django.contrib.comments.urls')),
+
+    # NOCLook URLs
+    (r'^/?$', include('niweb.noclook.urls')),
 )
