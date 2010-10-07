@@ -13,4 +13,13 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
+
+    # Django Generic Login
+    (r'^accounts/login/$', 'django.contrib.auth.views.login'),
+
+    # Django Generic Comments
+    (r'^comments/', include('django.contrib.comments.urls')),
+
+    # NOCLook URLs
+    ('/$', include('niweb.noclook.urls')),
 )
