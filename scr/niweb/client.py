@@ -177,7 +177,8 @@ class Base(object):
         if response.status == 204:
             del self
         elif response.status == 404:
-            raise NotFoundError(response.status, "Node or property not found")
+            raise KeyError(response.status, "Key not found") # Fixed Django lookup.
+            #raise NotFoundError(response.status, "Node or property not found")
         else:
             raise StatusException(response.status, "Node could not be "\
                                                    "deleted (still has " \
@@ -190,7 +191,8 @@ class Base(object):
             content = response.body
             self._dic["data"][key] = simplejson.loads(content)
         else:
-            raise NotFoundError(response.status, "Node or propery not found")
+            raise KeyError(response.status, "Key not found") # Fixed Django lookup.
+            #raise NotFoundError(response.status, "Node or propery not found")
         return self._dic["data"][key]
 
     def get(self, key, *args):
@@ -212,7 +214,8 @@ class Base(object):
         if response.status == 204:
             self._dic["data"].update({key: value})
         elif response.status == 404:
-            raise NotFoundError(response.status, "Node or property not found")
+            raise KeyError(response.status, "Key not found") # Fixed Django lookup.
+            #raise NotFoundError(response.status, "Node or property not found")
         else:
             raise StatusException(response.status, "Invalid data sent")
 
@@ -225,7 +228,8 @@ class Base(object):
         if response.status == 204:
             del self._dic["data"][key]
         elif response.status == 404:
-            raise NotFoundError(response.status, "Node or property not found")
+            raise KeyError(response.status, "Key not found") # Fixed Django lookup.
+            #raise NotFoundError(response.status, "Node or property not found")
         else:
             raise StatusException(response.status, "Node or propery not found")
 
@@ -347,6 +351,17 @@ class Node(Base):
                 raise StatusException(response.status, "Invalid data sent")
         return relationship
 
+    def __cmp__(self, other):
+        if self.id > other.id:
+            return 1
+        elif self.id == other.id:
+            return 0
+        elif self.id < other.id:
+            return -1
+
+    def __hash__(self):
+        return self.id
+
     def _get_relationships(self):
         """
         HACK: Return a 3-methods class: incoming, outgoing and all.
@@ -466,6 +481,20 @@ class Relationship(Base):
         return self._dic['type']
     type = property(_get_type)
 
+    def _get_id(self):
+        return int(self.url.split("/")[-1])
+    id = property(_get_id)
+
+    def __cmp__(self, other):
+        if self.id > other.id:
+            return 1
+        elif self.id == other.id:
+            return 0
+        elif self.id < other.id:
+            return -1
+
+    def __hash__(self):
+        return self.id
 
 class Path(object):
     """

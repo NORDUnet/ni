@@ -20,7 +20,8 @@ class NodeType(models.Model):
 class NodeHandle(models.Model):
     # Handle <-> Node data
     handle_id = models.AutoField(primary_key=True)
-    node_id = models.BigIntegerField()
+    node_id = models.BigIntegerField(blank=True, unique=True,
+        editable=False)
 
     # Data shared with the node
     node_name = models.CharField(max_length=200)
@@ -43,7 +44,8 @@ class NodeHandle(models.Model):
         Create a new node and associate it to the handle.
         '''
         nc = neo4jclient.Neo4jClient()
-        node = nc.create_node(self.node_name, self.node_type)
+        node = nc.create_node(self.node_name, str(self.node_type))
         self.node_id = node.id
-        super(NodeHandle, self).save(*args, **kwargs)
+        nc.root.Have(node) # Needs to be changed to the right meta node
+        super(NodeHandle, self).save()
 

@@ -28,6 +28,7 @@ class Neo4jClient:
     def __init__(self):
         # Open the database defined in settings.py
         self.db = self.open_db(settings.NEO4J_RESOURCE_URI)
+        self.root = self.db.nodes.get(0)
 
     def open_db(self, uri):
         '''
@@ -50,12 +51,16 @@ class Neo4jClient:
         return self.db.nodes.get(int(node_id))
 
 def main():
-    import os
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-    nc = Neo4jClient()
-    n = nc.get_node_by_id('0')
 
-    print n.id
+    def test_db_setup():
+        import os
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+        nc = Neo4jClient()
+        print "Next line should be 0."
+        n = nc.get_node_by_id('0')
+        print n.id
+
+    test_db_setup()
     return 0
 
 if __name__ == '__main__':
