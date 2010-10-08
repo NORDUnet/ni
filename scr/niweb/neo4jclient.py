@@ -29,6 +29,7 @@ class Neo4jClient:
         # Open the database defined in settings.py
         self.db = self.open_db(settings.NEO4J_RESOURCE_URI)
         self.root = self.db.nodes.get(0)
+        self.meta_nodes = {}
 
     def open_db(self, uri):
         '''
@@ -49,6 +50,19 @@ class Neo4jClient:
         TODO: try except
         '''
         return self.db.nodes.get(int(node_id))
+
+    def get_meta_node(self, meta_node_name):
+        '''
+        Will return the meta node requested or create it and return it.
+        '''
+        rels = self.root.relationships.outgoing(["Consists_of"])
+        for rel in rels:
+            if rel.end['name'] == meta_node_name:
+                return rel.end
+        # No node with requested name found
+        n = self.create_node(meta_node_name, 'meta')
+        self.root.Consists_of(n)
+        return n
 
 def main():
 
