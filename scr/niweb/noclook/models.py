@@ -5,8 +5,15 @@ import neo4jclient
 
 # Create your models here.
 
+NODE_META_TYPE_CHOICES = (
+    ('logical', 'Logical'),
+    ('physical', 'Physical'),
+    ('organisation', 'Organisation'),
+    ('location', 'Location'),
+)
+
 class NodeType(models.Model):
-    type = models.CharField(unique=True, max_length=200)
+    type = models.CharField(unique=True, max_length=255)
     slug = models.SlugField(unique=True, help_text='Suggested value \
         #automatically generated from type. Must be unique.')
 
@@ -26,6 +33,8 @@ class NodeHandle(models.Model):
     # Data shared with the node
     node_name = models.CharField(max_length=200)
     node_type = models.ForeignKey(NodeType)
+    node_meta_type = models.CharField(max_length=255,
+        choices=NODE_META_TYPE_CHOICES)
 
     # Meta information
     creator = models.ForeignKey(User)
@@ -46,6 +55,7 @@ class NodeHandle(models.Model):
         nc = neo4jclient.Neo4jClient()
         node = nc.create_node(self.node_name, str(self.node_type))
         self.node_id = node.id
-        nc.root.Have(node) # Needs to be changed to the right meta node
+        meta_node = get_meta_node(str(self.meta_node))
+        meta_node.Contains(node)
         super(NodeHandle, self).save()
 
