@@ -1,10 +1,11 @@
 Dependencies
 - Django trunk
-- neo4j-rest-client
+- neo4j-rest-client (git://github.com/johanlundberg/neo4j-rest-client.git)
 (- greatlemers-django-tools)
+- neo4j-rest-standalone-0.8-SNAPSHOT (latest snapshot does not work with neo4j-rest-client)
 
 Tools
-- neo4j webadmin
-    - Maven2
+(- neo4j webadmin
+    - Maven2)
 - django-debug-toolbar
     - python-setuptools

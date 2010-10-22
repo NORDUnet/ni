@@ -55,7 +55,7 @@ class NodeHandle(models.Model):
         nc = neo4jclient.Neo4jClient()
         node = nc.create_node(self.node_name, str(self.node_type))
         self.node_id = node.id
-        meta_node = get_meta_node(str(self.meta_node))
+        meta_node = nc.get_meta_node(str(self.node_meta_type))
         meta_node.Contains(node)
         super(NodeHandle, self).save()
 
