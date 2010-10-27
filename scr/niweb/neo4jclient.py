@@ -64,6 +64,16 @@ class Neo4jClient:
         self.root.Consists_of(n)
         return n
 
+    def delete_node(self, node_id):
+        '''
+        TODO: try except
+        '''
+        node = self.get_node_by_id(node_id)
+        for rel in node.relationships.all():
+            rel.delete()
+        node.delete()
+
+
 def main():
 
     def test_db_setup():
