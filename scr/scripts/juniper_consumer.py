@@ -47,9 +47,10 @@ def purge_db():
         nc.delete_node(h.node_id)
     NodeHandle.objects.all().delete()
 
-def insert_juniper(name, interfaces):
+def insert_physical(name, interfaces):
     '''
-
+    Inserts the data loaded from the json files in to the databases.
+    Some filtering is done for interface names that are not interesting.
     '''
     nc = neo4jclient.Neo4jClient()
 
@@ -69,10 +70,9 @@ def insert_juniper(name, interfaces):
     not_interesting_interfaces = ['all', 'lo0', 'fxp0', '']
     for i in interfaces:
         name = i['name']
-        print name
         if name not in not_interesting_interfaces:
             # Also not interesting is interfaces with . or * in them
-            if '.' not in name or '*' not in name:
+            if '.' not in name and '*' not in name:
                 type = NodeType.objects.get(slug="pic")
                 node_handle = NodeHandle(node_name=name, node_type=type,
                     node_meta_type = meta_type, creator=user)
@@ -102,7 +102,7 @@ def main():
         for i in json_list:
             name = i['host']['juniper_conf']['name']
             interfaces = i['host']['juniper_conf']['interfaces']
-            insert_juniper(name, interfaces)
+            insert_physical(name, interfaces)
 
     if purge:
         purge_db()
