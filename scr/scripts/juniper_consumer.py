@@ -22,7 +22,7 @@
 
 import os
 import sys
-sys.path.append(os.path.abspath('/home/lundberg/norduni/scr/niweb'))
+sys.path.append(os.path.abspath('/var/norduni/scr/niweb'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from noclook.models import NodeType, NodeHandle
 from django.contrib.auth.models import User
@@ -86,11 +86,11 @@ def main():
 
     # Insert for insert and purge to remove all handles and nodes.
     #insert = False
-    #purge = True
+    purge = True
     insert = True
-    purge = False
+   # purge = False
 
-    json_dir = '/home/lundberg/norduni/tools/nerds/producers/juniper_conf/json/'
+    json_dir = '/var/nistore/producers/juniper_conf/json/'
     json_list = []
 
     for subdir, dirs, files in os.walk(json_dir):
@@ -98,14 +98,14 @@ def main():
             f=open(join(json_dir, file), 'r')
             json_list.append(json.load(f))
 
+    if purge:
+        purge_db()
+
     if insert:
         for i in json_list:
             name = i['host']['juniper_conf']['name']
             interfaces = i['host']['juniper_conf']['interfaces']
             insert_physical(name, interfaces)
-
-    if purge:
-        purge_db()
 
     return 0
 
