@@ -25,5 +25,6 @@ urlpatterns = patterns('',
     (r'^comments/', include('django.contrib.comments.urls')),
 
     # NOCLook URLs
-    (r'^/?$', include('niweb.noclook.urls')),
+    #(r'^/?$', include('niweb.noclook.urls')),
+    (r'', include('niweb.noclook.urls')),
 )
