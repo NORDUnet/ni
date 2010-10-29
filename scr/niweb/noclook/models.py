@@ -3,8 +3,6 @@ from django.contrib.auth.models import User
 
 import neo4jclient
 
-# Create your models here.
-
 NODE_META_TYPE_CHOICES = (
     ('logical', 'Logical'),
     ('physical', 'Physical'),
@@ -20,7 +18,7 @@ class NodeType(models.Model):
     def __unicode__(self):
         return self.type
 
-    @models.permalink
+    #@models.permalink
     def get_absolute_url(self): # TODO
         pass
 
@@ -44,9 +42,14 @@ class NodeHandle(models.Model):
     def __unicode__(self):
         return '%s %s' % (self.node_type, self.node_name)
 
-    @models.permalink
+    #@models.permalink
     def get_absolute_url(self): # TODO
-        pass
+        '''
+        Should we import neo4jclient here and traverse the node to to
+        root? That way we can do urls like se-tug/fpc/pic/port or
+        dk-ore-lm-01/rack/sub_rack/.
+        '''
+        return '%s/%d/' % (self.node_type, self.handle_id)
 
     def save(self):
         '''
