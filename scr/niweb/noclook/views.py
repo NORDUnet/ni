@@ -8,8 +8,10 @@ def index(request):
         {'node_handle_list': node_handle_list})
 
 
-def detail(request, node_handle_id):
-    nh = get_object_or_404(NodeHandle, pk=node_handle_id)
+def detail(request, handle_id, slug):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
     return render_to_response('noclook/detail.html',
-        {'node_handle': nh, 'node': n})
+        {'node_handle': nh, 'node': node})
