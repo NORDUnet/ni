@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} | Detail{% endblock %}
+
+{% block menu %}
+<ul>
+    <li class="menu_item">All nodes</li>
+    <li class="menu_item">Types</li>
+</ul>
+{% endblock %}
+
+{% block content %}
+    <div class="content">
+            <h3>Node properties</h3>
+            <table>
+            {% for key,value in node.properties.items %}
+                <tr>
+                    <td><b>{{key}}</b></td><td>{{value}}</td>
+                </tr>
+            {% endfor %}
+            </table>
+            <h3>Meta information</h3>
+            <table>
+                <tr>
+                    <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_meta_type:</b> </td><td>{{ node_handle.node_meta_type }}</td>
+                </tr>
+                <tr>
+                    <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
+                </tr>
+                <tr>
+                    <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
+                </tr>
+                <tr>
+                    <td><b>modified:</b> </td><td>{{ node_handle.modified }}</td>
+                </tr>
+
+            </table>
+
+     </div>
+{% endblock %}
