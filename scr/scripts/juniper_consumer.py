@@ -22,7 +22,7 @@
 
 import os
 import sys
-sys.path.append(os.path.abspath('/var/norduni/scr/niweb'))
+sys.path.append(os.path.abspath('/home/lundberg/norduni/scr/niweb'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from noclook.models import NodeType, NodeHandle
 from django.contrib.auth.models import User
@@ -90,7 +90,7 @@ def main():
     insert = True
    # purge = False
 
-    json_dir = '/var/nistore/producers/juniper_conf/json/'
+    json_dir = '/home/lundberg/norduni/tools/nerds/producers/juniper_conf/json/'
     json_list = []
 
     for subdir, dirs, files in os.walk(json_dir):
