@@ -5,6 +5,7 @@ from sys import path
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+STATIC_DEV_MEDIA = path_to_static_media_for_development
 
 NIWEB_ROOT = ''
 # URL without the host name,
