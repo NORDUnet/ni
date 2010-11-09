@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.conf.urls.defaults import *
 
 # Uncomment the next two lines to enable the admin:
@@ -16,7 +17,7 @@ urlpatterns = patterns('',
 
     # Static serve
     (r'^site_media/(?P<path>.*)$', 'django.views.static.serve',
-        {'document_root': '/home/lundberg/norduni/scr/niweb/media'}),
+        {'document_root': settings.STATIC_DEV_MEDIA}),
 
     # Django Generic Login
     (r'^accounts/login/$', 'django.contrib.auth.views.login'),
