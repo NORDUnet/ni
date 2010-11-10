@@ -18,9 +18,13 @@ class NodeType(models.Model):
     def __unicode__(self):
         return self.type
 
-    #@models.permalink
+    def get_slug(self):
+        return self.slug
+
+    @models.permalink
     def get_absolute_url(self): # TODO
-        pass
+        return('niweb.noclook.views.list_by_type', (), {
+            'slug': self.slug})
 
 class NodeHandle(models.Model):
     # Handle <-> Node data
@@ -42,14 +46,17 @@ class NodeHandle(models.Model):
     def __unicode__(self):
         return '%s %s' % (self.node_type, self.node_name)
 
-    #@models.permalink
-    def get_absolute_url(self): # TODO
+    @models.permalink
+    def get_absolute_url(self):
         '''
-        Should we import neo4jclient here and traverse the node to to
-        root? That way we can do urls like se-tug/fpc/pic/port or
+        Should we instead import neo4jclient here and traverse the node
+        to to root? That way we can do urls like se-tug/fpc/pic/port or
         dk-ore-lm-01/rack/sub_rack/.
         '''
-        return '%s/%d/' % (self.node_type, self.handle_id)
+        #return '%s/%d/' % (self.node_type, self.handle_id)
+        return('niweb.noclook.views.detail', (), {
+            'slug': self.node_type.get_slug(),
+            'handle_id': self.handle_id})
 
     def save(self):
         '''

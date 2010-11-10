@@ -1,5 +1,5 @@
 from django.shortcuts import render_to_response, get_object_or_404
-from niweb.noclook.models import NodeHandle
+from niweb.noclook.models import NodeHandle, NodeType
 import neo4jclient
 
 def index(request):
@@ -7,6 +7,11 @@ def index(request):
     return render_to_response('noclook/index.html',
         {'node_handle_list': node_handle_list})
 
+def list_by_type(request, slug):
+    type = get_object_or_404(NodeType, slug=slug)
+    node_handle_list = type.nodehandle_set.all()
+    return render_to_response('noclook/list_by_type.html',
+        {'node_handle_list': node_handle_list})
 
 def detail(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
