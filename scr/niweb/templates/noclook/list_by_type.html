@@ -4,8 +4,11 @@
 
 {% block menu %}
 <ul>
-    <li class="menu_choice">All nodes</li>
-    <li class="menu_item">Types</li>
+    <li class="menu_choice">All</li>
+    <li class="menu_header">Types</li>
+    <ul>
+        <li class="menu_item">Types</li>
+    </ul>
 </ul>
 {% endblock %}
 
@@ -15,7 +18,7 @@
             <tr><td>Node type</td><td>Node name</td></tr>
             {% for handle in node_handle_list %}
                 <tr>
-                    <td><a class="type" href="{{ handle.node_type.get_absolute_url }}">{{ handle.node_type }}</a></td>
+                    <td><a class="type" href="{{ handle.get_absolute_url }}">{{ handle.node_type }}</a></td>
                     <td><a class="handle" href="{{ handle.get_absolute_url }}">{{ handle.node_name }}</a></td>
                 </tr>
 
