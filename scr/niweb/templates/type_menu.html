@@ -1,0 +1,5 @@
+<ul class='menu'>
+{% for type in types %}
+    <li><a class="type" href="{{ type.get_absolute_url }}">{{ type }}s</a></li>
+{% endfor %}
+</ul>
