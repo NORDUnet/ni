@@ -3,9 +3,8 @@ from niweb.noclook.models import NodeHandle, NodeType
 import neo4jclient
 
 def index(request):
-    node_handle_list = NodeHandle.objects.all()
-    return render_to_response('noclook/index.html',
-        {'node_handle_list': node_handle_list})
+    type_list = NodeType.objects.all()
+    return render_to_response('noclook/index.html', {})
 
 def list_by_type(request, slug):
     type = get_object_or_404(NodeType, slug=slug)
