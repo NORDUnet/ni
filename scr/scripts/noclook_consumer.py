@@ -191,6 +191,9 @@ def main():
         if config.get('data', 'nmap_services') != '':
             insert_nmap(load_json(config.get('data', 'nmap_services')))
 
+    timestamp = datetime.datetime.strftime(datetime.datetime.now(),
+        '%b %d %H:%M:%S')
+    print "%s noclook_consumer.py ran successfully." % timestamp
     return 0
 
 if __name__ == '__main__':
