@@ -67,5 +67,12 @@ class NodeHandle(models.Model):
         self.node_id = node.id
         meta_node = nc.get_meta_node(str(self.node_meta_type))
         meta_node.Contains(node)
-        super(NodeHandle, self).save()
+        try:
+            super(NodeHandle, self).save()
+        except Exception as e:
+            # If you cant write to the sql db undo the neo4j change
+            print 'test'
+            nc.delete_node(node.id)
+            print e
+
 
