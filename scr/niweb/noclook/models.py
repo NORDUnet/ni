@@ -71,7 +71,6 @@ class NodeHandle(models.Model):
             super(NodeHandle, self).save()
         except Exception as e:
             # If you cant write to the sql db undo the neo4j change
-            print 'test'
             nc.delete_node(node.id)
             print e
 
