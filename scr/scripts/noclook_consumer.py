@@ -99,15 +99,19 @@ def insert_juniper(json_list):
             name = i['name']
             if name not in not_interesting_interfaces:
                 # Also not interesting is interfaces with . or * in them
-                if '.' not in name and '*' not in name:
-                    type = NodeType.objects.get(slug="pic")
-                    node_handle = NodeHandle(node_name=name, node_type=type,
-                        node_meta_type = meta_type, creator=user)
-                    node_handle.save()
-                    node = nc.get_node_by_id(node_handle.node_id)
-                    node['description'] = i['desc']
-                    node['units'] = json.dumps(i['units'])
-                    master_node.Has(node)
+                try:
+                    if '.' not in name and '*' not in name:
+                        type = NodeType.objects.get(slug="pic")
+                        node_handle = NodeHandle(node_name=name, node_type=type,
+                            node_meta_type = meta_type, creator=user)
+                        node_handle.save()
+                        node = nc.get_node_by_id(node_handle.node_id)
+                        node['description'] = i['description']
+                        node['units'] = json.dumps(i['units'])
+                        master_node.Has(node)
+                except TypeError:
+                    print name, master_node['name']
+                    sys.exit(1)
 
 def insert_nmap(json_list):
     '''
