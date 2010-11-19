@@ -131,7 +131,7 @@ def insert_juniper(json_list):
                         node_meta_type = meta_type, creator=user)
                     node_handle.save()
                     node = nc.get_node_by_id(node_handle.node_id)
-                    node['description'] = i['description']
+                    node['description'] = rest_comp(i['description'])
                     node['units'] = json.dumps(i['units'])
                     master_node.Has(node)
                 #except TypeError:
