@@ -69,6 +69,30 @@ def purge_db():
         nc.delete_node(h.node_id)
     NodeHandle.objects.all().delete()
 
+def get_node_type(type_name):
+    '''
+    Returns or creates and returns the NodeType object with the supplied
+    name.
+    '''
+    try:
+        type = NodeType.objects.get(type=type_name)
+    except Exception as e:
+        print e
+        # The NodeType was not found create one
+        from django.template.defaultfilters import slugify
+        type = NodeType(type=type_name, slug=slugify(type_name))
+        type.save()
+    return type
+
+def rest_comp(data):
+    '''
+    As the REST interface cant handle None type we change None to False.
+    '''
+    if data is None:
+        return False
+    else:
+        return data
+
 def insert_juniper(json_list):
     '''
     Inserts the data loaded from the json files created by juniper_conf.
@@ -78,12 +102,13 @@ def insert_juniper(json_list):
     for i in json_list:
         name = i['host']['juniper_conf']['name']
         interfaces = i['host']['juniper_conf']['interfaces']
+        bgp_peerings = i['host']['juniper_conf']['bgp_peerings']
 
         nc = neo4jclient.Neo4jClient()
 
         # Hard coded values that we can't get on the fly right now
-        user = User.objects.get(username="lundberg")
-        type = NodeType.objects.get(slug="router")
+        user = User.objects.get(username='lundberg')
+        type = get_node_type('Router')
         meta_type = 'physical'
 
         # Insert the router
@@ -99,19 +124,40 @@ def insert_juniper(json_list):
             name = i['name']
             if name not in not_interesting_interfaces:
                 # Also not interesting is interfaces with . or * in them
-                try:
-                    if '.' not in name and '*' not in name:
-                        type = NodeType.objects.get(slug="pic")
-                        node_handle = NodeHandle(node_name=name, node_type=type,
-                            node_meta_type = meta_type, creator=user)
-                        node_handle.save()
-                        node = nc.get_node_by_id(node_handle.node_id)
-                        node['description'] = i['description']
-                        node['units'] = json.dumps(i['units'])
-                        master_node.Has(node)
-                except TypeError:
-                    print name, master_node['name']
-                    sys.exit(1)
+                #try:
+                if '.' not in name and '*' not in name:
+                    type = get_node_type('PIC')
+                    node_handle = NodeHandle(node_name=name, node_type=type,
+                        node_meta_type = meta_type, creator=user)
+                    node_handle.save()
+                    node = nc.get_node_by_id(node_handle.node_id)
+                    node['description'] = i['description']
+                    node['units'] = json.dumps(i['units'])
+                    master_node.Has(node)
+                #except TypeError:
+                    #print name, master_node['name']
+                    #sys.exit(1)
+
+        # Insert BGP peerings
+        for p in bgp_peerings:
+            peering_type = p['type']
+            if peering_type == 'internal':
+                type = get_node_type('Internal Peering')
+            elif peering_type == 'external':
+                type = get_node_type('External Peering')
+            name = p['description']
+            if name == None:
+                name = 'No description'
+            meta_type = 'Logical'
+            node_handle = NodeHandle(node_name=name, node_type=type,
+                node_meta_type = meta_type, creator=user)
+            node_handle.save()
+            node = nc.get_node_by_id(node_handle.node_id)
+            node['as_number'] = rest_comp(p['as_number'])
+            node['group'] = rest_comp(p['group'])
+            node['remote_address'] = rest_comp(p['remote_address'])
+            node['local_address'] = rest_comp(p['local_address'])
+            #nc.get_meta_node()
 
 def insert_nmap(json_list):
     '''
