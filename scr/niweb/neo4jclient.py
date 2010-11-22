@@ -51,6 +51,12 @@ class Neo4jClient:
         '''
         return self.db.nodes.get(int(node_id))
 
+    def get_node_by_name(self, node_name, node_type=None):
+        '''
+        Text
+        '''
+        pass
+
     def get_meta_node(self, meta_node_name):
         '''
         Will return the meta node requested or create it and return it.
