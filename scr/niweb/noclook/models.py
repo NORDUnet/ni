@@ -73,5 +73,7 @@ class NodeHandle(models.Model):
             # If you cant write to the sql db undo the neo4j change
             nc.delete_node(node.id)
             print e
-
-
+            return None
+        # We need to save the node_handle before it gets a handle_id.
+        node['handle_id'] = int(self.handle_id)
+        return self
