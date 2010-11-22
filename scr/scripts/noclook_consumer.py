@@ -30,7 +30,7 @@ import argparse
 
 ## Need to change this path depending on where the Django project is
 ## located.
-path = '/home/lundberg/norduni/scr/niweb/'
+path = '/var/norduni/scr/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
