@@ -11,5 +11,7 @@ urlpatterns += patterns('niweb.noclook.views',
     # NOCLook views
     (r'^$', 'index'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'detail'),
+    (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
+        'list_by_master'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
 )
