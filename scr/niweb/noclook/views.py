@@ -20,6 +20,24 @@ def list_by_type(request, slug):
         context_instance=RequestContext(request))
 
 @login_required
+def list_by_master(request, handle_id, slug):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    nc = neo4jclient.Neo4jClient()
+    master = nc.get_node_by_id(nh.node_id)
+    # Get all related nodes
+    node_list = master.traverse()
+    node_handle_list = []
+    type = get_object_or_404(NodeType, slug=slug)
+    for node in node_list:
+        if node['type'] == str(type):
+            node_handle_list.append(get_object_or_404(NodeHandle,
+                                        pk=node['handle_id']))
+    return render_to_response('noclook/list_by_type.html',
+        {'node_handle_list': node_handle_list},
+        context_instance=RequestContext(request))
+
+@login_required
 def detail(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
