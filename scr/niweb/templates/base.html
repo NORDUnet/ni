@@ -19,6 +19,13 @@
                     {% block menu %}
                     {% load niweb_tags %}
                     {% type_menu %}
+
+                    <ul>
+                    {% if user.is_authenticated %}
+                        <li><a href="/logout/">Log out</a></li>
+                    {% endif %}
+                    </ul>
+
                     {% endblock %}
                 </div>
         </div>
