@@ -37,13 +37,13 @@ class Neo4jClient:
         '''
         return client.GraphDatabase(uri)
 
-    def create_node(self, name='', type=''):
+    def create_node(self, n='', t=''):
         '''
         Creates a node with the mandatory attributes name and type.
 
         TODO: try except
         '''
-        return self.db.node(name = name, type = type)
+        return self.db.node(name = n, type = t)
 
     def get_node_by_id(self, node_id):
         '''
@@ -51,11 +51,45 @@ class Neo4jClient:
         '''
         return self.db.nodes.get(int(node_id))
 
-    def get_node_by_name(self, node_name, node_type=None):
+    def get_node_by_value(self, node_value, meta_node_name=None,
+                                                    node_property=None):
         '''
-        Text
+        Traverses the meta node, if any, else it traverses all
+        available meta nodes and compares the property of the nodes
+        with the supplied strings and returns the ones matching.
         '''
-        pass
+        if meta_node_name is not None:
+            meta_node = self.get_meta_node(meta_node_name)
+            meta_node_list = [meta_node] # It's easy to loop with lists
+        else:
+            meta_node_list = self.get_all_meta_nodes()
+
+        node_list = []
+        for meta_node in meta_node_list:
+            for node in meta_node.traverse():
+                if node_property is None: # Compare all values
+                    for key in node.properties:
+                        if node.properties[key] == node_value:
+                            node_list.append(node)
+                else: # Compare the supplied property value if it exists
+                    try:
+                        value = node.properties[node_property]
+                        if value == node_value:
+                            node_list.append(node)
+                    except KeyError:
+                        pass
+
+        return node_list
+
+    def get_all_meta_nodes(self):
+        '''
+        Will return all available meta nodes.
+        '''
+        rels = self.root.relationships.outgoing(["Consists_of"])
+        meta_node_list = []
+        for rel in rels:
+            meta_node_list.append(rel.end)
+        return meta_node_list
 
     def get_meta_node(self, meta_node_name):
         '''
@@ -78,6 +112,20 @@ class Neo4jClient:
         for rel in node.relationships.all():
             rel.delete()
         node.delete()
+
+    def has_relationship(self, start, end, rel_type=None):
+        '''
+        Takes a start and an end node with an optional relationship
+        type. Returns True if the nodes have a relationship else False.
+        '''
+        for rel in start.relationships.all():
+            if rel.start is start and rel.end is end:
+                if rel_type:
+                    if rel.type == rel_type:
+                        return True
+                else:
+                    return True
+        return False
 
 
 def main():

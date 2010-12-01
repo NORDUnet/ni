@@ -2,7 +2,8 @@ Dependencies
 - Django trunk
 - neo4j-rest-client (git://github.com/johanlundberg/neo4j-rest-client.git)
 (- greatlemers-django-tools)
-- neo4j-rest-standalone-0.8-SNAPSHOT (latest snapshot does not work with neo4j-rest-client)
+- neo4j-rest-standalone-0.8-SNAPSHOT
+- ipaddr 2.1.5 (http://code.google.com/p/ipaddr-py/)
 
 Tools
 (- neo4j webadmin
