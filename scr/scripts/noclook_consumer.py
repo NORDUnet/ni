@@ -27,6 +27,7 @@ import json
 import datetime
 import ConfigParser
 import argparse
+import ipaddr
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -107,15 +108,18 @@ def rest_comp(data):
 
 def insert_juniper_router(name):
     '''
-    Inserts the data loaded from the json files created by juniper_conf.
+    Inserts a physical meta type node of the type Router.
     Returns the node created.
     '''
     nc = neo4jclient.Neo4jClient()
     node_handle = get_node_handle(name, 'Router', 'physical')
     node_handle.save()
-    return nc.get_node_by_id(node_handle.node_id)
+    node = nc.get_node_by_id(node_handle.node_id)
+    node_list = [node]
 
-def insert_juniper_interface(router_node, interfaces):
+    return node_list
+
+def insert_juniper_interfaces(router_node, interfaces):
     '''
     Insert all interfaces in the interfaces list with a Has
     relationship from the router_node. Some filtering is done for
@@ -128,7 +132,8 @@ def insert_juniper_interface(router_node, interfaces):
     for i in interfaces:
         name = i['name']
         if name not in not_interesting_interfaces:
-            # Also not interesting is interfaces with . or * in them
+            # Also "not interesting" is interfaces with . or * in their
+            # names
             if '.' not in name and '*' not in name:
                 node_handle = get_node_handle(name, 'PIC', 'physical')
                 node_handle.save()
@@ -140,7 +145,34 @@ def insert_juniper_interface(router_node, interfaces):
 
     return node_list
 
-def insert_juniper_bgp_peering(bgp_peerings):
+def insert_juniper_relation(name, as_number):
+    '''
+    Inserts a relation meta type node of the type Peering partner.
+    Returns the newly created node.
+    '''
+    nc = neo4jclient.Neo4jClient()
+    node_handle = get_node_handle(name, 'Peering Partner', 'relation')
+    node_handle.save()
+    node = nc.get_node_by_id(node_handle.node_id)
+    node['as_number'] = rest_comp(as_number)
+    node_list = [node]
+
+    return node_list
+
+def insert_juniper_service(name):
+    '''
+    Inserts a logical meta type node of the type IP Service.
+    Returns the newly created node.
+    '''
+    nc = neo4jclient.Neo4jClient()
+    node_handle = get_node_handle(name, 'IP Service', 'logical')
+    node_handle.save()
+    node = nc.get_node_by_id(node_handle.node_id)
+    node_list = [node]
+
+    return node_list
+
+def insert_juniper_bgp_peerings(bgp_peerings):
     '''
     Inserts all BGP peerings for all routers collected by the
     juniper_conf producer. This is to be able to get all the internal
@@ -150,24 +182,47 @@ def insert_juniper_bgp_peering(bgp_peerings):
     nc = neo4jclient.Neo4jClient()
     node_list = []
     for p in bgp_peerings:
-        peering_type = p['type']
-        if peering_type == 'internal':
-            node_type = 'Internal Peering'
-        elif peering_type == 'external':
-            node_type = 'External Peering'
         name = p['description']
         if name == None:
             name = 'No description'
-        node_handle = get_node_handle(name, node_type, 'logical')
-        node_handle.save()
-        node = nc.get_node_by_id(node_handle.node_id)
-        node['as_number'] = rest_comp(p['as_number'])
-        node['group'] = rest_comp(p['group'])
-        node['remote_address'] = rest_comp(p['remote_address'])
-        node['local_address'] = rest_comp(p['local_address'])
-        node_list.append(node)
 
-    return node_list
+        group = p['group']
+        service = nc.get_node_by_value(group, 'logical', 'name')
+        if service == []:
+            service = insert_juniper_service(group)
+
+        peering_type = p['type']
+        if peering_type == 'internal':
+            remote_addr = ipaddr.IPAddress(p['remote_address'])
+            local_addr = ipaddr.IPAddress(p['local_address'])
+
+        elif peering_type == 'external':
+            peeringp = nc.get_node_by_value(name, 'relation', 'name')
+            if peeringp == []:
+                peeringp = insert_juniper_relation(name, p['as_number'])
+            peeringp[0].Uses(service[0], ip_adress=p['remote_address'])
+            remote_addr = ipaddr.IPAddress(p['remote_address'])
+            local_addr = ipaddr.IPAddress('0.0.0.0') #None did not work
+
+        # Loop through interfaces to find the local and/or remote
+        # address
+        meta_node = nc.get_meta_node('physical')
+        node_dict = {}
+        for rel in meta_node.relationships.outgoing(["Contains"]):
+            if rel.end['type'] == 'PIC':
+                units = json.loads(rel.end['units'])
+
+                for unit in units:
+                    for ip in unit['address']:
+                        pic_addr = ipaddr.IPNetwork(ip)
+                        if local_addr in pic_addr:
+                            if not nc.has_relationship(service[0], rel.end):
+                                service[0].Depends_on(rel.end, ip_address=ip, unit=unit['unit'], vlan=unit['vlanid'])
+                                break
+                        elif remote_addr in pic_addr:
+                            if not nc.has_relationship(service[0], rel.end):
+                                service[0].Depends_on(rel.end, ip_address=ip, unit=unit['unit'], vlan=unit['vlanid'])
+                                break
 
 def consume_juniper_conf(json_list):
     '''
@@ -177,13 +232,13 @@ def consume_juniper_conf(json_list):
     bgp_peerings = []
     for i in json_list:
         name = i['host']['juniper_conf']['name']
-        router_node = insert_juniper_router(name)
+        router_node = insert_juniper_router(name)[0]
         interfaces = i['host']['juniper_conf']['interfaces']
-        interface_nodes = insert_juniper_interface(router_node,
+        interface_nodes = insert_juniper_interfaces(router_node,
                             interfaces)
         bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
 
-    bgp_peering_nodes = insert_juniper_bgp_peering(bgp_peerings)
+    bgp_peering_nodes = insert_juniper_bgp_peerings(bgp_peerings)
 
 
 def insert_nmap(json_list):
