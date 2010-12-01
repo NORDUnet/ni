@@ -12,6 +12,19 @@
                 </tr>
             {% endfor %}
             </table>
+
+            <h3>Relationships</h3>
+            <table>
+            {% for rel in node.relationships.all %}
+                <tr>
+                    <td><a href="/any/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/any/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                </tr>
+                <tr>
+                    <td></td><td>{{rel.properties}}</td><td></td>
+                </tr>
+            {% endfor %}
+            </table>
+
             <h3>Meta information</h3>
             <table>
                 <tr>
