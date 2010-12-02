@@ -211,16 +211,28 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         for rel in meta_node.relationships.outgoing(["Contains"]):
             if rel.end['type'] == 'PIC':
                 units = json.loads(rel.end['units'])
-
+                # Gah, this next part needs to be refactored
                 for unit in units:
                     for ip in unit['address']:
                         pic_addr = ipaddr.IPNetwork(ip)
                         if local_addr in pic_addr:
-                            if not nc.has_relationship(service[0], rel.end):
+                            rels = nc.has_relationship(service[0], rel.end, 'Depends_on')
+                            create = True
+                            for rel in rels:
+                                if rel['unit'] == unit['unit']: # Can't have more than one unit per unit number
+                                    create = False
+                                    break
+                            if create:
                                 service[0].Depends_on(rel.end, ip_address=ip, unit=unit['unit'], vlan=unit['vlanid'])
                                 break
                         elif remote_addr in pic_addr:
-                            if not nc.has_relationship(service[0], rel.end):
+                            rels = nc.has_relationship(service[0], rel.end, 'Depends_on')
+                            create = True
+                            for rel in rels:
+                                if rel['unit'] == unit['unit']: # Can't have more than one unit per unit number
+                                    create = False
+                                    break
+                            if create:
                                 service[0].Depends_on(rel.end, ip_address=ip, unit=unit['unit'], vlan=unit['vlanid'])
                                 break
 

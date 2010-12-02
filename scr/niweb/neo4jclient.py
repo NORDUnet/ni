@@ -116,16 +116,18 @@ class Neo4jClient:
     def has_relationship(self, start, end, rel_type=None):
         '''
         Takes a start and an end node with an optional relationship
-        type. Returns True if the nodes have a relationship else False.
+        type.
+        Returns the relationsships found or an empty list.
         '''
+        rel_list = []
         for rel in start.relationships.all():
             if rel.start.id == start.id and rel.end.id == end.id:
                 if rel_type:
                     if rel.type == rel_type:
-                        return True
+                        rel_list.append(rel)
                 else:
-                    return True
-        return False
+                    rel_list.append(rel)
+        return rel_list
 
 
 def main():
