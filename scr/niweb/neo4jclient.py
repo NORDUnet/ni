@@ -119,7 +119,7 @@ class Neo4jClient:
         type. Returns True if the nodes have a relationship else False.
         '''
         for rel in start.relationships.all():
-            if rel.start is start and rel.end is end:
+            if rel.start.id == start.id and rel.end.id == end.id:
                 if rel_type:
                     if rel.type == rel_type:
                         return True
