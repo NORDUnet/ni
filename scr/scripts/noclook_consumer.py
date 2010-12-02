@@ -127,7 +127,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     Returns a list with all created nodes.
     '''
     nc = neo4jclient.Neo4jClient()
-    not_interesting_interfaces = ['all', 'lo0', 'fxp0', '']
+    not_interesting_interfaces = ['all', 'fxp0', '']
     node_list = []
     for i in interfaces:
         name = i['name']
@@ -214,9 +214,13 @@ def insert_juniper_bgp_peerings(bgp_peerings):
                 # Gah, this next part needs to be refactored
                 for unit in units:
                     for ip in unit['address']:
-                        pic_addr = ipaddr.IPNetwork(ip)
+                        try:
+                            pic_addr = ipaddr.IPNetwork(ip)
+                        except ValueError:
+                            # ISO address on lo0
+                            break
                         if local_addr in pic_addr:
-                            rels = nc.has_relationship(service[0], rel.end, 'Depends_on')
+                            rels = nc.get_relationships(service[0], rel.end, 'Depends_on')
                             create = True
                             for rel in rels:
                                 if rel['unit'] == unit['unit']: # Can't have more than one unit per unit number
@@ -226,7 +230,7 @@ def insert_juniper_bgp_peerings(bgp_peerings):
                                 service[0].Depends_on(rel.end, ip_address=ip, unit=unit['unit'], vlan=unit['vlanid'])
                                 break
                         elif remote_addr in pic_addr:
-                            rels = nc.has_relationship(service[0], rel.end, 'Depends_on')
+                            rels = nc.get_relationships(service[0], rel.end, 'Depends_on')
                             create = True
                             for rel in rels:
                                 if rel['unit'] == unit['unit']: # Can't have more than one unit per unit number
