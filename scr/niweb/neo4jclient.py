@@ -113,7 +113,7 @@ class Neo4jClient:
             rel.delete()
         node.delete()
 
-    def has_relationship(self, start, end, rel_type=None):
+    def get_relationships(self, start, end, rel_type=None):
         '''
         Takes a start and an end node with an optional relationship
         type.
