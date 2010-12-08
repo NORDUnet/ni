@@ -29,7 +29,10 @@ class Neo4jClient:
         # Open the database defined in settings.py
         self.db = self.open_db(settings.NEO4J_RESOURCE_URI)
         self.root = self.db.nodes.get(0)
-        self.meta_nodes = {}
+        self.meta_nodes = {} #?
+        self.Outgoing = client.Outgoing
+        self.Incoming = client.Incoming
+        self.Undirected = client.Undirected
 
     def open_db(self, uri):
         '''
