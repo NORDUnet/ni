@@ -22,7 +22,7 @@
                     <td>
                     {% for rel in pic.relationships.incoming %}
                         {% if rel.type == "Depends_on" %}
-                            {{ rel.start.name }} with address {{ rel.ip_address }}{% if re.vlan|length > 0 %}, vlan: Z{{ rel.vlan }}Z{% endif %}<br />
+                            {{ rel.start.name }} with address {{ rel.ip_address }}, vlan: {{ rel.vlan }}<br />
                         {% endif %}
                     {% endfor %}
                     </td>
