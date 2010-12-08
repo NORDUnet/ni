@@ -58,6 +58,10 @@ ul.menu {
  list-style-type: none;
 }
 
+td.leftcol {
+ vertical-align:top;
+}
+
  /*printer styles*/
  @media print{
 /*hide the left column when printing*/

@@ -54,9 +54,16 @@ class NodeHandle(models.Model):
         dk-ore-lm-01/rack/sub_rack/.
         '''
         #return '%s/%d/' % (self.node_type, self.handle_id)
-        return('niweb.noclook.views.detail', (), {
+        return('niweb.noclook.views.generic_detail', (), {
             'slug': self.node_type.get_slug(),
             'handle_id': self.handle_id})
+
+    def get_node(self):
+        '''
+        Returns the NodeHandles node.
+        '''
+        nc = neo4jclient.Neo4jClient()
+        return nc.get_node_by_id(self.node_id)
 
     def save(self):
         '''
@@ -77,3 +84,24 @@ class NodeHandle(models.Model):
         # We need to save the node_handle before it gets a handle_id.
         node['handle_id'] = int(self.handle_id)
         return self
+        save.alters_data = True
+
+    #def delete(self):
+        #'''
+        #Create a new node and associate it to the handle.
+        #'''
+        #nc = neo4jclient.Neo4jClient()
+        #try:
+            #node = nc.get_node_by_id(self.node_id)
+            #super(NodeHandle, self).delete()
+        #except Exception as e:
+            ## If you cant write to the sql db or the neo4j db do nothing
+            #print e
+            #return False
+        ## The handle is deleted and the node fetched, everthing seems
+        ## fine. Delete the node and all relationsships.
+        #for rel in node.relationships.all():
+            #rel.delete()
+        #node.delete()
+        #return True
+        #delete.alters_data = True
