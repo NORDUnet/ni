@@ -211,33 +211,32 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         for rel in meta_node.relationships.outgoing(["Contains"]):
             if rel.end['type'] == 'PIC':
                 units = json.loads(rel.end['units'])
-                # Gah, this next part needs to be refactored
+                # Gah, this next part needs to be refactored, it is hard
+                # to read and ugly...
                 for unit in units:
-                    for ip in unit['address']:
+                    for addr in unit['address']:
                         try:
-                            pic_addr = ipaddr.IPNetwork(ip)
+                            pic_addr = ipaddr.IPNetwork(addr)
                         except ValueError:
                             # ISO address on lo0
                             break
-                        if local_addr in pic_addr:
-                            rels = nc.get_relationships(service[0], rel.end, 'Depends_on')
-                            create = True
+                        if local_addr in pic_addr or \
+                                                remote_addr in pic_addr:
+                            rels = nc.get_relationships(service[0],
+                                                rel.end, 'Depends_on')
+                            create = True # Create new relation?
                             for rel in rels:
-                                if rel['unit'] == unit['unit']: # Can't have more than one unit per unit number
-                                    create = False
-                                    break
+                                # Can't have more than one unit with the
+                                # same unit number
+                                if rel['unit'] == unit['unit']:
+                                    create = False  # Do not create new
+                                    break           # a new relaion
                             if create:
-                                service[0].Depends_on(rel.end, ip_address=ip, unit=unit['unit'], vlan=unit['vlanid'])
-                                break
-                        elif remote_addr in pic_addr:
-                            rels = nc.get_relationships(service[0], rel.end, 'Depends_on')
-                            create = True
-                            for rel in rels:
-                                if rel['unit'] == unit['unit']: # Can't have more than one unit per unit number
-                                    create = False
-                                    break
-                            if create:
-                                service[0].Depends_on(rel.end, ip_address=ip, unit=unit['unit'], vlan=unit['vlanid'])
+                                service[0].Depends_on(rel.end,
+                                        ip_address=addr,
+                                        unit=unit['unit'],
+                                        vlan=unit['vlanid'],
+                                        description=unit['description'])
                                 break
 
 def consume_juniper_conf(json_list):
