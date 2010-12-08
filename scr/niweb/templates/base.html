@@ -9,7 +9,7 @@
 </head>
 <body>
     <div id="pagewidth">
-        <div id="header" ><a href="/"><img src="{% niweb_media_url %}images/NOCLook.png"></a>
+        <div id="header" ><a href="/"><img src="{% niweb_media_url %}images/NOCLook.png" width="442" height="163" alt="NOCLook it!" /></a>
                 <div id="wrapper" class="clearfix">
                 <div id="maincol">
                     {% block content %}
@@ -19,13 +19,11 @@
                     {% block menu %}
                     {% load niweb_tags %}
                     {% type_menu %}
-
                     <ul class="menu">
                     {% if user.is_authenticated %}
                         <li><a href="/logout/">Log out</a></li>
                     {% endif %}
                     </ul>
-
                     {% endblock %}
                 </div>
         </div>

@@ -7,7 +7,6 @@ from niweb.noclook.models import NodeHandle, NodeType
 import neo4jclient
 
 def index(request):
-    type_list = NodeType.objects.all()
     return render_to_response('noclook/index.html', {},
         context_instance=RequestContext(request))
 
@@ -25,7 +24,7 @@ def list_by_master(request, handle_id, slug):
     # Get node from neo4j-database
     nc = neo4jclient.Neo4jClient()
     master = nc.get_node_by_id(nh.node_id)
-    # Get all related nodes
+    # Get all outgoing related nodes
     node_list = master.traverse()
     node_handle_list = []
     type = get_object_or_404(NodeType, slug=slug)
@@ -38,7 +37,7 @@ def list_by_master(request, handle_id, slug):
         context_instance=RequestContext(request))
 
 @login_required
-def detail(request, handle_id, slug):
+def generic_detail(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     nc = neo4jclient.Neo4jClient()
@@ -48,9 +47,21 @@ def detail(request, handle_id, slug):
         context_instance=RequestContext(request))
 
 @login_required
+def router_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
+    # Get all the routers PICs
+    pic_nodes = node.traverse(types=nc.Outgoing.Has)
+    return render_to_response('noclook/router_detail.html',
+        {'node_handle': nh, 'node': node, 'pic_nodes': pic_nodes},
+        context_instance=RequestContext(request))
+
+@login_required
 def logout_page(request):
-    """
+    '''
     Log users out and re-direct them to the index.
-    """
+    '''
     logout(request)
     return HttpResponseRedirect('/')
