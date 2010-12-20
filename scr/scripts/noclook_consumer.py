@@ -200,7 +200,7 @@ def insert_juniper_bgp_peerings(bgp_peerings):
             peeringp = nc.get_node_by_value(name, 'relation', 'name')
             if peeringp == []:
                 peeringp = insert_juniper_relation(name, p['as_number'])
-            peeringp[0].Uses(service[0], ip_adress=p['remote_address'])
+            peeringp[0].Uses(service[0], ip_address=p['remote_address'])
             remote_addr = ipaddr.IPAddress(p['remote_address'])
             local_addr = ipaddr.IPAddress('0.0.0.0') #None did not work
 
