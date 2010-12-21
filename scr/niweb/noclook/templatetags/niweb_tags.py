@@ -4,9 +4,9 @@ register = template.Library()
 
 @register.simple_tag
 def niweb_url():
-    """
+    '''
     Returns the string contained in the setting NIWEB_URL.
-    """
+    '''
     try:
         from django.conf import settings
     except ImportError:
@@ -18,9 +18,9 @@ def niweb_url():
 
 @register.simple_tag
 def niweb_media_url():
-    """
+    '''
     Returns the string contained in the setting NIWEB_MEDIA_URL.
-    """
+    '''
     try:
         from django.conf import settings
     except ImportError:
@@ -32,11 +32,13 @@ def niweb_media_url():
 
 @register.inclusion_tag('type_menu.html')
 def type_menu():
-    """
-    Returns a list with all NodeType objects for easy menu handling.
-    """
+    '''
+    Returns a list with all wanted NodeType objects for easy menu
+    handling.
+    Just chain .exclude(type='name') to remove unwanted types.
+    '''
     from niweb.noclook.models import NodeType
-    types = NodeType.objects.all()
+    types = NodeType.objects.exclude(type='PIC')
     return {'types': types}
 
 

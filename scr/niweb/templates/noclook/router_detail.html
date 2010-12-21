@@ -4,21 +4,14 @@
 
 {% block content %}
     <div class="content">
-            <h3>Node properties</h3>
-            <table>
-            {% for key,value in node.properties.items %}
-                <tr>
-                    <td><b>{{key}}</b></td><td>{{value}}</td>
-                </tr>
-            {% endfor %}
-            </table>
-
-            <h3>PICs</h3>
+        <h2>{{ node.name }}</h2>
+        <h3>PICs</h3>
+        <div class="section">
             <table>
             <td><b>PIC</b></td><td><b>Services</b></td>
             {% for pic in pic_nodes|dictsort:"name" %}
                 <tr>
-                    <td class="leftcol"><a href="/{{pic.type|slugify}}/{{pic.handle_id}}/">{{pic.name}}</a></td>
+                    <td class="align_top"><a href="/{{pic.type|slugify}}/{{pic.handle_id}}/">{{pic.name}}</a></td>
                     <td>
                     {% for rel in pic.relationships.incoming %}
                         {% if rel.type == "Depends_on" %}
@@ -29,8 +22,22 @@
                 </tr>
             {% endfor %}
             </table>
+        </div>
 
-            <h3>Meta information</h3>
+        <hr>
+
+        <h3>Debug</h3>
+        <div class="section">
+            <h4>Node properties</h4>
+            <table>
+            {% for key,value in node.properties.items %}
+                <tr>
+                    <td><b>{{key}}</b></td><td>{{value}}</td>
+                </tr>
+            {% endfor %}
+            </table>
+
+            <h4>Meta information</h4>
             <table>
                 <tr>
                     <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
@@ -56,8 +63,7 @@
                 <tr>
                     <td><b>modified:</b> </td><td>{{ node_handle.modified }}</td>
                 </tr>
-
             </table>
-
+        </div>
      </div>
 {% endblock %}
