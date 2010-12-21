@@ -8,6 +8,10 @@ html, body{
  padding:0;
 }
 
+img{
+ border: 0px;
+}
+
 #pagewidth{ }
 
 #header{
@@ -29,13 +33,6 @@ html, body{
  display:inline;
  position: relative;
  width:80%;
-}
-
-div.section{
- border-style:dashed;
- border-width:1px;
- margin: 10px 0px 50px 0px;
- padding: 5px 5px 5px 5px;
 }
 
  /* *** Float containers fix:
@@ -67,6 +64,13 @@ ul.menu {
 
 td.align_top {
  vertical-align:top;
+}
+
+div.section{
+ border-style:dashed;
+ border-width:1px;
+ margin: 10px 0px 50px 0px;
+ padding: 5px 5px 5px 5px;
 }
 
  /*printer styles*/
