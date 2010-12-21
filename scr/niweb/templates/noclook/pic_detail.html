@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} | Detail{% endblock %}
+
+{% block content %}
+    <div class="content">
+            <h2><a href="/{{ parent.type|slugify }}/{{ parent.handle_id }}/">{{ parent.name }}</a> {{ node.name }}</h2>
+
+
+            <h3>Units</h3>
+            <div class="section">
+            {% if units %}
+                <table>
+                    <td><b>Unit</b></td><td><b>Address</b></td><td><b>VLAN</b></td><td><b>Description</b></td>
+                    {% for unit in units %}
+                    <tr>
+                        <td class="align_top">{{ unit.unit }}</td>
+                        <td class="align_top">{% for address in unit.address %}{{ address }}<br />{% endfor %}</td>
+                        <td class="align_top">{{ unit.vlanid }}</td>
+                        <td class="align_top">{{ unit.description }}</td>
+                    </tr>
+                {% endfor %}
+                </table>
+            {% else %}
+                No units found.
+            {% endif %}
+            </div>
+
+            <h3>Depends on this PIC</h3>
+            <div class="section">
+            {% if depending %}
+                <table>
+                <td><b>Service</b></td><td><b>Customer</b></td>
+                {% for dep_group in depending %}
+                    <tr>
+                    {% for item in dep_group %}
+                        {% if forloop.first %}
+                            <td class="align_top"><a href="/{{ item.type|slugify }}/{{ item.handle_id }}/">{{ item.name }}</a></td>
+                            <td class="align_top">
+                        {% else %}
+                                <a href="/{{ item.type|slugify }}/{{ item.handle_id }}/">{{ item.name }}</a><br />
+                        {% endif %}
+                    {% endfor %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </table>
+            {% else %}
+                No services depending on this PIC found.
+            {% endif %}
+            </div>
+
+            <hr />
+
+            <h3>Debug</h3>
+            <div class="section">
+            <h4>Node properties</h4>
+            <table>
+            {% for key,value in node.properties.items %}
+                <tr>
+                    <td><b>{{key}}</b></td><td>{{value}}</td>
+                </tr>
+            {% endfor %}
+            </table>
+
+            <h4>Meta information</h4>
+            <table>
+                <tr>
+                    <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
+                </tr>
+                <tr>
+                    <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
+                </tr>
+                <tr>
+                    <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
+                </tr>
+                <tr>
+                    <td><b>modified:</b> </td><td>{{ node_handle.modified }}</td>
+                </tr>
+
+            </table>
+        </div>
+     </div>
+{% endblock %}
+

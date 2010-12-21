@@ -31,6 +31,13 @@ html, body{
  width:80%;
 }
 
+div.section{
+ border-style:dashed;
+ border-width:1px;
+ margin: 10px 0px 50px 0px;
+ padding: 5px 5px 5px 5px;
+}
+
  /* *** Float containers fix:
  http://www.csscreator.com/attributes/containedfloat.php *** */
 .clearfix:after {
@@ -58,7 +65,7 @@ ul.menu {
  list-style-type: none;
 }
 
-td.leftcol {
+td.align_top {
  vertical-align:top;
 }
 
