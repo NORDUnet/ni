@@ -6,6 +6,8 @@
 <meta http-equiv="content-type" content="text/html;charset=utf-8" />
 <meta name="generator" content="www.csscreator.com" />
 <link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/noclook.css" type="text/css" />
+{% block head %}
+{% endblock %}
 </head>
 <body>
     <div id="pagewidth">
@@ -19,6 +21,13 @@
                     {% block menu %}
                     {% load niweb_tags %}
                     {% type_menu %}
+
+                    {% if node_handle %}
+                        <ul class="menu">
+                            <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
+                        </ul>
+                    {% endif %}
+
                     <ul class="menu">
                     {% if user.is_authenticated %}
                         <li><a href="/logout/">Log out</a></li>

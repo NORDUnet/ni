@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}{{ block.super }} | All nodes{% endblock %}
+{% block title %}{{ block.super }} All nodes{% endblock %}
 
 {% block content %}
     <div class="content">
+            <h3>{{node_type}}s</h3>
             <table>
-            <tr><td>Node type</td><td>Node name</td></tr>
             {% for handle in node_handle_list %}
                 <tr>
-                    <td><a class="type" href="{{ handle.get_absolute_url }}">{{ handle.node_type }}</a></td>
                     <td><a class="handle" href="{{ handle.get_absolute_url }}">{{ handle.node_name }}</a></td>
                 </tr>
 
