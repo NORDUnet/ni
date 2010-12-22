@@ -10,13 +10,20 @@ urlpatterns = patterns('',
 urlpatterns += patterns('niweb.noclook.views',
     # NOCLook views
     (r'^$', 'index'),
+    # Detailed views
     (r'^router/(?P<handle_id>\d+)/$', 'router_detail'),
     (r'^pic/(?P<handle_id>\d+)/$', 'pic_detail'),
     (r'^peering-partner/(?P<handle_id>\d+)/$',
                                         'peering_partner_detail'),
     (r'^ip-service/(?P<handle_id>\d+)/$', 'ip_service_detail'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
+    # List views
     (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
         'list_by_master'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
+    # Visualize views
+    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)\.xml$',
+                                            'visualize_xml'),
+    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$',
+                                                'visualize'),
 )
