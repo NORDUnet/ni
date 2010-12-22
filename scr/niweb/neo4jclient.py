@@ -72,12 +72,13 @@ class Neo4jClient:
             for node in meta_node.traverse():
                 if node_property is None: # Compare all values
                     for key in node.properties:
-                        if node.properties[key] == node_value:
+                        if node.properties[key].lower() == \
+                                                    node_value.lower():
                             node_list.append(node)
                 else: # Compare the supplied property value if it exists
                     try:
                         value = node.properties[node_property]
-                        if value == node_value:
+                        if value.lower() == node_value.lower():
                             node_list.append(node)
                     except KeyError:
                         pass
@@ -132,16 +133,18 @@ class Neo4jClient:
                     rel_list.append(rel)
         return rel_list
 
-
 def main():
 
     def test_db_setup():
         import os
         os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
         nc = Neo4jClient()
-        print "Next line should be 0."
+        print 'Testing read and write for Neo4j REST database at %s.' \
+                                        % settings.NEO4J_RESOURCE_URI
+        print 'Next line should be "Root 0".'
         n = nc.get_node_by_id('0')
-        print n.id
+        n['name'] = 'Root'
+        print n['name'], n.id
 
     test_db_setup()
     return 0

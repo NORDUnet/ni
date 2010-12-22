@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ block.super }} | Detail{% endblock %}
+{% block title %}{{ block.super }} Detail{% endblock %}
 
 {% block content %}
     <div class="content">
@@ -30,19 +30,23 @@
             <div class="section">
             {% if depending %}
                 <table>
-                <td><b>Service</b></td><td><b>Customer</b></td>
-                {% for dep_group in depending %}
-                    <tr>
-                    {% for item in dep_group %}
-                        {% if forloop.first %}
-                            <td class="align_top"><a href="/{{ item.type|slugify }}/{{ item.handle_id }}/">{{ item.name }}</a></td>
-                            <td class="align_top">
-                        {% else %}
-                                <a href="/{{ item.type|slugify }}/{{ item.handle_id }}/">{{ item.name }}</a><br />
-                        {% endif %}
-                    {% endfor %}
-                        </td>
-                    </tr>
+                <td><b>Service Address</b></td><td><b>VLAN</b></td><td><b>Service</b></td><td><b>Organisation Address</b><td><b>Organisation</b></td></td>
+                    {% for dep_group in depending %}
+                        {% for item in dep_group %}
+                            {% if forloop.counter0 == 0 %}
+                                <tr>
+                                    <td class="align_top">{{ item.ip_address }}<td>{{ item.vlan }}</td></td><td class="align_top"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
+                            {% endif %}
+                            {% if forloop.counter0 == 1 %}
+                                    <td class="align_top">{{ item.ip_address }}</td><td class="align_top"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
+                                </tr>
+                            {% endif %}
+                            {% if forloop.counter0 > 1 %}
+                                <tr>
+                                    <td></td><td></td><td></td><td class="align_top">{{ item.ip_address }}</td><td class="align_top"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
                 {% endfor %}
                 </table>
             {% else %}
