@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ block.super }} | Detail{% endblock %}
+{% block title %}{{ block.super }} Detail{% endblock %}
 
 {% block content %}
     <div class="content">
@@ -10,7 +10,7 @@
             <div class="section">
             {% if service_relationships %}
                 <table>
-                <td><b>PIC Address</b></td><td><b>VLAN</b></td><td><b>PIC</b></td><td><b>Organisation IP</b><td><b>Organisation</b></td></td>
+                <td><b>PIC Address</b></td><td><b>VLAN</b></td><td><b>PIC</b></td><td><b>Organisation Address</b><td><b>Organisation</b></td></td>
                     {% for service_group in service_relationships %}
                         {% for item in service_group %}
                             {% if forloop.counter0 == 0 %}
@@ -30,7 +30,7 @@
                 {% endfor %}
                 </table>
             {% else %}
-                No services used.
+                No resources used.
             {% endif %}
             </div>
 

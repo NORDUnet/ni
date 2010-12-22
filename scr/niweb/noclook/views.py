@@ -18,7 +18,7 @@ def list_by_type(request, slug):
     type = get_object_or_404(NodeType, slug=slug)
     node_handle_list = type.nodehandle_set.all()
     return render_to_response('noclook/list_by_type.html',
-        {'node_handle_list': node_handle_list},
+        {'node_handle_list': node_handle_list, 'node_type': type},
         context_instance=RequestContext(request))
 
 @login_required
@@ -73,19 +73,19 @@ def pic_detail(request, handle_id):
     rel_list = node.relationships.incoming(types=['Has'])
     parent_node = rel_list[0].start
     # Get depending nodes
-    depending_nodes = []
+    depending_relationships = []
     depends_rel = node.relationships.incoming(types=['Depends_on'])
     for d_rel in depends_rel:
         orgs_rel = d_rel.start.relationships.incoming(types=['Uses'])
         pic_address = ipaddr.IPNetwork(d_rel['ip_address'])
         tmp = []
-        tmp.append(d_rel.start)
+        tmp.append(d_rel)
         for o_rel in orgs_rel:
             org_address = ipaddr.IPAddress(o_rel['ip_address'])
             if org_address in pic_address:
-                tmp.append(o_rel.start)
+                tmp.append(o_rel)
         if len(tmp) > 1: #If any organistations was found
-            depending_nodes.append(tmp)
+            depending_relationships.append(tmp)
     # Get connected nodes
     connected_nodes = []
     rel_list = node.relationships.incoming(types=['Connected_to'])
@@ -93,7 +93,7 @@ def pic_detail(request, handle_id):
         connected_nodes.append(rel.start)
     return render_to_response('noclook/pic_detail.html',
         {'node_handle': nh, 'node': node, 'units': units,
-        'parent': parent_node, 'depending':depending_nodes,
+        'parent': parent_node, 'depending':depending_relationships,
         'connected':connected_nodes},
         context_instance=RequestContext(request))
 
@@ -157,3 +157,99 @@ def logout_page(request):
     '''
     logout(request)
     return HttpResponseRedirect('/')
+
+# Mx_graph visualizing helper functions
+# These should perhaps be moved in to a visualization module.
+def makeVertex(doc, parent, id, label, style, width, height):
+    cell = doc.createElement('mxCell')
+    cell.setAttribute('id', id)
+    cell.setAttribute('parent', parent)
+    cell.setAttribute('value', label)
+    cell.setAttribute('label', 'Label')
+    cell.setAttribute('vertex', '-1')
+    cell.setAttribute('style', style)
+    cell.setAttribute('link', 'Link')
+    geometry = doc.createElement('mxGeometry')
+    geometry.setAttribute("x", "0")
+    geometry.setAttribute("y","0")
+    geometry.setAttribute("width", width)
+    geometry.setAttribute("height", height)
+    geometry.setAttribute("as","geometry")
+    cell.appendChild(geometry)
+
+    return cell
+
+def makeEdge(doc, parent, source, target, label):
+    cell = doc.createElement('mxCell')
+    cell.setAttribute('id', source['name']+'-'+target['name'])
+    cell.setAttribute('parent', parent)
+    cell.setAttribute('value', label)
+    cell.setAttribute('source', str(source.id))
+    cell.setAttribute('target', str(target.id))
+    cell.setAttribute('edge', '1')
+    geometry = doc.createElement('mxGeometry')
+    geometry.setAttribute('as', 'geometry')
+    geometry.setAttribute('relative', '1')
+    cell.appendChild(geometry)
+
+    return cell
+
+def add_mx_node(doc, container, parent, n):
+    container.appendChild(makeVertex(doc, parent, str(n.id),
+        'Name: '+n['name']+' ID: '+str(n.id), "shape=box","80","60"))
+    for rel in n.relationships.all():
+        add_mx_node_relation(doc, container, parent, rel)
+
+def add_mx_node_relation(doc, container, parent, rel):
+    container.appendChild(makeEdge(doc, parent, rel.start, rel.end,
+        rel.type))
+
+@login_required
+def visualize_xml(request, slug, handle_id):
+    '''
+    Creates the XML representation of the nodes relation which the
+    mxGraph (http://www.jgraph.com/doc/mxgraph/) javascript can handle.
+
+    This should be refactored to just make the boiler plate xml document
+    and then used to make specialized xml documents.
+    '''
+    from django.http import HttpResponse
+    from xml.dom.minidom import Document
+
+    # Get the node
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    nc = neo4jclient.Neo4jClient()
+    root_node = nc.get_node_by_id(nh.node_id)
+
+    # Create the minidom document
+    doc = Document()
+    # Create the <mxGraphModel> base element
+    mxGraphModel = doc.createElement("mxGraphModel")
+    doc.appendChild(mxGraphModel)
+    # Create the main <root> element
+    root = doc.createElement("root")
+    mxGraphModel.appendChild(root)
+    # Create the first <cell> element
+    cell0 = doc.createElement("mxCell")
+    cell0.setAttribute("id", "root")
+    root.appendChild(cell0)
+    # Create the second <cell> element
+    cell1 = doc.createElement("mxCell")
+    cell1.setAttribute("id", "main")
+    cell1.setAttribute("parent", "root")
+    root.appendChild(cell1)
+
+    add_mx_node(doc, root, 'main', root_node)
+    for n in root_node.traverse():
+        add_mx_node(doc, root, 'main', n)
+
+    return HttpResponse(doc.toxml(), mimetype="text/xml")
+
+@login_required
+def visualize(request, slug, handle_id):
+    '''
+
+    '''
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    return render_to_response('noclook/visualize.html',
+    {'node_handle': nh}, context_instance=RequestContext(request))

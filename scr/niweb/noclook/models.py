@@ -22,7 +22,7 @@ class NodeType(models.Model):
         return self.slug
 
     @models.permalink
-    def get_absolute_url(self): # TODO
+    def get_absolute_url(self):
         return('niweb.noclook.views.list_by_type', (), {
             'slug': self.slug})
 
