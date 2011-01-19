@@ -54,6 +54,15 @@ class Neo4jClient:
         '''
         return self.db.nodes.get(int(node_id))
 
+    def get_node_meta_type(self, node):
+        '''
+        Returns the meta type of the supplied node as a string.
+        '''
+        rel = node.relationships.incoming(types=['Consists_of',
+                                                        'Contains'])[0]
+        return rel.start['name']
+
+
     def get_node_by_value(self, node_value, meta_node_name=None,
                                                     node_property=None):
         '''

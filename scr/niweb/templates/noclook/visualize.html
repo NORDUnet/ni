@@ -10,8 +10,8 @@
 <script language="javascript" type="text/javascript" src="/site_media/js/jit/jit-yc.js"></script>
 <!-- JIT Force-Direction Graph -->
 <script language="javascript" type="text/javascript" src="/site_media/js/jit/visualize.js"></script>
+<!-- First initialize -->
 <script type="text/javascript">
-// First initialize
 window.onload = function(){
     $.getJSON('/visualize/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}.json', function(json) {
         init(json);
@@ -23,7 +23,7 @@ window.onload = function(){
 {% block content %}
 <div class="content">
     <h2><a href="{{ node_handle.get_absolute_url }}">{{ node_handle }}</a></h2>
-    <div class="section">
+    <div class="infovis_section">
         <div id="infovis"></div>
     </div>
 
