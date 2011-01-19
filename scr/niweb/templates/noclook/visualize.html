@@ -1,180 +1,41 @@
 {% extends "base.html" %}
 
 {% block title %}{{ block.super }} Visualize {{ node_handle }}{% endblock %}
+
 {% block head %}
+<!--[if IE]><script language="javascript" type="text/javascript" src="/site_media/js/jit/Extras/excanvas.js"></script><![endif]-->
+<!-- JQuery Library File -->
+<script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery-1.4.4.min.js"></script>
+<!-- JIT Library File -->
+<script language="javascript" type="text/javascript" src="/site_media/js/jit/jit-yc.js"></script>
+<!-- JIT Force-Direction Graph -->
+<script language="javascript" type="text/javascript" src="/site_media/js/jit/visualize.js"></script>
 <script type="text/javascript">
-    mxBasePath = '/site_media/js/mxgraph/';
-</script>
-<script type="text/javascript" src="/site_media/js/mxgraph/mxClient.js"></script>
-<script type="text/javascript">
-
-        /*
-            The example shape is a "3D box" that looks like this:
-                       ____
-                      /   /|
-                     /___/ |
-                     |   | /
-                     |___|/
-
-            The code below defines the shape. The BoxShape function
-            it the constructor which creates a new object instance.
-        */
-        function BoxShape() { }
-
-        /*
-            The next lines use an mxCylinder instance to augment the
-            prototype of the shape ("inheritance") and reset the
-            constructor to the topmost function of the c'tor chain.
-        */
-        BoxShape.prototype = new mxCylinder();
-        BoxShape.prototype.constructor = BoxShape;
-
-        // Defines the extrusion of the box as a "static class variable"
-        BoxShape.prototype.extrude = 10;
-
-        /*
-            Next, the mxCylinder's redrawPath method is "overridden".
-            This method has a isForeground argument to separate two
-            paths, one for the background (which must be closed and
-            might be filled) and one for the foreground, which is
-            just a stroke.
-
-             Foreground:       /
-                         _____/
-                              |
-                              |
-                           ____
-             Background:  /    |
-                         /     |
-                         |     /
-                         |____/
-        */
-        BoxShape.prototype.redrawPath = function(path, x, y, w, h, isForeground)
-        {
-            var dy = this.extrude;
-            var dx = this.extrude;
-
-            if (isForeground)
-            {
-                path.moveTo(0, dy);
-                path.lineTo(w-dx, dy);
-                path.lineTo(w, 0);
-                path.moveTo(w-dx, dy);
-                path.lineTo(w-dx, h);
-                path.end();
-            }
-            else
-            {
-                path.moveTo(0, dy);
-                path.lineTo(dx, 0);
-                path.lineTo(w, 0);
-                path.lineTo(w, h-dy);
-                path.lineTo(w-dx, h);
-                path.lineTo(0, h);
-                path.close();
-            }
-        }
-
-        /*
-            The custom shape can be registered globally or in each cellRenderer
-            instance. In this example, the shape is registered globally. For
-            registering the shape in a cellRenderer instance, the following
-            code can be used:
-
-            graph.cellRenderer.registerShape('box', BoxShape);
-        */
-        mxCellRenderer.prototype.defaultShapes['box'] = BoxShape;
-</script>
-<script type="text/javascript">
-
-    function buildGraph(xml,container) {
-        var graph = new mxGraph(container);
-        graph.setEnabled(true);
-        graph.gridSize = 20;
-
-        graph.setPanning(true);
-        graph.setTooltips(true);
-        graph.setAllowDanglingEdges(false);
-        graph.autoSizeCells = true;
-        graph.resizeContainer = true;
-        graph.autoLayout = true;
-        graph.setHtmlLabels = true;
-
-        //graph.addListener(mxEvent.CLICK, openURL)
-
-        // Adds a highlight on the cell under the mousepointer
-        new mxHighlight(graph);
-
-        // Changes the default vertex style in-place
-        var style = graph.getStylesheet().getDefaultVertexStyle();
-        style[mxConstants.STYLE_SHAPE] = mxConstants.SHAPE_ROUNDED;
-        style[mxConstants.STYLE_PERIMETER] = mxPerimeter.RectanglePerimeter;
-        style[mxConstants.STYLE_GRADIENTCOLOR] = 'white';
-        style[mxConstants.STYLE_PERIMETER_SPACING] = 4;
-        style[mxConstants.STYLE_SHADOW] = false;
-
-        style = graph.getStylesheet().getDefaultEdgeStyle();
-        style[mxConstants.STYLE_LABEL_BACKGROUNDCOLOR] = 'white';
-
-        graph.getModel().beginUpdate();
-        try {
-            var xmlDocument = mxUtils.parseXml(xml);
-            var decoder = new mxCodec(xmlDocument);
-            var node = xmlDocument.documentElement;
-            decoder.decode(node,graph.getModel());
-
-            var layout = new mxFastOrganicLayout(graph);
-            var l2 = new mxHierarchicalLayout(graph);
-            layout.forceConstant = 240;
-
-            var parent = graph.getDefaultParent();
-            l2.execute(parent);
-
-            var bounds = graph.getBounds();
-            container.style.width = (bounds.x + bounds.width + 1) + 'px';
-            container.style.height = (bounds.y + bounds.height + 1) + 'px';
-        } finally {
-            graph.getModel().endUpdate();
-        }
-
-    }
-
-    function loadGraph(url) {
-        var div = document.getElementById('graphContainer');
-        var url = url;
-
-        //div.innerHTML = "<img src=\"../images/ajax-loader.gif\" border=\"0\"/>";
-
-        var req = mxUtils.load(url);
-        var xml = req.getText();
-        buildGraph(xml,div);
-    }
-
-    function loadGraphFromPath() {
-        var text = document.getElementById("path");
-        loadGraph(text.value);
-    }
-    /*function openURL(evt) {
-        alert(evt.getState());
-    }*/
-
-    window.onload = function() {
-        if (!mxClient.isBrowserSupported())
-        {
-            // Displays an error message if the browser is
-            // not supported.
-            mxUtils.error('Browser is not supported!', 200, false);
-        } else {
-            loadGraph("/visualize/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}.xml")
-        }
-    }
-
-
+// First initialize
+window.onload = function(){
+    $.getJSON('/visualize/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}.json', function(json) {
+        init(json);
+    });
+};
 </script>
 {% endblock %}
 
 {% block content %}
-<h2><a href="{{ node_handle.node_type.get_absolute_url }}">{{ node_handle.node_type }}</a> {{ node_handle.node_name }}</h2>
+<div class="content">
+    <h2><a href="{{ node_handle.get_absolute_url }}">{{ node_handle }}</a></h2>
+    <div class="section">
+        <div id="infovis"></div>
+    </div>
 
-<div align="center" valign="center" id="graphContainer" style="width: 100%; height: 100%;"></div>
+    <h4>Log</h4>
+    <div class="section">
+        <div id="log"></div>
+    </div>
+
+    <h4>Debug</h4>
+    <div class="section">
+        <div id="id-list"></div>
+        <div id="inner-details"></div>
+    </div>
+</div>
 {% endblock %}

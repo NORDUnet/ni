@@ -6,6 +6,7 @@ from django.template import RequestContext
 from niweb.noclook.models import NodeHandle, NodeType
 
 import neo4jclient
+import mxgraph
 import ipaddr
 import json
 
@@ -158,52 +159,6 @@ def logout_page(request):
     logout(request)
     return HttpResponseRedirect('/')
 
-# Mx_graph visualizing helper functions
-# These should perhaps be moved in to a visualization module.
-def makeVertex(doc, parent, id, label, style, width, height):
-    cell = doc.createElement('mxCell')
-    cell.setAttribute('id', id)
-    cell.setAttribute('parent', parent)
-    cell.setAttribute('value', label)
-    cell.setAttribute('label', 'Label')
-    cell.setAttribute('vertex', '-1')
-    cell.setAttribute('style', style)
-    cell.setAttribute('link', 'Link')
-    geometry = doc.createElement('mxGeometry')
-    geometry.setAttribute("x", "0")
-    geometry.setAttribute("y","0")
-    geometry.setAttribute("width", width)
-    geometry.setAttribute("height", height)
-    geometry.setAttribute("as","geometry")
-    cell.appendChild(geometry)
-
-    return cell
-
-def makeEdge(doc, parent, source, target, label):
-    cell = doc.createElement('mxCell')
-    cell.setAttribute('id', source['name']+'-'+target['name'])
-    cell.setAttribute('parent', parent)
-    cell.setAttribute('value', label)
-    cell.setAttribute('source', str(source.id))
-    cell.setAttribute('target', str(target.id))
-    cell.setAttribute('edge', '1')
-    geometry = doc.createElement('mxGeometry')
-    geometry.setAttribute('as', 'geometry')
-    geometry.setAttribute('relative', '1')
-    cell.appendChild(geometry)
-
-    return cell
-
-def add_mx_node(doc, container, parent, n):
-    container.appendChild(makeVertex(doc, parent, str(n.id),
-        'Name: '+n['name']+' ID: '+str(n.id), "shape=box","80","60"))
-    for rel in n.relationships.all():
-        add_mx_node_relation(doc, container, parent, rel)
-
-def add_mx_node_relation(doc, container, parent, rel):
-    container.appendChild(makeEdge(doc, parent, rel.start, rel.end,
-        rel.type))
-
 @login_required
 def visualize_xml(request, slug, handle_id):
     '''
@@ -239,16 +194,81 @@ def visualize_xml(request, slug, handle_id):
     cell1.setAttribute("parent", "root")
     root.appendChild(cell1)
 
-    add_mx_node(doc, root, 'main', root_node)
+    mxgraph.add_mx_node(doc, root, 'main', root_node)
     for n in root_node.traverse():
-        add_mx_node(doc, root, 'main', n)
+        if n['type'] != 'meta': # No meta nodes please
+            mxgraph.add_mx_node(doc, root, 'main', n)
 
     return HttpResponse(doc.toxml(), mimetype="text/xml")
+
+def add_jit_node(node):
+    '''
+    Creates the data structure for JSON export from the node.
+
+    {'id': unique_id, 'name': node_name, 'data':{}, 'adjecencies':[]}
+    '''
+
+    structure = {'id': node.id,
+                'name': '%s %s' % (node['type'], node['name']),
+                'data':{
+                    '$type': 'rectangle',
+                    '$color': '#EE3B3B',
+                    'node_type': node['type'],
+                    'node_handle': node['handle_id']
+                },
+                'adjacencies':[]
+                }
+
+    for rel in node.relationships.all():
+        structure['adjacencies'].append(add_directed_adjacencies(rel))
+
+    return structure
+
+def add_directed_adjacencies(rel):
+    '''
+    Creates the data structure for JSON export from the relationship.
+
+    {'nodeTo': unique_id, 'nodeFrom': unique_id, 'data':{}}
+    '''
+    structure = {'nodeTo': rel.end.id,
+                'nodeFrom': rel.start.id,
+                'data':{
+                    '$type': 'arrow',
+                    '$color': '#000000'}}
+
+    return structure
+
+@login_required
+def visualize_json(request, slug, handle_id):
+    '''
+    Creates a JSON representation of the nodes and its adjecencies.
+    This JSON data is then used by JIT (http://thejit.org) to make
+    a visual representation.
+    '''
+    from django.http import HttpResponse
+
+    # Get the node
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    nc = neo4jclient.Neo4jClient()
+    root_node = nc.get_node_by_id(nh.node_id)
+
+    # Create the data structure needed for conversion to JSON
+    node_list = []
+    node_list.append(add_jit_node(root_node))
+    for rel in root_node.relationships.outgoing():
+        if rel.end['type'] != 'meta': # No meta nodes please
+            node_list.append(add_jit_node(rel.end))
+    for rel in root_node.relationships.incoming():
+        if rel.start['type'] != 'meta': # No meta nodes please
+            node_list.append(add_jit_node(rel.start))
+
+    return HttpResponse(json.dumps(node_list),
+                                            mimetype='application/json')
 
 @login_required
 def visualize(request, slug, handle_id):
     '''
-
+    Visualize view
     '''
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     return render_to_response('noclook/visualize.html',
