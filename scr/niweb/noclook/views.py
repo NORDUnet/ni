@@ -6,7 +6,6 @@ from django.template import RequestContext
 from niweb.noclook.models import NodeHandle, NodeType
 
 import neo4jclient
-import mxgraph
 import ipaddr
 import json
 
@@ -160,85 +159,6 @@ def logout_page(request):
     return HttpResponseRedirect('/')
 
 @login_required
-def visualize_xml(request, slug, handle_id):
-    '''
-    Creates the XML representation of the nodes relation which the
-    mxGraph (http://www.jgraph.com/doc/mxgraph/) javascript can handle.
-
-    This should be refactored to just make the boiler plate xml document
-    and then used to make specialized xml documents.
-    '''
-    from django.http import HttpResponse
-    from xml.dom.minidom import Document
-
-    # Get the node
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    nc = neo4jclient.Neo4jClient()
-    root_node = nc.get_node_by_id(nh.node_id)
-
-    # Create the minidom document
-    doc = Document()
-    # Create the <mxGraphModel> base element
-    mxGraphModel = doc.createElement("mxGraphModel")
-    doc.appendChild(mxGraphModel)
-    # Create the main <root> element
-    root = doc.createElement("root")
-    mxGraphModel.appendChild(root)
-    # Create the first <cell> element
-    cell0 = doc.createElement("mxCell")
-    cell0.setAttribute("id", "root")
-    root.appendChild(cell0)
-    # Create the second <cell> element
-    cell1 = doc.createElement("mxCell")
-    cell1.setAttribute("id", "main")
-    cell1.setAttribute("parent", "root")
-    root.appendChild(cell1)
-
-    mxgraph.add_mx_node(doc, root, 'main', root_node)
-    for n in root_node.traverse():
-        if n['type'] != 'meta': # No meta nodes please
-            mxgraph.add_mx_node(doc, root, 'main', n)
-
-    return HttpResponse(doc.toxml(), mimetype="text/xml")
-
-def add_jit_node(node):
-    '''
-    Creates the data structure for JSON export from the node.
-
-    {'id': unique_id, 'name': node_name, 'data':{}, 'adjecencies':[]}
-    '''
-
-    structure = {'id': node.id,
-                'name': '%s %s' % (node['type'], node['name']),
-                'data':{
-                    '$type': 'rectangle',
-                    '$color': '#EE3B3B',
-                    'node_type': node['type'],
-                    'node_handle': node['handle_id']
-                },
-                'adjacencies':[]
-                }
-
-    for rel in node.relationships.all():
-        structure['adjacencies'].append(add_directed_adjacencies(rel))
-
-    return structure
-
-def add_directed_adjacencies(rel):
-    '''
-    Creates the data structure for JSON export from the relationship.
-
-    {'nodeTo': unique_id, 'nodeFrom': unique_id, 'data':{}}
-    '''
-    structure = {'nodeTo': rel.end.id,
-                'nodeFrom': rel.start.id,
-                'data':{
-                    '$type': 'arrow',
-                    '$color': '#000000'}}
-
-    return structure
-
-@login_required
 def visualize_json(request, slug, handle_id):
     '''
     Creates a JSON representation of the nodes and its adjecencies.
@@ -246,24 +166,17 @@ def visualize_json(request, slug, handle_id):
     a visual representation.
     '''
     from django.http import HttpResponse
+    import jitgraph
 
     # Get the node
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     nc = neo4jclient.Neo4jClient()
     root_node = nc.get_node_by_id(nh.node_id)
 
-    # Create the data structure needed for conversion to JSON
-    node_list = []
-    node_list.append(add_jit_node(root_node))
-    for rel in root_node.relationships.outgoing():
-        if rel.end['type'] != 'meta': # No meta nodes please
-            node_list.append(add_jit_node(rel.end))
-    for rel in root_node.relationships.incoming():
-        if rel.start['type'] != 'meta': # No meta nodes please
-            node_list.append(add_jit_node(rel.start))
+    # Create the data JSON structure needed
+    jsonstr = jitgraph.get_json(root_node)
 
-    return HttpResponse(json.dumps(node_list),
-                                            mimetype='application/json')
+    return HttpResponse(jsonstr, mimetype='application/json')
 
 @login_required
 def visualize(request, slug, handle_id):
