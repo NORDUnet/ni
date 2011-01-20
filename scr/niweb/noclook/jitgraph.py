@@ -3,29 +3,21 @@ import neo4jclient
 
 # Color and shape settings for know node types
 # Physical
-PHYSICAL = {'$type': 'rectangle',
-        '$color': '#4876FF',
-        '$height': '50',
-        '$width': '50',
-        '$dim': '10'}
+PHYSICAL = {'$type': 'circle',
+        '$color': '#00FF00',
+        '$dim': '15'}
 # Logical
 LOGICAL = {'$type': 'circle',
-        '$color': '#70DB93',
-        '$height': '50',
-        '$width': '50',
-        '$dim': '30'}
+        '$color': '#007FFF',
+        '$dim': '15'}
 # Organisations
-RELATION = {'$type': 'star',
-        '$color': '#8A2BE2',
-        '$height': '50',
-        '$width': '50',
-        '$dim': '20'}
+RELATION = {'$type': 'circle',
+        '$color': '#FFFF00',
+        '$dim': '15'}
 # Locations
-LOCATION = {'$type': 'ellipse',
-        '$color': '#CD7F32',
-        '$height': '50',
-        '$width': '50',
-        '$dim': '10'}
+LOCATION = {'$type': 'circle',
+        '$color': '#FF4040',
+        '$dim': '15'}
 
 def get_jit_node(node):
     '''
@@ -40,9 +32,7 @@ def get_jit_node(node):
                 'data':{
                     '$type': 'triangle',
                     '$color': '#EE3B3B', # Red
-                    '$height': '50',
-                    '$width': '50',
-                    '$dim': '10',
+                    '$dim': '15',
                     'node_type': node['type']
                 },
                 'adjacencies':[]
@@ -78,7 +68,7 @@ def get_directed_adjacencie(rel):
                 'nodeFrom': rel.start.id,
                 'data':{
                     # JIT data
-                    '$type': 'arrow',
+                    '$type': 'line',
                     '$color': '#000000'}}
 
     return structure
@@ -98,17 +88,29 @@ def create_graph_list(root_node):
         'data':{}}
     ]}]
     '''
-    graph_list = []
-    jit_root = get_jit_node(root_node)
-    for rel in root_node.relationships.all():
-        if rel.start.id != root_node.id:
-            node = get_jit_node(rel.start)
-        else:
-            node = get_jit_node(rel.end)
-        jit_root['adjacencies'].append(get_directed_adjacencie(rel))
-        node['adjacencies'].append(get_directed_adjacencie(rel))
-        graph_list.append(node)
-    graph_list.append(jit_root)
+
+    nc = neo4jclient.Neo4jClient()
+    meta_type = nc.get_node_meta_type(node)
+    if meta_type == 'physical':
+
+    elif meta_type == 'logical':
+
+    elif meta_type == 'relation':
+
+    elif meta_type == 'location':
+
+    else:
+        graph_list = []
+        jit_root = get_jit_node(root_node)
+        for rel in root_node.relationships.all():
+            if rel.start.id != root_node.id:
+                node = get_jit_node(rel.start)
+            else:
+                node = get_jit_node(rel.end)
+            jit_root['adjacencies'].append(get_directed_adjacencie(rel))
+            node['adjacencies'].append(get_directed_adjacencie(rel))
+            graph_list.append(node)
+        graph_list.append(jit_root)
 
     # Remove all None items from the list
     #graph_list = filter(lambda x: x is not None, graph_list)
