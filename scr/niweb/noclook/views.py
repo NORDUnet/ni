@@ -158,97 +158,30 @@ def logout_page(request):
     logout(request)
     return HttpResponseRedirect('/')
 
-# Mx_graph visualizing helper functions
-# These should perhaps be moved in to a visualization module.
-def makeVertex(doc, parent, id, label, style, width, height):
-    cell = doc.createElement('mxCell')
-    cell.setAttribute('id', id)
-    cell.setAttribute('parent', parent)
-    cell.setAttribute('value', label)
-    cell.setAttribute('label', 'Label')
-    cell.setAttribute('vertex', '-1')
-    cell.setAttribute('style', style)
-    cell.setAttribute('link', 'Link')
-    geometry = doc.createElement('mxGeometry')
-    geometry.setAttribute("x", "0")
-    geometry.setAttribute("y","0")
-    geometry.setAttribute("width", width)
-    geometry.setAttribute("height", height)
-    geometry.setAttribute("as","geometry")
-    cell.appendChild(geometry)
-
-    return cell
-
-def makeEdge(doc, parent, source, target, label):
-    cell = doc.createElement('mxCell')
-    cell.setAttribute('id', source['name']+'-'+target['name'])
-    cell.setAttribute('parent', parent)
-    cell.setAttribute('value', label)
-    cell.setAttribute('source', str(source.id))
-    cell.setAttribute('target', str(target.id))
-    cell.setAttribute('edge', '1')
-    geometry = doc.createElement('mxGeometry')
-    geometry.setAttribute('as', 'geometry')
-    geometry.setAttribute('relative', '1')
-    cell.appendChild(geometry)
-
-    return cell
-
-def add_mx_node(doc, container, parent, n):
-    container.appendChild(makeVertex(doc, parent, str(n.id),
-        'Name: '+n['name']+' ID: '+str(n.id), "shape=box","80","60"))
-    for rel in n.relationships.all():
-        add_mx_node_relation(doc, container, parent, rel)
-
-def add_mx_node_relation(doc, container, parent, rel):
-    container.appendChild(makeEdge(doc, parent, rel.start, rel.end,
-        rel.type))
-
 @login_required
-def visualize_xml(request, slug, handle_id):
+def visualize_json(request, slug, handle_id):
     '''
-    Creates the XML representation of the nodes relation which the
-    mxGraph (http://www.jgraph.com/doc/mxgraph/) javascript can handle.
-
-    This should be refactored to just make the boiler plate xml document
-    and then used to make specialized xml documents.
+    Creates a JSON representation of the nodes and its adjecencies.
+    This JSON data is then used by JIT (http://thejit.org) to make
+    a visual representation.
     '''
     from django.http import HttpResponse
-    from xml.dom.minidom import Document
+    import jitgraph
 
     # Get the node
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     nc = neo4jclient.Neo4jClient()
     root_node = nc.get_node_by_id(nh.node_id)
 
-    # Create the minidom document
-    doc = Document()
-    # Create the <mxGraphModel> base element
-    mxGraphModel = doc.createElement("mxGraphModel")
-    doc.appendChild(mxGraphModel)
-    # Create the main <root> element
-    root = doc.createElement("root")
-    mxGraphModel.appendChild(root)
-    # Create the first <cell> element
-    cell0 = doc.createElement("mxCell")
-    cell0.setAttribute("id", "root")
-    root.appendChild(cell0)
-    # Create the second <cell> element
-    cell1 = doc.createElement("mxCell")
-    cell1.setAttribute("id", "main")
-    cell1.setAttribute("parent", "root")
-    root.appendChild(cell1)
+    # Create the data JSON structure needed
+    jsonstr = jitgraph.get_json(root_node)
 
-    add_mx_node(doc, root, 'main', root_node)
-    for n in root_node.traverse():
-        add_mx_node(doc, root, 'main', n)
-
-    return HttpResponse(doc.toxml(), mimetype="text/xml")
+    return HttpResponse(jsonstr, mimetype='application/json')
 
 @login_required
 def visualize(request, slug, handle_id):
     '''
-
+    Visualize view
     '''
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     return render_to_response('noclook/visualize.html',

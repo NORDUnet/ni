@@ -69,7 +69,15 @@ td.align_top {
 div.section{
  border-style:dashed;
  border-width:1px;
- margin: 10px 0px 50px 0px;
+ margin: 10px 50px 50px 0px;
+ padding: 5px 5px 5px 5px;
+}
+
+div.infovis_section{
+ height: 600px;
+ border-style:dashed;
+ border-width:1px;
+ margin: 10px 50px 50px 0px;
  padding: 5px 5px 5px 5px;
 }
 

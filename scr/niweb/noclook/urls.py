@@ -22,8 +22,8 @@ urlpatterns += patterns('niweb.noclook.views',
         'list_by_master'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
     # Visualize views
-    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)\.xml$',
-                                            'visualize_xml'),
+    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)\.json$',
+                                                    'visualize_json'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$',
-                                                'visualize'),
+                                                        'visualize'),
 )

@@ -4,6 +4,8 @@ Dependencies
 (- greatlemers-django-tools)
 - neo4j-rest-standalone-0.8-SNAPSHOT
 - ipaddr 2.1.5 (http://code.google.com/p/ipaddr-py/)
+- JIT 2.0 Beta (http://thejit.org)
+- JQuery 1.4.4 (http://www.jquery.com)
 
 Tools
 (- neo4j webadmin
