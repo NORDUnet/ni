@@ -126,15 +126,16 @@ class Neo4jClient:
             rel.delete()
         node.delete()
 
-    def get_relationships(self, start, end, rel_type=None):
+    def get_relationships(self, n1, n2, rel_type=None):
         '''
         Takes a start and an end node with an optional relationship
         type.
-        Returns the relationsships found or an empty list.
+        Returns the relationsships between the nodes or an empty list.
         '''
         rel_list = []
-        for rel in start.relationships.all():
-            if rel.start.id == start.id and rel.end.id == end.id:
+        for rel in n1.relationships.all():
+            if (rel.start.id == n1.id and rel.end.id == n2.id) or \
+            (rel.start.id == n2.id and rel.end.id == n1.id):
                 if rel_type:
                     if rel.type == rel_type:
                         rel_list.append(rel)
