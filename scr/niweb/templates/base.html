@@ -1,40 +1,54 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<title>NOCLook |{% block title %}{% endblock %}</title>
-<meta http-equiv="Content-Style-Type" content="text/css" />
-<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-<meta name="generator" content="www.csscreator.com" />
-<link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/noclook.css" type="text/css" />
-{% block head %}
-{% endblock %}
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" href="{% niweb_media_url %}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+  <title>NOCLook |{% block title %}{% endblock %}</title>
+  {% block js %}{% endblock %}
 </head>
 <body>
-    <div id="pagewidth">
-        <div id="header" ><a href="/"><img src="{% niweb_media_url %}images/NOCLook.png" width="442" height="163" alt="NOCLook it!" /></a>
-                <div id="wrapper" class="clearfix">
-                <div id="maincol">
-                    {% block content %}
-                    {% endblock %}
-                </div>
-                <div id="leftcol">
-                    {% block menu %}
-                    {% load niweb_tags %}
-                    {% type_menu %}
-
-                    {% if node_handle %}
-                        <ul class="menu">
-                            <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
+    <div id="container">
+        <div id="top">
+            <table id="top_table">
+                <tr>
+                    <td><img src="{% niweb_media_url %}img/NORDUnet2.jpg" width="203" height="46" alt="" /></td>
+                    <!--<td>
+                        <ul id="main_nav">
+                            <li id="selectedPage"><a href="home.html"><span>Home</span></a></li>
+                            <li><a href="news___events.html"><span>News & Events</span></a></li>
+                            <li><a href="network___services.html"><span>Network & Services</span></a></li>
+                            <li><a href="international.html"><span>International</span></a></li>
+                            <li><a href="operations.html"><span>Operations</span></a></li>
+                            <li><a href="r___d.html"><span>R & D</span></a></li>
+                            <li><a href="about_nordunet.html"><span>About NORDUnet</span></a></li>
                         </ul>
-                    {% endif %}
+                    </td>-->
+                </tr>
+            </table>
+        </div>
+        <div id="left">
+            {% block menu %}
+            {% load niweb_tags %}
+            {% type_menu %}
 
-                    <ul class="menu">
-                    {% if user.is_authenticated %}
-                        <li><a href="/logout/">Log out</a></li>
-                    {% endif %}
-                    </ul>
-                    {% endblock %}
-                </div>
+            {% if node_handle %}
+                <ul class="menu">
+                    <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
+                </ul>
+            {% endif %}
+
+            <ul class="menu">
+            {% if user.is_authenticated %}
+                <li><a href="/logout/">Log out</a></li>
+            {% endif %}
+            </ul>
+            {% endblock %}
+        </div>
+        <div id="content">
+            {% block content %}{% endblock %}
+        </div>
+        <div id="footer">
+            <p>Development version. Questions, comments or bug reports? Send an e-mail to <a href="mailto:lundberg@nordu.net">lundberg@nordu.net</a>.</p>
         </div>
     </div>
 </body>
