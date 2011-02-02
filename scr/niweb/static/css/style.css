@@ -310,3 +310,32 @@ color:#FFFFFF;
 font-size:12px;
 font-weight:bold;
 }
+
+/* NOCLook CSS */
+#toggle_debug:link, #toggle_debug:visited {
+    display: block;
+    color: #000000;
+    background-color: #D3D3D3;
+    text-align: center;
+    text-decoration:none;
+    width: 150px;
+    padding: 2px;
+}
+#toggle_debug:hover, #toggle_debug:active {
+    background-color: #808080;
+}
+
+#debug {
+    display: none;
+}
+
+#section{
+ margin: 10px 50px 50px 0px;
+ padding: 5px 5px 5px 5px;
+}
+
+#infovis_section {
+    height: 600px;
+    margin: 10px 50px 50px 0px;
+    padding: 5px 5px 5px 5px;
+}
