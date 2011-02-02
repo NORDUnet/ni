@@ -2,10 +2,7 @@
 
 {% block title %}{{ block.super }} Visualize {{ node_handle }}{% endblock %}
 
-{% block head %}
-<!--[if IE]><script language="javascript" type="text/javascript" src="/site_media/js/jit/Extras/excanvas.js"></script><![endif]-->
-<!-- JQuery Library File -->
-<script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery-1.4.4.min.js"></script>
+{% block js %}
 <!-- JIT Library File -->
 <script language="javascript" type="text/javascript" src="/site_media/js/jit/jit-yc.js"></script>
 <!-- JIT Force-Direction Graph -->
@@ -23,19 +20,20 @@ window.onload = function(){
 {% block content %}
 <div class="content">
     <h2><a href="{{ node_handle.get_absolute_url }}">{{ node_handle }}</a></h2>
-    <div class="infovis_section">
+    <div id="infovis_section">
         <div id="infovis"></div>
     </div>
-
-    <h4>Log</h4>
-    <div class="section">
-        <div id="log"></div>
-    </div>
-
-    <h4>Debug</h4>
-    <div class="section">
-        <div id="id-list"></div>
-        <div id="inner-details"></div>
+    <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
+    <div id="debug">
+        <h4>Log</h4>
+        <div class="section">
+            <div id="log"></div>
+        </div>
+        <h4>Debug</h4>
+        <div class="section">
+            <div id="id-list"></div>
+            <div id="inner-details"></div>
+        </div>
     </div>
 </div>
 {% endblock %}

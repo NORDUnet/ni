@@ -30,18 +30,6 @@ def niweb_media_url():
         raise template.VariableDoesNotExist('Please set the NIWEB_MEDIA_URL in you settings file.')
     return settings.NIWEB_MEDIA_URL
 
-@register.inclusion_tag('type_menu.html')
-def type_menu():
-    '''
-    Returns a list with all wanted NodeType objects for easy menu
-    handling.
-    Just chain .exclude(type='name') to remove unwanted types.
-    '''
-    from niweb.noclook.models import NodeType
-    types = NodeType.objects.exclude(type='PIC')
-    return {'types': types}
-
-
 #register.simple_tag(niweb_url)
 #register.simple_tag(niweb_media_url)
 #register.simple_tag(node_type_list)

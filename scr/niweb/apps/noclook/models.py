@@ -23,7 +23,7 @@ class NodeType(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return('niweb.noclook.views.list_by_type', (), {
+        return('niweb.apps.noclook.views.list_by_type', (), {
             'slug': self.slug})
 
 class NodeHandle(models.Model):
@@ -54,7 +54,7 @@ class NodeHandle(models.Model):
         dk-ore-lm-01/rack/sub_rack/.
         '''
         #return '%s/%d/' % (self.node_type, self.handle_id)
-        return('niweb.noclook.views.generic_detail', (), {
+        return('niweb.apps.noclook.views.generic_detail', (), {
             'slug': self.node_type.get_slug(),
             'handle_id': self.handle_id})
 

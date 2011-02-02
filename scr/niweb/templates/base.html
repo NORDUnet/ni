@@ -1,34 +1,32 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <link rel="stylesheet" href="{% niweb_media_url %}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
-  <title>NOCLook |{% block title %}{% endblock %}</title>
-  {% block js %}{% endblock %}
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+    <title>NOCLook |{% block title %}{% endblock %}</title>
+    <!--[if IE]><script language="javascript" type="text/javascript" src="/site_media/js/jit/Extras/excanvas.js"></script><![endif]-->
+    <!-- JQuery Library File -->
+    <script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery-1.4.4.min.js"></script>
+    <script type="text/javascript">
+    function toggle_debug() {
+        $('#debug').toggle('slow', function() {
+        });
+    }
+    </script>
+    {% block js %}{% endblock %}
 </head>
 <body>
     <div id="container">
         <div id="top">
             <table id="top_table">
                 <tr>
-                    <td><img src="{% niweb_media_url %}img/NORDUnet2.jpg" width="203" height="46" alt="" /></td>
-                    <!--<td>
-                        <ul id="main_nav">
-                            <li id="selectedPage"><a href="home.html"><span>Home</span></a></li>
-                            <li><a href="news___events.html"><span>News & Events</span></a></li>
-                            <li><a href="network___services.html"><span>Network & Services</span></a></li>
-                            <li><a href="international.html"><span>International</span></a></li>
-                            <li><a href="operations.html"><span>Operations</span></a></li>
-                            <li><a href="r___d.html"><span>R & D</span></a></li>
-                            <li><a href="about_nordunet.html"><span>About NORDUnet</span></a></li>
-                        </ul>
-                    </td>-->
+                    <td><img src="{% niweb_media_url %}img/noclook_trans.png" width="202" height="46" alt="NOCLook" /></td>
                 </tr>
             </table>
         </div>
         <div id="left">
             {% block menu %}
-            {% load niweb_tags %}
+            {% load noclook_tags %}
             {% type_menu %}
 
             {% if node_handle %}

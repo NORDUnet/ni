@@ -3,7 +3,7 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from niweb.noclook.models import NodeHandle, NodeType
+from niweb.apps.noclook.models import NodeHandle, NodeType
 
 import neo4jclient
 import ipaddr

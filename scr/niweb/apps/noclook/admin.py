@@ -1,4 +1,4 @@
-from noclook.models import NodeHandle, NodeType
+from apps.noclook.models import NodeHandle, NodeType
 from django.contrib import admin
 
 class NodeHandleAdmin(admin.ModelAdmin):
