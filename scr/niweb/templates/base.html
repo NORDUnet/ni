@@ -1,40 +1,52 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<title>NOCLook |{% block title %}{% endblock %}</title>
-<meta http-equiv="Content-Style-Type" content="text/css" />
-<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-<meta name="generator" content="www.csscreator.com" />
-<link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/noclook.css" type="text/css" />
-{% block head %}
-{% endblock %}
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+    <title>NOCLook |{% block title %}{% endblock %}</title>
+    <!--[if IE]><script language="javascript" type="text/javascript" src="/site_media/js/jit/Extras/excanvas.js"></script><![endif]-->
+    <!-- JQuery Library File -->
+    <script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery-1.4.4.min.js"></script>
+    <script type="text/javascript">
+    function toggle_debug() {
+        $('#debug').toggle('slow', function() {
+        });
+    }
+    </script>
+    {% block js %}{% endblock %}
 </head>
 <body>
-    <div id="pagewidth">
-        <div id="header" ><a href="/"><img src="{% niweb_media_url %}images/NOCLook.png" width="442" height="163" alt="NOCLook it!" /></a>
-                <div id="wrapper" class="clearfix">
-                <div id="maincol">
-                    {% block content %}
-                    {% endblock %}
-                </div>
-                <div id="leftcol">
-                    {% block menu %}
-                    {% load niweb_tags %}
-                    {% type_menu %}
+    <div id="container">
+        <div id="top">
+            <table id="top_table">
+                <tr>
+                    <td><img src="{% niweb_media_url %}img/noclook_trans.png" width="202" height="46" alt="NOCLook" /></td>
+                </tr>
+            </table>
+        </div>
+        <div id="left">
+            {% block menu %}
+            {% load noclook_tags %}
+            {% type_menu %}
 
-                    {% if node_handle %}
-                        <ul class="menu">
-                            <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
-                        </ul>
-                    {% endif %}
+            {% if node_handle %}
+                <ul class="menu">
+                    <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
+                </ul>
+            {% endif %}
 
-                    <ul class="menu">
-                    {% if user.is_authenticated %}
-                        <li><a href="/logout/">Log out</a></li>
-                    {% endif %}
-                    </ul>
-                    {% endblock %}
-                </div>
+            <ul class="menu">
+            {% if user.is_authenticated %}
+                <li><a href="/logout/">Log out</a></li>
+            {% endif %}
+            </ul>
+            {% endblock %}
+        </div>
+        <div id="content">
+            {% block content %}{% endblock %}
+        </div>
+        <div id="footer">
+            <p>Development version. Questions, comments or bug reports? Send an e-mail to <a href="mailto:lundberg@nordu.net">lundberg@nordu.net</a>.</p>
         </div>
     </div>
 </body>

@@ -4,10 +4,10 @@ from django.conf.urls.defaults import *
 urlpatterns = patterns('',
     # Login / logout.
     (r'^login/$', 'django.contrib.auth.views.login'),
-    (r'^logout/$', 'niweb.noclook.views.logout_page'),
+    (r'^logout/$', 'niweb.apps.noclook.views.logout_page'),
 )
 
-urlpatterns += patterns('niweb.noclook.views',
+urlpatterns += patterns('niweb.apps.noclook.views',
     # NOCLook views
     (r'^$', 'index'),
     # Detailed views
