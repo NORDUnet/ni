@@ -4,15 +4,15 @@
 
 {% block content %}
     <div class="content">
-        <h2>{{ node.name }}</h2>
+        <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }}</h2>
         <h3>PICs</h3>
         <div class="section">
             <table>
-            <td><b>PIC</b></td><td><b>Services</b></td>
+            <th>PIC</th><th>Services</th>
             {% for pic in pic_nodes|dictsort:"name" %}
                 <tr>
-                    <td class="align_top"><a href="/{{pic.type|slugify}}/{{pic.handle_id}}/">{{pic.name}}</a></td>
-                    <td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{pic.type|slugify}}/{{pic.handle_id}}/">{{pic.name}}</a></td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}">
                     {% for rel in pic.relationships.incoming %}
                         {% if rel.type == "Depends_on" %}
                             {{ rel.start.name }} with address {{ rel.ip_address }}, vlan: {{ rel.vlan }}<br />
@@ -24,10 +24,9 @@
             </table>
         </div>
 
-        <hr>
-
-        <h3>Debug</h3>
-        <div class="section">
+        <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
+        <div id="debug">
+            <h3>Debug</h3>
             <h4>Node properties</h4>
             <table>
             {% for key,value in node.properties.items %}

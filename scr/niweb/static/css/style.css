@@ -272,7 +272,7 @@ hr {
 }
 
 
-#intro  img{
+#intro img{
     padding-top: 5px;
     border: none;
 }
@@ -312,6 +312,21 @@ font-weight:bold;
 }
 
 /* NOCLook CSS */
+ul.menu {
+ list-style-type: none;
+ font-size: 15px;
+ margin-top: 20px;
+}
+
+#content td.align_top {
+ vertical-align: top;
+}
+
+#content td.align_top_grey {
+ vertical-align: top;
+ background-color: #F0F0F0;
+}
+
 #toggle_debug:link, #toggle_debug:visited {
     display: block;
     color: #000000;
@@ -329,7 +344,7 @@ font-weight:bold;
     display: none;
 }
 
-#section{
+#section {
  margin: 10px 50px 50px 0px;
  padding: 5px 5px 5px 5px;
 }
@@ -339,3 +354,5 @@ font-weight:bold;
     margin: 10px 50px 50px 0px;
     padding: 5px 5px 5px 5px;
 }
+
+

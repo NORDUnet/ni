@@ -4,36 +4,36 @@
 
 {% block content %}
     <div class="content">
-            <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }}</h2>
+        <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }}</h2>
 
-            <h3>Services used</h3>
-            <div class="section">
-            {% if service_relationships %}
-                <table>
-                <td><b>{{ node.name }} IP Address</b></td><td><b>Service</b></td><td><b>PIC Address</b><td><b>PIC</b></td></td>
-                    {% for service_group in service_relationships %}
-                    <tr>
-                    {% for item in service_group %}
-                        {% if forloop.first %}
-                            <td class="align_top">{{ item.ip_address }}</td><td class="align_top"><a href="/{{ item.end.type|slugify }}/{{ item.end.handle_id }}/">{{ item.end.name }}</a></td>
-                            <td class="align_top">
-                        {% else %}
-                                {{ item.ip_address }}<td class="align_top"><a href="/{{ item.end.type|slugify }}/{{ item.end.handle_id }}/">{{ item.end.name }}</a></td>
-                        {% endif %}
-                    {% endfor %}
-                        </td>
-                    </tr>
+        <h3>Services used</h3>
+        <div class="section">
+        {% if service_relationships %}
+            <table>
+            <th>{{ node.name }} IP Address</th><th>Service</th><th>PIC Address</th><th>PIC</td>
+                {% for service_group in service_relationships %}
+                <tr>
+                {% for item in service_group %}
+                    {% if forloop.first %}
+                        <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.end.type|slugify }}/{{ item.end.handle_id }}/">{{ item.end.name }}</a></td>
+                        <td class="{% cycle 'align_top' 'align_top_grey' %}">
+                    {% else %}
+                            {{ item.ip_address }}<td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.end.type|slugify }}/{{ item.end.handle_id }}/">{{ item.end.name }}</a></td>
+                    {% endif %}
                 {% endfor %}
-                </table>
-            {% else %}
-                No services used.
-            {% endif %}
-            </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </table>
+        {% else %}
+            No services used.
+        {% endif %}
+        </div>
 
-            <hr />
 
+        <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
+        <div id="debug">
             <h3>Debug</h3>
-            <div class="section">
             <h4>Node properties</h4>
             <table>
             {% for key,value in node.properties.items %}
