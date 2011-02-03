@@ -3,7 +3,7 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from niweb.noclook.models import NodeHandle, NodeType
+from niweb.apps.noclook.models import NodeHandle, NodeType
 
 import neo4jclient
 import ipaddr
@@ -184,5 +184,8 @@ def visualize(request, slug, handle_id):
     Visualize view
     '''
     nh = get_object_or_404(NodeHandle, pk=handle_id)
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
     return render_to_response('noclook/visualize.html',
-    {'node_handle': nh}, context_instance=RequestContext(request))
+                            {'node_handle': nh, 'node': node},
+                            context_instance=RequestContext(request))
