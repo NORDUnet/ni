@@ -19,7 +19,7 @@ window.onload = function(){
 
 {% block content %}
 <div class="content">
-    <h2><a href="{{ node_handle.get_absolute_url }}">{{ node_handle }}</a></h2>
+    <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> <a href="/{{ node.type|slugify }}/{{ node_handle.handle_id }}">{{ node.name }}</a></h2>
     <div id="infovis_section">
         <div id="infovis"></div>
     </div>

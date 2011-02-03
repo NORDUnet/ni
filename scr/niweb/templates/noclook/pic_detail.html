@@ -4,60 +4,60 @@
 
 {% block content %}
     <div class="content">
-            <h2><a href="/{{ parent.type|slugify }}/{{ parent.handle_id }}/">{{ parent.name }}</a> {{ node.name }}</h2>
+        <h2><a href="/{{ parent.type|slugify }}/{{ parent.handle_id }}/">{{ parent.name }}</a> {{ node.name }}</h2>
 
 
-            <h3>Units</h3>
-            <div class="section">
-            {% if units %}
-                <table>
-                    <td><b>Unit</b></td><td><b>Address</b></td><td><b>VLAN</b></td><td><b>Description</b></td>
-                    {% for unit in units %}
-                    <tr>
-                        <td class="align_top">{{ unit.unit }}</td>
-                        <td class="align_top">{% for address in unit.address %}{{ address }}<br />{% endfor %}</td>
-                        <td class="align_top">{{ unit.vlanid }}</td>
-                        <td class="align_top">{{ unit.description }}</td>
-                    </tr>
-                {% endfor %}
-                </table>
-            {% else %}
-                No units found.
-            {% endif %}
-            </div>
+        <h3>Units</h3>
+        <div class="section">
+        {% if units %}
+            <table>
+                <th>Unit</th><th>Address</th><th>VLAN</th><th>Description</th>
+                {% for unit in units %}
+                <tr>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ unit.unit }}</td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{% for address in unit.address %}{{ address }}<br />{% endfor %}</td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ unit.vlanid }}</td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ unit.description }}</td>
+                </tr>
+            {% endfor %}
+            </table>
+        {% else %}
+            No units found.
+        {% endif %}
+        </div>
 
-            <h3>Depends on this PIC</h3>
-            <div class="section">
-            {% if depending %}
-                <table>
-                <td><b>Service Address</b></td><td><b>VLAN</b></td><td><b>Service</b></td><td><b>Organisation Address</b><td><b>Organisation</b></td></td>
-                    {% for dep_group in depending %}
-                        {% for item in dep_group %}
-                            {% if forloop.counter0 == 0 %}
-                                <tr>
-                                    <td class="align_top">{{ item.ip_address }}<td>{{ item.vlan }}</td></td><td class="align_top"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
-                            {% endif %}
-                            {% if forloop.counter0 == 1 %}
-                                    <td class="align_top">{{ item.ip_address }}</td><td class="align_top"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
-                                </tr>
-                            {% endif %}
-                            {% if forloop.counter0 > 1 %}
-                                <tr>
-                                    <td></td><td></td><td></td><td class="align_top">{{ item.ip_address }}</td><td class="align_top"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
-                {% endfor %}
-                </table>
-            {% else %}
-                No services depending on this PIC found.
-            {% endif %}
-            </div>
+        <h3>Depends on this PIC</h3>
+        <div class="section">
+        {% if depending %}
+            <table>
+            <th>Service Address</th><th>VLAN</th><th>Service</th><th>Organisation Address<th>Organisation</th>
+                {% for dep_group in depending %}
+                    {% for item in dep_group %}
+                        {% if forloop.counter0 == 0 %}
+                            <tr>
+                                <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}<td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.vlan }}</td></td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
+                        {% endif %}
+                        {% if forloop.counter0 == 1 %}
+                                <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
+                            </tr>
+                        {% endif %}
+                        {% if forloop.counter0 > 1 %}
+                            <tr>
+                                <td></td><td></td><td></td><td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+            {% endfor %}
+            </table>
+        {% else %}
+            No services depending on this PIC found.
+        {% endif %}
+        </div>
 
-            <hr />
 
+        <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
+        <div id="debug">
             <h3>Debug</h3>
-            <div class="section">
             <h4>Node properties</h4>
             <table>
             {% for key,value in node.properties.items %}

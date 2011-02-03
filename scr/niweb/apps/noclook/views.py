@@ -184,5 +184,8 @@ def visualize(request, slug, handle_id):
     Visualize view
     '''
     nh = get_object_or_404(NodeHandle, pk=handle_id)
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
     return render_to_response('noclook/visualize.html',
-    {'node_handle': nh}, context_instance=RequestContext(request))
+                            {'node_handle': nh, 'node': node},
+                            context_instance=RequestContext(request))
