@@ -6,7 +6,7 @@
     <div class="content">
             <h3>{{node_type}}s</h3>
             <table>
-            {% for handle in node_handle_list %}
+            {% for handle in node_handle_list|dictsort:"node_name" %}
                 <tr>
                     <td><a class="handle" href="{{ handle.get_absolute_url }}">{{ handle.node_name }}</a></td>
                 </tr>
