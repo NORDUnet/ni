@@ -525,9 +525,9 @@ class Path(object):
         return self._length
 
     def __iter__(self):
-        while True:
-            for obj in self._iterable:
-                yield obj
+        #while True:
+        for obj in self._iterable:
+            yield obj
 
 
 class Position(object):
