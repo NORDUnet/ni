@@ -36,7 +36,7 @@ path = '/var/norduni/scr/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-from noclook.models import NodeType, NodeHandle
+from apps.noclook.models import NodeType, NodeHandle
 from django.contrib.auth.models import User
 import neo4jclient
 
@@ -79,8 +79,8 @@ def get_node_type(type_name):
         node_type = NodeType.objects.get(type=type_name)
     except Exception as e:
         print e
-        print 'Creating NodeType object.'
-        # The NodeType was not found create one
+        print 'Creating NodeType instance.'
+        # The NodeType was not found, create one
         from django.template.defaultfilters import slugify
         node_type = NodeType(type=type_name, slug=slugify(type_name))
         node_type.save()
@@ -89,13 +89,26 @@ def get_node_type(type_name):
 
 def get_node_handle(node_name, node_type_name, node_meta_type):
     '''
+    Takes the arguments as strings.
     Returns a NodeHandle object.
     '''
     # Hard coded user value that we can't get on the fly right now
     user = User.objects.get(username='lundberg')
     node_type = get_node_type(node_type_name)
-    return NodeHandle(node_name=node_name, node_type=node_type,
-                        node_meta_type=node_meta_type, creator=user)
+    try:
+        node_handle = NodeHandle.objects.get(node_name=node_name,
+                                            node_type=node_type)
+        print 'NodeHandle instance found, updating it.' # Debug
+    except Exception as e:
+        print e
+        print 'Creating NodeHandle instance.'
+        # The NodeHandle was not found, create one
+        node_handle = NodeHandle(node_name=node_name,
+                                node_type=node_type,
+                                node_meta_type=node_meta_type,
+                                creator=user)
+        node_handle.save()
+    return node_handle
 
 def rest_comp(data):
     '''
@@ -113,7 +126,6 @@ def insert_juniper_router(name):
     '''
     nc = neo4jclient.Neo4jClient()
     node_handle = get_node_handle(name, 'Router', 'physical')
-    node_handle.save()
     node = nc.get_node_by_id(node_handle.node_id)
     node_list = [node]
 
@@ -136,7 +148,6 @@ def insert_juniper_interfaces(router_node, interfaces):
             # names
             if '.' not in name and '*' not in name:
                 node_handle = get_node_handle(name, 'PIC', 'physical')
-                node_handle.save()
                 node = nc.get_node_by_id(node_handle.node_id)
                 node['description'] = rest_comp(i['description'])
                 node['units'] = json.dumps(i['units'])
@@ -152,7 +163,6 @@ def insert_juniper_relation(name, as_number):
     '''
     nc = neo4jclient.Neo4jClient()
     node_handle = get_node_handle(name, 'Peering Partner', 'relation')
-    node_handle.save()
     node = nc.get_node_by_id(node_handle.node_id)
     node['as_number'] = rest_comp(as_number)
     node_list = [node]
@@ -166,7 +176,6 @@ def insert_juniper_service(name):
     '''
     nc = neo4jclient.Neo4jClient()
     node_handle = get_node_handle(name, 'IP Service', 'logical')
-    node_handle.save()
     node = nc.get_node_by_id(node_handle.node_id)
     node_list = [node]
 
@@ -241,7 +250,8 @@ def insert_juniper_bgp_peerings(bgp_peerings):
 
 def consume_juniper_conf(json_list):
     '''
-    Inserts the data loaded from the json files created by juniper_conf.
+    Inserts the data loaded from the json files created by the nerds
+    producer juniper_conf.
     Some filtering is done for interface names that are not interesting.
     '''
     bgp_peerings = []
@@ -259,7 +269,7 @@ def consume_juniper_conf(json_list):
 def insert_nmap(json_list):
     '''
     Inserts the data loaded from the json files created by
-    nmap_services.
+    the nerds producer nmap_services.
     '''
     nc = neo4jclient.Neo4jClient()
 
@@ -288,6 +298,61 @@ def insert_nmap(json_list):
         node['hostnames'] = hostnames
         node['addresses'] = addresses
         node['services'] = services
+
+def insert_cable(cable_id, cable_type):
+    '''
+    Creates a new cable node and node_handle.
+    Returns the node in a node_list.
+    '''
+    nc = neo4jclient.Neo4jClient()
+    node_handle = get_node_handle(cable_id, 'Cable', 'physical')
+    node = nc.get_node_by_id(node_handle.node_id)
+    node['cable_type'] = cable_type
+    return node_handle
+
+def consume_alcatel_isis(json_list):
+    '''
+    Inserts the data loaded from the json files created by the nerds
+    producer alcatel_isis.
+
+    Metric = 0      "localhost"
+    Metric = 12     "LAN connected"
+    Metric = 19     "OMS - optical multiplex section connection"
+                    (between LM's only)
+    Metric = 20/21  "direct fiber connection"
+    '''
+    nc = neo4jclient.Neo4jClient()
+
+    # Insert the optical node
+    for i in json_list:
+        name = i['host']['name']
+        node_handle = get_node_handle(name, 'Optical Node', 'physical')
+        node = nc.get_node_by_id(node_handle.node_id)
+        for neighbour in i['host']['alcatel_isis']['neighbours']:
+            metric = neighbour['metric']
+            if metric == '0':       # localhost
+                break
+            elif metric == '12':    # LAN connected
+                cable_type = 'TP'
+            else:                   # Fiber
+                cable_type = 'Fiber'
+            # Get or create a neighbour node
+            neighbour_node_handle = get_node_handle(neighbour['name'],
+                                            'Optical Node', 'physical')
+            neighbour_node = nc.get_node_by_id(neighbour_node_handle.node_id)
+            # See if the nodes already are connected via something
+            create = True
+            for rel in node.relationships.incoming(['Connected_to']):
+                for rel2 in rel.start.relationships.outgoing(['Connected_to']):
+                    if rel2.end['name'] == neighbour_node['name']:
+                        create = False
+                        break
+            if create:
+                tmp_name = '%s - %s' % (node['name'], neighbour_node['name']) # Is this good?
+                cable_handle = insert_cable(tmp_name, cable_type)
+                cable_node = nc.get_node_by_id(cable_handle.node_id)
+                cable_node.Connected_to(node)
+                cable_node.Connected_to(neighbour_node)
 
 def load_json(json_dir):
     '''
@@ -335,11 +400,17 @@ def main():
     # Insert data from known data sources if option -I was used
     if args.I:
         print 'Inserting data...'
-        if config.get('data', 'juniper_conf') != '':
+        if config.get('data', 'juniper_conf'):
             consume_juniper_conf(load_json(
                                     config.get('data', 'juniper_conf')))
-        if config.get('data', 'nmap_services') != '':
+            print 'juniper_conf consume done.'
+        if config.get('data', 'nmap_services'):
             insert_nmap(load_json(config.get('data', 'nmap_services')))
+            print 'nmap_services consume done.'
+        if config.get('data', 'alcatel_isis'):
+            consume_alcatel_isis(load_json(config.get('data', 'alcatel_isis')))
+            print 'alcatel_isis consume done.'
+
 
     timestamp = datetime.datetime.strftime(datetime.datetime.now(),
         '%b %d %H:%M:%S')
