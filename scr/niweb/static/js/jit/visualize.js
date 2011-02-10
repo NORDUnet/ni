@@ -87,8 +87,8 @@ function init(json){
       enable: true,
       onShow: function(tip, node) {
         //count connections
-        var count = 0;
-        node.eachAdjacency(function() { count++; });
+        //var count = 0;
+        //node.eachAdjacency(function() { count++; });
         //display node info in tooltip
         tip.innerHTML = "<div class=\"tip-title\"><b>" + node.name + "</b></div>"
           + "<div class=\"tip-text\"></div>";
@@ -128,12 +128,18 @@ function init(json){
         //append connections information
         //$jit.id('inner-details').innerHTML = html + list.join("</li><li>") + "</li></ul>";
         var slug = node.data["node_type"].replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase();
-        //var json_url = "/visualize/" + slug + "/" + node.data["node_handle"] + ".json"
-        var node_url = "/visualize/" + slug + "/" + node.data["node_handle"] + "/"
-        //$.getJSON(json_url, function(json) {
-        //    loadGraph(fd, json);
-        //});
-        window.open(node_url, "_self")
+        var json_url = "/visualize/" + slug + "/" + node.data["node_handle"] + ".json"
+        //var node_url = "/visualize/" + slug + "/" + node.data["node_handle"] + "/"
+        $.getJSON(json_url, function(data) {
+            if ($('#add_to_graph:checked').val() !== undefined) {
+                json = json.concat(data);
+                loadGraph(fd, json);
+            } else {
+                var new_json = json.concat(data);
+                loadGraph(fd, new_json);
+            }
+        });
+        //window.open(node_url, "_self")
         //$jit.id('inner-details').innerHTML = json_url
       }
     },
