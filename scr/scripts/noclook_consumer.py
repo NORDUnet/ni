@@ -100,8 +100,8 @@ def get_node_handle(node_name, node_type_name, node_meta_type):
                                             node_type=node_type)
         print 'NodeHandle instance found, updating it.' # Debug
     except Exception as e:
-        print e
-        print 'Creating NodeHandle instance.'
+        print e                                         # Debug
+        print 'Creating NodeHandle instance.'           # Debug
         # The NodeHandle was not found, create one
         node_handle = NodeHandle(node_name=node_name,
                                 node_type=node_type,
@@ -233,13 +233,13 @@ def insert_juniper_bgp_peerings(bgp_peerings):
                                                 remote_addr in pic_addr:
                             rels = nc.get_relationships(service[0],
                                                 rel.end, 'Depends_on')
-                            create = True # Create new relation?
+                            create = True # Create new relation
                             for rel in rels:
                                 # Can't have more than one unit with the
                                 # same unit number
                                 if rel['unit'] == unit['unit']:
-                                    create = False  # Do not create new
-                                    break           # a new relaion
+                                    create = False  # Do not create a
+                                    break           # new relation
                             if create:
                                 service[0].Depends_on(rel.end,
                                         ip_address=addr,
@@ -348,7 +348,7 @@ def consume_alcatel_isis(json_list):
                         create = False
                         break
             if create:
-                tmp_name = '%s - %s' % (node['name'], neighbour_node['name']) # Is this good?
+                tmp_name = '%s - %s' % (node['name'], neighbour_node['name']) # Is this good until we get the fiber id?
                 cable_handle = insert_cable(tmp_name, cable_type)
                 cable_node = nc.get_node_by_id(cable_handle.node_id)
                 cable_node.Connected_to(node)
