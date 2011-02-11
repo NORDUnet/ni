@@ -11,7 +11,8 @@
 <script type="text/javascript">
 window.onload = function(){
     $.getJSON('/visualize/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}.json', function(json) {
-        init(json);
+        var fd = init(json);
+        loadGraph(fd, json, {{ node_handle.handle_id }});
     });
 };
 </script>
