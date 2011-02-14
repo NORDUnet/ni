@@ -47,7 +47,9 @@ function loadGraph(fd, json, root_id){
         //This is done by collecting the information (stored in the data property)
         //for all the nodes adjacent to the centered node.
         var node = fd.graph.getNode(root_id);
-        var html = "<h4>" + node.name + "</h4><b>Relationships:</b>";
+        //Hardcoded URL...needs to be fixed
+        var slug = node.data["node_type"].replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase();
+        var html = "<h4><a href=\"/visualize/" + slug + "/" + node.data["node_handle"] + "/\">" + node.name + "</a></h4><b>Relationships:</b>";
         html += "<ul>";
         node.eachAdjacency(function(adj){
             var child = adj.nodeTo;
