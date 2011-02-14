@@ -12,7 +12,7 @@
 window.onload = function(){
     $.getJSON('/visualize/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}.json', function(json) {
         var fd = init(json);
-        loadGraph(fd, json, {{ node_handle.handle_id }});
+        loadGraph(fd, json, "{{ node_handle.node_id }}");
     });
 };
 </script>
@@ -23,6 +23,7 @@ window.onload = function(){
     <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> <a href="/{{ node.type|slugify }}/{{ node_handle.handle_id }}">{{ node.name }}</a></h2>
     <div id="infovis_section">
         <div id="infovis"></div>
+        <div id="inner-details"></div>
     </div>
     <form>
         <input type="checkbox" id="add_to_graph">Add to graph</input>
@@ -36,7 +37,6 @@ window.onload = function(){
         <h4>Debug</h4>
         <div class="section">
             <div id="id-list"></div>
-            <div id="inner-details"></div>
         </div>
     </div>
 </div>
