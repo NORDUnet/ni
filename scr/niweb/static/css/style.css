@@ -345,14 +345,46 @@ ul.menu {
 }
 
 #section {
- margin: 10px 50px 50px 0px;
- padding: 5px 5px 5px 5px;
-}
-
-#infovis_section {
-    height: 600px;
     margin: 10px 50px 50px 0px;
     padding: 5px 5px 5px 5px;
 }
+
+/* Visualization */
+#infovis_section {
+    position:relative;
+    width: 1210px;
+    margin: 10px 50px 50px 0px;
+    padding: 5px 5px 5px 5px;
+}
+
+#infovis {
+    position: relative;
+    height: 600px;
+    width: 800px;
+    left:0px;
+    top:0px;
+}
+
+#inner-details {
+    position:absolute;
+    right:0px;
+    top:0px;
+}
+
+/*TOOLTIPS*/
+.tip {
+    color: #111;
+    width: 139px;
+    background-color: white;
+    border:1px solid #ccc;
+    -moz-box-shadow:#555 2px 2px 8px;
+    -webkit-box-shadow:#555 2px 2px 8px;
+    -o-box-shadow:#555 2px 2px 8px;
+    box-shadow:#555 2px 2px 8px;
+    opacity:0.9;
+    filter:alpha(opacity=90);
+    font-size:10px;
+    font-family:Verdana, Geneva, Arial, Helvetica, sans-serif;
+    padding:7px;
 
 

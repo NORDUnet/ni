@@ -46,16 +46,17 @@ function loadGraph(fd, json, root_id){
         //Build the right column relations list.
         //This is done by collecting the information (stored in the data property)
         //for all the nodes adjacent to the centered node.
-        var node = fd.graph.getClosestNodeToOrigin("start");
-        //var node = fd.getNode(root_id);
-        alert(root_id)
-        var html = "<h4>" + node.name + "</h4><b>Connections:</b>";
+        var node = fd.graph.getNode(root_id);
+        var html = "<h4>" + node.name + "</h4><b>Relationships:</b>";
         html += "<ul>";
         node.eachAdjacency(function(adj){
             var child = adj.nodeTo;
+            if (child.id == node.id) {
+                child = adj.nodeFrom;
+            }
             if (child.data) {
-                var rel = (child.data.band == node.name) ? child.data.relation : node.data.relation;
-                html += "<li>" + child.name + " " + "<div class=\"relation\">(relation: " + rel + ")</div></li>";
+                var rel = adj.data.relationship;
+                html += "<li>" + child.name + " " + "<div class=\"relation\">(relationship: " + rel + ")</div></li>";
             }
         });
         html += "</ul>";
@@ -185,6 +186,6 @@ function init(json){
       style.display = '';
     }
     });
+
     return fd
-//    loadGraph(fd, json)
 };
