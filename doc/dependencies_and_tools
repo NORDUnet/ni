@@ -8,7 +8,5 @@ Dependencies
 - JQuery 1.4.4 (http://www.jquery.com)
 
 Tools
-(- neo4j webadmin
-    - Maven2)
 - django-debug-toolbar
     - python-setuptools
