@@ -78,11 +78,11 @@ def get_node_type(type_name):
     try:
         node_type = NodeType.objects.get(type=type_name)
     except Exception as e:
-        print e
-        print 'Creating NodeType instance.'
+        print e                                             # Debug
         # The NodeType was not found, create one
         from django.template.defaultfilters import slugify
         node_type = NodeType(type=type_name, slug=slugify(type_name))
+        print 'Creating NodeType instance %s' % type_name   # Debug
         node_type.save()
 
     return node_type
@@ -101,12 +101,12 @@ def get_node_handle(node_name, node_type_name, node_meta_type):
         print 'NodeHandle instance found, updating it.' # Debug
     except Exception as e:
         print e                                         # Debug
-        print 'Creating NodeHandle instance.'           # Debug
         # The NodeHandle was not found, create one
         node_handle = NodeHandle(node_name=node_name,
                                 node_type=node_type,
                                 node_meta_type=node_meta_type,
                                 creator=user)
+        print 'Creating NodeHandle instance %s.' % node_name    # Debug
         node_handle.save()
     return node_handle
 
@@ -274,8 +274,8 @@ def insert_nmap(json_list):
     nc = neo4jclient.Neo4jClient()
 
     # Hard coded values that we can't get on the fly right now
-    user = User.objects.get(username="lundberg")
-    type = NodeType.objects.get(slug="host")
+    #user = User.objects.get(username="lundberg")
+    node_type = "Host"
     meta_type = 'physical'
 
     # Insert the host
@@ -289,9 +289,10 @@ def insert_nmap(json_list):
             services = 'None'
 
         # Create the NodeHandle and the Node
-        node_handle = NodeHandle(node_name=name, node_type=type,
-            node_meta_type = meta_type, creator=user)
-        node_handle.save()
+        node_handle = get_node_handle(name, node_type, meta_type)
+        #node_handle = NodeHandle(node_name=name, node_type=type,
+            #node_meta_type = meta_type, creator=user)
+        #node_handle.save()
 
         # Set Node attributes
         node = nc.get_node_by_id(node_handle.node_id)

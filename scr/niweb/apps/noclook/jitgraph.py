@@ -92,7 +92,10 @@ def get_directed_adjacencie(rel):
                 'data':{
                     # JIT data
                     '$type': 'line',
-                    '$color': '#000000'}}
+                    '$color': '#000000',
+                    # Other data
+                    'relationship': str(rel.type).replace('_', ' ')}
+                }
 
     return structure
 
