@@ -25,7 +25,7 @@ var Log = {
   }
 };
 
-function loadGraph(fd, json){
+function loadGraph(fd, json, root_id){
     // load JSON data.
     fd.loadJSON(json);
     // compute positions incrementally and animate.
@@ -36,12 +36,31 @@ function loadGraph(fd, json){
       Log.write(perc + '% loaded...');
     },
     onComplete: function(){
-      Log.write('done');
-      fd.animate({
-        modes: ['linear'],
-        transition: $jit.Trans.Elastic.easeOut,
-        duration: 2500
-      });
+        Log.write('done');
+        fd.animate({
+            modes: ['linear'],
+            //transition: $jit.Trans.Elastic.easeOut,
+            transition: $jit.Trans.Circ.easeInOut,
+            duration: 1000
+        });
+        //Build the right column relations list.
+        //This is done by collecting the information (stored in the data property)
+        //for all the nodes adjacent to the centered node.
+        var node = fd.graph.getNode(root_id);
+        var html = "<h4>" + node.name + "</h4><b>Relationships:</b>";
+        html += "<ul>";
+        node.eachAdjacency(function(adj){
+            var child = adj.nodeTo;
+            if (child.id == node.id) {
+                child = adj.nodeFrom;
+            }
+            if (child.data) {
+                var rel = adj.data.relationship;
+                html += "<li>" + child.name + " " + "<div class=\"relation\">(relationship: " + rel + ")</div></li>";
+            }
+        });
+        html += "</ul>";
+        $jit.id('inner-details').innerHTML = html;
     }
     });
     // end
@@ -133,10 +152,10 @@ function init(json){
         $.getJSON(json_url, function(data) {
             if ($('#add_to_graph:checked').val() !== undefined) {
                 json = json.concat(data);
-                loadGraph(fd, json);
+                loadGraph(fd, json, node.id);
             } else {
                 var new_json = json.concat(data);
-                loadGraph(fd, new_json);
+                loadGraph(fd, new_json, node.id);
             }
         });
         //window.open(node_url, "_self")
@@ -168,5 +187,5 @@ function init(json){
     }
     });
 
-    loadGraph(fd, json)
+    return fd
 };
