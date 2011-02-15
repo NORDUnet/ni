@@ -31,7 +31,7 @@ import ipaddr
 
 ## Need to change this path depending on where the Django project is
 ## located.
-path = '/home/lundberg/norduni/scr/niweb/'
+path = '/home/erik/norduni/scr/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
@@ -93,7 +93,7 @@ def get_node_handle(node_name, node_type_name, node_meta_type):
     Returns a NodeHandle object.
     '''
     # Hard coded user value that we can't get on the fly right now
-    user = User.objects.get(username='lundberg')
+    user = User.objects.get(username='erik')
     node_type = get_node_type(node_type_name)
     try:
         node_handle = NodeHandle.objects.get(node_name=node_name,
@@ -206,8 +206,8 @@ def insert_juniper_bgp_peerings(bgp_peerings):
             local_addr = ipaddr.IPAddress(p['local_address'])
 
         elif peering_type == 'external':
-            peeringp = nc.get_node_by_value(name, 'relation', 'name')
-            if peeringp == []:
+            peeringp = nc.get_node_by_value(p['as_number'], 'relation', 'as_number')
+            if not peeringp:
                 peeringp = insert_juniper_relation(name, p['as_number'])
             peeringp[0].Uses(service[0], ip_address=p['remote_address'])
             remote_addr = ipaddr.IPAddress(p['remote_address'])
