@@ -62,6 +62,17 @@ class Neo4jClient:
                                                         'Contains'])[0]
         return rel.start['name']
 
+    def get_root_parent(self, node, types):
+        '''
+        Returns the nodes most top parent.
+        '''
+        node_list = node.traverse(types=[types])
+        for node in node_list:
+            for rel in node.relationships.all():
+                if rel.type == 'Contains':
+                    return node
+
+        return None
 
     def get_node_by_value(self, node_value, meta_node_name=None,
                                                     node_property=None):
