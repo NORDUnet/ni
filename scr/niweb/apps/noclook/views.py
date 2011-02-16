@@ -3,11 +3,20 @@ from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
+from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
 
 import neo4jclient
 import ipaddr
 import json
+
+# Tools, consider moving these to another file
+def get_node_url(node):
+    '''
+    Returns a relative url to a node.
+    '''
+    return '/%s/%d/' % (slugify(node['type']), node['handle_id'])
+# end tools
 
 def index(request):
     return render_to_response('noclook/index.html', {},
@@ -106,21 +115,31 @@ def peering_partner_detail(request, handle_id):
     # Get services used
     service_relationships = []
     services_rel = node.relationships.outgoing(types=['Uses'])
+    # services_rel are relatios to bgp groups(Service)
+    peering_points = []
+
     for s_rel in services_rel:
+        peering_point = {}
+        peering_point['pp_ip'] = s_rel['ip_address']
+        peering_point['service'] = s_rel.end['name']
+        peering_point['service_url'] = get_node_url(s_rel.end)
         pics_rel = s_rel.end.relationships.outgoing(types="Depends_on")
+        #pics_rel is a list of nodes with equipments/cables and services
         org_address = ipaddr.IPAddress(s_rel['ip_address'])
-        tmp = []
-        tmp.append(s_rel)
         for p_rel in pics_rel:
             pic_address = ipaddr.IPNetwork(p_rel['ip_address'])
             if org_address in pic_address:
-                tmp.append(p_rel)
-        if len(tmp) > 1: #If any organistations was found
-            service_relationships.append(tmp)
+                peering_point['pic_ip'] = p_rel['ip_address']
+                peering_point['pic'] = p_rel.end['name']
+                peering_point['pic_url'] = get_node_url(p_rel.end)
+                router = nc.get_root_parent(p_rel.end, nc.Incoming.Has)
+                peering_point['router'] = router['name']
+                peering_point['router_url'] = get_node_url(router)
+                peering_points.append(peering_point)
 
     return render_to_response('noclook/peering_partner_detail.html',
         {'node_handle': nh, 'node': node,
-        'service_relationships': service_relationships},
+        'peering_points': peering_points},
         context_instance=RequestContext(request))
 
 @login_required
