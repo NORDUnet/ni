@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
+from django.conf import settings
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
@@ -9,19 +10,30 @@ from niweb.apps.noclook.models import NodeHandle, NodeType
 import neo4jclient
 import ipaddr
 import json
+import copy
 
 # Tools, consider moving these to another file
 def get_node_url(node):
     '''
     Returns a relative url to a node.
     '''
-    return '/%s/%d/' % (slugify(node['type']), node['handle_id'])
+    return '%s%s/%d/' % (settings.NIWEB_URL, slugify(node['type']),
+                                                    node['handle_id'])
 # end tools
 
 def index(request):
     return render_to_response('noclook/index.html', {},
         context_instance=RequestContext(request))
 
+@login_required
+def logout_page(request):
+    '''
+    Log users out and redirect them to the index.
+    '''
+    logout(request)
+    return HttpResponseRedirect('/')
+
+# List views
 @login_required
 def list_by_type(request, slug):
     type = get_object_or_404(NodeType, slug=slug)
@@ -48,6 +60,7 @@ def list_by_master(request, handle_id, slug):
         {'node_handle_list': node_handle_list},
         context_instance=RequestContext(request))
 
+# Detail views
 @login_required
 def generic_detail(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -169,14 +182,7 @@ def ip_service_detail(request, handle_id):
         'service_relationships': service_relationships},
         context_instance=RequestContext(request))
 
-@login_required
-def logout_page(request):
-    '''
-    Log users out and redirect them to the index.
-    '''
-    logout(request)
-    return HttpResponseRedirect('/')
-
+# Visualization views
 @login_required
 def visualize_json(request, slug, handle_id):
     '''
@@ -200,7 +206,7 @@ def visualize_json(request, slug, handle_id):
 @login_required
 def visualize(request, slug, handle_id):
     '''
-    Visualize view
+    Visualize view with JS that loads JSON data.
     '''
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     nc = neo4jclient.Neo4jClient()
@@ -208,3 +214,58 @@ def visualize(request, slug, handle_id):
     return render_to_response('noclook/visualize.html',
                             {'node_handle': nh, 'node': node},
                             context_instance=RequestContext(request))
+
+# Node manipulation views
+@login_required
+def edit_node(request, slug, handle_id, node=None):
+    '''
+    View used to change and add properties to a node.
+    '''
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    nc = neo4jclient.Neo4jClient()
+    if not node:
+        node = nc.get_node_by_id(nh.node_id)
+    # Make a dict of properties you want to be able to change
+    node_properties = copy.copy(node.properties)
+    unwanted_properties = ['handle_id', 'type']
+    for key in unwanted_properties:
+        del node_properties[key]
+
+    return render_to_response('noclook/edit_node.html',
+                            {'node_handle': nh, 'node': node,
+                            'node_properties': node_properties},
+                            context_instance=RequestContext(request))
+
+@login_required
+def save_node(request, slug, handle_id):
+    '''
+    Updates the node and node_handle with new values.
+    '''
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
+
+    if request.POST:
+        # request.POST is immutable.
+        post = request.POST.copy()
+        new_properties = {}
+        del post['csrfmiddlewaretoken']
+        # Add all new properties
+        for i in range(0, len(post)):
+            # To make this work we need js in the template to add new
+            # input with name new_keyN and new_valueN.
+            nk = 'new_key%d' % i
+            nv = 'new_value%d' % i
+            if (nk in post) and (nv in post):
+                #QueryDicts uses lists a values
+                new_properties[post[nk]] = post.get(nv)
+                del post[nk]
+                del post[nv]
+        # Add the remaining properties
+        for item in post:
+            new_properties[item] = post.get(item)
+
+        # Update the node
+        node = nc.update_node_properties(nh.node_id, new_properties)
+
+    return edit_node(request, slug, handle_id, node)

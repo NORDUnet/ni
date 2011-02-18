@@ -31,7 +31,7 @@ import ipaddr
 
 ## Need to change this path depending on where the Django project is
 ## located.
-path = '/home/erik/norduni/scr/niweb/'
+path = '/home/lundberg/norduni/scr/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
@@ -93,7 +93,7 @@ def get_node_handle(node_name, node_type_name, node_meta_type):
     Returns a NodeHandle object.
     '''
     # Hard coded user value that we can't get on the fly right now
-    user = User.objects.get(username='erik')
+    user = User.objects.get(username='lundberg')
     node_type = get_node_type(node_type_name)
     try:
         node_handle = NodeHandle.objects.get(node_name=node_name,

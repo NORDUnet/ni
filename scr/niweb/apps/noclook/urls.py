@@ -26,4 +26,6 @@ urlpatterns += patterns('niweb.apps.noclook.views',
                                                     'visualize_json'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$',
                                                         'visualize'),
+    (r'^edit/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'edit_node'),
+    (r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
 )
