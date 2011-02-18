@@ -154,6 +154,22 @@ class Neo4jClient:
                     rel_list.append(rel)
         return rel_list
 
+    def update_node_properties(self, node_id, new_properties):
+        '''
+        Take a node and a dictionary of properties. Updates the
+        node and returns it.
+        '''
+        node = self.get_node_by_id(node_id)
+        # We might want to do a better check of the data...
+        for key, value in new_properties.items():
+            fixed_key = key.replace(' ','_').lower() # No ' ' or caps
+            if value:
+                node[fixed_key] = value
+            elif fixed_key in node.properties:
+                del node[fixed_key]
+
+        return node
+
 def main():
 
     def test_db_setup():

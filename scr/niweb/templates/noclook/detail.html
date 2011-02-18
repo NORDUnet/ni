@@ -3,58 +3,57 @@
 {% block title %}{{ block.super }} | Detail{% endblock %}
 
 {% block content %}
-    <div class="content">
-        <h3>Debug</h3>
-        <div class="section">
-            <h4>Node properties</h4>
-            <table>
-            {% for key,value in node.properties.items %}
-                <tr>
-                    <td><b>{{key}}</b></td><td>{{value}}</td>
-                </tr>
-            {% endfor %}
-            </table>
+    <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }}</h2>
+    <h3>Debug</h3>
+    <div class="section">
+        <h4>Node properties</h4>
+        <table>
+        {% for key,value in node.properties.items %}
+            <tr>
+                <td><b>{{key}}</b></td><td>{{value}}</td>
+            </tr>
+        {% endfor %}
+        </table>
 
-            <h4>Relationships</h4>
-            <table>
-            {% for rel in node.relationships.all %}
-                <tr>
-                    <td><a href="/{{rel.start.type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
-                </tr>
-                <tr>
-                    <td></td><td>{{rel.properties}}</td><td></td>
-                </tr>
-            {% endfor %}
-            </table>
+        <h4>Relationships</h4>
+        <table>
+        {% for rel in node.relationships.all %}
+            <tr>
+                <td><a href="/{{rel.start.type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+            </tr>
+            <tr>
+                <td></td><td>{{rel.properties}}</td><td></td>
+            </tr>
+        {% endfor %}
+        </table>
 
-            <h4>Meta information</h4>
-            <table>
-                <tr>
-                    <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
-                </tr>
-                <tr>
-                    <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
-                </tr>
-                <tr>
-                    <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
-                </tr>
-                <tr>
-                    <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
-                </tr>
-                <tr>
-                    <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
-                </tr>
-                <tr>
-                    <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
-                </tr>
-                <tr>
-                    <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
-                </tr>
-                <tr>
-                    <td><b>modified:</b> </td><td>{{ node_handle.modified }}</td>
-                </tr>
+        <h4>Meta information</h4>
+        <table>
+            <tr>
+                <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
+            </tr>
+            <tr>
+                <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
+            </tr>
+            <tr>
+                <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
+            </tr>
+            <tr>
+                <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
+            </tr>
+            <tr>
+                <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
+            </tr>
+            <tr>
+                <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
+            </tr>
+            <tr>
+                <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
+            </tr>
+            <tr>
+                <td><b>modified:</b> </td><td>{{ node_handle.modified }}</td>
+            </tr>
 
-            </table>
-        </div>
-     </div>
+        </table>
+    </div>
 {% endblock %}
