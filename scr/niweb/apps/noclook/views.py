@@ -120,6 +120,34 @@ def pic_detail(request, handle_id):
         context_instance=RequestContext(request))
 
 @login_required
+def optical_node_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
+    info = {}
+    info['name'] = node['name']
+    info['node_url'] = get_node_url(node)
+    #get incoming rels of fibers
+    connected_rel = node.relationships.incoming(types=['Connected_to'])
+    opt_info = []
+    for rel in connected_rel:
+        fibers = {}
+        fiber = rel.start
+        fibers['fiber_name'] = fiber['name']
+        fibers['fiber_url'] = get_node_url(fiber)
+        conn = fiber.relationships.outgoing(types = ['Connected_to'])
+        for item in conn:
+            tmp = item.end
+            if tmp['name'] != node['name']:
+                fibers['node_name'] = tmp['name']
+                fibers['node_url'] = get_node_url(tmp)
+        opt_info.append(fibers)
+    return render_to_response('noclook/optical_node_detail.html',
+        {'node_handle': nh, 'info': info, 'opt_info': opt_info},
+        context_instance=RequestContext(request))
+
+@login_required
 def peering_partner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
