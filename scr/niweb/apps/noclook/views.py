@@ -147,6 +147,47 @@ def optical_node_detail(request, handle_id):
         {'node_handle': nh, 'info': info, 'opt_info': opt_info},
         context_instance=RequestContext(request))
 
+#@login_required
+#def host_node_detail(request, handle_id):
+    #nh = get_object_or_404(NodeHandle, pk=handle_id)
+    ## Get node from neo4j-database
+    #nc = neo4jclient.Neo4jClient()
+    #node = nc.get_node_by_id(nh.node_id)
+    #info = {}
+    #info['name'] = node['name']
+    #info['node_url'] = get_node_url(node)
+
+    #return render_to_response('noclook/host_node_detail.html',
+        #{'node_handle': nh, 'info': info, 'node': node, 'lista': lista},
+        #context_instance=RequestContext(request))
+
+@login_required
+def cable_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
+    info = {}
+    info['name'] = node['name']
+    info['node_url'] = get_node_url(node)
+    if node['cable_type'] == 'TP':
+        info['type'] == 'copper cable'
+    elif node['cable_type'] == 'Fiber':
+        info['type'] = 'optic fiber'
+    else:
+        info['cable_type'] = node['type']
+    connected_rel = node.relationships.outgoing(types=['Connected_to'])
+    opt_info = []
+    for equip in connected_rel:
+        equipment = {}
+        conn = equip.end
+        equipment['node_name'] = conn['name']
+        equipment['node_url'] = get_node_url(conn)
+        opt_info.append(equipment)
+    return render_to_response('noclook/cable_detail.html',
+        {'node_handle': nh, 'info': info, 'opt_info': opt_info, 'node': node },
+        context_instance=RequestContext(request))
+
 @login_required
 def peering_partner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
