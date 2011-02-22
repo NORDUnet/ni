@@ -17,6 +17,8 @@ urlpatterns += patterns('niweb.apps.noclook.views',
                                         'peering_partner_detail'),
     (r'^ip-service/(?P<handle_id>\d+)/$', 'ip_service_detail'),
     (r'^optical-node/(?P<handle_id>\d+)/$', 'optical_node_detail'),
+    (r'^cable/(?P<handle_id>\d+)/$', 'cable_detail'),
+#    (r'^host/(?P<handle_id>\d+)/$', 'host_node_detail'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
     # List views
     (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
