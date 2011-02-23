@@ -288,7 +288,8 @@ def visualize(request, slug, handle_id):
 @login_required
 def edit_node(request, slug, handle_id, node=None):
     '''
-    View used to change and add properties to a node.
+    View used to change and add properties to a node, also to delete
+    a node relationships.
     '''
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     nc = neo4jclient.Neo4jClient()
@@ -300,9 +301,24 @@ def edit_node(request, slug, handle_id, node=None):
     for key in unwanted_properties:
         del node_properties[key]
 
+    # Relationships
+    # Make a dict of relationships you want to be able to change
+    unwanted_relationships = ['Contains', 'Consist_of']
+    node_relationships = []
+    for rel in node.relationships.all():
+        relationship = {'properties': {}}
+        if rel.type not in unwanted_relationships:
+            relationship['id'] = rel.id
+            relationship['start'] = rel.start['name']
+            relationship['type'] = rel.type
+            relationship['end'] = rel.end['name']
+            relationship['properties'].update(rel.properties)
+            node_relationships.append(relationship)
+
     return render_to_response('noclook/edit_node.html',
                             {'node_handle': nh, 'node': node,
-                            'node_properties': node_properties},
+                            'node_properties': node_properties,
+                            'node_relationships': node_relationships},
                             context_instance=RequestContext(request))
 
 @login_required
@@ -337,4 +353,12 @@ def save_node(request, slug, handle_id):
         # Update the node
         node = nc.update_node_properties(nh.node_id, new_properties)
 
+    return edit_node(request, slug, handle_id, node)
+
+@login_required
+def delete_relationship(request, slug, handle_id):
+    '''
+    Deletes the relationship if POST['confirmed']==True.
+    '''
+    pass
     return edit_node(request, slug, handle_id, node)
