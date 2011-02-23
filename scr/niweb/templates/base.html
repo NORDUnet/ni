@@ -32,6 +32,9 @@
             {% if node_handle %}
                 <ul class="menu">
                     <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
+                {% if user.is_staff %}
+                    <li><a href="/edit{{ node_handle.get_absolute_url }}">Edit</a></li>
+                {% endif %}
                 </ul>
             {% endif %}
 
