@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.conf import settings
 from django.template import RequestContext
@@ -291,6 +291,8 @@ def edit_node(request, slug, handle_id, node=None):
     View used to change and add properties to a node, also to delete
     a node relationships.
     '''
+    if not request.user.is_staff:
+        raise Http404
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     nc = neo4jclient.Neo4jClient()
     if not node:
@@ -326,6 +328,8 @@ def save_node(request, slug, handle_id):
     '''
     Updates the node and node_handle with new values.
     '''
+    if not request.user.is_staff:
+        raise Http404
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
@@ -360,5 +364,7 @@ def delete_relationship(request, slug, handle_id):
     '''
     Deletes the relationship if POST['confirmed']==True.
     '''
+    if not request.user.is_staff:
+        raise Http404
     pass
     return edit_node(request, slug, handle_id, node)
