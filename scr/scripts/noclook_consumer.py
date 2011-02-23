@@ -31,7 +31,8 @@ import ipaddr
 
 ## Need to change this path depending on where the Django project is
 ## located.
-path = '/var/norduni/scr/niweb/'
+#path = '/var/norduni/scr/niweb/'
+path = '/home/lundberg/norduni/scr/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
@@ -87,9 +88,11 @@ def get_node_type(type_name):
 
     return node_type
 
-def get_node_handle(node_name, node_type_name, node_meta_type):
+def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     '''
-    Takes the arguments as strings.
+    Takes the arguments needed to create a NodeHandle, if there already
+    is a NodeHandle with the same name and type it will be considered
+    the same one.
     Returns a NodeHandle object.
     '''
     # Hard coded user value that we can't get on the fly right now
@@ -110,6 +113,41 @@ def get_node_handle(node_name, node_type_name, node_meta_type):
         node_handle.save()
     return node_handle
 
+def get_node_handle(node_name, node_type_name, node_meta_type,
+                                                        parent=None):
+    '''
+    Takes the arguments needed to create a NodeHandle. If a parent is
+    supplied the NodeHandle will be unique for that parent.
+    Returns a NodeHandle object.
+    '''
+    # Hard coded user value that we can't get on the fly right now
+    user = User.objects.get(username='lundberg')
+    node_type = get_node_type(node_type_name)
+    try:
+        node_handles = NodeHandle.objects.get(node_name=node_name,
+                                            node_type=node_type)
+        print 'One or more handles found.' # Debug
+        if parent:
+            nc = neo4jclient.Neo4jClient()
+            for node_handle in node_handles:
+                node = nc.get_node_by_id(node_handle.node_id)
+                if parent.id == nc.get_root_parent(node,
+                                                    nc.Incoming.Has).id:
+                    return node_handle
+            return node_handle # NodeHandle for that parent was found
+    except Exception as e:
+        print e                                         # Debug
+    # The NodeHandle was not found, create one
+    node_handle = NodeHandle(node_name=node_name,
+                            node_type=node_type,
+                            node_meta_type=node_meta_type,
+                            creator=user)
+    print 'Creating NodeHandle instance %s.' % node_name    # Debug
+    node_handle.save()
+    return node_handle # No NodeHandle found return a new handle.
+
+
+
 def rest_comp(data):
     '''
     As the REST interface cant handle None type we change None to False.
@@ -125,7 +163,7 @@ def insert_juniper_router(name):
     Returns the node created.
     '''
     nc = neo4jclient.Neo4jClient()
-    node_handle = get_node_handle(name, 'Router', 'physical')
+    node_handle = get_unique_node_handle(name, 'Router', 'physical')
     node = nc.get_node_by_id(node_handle.node_id)
     node_list = [node]
 
@@ -147,8 +185,10 @@ def insert_juniper_interfaces(router_node, interfaces):
             # Also "not interesting" is interfaces with . or * in their
             # names
             if '.' not in name and '*' not in name:
-                node_handle = get_node_handle(name, 'PIC', 'physical')
+                node_handle = get_node_handle(name, 'PIC', 'physical', router_node)
                 node = nc.get_node_by_id(node_handle.node_id)
+                #if router_node.id != get_root_parent(node, nc.Incoming.Has).id:
+        #
                 node['description'] = rest_comp(i['description'])
                 node['units'] = json.dumps(i['units'])
                 router_node.Has(node)
@@ -162,7 +202,7 @@ def insert_juniper_relation(name, as_number):
     Returns the newly created node.
     '''
     nc = neo4jclient.Neo4jClient()
-    node_handle = get_node_handle(name, 'Peering Partner', 'relation')
+    node_handle = get_unique_node_handle(name, 'Peering Partner', 'relation')
     node = nc.get_node_by_id(node_handle.node_id)
     node['as_number'] = rest_comp(as_number)
     node_list = [node]
@@ -175,7 +215,7 @@ def insert_juniper_service(name):
     Returns the newly created node.
     '''
     nc = neo4jclient.Neo4jClient()
-    node_handle = get_node_handle(name, 'IP Service', 'logical')
+    node_handle = get_unique_node_handle(name, 'IP Service', 'logical')
     node = nc.get_node_by_id(node_handle.node_id)
     node_list = [node]
 
@@ -289,7 +329,7 @@ def insert_nmap(json_list):
             services = 'None'
 
         # Create the NodeHandle and the Node
-        node_handle = get_node_handle(name, node_type, meta_type)
+        node_handle = get_unique_node_handle(name, node_type, meta_type)
         #node_handle = NodeHandle(node_name=name, node_type=type,
             #node_meta_type = meta_type, creator=user)
         #node_handle.save()
@@ -306,7 +346,7 @@ def insert_cable(cable_id, cable_type):
     Returns the node in a node_list.
     '''
     nc = neo4jclient.Neo4jClient()
-    node_handle = get_node_handle(cable_id, 'Cable', 'physical')
+    node_handle = get_unique_node_handle(cable_id, 'Cable', 'physical')
     node = nc.get_node_by_id(node_handle.node_id)
     node['cable_type'] = cable_type
     return node_handle
@@ -327,7 +367,7 @@ def consume_alcatel_isis(json_list):
     # Insert the optical node
     for i in json_list:
         name = i['host']['name']
-        node_handle = get_node_handle(name, 'Optical Node', 'physical')
+        node_handle = get_unique_node_handle(name, 'Optical Node', 'physical')
         node = nc.get_node_by_id(node_handle.node_id)
         for neighbour in i['host']['alcatel_isis']['neighbours']:
             metric = neighbour['metric']
@@ -338,7 +378,7 @@ def consume_alcatel_isis(json_list):
             else:                   # Fiber
                 cable_type = 'Fiber'
             # Get or create a neighbour node
-            neighbour_node_handle = get_node_handle(neighbour['name'],
+            neighbour_node_handle = get_unique_node_handle(neighbour['name'],
                                             'Optical Node', 'physical')
             neighbour_node = nc.get_node_by_id(neighbour_node_handle.node_id)
             # See if the nodes already are connected via something
