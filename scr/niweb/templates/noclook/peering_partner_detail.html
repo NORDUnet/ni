@@ -1,0 +1,75 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} | Detail{% endblock %}
+
+{% block content %}
+    <div class="content">
+        <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }} (as{{ node.as_number }}) </h2>
+
+        <h3>Services used</h3>
+        <div class="section">
+        {% if peering_points %}
+            <table>
+            <th>{{ node.name }} IP Address</th><th>Service</th><th>PIC Address</th><th>PIC</th><th>Router</th>
+                {% for item in peering_points %}
+                <tr>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.pp_ip }}</td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}"<a href="{{ item.service_url }}">{{ item.service }}</a></td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.pic_ip }}</td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="{{ item.pic_url }}">{{ item.pic }}</a></td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="{{ item.router_url }}">{{ item.router }}</a></td>
+                </tr>
+            {% endfor %}
+            </table>
+        {% else %}
+            No services used.
+        {% endif %}
+        </div>
+
+
+        <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
+        <div id="debug">
+            <h3>Debug</h3>
+            {{service_relationships}}
+
+            <h4>Node properties</h4>
+            <table>
+            {% for key,value in node.properties.items %}
+                <tr>
+                    <td><b>{{key}}</b></td><td>{{value}}</td>
+                </tr>
+            {% endfor %}
+            </table>
+
+            <h4>Meta information</h4>
+            <table>
+                <tr>
+                    <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
+                </tr>
+                <tr>
+                    <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
+                </tr>
+                <tr>
+                    <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
+                </tr>
+                <tr>
+                    <td><b>modified:</b> </td><td>{{ node_handle.modified }}</td>
+                </tr>
+
+            </table>
+        </div>
+     </div>
+{% endblock %}
