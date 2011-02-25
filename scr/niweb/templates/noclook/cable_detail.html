@@ -10,7 +10,7 @@
                 <th>Connecting nodes</th>
                     {% for item in opt_info %}
                     <tr>
-                        <td class="{% cycle 'align_top' 'align_top_grey' %}"<a href="{{ item.node_url }}">{{ item.node_name }}</a></td>
+                        <td class="{% cycle 'align_top' 'align_top_grey' %}"></td><a href="{{ item.node_url }}">{{ item.node_name }}</a></td>
                     </tr>
                      {% endfor %}
             </table>
