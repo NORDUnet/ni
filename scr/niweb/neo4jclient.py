@@ -28,6 +28,7 @@ class Neo4jClient:
     def __init__(self):
         # Open the database defined in settings.py
         self.db = self.open_db(settings.NEO4J_RESOURCE_URI)
+        self.client = client
         self.root = self.db.nodes.get(0)
         self.meta_nodes = {} #?
         self.Outgoing = client.Outgoing
@@ -47,6 +48,28 @@ class Neo4jClient:
         TODO: try except
         '''
         return self.db.node(name = n, type = t)
+        
+    def get_all_nodes(self):
+        '''
+        Returns all nodes in the database in a list. 
+        
+        TODO: try expect
+        '''
+        nodes = [self.root]
+        for meta_node in self.root.traverse():
+            nodes.extend(meta_node.traverse())
+        return nodes
+        
+    def get_all_relationships(self):
+        '''
+        Returns all relationships in the database in a list.
+        
+        TODO: try except
+        '''
+        relationships = []
+        for node in self.get_all_nodes():
+            relationships.extend(node.relationships.all())
+        return list(set(relationships))
 
     def get_node_by_id(self, node_id):
         '''
@@ -64,7 +87,7 @@ class Neo4jClient:
 
     def get_root_parent(self, node, types):
         '''
-        Returns the nodes most top parent.
+        Returns the nodes most top parent (not meta nodes or root node).
         '''
         node_list = node.traverse(types=[types])
         for node in node_list:
@@ -136,6 +159,19 @@ class Neo4jClient:
         for rel in node.relationships.all():
             rel.delete()
         node.delete()
+        
+    def get_relationship_by_id(self, node, rel_id):
+        '''
+        Returns the relationship with the supplied id. As there are no
+        global collection of relationships you need to supply a node that 
+        actually has the wanted relationship.
+        
+        TODO: Try Except
+        '''
+        for rel in node.relationships.all():
+            if rel.id == int(rel_id):
+                return rel
+        return False
 
     def get_relationships(self, n1, n2, rel_type=None):
         '''
@@ -167,8 +203,20 @@ class Neo4jClient:
                 node[fixed_key] = value
             elif fixed_key in node.properties:
                 del node[fixed_key]
-
         return node
+        
+    def update_relationship_properties(self, node, rel_id, new_properties):
+        '''
+        Updates the properties of a relationship with the supplied dictionary.
+        '''
+        rel = self.get_relationship_by_id(node, rel_id)
+        for key, value in new_properties.items():
+            fixed_key = key.replace(' ','_').lower() # No ' ' or caps
+            if value:
+                rel[fixed_key] = value
+            elif fixed_key in rel.properties:
+                del rel[fixed_key]
+        return rel
 
 def main():
 

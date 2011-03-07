@@ -2,6 +2,17 @@
 
 {% block title %}{{ block.super }} | Detail{% endblock %}
 
+{% block js %}
+<!-- Submit JS for delete relationship -->
+{% for rel in node_relationships %}
+<script type="text/javascript">
+function submit_rel_{{ rel.id }}() {
+        $('#rel_{{ rel.id }}').submit();
+    }
+</script>
+{% endfor %}
+{% endblock %}
+
 {% block content %}
     <div class="content">
         <h3>Edit <a href="/{{ node.type|slugify }}/">{{ node.type }}</a> <a href="{{ node_handle.get_absolute_url }}">{{ node.name }}</a></h3>
@@ -10,7 +21,7 @@
             <table>
                 {% for key, value in node_properties.items %}
                 <tr>
-                    <th>{{ key|capfirst }}:</th><td><input type="text" name="{{ key }}" value="{{ value }}" /></td>
+                    <th>{{ key}}:</th><td><input type="text" name="{{ key }}" value="{{ value }}" /></td>
                 </tr>
                 {% endfor %}
             </table>
@@ -34,6 +45,9 @@
         </form>
 
         <h3>Edit or delete relationship</h3>
+        {% if message %}
+            <p>{{ message }}</p>
+        {% endif %}
         <table>
         <tr>
             <th>Start</th><th>Type</th><th>End</th>
@@ -44,11 +58,15 @@
             <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ rel.type }}</td>
             <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ rel.end }}</td>
             <td>
-                <form id="del_rel_{{ rel.id }}" action="/delete/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}/relationship/" method="post">
-                    <input id='confirm' type="checkbox" />
+                <form id="rel_{{ rel.id }}" action="/delete/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}/relationship/{{ rel.id }}/" method="post">
+                    {% csrf_token %}
+                    <input name='confirmed' value='{{ rel.id }}' type="checkbox" />
                 </form>
             </td>
-            <td><div id="submit_{{ rel.id }}">Delete</div> <div>Edit</div></td>
+            <td>
+                <a id="delete_{{ rel.id }}" href="javascript:submit_rel_{{ rel.id }}()">Delete</a>
+                <a href="/edit/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}/relationship/{{ rel.id }}">Edit</a>
+            </td>
         </tr>
         {% if rel.properties %}
             {% for key,value in rel.properties.items %}
