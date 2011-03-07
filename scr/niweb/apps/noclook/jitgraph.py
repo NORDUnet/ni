@@ -104,7 +104,6 @@ def traverse_relationships(root_node, types, graph_list):
     Traverse the relationship we want and add the nodes and
     adjacencies to the JSON structure.
     '''
-    nc = neo4jclient.Neo4jClient()
     for rel in root_node.traverse(returns='relationship', types=types):
         jit_node_start = get_jit_node(rel.start)
         jit_node_end = get_jit_node(rel.end)
@@ -162,7 +161,7 @@ def create_graph_list(root_node, graph_list = None):
                 jit_node = get_jit_node(rel.end)
             jit_root['adjacencies'].append(get_directed_adjacencie(rel))
             jit_node['adjacencies'].append(get_directed_adjacencie(rel))
-            graph_list.append(node)
+            graph_list.append(jit_node)
         graph_list.append(jit_root)
 
     return graph_list
