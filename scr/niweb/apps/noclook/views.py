@@ -195,7 +195,6 @@ def peering_partner_detail(request, handle_id):
     nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     # Get services used
-    service_relationships = []
     services_rel = node.relationships.outgoing(types=['Uses'])
     # services_rel are relatios to bgp groups(Service)
     peering_points = []
@@ -286,7 +285,13 @@ def visualize(request, slug, handle_id):
 
 # Node manipulation views
 @login_required
-def edit_node(request, slug, handle_id, node=None):
+def new_node(request):
+    if not request.user.is_staff:
+        raise Http404    
+    pass
+
+@login_required
+def edit_node(request, slug, handle_id, node=None, message=None):
     '''
     View used to change and add properties to a node, also to delete
     a node relationships.
@@ -320,7 +325,8 @@ def edit_node(request, slug, handle_id, node=None):
     return render_to_response('noclook/edit_node.html',
                             {'node_handle': nh, 'node': node,
                             'node_properties': node_properties,
-                            'node_relationships': node_relationships},
+                            'node_relationships': node_relationships,
+                            'message': message},
                             context_instance=RequestContext(request))
 
 @login_required
@@ -356,15 +362,96 @@ def save_node(request, slug, handle_id):
 
         # Update the node
         node = nc.update_node_properties(nh.node_id, new_properties)
+        
+        # Update the node_handle
+        nh.node_name = node['name']
+        nh.save()
 
-    return edit_node(request, slug, handle_id, node)
+    return edit_node(request, slug, handle_id, node=node)
+    
+@login_required
+def delete_node(request, slug, handle_id):
+    pass
 
 @login_required
-def delete_relationship(request, slug, handle_id):
+def new_relationship(request, slug, handle_id):
+    pass
+
+@login_required
+def edit_relationship(request, slug, handle_id, rel_id, rel=None, message=None):
     '''
-    Deletes the relationship if POST['confirmed']==True.
+    View to update, change or delete relationships properties.
     '''
     if not request.user.is_staff:
         raise Http404
-    pass
-    return edit_node(request, slug, handle_id, node)
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    if rel == None:
+        nc = neo4jclient.Neo4jClient()
+        node = nc.get_node_by_id(nh.node_id)
+        rel = nc.get_relationship_by_id(node, rel_id)
+    rel_properties = rel.properties
+    return render_to_response('noclook/edit_relationship.html',
+                            {'node_handle': nh, 'rel': rel, 
+                             'rel_properties': rel_properties, 
+                             'message': message},
+                            context_instance=RequestContext(request))
+
+@login_required
+def save_relationship(request, slug, handle_id, rel_id):
+    if not request.user.is_staff:
+        raise Http404
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
+    rel = nc.get_relationship_by_id(node, rel_id)
+
+    if request.POST:
+        # request.POST is immutable.
+        post = request.POST.copy()
+        new_properties = {}
+        del post['csrfmiddlewaretoken']
+        # Add all new properties
+        for i in range(0, len(post)):
+            # To make this work we need js in the template to add new
+            # input with name new_keyN and new_valueN.
+            nk = 'new_key%d' % i
+            nv = 'new_value%d' % i
+            if (nk in post) and (nv in post):
+                #QueryDicts uses lists a values
+                new_properties[post[nk]] = post.get(nv)
+                del post[nk]
+                del post[nv]
+        # Add the remaining properties
+        for item in post:
+            new_properties[item] = post.get(item)
+            
+        # Update the relationships properties
+        rel = nc.update_relationship_properties(node, rel_id, new_properties)
+        
+    return edit_relationship(request, slug, handle_id, rel_id, rel)
+
+@login_required
+def delete_relationship(request, slug, handle_id, rel_id):
+    '''
+    Deletes the relationship if POST['confirmed']==True.
+    '''
+    if not request.user.is_staff or not request.POST:
+        raise Http404
+    if 'confirmed' in request.POST.keys():
+        nh = get_object_or_404(NodeHandle, pk=handle_id)
+        nc = neo4jclient.Neo4jClient()
+        node = nc.get_node_by_id(nh.node_id)
+        message = 'No relationship matching the query was found. Nothing deleted.'
+        for rel in node.relationships.all():
+            cur_id = str(rel.id)
+            if cur_id == rel_id and cur_id in request.POST['confirmed']:
+                message = 'Relationship %s %s %s deleted.' % (rel.start['name'],
+                                                              rel.type,
+                                                              rel.end['name']) 
+                rel.delete()
+                break                
+        return edit_node(request, slug, handle_id, message=message)
+    else:            
+        message = 'Please confirm the deletion of the relationship.'
+        return edit_node(request, slug, handle_id, message=message)
+        
