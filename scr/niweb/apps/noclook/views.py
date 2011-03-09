@@ -171,7 +171,7 @@ def cable_detail(request, handle_id):
     info['name'] = node['name']
     info['node_url'] = get_node_url(node)
     if node['cable_type'] == 'TP':
-        info['type'] == 'copper cable'
+        info['type'] = 'copper cable'
     elif node['cable_type'] == 'Fiber':
         info['type'] = 'optic fiber'
     else:
@@ -375,7 +375,56 @@ def delete_node(request, slug, handle_id):
 
 @login_required
 def new_relationship(request, slug, handle_id):
-    pass
+    '''
+    Create a new relationship between the node that was edited and another node.
+    
+    The way to get the nodes that are suitible for relationships have to be
+    tought over again. This way is pretty hary.
+    '''
+    if not request.user.is_staff:
+        raise Http404
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    nc = neo4jclient.Neo4jClient()
+    node = nc.get_node_by_id(nh.node_id)
+    message = ''
+    
+    if request.POST:
+        if request.POST['direction']:
+            direction = request.POST['direction']
+            node_id = request.POST['nodes']
+            other_node = nc.get_node_by_id(node_id)
+            rel_type = request.POST['types']
+            
+            if direction == 'out':
+                rel = nc.make_suitable_relationship(node, other_node, rel_type)
+            else:
+                rel = nc.make_suitable_relationship(other_node, node, rel_type)
+            if rel:
+                rel_id = rel.id
+                return edit_relationship(request, slug, handle_id, rel_id, rel)
+            else:
+                message = 'The requested relationship could not be made.' 
+        else:
+            message = 'You have to choose relationship direction.'
+    
+    node_dicts = []
+    suitable_nodes = nc.get_suitable_nodes(node)
+    for item in ['physical', 'logical', 'relation', 'location']:
+        for n in suitable_nodes[item]:
+            parent = nc.get_root_parent(n, nc.Incoming.Has)
+            if parent:
+                name = '%s %s' % (parent['name'], n['name'])      
+            else:
+                name = n['name']
+                type = n['type']
+            node_dicts.append({'name': name, 
+                               'id':n.id, 
+                               'type': type})
+    
+    return render_to_response('noclook/new_relationship.html',
+                            {'node_handle': nh, 'node': node, 
+                             'node_dicts': node_dicts, 'message': message},
+                            context_instance=RequestContext(request))
 
 @login_required
 def edit_relationship(request, slug, handle_id, rel_id, rel=None, message=None):

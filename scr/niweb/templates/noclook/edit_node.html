@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ block.super }} | Detail{% endblock %}
+{% block title %}{{ block.super }} Edit {{ node }}{% endblock %}
 
 {% block js %}
 <!-- Submit JS for delete relationship -->
@@ -44,6 +44,9 @@ function submit_rel_{{ rel.id }}() {
             <a href='{{ node_handle.get_absolute_url }}'><input type="button" value="Done"></a>
         </form>
 
+        <h3>Create relationship</h3>
+        <a href="/new/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}/relationship/">Add a new relationship</a>
+
         <h3>Edit or delete relationship</h3>
         {% if message %}
             <p>{{ message }}</p>
@@ -69,16 +72,16 @@ function submit_rel_{{ rel.id }}() {
             </td>
         </tr>
         {% if rel.properties %}
+        <tr>
+            <td class="align_top"></td>
+            <th>Properties</th>
+            <td class="align_top"></td>
+        </tr>
             {% for key,value in rel.properties.items %}
             <tr>
-                <td class="{% cycle 'align_top' 'align_top_grey' %}"></td>
-                <th>Properties</th>
-                <td class="{% cycle 'align_top' 'align_top_grey' %}"></td>
-            </tr>
-            <tr>
-                <td class="{% cycle 'align_top' 'align_top_grey' %}"></td>
-                <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ key }}</td>
-                <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ value }}</td>
+                <td class="align_top"></td>
+                <td class="align_top">{{ key }}</td>
+                <td class="align_top">{{ value }}</td>
             </tr>
             {% endfor %}
         {% endif %}

@@ -85,14 +85,14 @@ class Neo4jClient:
                                                         'Contains'])[0]
         return rel.start['name']
 
-    def get_root_parent(self, node, types):
+    def get_root_parent(self, node, rel_type):
         '''
         Returns the nodes most top parent (not meta nodes or root node).
         '''
-        node_list = node.traverse(types=[types])
+        node_list = node.traverse(types=[rel_type])
         for node in node_list:
             for rel in node.relationships.all():
-                if rel.type == 'Contains':
+                if rel.type == 'Contains': # Doesnt all nodes have this rel?
                     return node
 
         return None
@@ -150,6 +150,76 @@ class Neo4jClient:
         n = self.create_node(meta_node_name, 'meta')
         self.root.Consists_of(n)
         return n
+        
+    def get_suitable_nodes(self, node):
+        '''
+        Takes a reference node and returns all nodes that is suitable for a
+        relationship with that node.
+        
+        Returns a dictionary with the suitable nodes in separated lists.
+        '''
+        meta_type = self.get_node_meta_type(node)
+        
+        # Create and fill the dictionary with all nodes
+        suitable_types = {'physical': [], 'logical': [], 
+                          'relation': [], 'location': []}
+        for key in suitable_types:
+            meta_node = self.get_meta_node(key)
+            suitable_types[key] = meta_node.traverse(self.Outgoing.Contains)
+            
+        # Remove the reference node, can't have relationship with yourself        
+        suitable_types[meta_type].remove(node)
+
+        # Unreference the types of nodes that are un suitable                  
+        if meta_type == 'location':
+            suitable_types['location'] = []
+            suitable_types['logical'] = []
+        elif meta_type == 'logical':
+            suitable_types['location'] = []
+        elif meta_type == 'relation':
+            suitable_types['relation'] = []
+        
+        return suitable_types
+        
+    def make_suitable_relationship(self, node, other_node, rel_type):
+        '''
+        Makes a relationship from node to other_node depending on which
+        meta_type the nodes sent in are. Returns the relationship or None
+        if no relationship was made.
+        '''
+        meta_type = self.get_node_meta_type(node)
+        other_meta_type = self.get_node_meta_type(other_node)
+        rel = None
+        
+        if meta_type == 'location':                # Location
+            if other_meta_type == 'location':
+                rel = node.Has(other_node)
+        elif meta_type == 'logical':               # Logical
+            if other_meta_type == 'logical':
+                rel = node.Depends_on(other_node)
+            elif other_meta_type == 'physical':
+                rel = node.Depends_on(other_node)
+        elif meta_type == 'relation':              # Relation
+            if other_meta_type == 'logical':
+                if rel_type == 'Uses':
+                    rel = node.Uses(other_node)
+                elif rel_type == 'Provides':
+                    rel = node.Provides(other_node)
+            elif other_meta_type == 'location':
+                rel = node.Responsible_for(other_node)
+            elif other_meta_type == 'physical':
+                rel = node.Responsible_for(other_node)
+        elif meta_type == 'physical':              # Physical
+            if other_meta_type == 'physical':
+                if rel_type == 'Has':
+                    rel = node.Has(other_node)
+                if rel_type == 'Connected_to':
+                    rel = node.Connected_to(other_node)
+            elif other_meta_type == 'Location':
+                rel = node.Located_in(other_node)
+                
+        return rel
+        
 
     def delete_node(self, node_id):
         '''
