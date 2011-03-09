@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect, Http404
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response, get_object_or_404, get_list_or_404
 from django.conf import settings
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
@@ -285,10 +285,27 @@ def visualize(request, slug, handle_id):
 
 # Node manipulation views
 @login_required
-def new_node(request):
+def new_node(request, slug):
     if not request.user.is_staff:
         raise Http404    
-    pass
+    if request.POST:
+        # Create the new node
+        node_name = request.POST['name']
+        node_type = get_object_or_404(NodeType, slug=request.POST['node_types'])
+        node_meta_type = request.POST['meta_types'].lower()
+        node_handle = NodeHandle(node_name=node_name,
+                                node_type=node_type,
+                                node_meta_type=node_meta_type,
+                                creator=request.user)
+        node_handle.save()
+        return edit_node(request, slugify(node_handle.node_type), 
+                                                         node_handle.handle_id)
+    else:
+        node_types = get_list_or_404(NodeType)
+
+    return render_to_response('noclook/new_node.html',
+                            {'node_types': node_types},
+                            context_instance=RequestContext(request))
 
 @login_required
 def edit_node(request, slug, handle_id, node=None, message=None):

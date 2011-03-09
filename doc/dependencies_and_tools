@@ -10,3 +10,4 @@ Dependencies
 Tools
 - django-debug-toolbar
     - python-setuptools
+- django-extensions

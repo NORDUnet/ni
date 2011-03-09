@@ -38,12 +38,16 @@
                 {% endif %}
                 </ul>
             {% endif %}
-
+            {% if user.is_staff %}
             <ul class="menu">
-            {% if user.is_authenticated %}
-                <li><a href="/logout/">Log out</a></li>
-            {% endif %}
+                <li><a href="/new/node/">Create new node</a></li>
             </ul>
+            {% endif %}
+            {% if user.is_authenticated %}
+            <ul class="menu">
+                <li><a href="/logout/">Log out</a></li>
+            </ul>
+            {% endif %}
             {% endblock %}
         </div>
         <div id="content">
