@@ -388,7 +388,22 @@ def save_node(request, slug, handle_id):
     
 @login_required
 def delete_node(request, slug, handle_id):
-    pass
+    '''
+    Deletes the NodeHandle from the SQL database and the node from the Neo4j
+    database.
+    '''    
+    if not request.user.is_staff:
+        raise Http404
+    if request.POST:
+        if 'confirmed' in request.POST and \
+                                        request.POST['confirmed'] == 'delete':
+            nh = get_object_or_404(NodeHandle, pk=handle_id)
+            nc = neo4jclient.Neo4jClient()
+            nc.delete_node(nh.node_id)
+            nh.delete()
+            return HttpResponseRedirect('/%s/' % slug) 
+            
+    return edit_node(request, slug, handle_id)
 
 @login_required
 def new_relationship(request, slug, handle_id):

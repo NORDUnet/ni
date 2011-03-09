@@ -88,6 +88,13 @@ function submit_rel_{{ rel.id }}() {
         {% endfor %}
         </table>
 
+        <h3>Delete node</h3>
+        <form action="/delete/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}/" method="post">
+        {% csrf_token %}
+        <input name='confirmed' value='delete' type="checkbox" /> Confirm delete
+        <input type="submit" value="Delete">
+        </form>
+
 <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
     <div id="debug">
         <h3>Debug</h3>
