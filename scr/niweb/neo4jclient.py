@@ -144,10 +144,10 @@ class Neo4jClient:
         '''
         rels = self.root.relationships.outgoing(["Consists_of"])
         for rel in rels:
-            if rel.end['name'] == meta_node_name:
+            if rel.end['name'] == meta_node_name.lower():
                 return rel.end
         # No node with requested name found
-        n = self.create_node(meta_node_name, 'meta')
+        n = self.create_node(meta_node_name.lower(), 'meta')
         self.root.Consists_of(n)
         return n
         
@@ -158,7 +158,7 @@ class Neo4jClient:
         
         Returns a dictionary with the suitable nodes in separated lists.
         '''
-        meta_type = self.get_node_meta_type(node)
+        meta_type = self.get_node_meta_type(node).lower()
         
         # Create and fill the dictionary with all nodes
         suitable_types = {'physical': [], 'logical': [], 
