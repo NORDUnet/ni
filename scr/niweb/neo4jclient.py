@@ -58,7 +58,7 @@ class Neo4jClient:
         nodes = [self.root]
         for meta_node in self.root.traverse():
             nodes.extend(meta_node.traverse())
-        return nodes
+        return list(set(nodes))
         
     def get_all_relationships(self):
         '''

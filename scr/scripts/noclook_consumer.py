@@ -43,7 +43,7 @@ import neo4jclient
 
 '''
 This script is used for adding the objects collected with the
-NERDS juniper_conf producer to the noclook database viewer.
+NERDS producers to the noclook database viewer.
 '''
 
 def init_config(path):
