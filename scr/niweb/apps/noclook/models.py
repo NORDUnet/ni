@@ -69,6 +69,9 @@ class NodeHandle(models.Model):
         '''
         Create a new node and associate it to the handle.
         '''
+        if self.node_id: # Not first save
+            super(NodeHandle, self).save()
+            return self
         nc = neo4jclient.Neo4jClient()
         node = nc.create_node(self.node_name, str(self.node_type))
         self.node_id = node.id
