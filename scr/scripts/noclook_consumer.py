@@ -188,8 +188,6 @@ def insert_juniper_interfaces(router_node, interfaces):
             if '.' not in name and '*' not in name:
                 node_handle = get_node_handle(name, 'PIC', 'physical', router_node)
                 node = nc.get_node_by_id(node_handle.node_id)
-                #if router_node.id != get_root_parent(node, nc.Incoming.Has).id:
-        #
                 node['description'] = rest_comp(i['description'])
                 node['units'] = json.dumps(i['units'])
                 if not nc.get_relationships(router_node, node, 'Has'):
@@ -266,9 +264,9 @@ def insert_juniper_bgp_peerings(bgp_peerings):
 
         # Loop through interfaces to find the local and/or remote
         # address
-        i = 0
+        i = 0 # Debug
         for pic in nc.get_node_by_value('PIC', 'physical', 'type'):
-            i = i+1
+            i = i+1 # Debug
             print 'loop forever?', i # Debug              
             units = json.loads(pic['units'])
             # Gah, this next part needs to be refactored, it is hard
