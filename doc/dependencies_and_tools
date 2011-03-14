@@ -1,5 +1,6 @@
 Dependencies
 - Django trunk
+- markdown (pip install markdown)
 - neo4j-rest-client (git://github.com/johanlundberg/neo4j-rest-client.git)
 (- greatlemers-django-tools)
 - neo4j-rest-standalone-0.8-SNAPSHOT
