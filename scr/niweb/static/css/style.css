@@ -388,5 +388,24 @@ ul.menu {
     font-size:10px;
     font-family:Verdana, Geneva, Arial, Helvetica, sans-serif;
     padding:7px;
+}
 
+/* Comments */
+#id_honeypot {
+    visibility:hidden;
+}
 
+div.comment{
+    width: 400px;
+    white-space: normal;
+    background:#f4f4f4;
+    padding:10px;
+    margin:10px;
+}
+
+div.comment_noborder{
+    width: 400px;
+    white-space: normal;
+    padding:10px;
+    margin:10px;
+}
