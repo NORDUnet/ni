@@ -436,11 +436,16 @@ def main():
     parser.add_argument('-T', action='store_true',
         help='Test the database database setup.')
     args = parser.parse_args()
+    
+    # Start time
+    start = datetime.datetime.now()
+    timestamp_start = datetime.datetime.strftime(start,
+        '%b %d %H:%M:%S')
+    print '%s noclook_consumer.py was started.' % timestamp_start
 
     # Test DB connection
     if args.T:
         test_db()
-        sys.exit(0)
 
     # Load the configuration file
     if args.C == None:
@@ -468,10 +473,13 @@ def main():
             consume_alcatel_isis(load_json(config.get('data', 'alcatel_isis')))
             print 'alcatel_isis consume done.'
 
-
-    timestamp = datetime.datetime.strftime(datetime.datetime.now(),
+    # end time
+    end = datetime.datetime.now()
+    timestamp_end = datetime.datetime.strftime(end,
         '%b %d %H:%M:%S')
-    print '%s noclook_consumer.py ran successfully.' % timestamp
+    print '%s noclook_consumer.py ran successfully.' % timestamp_end
+    timedelta = end - start
+    print 'Total time: %s' % (timedelta)
     return 0
 
 if __name__ == '__main__':
