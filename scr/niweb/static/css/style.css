@@ -356,7 +356,6 @@ ul.menu {
 /* Visualization */
 #infovis_section {
     position:relative;
-    width: 1210px;
     margin: 10px 50px 50px 0px;
     padding: 5px 5px 5px 5px;
 }
@@ -364,7 +363,6 @@ ul.menu {
 #infovis {
     position: relative;
     height: 600px;
-    width: 800px;
     left:0px;
     top:0px;
 }

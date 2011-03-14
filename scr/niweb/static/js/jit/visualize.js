@@ -73,7 +73,8 @@ function init(json){
     var fd = new $jit.ForceDirected({
     //id of the visualization container
     injectInto: 'infovis',
-    'width': 800,
+    //'width': 800,
+    'width': ($(window).width() / 2),
     'height':600,
     //Enable zooming and panning
     //by scrolling and DnD
