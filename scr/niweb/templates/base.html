@@ -52,6 +52,41 @@
         </div>
         <div id="content">
             {% block content %}{% endblock %}
+            {% if node_handle %}
+                <!-- Comments -->
+                <div class="section">
+                    {% load comments %}
+                    {% get_comment_count for node_handle as comment_count %}
+                    <p>{{ comment_count }} comments have been posted.</p>
+                    {% load markup %}
+                    {% get_comment_list for node_handle as comment_list %}
+                    {% if comment_list %}
+                            <h2>Comments:</h2>
+                            {% for comment in comment_list %}
+                                    <div class="{% cycle 'comment' 'comment_noborder' %}">
+                                            <p> On {{ comment.submit_date|date:"F j, Y" }},
+                                            {{ comment.name }} said:</p>
+                                            {{ comment.comment|markdown:"safe" }}
+                                    </div>
+                            {% endfor %}
+                    {% endif %}
+                    <h2>Post a comment:</h2>
+                    {% get_comment_form for node_handle as form %}
+                    <form action="{% comment_form_target %}" method="POST">
+                        {% csrf_token %}
+                        {{ form.comment }}
+                        {{ form.honeypot }}
+                        {{ form.content_type }}
+                        {{ form.object_pk }}
+                        {{ form.timestamp }}
+                        {{ form.security_hash }}
+                        <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
+                        <br />
+                        <input type="submit" value="Add comment" id="id_submit" />
+                    </form>
+                </div>
+                <!-- End comments -->
+            {% endif %}
         </div>
         <div id="footer">
             <p>Development version. Questions, comments or bug reports? Send an e-mail to <a href="mailto:lundberg@nordu.net">lundberg@nordu.net</a>.</p>
