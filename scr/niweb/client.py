@@ -2,22 +2,27 @@
 import base64
 import datetime
 import decimal
-import httplib
+import httplib2
 import re
-import simplejson
+try:
+    import simplejson
+except:
+    import json as simplejson
 import time
 from urlparse import urlsplit
 
 __all__ = ("GraphDatabase", "Incoming", "Outgoing", "Undirected",
-           "StopAtDepth", "NotFoundError", "StatusException")
+           "StopAtDepth", "NotFoundError", "StatusException", "KeyError")
 __author__ = "Javier de la Rosa, and Diego Muñoz Escalante"
 __credits__ = ["Javier de la Rosa", "Diego Muñoz Escalante"]
 __license__ = "GPLv3"
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 __email__ = "versae [at] gmail [dot] com"
 __status__ = "Development"
 
-
+# Global options
+CACHE = False
+DEBUG = False
 # Order
 BREADTH_FIRST = "breadth first"
 DEPTH_FIRST = "depth first"
@@ -76,31 +81,29 @@ class GraphDatabase(object):
 
     def __init__(self, url):
         self.url = None
-        self.node = {}
-        self.index_url = None
-        self.reference_node_url = None
-        self.index_path = "/index"
-        self.node_path = "/node"
-        self.Traversal = self._get_traversal_class()
         if url.endswith("/"):
-            self.url = url[0:-1]
-        else:
             self.url = url
-        response = Request().get(url)
+        else:
+            self.url = "%s/" % url
+        response, content = Request().get(url)
         if response.status == 200:
-            content = response.body
             response_json = simplejson.loads(content)
-            self.index_url = response_json['index']
-            self.reference_node_url = response_json['reference node']
-            self.nodes = NodeProxy(self.url, self.node_path,
-                                  self.reference_node_url)
+            self._relationship_index = response_json['relationship_index']
+            self._node = response_json['node']
+            self._node_index = response_json['node_index']
+            self._reference_node = response_json['reference_node']
+            self._extensions_info = response_json['extensions_info']
+            self._extensions = response_json['extensions']
+            self.extensions = ExtensionsProxy(self._extensions)
+            self.nodes = NodesProxy(self._node, self._reference_node)
             # Backward compatibility. The current style is more pythonic
             self.node = self.nodes
+            self.Traversal = self._get_traversal_class()
         else:
             raise NotFoundError(response.status, "Unable get root")
 
     def _get_reference_node(self):
-        return Node(self.reference_node_url)
+        return Node(self._reference_node)
     reference_node = property(_get_reference_node)
 
     def index(self, create=False):
@@ -153,32 +156,34 @@ class Base(object):
     def __init__(self, url, create=False, data={}):
         self._dic = {}
         self.url = None
+        if url.endswith("/"):
+            url = url[:-1]
         if create:
-            response = Request().post(url, data=data)
+            response, content = Request().post(url, data=data)
             if response.status == 201:
                 self._dic.update(data.copy())
-                self.url = response.getheader("Location")
+                self.url = response.get("location")
             else:
                 raise NotFoundError(response.status, "Invalid data sent")
         if not self.url:
             self.url = url
-        response = Request().get(self.url)
+        response, content = Request().get(self.url)
         if response.status == 200:
-            content = response.body
             self._dic.update(simplejson.loads(content).copy())
+            self._extensions = self._dic.get('extensions', {})
+            self.extensions = ExtensionsProxy(self._extensions)
         else:
-            raise NotFoundError(response.status, "Unable get node")
+            raise NotFoundError(response.status, "Unable get object")
 
     def delete(self, key=None):
         if key:
             self.__delitem__(key)
             return
-        response = Request().delete(self.url)
+        response, content = Request().delete(self.url)
         if response.status == 204:
             del self
         elif response.status == 404:
-            raise KeyError(response.status, "Key not found") # Fixed Django lookup.
-            #raise NotFoundError(response.status, "Node or property not found")
+            raise NotFoundError(response.status, "Node or property not found")
         else:
             raise StatusException(response.status, "Node could not be "\
                                                    "deleted (still has " \
@@ -186,12 +191,13 @@ class Base(object):
 
     def __getitem__(self, key):
         property_url = self._dic["property"].replace("{key}", key)
-        response = Request().get(property_url)
+        response, content = Request().get(property_url)
         if response.status == 200:
-            content = response.body
             self._dic["data"][key] = simplejson.loads(content)
         else:
-            raise KeyError(response.status, "Key not found") # Fixed Django lookup.
+            raise KeyError(response.status, "Node or property not found")
+            # Changed NotFoundError to KeyError so that Djangos lookup does 
+            # not crash.
             #raise NotFoundError(response.status, "Node or propery not found")
         return self._dic["data"][key]
 
@@ -210,12 +216,11 @@ class Base(object):
 
     def __setitem__(self, key, value):
         property_url = self._dic["property"].replace("{key}", key)
-        response = Request().put(property_url, data=value)
+        response, content = Request().put(property_url, data=value)
         if response.status == 204:
             self._dic["data"].update({key: value})
         elif response.status == 404:
-            raise KeyError(response.status, "Key not found") # Fixed Django lookup.
-            #raise NotFoundError(response.status, "Node or property not found")
+            raise NotFoundError(response.status, "Node or property not found")
         else:
             raise StatusException(response.status, "Invalid data sent")
 
@@ -224,12 +229,11 @@ class Base(object):
 
     def __delitem__(self, key):
         property_url = self._dic["property"].replace("{key}", key)
-        response = Request().delete(property_url)
+        response, content = Request().delete(property_url)
         if response.status == 204:
             del self._dic["data"][key]
         elif response.status == 404:
-            raise KeyError(response.status, "Key not found") # Fixed Django lookup.
-            #raise NotFoundError(response.status, "Node or property not found")
+            raise NotFoundError(response.status, "Node or property not found")
         else:
             raise StatusException(response.status, "Node or propery not found")
 
@@ -267,7 +271,7 @@ class Base(object):
         if not props:
             return None
         properties_url = self._dic["properties"]
-        response = Request().put(properties_url, data=props)
+        response, content = Request().put(properties_url, data=props)
         if response.status == 204:
             self._dic["data"] = props.copy()
             return props
@@ -278,7 +282,7 @@ class Base(object):
 
     def _del_properties(self):
         properties_url = self._dic["properties"]
-        response = Request().delete(properties_url)
+        response, content = Request().delete(properties_url)
         if response.status == 204:
             self._dic["data"] = {}
         else:
@@ -286,36 +290,42 @@ class Base(object):
     properties = property(_get_properties, _set_properties, _del_properties)
 
 
-class NodeProxy(dict):
+class NodesProxy(dict):
     """
     Class proxy for node in order to allow get a node by id and
     create new nodes through calling.
     """
 
-    def __init__(self, url, node_path, reference_node_url=None):
-        self.url = url
-        self.node_path = node_path
-        self.node_url = "%s%s" % (self.url, self.node_path)
-        self.reference_node_url = reference_node_url
+    def __init__(self, node, reference_node=None):
+        self._node = node
+        self._reference_node = reference_node
 
     def __call__(self, **kwargs):
         reference = kwargs.pop("reference", False)
-        if reference and self.reference_node_url:
-            return Node(self.reference_node_url)
+        if reference and self._reference_node:
+            return Node(self._reference_node)
         else:
             return self.create(**kwargs)
 
     def __getitem__(self, key):
-        if isinstance(key, (str, unicode)) and key.startswith(self.node_url):
+        if isinstance(key, (str, unicode)) and key.startswith(self._node):
             return Node(key)
         else:
-            return Node("%s/%s" % (self.node_url, key))
+            return Node("%s/%s/" % (self._node, key))
 
-    def get(self, key):
-        return self.__getitem__(key)
+    def get(self, key, *args, **kwargs):
+        try:
+            return self.__getitem__(key)
+        except (KeyError, NotFoundError, StatusException):
+            if args:
+                return args[0]
+            elif "default" in kwargs:
+                return kwargs["default"]
+            else:
+                raise NotFoundError()
 
     def create(self, **kwargs):
-        return Node(self.node_url, create=True, data=kwargs)
+        return Node(self._node, create=True, data=kwargs)
 
     def delete(self, key):
         node = self.__getitem__(key)
@@ -333,16 +343,17 @@ class Node(Base):
         """
 
         def relationship(to, *args, **kwargs):
-            create_relationship_url = self._dic["create relationship"]
+            create_relationship_url = self._dic["create_relationship"]
             data = {
                 "to": to.url,
                 "type": relationship_name,
             }
             if kwargs:
                 data.update({"data": kwargs})
-            response = Request().post(create_relationship_url, data=data)
+            response, content = Request().post(create_relationship_url,
+                                               data=data)
             if response.status == 201:
-                return Relationship(response.getheader("Location"))
+                return Relationship(response.get("location"))
             elif response.status == 404:
                 raise NotFoundError(response.status, "Node specified by the " \
                                                      "URI not of \"to\" node" \
@@ -350,7 +361,7 @@ class Node(Base):
             else:
                 raise StatusException(response.status, "Invalid data sent")
         return relationship
-
+        
     def __cmp__(self, other):
         if self.id > other.id:
             return 1
@@ -358,7 +369,7 @@ class Node(Base):
             return 0
         elif self.id < other.id:
             return -1
-
+    
     def __hash__(self):
         return self.id
 
@@ -405,9 +416,8 @@ class Node(Base):
         if returns not in (NODE, RELATIONSHIP, PATH, POSITION):
             returns = NODE
         traverse_url = self._dic["traverse"].replace("{returnType}", returns)
-        response = Request().post(traverse_url, data=data)
+        response, content = Request().post(traverse_url, data=data)
         if response.status == 200:
-            content = response.body
             results_list = simplejson.loads(content)
             if returns is NODE:
                 return [Node(r["self"]) for r in results_list]
@@ -438,15 +448,14 @@ class Relationships(object):
         def get_relationships(types=None, *args, **kwargs):
             if relationship_type in ["all", "incoming", "outgoing"]:
                 if types and isinstance(types, (tuple, list)):
-                    key = "%s typed relationships" % relationship_type
+                    key = "%s_typed_relationships" % relationship_type
                     url_string = self._node._dic[key]
                     url = url_string.replace(self._pattern, "&".join(types))
                 else:
-                    key = "%s relationships" % relationship_type
+                    key = "%s_relationships" % relationship_type
                     url = self._node._dic[key]
-                response = Request().get(url)
+                response, content = Request().get(url)
                 if response.status == 200:
-                    content = response.body
                     relationship_list = simplejson.loads(content)
                     relationships = [Relationship(r["self"])
                                      for r in relationship_list]
@@ -480,7 +489,7 @@ class Relationship(Base):
     def _get_type(self):
         return self._dic['type']
     type = property(_get_type)
-
+    
     def _get_id(self):
         return int(self.url.split("/")[-1])
     id = property(_get_id)
@@ -495,6 +504,7 @@ class Relationship(Base):
 
     def __hash__(self):
         return self.id
+
 
 class Path(object):
     """
@@ -525,9 +535,9 @@ class Path(object):
         return self._length
 
     def __iter__(self):
-        #while True:
-        for obj in self._iterable:
-            yield obj
+        #while True: # This gets me stuck, am I doing something wrong?
+            for obj in self._iterable:
+                yield obj
 
 
 class Position(object):
@@ -565,6 +575,168 @@ class BaseInAndOut(object):
 Outgoing = BaseInAndOut(direction="out")
 Incoming = BaseInAndOut(direction="in")
 Undirected = BaseInAndOut(direction="both")
+
+
+class ExtensionsProxy(dict):
+    """
+    Class proxy for extensions in order to allow get an extension by module
+    and class name and executing with the right params through calling.
+    """
+
+    def __init__(self, extensions):
+        self._extensions = extensions
+        self._dict = {}
+
+    def __getitem__(self, attr):
+        return self.__getattr__(attr)
+
+    def __getattr__(self, attr):
+        if attr in self._dict:
+            return self._dict[attr]
+        class_name = self._extensions[attr]
+        # Using an anonymous class
+        return type("ExtensionModule", (dict, ), {
+            '__str__': lambda self: self.__unicode__(),
+            '__repr__': lambda self: self.__unicode__(),
+            '__unicode__': lambda self: u"<Neo4j %s: %s>" \
+                                        % (self.__class__.__name__,
+                                           unicode(class_name.keys())),
+            '__getitem__': lambda self, _attr: self.__getattr__(_attr),
+            '__getattr__': lambda self, _attr: Extension(class_name[_attr]),
+            'get': lambda self, _attr: self.__getattr__(_attr),
+        })()
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        if not self._dict:
+            self._dict = self._get_dict()
+        return unicode(self._dict)
+
+    def _get_dict(self):
+        return dict([(key, self.__getattr__(key))
+                     for key in self._extensions.keys()])
+
+    def get(self, attr, *args, **kwargs):
+        if attr in self._dict.keys():
+            return self.__getattr__(attr)
+        else:
+            if args:
+                return args[0]
+            elif "default" in kwargs:
+                return kwargs["default"]
+            else:
+                raise NotFoundError()
+
+    def items(self):
+        if not self._dict:
+            self._dict = self._get_dict()
+        return self._dict.items()
+
+    def values(self):
+        if not self._dict:
+            self._dict = self._get_dict()
+        return self._dict.values()
+
+    def keys(self):
+        if not self._dict:
+            self._dict = self._get_dict()
+        return self._dict.keys()
+
+
+class Extension(object):
+    """
+    Extension class.
+    """
+
+    def __init__(self, url):
+        self._dic = {}
+        if url.endswith("/"):
+            url = url[:-1]
+        self.url = url
+        response, content = Request().get(self.url)
+        if response.status == 200:
+            self._dic.update(simplejson.loads(content).copy())
+            self.description = self._dic['description']
+            self.name = self._dic['name']
+            self.extends = self._dic['extends']
+            self.parameters = self._dic['parameters']
+        else:
+            raise NotFoundError(response.status, "Unable get extension")
+
+    def __call__(self, *args, **kwargs):
+        parameters = self._parse_parameters(args, kwargs)
+        response, content = Request().post(self.url, data=parameters)
+        if response.status == 200:
+            results_list = simplejson.loads(content)
+            # HACK: The _returns param is a temporary solution while
+            #       a proper way to get the data type of returned values by
+            #       the extensions is implemented in Neo4j
+            returns = kwargs.pop("_returns", results_list[0]["self"])
+            if results_list:
+                if NODE in returns:
+                    return [Node(r["self"]) for r in results_list]
+                elif RELATIONSHIP in returns:
+                    return [Relationship(r["self"]) for r in results_list]
+                elif PATH in returns:
+                    return [Path(r) for r in results_list]
+                elif POSITION in returns:
+                    return [Position(r) for r in results_list]
+            else:
+                return []
+        elif response.status == 404:
+            raise NotFoundError(response.status, "Extension not found")
+        else:
+            raise StatusException(response.status, "Invalid data sent")
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u"<Neo4j %s: %s>" % (self.__class__.__name__, self.url)
+
+    def _parse_parameters(self, args, kwargs):
+        if not args and not kwargs:
+            return kwargs
+        params_len = len(self.parameters)
+        args_len = len(args)
+        kwargs_len = len(kwargs)
+        if args_len + kwargs_len > params_len:
+            raise TypeError("%s() take at most %s arguments (%s given)"
+                            % (self.name, params_len, args_len + kwargs_len))
+        required = [np for np in self.parameters if np["optional"] == False]
+        required_len = len(required)
+        if args_len + kwargs_len < required_len:
+            raise TypeError("%s() take at least %s arguments (%s given)"
+                            % (self.name, required_len, args_len + kwargs_len))
+        params_kwargs = {}
+        if args:
+            for i, arg in enumerate(args):
+                key = required[i]["name"]
+                params_kwargs[key] = args[i]
+        if kwargs:
+            for param, value in kwargs.items():
+                has_param = (len([np for np in self.parameters
+                                     if np["name"] == param]) != 0)
+                if key not in params_kwargs and has_param:
+                    params_kwargs[key] = value
+        return self._parse_types(params_kwargs)
+
+    def _parse_types(self, kwargs):
+        params_kwargs = {}
+        for key, value in kwargs.items():
+            if isinstance(value, Base):
+                params_kwargs[key] = value.url
+            else:
+                params_kwargs[key] = value
+        return params_kwargs
 
 
 class StatusException(Exception):
@@ -625,6 +797,7 @@ class StatusException(Exception):
               'Cannot satisfy request range.'),
         417: ('Expectation Failed',
               'Expect condition could not be satisfied.'),
+        418: ('I\'m a teapot', 'Is the server running?'),
         500: ('Internal Server Error', 'Server got itself in trouble'),
         501: ('Not Implemented',
               'Server does not support this operation'),
@@ -780,29 +953,40 @@ class Request(object):
             ret = {}
             for k, v in data.items():
                 # Neo4j doesn't allow 'null' properties
-                if v:
+                if v != None:
                     ret[k] = _any(v)
             return ret
         ret = _any(data)
         return simplejson.dumps(ret, ensure_ascii=ensure_ascii)
 
     def _request(self, method, url, data={}, headers={}):
+        global CACHE, DEBUG
         splits = urlsplit(url)
         scheme = splits.scheme
-        hostname = splits.hostname
-        port = splits.port
+        # Not used, it makes pyflakes happy
+        # hostname = splits.hostname
+        # port = splits.port
         username = splits.username or self.username
         password = splits.password or self.password
-        if scheme.lower() == 'https':
-            connection = httplib.HTTPSConnection(hostname, port, self.key_file,
-                                                 self.cert_file)
-        else:
-            connection = httplib.HTTPConnection(hostname, port)
         headers = headers or {}
+        if DEBUG:
+            httplib2.debuglevel = 1
+        else:
+            httplib2.debuglevel = 0
+        if CACHE:
+            headers['Cache-Control'] = 'no-cache'
+            http = httplib2.Http(".cache")
+        else:
+            http = httplib2.Http()
+        if scheme.lower() == 'https':
+            http.add_certificate(self.key_file, self.cert_file, self.url)
         headers['Accept'] = 'application/json'
         headers['Accept-Encoding'] = '*'
         headers['Accept-Charset'] = 'ISO-8859-1,utf-8;q=0.7,*;q=0.7'
-        headers['Content-Type'] = 'application/json'
+        # I'm not sure on the right policy about cache with Neo4j REST Server
+        # headers['Cache-Control'] = 'no-cache'
+        # TODO: Handle all requests with the same Http object
+        headers['Connection'] = 'close'
         headers['User-Agent'] = 'Neo4jPythonClient/%s ' % __version__
         if username and password:
             credentials = "%s:%s" % (username, password)
@@ -810,11 +994,19 @@ class Request(object):
             authorization = "Basic %s" % base64_credentials[:-1]
             headers['Authorization'] = authorization
             headers['Remote-User'] = username
-        body = self._json_encode(data, ensure_ascii=True)
-        connection.request(method, url, body, headers)
-        response = connection.getresponse()
-        response.body = response.read()
-        connection.close()
-        if response.status == 401:
-            raise StatusException(401, "Authorization Required")
-        return response
+        if method in ("POST", "PUT"):
+            headers['Content-Type'] = 'application/json'
+        # Thanks to Yashh: http://bit.ly/cWsnZG
+        # Don't JSON encode body when it starts with "http://" to set inde
+        if isinstance(data, (str, unicode)) and data.startswith('http://'):
+            body = data
+        else:
+            body = self._json_encode(data, ensure_ascii=True)
+        try:
+            response, content = http.request(url, method, headers=headers,
+                                             body=body)
+            if response.status == 401:
+                raise StatusException(401, "Authorization Required")
+            return response, content
+        except AttributeError:
+            raise Exception("Unknown error. Is the server running?")
