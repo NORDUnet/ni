@@ -69,7 +69,10 @@ def test_db():
 def purge_db():
     nc = neo4jclient.Neo4jClient()
     for h in NodeHandle.objects.all():
-        nc.delete_node(h.node_id)
+        try:
+            nc.delete_node(h.node_id)
+        except nc.client.NotFoundError:
+            print 'Could not delete the Neo4j node.' 
     NodeHandle.objects.all().delete()
 
 def get_node_type(type_name):
