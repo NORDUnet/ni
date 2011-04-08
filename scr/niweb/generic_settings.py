@@ -130,7 +130,7 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django.contrib.comments',
     'django.contrib.markup',
+    'fedlogin',
     'niweb_core',
     'apps.noclook',
-    'debug_toolbar',
 )
