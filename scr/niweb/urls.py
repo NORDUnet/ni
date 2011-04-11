@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
+from django.contrib.auth.views import login
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -20,12 +21,14 @@ urlpatterns = patterns('',
         {'document_root': settings.STATIC_DEV_MEDIA}),
 
     # Django Generic Login
-    (r'^accounts/login/$', 'django.contrib.auth.views.login'),
+    #(r'^accounts/login/$', 'django.contrib.auth.views.login'),
 
     # Django Generic Comments
     (r'^comments/', include('django.contrib.comments.urls')),
 
+    # Federated login
+    (r'^accounts/', include('niweb.apps.fedlogin.urls')),
+
     # NOCLook URLs
-    #(r'^/?$', include('niweb.apps.noclook.urls')),
     (r'', include('niweb.apps.noclook.urls')),
 )
