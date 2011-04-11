@@ -82,12 +82,10 @@ def get_node_type(type_name):
     '''
     try:
         node_type = NodeType.objects.get(type=type_name)
-    except Exception as e:
-        print e                                             # Debug
+    except Exception:
         # The NodeType was not found, create one
         from django.template.defaultfilters import slugify
         node_type = NodeType(type=type_name, slug=slugify(type_name))
-        print 'Creating NodeType instance %s' % type_name   # Debug
         node_type.save()
 
     return node_type
@@ -105,15 +103,12 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     try:
         node_handle = NodeHandle.objects.get(node_name=node_name,
                                             node_type=node_type)
-        print 'NodeHandle instance found, updating it.' # Debug
-    except Exception as e:
-        print e                                         # Debug
+    except Exception:
         # The NodeHandle was not found, create one
         node_handle = NodeHandle(node_name=node_name,
                                 node_type=node_type,
                                 node_meta_type=node_meta_type,
                                 creator=user)
-        print 'Creating NodeHandle instance %s.' % node_name    # Debug
         node_handle.save()
     return node_handle
 
@@ -138,8 +133,6 @@ def get_node_handle(node_name, node_type_name, node_meta_type,
                 node = nc.get_node_by_id(node_handle.node_id)
                 if parent.id == nc.get_root_parent(node,
                                                     nc.Incoming.Has).id:
-                    print '%s already have a %s node.' % (parent['name'], 
-                                                          node['name']) # Debug
                     return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
@@ -148,7 +141,6 @@ def get_node_handle(node_name, node_type_name, node_meta_type,
                             node_type=node_type,
                             node_meta_type=node_meta_type,
                             creator=user)
-    print 'Creating NodeHandle instance %s.' % node_name    # Debug
     node_handle.save()
     return node_handle # No NodeHandle found return a new handle.
 
@@ -195,7 +187,6 @@ def insert_juniper_interfaces(router_node, interfaces):
                 node['units'] = json.dumps(i['units'])
                 if not nc.get_relationships(router_node, node, 'Has'):
                     # Only create a relationship if it doesn't exist
-                    print 'No relationship found. Creating one.' # Debug
                     router_node.Has(node)
                 node_list.append(node)
 
@@ -267,15 +258,11 @@ def insert_juniper_bgp_peerings(bgp_peerings):
 
         # Loop through interfaces to find the local and/or remote
         # address
-        i = 0 # Debug
-        for pic in nc.get_node_by_value('PIC', 'physical', 'type'):
-            i = i+1 # Debug
-            print 'loop forever?', i # Debug              
+        for pic in nc.get_node_by_value('PIC', 'physical', 'type'):          
             units = json.loads(pic['units'])
             # Gah, this next part needs to be refactored, it is hard
             # to read and ugly...
             for unit in units:
-                print 'Unit' # Debug     
                 for addr in unit['address']:
                     try:
                         pic_addr = ipaddr.IPNetwork(addr)
@@ -316,7 +303,6 @@ def consume_juniper_conf(json_list):
                             interfaces)
         bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
 
-    print 'Inserting BGP peerings.' # Debug
     insert_juniper_bgp_peerings(bgp_peerings)
 
 
@@ -380,7 +366,7 @@ def consume_alcatel_isis(json_list):
 
     # Insert the optical node
     for i in json_list:
-        name = i['host']['name']
+        name = i['host']['alcatel_isis']['name']
         node_handle = get_unique_node_handle(name, 'Optical Node', 'physical')
         node = nc.get_node_by_id(node_handle.node_id)
         for neighbour in i['host']['alcatel_isis']['neighbours']:
