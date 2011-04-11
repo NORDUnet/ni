@@ -32,9 +32,6 @@ MEDIA_URL = NIWEB_MEDIA_URL
 # Examples: "http://foo.com/media/", "/media/".
 ADMIN_MEDIA_PREFIX = join(NIWEB_URL, 'static/admin/')
 
-# URL of the login page.
-LOGIN_URL = '/login/'
-
 # django-debug-toolbar settings
 INTERNAL_IPS = ('127.0.0.1',)
 DEBUG_TOOLBAR_PANELS = (
