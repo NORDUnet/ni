@@ -115,13 +115,12 @@ class Neo4jClient:
             for node in meta_node.traverse():
                 if node_property is None: # Compare all values
                     for key in node.properties:
-                        if node.properties[key].lower() == \
-                                                    node_value.lower():
+                        if node.properties[key] == node_value:
                             node_list.append(node)
                 else: # Compare the supplied property value if it exists
                     try:
                         value = node.properties[node_property]
-                        if value.lower() == node_value.lower():
+                        if value == node_value:
                             node_list.append(node)
                     except KeyError:
                         pass
