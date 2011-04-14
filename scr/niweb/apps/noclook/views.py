@@ -144,7 +144,7 @@ def optical_node_detail(request, handle_id):
                 fibers['node_url'] = get_node_url(tmp)
         opt_info.append(fibers)
     return render_to_response('noclook/optical_node_detail.html',
-        {'node_handle': nh, 'info': info, 'opt_info': opt_info},
+        {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info},
         context_instance=RequestContext(request))
 
 #@login_required
@@ -185,7 +185,7 @@ def cable_detail(request, handle_id):
         equipment['node_url'] = get_node_url(conn)
         opt_info.append(equipment)
     return render_to_response('noclook/cable_detail.html',
-        {'node_handle': nh, 'info': info, 'opt_info': opt_info, 'node': node },
+        {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info},
         context_instance=RequestContext(request))
 
 @login_required
