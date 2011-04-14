@@ -400,6 +400,48 @@ def consume_alcatel_isis(json_list):
                     # Only create a relationship if it doesn't exist
                     cable_node.Connected_to(neighbour_node)
 
+def consume_noclook(json_list):
+    '''
+    Inserts the backup made with NOCLook producer.
+    '''
+    nc = neo4jclient.Neo4jClient()
+
+    for i in json_list:
+        if i['host']['name'].startswith('node'):
+            item = i['host']['noclook_producer']
+            properties = item.get('properties')
+            
+            node_name = properties.get('name')
+            node_type = properties.get('type')
+            meta_type = item.get('meta_type')
+            
+            nh = get_node_handle(node_name, node_type, meta_type)
+            
+            node = nc.get_node_by_id(nh.node_id)
+            node['old_node_id'] = item.get('id')
+            
+            for key,value in properties.items():
+                if key != 'handle_id':
+                    node[key] = value
+            
+    for i in json_list:
+        if i['host']['name'].startswith('relationship'):
+            item = i['host']['noclook_producer']
+            properties = item.get('properties')
+            
+            start_node = nc.get_node_by_value(node_value=item.get('start'),
+                                              node_property='old_node_id')
+            end_node = nc.get_node_by_value(node_value=item.get('end'),
+                                              node_property='old_node_id')
+            rel = start_node[0].relationships.create(item.get('type'), 
+                                                                    end_node[0])
+            
+            for key,value in properties.items():
+                rel[key] = value
+                
+#    for n in nc.get_all_nodes():
+#        if n.
+
 def load_json(json_dir):
     '''
     Thinks all files in the supplied dir are text files containing json.
@@ -450,17 +492,25 @@ def main():
 
     # Insert data from known data sources if option -I was used
     if args.I:
+        print 'Loading data...'
+        juniper_conf_data = config.get('data', 'juniper_conf')
+        nmap_services_data = config.get('data', 'nmap_services')
+        alcatel_isis_data = config.get('data', 'alcatel_isis')
+        noclook_data = config.get('data', 'noclook')
+        
         print 'Inserting data...'
-        if config.get('data', 'juniper_conf'):
-            consume_juniper_conf(load_json(
-                                    config.get('data', 'juniper_conf')))
+        if juniper_conf_data:
+            consume_juniper_conf(load_json(juniper_conf_data))
             print 'juniper_conf consume done.'
-        if config.get('data', 'nmap_services'):
-            insert_nmap(load_json(config.get('data', 'nmap_services')))
+        if nmap_services_data:
+            insert_nmap(load_json(nmap_services_data))
             print 'nmap_services consume done.'
-        if config.get('data', 'alcatel_isis'):
-            consume_alcatel_isis(load_json(config.get('data', 'alcatel_isis')))
+        if alcatel_isis_data:
+            consume_alcatel_isis(load_json(alcatel_isis_data))
             print 'alcatel_isis consume done.'
+        if noclook_data:
+            consume_noclook(load_json(config.get('data', 'noclook')))
+            print 'noclook consume done.'
 
     # end time
     end = datetime.datetime.now()
