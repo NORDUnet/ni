@@ -4,17 +4,36 @@
 
 {% block content %}
  <div class="content">
-        <h3>Cable {{ info.name }} is a {{ info.type }} </h3>
+        <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }}</h2>
         <div class="section">
             <table>
-                <th>Connecting nodes</th>
+                <tr>
+                    <th>Cable type:</th><td>{{ info.type|capfirst }}</td>
+                </tr>
+                {% if info.trunk_id %}
+                <tr>
+                    <th>Trunk ID:</th><td>{{ info.trunk_id }}</td>
+                </tr>
+                {% endif %}
+                {% if info.tn1 %}
+                <tr>
+                    <th>TN1 number:</th><td>{{ info.tn1 }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>Connections</h3>
+            <table>
+                <th>Connected to</th>
                     {% for item in opt_info %}
                     <tr>
                         <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="{{ item.node_url }}">{{ item.node_name }}</a></td>
                     </tr>
                      {% endfor %}
             </table>
-
+        </div>
         <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
         <div id="debug">
             <h3>Debug</h3>
