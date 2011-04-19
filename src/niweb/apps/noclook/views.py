@@ -128,6 +128,7 @@ def optical_node_detail(request, handle_id):
     info = {}
     info['name'] = node['name']
     info['node_url'] = get_node_url(node)
+    info.update(node.properties)
     #get incoming rels of fibers
     connected_rel = node.relationships.incoming(types=['Connected_to'])
     opt_info = []
@@ -170,12 +171,8 @@ def cable_detail(request, handle_id):
     info = {}
     info['name'] = node['name']
     info['node_url'] = get_node_url(node)
-    if node['cable_type'] == 'TP':
-        info['type'] = 'copper cable'
-    elif node['cable_type'] == 'Fiber':
-        info['type'] = 'optic fiber'
-    else:
-        info['cable_type'] = node['type']
+    info.update(node.properties)
+    
     connected_rel = node.relationships.outgoing(types=['Connected_to'])
     opt_info = []
     for equip in connected_rel:
