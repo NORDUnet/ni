@@ -41,6 +41,23 @@ def list_by_type(request, slug):
     return render_to_response('noclook/list_by_type.html',
         {'node_handle_list': node_handle_list, 'node_type': type},
         context_instance=RequestContext(request))
+        
+@login_required
+def list_peering_partners(request):
+    type = get_object_or_404(NodeType, slug='peering-partner')
+    nc = neo4jclient.Neo4jClient()
+    partner_list = []
+    for nh in type.nodehandle_set.all():
+        partner = {}
+        node = nc.get_node_by_id(nh.node_id)
+        partner['name'] = node.get('name', None)
+        partner['as_number'] = node.get('as_number', None)
+        partner['url'] = nh.get_absolute_url()
+        partner_list.append(partner)
+        
+    return render_to_response('noclook/list_peering_partners.html',
+                                {'partner_list': partner_list},
+                                context_instance=RequestContext(request))
 
 @login_required
 def list_by_master(request, handle_id, slug):
