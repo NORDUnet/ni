@@ -23,6 +23,7 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     # List views
     (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
         'list_by_master'),
+    (r'^peering-partner/$', 'list_peering_partners'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
     # Visualize views
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)\.json$', 
