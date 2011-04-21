@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} All nodes{% endblock %}
+
+{% block content %}
+    <div class="content">
+            <h3>Peering Partners</h3>
+            <table>
+            {% for item in partner_list|dictsort:"name" %}
+                <tr>
+                    <td><a class="handle" href="{{ item.url }}">{{ item.name }}</a></td><td>AS{{ item.as_number }}</td>
+                </tr>
+
+            {% endfor %}
+            </table>
+     </div>
+{% endblock %}
