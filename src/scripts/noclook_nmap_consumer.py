@@ -33,7 +33,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-import neo4jclient
+import norduni_client as nc
 import noclook_consumer as nt
 
 '''
@@ -46,13 +46,8 @@ def insert_nmap(json_list):
     Inserts the data loaded from the json files created by
     the nerds producer nmap_services.
     '''
-    nc = neo4jclient.Neo4jClient()
-
-    # Hard coded values that we can't get on the fly right now
-    #user = User.objects.get(username="lundberg")
     node_type = "Host"
     meta_type = 'physical'
-
     # Insert the host
     for i in json_list:
         name = i['host']['name']
@@ -62,16 +57,13 @@ def insert_nmap(json_list):
             services = json.dumps(i['host']['services'])
         except KeyError:
             services = 'None'
-
         # Create the NodeHandle and the Node
         node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
-
         # Set Node attributes
         node = nc.get_node_by_id(node_handle.node_id)
         node['hostnames'] = hostnames
         node['addresses'] = addresses
         node['services'] = services
-
 
 def main():
     # User friendly usage output
@@ -79,9 +71,8 @@ def main():
     parser.add_argument('-C', nargs='?',
         help='Path to the configuration file.')
     args = parser.parse_args()
-    
     # Load the configuration file
-    if args.C == None:
+    if not args.C:
         print 'Please provide a configuration file with -C.'
         sys.exit(1)
     else:

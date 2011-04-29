@@ -39,7 +39,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
 from django.contrib.auth.models import User
-import neo4jclient
+import norduni_client as nc
 import noclook_juniper_consumer
 import noclook_nmap_consumer
 import noclook_alcatel_consumer
@@ -83,14 +83,14 @@ def load_json(json_dir):
 
 def test_db():
     handles = NodeHandle.objects.all()
-    nc = neo4jclient.Neo4jClient()
+    #nc = neo4jclient.Neo4jClient()
     print 'Handle\tNode'
     for handle in handles:
         print '%d\t%s' % (handle.handle_id, nc.get_node_by_id(
             handle.node_id))
 
 def purge_db():
-    nc = neo4jclient.Neo4jClient()
+    #nc = neo4jclient.Neo4jClient()
     for h in NodeHandle.objects.all():
         try:
             nc.delete_node(h.node_id)
@@ -165,7 +165,7 @@ def get_node_handle(node_name, node_type_name, node_meta_type,
                                             ).filter(
                                             node_type__in=[node_type])
         if parent:
-            nc = neo4jclient.Neo4jClient()
+            #nc = neo4jclient.Neo4jClient()
             for node_handle in node_handles:
                 node = nc.get_node_by_id(node_handle.node_id)
                 if parent.id == nc.get_root_parent(node,
@@ -185,8 +185,7 @@ def consume_noclook(json_list):
     '''
     Inserts the backup made with NOCLook producer.
     '''
-    nc = neo4jclient.Neo4jClient()
-
+    #nc = neo4jclient.Neo4jClient()
     for i in json_list:
         if i['host']['name'].startswith('node'):
             item = i['host']['noclook_producer']
@@ -204,19 +203,16 @@ def consume_noclook(json_list):
             for key,value in properties.items():
                 if key != 'handle_id':
                     node[key] = value
-            
     for i in json_list:
         if i['host']['name'].startswith('relationship'):
             item = i['host']['noclook_producer']
             properties = item.get('properties')
-            
             start_node = nc.get_node_by_value(node_value=item.get('start'),
                                               node_property='old_node_id')
             end_node = nc.get_node_by_value(node_value=item.get('end'),
                                               node_property='old_node_id')
             rel = start_node[0].relationships.create(item.get('type'), 
                                                                     end_node[0])
-            
             for key,value in properties.items():
                 rel[key] = value
 
@@ -232,29 +228,24 @@ def main():
     parser.add_argument('-T', action='store_true',
         help='Test the database database setup.')
     args = parser.parse_args()
-    
     # Start time
     start = datetime.datetime.now()
     timestamp_start = datetime.datetime.strftime(start,
         '%b %d %H:%M:%S')
     print '%s noclook_consumer.py was started.' % timestamp_start
-
     # Test DB connection
     if args.T:
         test_db()
-
     # Load the configuration file
-    if args.C == None:
+    if not args.C:
         print 'Please provide a configuration file with -C.'
         sys.exit(1)
     else:
         config = init_config(args.C)
-
     # Purge DB if option -P was used
     if args.P:
         print 'Purging database...'
         purge_db()
-
     # Insert data from known data sources if option -I was used
     if args.I:
         print 'Loading data...'
@@ -262,7 +253,6 @@ def main():
         nmap_services_data = config.get('data', 'nmap_services')
         alcatel_isis_data = config.get('data', 'alcatel_isis')
         noclook_data = config.get('data', 'noclook')
-        
         print 'Inserting data...'
         if juniper_conf_data:
             data = load_json(juniper_conf_data)
@@ -280,7 +270,6 @@ def main():
             data = load_json(noclook_data)
             consume_noclook(data)
             print 'noclook consume done.'
-
     # end time
     end = datetime.datetime.now()
     timestamp_end = datetime.datetime.strftime(end,

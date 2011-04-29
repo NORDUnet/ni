@@ -23,7 +23,6 @@
 import os
 import sys
 import json
-import datetime
 import argparse
 import ipaddr
 
@@ -35,7 +34,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-import neo4jclient
+import norduni_client as nc
 import noclook_consumer as nt
 
 '''
@@ -93,7 +92,6 @@ def insert_juniper_router(name):
     Inserts a physical meta type node of the type Router.
     Returns the node created.
     '''
-    nc = neo4jclient.Neo4jClient()
     node_handle = nt.get_unique_node_handle(name, 'Router', 'physical')
     node = nc.get_node_by_id(node_handle.node_id)
     node_list = [node]
@@ -107,7 +105,6 @@ def insert_juniper_interfaces(router_node, interfaces):
     interface names that are not interesting.
     Returns a list with all created nodes.
     '''
-    nc = neo4jclient.Neo4jClient()
     not_interesting_interfaces = ['all', 'fxp0', '']
     node_list = []
     for i in interfaces:
@@ -133,7 +130,6 @@ def insert_juniper_relation(name, as_number):
     Inserts a relation meta type node of the type Peering partner.
     Returns the newly created node.
     '''
-    nc = neo4jclient.Neo4jClient()
     node_handle = nt.get_unique_node_handle(name, 'Peering Partner', 'relation')
     node = nc.get_node_by_id(node_handle.node_id)
     node['as_number'] = nt.rest_comp(as_number)
@@ -146,7 +142,6 @@ def insert_juniper_service(name):
     Inserts a logical meta type node of the type IP Service.
     Returns the newly created node.
     '''
-    nc = neo4jclient.Neo4jClient()
     node_handle = nt.get_unique_node_handle(name, 'IP Service', 'logical')
     node = nc.get_node_by_id(node_handle.node_id)
     node_list = [node]
@@ -160,22 +155,18 @@ def insert_juniper_bgp_peerings(bgp_peerings):
     peerings associated to the right interfaces.
     Returns a list of all created peering nodes.
     '''
-    nc = neo4jclient.Neo4jClient()
     for p in bgp_peerings:
         name = p['description']
         if name == None:
             name = 'No description'
-
         group = p['group']
         service = nc.get_node_by_value(group, 'logical', 'name')
         if not service:
             service = insert_juniper_service(group)
-
         peering_type = p['type']
         if peering_type == 'internal':
             remote_addr = ipaddr.IPAddress(p['remote_address'])
             local_addr = ipaddr.IPAddress(p['local_address'])
-
         elif peering_type == 'external':
             peeringp = nc.get_node_by_value(p['as_number'], 'relation', 'as_number')
             if not peeringp:
@@ -191,7 +182,6 @@ def insert_juniper_bgp_peerings(bgp_peerings):
                 peeringp[0].Uses(service[0], ip_address=p['remote_address'])
             remote_addr = ipaddr.IPAddress(p['remote_address'])
             local_addr = ipaddr.IPAddress('0.0.0.0') #None did not work
-
         # Loop through interfaces to find the local and/or remote
         # address
         for pic in nc.get_node_by_value('PIC', 'physical', 'type'):            
@@ -238,7 +228,6 @@ def consume_juniper_conf(json_list):
         insert_juniper_interfaces(router_node,
                             interfaces)
         bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
-        
     insert_juniper_bgp_peerings(bgp_peerings)
 
 def main():
@@ -249,33 +238,17 @@ def main():
     parser.add_argument('-I', action='store_true',
         help='Insert data in to the database.')
     args = parser.parse_args()
-    
-    # Start time
-    start = datetime.datetime.now()
-    timestamp_start = datetime.datetime.strftime(start,
-        '%b %d %H:%M:%S')
-    print '%s noclook_juniper_consumer.py was started.' % timestamp_start
-
     # Load the configuration file
-    if args.C == None:
+    if not args.C:
         print 'Please provide a configuration file with -C.'
         sys.exit(1)
     else:
         config = nt.init_config(args.C)
-
     # Insert data from known data sources if option -I was used
     if args.I:
-        print 'Inserting data...'
         if config.get('data', 'juniper_conf'):
             consume_juniper_conf(nt.load_json(
                                     config.get('data', 'juniper_conf')))
-    # end time
-    end = datetime.datetime.now()
-    timestamp_end = datetime.datetime.strftime(end,
-        '%b %d %H:%M:%S')
-    print '%s noclook_juniper_consumer.py ran successfully.' % timestamp_end
-    timedelta = end - start
-    print 'Total time: %s' % (timedelta)
     return 0
 
 if __name__ == '__main__':

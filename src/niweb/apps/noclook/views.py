@@ -2,24 +2,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404, get_list_or_404
-from django.conf import settings
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
 
-import neo4jclient
+import norduni_client as nc
 import ipaddr
 import json
 import copy
-
-# Tools, consider moving these to another file
-def get_node_url(node):
-    '''
-    Returns a relative url to a node.
-    '''
-    return '%s%s/%d/' % (settings.NIWEB_URL, slugify(node['type']),
-                                                    node['handle_id'])
-# end tools
 
 def index(request):
     return render_to_response('noclook/index.html', {},
@@ -45,7 +35,6 @@ def list_by_type(request, slug):
 @login_required
 def list_peering_partners(request):
     type = get_object_or_404(NodeType, slug='peering-partner')
-    nc = neo4jclient.Neo4jClient()
     partner_list = []
     for nh in type.nodehandle_set.all():
         partner = {}
@@ -54,7 +43,6 @@ def list_peering_partners(request):
         partner['as_number'] = node.get('as_number', None)
         partner['url'] = nh.get_absolute_url()
         partner_list.append(partner)
-        
     return render_to_response('noclook/list_peering_partners.html',
                                 {'partner_list': partner_list},
                                 context_instance=RequestContext(request))
@@ -63,7 +51,6 @@ def list_peering_partners(request):
 def list_by_master(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    nc = neo4jclient.Neo4jClient()
     master = nc.get_node_by_id(nh.node_id)
     # Get all outgoing related nodes
     node_list = master.traverse()
@@ -82,7 +69,6 @@ def list_by_master(request, handle_id, slug):
 def generic_detail(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     return render_to_response('noclook/detail.html',
         {'node_handle': nh, 'node': node},
@@ -92,7 +78,6 @@ def generic_detail(request, handle_id, slug):
 def router_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     # Get all the routers PICs
     pic_nodes = node.traverse(types=nc.Outgoing.Has)
@@ -104,7 +89,6 @@ def router_detail(request, handle_id):
 def pic_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     # Get PIC units
     units = json.loads(node['units'])
@@ -140,11 +124,10 @@ def pic_detail(request, handle_id):
 def optical_node_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     info = {}
     info['name'] = node['name']
-    info['node_url'] = get_node_url(node)
+    info['node_url'] = nc.get_node_url(node)
     info.update(node.properties)
     #get incoming rels of fibers
     connected_rel = node.relationships.incoming(types=['Connected_to'])
@@ -153,13 +136,13 @@ def optical_node_detail(request, handle_id):
         fibers = {}
         fiber = rel.start
         fibers['fiber_name'] = fiber['name']
-        fibers['fiber_url'] = get_node_url(fiber)
+        fibers['fiber_url'] = nc.get_node_url(fiber)
         conn = fiber.relationships.outgoing(types = ['Connected_to'])
         for item in conn:
             tmp = item.end
             if tmp['name'] != node['name']:
                 fibers['node_name'] = tmp['name']
-                fibers['node_url'] = get_node_url(tmp)
+                fibers['node_url'] = nc.get_node_url(tmp)
         opt_info.append(fibers)
     return render_to_response('noclook/optical_node_detail.html',
         {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info},
@@ -169,7 +152,6 @@ def optical_node_detail(request, handle_id):
 #def host_node_detail(request, handle_id):
     #nh = get_object_or_404(NodeHandle, pk=handle_id)
     ## Get node from neo4j-database
-    #nc = neo4jclient.Neo4jClient()
     #node = nc.get_node_by_id(nh.node_id)
     #info = {}
     #info['name'] = node['name']
@@ -183,11 +165,10 @@ def optical_node_detail(request, handle_id):
 def cable_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     info = {}
     info['name'] = node['name']
-    info['node_url'] = get_node_url(node)
+    info['node_url'] = nc.get_node_url(node)
     info.update(node.properties)
     
     connected_rel = node.relationships.outgoing(types=['Connected_to'])
@@ -196,7 +177,7 @@ def cable_detail(request, handle_id):
         equipment = {}
         conn = equip.end
         equipment['node_name'] = conn['name']
-        equipment['node_url'] = get_node_url(conn)
+        equipment['node_url'] = nc.get_node_url(conn)
         opt_info.append(equipment)
     return render_to_response('noclook/cable_detail.html',
         {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info},
@@ -206,7 +187,6 @@ def cable_detail(request, handle_id):
 def peering_partner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     # Get services used
     services_rel = node.relationships.outgoing(types=['Uses'])
@@ -217,7 +197,7 @@ def peering_partner_detail(request, handle_id):
         peering_point = {}
         peering_point['pp_ip'] = s_rel['ip_address']
         peering_point['service'] = s_rel.end['name']
-        peering_point['service_url'] = get_node_url(s_rel.end)
+        peering_point['service_url'] = nc.get_node_url(s_rel.end)
         pics_rel = s_rel.end.relationships.outgoing(types="Depends_on")
         #pics_rel is a list of nodes with equipments/cables and services
         org_address = ipaddr.IPAddress(s_rel['ip_address'])
@@ -226,10 +206,10 @@ def peering_partner_detail(request, handle_id):
             if org_address in pic_address:
                 peering_point['pic_ip'] = p_rel['ip_address']
                 peering_point['pic'] = p_rel.end['name']
-                peering_point['pic_url'] = get_node_url(p_rel.end)
+                peering_point['pic_url'] = nc.get_node_url(p_rel.end)
                 router = nc.get_root_parent(p_rel.end, nc.Incoming.Has)
                 peering_point['router'] = router['name']
-                peering_point['router_url'] = get_node_url(router)
+                peering_point['router_url'] = nc.get_node_url(router)
                 peering_points.append(peering_point)
 
     return render_to_response('noclook/peering_partner_detail.html',
@@ -241,7 +221,6 @@ def peering_partner_detail(request, handle_id):
 def ip_service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     # Get PICs dependendant on
     pics_rel = node.relationships.outgoing(types=['Depends_on'])
@@ -277,7 +256,6 @@ def visualize_json(request, slug, handle_id):
 
     # Get the node
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    nc = neo4jclient.Neo4jClient()
     root_node = nc.get_node_by_id(nh.node_id)
 
     # Create the data JSON structure needed
@@ -291,7 +269,6 @@ def visualize(request, slug, handle_id):
     Visualize view with JS that loads JSON data.
     '''
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     return render_to_response('noclook/visualize.html',
                             {'node_handle': nh, 'node': node},
@@ -330,7 +307,6 @@ def edit_node(request, slug, handle_id, node=None, message=None):
     if not request.user.is_staff:
         raise Http404
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    nc = neo4jclient.Neo4jClient()
     if not node:
         node = nc.get_node_by_id(nh.node_id)
     # Make a dict of properties you want to be able to change
@@ -368,7 +344,6 @@ def save_node(request, slug, handle_id):
     if not request.user.is_staff:
         raise Http404
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
 
     if request.POST:
@@ -412,7 +387,6 @@ def delete_node(request, slug, handle_id):
         if 'confirmed' in request.POST and \
                                         request.POST['confirmed'] == 'delete':
             nh = get_object_or_404(NodeHandle, pk=handle_id)
-            nc = neo4jclient.Neo4jClient()
             nc.delete_node(nh.node_id)
             nh.delete()
             return HttpResponseRedirect('/%s/' % slug) 
@@ -430,7 +404,6 @@ def new_relationship(request, slug, handle_id):
     if not request.user.is_staff:
         raise Http404
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
     message = ''
     
@@ -480,10 +453,9 @@ def edit_relationship(request, slug, handle_id, rel_id, rel=None, message=None):
     if not request.user.is_staff:
         raise Http404
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    if rel == None:
-        nc = neo4jclient.Neo4jClient()
+    if not rel:
         node = nc.get_node_by_id(nh.node_id)
-        rel = nc.get_relationship_by_id(node, rel_id)
+        rel = nc.get_relationship_by_id(rel_id, node)
     rel_properties = rel.properties
     return render_to_response('noclook/edit_relationship.html',
                             {'node_handle': nh, 'rel': rel, 
@@ -496,9 +468,8 @@ def save_relationship(request, slug, handle_id, rel_id):
     if not request.user.is_staff:
         raise Http404
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    nc = neo4jclient.Neo4jClient()
     node = nc.get_node_by_id(nh.node_id)
-    rel = nc.get_relationship_by_id(node, rel_id)
+    rel = nc.get_relationship_by_id(rel_id, node)
 
     if request.POST:
         # request.POST is immutable.
@@ -534,7 +505,6 @@ def delete_relationship(request, slug, handle_id, rel_id):
         raise Http404
     if 'confirmed' in request.POST.keys():
         nh = get_object_or_404(NodeHandle, pk=handle_id)
-        nc = neo4jclient.Neo4jClient()
         node = nc.get_node_by_id(nh.node_id)
         message = 'No relationship matching the query was found. Nothing deleted.'
         for rel in node.relationships.all():
