@@ -15,7 +15,7 @@ function submit_rel_{{ rel.id }}() {
 
 {% block content %}
     <div class="content">
-        <h3>Edit <a href="/{{ node.type|slugify }}/">{{ node.type }}</a> <a href="{{ node_handle.get_absolute_url }}">{{ node.name }}</a></h3>
+        <h3>Edit <a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> <a href="{{ node_handle.get_absolute_url }}">{{ node.name }}</a></h3>
         <form action="/save/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}/" method="post">
             {% csrf_token %}
             <table>
@@ -111,7 +111,7 @@ function submit_rel_{{ rel.id }}() {
             <table>
             {% for rel in node.relationships.all %}
                 <tr>
-                    <td><a href="/{{rel.start.type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                    <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
                 </tr>
                 <tr>
                     <td></td><td>{{rel.properties}}</td><td></td>

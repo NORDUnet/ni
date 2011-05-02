@@ -4,14 +4,14 @@
 
 {% block content %}
     <div class="content">
-        <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }}</h2>
+        <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
         <h3>PICs</h3>
         <div class="section">
             <table>
             <th>PIC</th><th>Services</th>
             {% for pic in pic_nodes|dictsort:"name" %}
                 <tr>
-                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{pic.type|slugify}}/{{pic.handle_id}}/">{{pic.name}}</a></td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{pic.node_type|slugify}}/{{pic.handle_id}}/">{{pic.name}}</a></td>
                     <td class="{% cycle 'align_top' 'align_top_grey' %}">
                     {% for rel in pic.relationships.incoming %}
                         {% if rel.type == "Depends_on" %}

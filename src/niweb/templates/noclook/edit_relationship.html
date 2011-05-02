@@ -5,7 +5,7 @@
 {% block content %}
     <div class="content">
         <h3>Edit relationship {{ rel.start.name }} {{ rel.type }} {{ rel.end.name }}</h3>
-        <form action="/save/{{ rel.start.type|slugify }}/{{ rel.start.handle_id }}/relationship/{{ rel.id }}/" method="post">
+        <form action="/save/{{ rel.start.node_type|slugify }}/{{ rel.start.handle_id }}/relationship/{{ rel.id }}/" method="post">
             {% csrf_token %}
             <table>
                 {% for key, value in rel_properties.items %}
@@ -19,7 +19,7 @@
         </form>
 
         <h3>Add a new property</h3>
-        <form action="/save/{{ rel.start.type|slugify }}/{{ rel.start.handle_id }}/relationship/{{ rel.id }}/" method="post">
+        <form action="/save/{{ rel.start.node_type|slugify }}/{{ rel.start.handle_id }}/relationship/{{ rel.id }}/" method="post">
             {% csrf_token %}
             <table>
                 <tr>

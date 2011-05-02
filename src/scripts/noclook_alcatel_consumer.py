@@ -63,6 +63,8 @@ JSON format used:
     "version": 1
     }
 }]
+The data block can hold any keys and don't necessarily have to be the ones
+listed above.
 '''
 
 def insert_cable(cable_id, cable_type):
@@ -71,7 +73,7 @@ def insert_cable(cable_id, cable_type):
     Returns the node in a node_list.
     '''
     node_handle = nt.get_unique_node_handle(cable_id, 'Cable', 'physical')
-    node = nc.get_node_by_id(node_handle.node_id)
+    node = node_handle.get_node()
     node['cable_type'] = cable_type
     return node_handle
 
@@ -90,11 +92,12 @@ def consume_alcatel_isis(json_list):
     for i in json_list:
         name = i['host']['alcatel_isis']['name']
         node_handle = nt.get_unique_node_handle(name, 'Optical Node', 'physical')
-        node = nc.get_node_by_id(node_handle.node_id)        
+        node = node_handle.get_node()
         data = i['host']['alcatel_isis']['data']
-        for key,value in data.items():
-            if value:
-                node[key] = value
+        nc.update_node_properties(node.id, data)        
+        #for key,value in data.items():
+        #    if value:
+        #        node[key] = value
         for neighbour in i['host']['alcatel_isis']['neighbours']:
             metric = neighbour['metric']
             if metric == '0':       # localhost
@@ -106,7 +109,7 @@ def consume_alcatel_isis(json_list):
             # Get or create a neighbour node
             neighbour_node_handle = nt.get_unique_node_handle(neighbour['name'],
                                             'Optical Node', 'physical')
-            neighbour_node = nc.get_node_by_id(neighbour_node_handle.node_id)
+            neighbour_node = neighbour_node_handle.get_node()
             # See if the nodes already are connected via something
             create = True
             for rel in node.relationships.incoming(['Connected_to']):
@@ -117,7 +120,7 @@ def consume_alcatel_isis(json_list):
             if create:
                 tmp_name = '%s - %s' % (node['name'], neighbour_node['name']) # Is this good until we get the fiber id?
                 cable_handle = insert_cable(tmp_name, cable_type)
-                cable_node = nc.get_node_by_id(cable_handle.node_id)
+                cable_node = cable_handle.get_node()
                 if not nc.get_relationships(cable_node, node, 'Connected_to'):
                     # Only create a relationship if it doesn't exist
                     cable_node.Connected_to(node)
