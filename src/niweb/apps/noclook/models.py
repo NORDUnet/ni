@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-import neo4jclient
+import norduni_client as nc
 
 NODE_META_TYPE_CHOICES = (
     ('logical', 'Logical'),
@@ -31,13 +31,11 @@ class NodeHandle(models.Model):
     handle_id = models.AutoField(primary_key=True)
     node_id = models.BigIntegerField(blank=True, unique=True,
         editable=False)
-
     # Data shared with the node
     node_name = models.CharField(max_length=200)
     node_type = models.ForeignKey(NodeType)
     node_meta_type = models.CharField(max_length=255,
         choices=NODE_META_TYPE_CHOICES)
-
     # Meta information
     creator = models.ForeignKey(User)
     created = models.DateTimeField(auto_now_add=True)
@@ -62,7 +60,6 @@ class NodeHandle(models.Model):
         '''
         Returns the NodeHandles node.
         '''
-        nc = neo4jclient.Neo4jClient()
         return nc.get_node_by_id(self.node_id)
 
     def save(self):
@@ -72,7 +69,6 @@ class NodeHandle(models.Model):
         if self.node_id: # Not first save
             super(NodeHandle, self).save()
             return self
-        nc = neo4jclient.Neo4jClient()
         node = nc.create_node(self.node_name, str(self.node_type))
         self.node_id = node.id
         meta_node = nc.get_meta_node(str(self.node_meta_type))
@@ -87,7 +83,8 @@ class NodeHandle(models.Model):
         # We need to save the node_handle before it gets a handle_id.
         node['handle_id'] = int(self.handle_id)
         return self
-        save.alters_data = True
+    
+    save.alters_data = True
 
     #def delete(self):
         #'''

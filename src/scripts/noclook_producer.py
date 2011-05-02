@@ -61,7 +61,7 @@ def main():
     for node in nodes:
         # Disregard node 0 and the meta nodes
         if node.id:
-            if node['type'] != 'meta':
+            if node['node_type'] != 'meta':
                 meta_type = nc.get_node_meta_type(node)
                 # Put the nodes json into the nerds format
                 out.append({'host':

@@ -3,7 +3,7 @@
 {% block title %}{{ block.super }} Detail{% endblock %}
 
 {% block content %}
-    <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }}</h2>
+    <h2><a href="/{{ node.node_typetype|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
     <h3>Debug</h3>
     <div class="section">
         <h4>Node properties</h4>
@@ -19,7 +19,7 @@
         <table>
         {% for rel in node.relationships.all %}
             <tr>
-                <td><a href="/{{rel.start.type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
             </tr>
             <tr>
                 <td></td><td>{{rel.properties}}</td><td></td>

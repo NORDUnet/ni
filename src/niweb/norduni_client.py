@@ -20,7 +20,7 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import client
+import client # https://github.com/versae/neo4j-rest-client/
 from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
 
@@ -48,32 +48,36 @@ def open_db(uri):
 def create_node(n='', t=''):
     '''
     Creates a node with the mandatory attributes name and type.
-    TODO: try except
     '''
     db = open_db(NEO4J_URI)
-    return db.node(name = n, type = t)
+    return db.node(name = n, node_type = t)
+    
+def get_node_by_id(node_id):
+    '''
+    Returns the node with the supplied id or none if it doesn't exist.
+    '''
+    db = open_db(NEO4J_URI)
+    return db.nodes.get(int(node_id), None)
 
 def delete_node(node_id):
     '''
-    TODO: try except
+    Deletes the node with the supplied id and returns True. Returns False
+    if the node wasn't found.
     '''
     node = get_node_by_id(node_id)
-    for rel in node.relationships.all():
-        rel.delete()
-    node.delete()
-
-def get_node_by_id(node_id):
-    '''
-    TODO: try except
-    '''
-    db = open_db(NEO4J_URI)
-    return db.nodes.get(int(node_id))
+    if node:
+        for rel in node.relationships.all():
+            rel.delete()
+        node.delete()
+        return True
+    return False
     
-def get_node_url(node):
+def get_node_url(node_id):
     '''
     Returns a relative url to a node.
     '''
-    return '%s%s/%d/' % (django_settings.NIWEB_URL, slugify(node['type']),
+    node = get_node_by_id(node_id)
+    return '%s%s/%d/' % (django_settings.NIWEB_URL, slugify(node['node_type']),
                                                     node['handle_id'])
 
 def get_root_node():
@@ -113,8 +117,6 @@ def get_node_by_value(node_value, meta_node_name=None,
 def get_all_nodes():
     '''
     Returns all nodes in the database in a list. 
-    
-    TODO: try expect
     '''
     root = get_root_node()
     nodes = [root]
@@ -125,8 +127,6 @@ def get_all_nodes():
 def get_all_relationships():
     '''
     Returns all relationships in the database in a list.
-    
-    TODO: try except
     '''
     relationships = []
     for node in get_all_nodes():
@@ -182,7 +182,8 @@ def get_suitable_nodes(node):
     Takes a reference node and returns all nodes that is suitable for a
     relationship with that node.
     
-    Returns a dictionary with the suitable nodes in separated lists.
+    Returns a dictionary with the suitable nodes in lists separated by 
+    meta_type.
     '''
     meta_type = get_node_meta_type(node).lower()
     
@@ -202,7 +203,6 @@ def get_suitable_nodes(node):
         suitable_types['location'] = []
     elif meta_type == 'relation':
         suitable_types['relation'] = []
-    
     return suitable_types
         
 def make_suitable_relationship(node, other_node, rel_type):
@@ -214,7 +214,6 @@ def make_suitable_relationship(node, other_node, rel_type):
     meta_type = get_node_meta_type(node)
     other_meta_type = get_node_meta_type(other_node)
     rel = None
-    
     if meta_type == 'location':                # Location
         if other_meta_type == 'location':
             rel = node.Has(other_node)
@@ -245,9 +244,7 @@ def make_suitable_relationship(node, other_node, rel_type):
         
 def get_relationship_by_id(rel_id, node=None):
     '''
-    Returns the relationship with the supplied id. 
-    
-    TODO: Try Except
+    Returns the relationship with the supplied id.
     '''
     if node:
         for rel in node.relationships.all():
@@ -284,17 +281,18 @@ def update_node_properties(node_id, new_properties):
     node = get_node_by_id(node_id)
     # We might want to do a better check of the data...
     for key, value in new_properties.items():
-        fixed_key = key.replace(' ','_').lower() # No ' ' or caps
+        fixed_key = key.replace(' ','_').lower() # No spaces or caps
         if value:
             node[fixed_key] = value
         elif fixed_key in node.properties:
             del node[fixed_key]
     return node
 
-def update_relationship_properties(node, rel_id, new_properties):
+def update_relationship_properties(node_id, rel_id, new_properties):
     '''
     Updates the properties of a relationship with the supplied dictionary.
     '''
+    node = get_node_by_id(node_id)
     rel = get_relationship_by_id(node, rel_id)
     for key, value in new_properties.items():
         fixed_key = key.replace(' ','_').lower() # No ' ' or caps

@@ -66,8 +66,7 @@ def rest_comp(data):
     '''
     if data is None:
         return False
-    else:
-        return data
+    return data
         
 def load_json(json_dir):
     '''
@@ -165,11 +164,9 @@ def get_node_handle(node_name, node_type_name, node_meta_type,
                                             ).filter(
                                             node_type__in=[node_type])
         if parent:
-            #nc = neo4jclient.Neo4jClient()
             for node_handle in node_handles:
-                node = nc.get_node_by_id(node_handle.node_id)
-                if parent.id == nc.get_root_parent(node,
-                                                    nc.Incoming.Has).id:
+                node = node_handle.get_node()
+                if parent.id == nc.get_root_parent(node, nc.Incoming.Has).id:
                     return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
@@ -185,24 +182,22 @@ def consume_noclook(json_list):
     '''
     Inserts the backup made with NOCLook producer.
     '''
-    #nc = neo4jclient.Neo4jClient()
+    # Loop through all files starting with node
     for i in json_list:
         if i['host']['name'].startswith('node'):
             item = i['host']['noclook_producer']
             properties = item.get('properties')
-            
             node_name = properties.get('name')
             node_type = properties.get('type')
             meta_type = item.get('meta_type')
-            
-            nh = get_node_handle(node_name, node_type, meta_type)
-            
-            node = nc.get_node_by_id(nh.node_id)
+            # Get a node handle
+            nh = get_node_handle(node_name, node_type, meta_type) 
+            node = nh.get_node()
             node['old_node_id'] = item.get('id')
-            
-            for key,value in properties.items():
-                if key != 'handle_id':
-                    node[key] = value
+            # Add all properties except the old NodeHandle id
+            nc.update_node_properties(node.id, properties)
+            node['handle_id'] = int(nh.handle_id)
+    # Loop through all files starting with relationship
     for i in json_list:
         if i['host']['name'].startswith('relationship'):
             item = i['host']['noclook_producer']
@@ -213,8 +208,11 @@ def consume_noclook(json_list):
                                               node_property='old_node_id')
             rel = start_node[0].relationships.create(item.get('type'), 
                                                                     end_node[0])
-            for key,value in properties.items():
-                rel[key] = value
+            nc.update_relationship_properties(start_node.id, rel.id, properties)
+    # Remove the 'old_node_id' property from all nodes
+    for n in nc.get_all_node():
+        if 'old_node_id' in n:
+            del n['old_node_id']
 
 def main():
     # User friendly usage output

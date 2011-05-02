@@ -93,9 +93,8 @@ def insert_juniper_router(name):
     Returns the node created.
     '''
     node_handle = nt.get_unique_node_handle(name, 'Router', 'physical')
-    node = nc.get_node_by_id(node_handle.node_id)
+    node = node_handle.get_node()
     node_list = [node]
-
     return node_list
 
 def insert_juniper_interfaces(router_node, interfaces):
@@ -184,7 +183,7 @@ def insert_juniper_bgp_peerings(bgp_peerings):
             local_addr = ipaddr.IPAddress('0.0.0.0') #None did not work
         # Loop through interfaces to find the local and/or remote
         # address
-        for pic in nc.get_node_by_value('PIC', 'physical', 'type'):            
+        for pic in nc.get_node_by_value('PIC', 'physical', 'node_type'):            
             units = json.loads(pic['units'])
             # Gah, this next part needs to be refactored, it is hard
             # to read and ugly...

@@ -4,7 +4,7 @@
 
 {% block content %}
     <div class="content">
-            <h2><a href="/{{ node.type|slugify }}/">{{ node.type }}</a> {{ node.name }}</h2>
+            <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
 
             <h3>Resources used</h3>
             <div class="section">
@@ -15,15 +15,15 @@
                         {% for item in service_group %}
                             {% if forloop.counter0 == 0 %}
                                 <tr>
-                                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}<td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.vlan }}</td></td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.end.type|slugify }}/{{ item.end.handle_id }}/">{{ item.end.name }}</a></td>
+                                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}<td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.vlan }}</td></td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.end.node_type|slugify }}/{{ item.end.handle_id }}/">{{ item.end.name }}</a></td>
                             {% endif %}
                             {% if forloop.counter0 == 1 %}
-                                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
+                                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.node_type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
                                 </tr>
                             {% endif %}
                             {% if forloop.counter0 > 1 %}
                                 <tr>
-                                    <td></td><td></td><td></td><td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
+                                    <td></td><td></td><td></td><td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.node_type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
                                 </tr>
                             {% endif %}
                         {% endfor %}

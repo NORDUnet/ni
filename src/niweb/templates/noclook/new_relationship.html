@@ -12,14 +12,14 @@
             {% csrf_token %}
             <table>
                 <tr>
-                    <th>Node</th><td>{{ node.type }} {{ node.name }}</td>
+                    <th>Node</th><td>{{ node.node_type }} {{ node.name }}</td>
                 </tr>
                 <tr>
                     <th>Other node</th>
                     <td>
                         <select name="nodes">
                         {% for item in node_dicts|dictsort:"name" %}
-                            <option value="{{ item.id }}">{{ item.type }} {{ item.name }}</option>
+                            <option value="{{ item.id }}">{{ item.node_type }} {{ item.name }}</option>
                         {% endfor %}
                         </select>
                     </td>

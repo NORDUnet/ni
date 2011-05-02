@@ -60,7 +60,7 @@ def insert_nmap(json_list):
         # Create the NodeHandle and the Node
         node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
         # Set Node attributes
-        node = nc.get_node_by_id(node_handle.node_id)
+        node = node_handle.get_node()
         node['hostnames'] = hostnames
         node['addresses'] = addresses
         node['services'] = services
