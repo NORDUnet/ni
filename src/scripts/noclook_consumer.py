@@ -210,7 +210,7 @@ def consume_noclook(json_list):
                                                                     end_node[0])
             nc.update_relationship_properties(start_node.id, rel.id, properties)
     # Remove the 'old_node_id' property from all nodes
-    for n in nc.get_all_node():
+    for n in nc.get_all_nodes():
         if 'old_node_id' in n:
             del n['old_node_id']
 
