@@ -291,7 +291,7 @@ def update_node_properties(node_id, new_properties):
     for key, value in new_properties.items():
         fixed_key = key.replace(' ','_').lower() # No spaces or caps
         if value:
-            node[fixed_key] = value
+            node[fixed_key] = normalize_whitespace(value)
         elif fixed_key in node.properties:
             del node[fixed_key]
     return node
@@ -305,7 +305,7 @@ def update_relationship_properties(node_id, rel_id, new_properties):
     for key, value in new_properties.items():
         fixed_key = key.replace(' ','_').lower() # No ' ' or caps
         if value:
-            rel[fixed_key] = value
+            rel[fixed_key] = normalize_whitespace(value)
         elif fixed_key in rel.properties:
             del rel[fixed_key]
     return rel
