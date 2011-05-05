@@ -39,6 +39,12 @@ Outgoing = client.Outgoing
 Incoming = client.Incoming
 Undirected = client.Undirected
 
+def normalize_whitespace(s):
+    '''
+    Removes leading and ending whitespace from a string.
+    '''
+    return ' '.join(s.split())
+
 def open_db(uri):
     '''
     Open or create a Neo4j database in the supplied path.
@@ -50,7 +56,9 @@ def create_node(n='', t=''):
     Creates a node with the mandatory attributes name and type.
     '''
     db = open_db(NEO4J_URI)
-    return db.node(name = n, node_type = t)
+    n = normalize_whitespace(n)
+    t = normalize_whitespace(t)
+    return db.node(name=n, node_type=t)
     
 def get_node_by_id(node_id):
     '''
