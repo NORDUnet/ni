@@ -44,6 +44,13 @@ def normalize_whitespace(s):
     Removes leading and ending whitespace from a string.
     '''
     return ' '.join(s.split())
+    
+def lowerstr(s):
+    '''
+    Makes everything to a string and tries to make it lower case. Also
+    normalizes whitespace.
+    '''
+    return normalize_whitespace(str(s).lower())
 
 def open_db(uri):
     '''
@@ -111,12 +118,12 @@ def get_node_by_value(node_value, meta_node_name=None,
         for node in meta_node.traverse():
             if node_property is None: # Compare all values
                 for key in node.properties:
-                    if node.properties[key] == node_value:
+                    if lowerstr(node.properties[key]) == lowerstr(node_value):
                         node_list.append(node)
             else: # Compare the supplied property value if it exists
                 try:
                     value = node.properties[node_property]
-                    if value == node_value:
+                    if lowerstr(value) == lowerstr(node_value):
                         node_list.append(node)
                 except KeyError:
                     pass

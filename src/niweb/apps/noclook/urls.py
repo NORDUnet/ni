@@ -18,13 +18,6 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^ip-service/(?P<handle_id>\d+)/$', 'ip_service_detail'),
     (r'^optical-node/(?P<handle_id>\d+)/$', 'optical_node_detail'),
     (r'^cable/(?P<handle_id>\d+)/$', 'cable_detail'),
-#    (r'^host/(?P<handle_id>\d+)/$', 'host_node_detail'),
-    (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
-    # List views
-    (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
-        'list_by_master'),
-    (r'^peering-partner/$', 'list_peering_partners'),
-    (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
     # Visualize views
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)\.json$', 
                                                          'visualize_json'),
@@ -42,4 +35,19 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^edit/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'edit_node'),
     (r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
     (r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
+    # Find all
+    (r'^findall/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
+    (r'^findall/(?P<value>[-\w]+)/$', 'search'),
+    # List views
+    (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
+        'list_by_master'),
+    (r'^peering-partner/$', 'list_peering_partners'),
+    (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
+    # Generic view
+    (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
+    # Search
+    (r'^(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
+    (r'^(?P<slug>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
+
+
 )

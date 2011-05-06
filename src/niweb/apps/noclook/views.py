@@ -499,4 +499,30 @@ def delete_relationship(request, slug, handle_id, rel_id):
     else:            
         message = 'Please confirm the deletion of the relationship.'
         return edit_node(request, slug, handle_id, message=message)
-        
+
+@login_required
+def search(request, slug=None, key=None, value=None):
+    '''
+    Search through nodes either from a POSTed search query or through an
+    URL like /slug/key/value/ or /slug/value/.
+    '''    
+    if request.POST:
+        value = request.get('query', None)
+    if slug:
+        node_type = get_object_or_404(NodeType, slug=slug)
+        node_handle = node_type.nodehandle_set.all()[0]
+        node_meta_type = node_handle.node_meta_type
+    else:
+        node_meta_type = None
+    nodes = nc.get_node_by_value(node_value=value, meta_node_name=node_meta_type, node_property=key)
+    result = []
+    for node in nodes:
+        nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
+        item = {'node': node, 'nh': nh}
+        result.append(item)
+    return render_to_response('noclook/search_result.html',
+                            {'node_type': node_meta_type, 'key': key, 'value': value,
+                             'result': result, 
+                             'node_meta_type': node_meta_type},
+                            context_instance=RequestContext(request))
+                            

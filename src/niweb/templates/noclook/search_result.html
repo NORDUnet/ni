@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Search result{% endblock %}
+
+{% block content %}
+    <div class="content">
+            <h3>Search result</h3>
+            <p>Search for <i>{% if key %}{{ key }}:{% endif %}{{ value|lower }}</i>:</p>
+            <table>
+            {% for item in result %}
+                <tr>
+                    <td><a class="handle" href="{{ item.nh.get_absolute_url }}">{{ item.nh }}</a></td>
+                </tr>
+                <tr>
+                    <td>
+                        {% for key,value in item.node.properties.items %}
+                            <b>{{key}}</b>: {{value}}<br />
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </table>
+     </div>
+{% endblock %}
