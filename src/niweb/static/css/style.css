@@ -353,6 +353,10 @@ ul.menu {
     padding: 5px 5px 5px 5px;
 }
 
+#search {
+    margin: 0px 0px 0px 200px;
+}
+
 /* Visualization */
 #infovis_section {
     position:relative;

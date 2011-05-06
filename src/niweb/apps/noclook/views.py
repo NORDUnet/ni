@@ -505,9 +505,9 @@ def search(request, slug=None, key=None, value=None):
     '''
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/ or /slug/value/.
-    '''    
+    '''
     if request.POST:
-        value = request.get('query', None)
+        value = request.POST.get('query', '')
     if slug:
         node_type = get_object_or_404(NodeType, slug=slug)
         node_handle = node_type.nodehandle_set.all()[0]
