@@ -1,5 +1,5 @@
 import json
-import neo4jclient
+import norduni_client as nc
 
 # Color and shape settings for know node types
 # http://thejit.org/static/v20/Docs/files/Options/Options-Node-js.html
@@ -21,7 +21,6 @@ LOCATION = {'$type': 'circle',
         '$dim': '15'}
 
 # Relations that should be traversed for a node type
-nc = neo4jclient.Neo4jClient() # Needs fixing
 LOGICAL_TYPES = [nc.Undirected.Provides,
                 nc.Undirected.Uses,
                 nc.Undirected.Depends_on]
@@ -49,20 +48,19 @@ def get_jit_node(node):
     {'id': unique_id, 'name': node_name, 'data':{}, 'adjacencies':[]}
     '''
     structure = {'id': node.id,
-                'name': '%s %s' % (node['type'], node['name']),
+                'name': '%s %s' % (node['node_type'], node['name']),
                 'data':{
                     # JIT data
                     '$type': 'triangle',
                     '$color': '#EE3B3B', # Red
                     '$dim': '15',
                     # Other data
-                    'node_type': node['type']
+                    'node_type': node['node_type']
                 },
                 'adjacencies':[]
                 }
 
     # Set node specific apperance
-    nc = neo4jclient.Neo4jClient()
     meta_type = nc.get_node_meta_type(node)
     if meta_type == 'physical':
         structure['data'].update(PHYSICAL)
@@ -130,7 +128,6 @@ def create_graph_list(root_node, graph_list = None):
         'data':{}}
     ]}]
     '''
-    nc = neo4jclient.Neo4jClient()
     if graph_list == None:
         graph_list = []
     # Create graph lists for known node types

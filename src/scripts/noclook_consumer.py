@@ -82,14 +82,12 @@ def load_json(json_dir):
 
 def test_db():
     handles = NodeHandle.objects.all()
-    #nc = neo4jclient.Neo4jClient()
     print 'Handle\tNode'
     for handle in handles:
         print '%d\t%s' % (handle.handle_id, nc.get_node_by_id(
             handle.node_id))
 
 def purge_db():
-    #nc = neo4jclient.Neo4jClient()
     for h in NodeHandle.objects.all():
         try:
             nc.delete_node(h.node_id)
