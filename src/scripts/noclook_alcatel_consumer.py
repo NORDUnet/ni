@@ -94,7 +94,7 @@ def consume_alcatel_isis(json_list):
         node_handle = nt.get_unique_node_handle(name, 'Optical Node', 'physical')
         node = node_handle.get_node()
         data = i['host']['alcatel_isis']['data']
-        nc.update_node_properties(node.id, data)        
+        nc.update_node_properties(node.id, data)
         #for key,value in data.items():
         #    if value:
         #        node[key] = value
