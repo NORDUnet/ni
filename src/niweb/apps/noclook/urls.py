@@ -38,6 +38,7 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     # Find all
     (r'^findall/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
     (r'^findall/(?P<value>[-\w]+)/$', 'search'),
+    (r'^findall/$', 'search'),
     # List views
     (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
         'list_by_master'),

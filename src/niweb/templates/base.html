@@ -24,6 +24,12 @@
                     <td><a href="{% niweb_url %}"><img src="{% niweb_media_url %}img/noclook_trans.png" width="202" height="46" alt="NOCLook" /></a></td>
                 </tr>
             </table>
+            <div id="search">
+                <form action="/findall/" method="post" class="search">
+                    {% csrf_token %}
+                    <input type="search" name="query" /><button type="submit">Search</button>
+                </form>
+            </div>
         </div>
         <div id="left">
             {% block menu %}
