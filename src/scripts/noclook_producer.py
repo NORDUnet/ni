@@ -33,7 +33,7 @@ path = '/home/lundberg/norduni/scr/niweb/'
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 #from apps.noclook.models import NodeType, NodeHandle
-import neo4jclient
+import norduni_client as nc
 
 '''
 A NERDS producer for the NOCLook application. It should be used to take
@@ -51,7 +51,6 @@ def main():
         help='Don\'t write output to disk (JSON format).')
     args = parser.parse_args()
     
-    nc = neo4jclient.Neo4jClient()
     # Node and relationships collections
     nodes = nc.get_all_nodes()
     rels = nc.get_all_relationships()
