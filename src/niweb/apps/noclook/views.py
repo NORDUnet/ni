@@ -509,20 +509,29 @@ def search(request, slug=None, key=None, value=None):
     if request.POST:
         value = request.POST.get('query', '')
     if slug:
-        node_type = get_object_or_404(NodeType, slug=slug)
-        node_handle = node_type.nodehandle_set.all()[0]
-        node_meta_type = node_handle.node_meta_type
+        try:
+            node_type = get_object_or_404(NodeType, slug=slug)
+            node_handle = node_type.nodehandle_set.all()[0]
+            node_meta_type = node_handle.node_meta_type
+        except Http404:
+            return render_to_response('noclook/search_result.html',
+                            {'node_type': slug, 'key': key, 
+                             'value': value, 'result': None, 
+                             'node_meta_type': None},
+                            context_instance=RequestContext(request))
     else:
         node_meta_type = None
-    nodes = nc.get_node_by_value(node_value=value, meta_node_name=node_meta_type, node_property=key)
+    nodes = nc.get_node_by_value(node_value=value, 
+                                 meta_node_name=node_meta_type, 
+                                 node_property=key)
     result = []
     for node in nodes:
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
         item = {'node': node, 'nh': nh}
         result.append(item)
     return render_to_response('noclook/search_result.html',
-                            {'node_type': node_meta_type, 'key': key, 'value': value,
-                             'result': result, 
+                            {'node_type': node_type, 'key': key, 
+                             'value': value, 'result': result, 
                              'node_meta_type': node_meta_type},
                             context_instance=RequestContext(request))
                             
