@@ -39,6 +39,9 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^findall/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
     (r'^findall/(?P<value>[-\w]+)/$', 'search'),
     (r'^findall/$', 'search'),
+    # Search
+    (r'^search/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
+    (r'^search/(?P<slug>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
     # List views
     (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
         'list_by_master'),
@@ -46,9 +49,4 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
     # Generic view
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
-    # Search
-    (r'^(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
-    (r'^(?P<slug>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
-
-
 )
