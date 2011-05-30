@@ -73,8 +73,7 @@ def main():
                     
     for rel in rels:
         # Disregard the relationships connecting to node 0 or the meta nodes
-        if rel.start.id:
-            if rel.start['type'] != 'meta':
+        if rel.start.id and rel.start['node_type'] != 'meta':
                 out.append({'host':
                         {'name': 'relationship_%d' % rel.id,
                         'version': 1,
