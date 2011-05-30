@@ -95,6 +95,15 @@ def purge_db():
             print 'Could not delete the Neo4j node.' 
     NodeHandle.objects.all().delete()
 
+def generate_password(n):
+    '''
+    Returns a psudo random string of lenght n.
+    http://code.activestate.com/recipes/576722-pseudo-random-string/
+    '''
+    import os, math
+    from base64 import b64encode
+    return b64encode(os.urandom(int(math.ceil(0.75*n))),'-_')[:n]
+
 def get_user(username='noclook'):
     '''
     Gets or creates a user that can be used to insert data.
@@ -102,11 +111,7 @@ def get_user(username='noclook'):
     try:
         user = User.objects.get(username=username)
     except User.DoesNotExist:
-        # Password generation taken from
-        # http://code.activestate.com/recipes/576722-pseudo-random-string/
-        import os, math
-        from base64 import b64encode
-        passwd = b64encode(os.urandom(int(math.ceil(0.75*30))),'-_')[:30]
+        passwd = generate_password(30)
         user = User.objects.create_user(username, '', passwd)
     return user
     
