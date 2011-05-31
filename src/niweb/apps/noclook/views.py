@@ -521,11 +521,14 @@ def search(request, slug=None, key=None, value=None):
                             context_instance=RequestContext(request))
     else:
         node_meta_type = None
+        node_type = None
     nodes = nc.get_node_by_value(node_value=value, 
                                  meta_node_name=node_meta_type, 
                                  node_property=key)
     result = []
     for node in nodes:
+        if node_type and not node['node_type'] == str(node_type):
+            continue
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
         item = {'node': node, 'nh': nh}
         result.append(item)
