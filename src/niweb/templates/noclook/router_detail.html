@@ -8,10 +8,11 @@
         <h3>PICs</h3>
         <div class="section">
             <table>
-            <th>PIC</th><th>Services</th><th>Description</th>
+            <th>PIC</th><th>Description</th><th>Services</th>
             {% for pic in pic_nodes|dictsort:"name" %}
                 <tr>
-                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{pic.node_type|slugify}}/{{pic.handle_id}}/">{{pic.name}}</a></td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{pic.node_type|slugify}}/{{pic.handle_id}}/">{{ pic.name }}</a></td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{% if pic.description %}{{ pic.description }}{% endif %}</td>
                     <td class="{% cycle 'align_top' 'align_top_grey' %}">
                     {% for rel in pic.relationships.incoming %}
                         {% if rel.type == "Depends_on" %}
@@ -19,7 +20,6 @@
                         {% endif %}
                     {% endfor %}
                     </td>
-                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{pic.description}}</td>
                 </tr>
             {% endfor %}
             </table>
