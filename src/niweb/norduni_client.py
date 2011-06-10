@@ -20,7 +20,7 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import client # https://github.com/versae/neo4j-rest-client/
+import neo4jrestclient as client # https://github.com/versae/neo4j-rest-client/
 from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
 
@@ -262,13 +262,12 @@ def get_relationship_by_id(rel_id, node=None):
     Returns the relationship with the supplied id.
     '''
     if node:
-        for rel in node.relationships.all():
-            if rel.id == int(rel_id):
-                return rel
+        relationships = node.relationships.all()
     else:
-        for rel in get_all_relationships():
-            if rel.id == int(rel_id):
-                return rel
+        relationships = get_all_relationships()
+    for rel in relationships:
+        if rel.id == int(rel_id):
+            return rel
     return None
 
 def get_relationships(n1, n2, rel_type=None):
@@ -308,7 +307,7 @@ def update_relationship_properties(node_id, rel_id, new_properties):
     Updates the properties of a relationship with the supplied dictionary.
     '''
     node = get_node_by_id(node_id)
-    rel = get_relationship_by_id(node, rel_id)
+    rel = get_relationship_by_id(rel_id, node)
     for key, value in new_properties.items():
         fixed_key = key.replace(' ','_').lower() # No ' ' or caps
         if value:
