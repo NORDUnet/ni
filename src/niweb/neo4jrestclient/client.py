@@ -8,12 +8,9 @@ from constants import (BREADTH_FIRST, DEPTH_FIRST,
                        RELATIONSHIP_GLOBAL, RELATIONSHIP_PATH,
                        RELATIONSHIP_RECENT,
                        NODE, RELATIONSHIP, PATH, POSITION,
-                       INDEX_FULLTEXT)
+                       INDEX_FULLTEXT, SMART_ERRORS)
 from request import Request, NotFoundError, StatusException
 
-# Django mode
-# Throws KeyError instead of NotFoundError where it would benefit a Django app.
-django_mode = True
 
 class StopAtDepth(object):
     """
@@ -169,7 +166,7 @@ class Base(object):
         if response.status == 200:
             self._dic["data"][key] = json.loads(content)
         else:
-            if django_mode:
+            if SMART_ERRORS:
                 raise KeyError()
             else:
                 raise NotFoundError(response.status,
@@ -208,7 +205,7 @@ class Base(object):
         if response.status == 204:
             del self._dic["data"][key]
         elif response.status == 404:
-            if django_mode:
+            if SMART_ERRORS:
                 raise KeyError()
             else:
                 raise NotFoundError(response.status,
@@ -302,10 +299,7 @@ class NodesProxy(dict):
             elif "default" in kwargs:
                 return kwargs["default"]
             else:
-                if django_mode:
-                    raise KeyError()
-                else:
-                    raise NotFoundError()
+                raise NotFoundError()
 
     def create(self, **kwargs):
         return Node(self._node, create=True, data=kwargs)
@@ -367,8 +361,13 @@ class Node(Base):
         data = {}
         if order in (BREADTH_FIRST, DEPTH_FIRST):
             data.update({"order": order})
-        if isinstance(stop, (int, float)) or stop is STOP_AT_END_OF_GRAPH:
+        if isinstance(stop, (int, float)):
             data.update({"max depth": stop})
+        elif stop is STOP_AT_END_OF_GRAPH:
+            data.update({'prune evaluator':{
+                            'language':'javascript',
+                            'body':'false',
+            }})
         if returnable in (BREADTH_FIRST, DEPTH_FIRST):
             data.update({"return filter": {
                             "language": "builtin",
@@ -483,7 +482,7 @@ class IndexesProxy(dict):
             elif "default" in kwargs:
                 return kwargs["default"]
             else:
-                if django_mode:
+                if SMART_ERRORS:
                     raise KeyError()
                 else:
                     raise NotFoundError()
@@ -907,7 +906,8 @@ class Extension(object):
             # the extensions is implemented in Neo4j
             returns = kwargs.pop("returns", None)
             # Another option is to inspect the results
-            if not returns and isinstance(results_list, (tuple, list)):
+            if (not returns and isinstance(results_list, (tuple, list))
+                and len(results_list) > 0):
                 returns = results_list[0].get("self", None)
             if results_list and returns:
                 if NODE in returns:
