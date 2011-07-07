@@ -36,12 +36,14 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
     (r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
     # Find all
-    (r'^findall/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
-    (r'^findall/(?P<value>[-\w]+)/$', 'search'),
-    (r'^findall/$', 'search'),
+    (r'^findall/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'find_all'),
+    (r'^findall/(?P<value>[-\w]+)/$', 'find_all'),
+    (r'^findall/$', 'find_all'),
+    # Find in
+    (r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'find_all'),
+    (r'^findin/(?P<slug>[-\w]+)/(?P<value>[-\w]+)/$', 'find_all'),
     # Search
-    (r'^search/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
-    (r'^search/(?P<slug>[-\w]+)/(?P<value>[-\w]+)/$', 'search'),
+    (r'^search/autocomplete$', 'search_autocomplete'),
     (r'^search/$', 'search'),
     # List views
     (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
