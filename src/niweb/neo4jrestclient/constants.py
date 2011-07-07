@@ -17,7 +17,6 @@ __email__ = "versae@gmail.com"
 __url__ = "https://github.com/versae/neo4j-rest-client"
 __description__ = """Library to interact with Neo4j standalone REST server"""
 __status__ = "Development"
-
 # Order
 BREADTH_FIRST = "breadth first"
 DEPTH_FIRST = "depth first"
@@ -42,5 +41,3 @@ POSITION = "position"
 # Indexes
 INDEX_EXACT = "exact"
 INDEX_FULLTEXT = "fulltext"
-# Smart errors
-SMART_ERRORS = False
