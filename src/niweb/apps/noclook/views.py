@@ -518,9 +518,10 @@ def search(request):
             nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
             item = {'node': node, 'nh': nh}
             result.append(item)
-    return render_to_response('noclook/search_result.html',
-                            {'value': value, 'result': result},
-                            context_instance=RequestContext(request))
+        return render_to_response('noclook/search_result.html',
+                                {'value': value, 'result': result},
+                                context_instance=RequestContext(request))
+    raise Http404
                             
 @login_required
 def search_autocomplete(request):
