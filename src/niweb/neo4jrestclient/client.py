@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 import json
 import urllib
+from lucenequerybuilder import Q
 
+import options
 from constants import (BREADTH_FIRST, DEPTH_FIRST,
                        STOP_AT_END_OF_GRAPH,
                        NODE_GLOBAL, NODE_PATH, NODE_RECENT,
                        RELATIONSHIP_GLOBAL, RELATIONSHIP_PATH,
                        RELATIONSHIP_RECENT,
                        NODE, RELATIONSHIP, PATH, POSITION,
-                       INDEX_FULLTEXT, SMART_ERRORS)
+                       INDEX_FULLTEXT)
 from request import Request, NotFoundError, StatusException
+
+__all__ = ["GraphDatabase", "Incoming", "Outgoing", "Undirected",
+           "StopAtDepth", "NotFoundError", "StatusException", "Q"]
 
 
 class StopAtDepth(object):
@@ -46,6 +51,7 @@ class GraphDatabase(object):
     """
 
     def __init__(self, url):
+        self._transactions = {}
         self.url = None
         if url.endswith("/"):
             self.url = url
@@ -117,6 +123,41 @@ class GraphDatabase(object):
 
         return Traversal
 
+    def transaction(self, context=None):
+        cls = self
+
+        class Transaction(object):
+
+            def __init__(self, transaction_id, context):
+                self.transaction_id = transaction_id
+                self.context = context
+                self.operations = []
+                self.variables = {}
+
+            def __enter__(self):
+                pass
+
+            def __exit__(self, type, value, traceback):
+                self.operations = []
+                del cls._transactions[transaction_id]
+                return self.commit(**self.context)
+
+            def subscribe(verb, url, data=None):
+                self.operations.append({
+                    "verb": verb,
+                    "url": url,
+                    "data": data,
+                })
+
+            def commit(self, *args, **kwargs):
+                # print self.operations
+                return True
+
+        transaction_id = len(self._transactions.keys())
+        self._transactions[transaction_id] = Transaction(transaction_id,
+                                                         context or {})
+        return self._transactions[transaction_id]
+
 
 class Base(object):
     """
@@ -166,8 +207,8 @@ class Base(object):
         if response.status == 200:
             self._dic["data"][key] = json.loads(content)
         else:
-            if SMART_ERRORS:
-                raise KeyError()
+            if options.SMART_ERRORS:
+                raise KeyError(response.status, "Node or propery not found")
             else:
                 raise NotFoundError(response.status,
                                     "Node or propery not found")
@@ -205,8 +246,8 @@ class Base(object):
         if response.status == 204:
             del self._dic["data"][key]
         elif response.status == 404:
-            if SMART_ERRORS:
-                raise KeyError()
+            if options.SMART_ERRORS:
+                raise KeyError(response.status, "Node or propery not found")
             else:
                 raise NotFoundError(response.status,
                                     "Node or propery not found")
@@ -265,6 +306,51 @@ class Base(object):
             raise NotFoundError(response.status, "Properties not found")
     properties = property(_get_properties, _set_properties, _del_properties)
 
+
+class Iterable(list):
+    """
+    Class to iterate among returned objects.
+    """
+
+    def __init__(self, cls, lst, attr):
+        self._list = lst
+        self._index = len(lst)
+        self._class = cls
+        self._attribute = attr
+        super(Iterable, self).__init__(lst)
+
+    def __getslice__(self, *args, **kwargs):
+        eltos = super(Iterable, self).__getslice__(*args, **kwargs)
+        if self._attribute:
+            return [self._class(elto[self._attribute]) for elto in eltos]
+        else:
+            return [self._class(elto) for elto in eltos]
+
+    def __getitem__(self, index):
+        elto = super(Iterable, self).__getitem__(index)
+        if self._attribute:
+            return self._class(elto[self._attribute])
+        else:
+            return self._class(elto)
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u"<Neo4j %s: %s>" % (self.__class__.__name__,
+                                    self._class.__name__)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self._index == 0:
+            raise StopIteration
+        self._index = self._index - 1
+        return self.__getitem__(self._index)
 
 class NodesProxy(dict):
     """
@@ -364,14 +450,14 @@ class Node(Base):
         if isinstance(stop, (int, float)):
             data.update({"max depth": stop})
         elif stop is STOP_AT_END_OF_GRAPH:
-            data.update({'prune evaluator':{
-                            'language':'javascript',
-                            'body':'false',
+            data.update({'prune evaluator': {
+                'language': 'javascript',
+                'body': 'false',
             }})
         if returnable in (BREADTH_FIRST, DEPTH_FIRST):
             data.update({"return filter": {
-                            "language": "builtin",
-                            "name": returnable,
+                "language": "builtin",
+                "name": returnable,
             }})
         if uniqueness in (NODE_GLOBAL, NODE_PATH, NODE_RECENT, NODE,
                           RELATIONSHIP_GLOBAL, RELATIONSHIP_PATH,
@@ -396,13 +482,13 @@ class Node(Base):
         if response.status == 200:
             results_list = json.loads(content)
             if returns is NODE:
-                return [Node(r["self"]) for r in results_list]
+                return Iterable(Node, results_list, "self")
             elif returns is RELATIONSHIP:
-                return [Relationship(r["self"]) for r in results_list]
+                return Iterable(Relationship, results_list, "self")
             elif returns is PATH:
-                return [Path(r) for r in results_list]
+                return Iterable(Path, results_list)
             elif returns is POSITION:
-                return [Position(r) for r in results_list]
+                return Iterable(Position, results_list)
         elif response.status == 404:
             raise NotFoundError(response.status, "Node or relationship not " \
                                                  "found")
@@ -482,7 +568,7 @@ class IndexesProxy(dict):
             elif "default" in kwargs:
                 return kwargs["default"]
             else:
-                if SMART_ERRORS:
+                if options.SMART_ERRORS:
                     raise KeyError()
                 else:
                     raise NotFoundError()
@@ -503,6 +589,23 @@ class Index(object):
     The returned object supports dict style lookups, eg index[key][value].
     """
 
+    @staticmethod
+    def _get_results(url, node_or_rel):
+        response, content = Request().get(url)
+        if response.status == 200:
+            data_list = json.loads(content)
+            if node_or_rel == NODE:
+                return Iterable(Node, data_list, "self")
+            else:
+                return Iterable(Relationship, data_list, "self")
+        elif response.status == 404:
+            raise NotFoundError(response.status,
+                                "Node or relationship not found")
+        else:
+            raise StatusException(response.status,
+                                    "Error requesting index with GET %s" \
+                                    % url)
+
     class IndexKey(object):
         """
         Intermediate object so that lookups can be done like:
@@ -520,8 +623,9 @@ class Index(object):
             self.url = url
 
         def __getitem__(self, value):
+            value = urllib.quote_plus(value.encode('utf-8'))
             url = "%s/%s" % (self.url, value)
-            return self._get_results(url)
+            return Index._get_results(url, self._index_for)
 
         def __setitem__(self, value, item):
             # Neo4j hardly crush if you try to index a relationship in a
@@ -533,7 +637,8 @@ class Index(object):
                 raise TypeError("%s is a %s and the index is for %ss"
                                 % (item, self._index_for.capitalize(),
                                    self._index_for))
-            value = urllib.quote(value)
+
+            value = urllib.quote_plus(value.encode('utf-8'))
             if isinstance(item, Base):
                 url_ref = item.url
             else:
@@ -552,27 +657,9 @@ class Index(object):
                                       "Error requesting index with POST %s " \
                                       ", data %s" % (request_url, url_ref))
 
-        def _get_results(self, url):
-            response, content = Request().get(url)
-            if response.status == 200:
-                data_list = json.loads(content)
-                if self._index_for == NODE:
-                    return [Node(n['self'], data=n['data'])
-                            for n in data_list]
-                else:
-                    return [Relationship(r['self'], data=r['data'])
-                            for r in data_list]
-            elif response.status == 404:
-                raise NotFoundError(response.status,
-                                    "Node or relationship not found")
-            else:
-                raise StatusException(response.status,
-                                      "Error requesting index with GET %s" \
-                                       % url)
-
         def query(self, value):
             url = "%s?query=%s" % (self.url, urllib.quote(value))
-            return self._get_results(url)
+            return Index._get_results(url, self._index_for)
 
     def __init__(self, index_for, name, **kwargs):
         self._index_for = index_for
@@ -596,6 +683,16 @@ class Index(object):
 
     def __unicode__(self):
         return u"<Neo4j %s: %s>" % (self.__class__.__name__, self.url)
+        
+#    def delete(self):
+#        response, content = Request().delete(self.url)
+#        if response.status == 204:
+#            del self
+#        elif response.status == 404:
+#            raise NotFoundError(response.status, "Index not found")
+#        else:
+#            raise StatusException(response.status, "Index could not be "\
+#                                                   "deleted.")
 
     def add(self, key, value, item):
         self.get(key)[value] = item
@@ -603,6 +700,7 @@ class Index(object):
     def get(self, key, value=None):
         key = urllib.quote(key)
         if value:
+            value = urllib.quote(value)
             return self.IndexKey(self._index_for,
                                  "%s/%s" % (self.url, key))[value]
         else:
@@ -632,8 +730,32 @@ class Index(object):
         elif response.status != 204:
             raise StatusException(response.status)
 
-    def query(self, key, value):
-        return self.get(key).query(value)
+    def query(self, *args):
+        """
+        Query a fulltext index by key and query or just a plain Lucene query, eg
+
+        i1 = gdb.nodes.indexes.get('people',type='fulltext', provider='lucene')
+        i1.query('name','do*')
+        i1.query('name:do*')
+
+        In this example, the last two line are equivalent.
+        """
+        if not args or len(args) > 2:
+            raise TypeError('query() takes 2 or 3 arguments (a query or a key and'
+                            ' a query) (%d given)' % (len(args) + 1))
+        elif len(args) == 1:
+            query, = args
+            return self.get('text').query(str(query))
+        else:
+            key, query = args
+            indexkey = self.get(key)
+            if isinstance(query, basestring):
+                return indexkey.query(query)
+            else:
+                if query.fielded:
+                    raise ValueError('Queries with an included key should not '\
+                                     'include a field.')
+                return indexkey.query(str(query))
 
 
 class RelationshipsProxy(dict):
@@ -696,8 +818,10 @@ class Relationships(object):
                 response, content = Request().get(url)
                 if response.status == 200:
                     relationship_list = json.loads(content)
-                    relationships = [Relationship(r["self"])
-                                     for r in relationship_list]
+                    relationships = Iterable(Relationship, relationship_list,
+                                             "self")
+                    # relationships = [Relationship(r["self"])
+                    #                  for r in relationship_list]
                     return relationships
                 elif response.status == 404:
                     raise NotFoundError(response.status,
@@ -911,13 +1035,13 @@ class Extension(object):
                 returns = results_list[0].get("self", None)
             if results_list and returns:
                 if NODE in returns:
-                    return [Node(r["self"]) for r in results_list]
+                    return Iterable(Node, results_list, "self")
                 elif RELATIONSHIP in returns:
-                    return [Relationship(r["self"]) for r in results_list]
+                    return Iterable(Relationship, results_list, "self")
                 elif PATH in returns:
-                    return [Path(r) for r in results_list]
+                    return Iterable(Path, results_list)
                 elif POSITION in returns:
-                    return [Position(r) for r in results_list]
+                    return Iterable(Position, results_list)
             else:
                 return []
         elif response.status == 404:
