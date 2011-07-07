@@ -2,11 +2,22 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/jquery-ui-1.8.14.smoothness.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
     <link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
     <title>NOCLook {% block title %}{% endblock %}</title>
     <!--[if IE]><script language="javascript" type="text/javascript" src="/site_media/js/jit/Extras/excanvas.js"></script><![endif]-->
     <!-- JQuery Library File -->
-    <script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery-1.4.4.min.js"></script>
+    <script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery-1.6.2.min.js"></script>
+    <script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery.autocomplete-min.js"></script>
+    <script>
+    $(document).ready(function() {
+        var options, a;
+        jQuery(function(){
+          options = { serviceUrl:'/search/autocomplete' };
+          a = $('#autoc').autocomplete(options);
+        });
+    });
+    </script>
     <!-- Remove toggle_debug after development -->
     <script type="text/javascript">
     function toggle_debug() {
@@ -25,9 +36,9 @@
                 </tr>
             </table>
             <div id="search">
-                <form action="/findall/" method="post" class="search">
+                <form action="/search/" method="post" class="search">
                     {% csrf_token %}
-                    <input type="search" name="query" /><button type="submit">Search</button>
+                    <input type="search" id="autoc" name="query" /><button type="submit">Search</button>
                 </form>
             </div>
         </div>

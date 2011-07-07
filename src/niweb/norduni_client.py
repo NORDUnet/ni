@@ -20,7 +20,7 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import neo4jrestclient as client # https://github.com/versae/neo4j-rest-client/
+from neo4jrestclient import client # https://github.com/versae/neo4j-rest-client/
 from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
 
@@ -34,6 +34,7 @@ https://portal.nordu.net/display/opsforum/NORDUnet+Network+Inventory
 '''
 
 NEO4J_URI = django_settings.NEO4J_RESOURCE_URI
+
 
 Outgoing = client.Outgoing
 Incoming = client.Incoming
@@ -50,7 +51,15 @@ def lowerstr(s):
     Makes everything to a string and tries to make it lower case. Also
     normalizes whitespace.
     '''
-    return normalize_whitespace(str(s).lower())
+    return normalize_whitespace(unicode(s).lower())
+    
+def is_meta_node(node):
+    '''
+    Returns True if the provided node is of node_type == meta.
+    '''
+    if node['node_type'] == 'meta':
+        return True
+    return False
 
 def open_db(uri):
     '''
@@ -135,9 +144,9 @@ def get_all_nodes():
     '''
     root = get_root_node()
     nodes = [root]
-    for meta_node in root.traverse():
-        nodes.extend(meta_node.traverse())
-    return list(set(nodes))
+    for node in root.traverse(stop=client.STOP_AT_END_OF_GRAPH):
+        nodes.append(node)
+    return nodes
         
 def get_all_relationships():
     '''
@@ -316,8 +325,67 @@ def update_relationship_properties(node_id, rel_id, new_properties):
             del rel[fixed_key]
     return rel
 
-def main():
+# Indexes
+def get_all_node_indexes():
+    '''
+    Returns a dictionary of all available indexes.
+    {index_name: index, ...}
+    '''
+    db = open_db(NEO4J_URI)
+    return db.nodes.indexes
+    
+def get_node_index(index_name):
+    '''
+    Returns the index with the supplied name. Creates a new index if it does
+    not exist.
+    '''
+    db = open_db(NEO4J_URI)
+    try:
+        index = db.nodes.indexes.get(index_name)
+    except KeyError:
+        index = db.nodes.indexes.create(index_name, type="fulltext", 
+                                        provider="lucene")
+    return index
 
+def add_index_node(index_name, key, node_id):
+    '''
+    Adds the provided node to the index if the property/key exists and is not
+    None. Also adds the node to the index key "all".
+    '''
+    index = get_node_index(index_name)
+    node = get_node_by_id(node_id)
+    if not is_meta_node(node):
+        value = node.get(key, None)
+        if value:
+            # Seems like the indexes are unique per key-value-node.id tripple
+            index.add(key, value, node)
+            index.add('all', value, node)
+            return True
+        return False
+    
+# Seems like the only way to remove nodes from indexes are to delete them.
+#def del_index_node(node_id):
+#    '''
+#    Tries to remove all the nodes properties from all available indexes.
+#    Returns a dictionary with properties that was removed and from which index.
+#    {index_name: [property_name, ...]}
+#    '''
+#    index_dict = get_all_node_indexes()
+#    node = get_node_by_id(node_id)
+#    rdict = {}
+#    for key in index_dict.keys():
+#        rdict[key] = []
+#        index_dict[key].delete('all', None, node)
+#        for prop in node:
+#            try:
+#                index_dict[key].delete(prop, None, node)
+#                rdict[key].append(prop)                
+#            except Exception: # StatusException from neo4jrestclient
+#                pass
+#    return rdict
+
+def main():
+    
     def test_db_setup():
         import os
         os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'

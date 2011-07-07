@@ -4,7 +4,7 @@
 
 {% block content %}
     <div class="content">
-        <h3>Node {{ info.name }}</h3>
+        <h3><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h3>
         <div class="section">
             <table>
                 <th>Connected to node</th><th>via</th>

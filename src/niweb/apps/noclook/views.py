@@ -1,6 +1,6 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404, get_list_or_404
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
@@ -247,7 +247,6 @@ def visualize_json(request, slug, handle_id):
     This JSON data is then used by JIT (http://thejit.org) to make
     a visual representation.
     '''
-    from django.http import HttpResponse
     import jitgraph
 
     # Get the node
@@ -499,15 +498,58 @@ def delete_relationship(request, slug, handle_id, rel_id):
     else:            
         message = 'Please confirm the deletion of the relationship.'
         return edit_node(request, slug, handle_id, message=message)
-
+        
+# Search views
 @login_required
-def search(request, slug=None, key=None, value=None):
+def search(request):
     '''
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/ or /slug/value/.
     '''
     if request.POST:
-        value = request.POST.get('query', '')
+        value = request.POST.get('query', '') # search for '' if blank
+        # See if value is from autocomplete
+        index = nc.get_node_index('search_test1')
+        nodes = list(index.query('all', '*%s*' % value))
+        if not nodes:
+            nodes = nc.get_node_by_value(node_value=value)
+        result = []
+        for node in nodes:
+            nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
+            item = {'node': node, 'nh': nh}
+            result.append(item)
+    return render_to_response('noclook/search_result.html',
+                            {'value': value, 'result': result},
+                            context_instance=RequestContext(request))
+                            
+@login_required
+def search_autocomplete(request):
+    '''
+    Search through a pre determined index for [query]* and returns JSON data
+    like below.
+    {
+     query:'Li',
+     suggestions:['Liberia','Liechtenstein','Lithuania'],
+     data:['LR','LY','LI','LT']
+    }
+    '''
+    query = request.GET.get('query', None)
+    if query:
+        ind = nc.get_node_index('search_test1')
+        suggestions = list(n['name'] for n in ind.query('name', '*%s*' % query))
+        jsonstr = json.dumps({'query': query, 'suggestions': suggestions,
+                              'data': []})
+        return HttpResponse(jsonstr, mimetype='application/json')
+    return False
+    
+@login_required
+def find_all(request, slug=None, key=None, value=None):
+    '''
+    Search through nodes either from a POSTed search query or through an
+    URL like /slug/key/value/ or /slug/value/.
+    '''
+    if request.POST:
+        value = request.POST.get('query', '') # search for '' if blank
     if slug:
         try:
             node_type = get_object_or_404(NodeType, slug=slug)
@@ -527,6 +569,7 @@ def search(request, slug=None, key=None, value=None):
                                  node_property=key)
     result = []
     for node in nodes:
+        # Check so that the node_types are equal. A problem with meta type.
         if node_type and not node['node_type'] == str(node_type):
             continue
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
@@ -537,4 +580,3 @@ def search(request, slug=None, key=None, value=None):
                              'value': value, 'result': result, 
                              'node_meta_type': node_meta_type},
                             context_instance=RequestContext(request))
-                            
