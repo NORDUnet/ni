@@ -521,7 +521,7 @@ def search(request):
         return render_to_response('noclook/search_result.html',
                                 {'value': value, 'result': result},
                                 context_instance=RequestContext(request))
-    raise Http404
+    return HttpResponseRedirect('/')
                             
 @login_required
 def search_autocomplete(request):
