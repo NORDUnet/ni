@@ -36,7 +36,7 @@ args = parser.parse_args()
 
 if args.list:
     print 'Available indexes:'
-    for i in nc.get_all_indexes().keys():
+    for i in nc.get_all_node_indexes().keys():
         print i
     sys.exit(0)
 
