@@ -35,7 +35,6 @@ https://portal.nordu.net/display/opsforum/NORDUnet+Network+Inventory
 
 NEO4J_URI = django_settings.NEO4J_RESOURCE_URI
 
-
 Outgoing = client.Outgoing
 Incoming = client.Incoming
 Undirected = client.Undirected
@@ -384,20 +383,14 @@ def add_index_node(index_name, key, node_id):
 #                pass
 #    return rdict
 
-def main():
-    
-    def test_db_setup():
-        import os
-        os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-        print 'Testing read and write for Neo4j REST database at %s.' \
-                                        % django_settings.NEO4J_RESOURCE_URI
-        print 'Next line should be "Root 0".'
-        n = get_node_by_id('0')
-        n['name'] = 'Root'
-        print n['name'], n.id
-
-    test_db_setup()
-    return 0
-
-if __name__ == '__main__':
-    main()
+# Tests
+def test_db_setup():
+    print 'Looking for NEO4J_RESOURCE_URI in Django settings.py.'
+    print 'Testing read and write for Neo4j REST database at %s.' % NEO4J_URI
+    print 'The next two lines should match.'
+    print 'Name: Root. Node Type: meta. Node ID: 0.'
+    n = get_node_by_id('0')
+    n['name'] = 'Root'
+    n['node_type'] = 'meta'
+    print 'Name: %s. Node Type: %s. Node ID: %d.' % (n['name'], 
+                                                    n['node_type'], n.id)
