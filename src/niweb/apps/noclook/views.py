@@ -509,7 +509,7 @@ def search(request):
     if request.POST:
         value = request.POST.get('query', '') # search for '' if blank
         # See if value is from autocomplete
-        index = nc.get_node_index('search_test1')
+        index = nc.get_node_index(nc.search_index_name())
         nodes = list(index.query('all', '*%s*' % value))
         if not nodes:
             nodes = nc.get_node_by_value(node_value=value)
@@ -536,7 +536,7 @@ def search_autocomplete(request):
     '''
     query = request.GET.get('query', None)
     if query:
-        ind = nc.get_node_index('search_test1')
+        ind = nc.get_node_index(nc.search_index_name())
         suggestions = list(n['name'] for n in ind.query('name', '*%s*' % query))
         jsonstr = json.dumps({'query': query, 'suggestions': suggestions,
                               'data': []})

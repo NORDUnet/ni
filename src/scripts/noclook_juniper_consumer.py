@@ -116,6 +116,8 @@ def insert_juniper_interfaces(router_node, interfaces):
                                                                     router_node)
                 node = nc.get_node_by_id(node_handle.node_id)
                 node['description'] = nt.rest_comp(i['description'])
+                # Add the nodes description to search index
+                nc.add_index_node('search', 'description', node.id)
                 node['units'] = json.dumps(i['units'])
                 if not nc.get_relationships(router_node, node, 'Has'):
                     # Only create a relationship if it doesn't exist
@@ -132,6 +134,8 @@ def insert_juniper_relation(name, as_number):
     node_handle = nt.get_unique_node_handle(name, 'Peering Partner', 'relation')
     node = nc.get_node_by_id(node_handle.node_id)
     node['as_number'] = nt.rest_comp(as_number)
+    # Add the nodes as_number to search index
+    nc.add_index_node('search', 'as_number', node.id)
     node_list = [node]
 
     return node_list

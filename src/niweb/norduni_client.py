@@ -20,7 +20,7 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-from neo4jrestclient import client # https://github.com/versae/neo4j-rest-client/
+from neo4jrestclient import client # https://github.com/johanlundberg/neo4j-rest-client/
 from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
 
@@ -30,7 +30,7 @@ easier to add and retrive data to a Neo4j database according to the NORDUnet
 Network Inventory data model.
 
 More information about NORDUnet Network Inventory: 
-https://portal.nordu.net/display/opsforum/NORDUnet+Network+Inventory
+https://portal.nordu.net/display/NI/
 '''
 
 NEO4J_URI = django_settings.NEO4J_RESOURCE_URI
@@ -73,7 +73,11 @@ def create_node(n='', t=''):
     db = open_db(NEO4J_URI)
     n = normalize_whitespace(n)
     t = normalize_whitespace(t)
-    return db.node(name=n, node_type=t)
+    node = db.node(name=n, node_type=t)
+    # Add the nodes name and type to search index
+    add_index_node(search_index_name(), 'name', node.id)
+    add_index_node('node_types', 'node_type', node.id)
+    return node
     
 def get_node_by_id(node_id):
     '''
@@ -325,6 +329,13 @@ def update_relationship_properties(node_id, rel_id, new_properties):
     return rel
 
 # Indexes
+def search_index_name():
+    '''
+    Set the name of the index that is used for autocomplete and search in the
+    gui.
+    '''
+    return 'search'
+    
 def get_all_node_indexes():
     '''
     Returns a dictionary of all available indexes.
@@ -361,7 +372,7 @@ def add_index_node(index_name, key, node_id):
             index.add('all', value, node)
             return True
         return False
-    
+            
 # Seems like the only way to remove nodes from indexes are to delete them.
 #def del_index_node(node_id):
 #    '''
