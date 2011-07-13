@@ -41,6 +41,75 @@ This script is used for adding the objects collected with the
 NERDS producers to the noclook database viewer.
 '''
 
+def insert_services(service_dict, node_id):
+    '''
+    Takes a dictionary of services and a node id for a host. Gets or creates a 
+    service and makes a Depends_on relationship between the service and host.
+    
+    Example service_dict:
+    {"ipv4": {
+        "127.0.0.1": {
+            "tcp": {
+                "1025": {
+                    "product": "Microsoft Windows RPC", 
+                    "confidence": "10", 
+                    "name": "msrpc", 
+                    "proto": "unknown"}, 
+                "1029": {
+                    "product": "Microsoft Windows RPC over HTTP", 
+                    "confidence": "10", 
+                    "version": "1.0", 
+                    "name": "ncacn_http", 
+                    "proto": "unknown"}, 
+                }
+            }
+        }
+    }
+    '''
+    node_type = "Host Service"
+    meta_type = 'logical'
+    host_node = nc.get_node_by_id(node_id)
+    service_nodes = []
+    for key in service_dict.keys():
+        print host_node['name'] # DEBUG
+        ipv = key
+        print ipv # DEBUG
+        for key in service_dict[ipv].keys():
+            address = key
+            print address # DEBUG
+            for key in service_dict[ipv][address].keys():
+                protocol = key
+                print protocol # DEBUG
+                for key in service_dict[ipv][address][protocol].keys():
+                    port = key
+                    print port # DEBUG
+                    service = service_dict[ipv][address][protocol][port]
+                    node_handle = nt.get_unique_node_handle(service['name'], 
+                                                            node_type, 
+                                                            meta_type)
+                    service_node = node_handle.get_node()
+                    service_nodes.append(service_node)
+                    print 'service_node id: %d' % service_node.id # DEBUG
+                    # Get allready existing relationships between the two nodes
+                    rels = nc.get_relationships(service_node, host_node, 
+                                                'Depends_on')
+                    # Make a relationship between the service and host
+                    new_rel = nc.make_suitable_relationship(service_node, 
+                                                    host_node, 'Depends_on')
+                    new_rel['ip_address'] = address
+                    new_rel['protocol'] = protocol
+                    new_rel['port'] = port
+                    for key, value in service.items():
+                        new_rel[key] = value
+                    # Removes the just created relationship if it equals any
+                    # allready existing
+                    print 'new_rel id: %d' % new_rel.id # DEBUG
+                    for rel in rels:
+                        if nc.relationships_equal(new_rel, rel):
+                            del new_rel
+    print 'All hosts services done.' # DEBUG
+    return service_nodes
+
 def insert_nmap(json_list):
     '''
     Inserts the data loaded from the json files created by
@@ -53,17 +122,16 @@ def insert_nmap(json_list):
         name = i['host']['name']
         hostnames = json.dumps(i['host']['hostnames'])
         addresses = json.dumps(i['host']['addrs'])
-        try:
-            services = json.dumps(i['host']['services'])
-        except KeyError:
-            services = 'None'
         # Create the NodeHandle and the Node
         node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
         # Set Node attributes
         node = node_handle.get_node()
         node['hostnames'] = hostnames
         node['addresses'] = addresses
-        node['services'] = services
+        try:
+            insert_services(i['host']['services'], node.id)
+        except KeyError:
+            pass
 
 def main():
     # User friendly usage output
