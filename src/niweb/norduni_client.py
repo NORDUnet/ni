@@ -291,13 +291,24 @@ def get_relationships(n1, n2, rel_type=None):
     rel_list = []
     for rel in n1.relationships.all():
         if (rel.start.id == n1.id and rel.end.id == n2.id) or \
-        (rel.start.id == n2.id and rel.end.id == n1.id):
+           (rel.start.id == n2.id and rel.end.id == n1.id):
             if rel_type:
                 if rel.type == rel_type:
                     rel_list.append(rel)
             else:
                 rel_list.append(rel)
     return rel_list
+    
+def relationships_equal(rel, other_rel):
+    '''
+    Takes two relationships and returns True if they have the same start and
+    end node, are of the same type and have the same properties.
+    '''
+    if rel.type == other_rel.type:
+        if rel.start == other_rel.start and rel.end == other_rel.end:
+            if rel.properties == other_rel.properties:
+                return True
+    return False
 
 def update_node_properties(node_id, new_properties):
     '''
