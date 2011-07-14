@@ -29,6 +29,18 @@ def niweb_media_url():
     if settings.NIWEB_MEDIA_URL is '':
         raise template.VariableDoesNotExist('Please set the NIWEB_MEDIA_URL in you settings file.')
     return settings.NIWEB_MEDIA_URL
+    
+@register.simple_tag
+def niweb_node_id_to_url(node_id):
+    '''
+    Takes a node id as a string and returns the relative url for a node.
+    '''
+    try:
+        import norduni_client as nc
+    except ImportError:
+        raise template.VariableDoesNotExist('Import error, can not import norduni_client module.')
+        return ''
+    return nc.get_node_url(node_id)
 
 #register.simple_tag(niweb_url)
 #register.simple_tag(niweb_media_url)

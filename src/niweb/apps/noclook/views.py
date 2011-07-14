@@ -148,18 +148,26 @@ def optical_node_detail(request, handle_id):
         {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info},
         context_instance=RequestContext(request))
 
-#@login_required
-#def host_node_detail(request, handle_id):
-    #nh = get_object_or_404(NodeHandle, pk=handle_id)
-    ## Get node from neo4j-database
-    #node = nh.get_node()
-    #info = {}
-    #info['name'] = node['name']
-    #info['node_url'] = get_node_url(node.id)
-
-    #return render_to_response('noclook/host_node_detail.html',
-        #{'node_handle': nh, 'info': info, 'node': node, 'lista': lista},
-        #context_instance=RequestContext(request))
+@login_required
+def host_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    service_relationships = node.relationships.incoming(types=['Depends_on'])
+    return render_to_response('noclook/host_detail.html', {'node_handle': nh,
+                'node': node, 'service_relationships': service_relationships},
+                context_instance=RequestContext(request))
+                
+@login_required
+def host_service_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    service_relationships = node.relationships.outgoing(types=['Depends_on'])
+    return render_to_response('noclook/host_service_detail.html', 
+                              {'node_handle': nh, 'node': node, 
+                               'service_relationships': service_relationships},
+                               context_instance=RequestContext(request))
 
 @login_required
 def cable_detail(request, handle_id):

@@ -2,14 +2,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/jquery-ui-1.8.14.smoothness.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
-    <link rel="stylesheet" href="{% load niweb_tags %}{% niweb_media_url %}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+    <!-- Load the template tags before referencing them -->
+    {% load niweb_tags %}
+    <link rel="stylesheet" href="{% niweb_media_url %}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+    <link rel="stylesheet" href="{% niweb_media_url %}css/jquery.tablesorter.blue.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+    <link rel="stylesheet" href="{% niweb_media_url %}css/jquery-ui-1.8.14.smoothness.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
     <title>NOCLook {% block title %}{% endblock %}</title>
     <!--[if IE]><script language="javascript" type="text/javascript" src="/site_media/js/jit/Extras/excanvas.js"></script><![endif]-->
     <!-- JQuery Library File -->
-    <script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery-1.6.2.min.js"></script>
-    <script language="javascript" type="text/javascript" src="/site_media/js/jquery/jquery.autocomplete-min.js"></script>
-    <script>
+    <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery-1.6.2.min.js"></script>
+    <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.autocomplete-min.js"></script>
+    <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript">
     $(document).ready(function() {
         var options, a;
         jQuery(function(){
