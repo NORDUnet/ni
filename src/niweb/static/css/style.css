@@ -322,7 +322,7 @@ ul.menu {
  margin-top: 20px;
 }
 
-#content td.align_top {
+/*#content td.align_top {
  vertical-align: top;
 }
 
@@ -330,7 +330,7 @@ ul.menu {
  vertical-align: top;
  background-color: #F0F0F0;
 }
-
+*/
 #toggle_debug:link, #toggle_debug:visited {
     display: block;
     color: #000000;

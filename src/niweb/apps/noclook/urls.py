@@ -18,6 +18,8 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^ip-service/(?P<handle_id>\d+)/$', 'ip_service_detail'),
     (r'^optical-node/(?P<handle_id>\d+)/$', 'optical_node_detail'),
     (r'^cable/(?P<handle_id>\d+)/$', 'cable_detail'),
+    (r'^host/(?P<handle_id>\d+)/$', 'host_detail'),
+    (r'^host-service/(?P<handle_id>\d+)/$', 'host_service_detail'),    
     # Visualize views
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)\.json$', 
                                                          'visualize_json'),

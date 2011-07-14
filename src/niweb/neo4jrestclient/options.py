@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Request
-CACHE = False
+CACHE = True
 DEBUG = False
 # Smart errors
 SMART_ERRORS = True
