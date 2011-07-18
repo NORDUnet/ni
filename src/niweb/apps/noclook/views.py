@@ -153,9 +153,13 @@ def host_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
+    info = {}
+    info['hostnames'] = json.loads(node['hostnames'])
+    info['addresses'] = json.loads(node['addresses'])
     service_relationships = node.relationships.incoming(types=['Depends_on'])
     return render_to_response('noclook/host_detail.html', {'node_handle': nh,
-                'node': node, 'service_relationships': service_relationships},
+                'node': node, 'service_relationships': service_relationships,
+                'info': info},
                 context_instance=RequestContext(request))
                 
 @login_required
