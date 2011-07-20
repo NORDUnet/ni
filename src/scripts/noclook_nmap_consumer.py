@@ -107,6 +107,7 @@ def insert_services(service_dict, node_id):
                     for rel in rels:
                         if nc.relationships_equal(new_rel, rel):
                             del new_rel
+                            break
     print 'All hosts services done.' # DEBUG
     return service_nodes
 
