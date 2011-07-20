@@ -12,43 +12,32 @@ __credits__ = [
     "Andy Denmark, https://github.com/denmark",
 ]
 __license__ = "GPL 3"
-__version__ = "1.4.0"
+__version__ = "1.3.4"
 __email__ = "versae@gmail.com"
 __url__ = "https://github.com/versae/neo4j-rest-client"
 __description__ = """Library to interact with Neo4j standalone REST server"""
 __status__ = "Development"
 # Order
-BREADTH_FIRST = "breadth_first"
-DEPTH_FIRST = "depth_first"
-# Relationships
-RELATIONSHIPS_ALL = "all"
-RELATIONSHIPS_IN = "in"
-RELATIONSHIPS_OUT = "out"
+BREADTH_FIRST = "breadth first"
+DEPTH_FIRST = "depth first"
 # Return
 RETURN_ALL_NODES = "all"
-RETURN_ALL_BUT_START_NODE = "all_but_start_node"
+RETURN_ALL_BUT_START_NODE = "all but start node"
 # Stop
 STOP_AT_DEPTH_ONE = 1
 STOP_AT_END_OF_GRAPH = "none"
 # Uniqueness
-NONE = "none"
-NODE_GLOBAL = "node_global"
-NODE_PATH = "node_path"
-NODE_RECENT = "node recent"  # Deprecated
-RELATIONSHIP_GLOBAL = "relationship_global"
-RELATIONSHIP_PATH = "relationship_path"
-RELATIONSHIP_RECENT = "relationship recent"  # Deprecated
+NODE_GLOBAL = "node global"
+NODE_PATH = "node path"
+NODE_RECENT = "node recent"
+RELATIONSHIP_GLOBAL = "relationship global"
+RELATIONSHIP_PATH = "relationship path"
+RELATIONSHIP_RECENT = "relationship recent"
 # Returns
 NODE = "node"
 RELATIONSHIP = "relationship"
 PATH = "path"
-FULLPATH = "fullpath"
 POSITION = "position"
 # Indexes
 INDEX_EXACT = "exact"
 INDEX_FULLTEXT = "fulltext"
-# Transactions
-TX_GET = "GET"
-TX_PUT = "PUT"
-TX_POST = "POST"
-TX_DELETE = "DELETE"

@@ -1,23 +1,19 @@
 # -*- coding: utf-8 -*-
 import json
 import urllib
-import weakref
-from lucenequerybuilder import Q
 
 import options
 from constants import (BREADTH_FIRST, DEPTH_FIRST,
                        STOP_AT_END_OF_GRAPH,
                        NODE_GLOBAL, NODE_PATH, NODE_RECENT,
                        RELATIONSHIP_GLOBAL, RELATIONSHIP_PATH,
-                       RELATIONSHIP_RECENT, NONE,
+                       RELATIONSHIP_RECENT,
                        NODE, RELATIONSHIP, PATH, POSITION,
-                       INDEX_FULLTEXT, TX_GET, TX_PUT, TX_POST, TX_DELETE,
-                       RELATIONSHIPS_ALL, RELATIONSHIPS_IN, RELATIONSHIPS_OUT)
-from request import (Request, NotFoundError, StatusException,
-                     TransactionException)
+                       INDEX_FULLTEXT)
+from request import Request, NotFoundError, StatusException
 
 __all__ = ["GraphDatabase", "Incoming", "Outgoing", "Undirected",
-           "StopAtDepth", "NotFoundError", "StatusException", "Q"]
+           "StopAtDepth", "NotFoundError", "StatusException"]
 
 
 class StopAtDepth(object):
@@ -39,7 +35,7 @@ class MetaTraversal(type):
 
     def __new__(cls, name, bases, dic):
         for attr in ["types", "order", "stop", "returnable", "uniqueness",
-                     "paginated", "page_size", "time_out", "returns"]:
+                     "returns"]:
             dic[attr] = dic.get(attr, None)
         dic["is_returnable"] = dic.get("is_returnable",
                                        dic.get("isReturnable", None))
@@ -54,7 +50,6 @@ class GraphDatabase(object):
     """
 
     def __init__(self, url):
-        self._transactions = {}
         self.url = None
         if url.endswith("/"):
             self.url = url
@@ -81,7 +76,6 @@ class GraphDatabase(object):
             self.relationships = RelationshipsProxy(self._relationship,
                                                     self._relationship_index)
             self.Traversal = self._get_traversal_class()
-            self._batch = "%sbatch" % self.url
         else:
             raise NotFoundError(response.status, "Unable get root")
 
@@ -112,9 +106,6 @@ class GraphDatabase(object):
                                                    uniqueness=self.uniqueness,
                                                    is_stop_node=is_stop_node,
                                                    is_returnable=is_returnable,
-                                                   paginated=self.paginated,
-                                                   page_size=self.page_size,
-                                                   time_out=self.time_out,
                                                    returns=self.returns)
                 self._items = results
                 self._index = len(results)
@@ -130,228 +121,15 @@ class GraphDatabase(object):
 
         return Traversal
 
-    def transaction(self, using_globals=True, commit=True, update=True,
-                    transaction_id=None, context=None):
-        if transaction_id not in self._transactions:
-            transaction_id = len(self._transactions.keys())
-        self._transactions[transaction_id] = Transaction(self, transaction_id,
-                                                         context or {},
-                                                         commit=commit,
-                                                         update=update)
-        if using_globals:
-            globals()[options.TX_NAME] = self._transactions[transaction_id]
-        return self._transactions[transaction_id]
-
-
-class TransactionOperationProxy(dict, object):
-    """
-    TransactionOperationProxy class. A proxy to convert transaction operations
-    into final instances of Node or Relationship.
-    """
-
-    def __init__(self, obj=None, attr=None, **kwargs):
-        self._self = None
-        if obj:
-            self._object_ref = weakref.ref(obj)
-        else:
-            self._object_ref = None
-        self._attribute = attr
-        super(TransactionOperationProxy, self).__init__(kwargs)
-
-    def __getattribute__(self, attr):
-        try:
-            if attr != "_self":
-                return getattr(object.__getattribute__(self, "_self"), attr)
-        except AttributeError:
-            pass
-        return object.__getattribute__(self, attr)
-
-    def __setattribute__(self, attr, val):
-        if attr in ("_object_ref", "_attribute"):
-            object.__setattribute__(self, attr, val)
-        elif attr != "_self":
-            setattr(self._self, attr, val)
-        else:
-            dict.__setattribute__(self, attr, val)
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __str__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        attr = "__unicode__"
-        try:
-            return getattr(object.__getattribute__(self, "_self"), attr)()
-        except AttributeError:
-            pass
-        return object.__repr__(self)
-
-    def __getitem__(self, key):
-        attr = "__getitem__"
-        try:
-            return getattr(object.__getattribute__(self, "_self"), attr)(key)
-        except AttributeError:
-            pass
-        return dict.__getitem__(self, key)
-
-    def get_object(self):
-        if self._object_ref:
-            return self._object_ref()
-        else:
-            return None
-
-    def get_attribute(self):
-        return self._attribute
-
-    def change(self, cls, url, data=None):
-        self._self = cls(url, update_dict=data)
-
-
-class Transaction(object):
-    """
-    Transaction class.
-    """
-
-    def __init__(self, cls, transaction_id, context, commit=True, update=True):
-        self._class = cls
-        self.url = self._class._batch
-        self.id = transaction_id
-        self.context = context
-        self.auto_commit = commit
-        self.auto_update = update
-        self.operations = []
-        self.references = []
-        self._value = None
-        self._attribute = None
-
-    def __call__(self, value):
-        """
-        Call method in order to allow expresions like
-
-        >>> with gdb.transaction(using_globals=False) as tx:
-           ...:     n[key] = tx(value)
-        """
-        self._value = value
-        return self
-
-    def get_value(self):
-        return self._value
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        del self._class._transactions[self.id]
-        if options.TX_NAME in globals():
-            del globals()[options.TX_NAME]
-        if self.auto_commit:
-            return self.commit(type, value, traceback)
-        return True
-
-    def _results_list_to_dict(self, results):
-        result_dict = {}
-        for result in results:
-            result_id = result.pop("id")
-            if "body" in result and "self" in result["body"]:
-                if NODE in result["body"]["self"]:
-                    result["returns"] = Node
-                elif RELATIONSHIP in result["body"]["self"]:
-                    result["returns"] = Relationship
-            if "returns" in result:
-                result_dict[result_id] = result
-        return result_dict
-
-    def _batch(self):
-        response, content = Request().post(self.url, data=self.operations)
-        if response.status == 200:
-            results_list = json.loads(content)
-            results_dict = self._results_list_to_dict(results_list)
-            return results_dict
-        else:
-            raise TransactionException(response.status)
-
-    def commit(self, *args, **kwargs):
-        results = self._batch()
-        # Objects to update
-        if self.auto_update:
-            for operation in self.operations:
-                on_object = operation.get_object()
-                if hasattr(on_object, "update"):
-                    on_object.update(extensions=False)
-        # Objects to return
-        for referenced_object in self.references:
-                ref_object = referenced_object()
-                result = results[ref_object["id"]]
-                if "returns" in result:
-                    if "location" in result:
-                        cls = result["returns"]
-                        url = result["location"]
-                    elif "body" in result:
-                        cls = result["returns"]
-                        url = result["body"]["self"]
-                    if cls and url:
-                        ref_object.change(cls, url, data=result)
-        self.references = []
-        self.operations = []
-        # Destroy the object after commit
-        self = None
-        if "type" in kwargs and isinstance(kwargs["type"], Exception):
-            raise kwargs["type"]
-        else:
-            return True
-
-    def subscribe(self, method, url, data=None, obj=None):
-        params = {
-            "method": method,
-            "to": "/%s" % url.replace(self._class.url, ""),
-            "id": len(self.operations),
-        }
-        if data:
-            params.update({"body": data})
-        # Reunify PUT methods in just one
-        transaction_operation = None
-        for i, operation in enumerate(self.operations):
-            if (operation["method"] == params["method"] == TX_PUT
-                and operation["to"] == params["to"]):
-                if "body" in operation:
-                    self.operations[i]["body"].update(params["body"])
-                else:
-                    self.operations[i]["body"] = params["body"]
-                transaction_operation = operation
-                break
-        if not transaction_operation:
-            transaction_operation = TransactionOperationProxy(obj=obj,
-                                                              **params)
-            self.operations.append(transaction_operation)
-            if method in (TX_POST, TX_GET):
-                self.references.append(weakref.ref(transaction_operation))
-        return transaction_operation
-
-    @staticmethod
-    def get_transaction(tx=None):
-        if not tx and options.TX_NAME in globals():
-            return globals()[options.TX_NAME]
-        elif isinstance(tx, Transaction):
-            return tx
-        elif (isinstance(tx, (list, tuple)) and len(tx) > 1
-              and isinstance(tx[-1], Transaction)):
-            return tx[-1]
-        else:
-            return None
-
 
 class Base(object):
     """
     Base class.
     """
 
-    def __init__(self, url, create=False, data={}, update_dict={}):
+    def __init__(self, url, create=False, data={}):
         self._dic = {}
         self.url = None
-        # TODO: Allow update an object using only a new data dict of properties
-        self._update_dict = update_dict
         if url.endswith("/"):
             url = url[:-1]
         if create:
@@ -363,25 +141,19 @@ class Base(object):
                 raise NotFoundError(response.status, "Invalid data sent")
         if not self.url:
             self.url = url
-        self.update()
-
-    def update(self, extensions=True):
         response, content = Request().get(self.url)
         if response.status == 200:
             self._dic.update(json.loads(content).copy())
-            if extensions:
-                self._extensions = self._dic.get('extensions', {})
-                if self._extensions:
-                    self.extensions = ExtensionsProxy(self._extensions)
+            self._extensions = self._dic.get('extensions', {})
+            if self._extensions:
+                self.extensions = ExtensionsProxy(self._extensions)
         else:
             raise NotFoundError(response.status, "Unable get object")
 
-    def delete(self, key=None, tx=None):
+    def delete(self, key=None):
         if key:
-            return self.__delitem__(key, tx=tx)
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            return tx.subscribe(TX_DELETE, self.url, obj=self)
+            self.__delitem__(key)
+            return
         response, content = Request().delete(self.url)
         if response.status == 204:
             del self
@@ -392,11 +164,8 @@ class Base(object):
                                                    "deleted (still has " \
                                                    "relationships?)")
 
-    def __getitem__(self, key, tx=None):
+    def __getitem__(self, key):
         property_url = self._dic["property"].replace("{key}", key)
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            return tx.subscribe(TX_GET, property_url, obj=self)
         response, content = Request().get(property_url)
         if response.status == 200:
             self._dic["data"][key] = json.loads(content)
@@ -408,35 +177,21 @@ class Base(object):
                                     "Node or propery not found")
         return self._dic["data"][key]
 
-    def get(self, key, *args, **kwargs):
-        tx = kwargs.get("tx", None)
-        try:
-            return self.__getitem__(key, tx=tx)
-        except (KeyError, NotFoundError, StatusException):
-            if args:
-                return args[0]
-            elif "default" in kwargs:
-                return kwargs["default"]
-            elif options.SMART_ERRORS:
-                raise KeyError(key)
-            else:
-                raise NotFoundError()
+    def get(self, key, *args):
+        if args:
+            default = args[0]
+            try:
+                return self.__getitem__(key)
+            except (KeyError, NotFoundError, StatusException):
+                return default
+        else:
+            return self.__getitem__(key)
 
     def __contains__(self, obj):
         return obj in self._dic["data"]
 
-    def __setitem__(self, key, value, tx=None):
-        if isinstance(key, (list, tuple)):
-            tx = tx or key[1]
-            key = key[0]
-        if isinstance(value, Transaction):
-            tx = tx or value
-            value = value.get_value()
+    def __setitem__(self, key, value):
         property_url = self._dic["property"].replace("{key}", key)
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            transaction_url = self._dic["property"].replace("{key}", "")
-            return tx.subscribe(TX_PUT, transaction_url, {key: value}, obj=self)
         response, content = Request().put(property_url, data=value)
         if response.status == 204:
             self._dic["data"].update({key: value})
@@ -445,17 +200,11 @@ class Base(object):
         else:
             raise StatusException(response.status, "Invalid data sent")
 
-    def set(self, key, value, tx=None):
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            return self.__setitem__(key, value, tx=tx)
+    def set(self, key, value):
         self.__setitem__(key, value)
 
-    def __delitem__(self, key, tx=None):
+    def __delitem__(self, key):
         property_url = self._dic["property"].replace("{key}", key)
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            return tx.subscribe(TX_DELETE, property_url, obj=self)
         response, content = Request().delete(property_url)
         if response.status == 204:
             del self._dic["data"][key]
@@ -518,63 +267,7 @@ class Base(object):
             self._dic["data"] = {}
         else:
             raise NotFoundError(response.status, "Properties not found")
-    # TODO: Create an own Property class to handle transactions
     properties = property(_get_properties, _set_properties, _del_properties)
-
-
-class Iterable(list):
-    """
-    Class to iterate among returned objects.
-    """
-
-    def __init__(self, cls, lst, attr):
-        self._list = lst
-        self._index = len(lst)
-        self._class = cls
-        self._attribute = attr
-        super(Iterable, self).__init__(lst)
-
-    def __getslice__(self, *args, **kwargs):
-        eltos = super(Iterable, self).__getslice__(*args, **kwargs)
-        if self._attribute:
-            return [self._class(elto[self._attribute]) for elto in eltos]
-        else:
-            return [self._class(elto) for elto in eltos]
-
-    def __getitem__(self, index):
-        elto = super(Iterable, self).__getitem__(index)
-        if self._attribute:
-            return self._class(elto[self._attribute])
-        else:
-            return self._class(elto)
-
-    def __repr__(self):
-        return self.__unicode__()
-
-    def __str__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
-        return u"<Neo4j %s: %s>" % (self.__class__.__name__,
-                                    self._class.__name__)
-
-    def __contains__(self, value):
-        if isinstance(value, Base) and hasattr(value, "url"):
-            if self._attribute:
-                return value.url in [elto[self._attribute]
-                                     for elto in self._list]
-            else:
-                return value.url in self._list
-        return False
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        if self._index == 0:
-            raise StopIteration
-        self._index = self._index - 1
-        return self.__getitem__(self._index)
 
 
 class NodesProxy(dict):
@@ -589,30 +282,21 @@ class NodesProxy(dict):
         self._node_index = node_index
 
     def __call__(self, **kwargs):
-        tx = Transaction.get_transaction(kwargs.get("tx", None))
         reference = kwargs.pop("reference", False)
         if reference and self._reference_node:
-            return self.__getitem__(self._reference_node, tx=tx)
+            return Node(self._reference_node)
         else:
             return self.create(**kwargs)
 
-    def __getitem__(self, key, tx=None):
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            if isinstance(key, (str, unicode)) and key.startswith(self._node):
-                return tx.subscribe(TX_GET, key, obj=self)
-            else:
-                return tx.subscribe(TX_GET, "%s/%s/" % (self._node, key), obj=self)
+    def __getitem__(self, key):
+        if isinstance(key, (str, unicode)) and key.startswith(self._node):
+            return Node(key)
         else:
-            if isinstance(key, (str, unicode)) and key.startswith(self._node):
-                return Node(key)
-            else:
-                return Node("%s/%s/" % (self._node, key))
+            return Node("%s/%s/" % (self._node, key))
 
     def get(self, key, *args, **kwargs):
-        tx = Transaction.get_transaction(kwargs.get("tx", None))
         try:
-            return self.__getitem__(key, tx=tx)
+            return self.__getitem__(key)
         except (KeyError, NotFoundError, StatusException):
             if args:
                 return args[0]
@@ -622,22 +306,11 @@ class NodesProxy(dict):
                 raise NotFoundError()
 
     def create(self, **kwargs):
-        tx = Transaction.get_transaction(kwargs.get("tx", None))
-        if tx:
-            if "tx" in kwargs and isinstance(kwargs["tx"], Transaction):
-                x = kwargs.pop("tx", None)
-                del x  # Makes pyflakes happy
-            return tx.subscribe(TX_POST, self._node, data=kwargs, obj=self)
-        else:
-            return Node(self._node, create=True, data=kwargs)
+        return Node(self._node, create=True, data=kwargs)
 
-    def delete(self, key, tx=None):
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            return self.__getitem__(key, tx=tx)
-        else:
-            node = self.__getitem__(key)
-            del node
+    def delete(self, key):
+        node = self.__getitem__(key)
+        del node
 
     def _indexes(self):
         if self._node_index:
@@ -656,20 +329,13 @@ class Node(Base):
         """
 
         def relationship(to, *args, **kwargs):
-            tx = Transaction.get_transaction(kwargs.get("tx", None))
             create_relationship_url = self._dic["create_relationship"]
             data = {
                 "to": to.url,
                 "type": relationship_name,
             }
-            if "tx" in kwargs and isinstance(kwargs["tx"], Transaction):
-                x = kwargs.pop("tx", None)
-                del x  # Makes pyflakes happy
             if kwargs:
                 data.update({"data": kwargs})
-            if tx:
-                return tx.subscribe(TX_POST, create_relationship_url,
-                                    data=data, obj=self)
             response, content = Request().post(create_relationship_url,
                                                data=data)
             if response.status == 201:
@@ -695,26 +361,25 @@ class Node(Base):
 
     def traverse(self, types=None, order=None, stop=None, returnable=None,
                  uniqueness=None, is_stop_node=None, is_returnable=None,
-                 paginated=False, page_size=None, time_out=None,
                  returns=None):
         data = {}
         if order in (BREADTH_FIRST, DEPTH_FIRST):
             data.update({"order": order})
         if isinstance(stop, (int, float)):
-            data.update({"max_depth": stop})
-        elif stop == STOP_AT_END_OF_GRAPH:
-            data.update({'prune_evaluator': {
+            data.update({"max depth": stop})
+        elif stop is STOP_AT_END_OF_GRAPH:
+            data.update({'prune evaluator': {
                 'language': 'javascript',
                 'body': 'false',
             }})
         if returnable in (BREADTH_FIRST, DEPTH_FIRST):
-            data.update({"return_filter": {
+            data.update({"return filter": {
                 "language": "builtin",
                 "name": returnable,
             }})
         if uniqueness in (NODE_GLOBAL, NODE_PATH, NODE_RECENT, NODE,
                           RELATIONSHIP_GLOBAL, RELATIONSHIP_PATH,
-                          RELATIONSHIP_RECENT, NONE):
+                          RELATIONSHIP_RECENT):
             data.update({"uniqueness": uniqueness})
         if types:
             if not isinstance(types, (list, tuple)):
@@ -730,83 +395,23 @@ class Node(Base):
                 data.update({"relationships": relationships})
         if returns not in (NODE, RELATIONSHIP, PATH, POSITION):
             returns = NODE
-        if ((paginated or page_size or time_out)
-            and "paged_traverse" in self._dic):
-            traverse_params = []
-            if page_size:
-                traverse_params.append("pageSize=%s" % page_size)
-            if time_out:
-                traverse_params.append("leaseTime=%s" % time_out)
-            traverse_url = self._dic["paged_traverse"].replace("{returnType}",
-                                                               returns)
-            traverse_url = traverse_url.replace("{?pageSize,leaseTime}", "")
-            if traverse_params:
-                traverse_url = "%s?%s" % (traverse_url,
-                                          "&".join(traverse_params))
-            return PaginatedTraversal(traverse_url, returns, data=data)
+        traverse_url = self._dic["traverse"].replace("{returnType}", returns)
+        response, content = Request().post(traverse_url, data=data)
+        if response.status == 200:
+            results_list = json.loads(content)
+            if returns is NODE:
+                return [Node(r["self"]) for r in results_list]
+            elif returns is RELATIONSHIP:
+                return [Relationship(r["self"]) for r in results_list]
+            elif returns is PATH:
+                return [Path(r) for r in results_list]
+            elif returns is POSITION:
+                return [Position(r) for r in results_list]
+        elif response.status == 404:
+            raise NotFoundError(response.status, "Node or relationship not " \
+                                                 "found")
         else:
-            traverse_url = self._dic["traverse"].replace("{returnType}",
-                                                         returns)
-            response, content = Request().post(traverse_url, data=data)
-            if response.status == 200:
-                results_list = json.loads(content)
-                if returns == NODE:
-                    return Iterable(Node, results_list, "self")
-                elif returns == RELATIONSHIP:
-                    return Iterable(Relationship, results_list, "self")
-                elif returns == PATH:
-                    return Iterable(Path, results_list)
-                elif returns == POSITION:
-                    return Iterable(Position, results_list)
-            elif response.status == 404:
-                raise NotFoundError(response.status, "Node or relationship " \
-                                                     "not found")
-            else:
-                raise StatusException(response.status, "Invalid data sent")
-
-
-class PaginatedTraversal(object):
-    """
-    Class for paged traversals.
-    """
-
-    def __init__(self, url, returns, data=None):
-        self.url = url
-        self.returns = returns
-        self.data = data
-        self._results = []
-        response, content = Request().post(self.url, data=self.data)
-        if response.status == 201:
-            self._results = json.loads(content)
-            self._next_url = response.get("location")
-        else:
-            self._next_url = None
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        if self._results:
-            self._item = False
-            if self.returns == NODE:
-                results = Iterable(Node, self._results, "self")
-            elif self.returns == RELATIONSHIP:
-                results = Iterable(Relationship, self._results, "self")
-            elif self.returns == PATH:
-                results = Iterable(Path, self._results)
-            elif self.returns == POSITION:
-                results = Iterable(Position, self._results)
-            self._results = []
-            if self._next_url:
-                response, content = Request().get(self._next_url)
-                if response.status == 200:
-                    self._results = json.loads(content)
-                    self._next_url = response.get("location")
-                else:
-                    self._next_url = None
-            return results
-        else:
-            raise StopIteration
+            raise StatusException(response.status, "Invalid data sent")
 
 
 class IndexesProxy(dict):
@@ -902,23 +507,6 @@ class Index(object):
     The returned object supports dict style lookups, eg index[key][value].
     """
 
-    @staticmethod
-    def _get_results(url, node_or_rel):
-        response, content = Request().get(url)
-        if response.status == 200:
-            data_list = json.loads(content)
-            if node_or_rel == NODE:
-                return Iterable(Node, data_list, "self")
-            else:
-                return Iterable(Relationship, data_list, "self")
-        elif response.status == 404:
-            raise NotFoundError(response.status,
-                                "Node or relationship not found")
-        else:
-            raise StatusException(response.status,
-                                    "Error requesting index with GET %s" \
-                                    % url)
-
     class IndexKey(object):
         """
         Intermediate object so that lookups can be done like:
@@ -937,7 +525,7 @@ class Index(object):
 
         def __getitem__(self, value):
             url = "%s/%s" % (self.url, urllib.quote_plus(value))
-            return Index._get_results(url, self._index_for)
+            return self._get_results(url)
 
         def __setitem__(self, value, item):
             # Neo4j hardly crush if you try to index a relationship in a
@@ -949,6 +537,8 @@ class Index(object):
                 raise TypeError("%s is a %s and the index is for %ss"
                                 % (item, self._index_for.capitalize(),
                                    self._index_for))
+            #TODO
+            #value = urllib.quote(value.encode('utf-8')) #Needs more testing
             value = urllib.quote_plus(value)
             if isinstance(item, Base):
                 url_ref = item.url
@@ -968,9 +558,27 @@ class Index(object):
                                       "Error requesting index with POST %s " \
                                       ", data %s" % (request_url, url_ref))
 
+        def _get_results(self, url):
+            response, content = Request().get(url)
+            if response.status == 200:
+                data_list = json.loads(content)
+                if self._index_for == NODE:
+                    return [Node(n['self'], data=n['data'])
+                            for n in data_list]
+                else:
+                    return [Relationship(r['self'], data=r['data'])
+                            for r in data_list]
+            elif response.status == 404:
+                raise NotFoundError(response.status,
+                                    "Node or relationship not found")
+            else:
+                raise StatusException(response.status,
+                                      "Error requesting index with GET %s" \
+                                       % url)
+
         def query(self, value):
-            url = "%s?query=%s" % (self.url, urllib.quote_plus(value))
-            return Index._get_results(url, self._index_for)
+            url = "%s?query=%s" % (self.url, urllib.quote(value))
+            return self._get_results(url)
 
     def __init__(self, index_for, name, **kwargs):
         self._index_for = index_for
@@ -1001,7 +609,7 @@ class Index(object):
     def get(self, key, value=None):
         key = urllib.quote(key)
         if value:
-            value = urllib.quote_plus(value)
+            value = urllib.quote(value)
             return self.IndexKey(self._index_for,
                                  "%s/%s" % (self.url, key))[value]
         else:
@@ -1012,7 +620,7 @@ class Index(object):
             raise TypeError("%s has no url attribute" % item)
         if key and value:
             key = urllib.quote(key)
-            value = urllib.quote_plus(value)
+            value = urllib.quote(value)
             url = self.template.replace("{key}", key).replace("{value}", value)
             url = "%s/%s" % (url, item.id)
         elif key and not value:
@@ -1033,7 +641,7 @@ class Index(object):
 
     def query(self, *args):
         """
-        Query a fulltext index by key and query or just a plain Lucene query,
+        Query a fulltext index by key and query or just a plain Lucene query, eg
 
         i1 = gdb.nodes.indexes.get('people',type='fulltext', provider='lucene')
         i1.query('name','do*')
@@ -1042,21 +650,15 @@ class Index(object):
         In this example, the last two line are equivalent.
         """
         if not args or len(args) > 2:
-            raise TypeError('query() takes 2 or 3 arguments (a query or a key '
-                            'and a query) (%d given)' % (len(args) + 1))
+            raise TypeError('query() takes 2 or 3 arguments (a query or a key and'
+                            ' a query) (%d given)' % (len(args) + 1))
         elif len(args) == 1:
+            # TODO: Add a Q class in order to do complex queries
             query, = args
-            return self.get('text').query(str(query))
+            return self.get('ridiculouskey123').query(query)
         else:
             key, query = args
-            index_key = self.get(key)
-            if isinstance(query, basestring):
-                return index_key.query(query)
-            else:
-                if query.fielded:
-                    raise ValueError('Queries with an included key should '\
-                                     'not include a field.')
-                return index_key.query(str(query))
+            return self.get(key).query(query)
 
 
 class RelationshipsProxy(dict):
@@ -1069,14 +671,12 @@ class RelationshipsProxy(dict):
         self._relationship = relationship
         self._relationship_index = relationship_index
 
-    def __getitem__(self, key, tx=None):
-        tx = Transaction.get_transaction(tx)
-        return Relationship("%s/%s" % (self._relationship, key), tx=tx)
+    def __getitem__(self, key):
+        return Relationship("%s/%s" % (self._relationship, key))
 
     def get(self, key, *args, **kwargs):
-        tx = Transaction.get_transaction(kwargs.get("tx", None))
         try:
-            return self.__getitem__(key, tx=tx)
+            return self.__getitem__(key)
         except (KeyError, NotFoundError, StatusException):
             if args:
                 return args[0]
@@ -1088,13 +688,9 @@ class RelationshipsProxy(dict):
     def create(self, node_from, relationship_name, node_to, **kwargs):
         return getattr(node_from, relationship_name)(node_to, **kwargs)
 
-    def delete(self, key, tx=None):
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            return self.__getitem__(key, tx=tx)
-        else:
-            relationship = self.__getitem__(key)
-            del relationship
+    def delete(self, key):
+        relationship = self.__getitem__(key)
+        del relationship
 
     def _indexes(self):
         if self._relationship_index:
@@ -1110,12 +706,10 @@ class Relationships(object):
     def __init__(self, node):
         self._node = node
         self._pattern = "{-list|&|types}"
-        self._dict = {}
 
     def __getattr__(self, relationship_type):
 
         def get_relationships(types=None, *args, **kwargs):
-            tx = Transaction.get_transaction(kwargs.get("tx", None))
             if relationship_type in ["all", "incoming", "outgoing"]:
                 if types and isinstance(types, (tuple, list)):
                     key = "%s_typed_relationships" % relationship_type
@@ -1124,54 +718,23 @@ class Relationships(object):
                 else:
                     key = "%s_relationships" % relationship_type
                     url = self._node._dic[key]
-                if tx:
-                    return tx.subscribe(TX_GET, url, obj=self)
                 response, content = Request().get(url)
                 if response.status == 200:
                     relationship_list = json.loads(content)
-                    relationships = Iterable(Relationship, relationship_list,
-                                             "self")
-                    # relationships = [Relationship(r["self"])
-                    #                  for r in relationship_list]
-                    self._dict[relationship_type] = relationships
-                    return self._dict[relationship_type]
+                    relationships = [Relationship(r["self"])
+                                     for r in relationship_list]
+                    return relationships
                 elif response.status == 404:
-                    if options.SMART_ERRORS:
-                        return []
-                    else:
-                        raise NotFoundError(response.status,
-                                            "Node or relationship not found")
+                    raise NotFoundError(response.status,
+                                        "Node or relationship not found")
                 else:
-                    if options.SMART_ERRORS:
-                        raise KeyError("Node not found")
-                    else:
-                        raise StatusException(response.status, "Node not found")
+                    raise StatusException(response.status, "Node not found")
             raise NameError("name %s is not defined" % relationship_type)
 
         return get_relationships
 
-    def __len__(self, tx=None):
-        tx = Transaction.get_transaction(tx)
-        if tx:
-            return len(self.__getattr__("all")(tx=tx))
-        elif "all" in self._dict:
-            return len(self._dic["all"])
-        else:
-            return len(self.__getattr__("all")())
-
-    def count(self, tx=None):
-        return self.__len__(tx=tx)
-
-    def __getitem__(self, index, tx=None):
-        tx = Transaction.get_transaction(tx)
-        return self.__getattr__("all")(tx=tx)[index]
-
     def create(self, relationship_name, to, **kwargs):
         return getattr(self._node, relationship_name)(to, **kwargs)
-
-    def get(self, index, tx=None):
-        tx = Transaction.get_transaction(tx)
-        return self.__getattr__(index, tx=tx)
 
 
 class Relationship(Base):
@@ -1204,7 +767,6 @@ class Path(object):
     def __init__(self, dic):
         self.start = property(Node(dic["start"]))
         self.end = property(Node(dic["end"]))
-        self.weight = property(dic.get("weight", None))
         self._length = int(dic["length"])
         nodes = []
         relationships = []
@@ -1263,10 +825,9 @@ class BaseInAndOut(object):
             'type': property(lambda self: attr),
         })()
 
-All = BaseInAndOut(direction=RELATIONSHIPS_ALL)
-Incoming = BaseInAndOut(direction=RELATIONSHIPS_IN)
-Outgoing = BaseInAndOut(direction=RELATIONSHIPS_OUT)
-Undirected = BaseInAndOut(direction="both")  # Deprecated, use "All" instead
+Outgoing = BaseInAndOut(direction="out")
+Incoming = BaseInAndOut(direction="in")
+Undirected = BaseInAndOut(direction="both")
 
 
 class ExtensionsProxy(dict):
@@ -1375,13 +936,13 @@ class Extension(object):
                 returns = results_list[0].get("self", None)
             if results_list and returns:
                 if NODE in returns:
-                    return Iterable(Node, results_list, "self")
+                    return [Node(r["self"]) for r in results_list]
                 elif RELATIONSHIP in returns:
-                    return Iterable(Relationship, results_list, "self")
+                    return [Relationship(r["self"]) for r in results_list]
                 elif PATH in returns:
-                    return Iterable(Path, results_list)
+                    return [Path(r) for r in results_list]
                 elif POSITION in returns:
-                    return Iterable(Position, results_list)
+                    return [Position(r) for r in results_list]
             else:
                 return []
         elif response.status == 404:
