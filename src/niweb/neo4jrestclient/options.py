@@ -3,4 +3,4 @@
 CACHE = False
 DEBUG = False
 # Smart errors
-SMART_ERRORS = False
+SMART_ERRORS = True
