@@ -90,24 +90,26 @@ def insert_services(service_dict, node_id):
                     service_node = node_handle.get_node()
                     service_nodes.append(service_node)
                     print 'service_node id: %d' % service_node.id # DEBUG
-                    # Get allready existing relationships between the two nodes
+                    # Get already existing relationships between the two nodes
                     rels = nc.get_relationships(service_node, host_node, 
                                                 'Depends_on')
-                    # Make a relationship between the service and host
-                    new_rel = nc.make_suitable_relationship(service_node, 
-                                                    host_node, 'Depends_on')
-                    new_rel['ip_address'] = address
-                    new_rel['protocol'] = protocol
-                    new_rel['port'] = port
-                    for key, value in service.items():
-                        new_rel[key] = value
-                    # Removes the just created relationship if it equals any
-                    # allready existing
-                    print 'new_rel id: %d' % new_rel.id # DEBUG
+                    create = True
                     for rel in rels:
-                        if nc.relationships_equal(new_rel, rel):
-                            del new_rel
+                        if rel['ip_address'] == address and \
+                        rel['protocol'] == protocol and rel['port'] == port:
+                            create = False
                             break
+                    if create:
+                        # Make a relationship between the service and host
+                        new_rel = nc.make_suitable_relationship(service_node, 
+                                                        host_node, 'Depends_on')
+                        new_rel['ip_address'] = address
+                        new_rel['protocol'] = protocol
+                        new_rel['port'] = port
+                        for key, value in service.items():
+                            new_rel[key] = value
+                        print 'new_rel id: %d' % new_rel.id # DEBUG
+
     print 'All hosts services done.' # DEBUG
     return service_nodes
 
