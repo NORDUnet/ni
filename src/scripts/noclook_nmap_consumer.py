@@ -109,7 +109,6 @@ def insert_services(service_dict, node_id):
                         for key, value in service.items():
                             new_rel[key] = value
                         print 'new_rel id: %d' % new_rel.id # DEBUG
-
     print 'All hosts services done.' # DEBUG
     return service_nodes
 
