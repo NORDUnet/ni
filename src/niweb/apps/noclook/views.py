@@ -386,7 +386,6 @@ def delete_node(request, slug, handle_id):
         if 'confirmed' in request.POST and \
                                         request.POST['confirmed'] == 'delete':
             nh = get_object_or_404(NodeHandle, pk=handle_id)
-            nc.delete_node(nh.node_id)
             nh.delete()
             return HttpResponseRedirect('/%s/' % slug) 
     return edit_node(request, slug, handle_id)
