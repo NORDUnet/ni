@@ -36,8 +36,11 @@ path = '/home/lundberg/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
+from django.contrib.comments import Comment
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 import norduni_client as nc
 import noclook_juniper_consumer
@@ -88,11 +91,11 @@ def test_db():
             handle.node_id))
 
 def purge_db():
-    for h in NodeHandle.objects.all():
-        try:
-            nc.delete_node(h.node_id)
-        except nc.client.NotFoundError:
-            print 'Could not delete the Neo4j node.' 
+#    for h in NodeHandle.objects.all():
+#        try:
+#            nc.delete_node(h.node_id)
+#        except nc.client.NotFoundError:
+#            print 'Could not delete the Neo4j node.' 
     NodeHandle.objects.all().delete()
 
 def generate_password(n):
@@ -180,6 +183,18 @@ def get_node_handle(node_name, node_type_name, node_meta_type,
                             creator=user)
     node_handle.save()
     return node_handle # No NodeHandle found return a new handle.
+
+def set_comment(node_handle, comment):
+    '''
+    Sets the comment string as a comment for the provided node_handle.
+    '''
+    content_type = ContentType.objects.get_for_model(NodeHandle)
+    object_pk = node_handle.pk
+    user = get_user()
+    site_id = django_settings.SITE_ID
+    c = Comment(content_type = content_type, object_pk = object_pk, user = user,
+                            site_id = site_id, comment = comment)
+    c.save()
 
 def consume_noclook(json_list):
     '''
