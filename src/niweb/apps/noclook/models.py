@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.comments import Comment
 
 import norduni_client as nc
 
@@ -86,22 +87,21 @@ class NodeHandle(models.Model):
     
     save.alters_data = True
 
-    #def delete(self):
-        #'''
-        #Create a new node and associate it to the handle.
-        #'''
-        #nc = neo4jclient.Neo4jClient()
-        #try:
-            #node = nc.get_node_by_id(self.node_id)
-            #super(NodeHandle, self).delete()
-        #except Exception as e:
-            ## If you cant write to the sql db or the neo4j db do nothing
-            #print e
-            #return False
-        ## The handle is deleted and the node fetched, everthing seems
-        ## fine. Delete the node and all relationsships.
-        #for rel in node.relationships.all():
-            #rel.delete()
-        #node.delete()
-        #return True
-        #delete.alters_data = True
+    def delete(self):
+        '''
+        Delete that node handle and the handles node.
+        '''
+        try:
+            node = self.get_node()
+            Comment.objects.filter(object_pk=self.pk).delete()
+            super(NodeHandle, self).delete()
+        except Exception as e:
+            # If you cant write to the sql db or the neo4j db do nothing
+            print e
+            return False
+        # The handle is deleted and the node fetched, everthing seems
+        # fine. Delete the node and all its relationsships.
+        nc.delete_node(node.id)
+        return True
+        
+    delete.alters_data = True
