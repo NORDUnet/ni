@@ -35,6 +35,7 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import norduni_client as nc
 import noclook_consumer as nt
+from memorymonitor import MemoryMonitor # DEBUG
 
 '''
 This script is used for adding the objects collected with the
@@ -70,7 +71,9 @@ def insert_services(service_dict, node_id):
     meta_type = 'logical'
     host_node = nc.get_node_by_id(node_id)
     service_nodes = []
+    memory_mon = MemoryMonitor('lundberg') # DEBUG 
     for key in service_dict.keys():
+        print 'for key in service_dict.keys():' # DEBUG
         print host_node['name'] # DEBUG
         ipv = key
         print ipv # DEBUG
@@ -81,6 +84,7 @@ def insert_services(service_dict, node_id):
                 protocol = key
                 print protocol # DEBUG
                 for key in service_dict[ipv][address][protocol].keys():
+                    print 'for key in service_dict[ipv][address][protocol].keys():' # DEBUG
                     port = key
                     print port # DEBUG
                     service = service_dict[ipv][address][protocol][port]
@@ -91,10 +95,11 @@ def insert_services(service_dict, node_id):
                     service_nodes.append(service_node)
                     print 'service_node id: %d' % service_node.id # DEBUG
                     # Get already existing relationships between the two nodes
-                    rels = nc.get_relationships(service_node, host_node, 
+                    rels = nc.get_relationships(service_node, host_node, # SLOW PART
                                                 'Depends_on')
                     create = True
                     for rel in rels:
+                        print 'for rel in rels:' # DEBUG
                         if rel['ip_address'] == address and \
                         rel['protocol'] == protocol and rel['port'] == port:
                             create = False
@@ -107,9 +112,11 @@ def insert_services(service_dict, node_id):
                         new_rel['protocol'] = protocol
                         new_rel['port'] = port
                         for key, value in service.items():
+                            print 'for key, value in service.items():' # DEBUG
                             new_rel[key] = value
                         print 'new_rel id: %d' % new_rel.id # DEBUG
     print 'All hosts services done.' # DEBUG
+    print 'Used_memory, %d' % memory_mon.usage() # DEBUG
     return service_nodes
 
 def insert_nmap(json_list):
@@ -121,6 +128,7 @@ def insert_nmap(json_list):
     meta_type = 'physical'
     # Insert the host
     for i in json_list:
+        print 'for i in json_list:' # DEBUG
         name = i['host']['name']
         hostnames = json.dumps(i['host']['hostnames'])
         addresses = json.dumps(i['host']['addrs'])
