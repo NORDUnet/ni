@@ -30,7 +30,7 @@ $(document).ready(
             {% if service_relationships %}
             <table id="services" class="tablesorter" cellspacing="1">
                 <thead>
-                    <th>Service</th><th>Address</th><th>Port</th><th>Protocol<th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th>
+                    <th>Host</th><th>Address</th><th>Port</th><th>Protocol<th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th>
                 </thead>
                 <tbody>
                 {% for service in service_relationships|dictsort:"confidence" %}

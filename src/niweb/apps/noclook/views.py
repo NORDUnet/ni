@@ -48,6 +48,23 @@ def list_peering_partners(request):
                                 context_instance=RequestContext(request))
 
 @login_required
+def list_hosts(request):
+    node_type = get_object_or_404(NodeType, slug='host')
+    host_list = []
+    for nh in node_type.nodehandle_set.all():
+        node = nh.get_node()
+        addresses = node.get('addresses', '[null]')
+        for address in json.loads(addresses):
+            host = {}
+            host['name'] = node.get('name', None)
+            host['address'] = address
+            host['url'] = nh.get_absolute_url()
+            host_list.append(host)
+    return render_to_response('noclook/list_hosts.html',
+                                {'host_list': host_list},
+                                context_instance=RequestContext(request))
+
+@login_required
 def list_by_master(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
