@@ -210,6 +210,17 @@ def host_provider_detail(request, handle_id):
                               {'node_handle': nh, 'node': node, 
                                'host_relationships': host_relationships},
                                context_instance=RequestContext(request))
+                               
+@login_required
+def host_user_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    host_relationships = node.relationships.outgoing(types=['Uses'])
+    return render_to_response('noclook/host_user_detail.html', 
+                              {'node_handle': nh, 'node': node, 
+                               'host_relationships': host_relationships},
+                               context_instance=RequestContext(request))
 
 @login_required
 def cable_detail(request, handle_id):

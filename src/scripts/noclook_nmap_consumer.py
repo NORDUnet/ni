@@ -125,7 +125,7 @@ def insert_nmap(json_list):
     the nerds producer nmap_services.
     '''
     node_type = "Host"
-    meta_type = 'physical'
+    meta_type = 'logical'
     # Insert the host
     for i in json_list:
         print 'for i in json_list:' # DEBUG

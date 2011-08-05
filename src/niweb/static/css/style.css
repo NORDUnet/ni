@@ -337,25 +337,32 @@ ul.menu {
  clear: both;
 }
 
-
 /* Detailed views */
 .info-container {
  width: auto;
  vertical-align: top;
 }
 
-.info-container th {
- text-align: left;
-}
-
 .info {
- margin: 10px;
  float: left;
 }
 
-.comment-container {
- margin: 10px;
- float: left;
+.info table {
+ table-layout:fixed;
+ width:300px;
+}
+.info th {
+ text-align: left;
+ vertical-align: top;
+}
+
+.info td {
+ text-align: left;
+ vertical-align: top;
+}
+
+.comment-cell {
+ width: 200px;
 }
 
 /*#content td.align_top {
