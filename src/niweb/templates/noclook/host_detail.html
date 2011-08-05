@@ -114,12 +114,29 @@ $(document).ready(
                         {% if info.os_version %}
                             <tr>
                                 <th>OS version:</th><td>{{info.os_version}}</td>
-                        </tr>
+                            </tr>
                         {% endif %}
                     </table>
                 {% endif %}
             </div>
-            <div class="comment-container"></div>
+            <div class="info">
+                {% load comments %}
+                {% load markup %}
+                {% get_comment_list for node_handle as comment_list %}
+                {% if comment_list %}
+                    <h4>User information:</h4>
+                    <table>
+                    {% for comment in comment_list %}
+                        <tr>
+                            <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
+                        </tr>
+                        <tr>
+                            <td class="comment-cell break-word">{{ comment.comment|markdown:"safe" }}</td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                {% endif %}
+            </div>
         </div>
     </div>
     <div class="clear-float"></div>

@@ -2,35 +2,46 @@
 
 {% block title %}{{ block.super }} Detail{% endblock %}
 
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#hosts").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {
+                1 : { sorter: "ipAddress"  },
+            },
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
 {% block content %}
     <div class="content">
             <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
 
-            <h3>Services provided</h3>
             <div class="section">
-            {% if service_relationships %}
-                <table>
-                <th>PIC Address</th><th>VLAN</th><th>PIC</th><th>Organisation Address<th>Organisation</th>
-                    {% for service_group in service_relationships %}
-                        {% for item in service_group %}
-                            {% if forloop.counter0 == 0 %}
-                                <tr>
-                                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}<td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.vlan }}</td></td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.end.node_type|slugify }}/{{ item.end.handle_id }}/">{{ item.end.name }}</a></td>
-                            {% endif %}
-                            {% if forloop.counter0 == 1 %}
-                                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.node_type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
-                                </tr>
-                            {% endif %}
-                            {% if forloop.counter0 > 1 %}
-                                <tr>
-                                    <td></td><td></td><td></td><td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.ip_address }}</td><td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{ item.start.node_type|slugify }}/{{ item.start.handle_id }}/">{{ item.start.name }}</a></td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
+            {% load niweb_tags %}
+            {% if host_relationships %}
+            <table id="hosts" class="tablesorter" cellspacing="1">
+                <thead>
+                    <th>Host</th>
+                </thead>
+                <tbody>
+                {% for host in host_relationships %}
+                    <tr>
+                        <td><a href="{% niweb_node_id_to_url host.end.id %}">{{ host.end.name }}</a></td>
+                    </tr>
                 {% endfor %}
-                </table>
+                </tbody>
+            </table>
             {% else %}
-                No resources used.
+                No hosts provided.
             {% endif %}
             </div>
 
@@ -45,7 +56,17 @@
                     </tr>
                 {% endfor %}
                 </table>
-
+                <h4>Relationships</h4>
+                <table>
+                {% for rel in node.relationships.all %}
+                    <tr>
+                        <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                    </tr>
+                    <tr>
+                        <td></td><td>{{rel.properties}}</td><td></td>
+                    </tr>
+                {% endfor %}
+                </table>
                 <h4>Meta information</h4>
                 <table>
                     <tr>
