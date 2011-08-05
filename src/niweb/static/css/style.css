@@ -322,6 +322,42 @@ ul.menu {
  margin-top: 20px;
 }
 
+.break-word {
+  word-wrap: break-word;
+}
+
+.section {
+ width: 100%;
+}
+
+.clear-float {
+ width: 100%;
+ height: 1px;
+ margin: 0 0 -1px;
+ clear: both;
+}
+
+
+/* Detailed views */
+.info-container {
+ width: auto;
+ vertical-align: top;
+}
+
+.info-container th {
+ text-align: left;
+}
+
+.info {
+ margin: 10px;
+ float: left;
+}
+
+.comment-container {
+ margin: 10px;
+ float: left;
+}
+
 /*#content td.align_top {
  vertical-align: top;
 }
@@ -349,6 +385,7 @@ ul.menu {
 }
 
 #section {
+    width: auto;
     margin: 10px 50px 50px 0px;
     padding: 5px 5px 5px 5px;
 }
