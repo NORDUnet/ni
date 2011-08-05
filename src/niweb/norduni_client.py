@@ -258,7 +258,10 @@ def make_suitable_relationship(node, other_node, rel_type):
         elif other_meta_type == 'location':
             rel = node.Responsible_for(other_node)
         elif other_meta_type == 'physical':
-            rel = node.Responsible_for(other_node)
+            if rel_type == 'Owns':
+                rel = node.Owns(other_node)
+            elif rel_type == 'Provides':
+                rel = node.Provides(other_node)
     elif meta_type == 'physical':              # Physical
         if other_meta_type == 'physical':
             if rel_type == 'Has':

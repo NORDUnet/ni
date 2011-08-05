@@ -91,17 +91,17 @@ class NodeHandle(models.Model):
         '''
         Delete that node handle and the handles node.
         '''
-        try:
-            node = self.get_node()
-            Comment.objects.filter(object_pk=self.pk).delete()
-            super(NodeHandle, self).delete()
-        except Exception as e:
-            # If you cant write to the sql db or the neo4j db do nothing
-            print e
-            return False
-        # The handle is deleted and the node fetched, everthing seems
-        # fine. Delete the node and all its relationsships.
+        #try:
+        node = self.get_node()
         nc.delete_node(node.id)
+        Comment.objects.filter(object_pk=self.pk).delete()
+        #except Exception as e:
+            # If you cant write to the sql db or the neo4j db do nothing
+            #print e
+            #return False
+        # The handle is deleted and the node fetched, everthing seems
+        # fine. Delete the node and all its relationsships.        
+        super(NodeHandle, self).delete()
         return True
         
     delete.alters_data = True

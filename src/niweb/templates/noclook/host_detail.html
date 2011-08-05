@@ -22,103 +22,188 @@ $(document).ready(
 {% endblock %}
 
 {% block content %}
-    <div class="content">
-            <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
-            <table>
-            {% for key, value in info.items %}
-                <tr>
-                    <td><b>{{key|capfirst}}</b></td>
-                    {% for item in value %}
-                        {% if forloop.first %}
-                                <td>{{item}}</td>
-                            </tr>
-                        {% else %}
+<div class="content">
+    <div class="section">
+        <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
+        <div class="info-container">
+            <div class="info">
+                <h4>Host information</h4>
+                <table>
+                    <tr>
+                        <th>Type:</th><td>{{ node_handle.node_meta_type|capfirst }} host</td>
+                    </tr>
+                    {% if info.status %}
                         <tr>
-                            <td></td><td>{{item}}</td>
+                            <th>Status:</th><td>{{ info.status|capfirst }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if info.hostnames %}
+                        {% for item in info.hostnames %}
+                            {% if forloop.first %}
+                                <tr>
+                                    <th>Hostnames:</th><td>{{item}}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td></td><td>{{item}}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if info.addresses %}
+                        {% for item in info.addresses %}
+                            {% if forloop.first %}
+                            <tr>
+                                <th>Addresses:</th><td>{{item}}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td></td><td>{{item}}</td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </table>
+            </div>
+            <div class="info">
+                {% if info.vendor or info.model or info.cpu or info.ram or info.hdd or info.service_tag %}
+                    <h4>Hardware information</h4>
+                    <table>
+                        {% if info.vendor %}
+                            <tr>
+                                <th>Vendor:</th><td>{{info.vendor}}</td>
+                            </tr>
+                        {% endif %}
+                        {% if info.model %}
+                            <tr>
+                                <th>Model:</th><td>{{info.model}}</td>
+                            </tr>
+                        {% endif %}
+                        {% if info.cpu %}
+                            <tr>
+                                <th>CPU:</th><td>{{info.cpu}}</td>
+                            </tr>
+                        {% endif %}
+                        {% if info.ram %}
+                            <tr>
+                                <th>RAM:</th><td>{{info.ram}}</td>
+                            </tr>
+                        {% endif %}
+                        {% if info.hdd %}
+                            <tr>
+                                <th>HDD:</th><td>{{info.hdd}}</td>
+                            </tr>
+                        {% endif %}
+                        {% if info.service_tag %}
+                            <tr>
+                                <th>Service tag:</th><td>{{info.service_tag}}</td>
+                            </tr>
+                        {% endif %}
+                    </table>
+                {% endif %}
+            </div>
+            <div class="info">
+                {% if info.os or info.os_version %}
+                    <h4>OS information</h4>
+                    <table>
+                        {% if info.os %}
+                            <tr>
+                                <th>OS:</th><td>{{info.os}}</td>
+                            </tr>
+                        {% endif %}
+                        {% if info.os_version %}
+                            <tr>
+                                <th>OS version:</th><td>{{info.os_version}}</td>
                         </tr>
                         {% endif %}
-                    {% endfor %}
+                    </table>
+                {% endif %}
+            </div>
+            <div class="comment-container"></div>
+        </div>
+    </div>
+    <div class="clear-float"></div>
+    <div class="section">
+    <h3>Services provided</h3>
+        {% load niweb_tags %}
+        {% if service_relationships %}
+        <table id="services" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>Service</th><th>Address</th><th>Port</th><th>Protocol<th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th>
+            </thead>
+            <tbody>
+            {% for service in service_relationships %}
+                <tr>
+                    <td><a href="{% niweb_node_id_to_url service.start.id %}">{{ service.start.name }}</a></td>
+                    <td>{{ service.ip_address }}</td>
+                    <td>{{ service.port }}</td>
+                    <td>{{ service.protocol }}</td>
+                    <td>{{ service.product }}</td>
+                    <td>{{ service.version }}</td>
+                    <td>{{ service.extrainfo }}</td>
+                    <td>{{ service.confidence }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            No services provided.
+        {% endif %}
+    </div>
+    <!-- DEBUG START -->
+    <div class="section">
+        <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
+        <div id="debug">
+            <h3>Debug</h3>
+            <h4>Node properties</h4>
+            <table>
+            {% for key,value in node.properties.items %}
+                <tr>
+                    <td><b>{{key}}</b></td><td>{{value}}</td>
+                </tr>
             {% endfor %}
             </table>
-
-            <h3>Services provided</h3>
-            <div class="section">
-            {% load niweb_tags %}
-            {% if service_relationships %}
-            <table id="services" class="tablesorter" cellspacing="1">
-                <thead>
-                    <th>Service</th><th>Address</th><th>Port</th><th>Protocol<th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th>
-                </thead>
-                <tbody>
-                {% for service in service_relationships|dictsort:"confidence" %}
-                    <tr>
-                        <td><a href="{% niweb_node_id_to_url service.start.id %}">{{ service.start.name }}</a></td>
-                        <td>{{ service.ip_address }}</td>
-                        <td>{{ service.port }}</td>
-                        <td>{{ service.protocol }}</td>
-                        <td>{{ service.product }}</td>
-                        <td>{{ service.version }}</td>
-                        <td>{{ service.extrainfo }}</td>
-                        <td>{{ service.confidence }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
+            <h4>Relationships</h4>
+            <table>
+            {% for rel in node.relationships.all %}
+                <tr>
+                    <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                </tr>
+                <tr>
+                    <td></td><td>{{rel.properties}}</td><td></td>
+                </tr>
+            {% endfor %}
             </table>
-            {% else %}
-                No services provided.
-            {% endif %}
-            </div>
+            <h4>Meta information</h4>
+            <table>
+                <tr>
+                    <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
+                </tr>
+                <tr>
+                    <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
+                </tr>
+                <tr>
+                    <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
+                </tr>
+                <tr>
+                    <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
+                </tr>
+                <tr>
+                    <td><b>modified:</b> </td><td>{{ node_handle.modified }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <!-- DEBUG END -->
 
-            <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
-            <div id="debug">
-                <h3>Debug</h3>
-                <h4>Node properties</h4>
-                <table>
-                {% for key,value in node.properties.items %}
-                    <tr>
-                        <td><b>{{key}}</b></td><td>{{value}}</td>
-                    </tr>
-                {% endfor %}
-                </table>
-                <h4>Relationships</h4>
-                <table>
-                {% for rel in node.relationships.all %}
-                    <tr>
-                        <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
-                    </tr>
-                    <tr>
-                        <td></td><td>{{rel.properties}}</td><td></td>
-                    </tr>
-                {% endfor %}
-                </table>
-                <h4>Meta information</h4>
-                <table>
-                    <tr>
-                        <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
-                    </tr>
-                    <tr>
-                        <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
-                    </tr>
-                    <tr>
-                        <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
-                    </tr>
-                    <tr>
-                        <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
-                    </tr>
-                    <tr>
-                        <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
-                    </tr>
-                    <tr>
-                        <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
-                    </tr>
-                    <tr>
-                        <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
-                    </tr>
-                    <tr>
-                        <td><b>modified:</b> </td><td>{{ node_handle.modified }}</td>
-                    </tr>
-                </table>
-            </div>
-     </div>
 {% endblock %}
 

@@ -33,7 +33,7 @@ $(document).ready(
                     <th>Host</th><th>Address</th><th>Port</th><th>Protocol<th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th>
                 </thead>
                 <tbody>
-                {% for service in service_relationships|dictsort:"confidence" %}
+                {% for service in service_relationships %}
                     <tr>
                         <td><a href="{% niweb_node_id_to_url service.end.id %}">{{ service.end.name }}</a></td>
                         <td>{{ service.ip_address }}</td>

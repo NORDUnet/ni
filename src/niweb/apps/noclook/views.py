@@ -171,8 +171,18 @@ def host_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     info = {}
-    info['hostnames'] = json.loads(node['hostnames'])
-    info['addresses'] = json.loads(node['addresses'])
+    special_keys = ['hostnames', 'addresses']
+    # Handle special keys
+    hostnames = json.loads(node.get('hostnames', '[]'))
+    addresses = json.loads(node.get('addresses', '[]'))
+    if hostnames:
+        info['hostnames'] = hostnames
+    if addresses:
+        info['addresses'] = addresses
+    # Add the rest of the keys to the info dict
+    for key, value in node.properties.items():
+        if key not in special_keys:
+            info[key] = value
     service_relationships = node.relationships.incoming(types=['Depends_on'])
     return render_to_response('noclook/host_detail.html', {'node_handle': nh,
                 'node': node, 'service_relationships': service_relationships,
@@ -188,6 +198,17 @@ def host_service_detail(request, handle_id):
     return render_to_response('noclook/host_service_detail.html', 
                               {'node_handle': nh, 'node': node, 
                                'service_relationships': service_relationships},
+                               context_instance=RequestContext(request))
+                               
+@login_required
+def host_provider_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    host_relationships = node.relationships.outgoing(types=['Provides'])
+    return render_to_response('noclook/host_provider_detail.html', 
+                              {'node_handle': nh, 'node': node, 
+                               'host_relationships': host_relationships},
                                context_instance=RequestContext(request))
 
 @login_required

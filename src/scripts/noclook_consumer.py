@@ -70,6 +70,13 @@ def rest_comp(data):
     if data is None:
         return False
     return data
+    
+def normalize_whitespace(text):
+    '''
+    Remove redundant whitespace from a string.
+    '''
+    text = text.replace('"', '').replace("'", '')
+    return ' '.join(text.split())
         
 def load_json(json_dir):
     '''
@@ -91,12 +98,11 @@ def test_db():
             handle.node_id))
 
 def purge_db():
-#    for h in NodeHandle.objects.all():
-#        try:
-#            nc.delete_node(h.node_id)
-#        except nc.client.NotFoundError:
-#            print 'Could not delete the Neo4j node.' 
-    NodeHandle.objects.all().delete()
+    for nh in NodeHandle.objects.all():
+        try:
+            nh.delete()
+        except nc.client.NotFoundError:
+            print 'Could not delete the Neo4j node.' 
 
 def generate_password(n):
     '''
@@ -145,7 +151,7 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     try:
         node_handle = NodeHandle.objects.get(node_name=node_name,
                                             node_type=node_type)
-    except Exception:
+    except NodeHandle.DoesNotExist:
         # The NodeHandle was not found, create one
         node_handle = NodeHandle(node_name=node_name,
                                 node_type=node_type,
