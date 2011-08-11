@@ -183,10 +183,16 @@ def host_detail(request, handle_id):
     for key, value in node.properties.items():
         if key not in special_keys:
             info[key] = value
+    # Handle relationships
     service_relationships = node.relationships.incoming(types=['Depends_on'])
+    user_relationships = node.relationships.incoming(types=['Uses'])
+    provider_relationships = node.relationships.incoming(types=['Provides'])
+    owner_relationships = node.relationships.incoming(types=['Owns'])
     return render_to_response('noclook/host_detail.html', {'node_handle': nh,
                 'node': node, 'service_relationships': service_relationships,
-                'info': info},
+                'info': info, 'user_relationships': user_relationships,
+                'provider_relationships': provider_relationships,
+                'owner_relationships': owner_relationships},
                 context_instance=RequestContext(request))
                 
 @login_required
