@@ -15,7 +15,7 @@
                 {% for item in peering_points %}
                 <tr>
                     <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.pp_ip }}</td>
-                    <td class="{% cycle 'align_top' 'align_top_grey' %}"<a href="{{ item.service_url }}">{{ item.service }}</a></td>
+                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="{{ item.service_url }}">{{ item.service }}</a></td>
                     <td class="{% cycle 'align_top' 'align_top_grey' %}">{{ item.pic_ip }}</td>
                     <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="{{ item.pic_url }}">{{ item.pic }}</a></td>
                     <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="{{ item.router_url }}">{{ item.router }}</a></td>
