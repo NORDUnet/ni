@@ -53,8 +53,8 @@ def list_hosts(request):
     host_list = []
     for nh in node_type.nodehandle_set.all():
         node = nh.get_node()
-        addresses = node.get('addresses', '[null]')
-        for address in json.loads(addresses):
+        addresses = node.get('addresses', [])
+        for address in addresses:
             host = {}
             host['name'] = node.get('name', None)
             host['address'] = address
@@ -173,12 +173,8 @@ def host_detail(request, handle_id):
     info = {}
     special_keys = ['hostnames', 'addresses']
     # Handle special keys
-    hostnames = json.loads(node.get('hostnames', '[]'))
-    addresses = json.loads(node.get('addresses', '[]'))
-    if hostnames:
-        info['hostnames'] = hostnames
-    if addresses:
-        info['addresses'] = addresses
+    info['hostnames'] = node.get('hostnames', [])
+    info['addresses'] = node.get('addresses', [])
     # Add the rest of the keys to the info dict
     for key, value in node.properties.items():
         if key not in special_keys:

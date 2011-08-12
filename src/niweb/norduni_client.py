@@ -335,12 +335,51 @@ def update_relationship_properties(node_id, rel_id, new_properties):
     node = get_node_by_id(node_id)
     rel = get_relationship_by_id(rel_id, node)
     for key, value in new_properties.items():
-        fixed_key = key.replace(' ','_').lower() # No ' ' or caps
+        fixed_key = key.replace(' ','_').lower() # No spaces or caps
         if value:
             rel[fixed_key] = normalize_whitespace(value)
         elif fixed_key in rel.properties:
             del rel[fixed_key]
     return rel
+
+def merge_properties(node_id, prop_name, new_props):
+    '''
+    Tries to figure out which type of property value that should be merged and
+    invoke the right function.
+    Returns True if the merge was successfull otherwise False.
+    '''
+    node = get_node_by_id(node_id)
+    existing_properties = node.get(prop_name, None)
+    if not existing_properties: # A new node without existing properties
+        node[prop_name] = new_props
+        return True
+    else:
+        if type(existing_properties) is int:
+            return False # Not implemented yet
+        elif type(existing_properties) is str:
+            return False # Not implemented yet
+        elif type(existing_properties) is list:
+            merged_props = merge_properties_list(prop_name, new_props,
+                                                        existing_properties)
+        elif type(existing_properties) is dict:
+            return False # Not implemented yet
+        else:
+            return False
+    if merged_props:
+        node[prop_name] = merged_props
+    else:
+        return False
+
+def merge_properties_list(prop_name, new_prop_list, existing_prop_list):
+    '''
+    Takes the name of a property, a list of new property values and the existing
+    node values.
+    Returns the merged properties.
+    '''
+    for item in new_prop_list:
+        if item not in existing_prop_list:
+            existing_prop_list.append(item)
+    return existing_prop_list
 
 # Indexes
 def search_index_name():

@@ -22,7 +22,6 @@
 
 import sys
 import os
-import json
 import datetime
 import argparse
 
@@ -108,23 +107,9 @@ def consume_host_csv(json_list):
             value = host_info.get(key, None)
             if value:
                 if key == 'hostnames' or key == 'aliases':
-                    if not node.get('hostnames', False):
-                        node['hostnames'] = json.dumps(value.split(','))
-                    else:
-                        hostnames = json.loads(node['hostnames'])
-                        for v in value.split(','):
-                            if v not in hostnames:
-                                hostnames.append(v)
-                        node['hostnames'] = json.dumps(hostnames)
+                    nc.merge_properties(node.id, 'hostnames', value.split(','))
                 if key == 'ipv4_address' or key == 'ipv6_address':
-                    if not node.get('addresses', False):
-                        node['addresses'] = json.dumps(value.split(','))
-                    else:
-                        addresses = json.loads(node['addresses'])
-                        for v in value.split(','):
-                            if v not in addresses:
-                                addresses.append(v)
-                        node['addresses'] = json.dumps(addresses)
+                    nc.merge_properties(node.id, 'addresses', value.split(','))
                 if key == 'service':
                     for service in value.split(','):
                         service_node = get_node(service, 'Host Service', 

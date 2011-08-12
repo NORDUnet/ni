@@ -22,8 +22,8 @@
 
 import os
 import sys
-import json
 import argparse
+import datetime
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -35,7 +35,6 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import norduni_client as nc
 import noclook_consumer as nt
-from memorymonitor import MemoryMonitor # DEBUG
 
 '''
 This script is used for adding the objects collected with the
@@ -71,35 +70,25 @@ def insert_services(service_dict, node_id):
     meta_type = 'logical'
     host_node = nc.get_node_by_id(node_id)
     service_nodes = []
-    memory_mon = MemoryMonitor('lundberg') # DEBUG 
     for key in service_dict.keys():
-        print 'for key in service_dict.keys():' # DEBUG
-        print host_node['name'] # DEBUG
         ipv = key
-        print ipv # DEBUG
         for key in service_dict[ipv].keys():
             address = key
-            print address # DEBUG
             for key in service_dict[ipv][address].keys():
                 protocol = key
-                print protocol # DEBUG
                 for key in service_dict[ipv][address][protocol].keys():
-                    print 'for key in service_dict[ipv][address][protocol].keys():' # DEBUG
                     port = key
-                    print port # DEBUG
                     service = service_dict[ipv][address][protocol][port]
                     node_handle = nt.get_unique_node_handle(service['name'], 
                                                             node_type, 
                                                             meta_type)
                     service_node = node_handle.get_node()
                     service_nodes.append(service_node)
-                    print 'service_node id: %d' % service_node.id # DEBUG
                     # Get already existing relationships between the two nodes
                     rels = nc.get_relationships(service_node, host_node, # SLOW PART
                                                 'Depends_on')
                     create = True
                     for rel in rels:
-                        print 'for rel in rels:' # DEBUG
                         if rel['ip_address'] == address and \
                         rel['protocol'] == protocol and rel['port'] == port:
                             create = False
@@ -111,12 +100,9 @@ def insert_services(service_dict, node_id):
                         new_rel['ip_address'] = address
                         new_rel['protocol'] = protocol
                         new_rel['port'] = port
+                        new_rel['added'] = datetime.datetime.now().isoformat()
                         for key, value in service.items():
-                            print 'for key, value in service.items():' # DEBUG
                             new_rel[key] = value
-                        print 'new_rel id: %d' % new_rel.id # DEBUG
-    print 'All hosts services done.' # DEBUG
-    print 'Used_memory, %d' % memory_mon.usage() # DEBUG
     return service_nodes
 
 def insert_nmap(json_list):
@@ -128,16 +114,13 @@ def insert_nmap(json_list):
     meta_type = 'logical'
     # Insert the host
     for i in json_list:
-        print 'for i in json_list:' # DEBUG
         name = i['host']['name']
-        hostnames = json.dumps(i['host']['hostnames'])
-        addresses = json.dumps(i['host']['addrs'])
         # Create the NodeHandle and the Node
         node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
         # Set Node attributes
         node = node_handle.get_node()
-        node['hostnames'] = hostnames
-        node['addresses'] = addresses
+        nc.merge_properties(node.id, 'hostnames', i['host']['hostnames'])
+        nc.merge_properties(node.id, 'addresses', i['host']['addrs'])
         try:
             insert_services(i['host']['services'], node.id)
         except KeyError:
