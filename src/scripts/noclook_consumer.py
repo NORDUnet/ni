@@ -151,6 +151,7 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     try:
         node_handle = NodeHandle.objects.get(node_name=node_name,
                                             node_type=node_type)
+        node_handle.save()
     except NodeHandle.DoesNotExist:
         # The NodeHandle was not found, create one
         node_handle = NodeHandle(node_name=node_name,
@@ -179,6 +180,7 @@ def get_node_handle(node_name, node_type_name, node_meta_type,
             for node_handle in node_handles:
                 node = node_handle.get_node()
                 if parent.id == nc.get_root_parent(node, nc.Incoming.Has).id:
+                    node_handle.save()
                     return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one

@@ -92,6 +92,7 @@ def insert_services(service_dict, node_id):
                         if rel['ip_address'] == address and \
                         rel['protocol'] == protocol and rel['port'] == port:
                             create = False
+                            rel['last_seen'] = datetime.datetime.now().isoformat()
                             break
                     if create:
                         # Make a relationship between the service and host
@@ -100,7 +101,8 @@ def insert_services(service_dict, node_id):
                         new_rel['ip_address'] = address
                         new_rel['protocol'] = protocol
                         new_rel['port'] = port
-                        new_rel['added'] = datetime.datetime.now().isoformat()
+                        new_rel['noclook_auto_manage'] = True
+                        new_rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
                         for key, value in service.items():
                             new_rel[key] = value
     return service_nodes
@@ -121,6 +123,9 @@ def insert_nmap(json_list):
         node = node_handle.get_node()
         nc.merge_properties(node.id, 'hostnames', i['host']['hostnames'])
         nc.merge_properties(node.id, 'addresses', i['host']['addrs'])
+        if node.get('_auto_manage', None) is None: # If _auto_manage is not set
+            node['noclook_auto_manage'] = True     # set it to True.
+        node['noclook_last_seen'] = datetime.datetime.now().isoformat()
         try:
             insert_services(i['host']['services'], node.id)
         except KeyError:

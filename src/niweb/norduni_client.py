@@ -425,7 +425,7 @@ def add_index_node(index_name, key, node_id):
                 index.add(key, value, node)
                 index.add('all', value, node)
                 return True
-            except KeyError:
+            except KeyError: # Just ignore the weirdly encoded strings for now
                 pass
         return False
             
