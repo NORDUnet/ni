@@ -420,10 +420,13 @@ def add_index_node(index_name, key, node_id):
     if not is_meta_node(node):
         value = node.get(key, None)
         if value:
-            # Seems like the indexes are unique per key-value-node.id tripple
-            index.add(key, value, node)
-            index.add('all', value, node)
-            return True
+            try:
+                # Seems like the indexes are unique per key-value-node.id tripple
+                index.add(key, value, node)
+                index.add('all', value, node)
+                return True
+            except KeyError:
+                pass
         return False
             
 # Seems like the only way to remove nodes from indexes are to delete them.
