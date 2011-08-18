@@ -80,6 +80,8 @@ def get_node(name, node_type, meta_type):
     node_handle = nt.get_unique_node_handle(name, node_type, 
                                             meta_type)
     node = node_handle.get_node()
+    node['noclook_auto_manage'] = False
+    node['noclook_last_seen'] = datetime.datetime.now().isoformat()
     return node
 
 def consume_host_csv(json_list):
@@ -93,7 +95,6 @@ def consume_host_csv(json_list):
         nh = nt.get_unique_node_handle(i['host']['name'], node_type, 
                                        meta_type)
         node = nh.get_node()
-        # Add most properties to the node
         special_keys = ['ipv4_address', 'ipv6_address', 'comment', 'service',
                         'aliases', 'hostnames', 'user', 'provider', 'meta_type']
         host_info = i['host']['csv_producer']
