@@ -23,6 +23,7 @@
 from neo4jrestclient import client # https://github.com/johanlundberg/neo4j-rest-client/
 from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
+import json
 
 '''
 This is an extension to the Neo4j REST client made by Versae which will make it
@@ -323,7 +324,11 @@ def update_node_properties(node_id, new_properties):
     for key, value in new_properties.items():
         fixed_key = key.replace(' ','_').lower() # No spaces or caps
         if value:
-            node[fixed_key] = normalize_whitespace(value)
+            try:
+                # Handle string representations of lists and booleans
+                node[fixed_key] = json.loads(value)
+            except ValueError:
+                node[fixed_key] = normalize_whitespace(value)
         elif fixed_key in node.properties:
             del node[fixed_key]
     return node
