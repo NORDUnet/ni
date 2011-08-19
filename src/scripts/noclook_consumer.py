@@ -83,12 +83,16 @@ def load_json(json_dir):
     Thinks all files in the supplied dir are text files containing json.
     '''
     json_list = []
-
-    for subdir, dirs, files in os.walk(json_dir):
-        for file in files:
-            f=open(join(json_dir, file), 'r')
-            json_list.append(json.load(f))
+    try:
+        for subdir, dirs, files in os.walk(json_dir):
+            for file in files:
+                f=open(join(json_dir, file), 'r')
+                json_list.append(json.load(f))
+    except IOError as e:
+        print 'Encountered a problem with %s.' % json_dir 
+        print e
     return json_list
+    
 
 def test_db():
     handles = NodeHandle.objects.all()
