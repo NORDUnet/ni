@@ -95,6 +95,8 @@ def consume_host_csv(json_list):
         nh = nt.get_unique_node_handle(i['host']['name'], node_type, 
                                        meta_type)
         node = nh.get_node()
+        node['noclook_auto_manage'] = False
+        node['noclook_last_seen'] = datetime.datetime.now().isoformat()
         special_keys = ['ipv4_address', 'ipv6_address', 'comment', 'service',
                         'aliases', 'hostnames', 'user', 'provider', 'meta_type']
         host_info = i['host']['csv_producer']
@@ -115,15 +117,21 @@ def consume_host_csv(json_list):
                     for service in value.split(','):
                         service_node = get_node(service, 'Host Service', 
                                                 'logical')
-                        nc.make_suitable_relationship(service_node, 
+                        rel = nc.make_suitable_relationship(service_node, 
                                                         node, 'Depends_on')
+                        rel['noclook_auto_manage'] = False
+                        rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
                 if key == 'user':
                     user_node = get_node(value, 'Host User', 'relation')
-                    nc.make_suitable_relationship(user_node, node, 'Uses')
+                    rel = nc.make_suitable_relationship(user_node, node, 'Uses')
+                    rel['noclook_auto_manage'] = False
+                    rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
                 if key == 'provider':
                     provider_node = get_node(value, 'Host Provider', 'relation')
-                    nc.make_suitable_relationship(provider_node, 
+                    rel = nc.make_suitable_relationship(provider_node, 
                                                         node, 'Provides')
+                    rel['noclook_auto_manage'] = False
+                    rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
                 if key == 'comment':
                     nt.set_comment(nh, value)
                 if key == 'meta_type':
