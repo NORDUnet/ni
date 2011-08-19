@@ -26,5 +26,5 @@ class Command(BaseCommand):
                 last_seen = datetime.datetime.strptime(n['noclook_last_seen'], 
                                                        '%Y-%m-%dT%H:%M:%S.%f')
                 if (now-last_seen) > max_age:
-                    NodeHandle.objects.get(pk=n.handle_id).delete()
+                    NodeHandle.objects.get(pk=n['handle_id']).delete()
                     #nc.delete_node(n.id)
