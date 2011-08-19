@@ -366,10 +366,16 @@ def edit_node(request, slug, handle_id, node=None, message=None):
     if not node:
         node = nh.get_node()
     # Make a dict of properties you want to be able to change
-    node_properties = copy.copy(node.properties)
+    node_properties = {}    
+    for key, value in node.properties.items():
+        try:
+            node_properties[key] = json.dumps(value)
+        except ValueError:
+            node_properties[key] = value
     unwanted_properties = ['handle_id', 'node_type']
     for key in unwanted_properties:
         del node_properties[key]
+    
     # Relationships
     # Make a dict of relationships you want to be able to change
     unwanted_relationships = ['Contains', 'Consist_of']
