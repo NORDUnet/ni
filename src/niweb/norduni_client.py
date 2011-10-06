@@ -269,7 +269,7 @@ def make_suitable_relationship(node, other_node, rel_type):
                 rel = node.Has(other_node)
             if rel_type == 'Connected_to':
                 rel = node.Connected_to(other_node)
-        elif other_meta_type == 'Location':
+        elif other_meta_type == 'location':
             rel = node.Located_in(other_node)
     return rel
         
