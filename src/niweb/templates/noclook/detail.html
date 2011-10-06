@@ -3,7 +3,7 @@
 {% block title %}{{ block.super }} Detail{% endblock %}
 
 {% block content %}
-    <h2><a href="/{{ node.node_typetype|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
+    <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
     <h3>Debug</h3>
     <div class="section">
         <h4>Node properties</h4>
