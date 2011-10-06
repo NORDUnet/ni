@@ -79,7 +79,7 @@ def get_node(name, node_type, meta_type):
     node['noclook_last_seen'] = datetime.datetime.now().isoformat()
     return node
 
-def consume_host_csv(json_list):
+def consume_site_csv(json_list):
     '''
     Inserts the data collected with NOCLook csv producer.
     '''
@@ -140,7 +140,7 @@ def main():
         print 'Loading data...'
         data = nt.load_json(args.D)
         print 'Inserting data...'
-        consume_host_csv(data)
+        consume_site_csv(data)
         print 'noclook consume done.'
     else:
         print 'Use -D to provide the path to the JSON files.'
