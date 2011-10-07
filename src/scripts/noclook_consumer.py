@@ -135,7 +135,7 @@ def get_node_type(type_name):
     '''
     try:
         node_type = NodeType.objects.get(type=type_name)
-    except Exception:
+    except NodeType.DoesNotExist:
         # The NodeType was not found, create one
         from django.template.defaultfilters import slugify
         node_type = NodeType(type=type_name, slug=slugify(type_name))
