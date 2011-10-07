@@ -1,19 +1,46 @@
 {% extends "base.html" %}
 
 {% block title %}{{ block.super }} | Detail{% endblock %}
-
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#services").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
 {% block content %}
     <div class="content">
         <h3><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h3>
+        {% load niweb_tags %}
+        {% if location_relationships %}
+            <h5 class="site">Located in
+            {% for loc in location_relationships %}
+                <a href="{% niweb_node_id_to_url loc.end.id %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
+            {% endfor %}
+            </h5>
+        {% endif %}
         <div class="section">
-            <table>
-                <th>Connected to node</th><th>via</th>
-                    {% for item in opt_info %}
+            <table id="services" class="tablesorter" cellspacing="1">
+                <thead>
+                    <th>Connected to node</th><th>via</th>
+                </thead>
+                <tbody>
+                {% for item in opt_info %}
                     <tr>
                         <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="{{ item.node_url }}">{{ item.node_name }}</a></td>
                         <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="{{ item.fiber_url }}">{{ item.fiber_name }}</a></td>
                     </tr>
-                     {% endfor %}
+                 {% endfor %}
+                </tbody>
             </table>
 
         <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>

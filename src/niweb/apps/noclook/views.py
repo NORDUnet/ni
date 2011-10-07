@@ -98,8 +98,10 @@ def router_detail(request, handle_id):
     node = nh.get_node()
     # Get all the routers PICs
     pic_nodes = node.traverse(types=nc.Outgoing.Has)
+    location_relationships = node.relationships.outgoing(types=['Located_in'])
     return render_to_response('noclook/router_detail.html',
-        {'node_handle': nh, 'node': node, 'pic_nodes': pic_nodes},
+        {'node_handle': nh, 'node': node, 'pic_nodes': pic_nodes,
+        'location_relationships': location_relationships},
         context_instance=RequestContext(request))
 
 @login_required
@@ -161,8 +163,10 @@ def optical_node_detail(request, handle_id):
                 fibers['node_name'] = tmp['name']
                 fibers['node_url'] = nc.get_node_url(tmp.id)
         opt_info.append(fibers)
+    location_relationships = node.relationships.outgoing(types=['Located_in'])
     return render_to_response('noclook/optical_node_detail.html',
-        {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info},
+        {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info,
+         'location_relationships': location_relationships},
         context_instance=RequestContext(request))
 
 @login_required
@@ -301,6 +305,24 @@ def ip_service_detail(request, handle_id):
         {'node_handle': nh, 'node': node,
         'service_relationships': service_relationships},
         context_instance=RequestContext(request))
+
+@login_required
+def site_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    info = node.properties
+    # Handle relationships
+    equipment_relationships = node.relationships.incoming(types=['Located_in'])
+    responsible_relationships = node.relationships.incoming(
+                                                    types=['Responsible_for'])
+    loc_relationships = node.relationships.outgoing(types=['Has'])
+    return render_to_response('noclook/site_detail.html', {'node_handle': nh,
+                'node': node, 'info': info,
+                'equipment_relationships': equipment_relationships, 
+                'responsible_relationships': responsible_relationships,
+                'loc_relationships': loc_relationships},
+                context_instance=RequestContext(request))
 
 # Visualization views
 @login_required

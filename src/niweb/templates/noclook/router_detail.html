@@ -5,6 +5,14 @@
 {% block content %}
     <div class="content">
         <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
+        {% load niweb_tags %}
+        {% if location_relationships %}
+            <h5 class="site">Located in
+            {% for loc in location_relationships %}
+                <a href="{% niweb_node_id_to_url loc.end.id %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
+            {% endfor %}
+            </h5>
+        {% endif %}
         <h3>PICs</h3>
         <div class="section">
             <table>
