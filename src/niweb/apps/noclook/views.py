@@ -324,6 +324,19 @@ def site_detail(request, handle_id):
                 'loc_relationships': loc_relationships},
                 context_instance=RequestContext(request))
 
+@login_required
+def site_owner_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    info = node.properties
+    # Handle relationships
+    site_relationships = node.relationships.outgoing(types=['Responsible_for'])
+    return render_to_response('noclook/site_owner_detail.html', {'node_handle': nh,
+                'node': node, 'info': info,
+                'site_relationships': site_relationships},
+                context_instance=RequestContext(request))
+
 # Visualization views
 @login_required
 def visualize_json(request, slug, handle_id):
