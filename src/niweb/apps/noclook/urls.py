@@ -23,6 +23,7 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^host-provider/(?P<handle_id>\d+)/$', 'host_provider_detail'),
     (r'^host-user/(?P<handle_id>\d+)/$', 'host_user_detail'),
     (r'^site/(?P<handle_id>\d+)/$', 'site_detail'),
+    (r'^site-owner/(?P<handle_id>\d+)/$', 'site_owner_detail'),
     # Visualize views
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)\.json$', 
                                                          'visualize_json'),
