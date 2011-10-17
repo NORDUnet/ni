@@ -10,9 +10,9 @@ import norduni_client as nc
 # Database will be deleted upon successfull test.
 TESTDB_URI = '/tmp/neo4jtestdb'
 
+nc.neo4jdb.shutdown()
+nc.test_db_setup(TESTDB_URI)
 db = nc.open_db(TESTDB_URI)
-
-nc.test_db_setup(db)
 
 print '''
 Creating nodes and relationships:

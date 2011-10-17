@@ -142,7 +142,7 @@ def get_node_type(type_name):
         node_type.save()
     return node_type
 
-def get_unique_node_handle(node_name, node_type_name, node_meta_type):
+def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
     '''
     Takes the arguments needed to create a NodeHandle, if there already
     is a NodeHandle with the same name and type it will be considered
@@ -155,7 +155,6 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     try:
         node_handle = NodeHandle.objects.get(node_name=node_name,
                                             node_type=node_type)
-        node_handle.save()
     except NodeHandle.DoesNotExist:
         # The NodeHandle was not found, create one
         node_handle = NodeHandle(node_name=node_name,
@@ -165,7 +164,7 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
         node_handle.save()
     return node_handle
 
-def get_node_handle(node_name, node_type_name, node_meta_type,
+def get_node_handle(db, node_name, node_type_name, node_meta_type,
                                                         parent=None):
     '''
     Takes the arguments needed to create a NodeHandle. If a parent is
@@ -183,8 +182,7 @@ def get_node_handle(node_name, node_type_name, node_meta_type,
         if parent:
             for node_handle in node_handles:
                 node = node_handle.get_node()
-                if parent.id == nc.get_root_parent(node, nc.Incoming.Has).id:
-                    node_handle.save()
+                if parent.id == nc.get_root_parent(nc.neo4jdb, node).id:
                     return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one

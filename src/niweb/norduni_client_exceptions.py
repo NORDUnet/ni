@@ -23,4 +23,15 @@ class NoRelationshipPossible(Exception):
                                     self.node2['name'])
         return '%s %s %s is not possible.' % (node1_str, self.relationship_type,
                                               node2_str)                       
+
+class MetaNodeNamingError(Exception):
+    '''
+    Exception that explains that meta nodes must have special names defined
+    in create_meta_node().
+    '''
+    def __init__(self):
+        self.error = 'A meta node can not have that name.'
+        
+    def __str__(self):
+        return self.error
         
