@@ -144,28 +144,24 @@ def optical_node_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    info = {}
-    info['name'] = node['name']
-    info['node_url'] = nc.get_node_url(node.id)
-    info.update(node.properties)
     #get incoming rels of fibers
-    connected_rel = node.relationships.incoming(types=['Connected_to'])
+    connected_rel = node.Connected_to.incoming
     opt_info = []
     for rel in connected_rel:
         fibers = {}
         fiber = rel.start
         fibers['fiber_name'] = fiber['name']
-        fibers['fiber_url'] = nc.get_node_url(fiber.id)
-        conn = fiber.relationships.outgoing(types = ['Connected_to'])
+        fibers['fiber_url'] = nc.get_node_url(fiber)
+        conn = fiber.Connected_to.outgoing
         for item in conn:
             tmp = item.end
             if tmp['name'] != node['name']:
                 fibers['node_name'] = tmp['name']
-                fibers['node_url'] = nc.get_node_url(tmp.id)
+                fibers['node_url'] = nc.get_node_url(tmp)
         opt_info.append(fibers)
-    location_relationships = node.relationships.outgoing(types=['Located_in'])
+    location_relationships = node.Located_in.outgoing
     return render_to_response('noclook/optical_node_detail.html',
-        {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info,
+        {'node': node, 'node_handle': nh, 'opt_info': opt_info,
          'location_relationships': location_relationships},
         context_instance=RequestContext(request))
 
@@ -233,27 +229,23 @@ def cable_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    info = {}
-    info['name'] = node['name']
-    info['node_url'] = nc.get_node_url(node.id)
-    info.update(node.properties)
-    connected_rel = node.relationships.outgoing(types=['Connected_to'])
+    connected_rel = node.Connected_to.outgoing
     opt_info = []
     for equip in connected_rel:
         equipment = {}
         conn = equip.end
         equipment['node_name'] = conn['name']
-        equipment['node_url'] = nc.get_node_url(conn.id)
+        equipment['node_url'] = nc.get_node_url(conn)
         opt_info.append(equipment)
     return render_to_response('noclook/cable_detail.html',
-        {'node': node, 'node_handle': nh, 'info': info, 'opt_info': opt_info},
+        {'node': node, 'node_handle': nh, 'opt_info': opt_info},
         context_instance=RequestContext(request))
 
 @login_required
 def peering_partner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    node = nh.get_node()
+    node = nh.get_node(nc.neo4jdb)
     # Get services used
     services_rel = node.relationships.outgoing(types=['Uses'])
     # services_rel are relatios to bgp groups(Service)

@@ -20,6 +20,7 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
+from norduni_client_exceptions import *
 from neo4j import GraphDatabase, Uniqueness, Evaluation, OUTGOING, INCOMING, ANY
 from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
@@ -71,7 +72,9 @@ def get_node_url(node):
 # Core functions
 def open_db(uri=NEO4J_URI):
     '''
-    Open or create a Neo4j database in the supplied path.
+    Open or create a Neo4j database in the supplied path. As the module
+    opens the database located at NEO4J_URI when imported you shouldn't have
+    to use this.
     '''
     return GraphDatabase(uri)
 
@@ -100,19 +103,14 @@ def get_node_by_id(db, node_id):
     '''
     Returns the node with the supplied id or None if it doesn't exist.
     '''
-    with db.transaction:
-        try:
-            node = db.nodes.get(int(node_id))
-        except KeyError:
-            return None
-    return node
+    return db.nodes.get(int(node_id))
     
 def get_all_nodes(db):
     '''
     Returns all nodes in the database in a list. 
     '''
     root = get_root_node(db)
-    nodes = [root]
+    nodes = []
     traverser = db.traversal().uniqueness(Uniqueness.NODE_GLOBAL).traverse(root)
     for node in traverser.nodes:
         nodes.append(node)
@@ -156,6 +154,18 @@ def delete_node(db, node_id):
     return False
 
 # NORDUni functions
+def create_meta_node(db, meta_node_name):
+    '''
+    Creates a meta node and its' relationship to the root node.
+    '''
+    if meta_node_name in ['physical', 'logical', 'relation', 'location']:
+        with db.transaction:
+            meta_node = create_node(db, meta_node_name, 'meta')
+            root = get_root_node(db)
+            root.Consists_of(meta_node)
+        return meta_node
+    raise MetaNodeNamingError()
+    
 def get_meta_node(db, meta_node_name):
     '''
     Will return the meta node requested or create it and return it.
@@ -166,14 +176,14 @@ def get_meta_node(db, meta_node_name):
             return Evaluation.INCLUDE_AND_PRUNE
         return Evaluation.EXCLUDE_AND_CONTINUE
     root = get_root_node(db)
+    if not len(root.relationships):
+        return create_meta_node(db, meta_node_name)
     traverser = db.traversal().evaluator(meta_name_evaluator).traverse(root)
     try:
         meta_node = list(traverser.nodes)[0]
     except IndexError:
         # No node with requested name found, create it.
-        with db.transaction:
-            meta_node = create_node(db, meta_node_name.lower(), 'meta')
-            root.Consists_of(meta_node)
+        meta_node = create_meta_node(db, meta_node_name)
     return meta_node
 
 def get_all_meta_nodes(db):
@@ -189,7 +199,13 @@ def get_node_meta_type(node):
     '''
     Returns the meta type of the supplied node as a string.
     '''
-    return node.Contains.single.start['name']
+    meta_type = None    
+    for rel in node.Contains.incoming:
+        meta_type = rel.start['name']
+    # I only want to do this line but it throws "ValueError: Too many items in 
+    # the iterator" when using this function in a traverser.
+    #return node.Contains.incoming.single.start['name']
+    return meta_type
 
 def get_root_parent(db, node):
     '''
@@ -250,177 +266,218 @@ def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
                     nodes.append(item)
     return nodes
 
-#        
-#def get_suitable_nodes(node):
-#    '''
-#    Takes a reference node and returns all nodes that is suitable for a
-#    relationship with that node.
-#    
-#    Returns a dictionary with the suitable nodes in lists separated by 
-#    meta_type.
-#    '''
-#    meta_type = get_node_meta_type(node).lower()
-#    
-#    # Create and fill the dictionary with all nodes
-#    suitable_types = {'physical': [], 'logical': [], 
-#                      'relation': [], 'location': []}
-#    for key in suitable_types:
-#        meta_node = get_meta_node(key)
-#        suitable_types[key] = meta_node.traverse(Outgoing.Contains)
-#    # Remove the reference node, can't have relationship with yourself        
-#    suitable_types[meta_type].remove(node)
-#    # Unreference the types of nodes that are un suitable                  
-#    if meta_type == 'location':
-#        suitable_types['location'] = []
-#        suitable_types['logical'] = []
-#    elif meta_type == 'logical':
-#        suitable_types['location'] = []
-#    elif meta_type == 'relation':
-#        suitable_types['relation'] = []
-#    return suitable_types
-#        
-#def make_suitable_relationship(node, other_node, rel_type):
-#    '''
-#    Makes a relationship from node to other_node depending on which
-#    meta_type the nodes sent in are. Returns the relationship or None
-#    if no relationship was made.
-#    '''
-#    meta_type = get_node_meta_type(node)
-#    other_meta_type = get_node_meta_type(other_node)
-#    rel = None
-#    if meta_type == 'location':                # Location
-#        if other_meta_type == 'location':
-#            rel = node.Has(other_node)
-#    elif meta_type == 'logical':               # Logical
-#        if other_meta_type == 'logical':
-#            rel = node.Depends_on(other_node)
-#        elif other_meta_type == 'physical':
-#            rel = node.Depends_on(other_node)
-#    elif meta_type == 'relation':              # Relation
-#        if other_meta_type == 'logical':
-#            if rel_type == 'Uses':
-#                rel = node.Uses(other_node)
-#            elif rel_type == 'Provides':
-#                rel = node.Provides(other_node)
-#        elif other_meta_type == 'location':
-#            rel = node.Responsible_for(other_node)
-#        elif other_meta_type == 'physical':
-#            if rel_type == 'Owns':
-#                rel = node.Owns(other_node)
-#            elif rel_type == 'Provides':
-#                rel = node.Provides(other_node)
-#    elif meta_type == 'physical':              # Physical
-#        if other_meta_type == 'physical':
-#            if rel_type == 'Has':
-#                rel = node.Has(other_node)
-#            if rel_type == 'Connected_to':
-#                rel = node.Connected_to(other_node)
-#        elif other_meta_type == 'location':
-#            rel = node.Located_in(other_node)
-#    return rel
-#        
+def get_suitable_nodes(db, node):
+    '''
+    Takes a reference node and returns all nodes that is suitable for a
+    relationship with that node.
+    
+    Returns a dictionary with the suitable nodes in lists separated by 
+    meta_type.
+    '''
+    meta_type = get_node_meta_type(node).lower()
+    # Spec which meta types can have a relationship with each other
+    if meta_type == 'location':
+        suitable_types = ['physical', 'relation', 'location']
+    elif meta_type == 'logical':
+        suitable_types = ['physical', 'relation', 'logical']
+    elif meta_type == 'relation':
+        suitable_types = ['physical', 'location', 'logical']
+    elif meta_type == 'physical':
+        suitable_types = ['physical', 'relation', 'location', 'logical']
+    # Get all suitable nodes from graph db
+    def suitable_evaluator(path):
+    # Filter on the nodes meta type
+        if get_node_meta_type(path.end) in suitable_types:
+            return Evaluation.INCLUDE_AND_CONTINUE
+        return Evaluation.EXCLUDE_AND_CONTINUE
+    traverser = db.traversal().evaluator(suitable_evaluator).traverse(node)
+    # Create and fill the dictionary with nodes
+    node_dict = {'physical': [], 'logical': [], 'relation': [], 'location': []}
+    for item in traverser.nodes:
+        node_dict[get_node_meta_type(item)].append(item)
+    # Remove the reference node, can't have relationship with yourself        
+    node_dict[meta_type].remove(node)
+    return node_dict
 
-#
-#def get_relationships(n1, n2, rel_type=None):
-#    '''
-#    Takes a start and an end node with an optional relationship
-#    type.
-#    Returns the relationsships between the nodes or an empty list.
-#    '''
-#    rel_list = []
-#    for rel in n1.relationships.all():
-#        if (rel.start.id == n1.id and rel.end.id == n2.id) or \
-#           (rel.start.id == n2.id and rel.end.id == n1.id):
-#            if rel_type:
-#                if rel.type == rel_type:
-#                    rel_list.append(rel)
-#            else:
-#                rel_list.append(rel)
-#    return rel_list
-#    
-#def relationships_equal(rel, other_rel):
-#    '''
-#    Takes two relationships and returns True if they have the same start and
-#    end node, are of the same type and have the same properties.
-#    '''
-#    if rel.type == other_rel.type:
-#        if rel.start == other_rel.start and rel.end == other_rel.end:
-#            if rel.properties == other_rel.properties:
-#                return True
-#    return False
-#
-#def update_node_properties(node_id, new_properties):
-#    '''
-#    Take a node and a dictionary of properties. Updates the
-#    node and returns it.
-#    '''
-#    node = get_node_by_id(node_id)
-#    # We might want to do a better check of the data...
-#    for key, value in new_properties.items():
-#        fixed_key = key.replace(' ','_').lower() # No spaces or caps
-#        if value:
-#            try:
-#                # Handle string representations of lists and booleans
-#                node[fixed_key] = json.loads(value)
-#            except ValueError:
-#                node[fixed_key] = normalize_whitespace(value)
-#        elif fixed_key in node.properties:
-#            del node[fixed_key]
-#    return node
-#
-#def update_relationship_properties(node_id, rel_id, new_properties):
-#    '''
-#    Updates the properties of a relationship with the supplied dictionary.
-#    '''
-#    node = get_node_by_id(node_id)
-#    rel = get_relationship_by_id(rel_id, node)
-#    for key, value in new_properties.items():
-#        fixed_key = key.replace(' ','_').lower() # No spaces or caps
-#        if value:
-#            rel[fixed_key] = normalize_whitespace(value)
-#        elif fixed_key in rel.properties:
-#            del rel[fixed_key]
-#    return rel
-#
-#def merge_properties(node_id, prop_name, new_props):
-#    '''
-#    Tries to figure out which type of property value that should be merged and
-#    invoke the right function.
-#    Returns True if the merge was successfull otherwise False.
-#    '''
-#    node = get_node_by_id(node_id)
-#    existing_properties = node.get(prop_name, None)
-#    if not existing_properties: # A new node without existing properties
-#        node[prop_name] = new_props
-#        return True
-#    else:
-#        if type(existing_properties) is int:
-#            return False # Not implemented yet
-#        elif type(existing_properties) is str:
-#            return False # Not implemented yet
-#        elif type(existing_properties) is list:
-#            merged_props = merge_properties_list(prop_name, new_props,
-#                                                        existing_properties)
-#        elif type(existing_properties) is dict:
-#            return False # Not implemented yet
-#        else:
-#            return False
-#    if merged_props:
-#        node[prop_name] = merged_props
-#    else:
-#        return False
-#
-#def merge_properties_list(prop_name, new_prop_list, existing_prop_list):
-#    '''
-#    Takes the name of a property, a list of new property values and the existing
-#    node values.
-#    Returns the merged properties.
-#    '''
-#    for item in new_prop_list:
-#        if item not in existing_prop_list:
-#            existing_prop_list.append(item)
-#    return existing_prop_list
-#
+def make_relationship(db, node, other_node, rel_type):
+    '''
+    Makes a relationship between the two node of the rel_type relationship type.
+    To be sure that relationship types are not misspelled or not following
+    the database model you should use make_suitable_relationship().
+    '''
+    with db.transaction:
+        return node.relationship.create(rel_type, other_node)
+
+
+def make_location_relationship(db, location_node, other_node, rel_type):
+    '''
+    Makes relationship between the two nodes and returns the relationship.
+    If a relationship is not possible NoRelationshipPossible exception is
+    raised.
+    '''
+    if get_node_meta_type(other_node) == 'location' and rel_type == 'Has':
+        return make_relationship(db, location_node, other_node, rel_type)
+    raise NoRelationshipPossible(location_node, other_node, rel_type)
+    
+def make_logical_relationship(db, logical_node, other_node, rel_type):
+    '''
+    Makes relationship between the two nodes and returns the relationship.
+    If a relationship is not possible NoRelationshipPossible exception is
+    raised.
+    '''
+    if rel_type == 'Depends_on':
+        other_meta_type = get_node_meta_type(other_node)
+        if other_meta_type == 'logical' or other_meta_type == 'physical':
+            return make_relationship(db, logical_node, other_node, rel_type)
+    raise NoRelationshipPossible(logical_node, other_node, None)
+    
+def make_relation_relationship(db, relation_node, other_node, rel_type):
+    '''
+    Makes relationship between the two nodes and returns the relationship.
+    If a relationship is not possible NoRelationshipPossible exception is
+    raised.
+    '''
+    other_meta_type = get_node_meta_type(other_node)
+    if other_meta_type == 'logical':
+        if rel_type == 'Uses' or rel_type == 'Provides':
+            return make_relationship(db, relation_node, other_node, rel_type)
+    elif other_meta_type == 'location' and rel_type == 'Responsible_for':
+        return make_relationship(db, relation_node, other_node, rel_type)
+    elif other_meta_type == 'physical':
+        if rel_type == 'Owns' or rel_type == 'Provides':
+            return make_relationship(db, relation_node, other_node, rel_type)
+    raise NoRelationshipPossible(relation_node, other_node, rel_type)
+    
+def make_physical_relationship(db, physical_node, other_node, rel_type):
+    '''
+    Makes relationship between the two nodes and returns the relationship.
+    If a relationship is not possible NoRelationshipPossible exception is
+    raised.
+    '''
+    other_meta_type = get_node_meta_type(other_node)
+    if other_meta_type == 'physical':
+        if rel_type == 'Has' or rel_type == 'Connected_to':
+            return make_relationship(db, physical_node, other_node, rel_type)
+    elif other_meta_type == 'location' and rel_type == 'Located_in':
+        return make_relationship(db, physical_node, other_node, rel_type)
+    raise NoRelationshipPossible(physical_node, other_node, rel_type)
+
+def make_suitable_relationship(db, node, other_node, rel_type):
+    '''
+    Makes a relationship from node to other_node depending on which
+    meta_type the nodes are. Returns the relationship or raises
+    NoRelationshipPossible exception.
+    '''
+    meta_type = get_node_meta_type(node)    
+    if meta_type == 'location':
+        return make_location_relationship(db, node, other_node, rel_type)
+    elif meta_type == 'logical':
+        return make_logical_relationship(db, node, other_node, rel_type)
+    elif meta_type == 'relation':
+        return make_relation_relationship(db, node, other_node, rel_type)
+    elif meta_type == 'physical':
+        return make_physical_relationship(db, node, other_node, rel_type)
+    raise NoRelationshipPossible(node, other_node, rel_type)
+
+def get_relationships(n1, n2, rel_type=None):
+    '''
+    Takes a start and an end node with an optional relationship
+    type.
+    Returns the relationsships between the nodes or an empty list.
+    '''
+    rel_list = []
+    for rel in n1.relationships:
+        if (rel.start.id == n1.id and rel.end.id == n2.id) or \
+           (rel.start.id == n2.id and rel.end.id == n1.id):
+            if rel_type:
+                if rel.type.name() == rel_type:
+                    rel_list.append(rel)
+            else:
+                rel_list.append(rel)
+    return rel_list
+    
+def relationships_equal(rel1, rel2):
+    '''
+    Takes two relationships and returns True if they have the same start and
+    end node, are of the same type and have the same properties.
+    '''
+    if rel1.type == rel2.type:
+        if rel1.start == rel2.start and rel1.end == rel2.end:
+            if rel1.propertyKeys.equals(rel2.propertyKeys):
+                if rel1.propertyValues.equals(rel2.propertyValues):
+                    return True
+    return False
+
+def node2dict(node):
+    '''
+    Returns the nodes properties as a dictionary.
+    '''
+    d = []
+    for key, value in node.items():
+        d[key] = value
+    return d
+
+def update_item_properties(db, item, new_properties):
+    '''
+    Take a node or a relationship and a dictionary of properties. Updates the
+    item and returns it.
+    '''
+    with db.transaction:
+    # We might want to do a better check of the data...
+        for key, value in new_properties.items():
+            fixed_key = key.replace(' ','_').lower() # No spaces or caps
+            if value:
+                try:
+                    # Handle string representations of lists and booleans
+                    item[fixed_key] = json.loads(value)
+                except ValueError:
+                    item[fixed_key] = normalize_whitespace(value)
+            elif fixed_key in item.propertyKeys:
+                del item[fixed_key]
+    return item
+
+def merge_properties(db, node, prop_name, new_props):
+    '''
+    Tries to figure out which type of property value that should be merged and
+    invoke the right function.
+    Returns True if the merge was successfull otherwise False.
+    '''
+    existing_properties = node.getProperty(prop_name, None)
+    if not existing_properties: # A node without existing properties
+        node[prop_name] = new_props
+        return True
+    else:
+        if type(new_props) is int:
+            return False # Not implemented yet
+        elif type(new_props) is str:
+            return False # Not implemented yet
+        elif type(new_props) is list:
+            merged_props = merge_properties_list(prop_name, new_props,
+                                                        existing_properties)
+        elif type(new_props) is dict:
+            return False # Not implemented yet
+        else:
+            return False
+    if merged_props:
+        with db.transaction:
+            node[prop_name] = merged_props
+            return True
+    else:
+        return False
+
+def merge_properties_list(prop_name, new_prop_list, existing_prop_list):
+    '''
+    Takes the name of a property, a list of new property values and the existing
+    node values.
+    Returns the merged properties.
+    '''
+    # Jpype returns lists as jpype._jarray.java.lang.String[].
+    existing_prop_list = list(existing_prop_list)
+    for item in new_prop_list:
+        if item not in existing_prop_list:
+            existing_prop_list.append(item)
+    return existing_prop_list
+
 # Indexes
 def search_index_name():
     '''
@@ -480,14 +537,41 @@ def del_index_item(db, index, item, key=None):
             del index[item]
     return True
 
-# Tests
-def test_db_setup(db):
+# Test and setup
+def test_db_setup(db_uri=None):
+    if db_uri:
+        db = open_db(db_uri)
+    else:
+        db = open_db()
     print 'Testing read and write for Neo4j REST database at %s.' % db.getStoreDir()
     print 'The next two lines should match.'
     print 'Name: root. Node Type: meta. Node ID: 0.'
     with db.transaction:
-        n = get_node_by_id(db, '0')
+        n = get_root_node(db)
         n['name'] = 'root'
         n['node_type'] = 'meta'
-        print 'Name: %s. Node Type: %s. Node ID: %d.' % (n['name'], 
-                                                        n['node_type'], n.id)
+    print 'Name: %s. Node Type: %s. Node ID: %d.' % (n['name'], n['node_type'], 
+                                                     n.id)
+    db.shutdown()
+
+def _init_db():
+    return open_db()
+
+try:
+    neo4jdb = _init_db()
+except Exception:
+    print '*** WARNING ***'
+    print 'Could not load the Neo4j database. Is it already loaded?'
+    print 'Use open_db(URI) to open another database.'
+
+def _close_db():
+    neo4jdb.shutdown()
+
+import atexit
+atexit.register(_close_db)
+
+def main():
+    test_db_setup()
+
+if __name__ == '__main__':
+    main()         

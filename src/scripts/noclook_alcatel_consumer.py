@@ -67,16 +67,6 @@ The data block can hold any keys and don't necessarily have to be the ones
 listed above.
 '''
 
-def insert_cable(cable_id, cable_type):
-    '''
-    Creates a new cable node and node_handle.
-    Returns the node in a node_list.
-    '''
-    node_handle = nt.get_unique_node_handle(cable_id, 'Cable', 'physical')
-    node = node_handle.get_node()
-    node['cable_type'] = cable_type
-    return node_handle
-
 def consume_alcatel_isis(json_list):
     '''
     Inserts the data loaded from the json files created by the nerds
@@ -91,13 +81,11 @@ def consume_alcatel_isis(json_list):
     # Insert the optical node
     for i in json_list:
         name = i['host']['alcatel_isis']['name']
-        node_handle = nt.get_unique_node_handle(name, 'Optical Node', 'physical')
+        node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 
+                                                'Optical Node', 'physical')
         node = node_handle.get_node()
         data = i['host']['alcatel_isis']['data']
-        nc.update_node_properties(node.id, data)
-        #for key,value in data.items():
-        #    if value:
-        #        node[key] = value
+        nc.update_item_properties(nc.neo4jdb, node, data)
         for neighbour in i['host']['alcatel_isis']['neighbours']:
             metric = neighbour['metric']
             if metric == '0':       # localhost
@@ -107,27 +95,35 @@ def consume_alcatel_isis(json_list):
             else:                   # Fiber
                 cable_type = 'Fiber'
             # Get or create a neighbour node
-            neighbour_node_handle = nt.get_unique_node_handle(neighbour['name'],
-                                            'Optical Node', 'physical')
+            neighbour_node_handle = nt.get_unique_node_handle(nc.neo4jdb, 
+                                            neighbour['name'], 'Optical Node', 
+                                            'physical')
             neighbour_node = neighbour_node_handle.get_node()
             # See if the nodes already are connected via something
             create = True
-            for rel in node.relationships.incoming(['Connected_to']):
-                for rel2 in rel.start.relationships.outgoing(['Connected_to']):
+            for rel in node.Connected_to.incoming:
+                for rel2 in rel.start.Connected_to.outgoing:
                     if rel2.end['name'] == neighbour_node['name']:
                         create = False
                         break
             if create:
-                tmp_name = '%s - %s' % (node['name'], neighbour_node['name']) # Is this good until we get the fiber id?
-                cable_handle = insert_cable(tmp_name, cable_type)
-                cable_node = cable_handle.get_node()
+                cable_id = '%s - %s' % (node['name'], neighbour_node['name'])
+                cable_node_handle = nt.get_unique_node_handle(nc.neo4jdb, 
+                                                              cable_id, 
+                                                              'Cable', 
+                                                              'physical')
+                cable_node = cable_node_handle.get_node()
+                with nc.neo4jdb.transaction:
+                    cable_node['cable_type'] = cable_type
                 if not nc.get_relationships(cable_node, node, 'Connected_to'):
                     # Only create a relationship if it doesn't exist
-                    cable_node.Connected_to(node)
+                    with nc.neo4jdb.transaction:
+                        cable_node.Connected_to(node)
                 if not nc.get_relationships(cable_node, neighbour_node, 
                                                                 'Connected_to'):
                     # Only create a relationship if it doesn't exist
-                    cable_node.Connected_to(neighbour_node)
+                    with nc.neo4jdb.transaction:
+                        cable_node.Connected_to(neighbour_node)
 
 def main():
     # User friendly usage output

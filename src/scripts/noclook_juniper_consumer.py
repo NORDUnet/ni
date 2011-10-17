@@ -34,6 +34,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+import re
 import norduni_client as nc
 import noclook_consumer as nt
 
@@ -92,10 +93,10 @@ def insert_juniper_router(name):
     Inserts a physical meta type node of the type Router.
     Returns the node created.
     '''
-    node_handle = nt.get_unique_node_handle(name, 'Router', 'physical')
+    node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 'Router', 
+                                            'physical')
     node = node_handle.get_node()
-    node_list = [node]
-    return node_list
+    return node
 
 def insert_juniper_interfaces(router_node, interfaces):
     '''
@@ -104,52 +105,50 @@ def insert_juniper_interfaces(router_node, interfaces):
     interface names that are not interesting.
     Returns a list with all created nodes.
     '''
-    not_interesting_interfaces = ['all', 'fxp0', '']
+    not_interesting_interfaces = re.compile(r'\*|\.|all|fxp0')
+    #not_interesting_interfaces = ['all', 'fxp0', '']
     node_list = []
     for i in interfaces:
         name = i['name']
-        if name not in not_interesting_interfaces:
+        if not not_interesting_interfaces.match(name):
             # Also "not interesting" is interfaces with . or * in their
             # names
-            if '.' not in name and '*' not in name:
-                node_handle = nt.get_node_handle(name, 'PIC', 'physical', 
-                                                                    router_node)
-                node = nc.get_node_by_id(node_handle.node_id)
+            #if '.' not in name and '*' not in name:
+            node_handle = nt.get_node_handle(nc.neo4jdb, name, 'PIC', 
+                                             'physical', router_node)
+            node = node_handle.get_node()
+            with nc.neo4jdb.transaction:
                 node['description'] = nt.rest_comp(i['description'])
                 # Add the nodes description to search index
-                nc.add_index_node('search', 'description', node.id)
+                index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                nc.add_index_item(nc.neo4jdb, index, node, 'description')
                 node['units'] = json.dumps(i['units'])
-                if not nc.get_relationships(router_node, node, 'Has'):
+                if not nc.get_relationships(router_node, node, 
+                                            'Has'):
                     # Only create a relationship if it doesn't exist
                     router_node.Has(node)
-                node_list.append(node)
+            node_list.append(node)
 
     return node_list
 
-def insert_juniper_relation(name, as_number):
+def get_juniper_relation(name, as_number):
     '''
-    Inserts a relation meta type node of the type Peering partner.
-    Returns the newly created node.
+    Inserts a new node of the type Peering partner and ensures that this node
+    is unique for AS number.
+    Returns the created node.
     '''
-    node_handle = nt.get_unique_node_handle(name, 'Peering Partner', 'relation')
-    node = nc.get_node_by_id(node_handle.node_id)
-    node['as_number'] = nt.rest_comp(as_number)
-    # Add the nodes as_number to search index
-    nc.add_index_node('search', 'as_number', node.id)
-    node_list = [node]
-
-    return node_list
-
-def insert_juniper_service(name):
-    '''
-    Inserts a logical meta type node of the type IP Service.
-    Returns the newly created node.
-    '''
-    node_handle = nt.get_unique_node_handle(name, 'IP Service', 'logical')
-    node = nc.get_node_by_id(node_handle.node_id)
-    node_list = [node]
-
-    return node_list
+    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    try:
+        node = list(index.query('as_number:%s' % as_number))[0]
+    except IndexError:
+        node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 
+                                                'Peering Partner', 'relation')
+        node = node_handle.get_node()
+        with nc.neo4jdb.transaction:
+            node['as_number'] = nt.rest_comp(as_number)
+            # Add the nodes as_number to search index        
+            nc.add_index_item(nc.neo4jdb, index, node, 'as_number')
+    return node
 
 def insert_juniper_bgp_peerings(bgp_peerings):
     '''
@@ -163,18 +162,15 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         if name == None:
             name = 'No description'
         group = p['group']
-        service = nc.get_node_by_value(group, 'logical', 'name')
-        if not service:
-            service = insert_juniper_service(group)
+        service_handle = nt.get_unique_node_handle(nc.neo4jdb, group, 
+                                                   'IP Service', 'logical')
+        service_node = service_handle.get_node()
         peering_type = p['type']
         if peering_type == 'internal':
-            remote_addr = ipaddr.IPAddress(p['remote_address'])
-            local_addr = ipaddr.IPAddress(p['local_address'])
+            continue # We said that we should ignore internal peerings, right?
         elif peering_type == 'external':
-            peeringp = nc.get_node_by_value(p['as_number'], 'relation', 'as_number')
-            if not peeringp:
-                peeringp = insert_juniper_relation(name, p['as_number'])
-            rel_uses = nc.get_relationships(peeringp[0], service[0], 'Uses')
+            peeringp_node = get_juniper_relation(name, p['as_number'])
+            rel_uses = nc.get_relationships(peeringp_node, service_node, 'Uses')
             create = True
             for rel in rel_uses:
                 if rel['ip_address'] == p['remote_address']:
@@ -182,12 +178,15 @@ def insert_juniper_bgp_peerings(bgp_peerings):
                     create = False
             if create:
                 # Only create a relationship if it doesn't exist
-                peeringp[0].Uses(service[0], ip_address=p['remote_address'])
-            remote_addr = ipaddr.IPAddress(p['remote_address'])
-            local_addr = ipaddr.IPAddress('0.0.0.0') #None did not work
+                with nc.neo4jdb.transaction:
+                    peeringp_node.Uses(service_node, 
+                                       ip_address=p['remote_address'])
+            with nc.neo4jdb.transaction:
+                remote_addr = ipaddr.IPAddress(p['remote_address'])
+                local_addr = ipaddr.IPAddress('0.0.0.0') #None did not work
         # Loop through interfaces to find the local and/or remote
         # address
-        for pic in nc.get_node_by_value('PIC', 'physical', 'node_type'):            
+        for pic in nc.get_node_by_value(nc.neo4jdb, 'PIC', 'node_type'):            
             units = json.loads(pic['units'])
             # Gah, this next part needs to be refactored, it is hard
             # to read and ugly...
@@ -198,10 +197,9 @@ def insert_juniper_bgp_peerings(bgp_peerings):
                     except ValueError:
                         # ISO address on lo0
                         break
-                    if local_addr in pic_addr or \
-                                            remote_addr in pic_addr:
-                        rels = nc.get_relationships(service[0],
-                                            pic, 'Depends_on')
+                    if (local_addr in pic_addr) or (remote_addr in pic_addr):
+                        rels = nc.get_relationships(service_node, pic, 
+                                                    'Depends_on')
                         create = True # Create new relation
                         for rel in rels:
                             # Can't have more than one unit with the
@@ -210,12 +208,13 @@ def insert_juniper_bgp_peerings(bgp_peerings):
                                 create = False  # Do not create a
                                 break           # new relation
                         if create:
-                            service[0].Depends_on(pic,
-                                    ip_address=addr,
-                                    unit=unit['unit'],
-                                    vlan=unit['vlanid'],
-                                    description=unit['description'])
+                            with nc.neo4jdb.transaction:
+                                service_node.Depends_on(pic, ip_address=addr,
+                                                unit=unit['unit'],
+                                                vlan=unit['vlanid'],
+                                                description=unit['description'])
                             break
+        print 'Peering loop done'
 
 def consume_juniper_conf(json_list):
     '''
@@ -226,7 +225,7 @@ def consume_juniper_conf(json_list):
     bgp_peerings = []
     for i in json_list:
         name = i['host']['juniper_conf']['name']
-        router_node = insert_juniper_router(name)[0]
+        router_node = insert_juniper_router(name)
         interfaces = i['host']['juniper_conf']['interfaces']
         insert_juniper_interfaces(router_node,
                             interfaces)

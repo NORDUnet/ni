@@ -8,16 +8,16 @@
         <div class="section">
             <table>
                 <tr>
-                    <th>Cable type:</th><td>{{ info.cable_type|capfirst }}</td>
+                    <th>Cable type:</th><td>{{ node.cable_type|capfirst }}</td>
                 </tr>
-                {% if info.trunk_id %}
+                {% if node.trunk_id %}
                 <tr>
-                    <th>Trunk ID:</th><td>{{ info.trunk_id }}</td>
+                    <th>Trunk ID:</th><td>{{ node.trunk_id }}</td>
                 </tr>
                 {% endif %}
-                {% if info.tn1 %}
+                {% if node.tn1 %}
                 <tr>
-                    <th>TN1 number:</th><td>{{ info.tn1 }}</td>
+                    <th>TN1 number:</th><td>{{ node.tn1 }}</td>
                 </tr>
                 {% endif %}
             </table>
@@ -41,7 +41,7 @@
 
             <h4>Node properties</h4>
             <table>
-            {% for key,value in node.properties.items %}
+            {% for key,value in node.items %}
                 <tr>
                     <td><b>{{key}}</b></td><td>{{value}}</td>
                 </tr>

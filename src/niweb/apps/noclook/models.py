@@ -7,7 +7,7 @@ import norduni_client as nc
 NODE_META_TYPE_CHOICES = (
     ('logical', 'Logical'),
     ('physical', 'Physical'),
-    ('organisation', 'Organisation'),
+    ('relation', 'Relation'),
     ('location', 'Location'),
 )
 
@@ -44,6 +44,12 @@ class NodeHandle(models.Model):
 
     def __unicode__(self):
         return '%s %s' % (self.node_type, self.node_name)
+        
+    def get_node(self):
+        '''
+        Returns the NodeHandles node.
+        '''
+        return nc.get_node_by_id(nc.neo4jdb, self.node_id)
 
     @models.permalink
     def get_absolute_url(self):
@@ -57,32 +63,29 @@ class NodeHandle(models.Model):
             'slug': self.node_type.get_slug(),
             'handle_id': self.handle_id})
 
-    def get_node(self):
-        '''
-        Returns the NodeHandles node.
-        '''
-        return nc.get_node_by_id(self.node_id)
-
-    def save(self):
+    def save(self,):
         '''
         Create a new node and associate it to the handle.
         '''
         if self.node_id: # Not first save
             super(NodeHandle, self).save()
             return self
-        node = nc.create_node(self.node_name, str(self.node_type))
+        node = nc.create_node(nc.neo4jdb, self.node_name, str(self.node_type))
         self.node_id = node.id
-        meta_node = nc.get_meta_node(str(self.node_meta_type))
-        meta_node.Contains(node)
-        try:
-            super(NodeHandle, self).save()
-        except Exception as e:
-            # If you cant write to the sql db undo the neo4j change
-            nc.delete_node(node.id)
-            print e
-            return None
+#        try:
+        super(NodeHandle, self).save()
+#        except Exception as e:
+#            # If you cant write to the sql db undo the neo4j change
+#            nc.delete_node(db, node.id)
+#            print e
+#            return None
         # We need to save the node_handle before it gets a handle_id.
-        node['handle_id'] = int(self.handle_id)
+        #db = nc.open_db()
+        meta_node = nc.get_meta_node(nc.neo4jdb, str(self.node_meta_type))
+        node = nc.get_node_by_id(nc.neo4jdb, self.node_id)
+        with nc.neo4jdb.transaction:
+            node['handle_id'] = int(self.handle_id)
+            meta_node.Contains(node)
         return self
     
     save.alters_data = True
@@ -93,7 +96,7 @@ class NodeHandle(models.Model):
         '''
         #try:
         node = self.get_node()
-        nc.delete_node(node.id)
+        nc.delete_node(nc.neo4jdb, node.id)
         Comment.objects.filter(object_pk=self.pk).delete()
         #except Exception as e:
             # If you cant write to the sql db or the neo4j db do nothing
