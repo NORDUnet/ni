@@ -52,8 +52,6 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^search/autocomplete$', 'search_autocomplete'),
     (r'^search/$', 'search'),
     # List views
-    (r'^([-\w]+)/(?P<handle_id>\d+)/(?P<slug>[-\w]+)s/$',
-        'list_by_master'),
     (r'^peering-partner/$', 'list_peering_partners'),
     (r'^host/$', 'list_hosts'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
