@@ -22,6 +22,7 @@
 
 from norduni_client_exceptions import *
 from neo4j import GraphDatabase, Uniqueness, Evaluation, OUTGOING, INCOMING, ANY
+from lucenequerybuilder import Q
 from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
 import json
@@ -170,20 +171,18 @@ def get_meta_node(db, meta_node_name):
     '''
     Will return the meta node requested or create it and return it.
     '''
-    def meta_name_evaluator(path):
-        # Filter on meta node name
-        if path.end['name'] == meta_node_name.lower():
-            return Evaluation.INCLUDE_AND_PRUNE
-        return Evaluation.EXCLUDE_AND_CONTINUE
     root = get_root_node(db)
     if not len(root.relationships):
+        # Set root name and node_type as it is the first run
+        with neo4jdb.transaction:
+            neo4jdb.reference_node['name'] = 'root'
+            neo4jdb.reference_node['node_type'] = 'meta'
         return create_meta_node(db, meta_node_name)
-    traverser = db.traversal().evaluator(meta_name_evaluator).traverse(root)
-    try:
-        meta_node = list(traverser.nodes)[0]
-    except IndexError:
-        # No node with requested name found, create it.
-        meta_node = create_meta_node(db, meta_node_name)
+    for rel in root.Consists_of.outgoing:
+        if rel.end['name'] == meta_node_name.lower():
+            return rel.end
+    # No meta node found, create one
+    meta_node = create_meta_node(db, meta_node_name)
     return meta_node
 
 def get_all_meta_nodes(db):
@@ -207,21 +206,24 @@ def get_node_meta_type(node):
     #return node.Contains.incoming.single.start['name']
     return meta_type
 
-def get_root_parent(db, node):
+def get_physical_root_parent(db, node):
     '''
-    Returns the nodes most top parent (not meta nodes or root node).
+    Returns the physical nodes most top parent (not meta node or root node).
     '''
-    def top_parent_evaluator(path):
-        # Filter on relationship type Contains.
+    def top_parent_evaluator(path):    
         try:
-            if path.last_relationship.type.name() == 'Contains':
-                return Evaluation.INCLUDE_AND_PRUNE
+            mtype = nc.get_node_meta_type(path.last_relationship.start)
+            if mtype == nc.get_node_meta_type(path.start):
+                if not path.last_relationship.start.Has.incoming:
+                    return Evaluation.INCLUDE_AND_PRUNE
+                else:
+                    return Evaluation.EXCLUDE_AND_CONTINUE
         except AttributeError:
             pass
-        return Evaluation.EXCLUDE_AND_CONTINUE
+        return Evaluation.EXCLUDE_AND_PRUNE
     traverser = db.traversal().evaluator(top_parent_evaluator).traverse(node)
     for path in traverser:
-        return path.last_relationship.end
+        return path.end
     
 def get_node_by_value(db, node_value, node_property=None):
     '''
@@ -254,7 +256,8 @@ def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
     the value or property/value pair. Returns a list of matching nodes.
     '''
     node_types_index = get_node_index(db, 'node_types')
-    hits = node_types_index.query('node_type:%s' % node_type)
+    q = Q('node_type', '%s' % node_type)
+    hits = node_types_index.query('%s' % q)
     nodes = []
     for item in hits:
         if node_property:
@@ -299,27 +302,27 @@ def get_suitable_nodes(db, node):
     node_dict[meta_type].remove(node)
     return node_dict
 
-def make_relationship(db, node, other_node, rel_type):
+def create_relationship(db, node, other_node, rel_type):
     '''
     Makes a relationship between the two node of the rel_type relationship type.
     To be sure that relationship types are not misspelled or not following
-    the database model you should use make_suitable_relationship().
+    the database model you should use create_suitable_relationship().
     '''
     with db.transaction:
         return node.relationship.create(rel_type, other_node)
 
 
-def make_location_relationship(db, location_node, other_node, rel_type):
+def create_location_relationship(db, location_node, other_node, rel_type):
     '''
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
     '''
     if get_node_meta_type(other_node) == 'location' and rel_type == 'Has':
-        return make_relationship(db, location_node, other_node, rel_type)
+        return create_relationship(db, location_node, other_node, rel_type)
     raise NoRelationshipPossible(location_node, other_node, rel_type)
     
-def make_logical_relationship(db, logical_node, other_node, rel_type):
+def create_logical_relationship(db, logical_node, other_node, rel_type):
     '''
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
@@ -328,10 +331,10 @@ def make_logical_relationship(db, logical_node, other_node, rel_type):
     if rel_type == 'Depends_on':
         other_meta_type = get_node_meta_type(other_node)
         if other_meta_type == 'logical' or other_meta_type == 'physical':
-            return make_relationship(db, logical_node, other_node, rel_type)
-    raise NoRelationshipPossible(logical_node, other_node, None)
+            return create_relationship(db, logical_node, other_node, rel_type)
+    raise NoRelationshipPossible(logical_node, other_node, rel_type)
     
-def make_relation_relationship(db, relation_node, other_node, rel_type):
+def create_relation_relationship(db, relation_node, other_node, rel_type):
     '''
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
@@ -340,15 +343,15 @@ def make_relation_relationship(db, relation_node, other_node, rel_type):
     other_meta_type = get_node_meta_type(other_node)
     if other_meta_type == 'logical':
         if rel_type == 'Uses' or rel_type == 'Provides':
-            return make_relationship(db, relation_node, other_node, rel_type)
+            return create_relationship(db, relation_node, other_node, rel_type)
     elif other_meta_type == 'location' and rel_type == 'Responsible_for':
-        return make_relationship(db, relation_node, other_node, rel_type)
+        return create_relationship(db, relation_node, other_node, rel_type)
     elif other_meta_type == 'physical':
         if rel_type == 'Owns' or rel_type == 'Provides':
-            return make_relationship(db, relation_node, other_node, rel_type)
+            return create_relationship(db, relation_node, other_node, rel_type)
     raise NoRelationshipPossible(relation_node, other_node, rel_type)
     
-def make_physical_relationship(db, physical_node, other_node, rel_type):
+def create_physical_relationship(db, physical_node, other_node, rel_type):
     '''
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
@@ -357,12 +360,12 @@ def make_physical_relationship(db, physical_node, other_node, rel_type):
     other_meta_type = get_node_meta_type(other_node)
     if other_meta_type == 'physical':
         if rel_type == 'Has' or rel_type == 'Connected_to':
-            return make_relationship(db, physical_node, other_node, rel_type)
+            return create_relationship(db, physical_node, other_node, rel_type)
     elif other_meta_type == 'location' and rel_type == 'Located_in':
-        return make_relationship(db, physical_node, other_node, rel_type)
+        return create_relationship(db, physical_node, other_node, rel_type)
     raise NoRelationshipPossible(physical_node, other_node, rel_type)
 
-def make_suitable_relationship(db, node, other_node, rel_type):
+def create_suitable_relationship(db, node, other_node, rel_type):
     '''
     Makes a relationship from node to other_node depending on which
     meta_type the nodes are. Returns the relationship or raises
@@ -370,13 +373,13 @@ def make_suitable_relationship(db, node, other_node, rel_type):
     '''
     meta_type = get_node_meta_type(node)    
     if meta_type == 'location':
-        return make_location_relationship(db, node, other_node, rel_type)
+        return create_location_relationship(db, node, other_node, rel_type)
     elif meta_type == 'logical':
-        return make_logical_relationship(db, node, other_node, rel_type)
+        return create_logical_relationship(db, node, other_node, rel_type)
     elif meta_type == 'relation':
-        return make_relation_relationship(db, node, other_node, rel_type)
+        return create_relation_relationship(db, node, other_node, rel_type)
     elif meta_type == 'physical':
-        return make_physical_relationship(db, node, other_node, rel_type)
+        return create_physical_relationship(db, node, other_node, rel_type)
     raise NoRelationshipPossible(node, other_node, rel_type)
 
 def get_relationships(n1, n2, rel_type=None):
@@ -565,7 +568,10 @@ except Exception:
     print 'Use open_db(URI) to open another database.'
 
 def _close_db():
-    neo4jdb.shutdown()
+    try:
+        neo4jdb.shutdown()
+    except NameError:
+        print 'Neo4j database already open in another process.'
 
 import atexit
 atexit.register(_close_db)
