@@ -9,5 +9,5 @@ def type_menu():
     Just chain .exclude(type='name') to remove unwanted types.
     '''
     from niweb.apps.noclook.models import NodeType
-    types = NodeType.objects.exclude(type='PIC')
+    types = NodeType.objects.exclude(type='PIC').exclude(type='Unit')
     return {'types': types}
