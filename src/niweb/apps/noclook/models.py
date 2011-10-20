@@ -1,4 +1,5 @@
-from django.db import models
+# -*- coding: utf-8 -*-
+from django.db import models, utils
 from django.contrib.auth.models import User
 from django.contrib.comments import Comment
 
@@ -72,15 +73,11 @@ class NodeHandle(models.Model):
             return self
         node = nc.create_node(nc.neo4jdb, self.node_name, str(self.node_type))
         self.node_id = node.id
-#        try:
-        super(NodeHandle, self).save()
-#        except Exception as e:
-#            # If you cant write to the sql db undo the neo4j change
-#            nc.delete_node(db, node.id)
-#            print e
-#            return None
-        # We need to save the node_handle before it gets a handle_id.
-        #db = nc.open_db()
+        try:
+            super(NodeHandle, self).save()
+        except utils.IntegrityError as e:
+            print e
+            print 'Node ID: %d' % node.id            
         meta_node = nc.get_meta_node(nc.neo4jdb, str(self.node_meta_type))
         node = nc.get_node_by_id(nc.neo4jdb, self.node_id)
         with nc.neo4jdb.transaction:
@@ -94,16 +91,13 @@ class NodeHandle(models.Model):
         '''
         Delete that node handle and the handles node.
         '''
-        #try:
-        node = self.get_node()
-        nc.delete_node(nc.neo4jdb, node.id)
+        try:
+            node = self.get_node()
+            nc.delete_node(nc.neo4jdb, node.id)
+        except KeyError:
+            # Node already deleted?
+            pass
         Comment.objects.filter(object_pk=self.pk).delete()
-        #except Exception as e:
-            # If you cant write to the sql db or the neo4j db do nothing
-            #print e
-            #return False
-        # The handle is deleted and the node fetched, everthing seems
-        # fine. Delete the node and all its relationsships.        
         super(NodeHandle, self).delete()
         return True
         
