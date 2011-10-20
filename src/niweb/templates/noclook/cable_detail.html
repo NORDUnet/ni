@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ block.super }} | Detail{% endblock %}
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
 
 {% block content %}
  <div class="content">
@@ -41,7 +41,7 @@
 
             <h4>Node properties</h4>
             <table>
-            {% for key,value in node.items %}
+            {% for key,value in node.properties.items %}
                 <tr>
                     <td><b>{{key}}</b></td><td>{{value}}</td>
                 </tr>
