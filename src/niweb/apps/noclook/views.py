@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -39,8 +40,8 @@ def list_peering_partners(request):
     for nh in node_type.nodehandle_set.all():
         partner = {}
         node = nh.get_node()
-        partner['name'] = node.get('name', None)
-        partner['as_number'] = node.get('as_number', None)
+        partner['name'] = node['name']
+        partner['as_number'] = node['as_number']
         partner['url'] = nh.get_absolute_url()
         partner_list.append(partner)
     return render_to_response('noclook/list_peering_partners.html',
@@ -63,23 +64,23 @@ def list_hosts(request):
     return render_to_response('noclook/list_hosts.html',
                                 {'host_list': host_list},
                                 context_instance=RequestContext(request))
-
-@login_required
-def list_by_master(request, handle_id, slug):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    # Get node from neo4j-database
-    master = nh.get_node()
-    # Get all outgoing related nodes
-    node_list = master.traverse()
-    node_handle_list = []
-    node_type = get_object_or_404(NodeType, slug=slug)
-    for node in node_list:
-        if node['node_type'] == str(node_type):
-            node_handle_list.append(get_object_or_404(NodeHandle,
-                                        pk=node['handle_id']))
-    return render_to_response('noclook/list_by_type.html',
-        {'node_handle_list': node_handle_list},
-        context_instance=RequestContext(request))
+# Remove?
+#@login_required
+#def list_by_master(request, handle_id, slug):
+#    nh = get_object_or_404(NodeHandle, pk=handle_id)
+#    # Get node from neo4j-database
+#    master = nh.get_node()
+#    # Get all outgoing related nodes
+#    node_list = master.traverse()
+#    node_handle_list = []
+#    node_type = get_object_or_404(NodeType, slug=slug)
+#    for node in node_list:
+#        if node['node_type'] == str(node_type):
+#            node_handle_list.append(get_object_or_404(NodeHandle,
+#                                        pk=node['handle_id']))
+#    return render_to_response('noclook/list_by_type.html',
+#        {'node_handle_list': node_handle_list},
+#        context_instance=RequestContext(request))
 
 # Detail views
 @login_required
@@ -109,35 +110,35 @@ def pic_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    # Get PIC units
-    units = json.loads(node['units'])
-    # Get the master node
-    rel_list = node.relationships.incoming(types=['Has'])
-    parent_node = rel_list[0].start
-    # Get depending nodes
-    depending_relationships = []
-    depends_rel = node.relationships.incoming(types=['Depends_on'])
-    for d_rel in depends_rel:
-        orgs_rel = d_rel.start.relationships.incoming(types=['Uses'])
-        pic_address = ipaddr.IPNetwork(d_rel['ip_address'])
-        tmp = []
-        tmp.append(d_rel)
-        for o_rel in orgs_rel:
-            org_address = ipaddr.IPAddress(o_rel['ip_address'])
-            if org_address in pic_address:
-                tmp.append(o_rel)
-        if len(tmp) > 1: #If any organistations was found
-            depending_relationships.append(tmp)
-    # Get connected nodes
-    connected_nodes = []
-    rel_list = node.relationships.incoming(types=['Connected_to'])
-    for rel in rel_list:
-        connected_nodes.append(rel.start)
+    # Get the top parent node
+    router = nc.get_physical_root_parent(nc.neo4jdb, node)
+    # Get unit nodes
+    units = []
+    depending_services = []
+    dep_rels = node.Depends_on.incoming
+    for dep_rel in dep_rels:
+        if dep_rel.start['node_type'] == 'Unit':
+            units.append(dep_rel.start)
+#TODO: Write a get_logical_root_parent
+#        if_address = ipaddr.IPNetwork(unit_rel['ip_address'])
+#        service = {}
+#        service['service'] = 
+#        service['unit'] = unit_rel.end
+#        service['if_address'] = unit_rel['ip_address']
+#        service['relations'] = []
+#        # Get relations who uses the pic
+#        rel_rels = node.Uses.incoming
+#        for r_rel in rel_rels:
+#            org_address = ipaddr.IPAddress(r_rel['ip_address'])
+#            if org_address in if_address:
+#                relation = {'rel_address': r_rel['ip_address'],
+#                            'relation': r_rel.start}
+#                service['relations'].append(relation)
+#        depending_services.append(service)    
     return render_to_response('noclook/pic_detail.html',
-        {'node_handle': nh, 'node': node, 'units': units,
-        'parent': parent_node, 'depending':depending_relationships,
-        'connected':connected_nodes},
-        context_instance=RequestContext(request))
+        {'node_handle': nh, 'node': node, 'router': router,
+         'units': units, 'depending_services': depending_services}, 
+         context_instance=RequestContext(request))
 
 @login_required
 def optical_node_detail(request, handle_id):
@@ -245,28 +246,29 @@ def cable_detail(request, handle_id):
 def peering_partner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    node = nh.get_node(nc.neo4jdb)
+    node = nh.get_node()
     # Get services used
-    services_rel = node.relationships.outgoing(types=['Uses'])
-    # services_rel are relatios to bgp groups(Service)
+    services_rel = node.Uses.outgoing
+    # services_rel are relations to bgp groups(Service)
     peering_points = []
     for s_rel in services_rel:
         peering_point = {}
         peering_point['pp_ip'] = s_rel['ip_address']
         peering_point['service'] = s_rel.end['name']
-        peering_point['service_url'] = nc.get_node_url(s_rel.end.id)
-        pics_rel = s_rel.end.relationships.outgoing(types="Depends_on")
-        #pics_rel is a list of nodes with equipments/cables and services
+        peering_point['service_url'] = nc.get_node_url(s_rel.end)
+        unit_rels = s_rel.end.Depends_on.outgoing
         org_address = ipaddr.IPAddress(s_rel['ip_address'])
-        for p_rel in pics_rel:
-            pic_address = ipaddr.IPNetwork(p_rel['ip_address'])
-            if org_address in pic_address:
-                peering_point['pic_ip'] = p_rel['ip_address']
-                peering_point['pic'] = p_rel.end['name']
-                peering_point['pic_url'] = nc.get_node_url(p_rel.end.id)
-                router = nc.get_root_parent(p_rel.end, nc.Incoming.Has)
+        for unit_rel in unit_rels:
+            unit_address = ipaddr.IPNetwork(unit_rel['ip_address'])
+            if org_address in unit_address:
+                peering_point['if_address'] = unit_rel['ip_address']
+                peering_point['unit'] = unit_rel.end['name']
+                pic = unit_rel.end.Depends_on.outgoing.single.end
+                peering_point['pic'] = pic['name']
+                peering_point['pic_url'] = nc.get_node_url(pic)
+                router = nc.get_physical_root_parent(nc.neo4jdb, pic)
                 peering_point['router'] = router['name']
-                peering_point['router_url'] = nc.get_node_url(router.id)
+                peering_point['router_url'] = nc.get_node_url(router)
                 peering_points.append(peering_point)
     return render_to_response('noclook/peering_partner_detail.html',
         {'node_handle': nh, 'node': node,
@@ -278,24 +280,31 @@ def ip_service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    # Get PICs dependendant on
-    pics_rel = node.relationships.outgoing(types=['Depends_on'])
-    # Get Organisations who uses the service
-    orgs_rel = node.relationships.incoming(types=['Uses'])
-    service_relationships = []
-    for p_rel in pics_rel:
-        pic_address = ipaddr.IPNetwork(p_rel['ip_address'])
-        tmp = []
-        tmp.append(p_rel)
-        for o_rel in orgs_rel:
-            org_address = ipaddr.IPAddress(o_rel['ip_address'])
-            if org_address in pic_address:
-                tmp.append(o_rel)
-        if len(tmp) > 1: #If any organistations was found
-            service_relationships.append(tmp)
+    # Get the units dependendant on
+    unit_rels = node.Depends_on.outgoing
+    service_resources = []
+    for unit_rel in unit_rels:
+        if_address = ipaddr.IPNetwork(unit_rel['ip_address'])
+        interface = {}
+        interface['unit'] = unit_rel.end
+        interface['if_address'] = unit_rel['ip_address']
+        pic = unit_rel.end.Depends_on.outgoing.single.end
+        interface['pic'] = pic
+        router = nc.get_physical_root_parent(nc.neo4jdb, pic)
+        interface['router'] = router
+        interface['relations'] = []
+        # Get relations who uses the service
+        rel_rels = node.Uses.incoming
+        for r_rel in rel_rels:
+            org_address = ipaddr.IPAddress(r_rel['ip_address'])
+            if org_address in if_address:
+                relation = {'rel_address': r_rel['ip_address'],
+                            'relation': r_rel.start}
+                interface['relations'].append(relation)
+        service_resources.append(interface)
     return render_to_response('noclook/ip_service_detail.html',
         {'node_handle': nh, 'node': node,
-        'service_relationships': service_relationships},
+        'service_resources': service_resources},
         context_instance=RequestContext(request))
 
 @login_required
