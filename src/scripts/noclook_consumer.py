@@ -105,7 +105,7 @@ def purge_db():
     for nh in NodeHandle.objects.all():
         try:
             nh.delete()
-        except nc.client.NotFoundError:
+        except KeyError:
             print 'Could not delete the Neo4j node.' 
 
 def generate_password(n):
