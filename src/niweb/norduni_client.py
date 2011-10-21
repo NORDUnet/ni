@@ -206,24 +206,27 @@ def get_node_meta_type(node):
     #return node.Contains.incoming.single.start['name']
     return meta_type
 
-def get_physical_root_parent(db, node):
+def get_root_parent(db, node):
     '''
-    Returns the physical nodes most top parent (not meta node or root node).
+    Takes a node and a string representing the relationship type. Returns the 
+    physical nodes' most top parent (not meta node or root node). Returns
+    none if no parent was found.
+    *** This function does not handle multiple parents. ***
     '''
-    def top_parent_evaluator(path):    
-        try:
-            mtype = nc.get_node_meta_type(path.last_relationship.start)
-            if mtype == nc.get_node_meta_type(path.start):
-                if not path.last_relationship.start.Has.incoming:
-                    return Evaluation.INCLUDE_AND_PRUNE
-                else:
-                    return Evaluation.EXCLUDE_AND_CONTINUE
-        except AttributeError:
-            pass
-        return Evaluation.EXCLUDE_AND_PRUNE
-    traverser = db.traversal().evaluator(top_parent_evaluator).traverse(node)
-    for path in traverser:
-        return path.end
+    # TODO: When traversels support just relationships directions without type 
+    # rewrite this function.
+    types = {'physical': 'Has', 'logical': 'Depends_on', 'location': 'Has'}
+    meta_type = nc.get_node_meta_type(node)
+    relationship_type = types[meta_type]
+    traverser = db.traversal().relationships(
+        relationship_type, INCOMING).traverse(node)
+    for n in traverser.nodes:
+        if not n == node:
+            for rel in n.relationships.incoming:
+                if rel.type.name() == relationship_type:
+                    break
+                return n
+    return None
     
 def get_node_by_value(db, node_value, node_property=None):
     '''
