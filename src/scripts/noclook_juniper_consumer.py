@@ -243,8 +243,6 @@ def insert_external_bgp_peering(peering, service_node):
                 return
         # No relationship was found, create one
         with nc.neo4jdb.transaction:
-            # DEBUG
-            print 'Creating Service -> Unit relationship.'
             rel = nc.create_suitable_relationship(nc.neo4jdb, service_node, 
                                                   unit_node, 'Depends_on')
             rel['ip_address'] = local_address
@@ -267,8 +265,6 @@ def insert_juniper_bgp_peerings(bgp_peerings):
             continue # We said that we should ignore internal peerings, right?
         elif peering_type == 'external':
             insert_external_bgp_peering(peering, ip_service_node)
-        # DEBUG
-        print 'Peering loop done'
 
 def consume_juniper_conf(json_list):
     '''
@@ -284,8 +280,6 @@ def consume_juniper_conf(json_list):
         insert_juniper_interfaces(router_node,
                             interfaces)
         bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
-    # DEBUG
-    print 'Starting peerings'
     insert_juniper_bgp_peerings(bgp_peerings)
 
 def main():

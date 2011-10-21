@@ -123,7 +123,7 @@ def insert_nmap(json_list):
         node = node_handle.get_node()
         nc.merge_properties(node.id, 'hostnames', i['host']['hostnames'])
         nc.merge_properties(node.id, 'addresses', i['host']['addrs'])
-        if node.get('_auto_manage', None) is None: # If _auto_manage is not set
+        if node.get('noclook_auto_manage', None) is None: # If _auto_manage is not set
             node['noclook_auto_manage'] = True     # set it to True.
         node['noclook_last_seen'] = datetime.datetime.now().isoformat()
         try:

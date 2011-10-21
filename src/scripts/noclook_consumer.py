@@ -63,14 +63,6 @@ def init_config(path):
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
 
-def rest_comp(data):
-    '''
-    As the REST interface cant handle None type change None to False.
-    '''
-    if data is None:
-        return False
-    return data
-    
 def normalize_whitespace(text):
     '''
     Remove redundant whitespace from a string.
@@ -92,21 +84,6 @@ def load_json(json_dir):
         print 'Encountered a problem with %s.' % json_dir 
         print e
     return json_list
-    
-
-def test_db():
-    handles = NodeHandle.objects.all()
-    print 'Handle\tNode'
-    for handle in handles:
-        print '%d\t%s' % (handle.handle_id, nc.get_node_by_id(
-            handle.node_id))
-
-def purge_db():
-    for nh in NodeHandle.objects.all():
-        try:
-            nh.delete()
-        except KeyError:
-            print 'Could not delete the Neo4j node.' 
 
 def generate_password(n):
     '''
@@ -127,7 +104,28 @@ def get_user(username='noclook'):
         passwd = generate_password(30)
         user = User.objects.create_user(username, '', passwd)
     return user
+
+def set_noclook_auto_manage(db, item, auto_manage):
+    '''
+    Sets the node or relationship noclook_auto_manage flag to True or False. 
+    Also sets the noclook_last_seen flag to now.
+    '''
+    with db.transaction:
+        item['noclook_auto_manage'] = auto_manage
+        item['noclook_last_seen'] = datetime.datetime.now().isoformat()
+    return True
     
+def update_noclook_auto_manage(db, item):
+    '''
+    Updates the noclook_auto_manage and noclook_last_seen properties. If 
+    noclook_auto_manage is not set, it is set to True.
+    '''
+    with db.transaction:
+        if item.get('noclook_auto_manage', None) is None:  
+            item['noclook_auto_manage'] = True
+        item['noclook_last_seen'] = datetime.datetime.now().isoformat()
+    return True
+
 def get_node_type(type_name):
     '''
     Returns or creates and returns the NodeType object with the supplied
@@ -170,19 +168,19 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
     Takes the arguments needed to create a NodeHandle. If a parent is
     supplied the NodeHandle will be unique for that parent.
     Returns a NodeHandle object.
+    *** This function does not handle multiple parents. ***
     '''
     # Hard coded user value that we can't get on the fly right now
     user = get_user()
     node_type = get_node_type(node_type_name)
     try:
-        node_handles = NodeHandle.objects.filter(
-                                            node_name__in=[node_name]
-                                            ).filter(
-                                            node_type__in=[node_type])
+        node_handles = NodeHandle.objects.filter(node_name__in=[node_name]
+                                            ).filter(node_type__in=[node_type])
         if parent:
             for node_handle in node_handles:
                 node = node_handle.get_node()
-                if parent.id == nc.get_root_parent(nc.neo4jdb, node).id:
+                node_parent = nc.get_root_parent(db, node)
+                if node_parent and parent.id == node_parent.id:
                     return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
@@ -241,6 +239,20 @@ def consume_noclook(json_list):
     for n in nc.get_all_nodes():
         if 'old_node_id' in n:
             del n['old_node_id']
+
+def test_db():
+    handles = NodeHandle.objects.all()
+    print 'Handle\tNode'
+    for handle in handles:
+        print '%d\t%s' % (handle.handle_id, nc.get_node_by_id(
+            handle.node_id))
+
+def purge_db():
+    for nh in NodeHandle.objects.all():
+        try:
+            nh.delete()
+        except KeyError:
+            print 'Could not delete the Neo4j node.' 
 
 def main():
     # User friendly usage output

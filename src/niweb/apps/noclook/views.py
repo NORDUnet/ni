@@ -10,7 +10,6 @@ from niweb.apps.noclook.models import NodeHandle, NodeType
 import norduni_client as nc
 import ipaddr
 import json
-import copy
 
 def index(request):
     return render_to_response('noclook/index.html', {},
@@ -35,6 +34,7 @@ def list_by_type(request, slug):
         
 @login_required
 def list_peering_partners(request):
+    #TODO: Get nodes directly via index.
     node_type = get_object_or_404(NodeType, slug='peering-partner')
     partner_list = []
     for nh in node_type.nodehandle_set.all():
@@ -50,6 +50,7 @@ def list_peering_partners(request):
 
 @login_required
 def list_hosts(request):
+    #TODO: Get nodes directly via index.
     node_type = get_object_or_404(NodeType, slug='host')
     host_list = []
     for nh in node_type.nodehandle_set.all():
@@ -111,7 +112,7 @@ def pic_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     # Get the top parent node
-    router = nc.get_physical_root_parent(nc.neo4jdb, node)
+    router = nc.get_root_parent(nc.neo4jdb, node)
     # Get unit nodes
     units = []
     depending_services = []
@@ -266,7 +267,7 @@ def peering_partner_detail(request, handle_id):
                 pic = unit_rel.end.Depends_on.outgoing.single.end
                 peering_point['pic'] = pic['name']
                 peering_point['pic_url'] = nc.get_node_url(pic)
-                router = nc.get_physical_root_parent(nc.neo4jdb, pic)
+                router = nc.get_root_parent(nc.neo4jdb, pic)
                 peering_point['router'] = router['name']
                 peering_point['router_url'] = nc.get_node_url(router)
                 peering_points.append(peering_point)
@@ -288,9 +289,11 @@ def ip_service_detail(request, handle_id):
         interface = {}
         interface['unit'] = unit_rel.end
         interface['if_address'] = unit_rel['ip_address']
+        # TODO: If service depends on more than one PIC this won't show the
+        # corrent information.
         pic = unit_rel.end.Depends_on.outgoing.single.end
         interface['pic'] = pic
-        router = nc.get_physical_root_parent(nc.neo4jdb, pic)
+        router = nc.get_root_parent(nc.neo4jdb, pic)
         interface['router'] = router
         interface['relations'] = []
         # Get relations who uses the service
