@@ -26,7 +26,7 @@ $(document).ready(
             <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
 
             <div class="section">
-            {% load niweb_tags %}
+            {% load noclook_tags %}
             {% if service_relationships %}
             <table id="services" class="tablesorter" cellspacing="1">
                 <thead>
@@ -35,7 +35,7 @@ $(document).ready(
                 <tbody>
                 {% for service in service_relationships %}
                     <tr>
-                        <td><a href="{% niweb_node_id_to_url service.end.id %}">{{ service.end.name }}</a></td>
+                        <td><a href="{% noclook_node_to_url service.end.id %}">{{ service.end.name }}</a></td>
                         <td>{{ service.ip_address }}</td>
                         <td>{{ service.port }}</td>
                         <td>{{ service.protocol }}</td>

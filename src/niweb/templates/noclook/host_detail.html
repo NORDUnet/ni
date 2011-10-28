@@ -22,7 +22,7 @@ $(document).ready(
 {% endblock %}
 
 {% block content %}
-{% load niweb_tags %}
+{% load noclook_tags %}
 <div class="content">
     <div class="section">
         <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
@@ -67,33 +67,33 @@ $(document).ready(
                     {% for item in user_relationships %}
                         {% if forloop.first %}
                         <tr>
-                            <th>Users:</th><td><a href="{% niweb_node_id_to_url item.start.id %}">{{item.start.name}}</td>
+                            <th>Users:</th><td><a href="{% noclook_node_to_url item.start.id %}">{{item.start.name}}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td></td><td><a href="{% niweb_node_id_to_url item.start.id %}">{{item.start.name}}</td>
+                            <td></td><td><a href="{% noclook_node_to_url item.start.id %}">{{item.start.name}}</td>
                         </tr>
                         {% endif %}
                     {% endfor %}
                     {% for item in provider_relationships %}
                         {% if forloop.first %}
                         <tr>
-                            <th>Providers:</th><td><a href="{% niweb_node_id_to_url item.start.id %}">{{item.start.name}}</td>
+                            <th>Providers:</th><td><a href="{% noclook_node_to_url item.start.id %}">{{item.start.name}}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td></td><td><a href="{% niweb_node_id_to_url item.start.id %}">{{item.start.name}}</td>
+                            <td></td><td><a href="{% noclook_node_to_url item.start.id %}">{{item.start.name}}</td>
                         </tr>
                         {% endif %}
                     {% endfor %}
                     {% for item in owner_relationships %}
                         {% if forloop.first %}
                         <tr>
-                            <th>Owners:</th><td><a href="{% niweb_node_id_to_url item.start.id %}">{{item.start.name}}</td>
+                            <th>Owners:</th><td><a href="{% noclook_node_to_url item.start.id %}">{{item.start.name}}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td></td><td><a href="{% niweb_node_id_to_url item.start.id %}">{{item.start.name}}</td>
+                            <td></td><td><a href="{% noclook_node_to_url item.start.id %}">{{item.start.name}}</td>
                         </tr>
                         {% endif %}
                     {% endfor %}
@@ -176,7 +176,7 @@ $(document).ready(
     <div class="clear-float"></div>
     <div class="section">
         <h3>Services provided</h3>
-        {% load niweb_tags %}
+        {% load noclook_tags %}
         {% if service_relationships %}
         <table id="services" class="tablesorter" cellspacing="1">
             <thead>
@@ -185,7 +185,7 @@ $(document).ready(
             <tbody>
             {% for service in service_relationships %}
                 <tr>
-                    <td><a href="{% niweb_node_id_to_url service.start.id %}">{{ service.start.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url service.start.id %}">{{ service.start.name }}</a></td>
                     <td>{{ service.ip_address }}</td>
                     <td>{{ service.port }}</td>
                     <td>{{ service.protocol }}</td>

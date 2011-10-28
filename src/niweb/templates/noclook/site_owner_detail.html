@@ -20,7 +20,7 @@ $(document).ready(
 {% endblock %}
 
 {% block content %}
-{% load niweb_tags %}
+{% load noclook_tags %}
 <div class="content">
     <div class="section">
         <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
@@ -65,7 +65,7 @@ $(document).ready(
             {% for equip in site_relationships %}
                 <tr>
                     <td><a href="/findin/site/country_code/{{ equip.end.country_code }}/">{{ equip.end.country_code }}</a></td>
-                    <td><a href="{% niweb_node_id_to_url equip.end.id %}">{{ equip.end.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url equip.end.id %}">{{ equip.end.name }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>

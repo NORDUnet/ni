@@ -20,11 +20,11 @@ $(document).ready(
 {% block content %}
     <div class="content">
         <h3><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h3>
-        {% load niweb_tags %}
+        {% load noclook_tags %}
         {% if location_relationships %}
             <h5 class="site">Located in
             {% for loc in location_relationships %}
-                <a href="{% niweb_node_id_to_url loc.end.id %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
+                <a href="{% noclook_node_to_url loc.end.id %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
             {% endfor %}
             </h5>
         {% endif %}
