@@ -84,35 +84,35 @@ $(document).ready(
         {% endif %}
         </div>
         <div class="section">
+            {% load noclook_tags %}
             <h3>Depends on this PIC</h3>
-            {% if depending %}
+            {% if depending_services %}
                 <table id="resources" class="tablesorter" cellspacing="1">
                 <thead>
-                    <th>Unit</th><th>Interface Address</th><th>VLAN</th><th>User Address<th>User</th>
+                    <th>Service</th><th>Unit</th><th>Interface Address</th><th>VLAN</th><th>User Address</th><th>User</th>
                 </thead>
                 <tbody>
-                    {% for resource in service_resources %}
-                        {% if resource.relations %}
-                            {% for relation in resource.relations %}
+                    {% for service in depending_services %}
+                        {% if service.relations %}
+                            {% for relation in service.relations %}
                                 <tr>
-                                    <td><a href="{% niweb_node_id_to_url resource.router %}">{{ resource.router.name }}</a></td>
-                                    <td><a href="{% niweb_node_id_to_url resource.pic %}">{{ resource.pic.name }}</a></td>
-                                    <td>{{ resource.unit.name }}</td>
-                                    <td>{{ resource.if_address }}</td>
-                                    <td>{{ resource.unit.vlanid }}</td>
+                                    <td><a href="{% noclook_node_to_url service.service %}">{{ service.service.name }}</a></td>
+                                    <td>{{ service.unit.name }}</td>
+                                    <td>{{ service.if_address }}</td>
+                                    <td>{{ service.unit.vlanid }}</td>
                                     <td>{{ relation.rel_address }}</td>
-                                    <td><a href="{% niweb_node_id_to_url relation.relation %}">{{ relation.relation.name }}</a></td>
+                                    <td><a href="{% noclook_node_to_url relation.relation %}">{{ relation.relation.name }}</a></td>
+
                                 </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td><a href="{% niweb_node_id_to_url resource.router %}">{{ resource.router.name }}</a></td>
-                                <td><a href="{% niweb_node_id_to_url resource.pic %}">{{ resource.pic.name }}</a></td>
-                                <td>{{ resource.unit.name }}</td>
-                                <td>{{ resource.if_address }}</td>
-                                <td>{{ resource.unit.vlanid }}</td>
+                                <td><a href="{% noclook_node_to_url service.service %}">{{ service.service.name }}</a></td>
+                                <td>{{ service.unit.name }}</td>
+                                <td>{{ service.if_address }}</td>
+                                <td>{{ service.unit.vlanid }}</td>
                                 <td>None</td>
-                                <td>None</td>
+                                <td>None</a></td>
                             </tr>
                         {% endif %}
                     {% endfor %}

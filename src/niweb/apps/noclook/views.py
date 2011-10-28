@@ -118,24 +118,25 @@ def pic_detail(request, handle_id):
     depending_services = []
     dep_rels = node.Depends_on.incoming
     for dep_rel in dep_rels:
-        if dep_rel.start['node_type'] == 'Unit':
-            units.append(dep_rel.start)
-#TODO: Write a get_logical_root_parent
-#        if_address = ipaddr.IPNetwork(unit_rel['ip_address'])
-#        service = {}
-#        service['service'] = 
-#        service['unit'] = unit_rel.end
-#        service['if_address'] = unit_rel['ip_address']
-#        service['relations'] = []
-#        # Get relations who uses the pic
-#        rel_rels = node.Uses.incoming
-#        for r_rel in rel_rels:
-#            org_address = ipaddr.IPAddress(r_rel['ip_address'])
-#            if org_address in if_address:
-#                relation = {'rel_address': r_rel['ip_address'],
-#                            'relation': r_rel.start}
-#                service['relations'].append(relation)
-#        depending_services.append(service)    
+        unit = dep_rel.start            
+        units.append(unit)
+        parent_service = nc.get_root_parent(nc.neo4jdb, unit)
+        for address in unit['ip_addresses']:
+            service = {}
+            service['if_address'] = address
+            service['service'] = parent_service
+            service['unit'] = unit 
+            service['relations'] = []
+            if_address = ipaddr.IPNetwork(address)
+            # Get relations who uses the pic
+            relation_rels = parent_service.Uses.incoming
+            for r_rel in relation_rels:
+                rel_address = ipaddr.IPAddress(r_rel['ip_address'])
+                if rel_address in if_address:
+                    relation = {'rel_address': r_rel['ip_address'],
+                                'relation': r_rel.start}
+                    service['relations'].append(relation)
+            depending_services.append(service)    
     return render_to_response('noclook/pic_detail.html',
         {'node_handle': nh, 'node': node, 'router': router,
          'units': units, 'depending_services': depending_services}, 
