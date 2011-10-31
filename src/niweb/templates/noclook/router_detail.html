@@ -2,9 +2,30 @@
 
 {% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
 
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#pics").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {
+                1 : { sorter: "ipAddress"  },
+            },
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
 {% block content %}
-    <div class="content">
-        <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
+{% load noclook_tags %}
+<div class="content">
+    <div class="section">
+        <h3><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h3>
         {% load noclook_tags %}
         {% if location_relationships %}
             <h5 class="site">Located in
@@ -13,38 +34,96 @@
             {% endfor %}
             </h5>
         {% endif %}
-        <h3>PICs</h3>
-        <div class="section">
-            <table>
-            <th>PIC</th><th>Description</th><th>Services</th>
-            {% for pic in pic_nodes|dictsort:"name" %}
+        <div class="info-container">
+            <div class="info">
+                <h4>{{ node.node_type }} information</h4>
+                <table>
+                    <tr>
+                        <th>Name:</th><td>{{ node_handle.node_name }}</td>
+                    </tr>
+                    {% for address in loopback_addresses %}
+                            {% if forloop.first %}
+                                <tr>
+                                    <th>Loopback addresses:</th><td>{{ address }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td></td><td>{{ address }}</td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                </table>
+            </div>
+            <div class="info">
+                {% load comments %}
+                {% load markup %}
+                {% get_comment_list for node_handle as comment_list %}
+                {% if comment_list %}
+                    <h4>User information:</h4>
+                    <table>
+                    {% for comment in comment_list %}
+                        <tr>
+                            <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
+                        </tr>
+                        <tr>
+                            <td class="comment-cell break-word">{{ comment.comment|markdown:"safe" }}</td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="clear-float"></div>
+    <div class="section">
+        <h3>Pics</h3>
+        {% if pics %}
+        <table id="pics" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>PIC</th><th>Description</th><th>Services</th>
+            </thead>
+            <tbody>
+            {% for pic in pics %}
                 <tr>
-                    <td class="{% cycle 'align_top' 'align_top_grey' %}"><a href="/{{pic.node_type|slugify}}/{{pic.handle_id}}/">{{ pic.name }}</a></td>
-                    <td class="{% cycle 'align_top' 'align_top_grey' %}">{% if pic.description %}{{ pic.description }}{% endif %}</td>
-                    <td class="{% cycle 'align_top' 'align_top_grey' %}">
-                    {% for rel in pic.relationships.incoming %}
-                        {% if rel.type == "Depends_on" %}
-                            {{ rel.start.name }} with address {{ rel.ip_address }}, vlan: {{ rel.vlan }}<br />
-                        {% endif %}
+                    <td><a href="{% noclook_node_to_url pic.pic %}">{{ pic.pic.name }}</a></td>
+                    <td>{{ pic.pic.description }}</td>
+                    <td>
+                    {% for service in pic.services %}
+                        <a href="{% noclook_node_to_url service %}">{{ service.name }}</a>{% if forloop.last %}{% else %},<br />{% endif %}
                     {% endfor %}
                     </td>
                 </tr>
             {% endfor %}
-            </table>
-        </div>
-
+            </tbody>
+        </table>
+        {% else %}
+            No services provided.
+        {% endif %}
+    </div>
+    <!-- DEBUG START -->
+    <div class="section">
         <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
         <div id="debug">
             <h3>Debug</h3>
             <h4>Node properties</h4>
             <table>
-            {% for key,value in node.properties.items %}
+            {% for key,value in node.items %}
                 <tr>
                     <td><b>{{key}}</b></td><td>{{value}}</td>
                 </tr>
             {% endfor %}
             </table>
-
+            <h4>Relationships</h4>
+            <table>
+            {% for rel in node.getRelationships %}
+                <tr>
+                    <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                </tr>
+                <tr>
+                    <td></td><td>{{rel.properties}}</td><td></td>
+                </tr>
+            {% endfor %}
+            </table>
             <h4>Meta information</h4>
             <table>
                 <tr>
@@ -73,5 +152,8 @@
                 </tr>
             </table>
         </div>
-     </div>
+    </div>
+    <!-- DEBUG END -->
+
 {% endblock %}
+
