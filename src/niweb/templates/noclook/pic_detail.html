@@ -11,8 +11,18 @@ $(document).ready(
             sortList: [[0,0]],
             headers:
             {
-                3 : { sorter: "ipAddress"  },
-                5 : { sorter: "ipAddress"  },
+                1 : { sorter: "ipAddress"  },
+            },
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+        $("#services").tablesorter(
+        {
+            sortList: [[0,0], [5,0]],
+            headers:
+            {
+                2 : { sorter: "ipAddress"  },
+                4 : { sorter: "ipAddress"  },
             },
             widthFixed: true,
             widgets: ['zebra']
@@ -87,7 +97,7 @@ $(document).ready(
             {% load noclook_tags %}
             <h3>Depends on this PIC</h3>
             {% if depending_services %}
-                <table id="resources" class="tablesorter" cellspacing="1">
+                <table id="services" class="tablesorter" cellspacing="1">
                 <thead>
                     <th>Service</th><th>Unit</th><th>Interface Address</th><th>VLAN</th><th>User Address</th><th>User</th>
                 </thead>
@@ -133,7 +143,17 @@ $(document).ready(
                 </tr>
             {% endfor %}
             </table>
-
+            <h4>Relationships</h4>
+            <table>
+            {% for rel in node.getRelationships %}
+                <tr>
+                    <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                </tr>
+                <tr>
+                    <td></td><td>{{rel.properties}}</td><td></td>
+                </tr>
+            {% endfor %}
+            </table>
             <h4>Meta information</h4>
             <table>
                 <tr>

@@ -98,12 +98,25 @@ def router_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    # Get all the routers PICs
-    pic_nodes = node.traverse(types=nc.Outgoing.Has)
-    location_relationships = node.relationships.outgoing(types=['Located_in'])
+    # Get all the PICs and the PICs services. Also get loopback addresses.
+    loopback_addresses = []
+    pics = []
+    for rel in node.Has.outgoing:
+        pic = {'pic': rel.end , 'services': []}
+        dep_units = pic['pic'].Depends_on.incoming
+        for dep_unit in dep_units:
+            unit = dep_unit.start
+            if pic['pic']['name'] == 'lo0':
+                loopback_addresses.extend(unit['ip_addresses'])
+            dep_services = unit.Depends_on.incoming
+            for service in dep_services:
+                pic['services'].append(service.start)
+        pics.append(pic)
+    location_relationships = node.Located_in.outgoing
     return render_to_response('noclook/router_detail.html',
-        {'node_handle': nh, 'node': node, 'pic_nodes': pic_nodes,
-        'location_relationships': location_relationships},
+        {'node_handle': nh, 'node': node, 'pics': pics,
+        'location_relationships': location_relationships,
+        'loopback_addresses': loopback_addresses},
         context_instance=RequestContext(request))
 
 @login_required
@@ -116,20 +129,21 @@ def pic_detail(request, handle_id):
     # Get unit nodes
     units = []
     depending_services = []
-    dep_rels = node.Depends_on.incoming
-    for dep_rel in dep_rels:
-        unit = dep_rel.start            
+    dep_units = node.Depends_on.incoming
+    for dep_unit in dep_units:
+        unit = dep_unit.start            
         units.append(unit)
-        parent_service = nc.get_root_parent(nc.neo4jdb, unit)
-        for address in unit['ip_addresses']:
+        dep_services = unit.Depends_on.incoming
+        for dep_service in dep_services:
+            address = dep_service['ip_address']
             service = {}
             service['if_address'] = address
-            service['service'] = parent_service
+            service['service'] = dep_service.start
             service['unit'] = unit 
             service['relations'] = []
             if_address = ipaddr.IPNetwork(address)
             # Get relations who uses the pic
-            relation_rels = parent_service.Uses.incoming
+            relation_rels = dep_service.start.Uses.incoming
             for r_rel in relation_rels:
                 rel_address = ipaddr.IPAddress(r_rel['ip_address'])
                 if rel_address in if_address:
