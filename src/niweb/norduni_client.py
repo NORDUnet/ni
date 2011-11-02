@@ -25,6 +25,7 @@ from neo4j import GraphDatabase, Uniqueness, Evaluation, OUTGOING, INCOMING, ANY
 from lucenequerybuilder import Q
 from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
+from datetime import datetime, timedelta
 import json
 
 '''
@@ -69,6 +70,34 @@ def get_node_url(node):
     '''
     return '%s%s/%d/' % (django_settings.NIWEB_URL, slugify(node['node_type']),
                                                     node['handle_id'])
+
+def isots_to_dt(item):
+    '''
+    Returns noclook_last_seen property as a datetime.datetime. If the property
+    does not exist we return datetime.datetime.min (0001-01-01 00:00:00).
+    '''
+    try:
+        ts = item['noclook_last_seen']
+        #2011-11-01T14:37:13.713434
+        dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
+    except KeyError:
+        dt = datetime.min
+    return dt
+
+def neo4j_data_age(item):
+    '''
+    Checks the noclook_last_seen property against datetime.datetime.now() and
+    if the differance is greater that django_settings.NEO4J_MAX_DATA_AGE and the
+    noclook_auto_manage is true the data is said to be expired.
+    Returns noclook_last_seen as a datetime and a "expired" boolean.
+    '''
+    max_age = timedelta(hours=int(django_settings.NEO4J_MAX_DATA_AGE))
+    now = datetime.now()
+    last_seen = isots_to_dt(item)
+    expired = False
+    if (now-last_seen) > max_age and item['noclook_auto_manage']:
+        expired = True
+    return last_seen, expired
 
 # Core functions
 def open_db(uri=NEO4J_URI):
@@ -450,7 +479,8 @@ def merge_properties(db, node, prop_name, new_props):
     '''
     existing_properties = node.getProperty(prop_name, None)
     if not existing_properties: # A node without existing properties
-        node[prop_name] = new_props
+        with db.transaction:
+            node[prop_name] = new_props
         return True
     else:
         if type(new_props) is int:
