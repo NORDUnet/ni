@@ -69,6 +69,7 @@ DATABASES = {
 
 # Neo4j settings
 NEO4J_RESOURCE_URI = 'http://localhost:7474/db/data/'
+NEO4J_MAX_DATA_AGE = '24' # hours
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
