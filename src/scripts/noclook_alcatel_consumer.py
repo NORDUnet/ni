@@ -84,6 +84,7 @@ def consume_alcatel_isis(json_list):
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 
                                                 'Optical Node', 'physical')
         node = node_handle.get_node()
+        nt.set_noclook_auto_manage(nc.neo4jdb, node, True)
         data = i['host']['alcatel_isis']['data']
         nc.update_item_properties(nc.neo4jdb, node, data)
         for neighbour in i['host']['alcatel_isis']['neighbours']:
@@ -99,12 +100,14 @@ def consume_alcatel_isis(json_list):
                                             neighbour['name'], 'Optical Node', 
                                             'physical')
             neighbour_node = neighbour_node_handle.get_node()
+            nt.set_noclook_auto_manage(nc.neo4jdb, neighbour_node, True)
             # See if the nodes already are connected via something
             create = True
             for rel in node.Connected_to.incoming:
                 for rel2 in rel.start.Connected_to.outgoing:
                     if rel2.end['name'] == neighbour_node['name']:
                         create = False
+                        nt.set_noclook_auto_manage(nc.neo4jdb, rel.start, True)
                         break
             if create:
                 cable_id = '%s - %s' % (node['name'], neighbour_node['name'])
@@ -113,17 +116,29 @@ def consume_alcatel_isis(json_list):
                                                               'Cable', 
                                                               'physical')
                 cable_node = cable_node_handle.get_node()
+                nt.set_noclook_auto_manage(nc.neo4jdb, cable_node, True)
                 with nc.neo4jdb.transaction:
                     cable_node['cable_type'] = cable_type
-                if not nc.get_relationships(cable_node, node, 'Connected_to'):
+                rels = nc.get_relationships(cable_node, node, 'Connected_to')
+                if rels:
+                    for rel in rels:
+                        nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
+                else:
                     # Only create a relationship if it doesn't exist
-                    with nc.neo4jdb.transaction:
-                        cable_node.Connected_to(node)
-                if not nc.get_relationships(cable_node, neighbour_node, 
-                                                                'Connected_to'):
+                    rel = nc.create_suitable_relationship(cable_node, node,
+                                                          'Connected_to')
+                    nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
+                rels = nc.get_relationships(cable_node, neighbour_node, 
+                                                                'Connected_to')
+                if rels:
+                    for rel in rels:
+                        nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
+                else:
                     # Only create a relationship if it doesn't exist
-                    with nc.neo4jdb.transaction:
-                        cable_node.Connected_to(neighbour_node)
+                    rel = nc.create_suitable_relationship(cable_node, 
+                                                          neighbour_node,
+                                                          'Connected_to')
+                    nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
 
 def main():
     # User friendly usage output

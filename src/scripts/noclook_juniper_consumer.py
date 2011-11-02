@@ -96,15 +96,25 @@ def insert_juniper_router(name):
     node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 'Router', 
                                             'physical')
     node = node_handle.get_node()
+    nt.set_noclook_auto_manage(nc.neo4jdb, node, True)
     return node
 
 def insert_interface_unit(interf_node, unit):
     '''
     Creates or updates logical interface units.
     '''
-    node_handle = nt.get_node_handle(nc.neo4jdb, unit['unit'], 'Unit', 
-                                             'logical', interf_node)
-    node = node_handle.get_node()
+    # Unit numbers are unique per interface
+    create = True
+    for rel in interf_node.Depends_on.incoming:
+        if rel.start['name'] == unit['unit']:
+            create = False
+            node = rel.start
+            break
+    if create:
+        node_handle = nt.get_node_handle(nc.neo4jdb, unit['unit'], 'Unit',
+                                         'logical', interf_node)
+        node = node_handle.get_node()
+    nt.set_noclook_auto_manage(nc.neo4jdb, node, True)
     with nc.neo4jdb.transaction:
         if unit['description']:
             node['description'] = unit['description']
@@ -114,10 +124,15 @@ def insert_interface_unit(interf_node, unit):
             node['ip_addresses'] = unit['address']
         if unit['vlanid']:
             node['vlanid'] = unit['vlanid']
-    if not nc.get_relationships(node, interf_node, 'Depends_on'):
+    rels = nc.get_relationships(node, interf_node, 'Depends_on')
+    if rels:
+        for rel in rels:
+            nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
+    else:
         # Only create a relationship if it doesn't exist
-        nc.create_suitable_relationship(nc.neo4jdb, node, interf_node, 
+        rel = nc.create_suitable_relationship(nc.neo4jdb, node, interf_node, 
                                         'Depends_on')
+        nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
     # Add the node description and IP addresses to search index
     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     nc.add_index_item(nc.neo4jdb, index, node, 'description')
@@ -137,6 +152,7 @@ def insert_juniper_interfaces(router_node, interfaces):
             node_handle = nt.get_node_handle(nc.neo4jdb, name, 'PIC', 
                                              'physical', router_node)
             node = node_handle.get_node()
+            nt.set_noclook_auto_manage(nc.neo4jdb, node, True)
             with nc.neo4jdb.transaction:
                 if i['description']:
                     node['description'] = i['description']
@@ -144,9 +160,16 @@ def insert_juniper_interfaces(router_node, interfaces):
                     node['description'] = 'No description'
                 for unit in i['units']:
                     insert_interface_unit(node, unit)
-                if not nc.get_relationships(router_node, node, 'Has'):
+                rels = nc.get_relationships(router_node, node, 'Has')
+                if rels:
+                    for rel in rels:
+                        nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
                     # Only create a relationship if it doesn't exist
-                    router_node.Has(node)
+                else:
+                    rel =  nc.create_suitable_relationship(nc.neo4jdb, 
+                                                           router_node, node, 
+                                                           'Has')
+                    nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
             # Add the node description and IP addresses to search index
             index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
             nc.add_index_item(nc.neo4jdb, index, node, 'description')
@@ -166,6 +189,7 @@ def get_peering_partner(peering):
     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     try:
         node = list(index['as_number'][as_number])[0]
+        nt.set_noclook_auto_manage(nc.neo4jdb, node, True)
         if node['name'] != name:
             with nc.neo4jdb.transaction:        
                 node['name'] = name
@@ -173,6 +197,7 @@ def get_peering_partner(peering):
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 
                                                 'Peering Partner', 'relation')
         node = node_handle.get_node()
+        nt.set_noclook_auto_manage(nc.neo4jdb, node, True)
         with nc.neo4jdb.transaction:
             node['as_number'] = as_number
             # Add the nodes as_number to search index        
@@ -197,7 +222,7 @@ def match_remote_ip_address(remote_address):
                 try:
                     local_network = ipaddr.IPNetwork(addr)
                 except ValueError:
-                    continue
+                    continue # ISO address
                 if remote_address in local_network:
                     return hit, addr
     return None, None
@@ -223,11 +248,16 @@ def insert_external_bgp_peering(peering, service_node):
     rel_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
     q = Q('ip_address', '%s' % peeringp_ip)
     peeringp_rel = rel_index.query(str(q))
-    # Create a relationship if couldn't find it    
-    if not peeringp_rel:
+    peeringp_rel = list(peeringp_rel)
+    # See if we already have created this peering relationship
+    if peeringp_rel:
+        nt.set_noclook_auto_manage(nc.neo4jdb, list(peeringp_rel)[0], True)
+    else:
+        # Create a relationship if couldn't find it
         peeringp_rel = nc.create_suitable_relationship(nc.neo4jdb, 
                                                        peeringp_node,
                                                        service_node, 'Uses')
+        nt.set_noclook_auto_manage(nc.neo4jdb, peeringp_rel, True)
         with nc.neo4jdb.transaction:
             peeringp_rel['ip_address'] = peeringp_ip
         # Add the relationship IP address to search index
@@ -240,11 +270,13 @@ def insert_external_bgp_peering(peering, service_node):
         rels = nc.get_relationships(service_node, unit_node, 'Depends_on')
         for rel in rels:
             if rel['ip_address'] == local_address:
+                nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
                 return
         # No relationship was found, create one
         with nc.neo4jdb.transaction:
             rel = nc.create_suitable_relationship(nc.neo4jdb, service_node, 
                                                   unit_node, 'Depends_on')
+            nt.set_noclook_auto_manage(nc.neo4jdb, rel, True)
             rel['ip_address'] = local_address
             nc.add_index_item(nc.neo4jdb, rel_index, rel, 'ip_address')
 
@@ -260,6 +292,7 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         ip_service_handle = nt.get_unique_node_handle(nc.neo4jdb, ip_service, 
                                                    'IP Service', 'logical')
         ip_service_node = ip_service_handle.get_node()
+        nt.set_noclook_auto_manage(nc.neo4jdb, ip_service_node, True)
         peering_type = peering.get('type')
         if peering_type == 'internal':
             continue # We said that we should ignore internal peerings, right?
@@ -287,8 +320,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', nargs='?',
         help='Path to the configuration file.')
-    parser.add_argument('-I', action='store_true',
-        help='Insert data in to the database.')
     args = parser.parse_args()
     # Load the configuration file
     if not args.C:
@@ -296,11 +327,8 @@ def main():
         sys.exit(1)
     else:
         config = nt.init_config(args.C)
-    # Insert data from known data sources if option -I was used
-    if args.I:
-        if config.get('data', 'juniper_conf'):
-            consume_juniper_conf(nt.load_json(
-                                    config.get('data', 'juniper_conf')))
+    if config.get('data', 'juniper_conf'):
+        consume_juniper_conf(nt.load_json(config.get('data', 'juniper_conf')))
     return 0
 
 if __name__ == '__main__':

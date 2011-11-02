@@ -121,7 +121,9 @@ def update_noclook_auto_manage(db, item):
     noclook_auto_manage is not set, it is set to True.
     '''
     with db.transaction:
-        if item.get('noclook_auto_manage', None) is None:  
+        try:
+            item['noclook_auto_manage']
+        except KeyError:
             item['noclook_auto_manage'] = True
         item['noclook_last_seen'] = datetime.datetime.now().isoformat()
     return True
@@ -170,7 +172,6 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
     Returns a NodeHandle object.
     *** This function does not handle multiple parents. ***
     '''
-    # Hard coded user value that we can't get on the fly right now
     user = get_user()
     node_type = get_node_type(node_type_name)
     try:
