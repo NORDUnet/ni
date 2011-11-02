@@ -37,14 +37,14 @@ $(document).ready(
         <div class="info-container">
             <div class="info">
                 <h4>{{ node.node_type }} information</h4>
-                <table>
+                <table class="info break-word">
                     <tr>
                         <th>Name:</th><td>{{ node_handle.node_name }}</td>
                     </tr>
                     {% for address in loopback_addresses %}
                             {% if forloop.first %}
                                 <tr>
-                                    <th>Loopback addresses:</th><td>{{ address }}</td>
+                                    <th>Loopback addresses:</th><td class="break-word">{{ address }}</td>
                                 </tr>
                             {% else %}
                                 <tr>
@@ -55,18 +55,32 @@ $(document).ready(
                 </table>
             </div>
             <div class="info">
+                <h4>Meta information:</h4>
+                <table class="info break-word">
+                    <tr>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    </tr>
+                    <tr>
+                        <th>Modified:</th><td>{{ node_handle.modified }}</td>
+                    </tr>
+                    <tr>
+                        <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="info">
                 {% load comments %}
                 {% load markup %}
                 {% get_comment_list for node_handle as comment_list %}
                 {% if comment_list %}
                     <h4>User information:</h4>
-                    <table>
-                    {% for comment in comment_list %}
+                    <table class="info break-word">
+                    {% for comment in comment_list|dictsortreversed:"submit_date" %}
                         <tr>
                             <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
                         </tr>
                         <tr>
-                            <td class="comment-cell break-word">{{ comment.comment|markdown:"safe" }}</td>
+                            <td class="comment-cell">{{ comment.comment|markdown:"safe" }}</td>
                         </tr>
                     {% endfor %}
                     </table>
@@ -76,7 +90,7 @@ $(document).ready(
     </div>
     <div class="clear-float"></div>
     <div class="section">
-        <h3>Pics</h3>
+        <h3>Interfaces</h3>
         {% if pics %}
         <table id="pics" class="tablesorter" cellspacing="1">
             <thead>

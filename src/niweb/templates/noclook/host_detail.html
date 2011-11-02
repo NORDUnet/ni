@@ -28,8 +28,8 @@ $(document).ready(
         <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
         <div class="info-container">
             <div class="info">
-                <h4>Host information</h4>
-                <table>
+                <h4>{{ node.node_type }} information</h4>
+                <table class="info break-word">
                     <tr>
                         <th>Type:</th><td>{{ node_handle.node_meta_type|capfirst }} host</td>
                     </tr>
@@ -102,7 +102,7 @@ $(document).ready(
             <div class="info">
                 {% if info.vendor or info.model or info.cpu or info.ram or info.hdd or info.service_tag %}
                     <h4>Hardware information</h4>
-                    <table>
+                    <table class="info break-word">
                         {% if info.vendor %}
                             <tr>
                                 <th>Vendor:</th><td>{{info.vendor}}</td>
@@ -139,7 +139,7 @@ $(document).ready(
             <div class="info">
                 {% if info.os or info.os_version %}
                     <h4>OS information</h4>
-                    <table>
+                    <table class="info break-word">
                         {% if info.os %}
                             <tr>
                                 <th>OS:</th><td>{{info.os}}</td>
@@ -154,18 +154,32 @@ $(document).ready(
                 {% endif %}
             </div>
             <div class="info">
+                <h4>Meta information:</h4>
+                <table class="info break-word">
+                    <tr>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    </tr>
+                    <tr>
+                        <th>Modified:</th><td>{{ node_handle.modified }}</td>
+                    </tr>
+                    <tr>
+                        <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="info">
                 {% load comments %}
                 {% load markup %}
                 {% get_comment_list for node_handle as comment_list %}
                 {% if comment_list %}
                     <h4>User information:</h4>
-                    <table>
-                    {% for comment in comment_list %}
+                    <table class="info break-word">
+                    {% for comment in comment_list|dictsortreversed:"submit_date" %}
                         <tr>
                             <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
                         </tr>
                         <tr>
-                            <td class="comment-cell break-word">{{ comment.comment|markdown:"safe" }}</td>
+                            <td class="comment-cell">{{ comment.comment|markdown:"safe" }}</td>
                         </tr>
                     {% endfor %}
                     </table>

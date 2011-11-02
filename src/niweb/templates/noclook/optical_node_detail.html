@@ -32,13 +32,13 @@ $(document).ready(
             <div class="info-container">
                 <div class="info">
                     <h4>{{ node.node_type }} information</h4>
-                    <table>
+                    <table class="info break-word">
                         <tr>
                             <th>Name:</th><td>{{ node_handle.node_name }}</td>
                         </tr>
                         {% if node.type %}
                         <tr>
-                            <th>Type:</th><td>{{ node.type }}</td>
+                            <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.type }}/">{{ node.type }}</a></td>
                         </tr>
                         {% endif %}
                     </table>
@@ -46,28 +46,42 @@ $(document).ready(
                 {% if node.ots or node.link %}
                 <div class="info">
                     <h4>Network information</h4>
-                    <table>
+                    <table class="info break-word">
                         {% if node.ots %}
                         <tr>
-                            <th>Optical Transport Section:</th><td>{{ node.ots }}</td>
+                            <th>Optical Transport Section:</th><td><a href="/findin/optical-node/ots/{{ node.ots }}/">{{ node.ots }}</a></td>
                         </tr>
                         {% endif %}
                         {% if node.link %}
                         <tr>
-                            <th>Link:</th><td>{{ node.link }}</td>
+                            <th>Link:</th><td><a href="/findin/optical-node/link/{{ node.link }}/">{{ node.link }}</a></td>
                         </tr>
                         {% endif %}
                     </table>
                 </div>
                 {% endif %}
                 <div class="info">
+                    <h4>Meta information:</h4>
+                    <table class="info break-word">
+                        <tr>
+                            <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                        </tr>
+                        <tr>
+                            <th>Modified:</th><td>{{ node_handle.modified }}</td>
+                        </tr>
+                        <tr>
+                            <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="info">
                     {% load comments %}
                     {% load markup %}
                     {% get_comment_list for node_handle as comment_list %}
                     {% if comment_list %}
                         <h4>User information:</h4>
-                        <table>
-                        {% for comment in comment_list %}
+                        <table class="info break-word">
+                        {% for comment in comment_list|dictsortreversed:"submit_date" %}
                             <tr>
                                 <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
                             </tr>
