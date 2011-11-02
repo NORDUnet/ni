@@ -27,11 +27,12 @@ $(document).ready(
                     <th>Peering Partner</th><th>AS Number</th>
                 </thead>
                 <tbody>
-            {% for item in partner_list %}
-                    <tr>
-                        <td><a class="handle" href="{{ item.url }}">{{ item.name }}</a></td><td>{{ item.as_number }}</td>
-                    </tr>
-            {% endfor %}
+                    {% load noclook_tags %}
+                    {% for partner in partner_list %}
+                            <tr>
+                                <td><a class="handle" href="{% noclook_node_to_url partner.peering_partner %}">{{ partner.name }}</a></td><td>{{ partner.as_number }}</td>
+                            </tr>
+                    {% endfor %}
                 </tbody>
             </table>
      </div>

@@ -29,11 +29,12 @@ $(document).ready(
                     <th>Host</th><th>Address</th>
                 </thead>
                 <tbody>
-            {% for item in host_list %}
-                    <tr>
-                        <td><a class="handle" href="{{ item.url }}">{{ item.name }}</a></td><td>{{ item.address }}</td>
-                    </tr>
-            {% endfor %}
+                    {% load noclook_tags %}
+                    {% for host in host_list %}
+                            <tr>
+                                <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td><td>{{ host.address }}</td>
+                            </tr>
+                    {% endfor %}
                 </tbody>
             </table>
      </div>
