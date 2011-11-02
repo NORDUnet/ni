@@ -2,16 +2,37 @@
 
 {% block title %}{{ block.super }} All nodes{% endblock %}
 
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#peering_partners").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
 {% block content %}
     <div class="content">
             <h3>Peering Partners</h3>
-            <table>
-            {% for item in partner_list|dictsort:"name" %}
-                <tr>
-                    <td><a class="handle" href="{{ item.url }}">{{ item.name }}</a></td><td>AS{{ item.as_number }}</td>
-                </tr>
-
+            <table id="peering_partners" class="tablesorter" cellspacing="1">
+                <thead>
+                    <th>Peering Partner</th><th>AS Number</th>
+                </thead>
+                <tbody>
+            {% for item in partner_list %}
+                    <tr>
+                        <td><a class="handle" href="{{ item.url }}">{{ item.name }}</a></td><td>{{ item.as_number }}</td>
+                    </tr>
             {% endfor %}
+                </tbody>
             </table>
      </div>
 {% endblock %}
