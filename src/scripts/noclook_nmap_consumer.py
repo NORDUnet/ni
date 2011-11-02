@@ -23,7 +23,7 @@
 import os
 import sys
 import argparse
-import datetime
+from lucenequerybuilder import Q
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -41,7 +41,7 @@ This script is used for adding the objects collected with the
 NERDS producers to the noclook database viewer.
 '''
 
-def insert_services(service_dict, node_id):
+def insert_services(service_dict, host_node):
     '''
     Takes a dictionary of services and a node id for a host. Gets or creates a 
     service and makes a Depends_on relationship between the service and host.
@@ -68,7 +68,6 @@ def insert_services(service_dict, node_id):
     '''
     node_type = "Host Service"
     meta_type = 'logical'
-    host_node = nc.get_node_by_id(node_id)
     service_nodes = []
     for key in service_dict.keys():
         ipv = key
@@ -79,32 +78,38 @@ def insert_services(service_dict, node_id):
                 for key in service_dict[ipv][address][protocol].keys():
                     port = key
                     service = service_dict[ipv][address][protocol][port]
-                    node_handle = nt.get_unique_node_handle(service['name'], 
+                    node_handle = nt.get_unique_node_handle(nc.neo4jdb,
+                                                            service['name'], 
                                                             node_type, 
                                                             meta_type)
                     service_node = node_handle.get_node()
+                    nt.update_noclook_auto_manage(nc.neo4jdb, service_node)
                     service_nodes.append(service_node)
-                    # Get already existing relationships between the two nodes
-                    rels = nc.get_relationships(service_node, host_node, # SLOW PART
-                                                'Depends_on')
+                    # Get existing relationships between the two nodes
+                    rel_index = nc.get_relationship_index(nc.neo4jdb, 
+                                                         nc.search_index_name())
+                    q = Q('ip_address', '%s' % address)
+                    service_rels = rel_index.query(str(q))
+                    service_rels = list(service_rels)
                     create = True
-                    for rel in rels:
-                        if rel['ip_address'] == address and \
-                        rel['protocol'] == protocol and rel['port'] == port:
+                    for rel in service_rels:
+                        if rel['protocol'] == protocol and rel['port'] == port:
                             create = False
-                            rel['last_seen'] = datetime.datetime.now().isoformat()
+                            nt.update_noclook_auto_manage(nc.neo4jdb, rel)
                             break
                     if create:
-                        # Make a relationship between the service and host
-                        new_rel = nc.make_suitable_relationship(service_node, 
-                                                        host_node, 'Depends_on')
-                        new_rel['ip_address'] = address
-                        new_rel['protocol'] = protocol
-                        new_rel['port'] = port
-                        new_rel['noclook_auto_manage'] = True
-                        new_rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
-                        for key, value in service.items():
-                            new_rel[key] = value
+                        # Create a relationship between the service and host
+                        new_rel = nc.create_suitable_relationship(nc.neo4jdb,
+                                                                  service_node, 
+                                                                  host_node, 
+                                                                  'Depends_on')
+                        with nc.neo4jdb.transaction:
+                            new_rel['ip_address'] = address
+                            new_rel['protocol'] = protocol
+                            new_rel['port'] = port
+                            for key, value in service.items():
+                                new_rel[key] = value
+                        nt.update_noclook_auto_manage(nc.neo4jdb, new_rel)
     return service_nodes
 
 def insert_nmap(json_list):
@@ -118,16 +123,20 @@ def insert_nmap(json_list):
     for i in json_list:
         name = i['host']['name']
         # Create the NodeHandle and the Node
-        node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
+        node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type,
+                                                meta_type)
         # Set Node attributes
         node = node_handle.get_node()
-        nc.merge_properties(node.id, 'hostnames', i['host']['hostnames'])
-        nc.merge_properties(node.id, 'addresses', i['host']['addrs'])
-        if node.get('noclook_auto_manage', None) is None: # If _auto_manage is not set
-            node['noclook_auto_manage'] = True     # set it to True.
-        node['noclook_last_seen'] = datetime.datetime.now().isoformat()
+        nt.update_noclook_auto_manage(nc.neo4jdb, node)
+        nc.merge_properties(nc.neo4jdb, node, 'hostnames',
+                            i['host']['hostnames'])
+        nc.merge_properties(nc.neo4jdb, node, 'addresses', i['host']['addrs'])
+        # Add the nodes hostnames and addresses to the search index                
+        index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+        nc.add_index_item(nc.neo4jdb, index, node, 'hostnames')
+        nc.add_index_item(nc.neo4jdb, index, node, 'ip_addresses')
         try:
-            insert_services(i['host']['services'], node.id)
+            insert_services(i['host']['services'], node)
         except KeyError:
             pass
 
