@@ -204,25 +204,24 @@ def host_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = nc.neo4j_data_age(node)
-    info = {}
-    special_keys = ['hostnames', 'addresses']
-    # Handle special keys
-    info['hostnames'] = node.get('hostnames', [])
-    info['addresses'] = node.get('addresses', [])
-    # Add the rest of the keys to the info dict
-    for key, value in node.properties.items():
-        if key not in special_keys:
-            info[key] = value
+#    info = {}
+#    special_keys = ['hostnames', 'addresses']
+#    # Handle special keys
+#    info['hostnames'] = node.get('hostnames', [])
+#    info['addresses'] = node.get('addresses', [])
+#    # Add the rest of the keys to the info dict
+#    for key, value in node.properties.items():
+#        if key not in special_keys:
+#            info[key] = value
     # Handle relationships
-    service_relationships = node.relationships.incoming(types=['Depends_on'])
-    user_relationships = node.relationships.incoming(types=['Uses'])
-    provider_relationships = node.relationships.incoming(types=['Provides'])
-    owner_relationships = node.relationships.incoming(types=['Owns'])
+    service_relationships = nc.iter2list(node.Depends_on.incoming)
+    user_relationships = nc.iter2list(node.Uses.incoming)
+    provider_relationships = nc.iter2list(node.Provides.incoming)
+    owner_relationships = nc.iter2list(node.Owns.incoming)
     return render_to_response('noclook/host_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired, 
-                               'service_relationships': service_relationships,
-                               'info': info, 
+                               'service_relationships': service_relationships, 
                                'user_relationships': user_relationships,
                                'provider_relationships': provider_relationships,
                                'owner_relationships': owner_relationships},
@@ -234,7 +233,7 @@ def host_service_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = nc.neo4j_data_age(node)
-    service_relationships = node.relationships.outgoing(types=['Depends_on'])
+    service_relationships = nc.iter2list(node.Depends_on.outgoing)
     return render_to_response('noclook/host_service_detail.html', 
                               {'node_handle': nh, 'node': node,
                               'last_seen': last_seen, 'expired': expired, 
