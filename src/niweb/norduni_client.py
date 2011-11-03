@@ -99,6 +99,15 @@ def neo4j_data_age(item):
         expired = True
     return last_seen, expired
 
+def iter2list(pythonic_iterator):
+    '''
+    Converts a neo4j.util.PythonicIterator to a list.
+    '''
+    l = []
+    for item in pythonic_iterator:
+        l.append(item)
+    return l
+    
 # Core functions
 def open_db(uri=NEO4J_URI):
     '''
