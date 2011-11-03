@@ -41,6 +41,8 @@ class NodeHandle(models.Model):
     # Meta information
     creator = models.ForeignKey(User)
     created = models.DateTimeField(auto_now_add=True)
+    # TODO: Add modified_by property    
+    #modified_by = models.ForeignKey(User, blank=True)
     modified = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
