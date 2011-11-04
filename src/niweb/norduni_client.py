@@ -613,7 +613,7 @@ def _close_db():
     try:
         neo4jdb.shutdown()
     except NameError:
-        print 'Neo4j database already open in another process.'
+        print 'Could not shutdown Neo4j database. Is it open in another process?'
 
 import atexit
 atexit.register(_close_db)
