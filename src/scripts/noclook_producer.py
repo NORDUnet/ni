@@ -26,13 +26,12 @@ import json
 import argparse
 ## Need to change this path depending on where the Django project is
 ## located.
-#path = '/var/norduni/scr/niweb/'
-path = '/home/lundberg/norduni/scr/niweb/'
+#path = '/var/norduni/src/niweb/'
+path = '/home/lundberg/norduni/src/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-#from apps.noclook.models import NodeType, NodeHandle
 import norduni_client as nc
 
 '''
@@ -52,8 +51,8 @@ def main():
     args = parser.parse_args()
     
     # Node and relationships collections
-    nodes = nc.get_all_nodes()
-    rels = nc.get_all_relationships()
+    nodes = nc.get_all_nodes(nc.neo4jdb)
+    rels = nc.get_all_relationships(nc.neo4jdb)
 
     # Create the json output
     out = []
@@ -63,25 +62,31 @@ def main():
             if node['node_type'] != 'meta':
                 meta_type = nc.get_node_meta_type(node)
                 # Put the nodes json into the nerds format
+                properties = {}
+                for key in node.getPropertyKeys():
+                    properties[key] = node[key]
                 out.append({'host':
                             {'name': 'node_%d' % node.id,
                             'version': 1,
                             'noclook_producer': {'id': node.id,
                                                  'meta_type': meta_type,
-                                                 'properties': node.properties}
+                                                 'properties': properties}
                             }})
                     
     for rel in rels:
         # Disregard the relationships connecting to node 0 or the meta nodes
         if rel.start.id and rel.start['node_type'] != 'meta':
-                out.append({'host':
+            properties = {}
+            for key in rel.getPropertyKeys():
+                properties[key] = rel[key]
+            out.append({'host':
                         {'name': 'relationship_%d' % rel.id,
                         'version': 1,
                         'noclook_producer': {'id': rel.id,
                                              'type': rel.type,
                                              'start': rel.start.id,
                                              'end': rel.end.id,
-                                             'properties': rel.properties}
+                                             'properties': properties}
                         }})
 
     if args.N:

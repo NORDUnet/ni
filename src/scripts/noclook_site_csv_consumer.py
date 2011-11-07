@@ -72,11 +72,9 @@ def get_node(name, node_type, meta_type):
     Returns the NodeHandles node.
     '''
     name = nt.normalize_whitespace(name)
-    node_handle = nt.get_unique_node_handle(name, node_type, 
+    node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type, 
                                             meta_type)
     node = node_handle.get_node()
-    node['noclook_auto_manage'] = False
-    node['noclook_last_seen'] = datetime.datetime.now().isoformat()
     return node
 
 def consume_site_csv(json_list):
@@ -87,41 +85,43 @@ def consume_site_csv(json_list):
     for i in json_list:
         node_type = i['host']['csv_producer']['node_type'].title()
         meta_type = i['host']['csv_producer']['meta_type'].lower()
-        nh = nt.get_unique_node_handle(i['host']['name'], node_type, 
+        nh = nt.get_unique_node_handle(nc.neo4jdb, i['host']['name'], node_type, 
                                        meta_type)
         node = nh.get_node()
-        node['noclook_auto_manage'] = False
-        node['noclook_last_seen'] = datetime.datetime.now().isoformat()
+        nt.set_noclook_auto_manage(nc.neo4jdb, node, False)
         special_keys = ['comment', 'responsible_for', 'meta_type']
         host_info = i['host']['csv_producer']
         for key in host_info:
             if key not in special_keys:
                 value = host_info.get(key, None)
                 if value:
-                    node[key] = value
+                    with nc.neo4jdb.transaction:
+                        node[key] = value
         # Handle the special data
         for key in special_keys:
             value = host_info.get(key, None)
             if value:
                 if key == 'responsible_for':
                     responsible_node = get_node(value, 'Site Owner', 'relation')
-                    rel = nc.make_suitable_relationship(responsible_node, 
-                                                        node, 'Responsible_for')
-                    rel['noclook_auto_manage'] = False
-                    rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
+                    nt.set_noclook_auto_manage(nc.neo4jdb, responsible_node,
+                                               False)
+                    rel = nc.create_suitable_relationship(nc.neo4jdb,
+                                                          responsible_node, 
+                                                          node, 
+                                                          'Responsible_for')
+                    nt.set_noclook_auto_manage(nc.neo4jdb, rel, False)
                 if key == 'comment':
                     nt.set_comment(nh, value)
                 if key == 'meta_type':
                     pass # This is saved in the NodeHandle
         # Try to match equipment against sites
-        search_index = nc.get_node_index(nc.search_index_name())
+        search_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
         matching_nodes = search_index.query('name', '*%s*' % i['host']['name']) 
         for equip_node in matching_nodes:
             if equip_node['node_type'] in ['Optical Node', 'Router']:
-                rel = nc.make_suitable_relationship(equip_node, node, 
-                                                    'Located_in')
-                rel['noclook_auto_manage'] = False
-                rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
+                rel = nc.create_suitable_relationship(nc.neo4jdb, equip_node, 
+                                                      node, 'Located_in')
+                nt.set_noclook_auto_manage(nc.neo4jdb, rel, False)
    
 def main():
     # User friendly usage output

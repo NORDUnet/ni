@@ -29,7 +29,7 @@ $(document).ready(
     {% if location_relationships %}
         <h5 class="site">Located in
         {% for loc in location_relationships %}
-            <a href="{% noclook_node_to_url loc.end.id %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
+            <a href="{% noclook_node_to_url loc.end %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
         {% endfor %}
         </h5>
     {% endif %}
