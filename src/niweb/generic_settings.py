@@ -46,15 +46,14 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.logger.LoggingPanel',
 )
 
-# Django settings, change these if needed.
+# Django mail settings, change these if needed.
 SERVER_EMAIL = 'django@example.com'
 ADMINS = (
     ('Admin', 'webmaster@example.com'),
 )
 MANAGERS = ADMINS
 
-# To get an e-mail when someone comments, please fill in a
-# mail server.
+# Please fill in a mail server.
 DEFAULT_FROM_EMAIL = 'postmaster@example.com'
 EMAIL_HOST = 'smtp.example.com'
 EMAIL_PORT = '25'
@@ -128,7 +127,7 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django.contrib.comments',
     'django.contrib.markup',
-    'fedlogin',
     'niweb_core',
+    'apps.fedlogin',
     'apps.noclook',
 )
