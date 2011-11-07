@@ -204,15 +204,6 @@ def host_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = nc.neo4j_data_age(node)
-#    info = {}
-#    special_keys = ['hostnames', 'addresses']
-#    # Handle special keys
-#    info['hostnames'] = node.get('hostnames', [])
-#    info['addresses'] = node.get('addresses', [])
-#    # Add the rest of the keys to the info dict
-#    for key, value in node.properties.items():
-#        if key not in special_keys:
-#            info[key] = value
     # Handle relationships
     service_relationships = nc.iter2list(node.Depends_on.incoming)
     user_relationships = nc.iter2list(node.Uses.incoming)
@@ -246,7 +237,7 @@ def host_provider_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = nc.neo4j_data_age(node)
-    host_relationships = node.relationships.outgoing(types=['Provides'])
+    host_relationships = nc.iter2list(node.Provides.outgoing)
     return render_to_response('noclook/host_provider_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
@@ -259,7 +250,7 @@ def host_user_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = nc.neo4j_data_age(node)
-    host_relationships = node.relationships.outgoing(types=['Uses'])
+    host_relationships = nc.iter2list(node.Uses.outgoing)
     return render_to_response('noclook/host_user_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,

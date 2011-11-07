@@ -77,11 +77,9 @@ def get_node(name, node_type, meta_type):
     Returns the NodeHandles node.
     '''
     name = nt.normalize_whitespace(name)
-    node_handle = nt.get_unique_node_handle(name, node_type, 
+    node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type, 
                                             meta_type)
     node = node_handle.get_node()
-    node['noclook_auto_manage'] = False
-    node['noclook_last_seen'] = datetime.datetime.now().isoformat()
     return node
 
 def consume_host_csv(json_list):
@@ -92,11 +90,10 @@ def consume_host_csv(json_list):
     node_type = "Host"
     meta_type = 'logical'
     for i in json_list:
-        nh = nt.get_unique_node_handle(i['host']['name'], node_type, 
+        nh = nt.get_unique_node_handle(nc.neo4jdb, i['host']['name'], node_type, 
                                        meta_type)
         node = nh.get_node()
-        node['noclook_auto_manage'] = False
-        node['noclook_last_seen'] = datetime.datetime.now().isoformat()
+        nt.set_noclook_auto_manage(nc.neo4jdb, node, False)
         special_keys = ['ipv4_address', 'ipv6_address', 'comment', 'service',
                         'aliases', 'hostnames', 'user', 'provider', 'meta_type']
         host_info = i['host']['csv_producer']
@@ -104,34 +101,42 @@ def consume_host_csv(json_list):
             if key not in special_keys:
                 value = host_info.get(key, None)
                 if value:
-                    node[key] = value
+                    with nc.neo4jdb.transaction:
+                        node[key] = value
         # Handle the special data
         for key in special_keys:
             value = host_info.get(key, None)
             if value:
                 if key == 'hostnames' or key == 'aliases':
-                    nc.merge_properties(node.id, 'hostnames', value.split(','))
+                    nc.merge_properties(nc.neo4jdb, node, 'hostnames', 
+                                        value.split(','))
                 if key == 'ipv4_address' or key == 'ipv6_address':
-                    nc.merge_properties(node.id, 'addresses', value.split(','))
+                    nc.merge_properties(nc.neo4jdb, node, 'addresses', 
+                                        value.split(','))
                 if key == 'service':
                     for service in value.split(','):
                         service_node = get_node(service, 'Host Service', 
                                                 'logical')
-                        rel = nc.make_suitable_relationship(service_node, 
-                                                        node, 'Depends_on')
-                        rel['noclook_auto_manage'] = False
-                        rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
+                        nt.update_noclook_auto_manage(nc.neo4jdb, service_node)
+                        rel = nc.create_suitable_relationship(nc.neo4jdb,
+                                                              service_node,
+                                                              node, 
+                                                              'Depends_on')
+                        nt.set_noclook_auto_manage(nc.neo4jdb, rel, False)
                 if key == 'user':
                     user_node = get_node(value, 'Host User', 'relation')
-                    rel = nc.make_suitable_relationship(user_node, node, 'Uses')
-                    rel['noclook_auto_manage'] = False
-                    rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
+                    nt.set_noclook_auto_manage(nc.neo4jdb, user_node, False)
+                    rel = nc.create_suitable_relationship(nc.neo4jdb,
+                                                          user_node, 
+                                                          node, 'Uses')
+                    nt.set_noclook_auto_manage(nc.neo4jdb, rel, False)
                 if key == 'provider':
                     provider_node = get_node(value, 'Host Provider', 'relation')
-                    rel = nc.make_suitable_relationship(provider_node, 
-                                                        node, 'Provides')
-                    rel['noclook_auto_manage'] = False
-                    rel['noclook_last_seen'] = datetime.datetime.now().isoformat()
+                    nt.set_noclook_auto_manage(nc.neo4jdb, provider_node, False)
+                    rel = nc.create_suitable_relationship(nc.neo4jdb, 
+                                                          provider_node,
+                                                          node, 'Provides')
+                    nt.set_noclook_auto_manage(nc.neo4jdb, rel, False)
                 if key == 'comment':
                     nt.set_comment(nh, value)
                 if key == 'meta_type':

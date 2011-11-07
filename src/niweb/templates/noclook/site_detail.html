@@ -27,39 +27,39 @@ $(document).ready(
         <div class="info">
             <h4>Site information</h4>
             <table class="info break-word">
-                {% if info.site_type %}
+                {% if node.site_type %}
                     <tr>
-                        <th>Type:</th><td>{{ info.site_type|capfirst }}</td>
+                        <th>Type:</th><td>{{ node.site_type|capfirst }}</td>
                     </tr>
                 {% endif %}
-                {% if info.owner_id %}
+                {% if node.owner_id %}
                     <tr>
-                        <th>Owner Site ID:</th><td>{{ info.owner_id }}</td>
+                        <th>Owner Site ID:</th><td>{{ node.owner_id }}</td>
                     </tr>
                 {% endif %}
-                {% if info.telenor_subscription_id %}
+                {% if node.telenor_subscription_id %}
                     <tr>
-                        <th>Telenor Subscription ID:</th><td>{{ info.telenor_subscription_id }}</td>
+                        <th>Telenor Subscription ID:</th><td>{{ node.telenor_subscription_id }}</td>
                     </tr>
                 {% endif %}
-                {% if info.address %}
+                {% if node.address %}
                     <tr>
-                        <th>Address:</th><td>{{ info.address }}</td>
+                        <th>Address:</th><td>{{ node.address }}</td>
                     </tr>
                 {% endif %}
-                {% if info.postarea %}
+                {% if node.postarea %}
                     <tr>
-                        <th></th><td>{{ info.postcode }} {{ info.postarea }}</td>
+                        <th></th><td>{{ node.postcode }} {{ node.postarea }}</td>
                     </tr>
                 {% endif %}
-                {% if info.area %}
+                {% if node.area %}
                     <tr>
-                        <th>Area:</th><td>{{ info.area }}</td>
+                        <th>Area:</th><td>{{ node.area }}</td>
                     </tr>
                 {% endif %}
-                {% if info.country %}
+                {% if node.country %}
                     <tr>
-                        <th>Country:</th><td>{{ info.country }}</td>
+                        <th>Country:</th><td>{{ node.country }}</td>
                     </tr>
                 {% endif %}
             </table>
@@ -67,24 +67,24 @@ $(document).ready(
         <div class="info">
             <h4>Location information</h4>
             <table class="info break-word">
-                {% if info.floor %}
+                {% if node.floor %}
                     <tr>
-                        <th>Floor:</th><td>{{ info.floor }}</td>
+                        <th>Floor:</th><td>{{ node.floor }}</td>
                     </tr>
                 {% endif %}
-                {% if info.room %}
+                {% if node.room %}
                     <tr>
-                        <th>Room:</th><td>{{ info.room }}</td>
+                        <th>Room:</th><td>{{ node.room }}</td>
                     </tr>
                 {% endif %}
                 {% for item in responsible_relationships %}
                     {% if forloop.first %}
                         <tr>
-                            <th>Site contact:</td><td><a href="{% noclook_node_to_url item.start.id %}">{{item.start.name}}</td>
+                            <th>Site contact:</td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td></td><td><a href="{% noclook_node_to_url item.start.id %}">{{item.start.name}}</td>
+                            <td></td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
                         </tr>
                     {% endif %}
                 {% endfor %}
@@ -139,7 +139,7 @@ $(document).ready(
         {% for equip in equipment_relationships %}
             <tr>
                 <td><a href="/{{ equip.start.node_type|slugify }}/">{{ equip.start.node_type }}</a></td>
-                <td><a href="{% noclook_node_to_url equip.start.id %}">{{ equip.start.name }}</a></td>
+                <td><a href="{% noclook_node_to_url equip.start %}">{{ equip.start.name }}</a></td>
             </tr>
         {% endfor %}
         </tbody>

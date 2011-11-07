@@ -241,6 +241,28 @@ def consume_noclook(json_list):
         if 'old_node_id' in n:
             del n['old_node_id']
 
+def run_consume(config_file):
+    '''
+    Function to start the consumer from another script.
+    '''
+    config = init_config(config_file)
+    juniper_conf_data = config.get('data', 'juniper_conf')
+    nmap_services_data = config.get('data', 'nmap_services')
+    alcatel_isis_data = config.get('data', 'alcatel_isis')
+    noclook_data = config.get('data', 'noclook')
+    if juniper_conf_data:
+        data = load_json(juniper_conf_data)
+        noclook_juniper_consumer.consume_juniper_conf(data)
+    if nmap_services_data:
+        data = load_json(nmap_services_data)
+        noclook_nmap_consumer.insert_nmap(data)
+    if alcatel_isis_data:
+        data = load_json(alcatel_isis_data)
+        noclook_alcatel_consumer.consume_alcatel_isis(data)
+    if noclook_data:
+        data = load_json(noclook_data)
+        consume_noclook(data)
+
 def test_db():
     handles = NodeHandle.objects.all()
     print 'Handle\tNode'
@@ -279,36 +301,14 @@ def main():
     if not args.C:
         print 'Please provide a configuration file with -C.'
         sys.exit(1)
-    else:
-        config = init_config(args.C)
     # Purge DB if option -P was used
     if args.P:
         print 'Purging database...'
         purge_db()
     # Insert data from known data sources if option -I was used
     if args.I:
-        print 'Loading data...'
-        juniper_conf_data = config.get('data', 'juniper_conf')
-        nmap_services_data = config.get('data', 'nmap_services')
-        alcatel_isis_data = config.get('data', 'alcatel_isis')
-        noclook_data = config.get('data', 'noclook')
         print 'Inserting data...'
-        if juniper_conf_data:
-            data = load_json(juniper_conf_data)
-            noclook_juniper_consumer.consume_juniper_conf(data)
-            print 'juniper_conf consume done.'
-        if nmap_services_data:
-            data = load_json(nmap_services_data)
-            noclook_nmap_consumer.insert_nmap(data)
-            print 'nmap_services consume done.'
-        if alcatel_isis_data:
-            data = load_json(alcatel_isis_data)
-            noclook_alcatel_consumer.consume_alcatel_isis(data)
-            print 'alcatel_isis consume done.'
-        if noclook_data:
-            data = load_json(noclook_data)
-            consume_noclook(data)
-            print 'noclook consume done.'
+        run_consume(args.C)
     # end time
     end = datetime.datetime.now()
     timestamp_end = datetime.datetime.strftime(end,

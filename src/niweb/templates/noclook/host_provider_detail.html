@@ -24,6 +24,48 @@ $(document).ready(
 {% block content %}
 <div class="section">
     <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
+    <div class="info-container">
+        <div class="info">
+            <h4>{{ node.node_type }} information</h4>
+            <table>
+                <tr>
+                    <th>Name:</th><td>{{ node.name }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="info">
+            <h4>Meta information:</h4>
+            <table class="info break-word">
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                </tr>
+                <tr>
+                    <th>Modified:</th><td>{{ node_handle.modified }}</td>
+                </tr>
+                <tr>
+                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="info">
+            {% load comments %}
+            {% load markup %}
+            {% get_comment_list for node_handle as comment_list %}
+            {% if comment_list %}
+                <h4>User information:</h4>
+                <table class="info break-word">
+                    {% for comment in comment_list %}
+                    <tr>
+                        <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
+                    </tr>
+                    <tr>
+                        <td>{{ comment.comment|markdown:"safe" }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+        </div>
+    </div>
     {% load noclook_tags %}
     {% if host_relationships %}
     <table id="hosts" class="tablesorter" cellspacing="1">
@@ -33,7 +75,7 @@ $(document).ready(
         <tbody>
         {% for host in host_relationships %}
             <tr>
-                <td><a href="{% noclook_node_to_url host.end.id %}">{{ host.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url host.end %}">{{ host.end.name }}</a></td>
             </tr>
         {% endfor %}
         </tbody>
