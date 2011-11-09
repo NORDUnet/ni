@@ -5,7 +5,7 @@
 {% block content %}
     <div class="content">
             <h3>Search result</h3>
-            <p>Search for <i>{% if key %}{{ key }}:{% endif %}{{ value|lower }}{% if node_type %} in {{ node_type }}s{% endif %}</i>:</p>
+            <p>Search for <i>{% if key %}{{ key }}:{% endif %}{{ query|lower }}{% if node_type %} in {{ node_type }}s{% endif %}</i>:</p>
             {% if result %}
                 <table>
                 {% for item in result %}
@@ -14,7 +14,7 @@
                     </tr>
                     <tr>
                         <td>
-                            {% for key,value in item.node.properties.items %}
+                            {% for key,value in item.node.items %}
                                 <b>{{key}}</b>: {{value}}<br />
                             {% endfor %}
                         </td>

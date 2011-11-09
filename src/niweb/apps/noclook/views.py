@@ -653,26 +653,27 @@ def search(request):
     URL like /slug/key/value/ or /slug/value/.
     '''
     if request.POST:
-        value = request.POST.get('query', '') # search for '' if blank
+        query = request.POST.get('query', '') # search for '' if blank
         # See if value is from autocomplete
-        index = nc.get_node_index(nc.search_index_name())
-        nodes = list(index.query('all', '*%s*' % value))
+        index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+        q = Q('all', '*%s*' % query, wildcard=True)
+        nodes = nc.iter2list(index.query(str(q)))
         if not nodes:
-            nodes = nc.get_node_by_value(node_value=value)
+            nodes = nc.get_node_by_value(nc.neo4jdb, node_value=query)
         result = []
         for node in nodes:
             nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
             item = {'node': node, 'nh': nh}
             result.append(item)
         return render_to_response('noclook/search_result.html',
-                                {'value': value, 'result': result},
+                                {'query': query, 'result': result},
                                 context_instance=RequestContext(request))
     return HttpResponseRedirect('/')
                             
 @login_required
 def search_autocomplete(request):
     '''
-    Search through a pre determined index for [query]* and returns JSON data
+    Search through a pre determined index for *[query]* and returns JSON data
     like below.
     {
      query:'Li',
@@ -682,8 +683,11 @@ def search_autocomplete(request):
     '''
     query = request.GET.get('query', None)
     if query:
-        ind = nc.get_node_index(nc.search_index_name())
-        suggestions = list(n['name'] for n in ind.query('name', '*%s*' % query))
+        index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+        q = Q('name', '*%s*' % query, wildcard=True)
+        suggestions = []
+        for node in index.query(str(q)):
+            suggestions.append(node['name'])
         jsonstr = json.dumps({'query': query, 'suggestions': suggestions,
                               'data': []})
         return HttpResponse(jsonstr, mimetype='application/json')
