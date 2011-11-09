@@ -40,7 +40,7 @@ $(document).ready(
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
                 </tr>
                 <tr>
-                    <th>Modified:</th><td>{{ node_handle.modified }}</td>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
                 </tr>
                 <tr>
                     <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
