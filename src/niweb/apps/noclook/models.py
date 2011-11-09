@@ -39,10 +39,9 @@ class NodeHandle(models.Model):
     node_meta_type = models.CharField(max_length=255,
         choices=NODE_META_TYPE_CHOICES)
     # Meta information
-    creator = models.ForeignKey(User)
+    creator = models.ForeignKey(User, related_name='creator')
     created = models.DateTimeField(auto_now_add=True)
-    # TODO: Add modified_by property    
-    #modified_by = models.ForeignKey(User, blank=True)
+    modifier = models.ForeignKey(User, blank=True, related_name='modifier')
     modified = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
