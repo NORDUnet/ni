@@ -653,20 +653,20 @@ def search(request):
     URL like /slug/key/value/ or /slug/value/.
     '''
     if request.POST:
-        query = request.POST.get('query', '') # search for '' if blank
+        value = request.POST.get('query', '') # search for '' if blank
         # See if value is from autocomplete
         index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-        q = Q('all', '*%s*' % query, wildcard=True)
+        q = Q('all', '*%s*' % value, wildcard=True)
         nodes = nc.iter2list(index.query(str(q)))
         if not nodes:
-            nodes = nc.get_node_by_value(nc.neo4jdb, node_value=query)
+            nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
         result = []
         for node in nodes:
             nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
             item = {'node': node, 'nh': nh}
             result.append(item)
         return render_to_response('noclook/search_result.html',
-                                {'query': query, 'result': result},
+                                {'value': value, 'result': result},
                                 context_instance=RequestContext(request))
     return HttpResponseRedirect('/')
                             
