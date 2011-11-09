@@ -157,10 +157,9 @@ def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
                                             node_type=node_type)
     except NodeHandle.DoesNotExist:
         # The NodeHandle was not found, create one
-        node_handle = NodeHandle(node_name=node_name,
-                                node_type=node_type,
-                                node_meta_type=node_meta_type,
-                                creator=user)
+        node_handle = NodeHandle(node_name=node_name, node_type=node_type,
+                                 node_meta_type=node_meta_type, creator=user,
+                                 modifier=user)
         node_handle.save()
     return node_handle
 
@@ -186,10 +185,9 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
         pass
-    node_handle = NodeHandle(node_name=node_name,
-                            node_type=node_type,
-                            node_meta_type=node_meta_type,
-                            creator=user)
+    node_handle = NodeHandle(node_name=node_name, node_type=node_type,
+                             node_meta_type=node_meta_type, creator=user,
+                             modifier=user)
     node_handle.save()
     return node_handle # No NodeHandle found return a new handle.
 
