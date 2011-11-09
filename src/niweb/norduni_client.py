@@ -604,8 +604,9 @@ def _init_db():
 
 try:
     neo4jdb = _init_db()
-except Exception:
+except Exception as e:
     print '*** WARNING ***'
+    print 'Error: %s' % e
     print 'Could not load the Neo4j database. Is it already loaded?'
     print 'Use open_db(URI) to open another database.'
 
