@@ -3,11 +3,12 @@
 {% block title %}{{ block.super }} Visualize {{ node_handle }}{% endblock %}
 
 {% block js %}
-<!-- JIT Library File -->
-<script language="javascript" type="text/javascript" src="/site_media/js/jit/jit-yc.js"></script>
-<!-- JIT Force-Direction Graph -->
-<script language="javascript" type="text/javascript" src="/site_media/js/jit/visualize.js"></script>
+<!-- Arbor Library File -->
+<script language="javascript" type="text/javascript" src="/site_media/js/arbor/arbor.js"></script>
+<script language="javascript" type="text/javascript" src="/site_media/js/arbor/graphics.js"></script>
+<script language="javascript" type="text/javascript" src="/site_media/js/arbor/renderer.js"></script>
 <!-- First initialize -->
+<!--
 <script type="text/javascript">
 window.onload = function(){
     $.getJSON('/visualize/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}.json', function(json) {
@@ -16,18 +17,25 @@ window.onload = function(){
     });
 };
 </script>
+-->
 {% endblock %}
 
 {% block content %}
 <div class="content">
     <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> <a href="/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}">{{ node.name }}</a></h2>
-    <div id="infovis_section">
-        <div id="infovis"></div>
-        <div id="inner-details"></div>
-    </div>
-    <form>
-        <input type="checkbox" id="add_to_graph">Add to graph</input>
-    </form>
+
+    <canvas id="viewport" width="1000" height="600"></canvas>
+    <script language="javascript" type="text/javascript">
+        var sys = arbor.ParticleSystem({repulsion:200, stiffness:512, friction:0.5, gravity: false, dt:0.2});
+        sys.parameters({gravity:true});
+        sys.renderer = Renderer("#viewport");
+        $.getJSON('/visualize/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}.json', function(json) {
+            sys.graft(json);
+        });
+        //var data = {"nodes": {"virus-2.exe": {"color": "grey", "label": "virus-2.exe"}, "Kajsa": {"color": "grey", "label": "Kajsa"}, "DDOS against Foo": {"color": "orange", "label": "DDOS against Foo"}, "virus-5.exe": {"color": "grey", "label": "virus-5.exe"}, "virus-1.exe": {"color": "grey", "label": "virus-1.exe"}, "virus-3.exe": {"color": "grey", "label": "virus-3.exe"}, "Very important investigation": {"color": "orange", "label": "Very important investigation"}, "Kalle": {"color": "grey", "label": "Kalle"}, "important_document.pdf": {"color": "grey", "label": "important_document.pdf"}, "virus-4.exe": {"color": "grey", "label": "virus-4.exe"}, "evil_malware_file.exe": {"color": "black", "label": "evil_malware_file.exe"}, "Virus outbrake": {"color": "orange", "label": "Virus outbrake"}, "Johan": {"color": "grey", "label": "Johan"}}, "edges": {"virus-2.exe": {"Virus outbrake": {"directed": true, "label": "part of"}}, "Kajsa": {"evil_malware_file.exe": {"directed": true, "label": "reported"}}, "DDOS against Foo": {"DDOS against Foo": {"directed": true, "label": "part of"}}, "virus-5.exe": {"Very important investigation": {"directed": true, "label": "part of"}}, "virus-1.exe": {"Virus outbrake": {"directed": true, "label": "part of"}}, "virus-3.exe": {"Very important investigation": {"directed": true, "label": "part of"}, "Virus outbrake": {"directed": true, "label": "part of"}}, "Very important investigation": {"Very important investigation": {"directed": true, "label": "part of"}}, "important_document.pdf": {"DDOS against Foo": {"directed": true, "label": "part of"}, "Virus outbrake": {"directed": true, "label": "part of"}, "important_document.pdf": {"directed": true, "label": "reported"}}, "virus-4.exe": {"Very important investigation": {"directed": true, "label": "part of"}}, "Kalle": {"evil_malware_file.exe": {"directed": true, "label": "reported"}, "DDOS against Foo": {"directed": true, "label": "involved"}, "important_document.pdf": {"directed": true, "label": "reported"}}, "Virus outbrake": {"Virus outbrake": {"directed": true, "label": "part of"}}, "Johan": {"Virus outbrake": {"directed": true, "label": "involved"}, "important_document.pdf": {"directed": true, "label": "reported"}}}}
+
+    </script>
+
     <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
     <div id="debug">
         <h4>Log</h4>
