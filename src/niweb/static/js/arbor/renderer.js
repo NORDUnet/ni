@@ -1,5 +1,5 @@
 (function(){
-  
+
   Renderer = function(canvas){
     var canvas = $(canvas).get(0)
     var ctx = canvas.getContext("2d");
@@ -24,7 +24,7 @@
           // node: {mass:#, p:{x,y}, name:"", data:{}}
           // pt:   {x:#, y:#}  node position in screen coords
 
-          // determine the box size and round off the coords if we'll be 
+          // determine the box size and round off the coords if we'll be
           // drawing a text label (awful alignment jitter otherwise...)
           var label = node.data.label||"";
           var w = ctx.measureText(""+label).width + 12;
@@ -36,14 +36,14 @@
           }
 
           // draw a rectangle centered at pt
-		  var color = node.data.color ? node.data.color : "rgba(0,0,0,.2)";
+          var color = node.data.color ? node.data.color : "rgba(0,0,0,.2)";
 
           if (node.data.shape=='dot'){
-			ctx.fillStyle = color;
+            ctx.fillStyle = color;
             gfx.oval(pt.x-w/2, pt.y-w/2, w,w, {fill:ctx.fillStyle});
             nodeBoxes[node.name] = [pt.x-w/2, pt.y-w/2, w,w];
           }else{
-			ctx.fillStyle = color;
+            ctx.fillStyle = color;
             gfx.rect(pt.x-w/2, pt.y-11, w,22, 3, {fill:ctx.fillStyle});
             nodeBoxes[node.name] = [pt.x-w/2, pt.y-11, w, 22];
           }
@@ -66,9 +66,9 @@
           var label = edge.data.label ? $.trim(edge.data.label) : '';
           var weight = edge.data.weight;
           var color = edge.data.color;
-		  
-		  // don't draw links to self
-		  if(edge.source.name == edge.target.name) return;
+
+          // don't draw links to self
+          if(edge.source.name == edge.target.name) return;
 
           // find the start point
           var tail = intersect_line_box(pt1, pt2, nodeBoxes[edge.source.name]);
@@ -77,10 +77,10 @@
           ctx.save();
             ctx.beginPath();
             ctx.lineWidth = (!isNaN(weight)) ? parseFloat(weight) : 1;
-			if(ctx) {
-				ctx.strokeStyle = (color) ? color : "#cccccc";
-				ctx.fillStyle = 'rgba(0,0,0,0)';
-			}
+            if(ctx) {
+                ctx.strokeStyle = (color) ? color : "#cccccc";
+                ctx.fillStyle = 'rgba(0,0,0,0)';
+            }
             ctx.moveTo(tail.x, tail.y);
             ctx.lineTo(head.x, head.y);
             ctx.stroke();
@@ -89,41 +89,41 @@
           // draw an arrowhead if this is a -> style edge
           if (edge.data.directed){
             ctx.save();
-				// move to the head position of the edge we just drew
-				var wt = !isNaN(weight) ? parseFloat(weight) : 1;
-				var arrowLength = 10 + wt;
-				var arrowWidth = 3 + wt;
-				if(ctx) {
-					ctx.fillStyle = (color) ? color : "#cccccc";
-				}
-				ctx.translate(head.x, head.y);
-				ctx.rotate(Math.atan2(head.y - tail.y, head.x - tail.x));
+                // move to the head position of the edge we just drew
+                var wt = !isNaN(weight) ? parseFloat(weight) : 1;
+                var arrowLength = 10 + wt;
+                var arrowWidth = 3 + wt;
+                if(ctx) {
+                    ctx.fillStyle = (color) ? color : "#cccccc";
+                }
+                ctx.translate(head.x, head.y);
+                ctx.rotate(Math.atan2(head.y - tail.y, head.x - tail.x));
 
-				// delete some of the edge that's already there (so the point isn't hidden)
-				ctx.clearRect(-arrowLength/2,-wt/2, arrowLength/2,wt)
+                // delete some of the edge that's already there (so the point isn't hidden)
+                ctx.clearRect(-arrowLength/2,-wt/2, arrowLength/2,wt)
 
-				// draw the chevron
-				ctx.beginPath();
-				ctx.moveTo(-arrowLength, arrowWidth);
-				ctx.lineTo(0, 0);
-				ctx.lineTo(-arrowLength, -arrowWidth);
-				ctx.lineTo(-arrowLength * 0.8, -0);
-				ctx.closePath();
-				ctx.fill();
+                // draw the chevron
+                ctx.beginPath();
+                ctx.moveTo(-arrowLength, arrowWidth);
+                ctx.lineTo(0, 0);
+                ctx.lineTo(-arrowLength, -arrowWidth);
+                ctx.lineTo(-arrowLength * 0.8, -0);
+                ctx.closePath();
+                ctx.fill();
             ctx.restore();
           }
           // draw the text
           if (label != '' && ctx){
-			mid_x = (tail.x+head.x)/2;
-			mid_y = (tail.y+head.y)/2;
-			ctx.save();
-				ctx.font = "12px Helvetica";
-				ctx.textAlign = "center";
-				ctx.lineWidth = 4;
-				ctx.strokeStyle = 'rgba(255,255,255,1)';
-				ctx.strokeText(label, mid_x, mid_y);
-				ctx.fillStyle = "black";
-				ctx.fillText(label, mid_x, mid_y);
+            mid_x = (tail.x+head.x)/2;
+            mid_y = (tail.y+head.y)/2;
+            ctx.save();
+                ctx.font = "12px Helvetica";
+                ctx.textAlign = "center";
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'rgba(255,255,255,1)';
+                ctx.strokeText(label, mid_x, mid_y);
+                ctx.fillStyle = "black";
+                ctx.fillText(label, mid_x, mid_y);
             ctx.restore();
           }
         });
@@ -146,9 +146,9 @@
 
             if (dragged.node !== null) dragged.node.fixed = true;
 
-	      var nName, nLevel;
-	      nName = dragged.node.name;
-	      $("#foo").append("<li>" + nName + "</li>")
+          var nName, nLevel;
+          nName = dragged.node.name;
+          $("#log").append("<li>" + nName + "</li>")
             $(canvas).bind('mousemove', handler.dragged);
             $(window).bind('mouseup', handler.dropped);
 
@@ -217,6 +217,6 @@
     }
 
     return that
-  }    
-  
+  }
+
 })()
