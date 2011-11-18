@@ -46,7 +46,14 @@ def get_arbor_node(node):
 
     Return None for nodes that should not be part of the visualization.
 
-    {id: {"color": "", "label": ""}
+    {id: {
+        "color": "", 
+        "label": "", 
+        "data": {
+            "node_handle": "", 
+            "node_type": ""
+        }
+    }}
     '''
     structure = {
         node.id: {
@@ -78,7 +85,16 @@ def get_directed_adjacencie(rel):
     '''
     Creates the data structure for JSON export from the relationship.
 
-    {id: {"other_id": {"directed": true, "label": ""}}
+    {id: {
+        "other_id": {
+            "directed": true, 
+            "label": ""
+        }
+        "other_id": {
+            "directed": true, 
+            "label": ""
+        }
+    }}
     '''
     structure = { 
         rel.start.id: {
@@ -168,4 +184,5 @@ def get_json(graph_dict):
     '''
     Converts a graph_list to JSON and returns the JSON string.
     '''
+    #return json.dumps(graph_dict)
     return json.dumps(graph_dict, indent=4)
