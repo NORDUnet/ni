@@ -382,20 +382,21 @@ def site_owner_detail(request, handle_id):
 
 # Visualization views
 @login_required
-def visualize_json(request, slug, handle_id):
+def visualize_json(request, node_id):
     '''
     Creates a JSON representation of the nodes and its adjecencies.
     This JSON data is then used by Arbor.js (http://arborjs.org/) to make
     a visual representation.
     '''
     import arborgraph
-
     # Get the node
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    root_node = nh.get_node()
-    # Create the data JSON structure needed
-    graph_dict = arborgraph.create_generic_graph(root_node)
-    jsonstr = arborgraph.get_json(graph_dict)
+    root_node = nc.get_node_by_id(nc.neo4jdb, node_id)
+    if root_node:
+        # Create the data JSON structure needed
+        graph_dict = arborgraph.create_generic_graph(root_node)
+        jsonstr = arborgraph.get_json(graph_dict)
+    else:
+        jsonstr = '{}'
     return HttpResponse(jsonstr, mimetype='application/json')
 
 @login_required

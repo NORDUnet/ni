@@ -13,7 +13,7 @@ window.onload = function(){
     var sys = arbor.ParticleSystem({repulsion:200, stiffness:512, friction:0.5, gravity: false, dt:0.2});
     sys.parameters({gravity:true});
     sys.renderer = Renderer("#viewport");
-    $.getJSON('/visualize/{{ node_handle.node_type|slugify }}/{{ node_handle.handle_id }}.json', function(json) {
+    $.getJSON('/visualize/{{ node_handle.node_id }}.json', function(json) {
         sys.graft(json);
     });
 };
