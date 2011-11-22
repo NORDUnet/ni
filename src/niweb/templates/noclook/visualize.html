@@ -4,14 +4,16 @@
 
 {% block js %}
 <!-- Arbor Library File -->
-<script language="javascript" type="text/javascript" src="/site_media/js/arbor/arbor.js"></script>
-<script language="javascript" type="text/javascript" src="/site_media/js/arbor/graphics.js"></script>
-<script language="javascript" type="text/javascript" src="/site_media/js/arbor/renderer.js"></script>
+{% load niweb_tags %}
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/arbor.js"></script>
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/graphics.js"></script>
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/renderer.js"></script>
 <!-- First initialize -->
 <script type="text/javascript">
 window.onload = function(){
     var sys = arbor.ParticleSystem({repulsion:200, stiffness:512, friction:0.5, gravity: false, dt:0.2});
     sys.parameters({gravity:true});
+    sys.screenPadding(20, 100, 20, 100)
     sys.renderer = Renderer("#viewport");
     $.getJSON('/visualize/{{ node_handle.node_id }}.json', function(json) {
         sys.graft(json);
@@ -25,8 +27,8 @@ window.onload = function(){
 <div class="content">
     <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> <a href="/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}">{{ node.name }}</a></h2>
 
-    <canvas id="viewport" width="1200" height="800"></canvas>
-
+    <canvas id="viewport" width="800" height="600"></canvas>
+    <p><a href="/visualize/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}/maximized/" target="_blank">Maximize</a></p>
     <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
     <div id="debug">
         <h4>Log</h4>
