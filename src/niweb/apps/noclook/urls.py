@@ -25,8 +25,9 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^site/(?P<handle_id>\d+)/$', 'site_detail'),
     (r'^site-owner/(?P<handle_id>\d+)/$', 'site_owner_detail'),
     # Visualize views
-    (r'^visualize/(?P<node_id>\d+)\.json$', 
-                                                         'visualize_json'),
+    (r'^visualize/(?P<node_id>\d+)\.json$', 'visualize_json'),
+    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', 
+                                                         'visualize_maximize'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'visualize'),
     # Manipulation views
     (r'^new/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/$', 
@@ -42,18 +43,19 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
     (r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
     # Find all
-    (r'^findall/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'find_all'),
-    (r'^findall/(?P<value>[-\w]+)/$', 'find_all'),
-    (r'^findall/$', 'find_all'),
+    (r'^findall/(?P<key>[-\w]+)/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
+    (r'^findall/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     # Find in
-    (r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w]+)/$', 'find_all'),
-    (r'^findin/(?P<slug>[-\w]+)/(?P<value>[-\w]+)/$', 'find_all'),
+    (r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
+    (r'^findin/(?P<slug>[-\w]+)/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     # Search
-    (r'^search/autocomplete$', 'search_autocomplete'),
     (r'^search/$', 'search'),
+    (r'^search/autocomplete$', 'search_autocomplete'),
+    (r'^search/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'search'),
     # List views
     (r'^peering-partner/$', 'list_peering_partners'),
     (r'^host/$', 'list_hosts'),
+    (r'^site/$', 'list_sites'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
     # Generic view
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
