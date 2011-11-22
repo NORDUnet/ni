@@ -8,6 +8,10 @@
         var that = {
             init: function(system) {
                 particleSystem = system;
+                if (canvas.width === 300 && canvas.height === 150) { // Actual size when width and height are not specified.
+                    ctx.canvas.width  = window.innerWidth;
+                    ctx.canvas.height = window.innerHeight;
+                }
                 particleSystem.screenSize(canvas.width, canvas.height);
                 that.initMouseHandling();
             },

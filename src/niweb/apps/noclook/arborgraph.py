@@ -59,9 +59,8 @@ def get_arbor_node(node):
         node.id: {
             'color': '',
             'label': '%s %s' % (node['node_type'], node['name']),
-            'data':{
-                'node_type': node['node_type']
-            }
+            'mass': 1,
+            'data':{}
         }
     }
     # Set node specific apperance
@@ -78,7 +77,11 @@ def get_arbor_node(node):
             structure[node.id].update(RELATION)
         elif meta_type == 'location':
             structure[node.id].update(LOCATION)
-        structure[node.id]['data']['node_handle'] = node['handle_id']
+            #structure[node.id].update({'p': {
+            #                            'x': node.latitude,
+            #                            'y': node.longitude
+            #                            }
+            #                        })
     return structure
 
 def get_directed_adjacencie(rel):
@@ -144,40 +147,22 @@ def create_generic_graph(root_node, graph_dict = None):
     '''
     if not graph_dict:
         graph_dict = {'nodes': {}, 'edges': {}}
-    # Create graph lists for known node types
-    meta_type = nc.get_node_meta_type(root_node)
-#    if meta_type == 'physical':
-#        graph_list.extend(traverse_relationships(root_node,
-#                                                    PHYSICAL_TYPES,
-#                                                    graph_list))
-#    elif meta_type == 'logical':
-#        graph_list.extend(traverse_relationships(root_node,
-#                                                    LOGICAL_TYPES,
-#                                                    graph_list))
-#    elif meta_type == 'relation':
-#        graph_list.extend(traverse_relationships(root_node,
-#                                                    RELATION_TYPES,
-#                                                    graph_list))
-#    elif meta_type == 'location':
-#                graph_list.extend(traverse_relationships(root_node,
-#                                                    LOCATION_TYPES,
-#                                                    graph_list))
-#    else:
     # Generic graph dict
     arbor_root = get_arbor_node(root_node)
     graph_dict['nodes'].update(arbor_root)
     for rel in root_node.relationships:
-        if rel.start.id == root_node.id:
-            arbor_node = get_arbor_node(rel.end)
-        else:
-            arbor_node = get_arbor_node(rel.start)
-        graph_dict['nodes'].update(arbor_node)
-        arbor_edge = get_directed_adjacencie(rel)
-        key = arbor_edge.keys()[0] # The only key in arbor_edge
-        if graph_dict['edges'].has_key(key):
-            graph_dict['edges'][key].update(arbor_edge[key])
-        else:
-            graph_dict['edges'].update(arbor_edge)
+        if rel.type.toString() != 'Contains':
+            if rel.start.id == root_node.id:
+                arbor_node = get_arbor_node(rel.end)
+            else:
+                arbor_node = get_arbor_node(rel.start)
+            graph_dict['nodes'].update(arbor_node)
+            arbor_edge = get_directed_adjacencie(rel)
+            key = arbor_edge.keys()[0] # The only key in arbor_edge
+            if graph_dict['edges'].has_key(key):
+                graph_dict['edges'][key].update(arbor_edge[key])
+            else:
+                graph_dict['edges'].update(arbor_edge)
     return graph_dict
 
 def get_json(graph_dict):
