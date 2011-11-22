@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} All nodes{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#sites").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+    <div class="content">
+            <h3>Sites</h3>
+            <table id="sites" class="tablesorter" cellspacing="1">
+                <thead>
+                    <th>Country code</th><th>Site name</th>
+                </thead>
+                <tbody>
+                    {% load noclook_tags %}
+                    {% for site in site_list %}
+                            <tr>
+                                <td><a href="/findin/site/country_code/{{ site.country_code }}/">{{ site.country_code }}</a></td><td><a href="{% noclook_node_to_url site.site %}">{{ site.name }}</a></td>
+                            </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+     </div>
+{% endblock %}
