@@ -107,7 +107,43 @@ def iter2list(pythonic_iterator):
     for item in pythonic_iterator:
         l.append(item)
     return l
-    
+
+def nodes_to_csv(node_list):
+    '''
+    Takes a list of nodes and returns a comma separeted file with all node keys
+    and their values.
+    '''
+    key_set = set()
+    for node in node_list:
+        key_set.update(node.propertyKeys)
+    key_set = sorted(key_set)
+    output = [';'.join(key_set)] # Line collection with header
+    for node in node_list: 
+        line = []
+        for key in key_set:
+            try:
+                line.append(unicode(node[key]))
+            except KeyError:
+                line.append('') # Node did not have that key, add a blank item.
+        output.append(';'.join(line))
+    return '\n'.join(output)
+
+def nodes_to_json(node_list):
+    '''
+    Takes a list of nodes and returns a json formated text with all node keys
+    and their values.
+    '''
+    # TODO
+    pass
+
+def nodes_to_geoff(node_list):
+    '''
+    Takes a list of nodes and returns geoff format with all node keys
+    and their values.
+    '''
+    # TODO
+    pass
+        
 # Core functions
 def open_db(uri=NEO4J_URI):
     '''
@@ -199,7 +235,7 @@ def create_meta_node(db, meta_node_name):
     '''
     if meta_node_name in ['physical', 'logical', 'relation', 'location']:
         with db.transaction:
-            meta_node = create_node(db, meta_node_name, 'meta')
+            meta_node = db.node(name=meta_node_name, node_type='meta')
             root = get_root_node(db)
             root.Consists_of(meta_node)
         return meta_node
