@@ -7,6 +7,11 @@
             <h3>Search result</h3>
             <p>Search for <i>{% if key %}{{ key }}:{% endif %}{{ value|lower }}{% if node_type %} in {{ node_type }}s{% endif %}</i>:</p>
             {% if result %}
+                {% if node_type or key %}
+                    <p>Get this result as: <a href="result.csv">CSV</a></p>
+                {% else %}
+                    <p>Get this result as: <a href="/search/{{ value }}/result.csv">CSV</a></p>
+                {% endif %}
                 <table>
                 {% for item in result %}
                     <tr>
