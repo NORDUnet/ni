@@ -69,6 +69,24 @@ def list_hosts(request):
     return render_to_response('noclook/list_hosts.html',
                                 {'host_list': host_list},
                                 context_instance=RequestContext(request))
+                                
+@login_required
+def list_sites(request):
+    node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
+    hits = node_types_index['node_type']['Site']
+    site_list = []
+    for node in hits:
+        site = {}
+        site['name'] = node['name']
+        try:
+            site['country_code'] = node['country_code']
+        except KeyError:
+            site['country_code'] = ''
+        site['site'] = node
+        site_list.append(site)
+    return render_to_response('noclook/list_sites.html',
+                                {'site_list': site_list},
+                                context_instance=RequestContext(request))
 # Remove?
 #@login_required
 #def list_by_master(request, handle_id, slug):
@@ -410,6 +428,17 @@ def visualize(request, slug, handle_id):
                             {'node_handle': nh, 'node': node},
                             context_instance=RequestContext(request))
 
+@login_required
+def visualize_maximize(request, slug, handle_id):
+    '''
+    Visualize view with JS that loads JSON data.
+    '''
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    node = nh.get_node()
+    return render_to_response('noclook/visualize_maximize.html',
+                            {'node_handle': nh, 'node': node},
+                            context_instance=RequestContext(request))
+
 # Node manipulation views
 @login_required
 def new_node(request, slug):
@@ -649,28 +678,32 @@ def delete_relationship(request, slug, handle_id, rel_id):
         
 # Search views
 @login_required
-def search(request):
+def search(request, value='', form=None):
     '''
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/ or /slug/value/.
     '''
     if request.POST:
-        value = request.POST.get('query', '') # search for '' if blank
-        # See if value is from autocomplete
-        index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-        q = Q('all', '*%s*' % value, wildcard=True)
-        nodes = nc.iter2list(index.query(str(q)))
-        if not nodes:
-            nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
-        result = []
-        for node in nodes:
-            nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
-            item = {'node': node, 'nh': nh}
-            result.append(item)
-        return render_to_response('noclook/search_result.html',
-                                {'value': value, 'result': result},
-                                context_instance=RequestContext(request))
-    return HttpResponseRedirect('/')
+        value = request.POST.get('query', '')
+    # See if value is from autocomplete
+    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    q = Q('all', '*%s*' % value, wildcard=True)
+    nodes = nc.iter2list(index.query(str(q)))
+    if not nodes:
+        nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
+    result = []
+    if form == 'csv':
+        csvfile = nc.nodes_to_csv(nodes)
+        return HttpResponse(csvfile, mimetype='application/text')
+    for node in nodes:
+        node_name = node['name']
+        nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
+        item = {'node': node, 'nh': nh}
+        result.append(item)
+    return render_to_response('noclook/search_result.html',
+                            {'value': value, 'result': result},
+                            context_instance=RequestContext(request))    
+
                             
 @login_required
 def search_autocomplete(request):
@@ -696,10 +729,10 @@ def search_autocomplete(request):
     return False
     
 @login_required
-def find_all(request, slug=None, key=None, value=None):
+def find_all(request, slug=None, key=None, value=None, form=None):
     '''
     Search through nodes either from a POSTed search query or through an
-    URL like /slug/key/value/ or /slug/value/.
+    URL like /slug/key/value/, /slug/value/ /key/value/, /value/ or /key/.
     '''
     if request.POST:
         value = request.POST.get('query', '') # search for '' if blank
@@ -719,6 +752,9 @@ def find_all(request, slug=None, key=None, value=None):
         node_type = None
     nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value,
                                  node_property=key)
+    if form == 'csv':
+        csvfile = nc.nodes_to_csv(nodes)
+        return HttpResponse(csvfile, mimetype='application/text')
     result = []
     for node in nodes:
         # Check so that the node_types are equal. A problem with meta type.
