@@ -8,7 +8,7 @@
         var that = {
             init: function(system) {
                 particleSystem = system;
-                if (canvas.width === 300 && canvas.height === 150) { // Actual size when width and height are not specified.
+                if (canvas.width === 300 && canvas.height === 150) { // Size when width and height are not specified?
                     ctx.canvas.width  = window.innerWidth;
                     ctx.canvas.height = window.innerHeight;
                 }
@@ -171,8 +171,9 @@
                             });
                         }
                         var nName, nLevel;
-                        nData = dragged.node.data;
-                        $("#debug").append("<li>" + nData["node_type"] + "</li>")
+                        n = dragged.node;
+                        $("#debug").append("<li>" + n["name"] + "</li>")
+                        console.log( dragged.node.p.x, dragged.node.p.y )
                         $(canvas).bind('mousemove', handler.dragged);
                         $(window).bind('mouseup', handler.dropped);
 
