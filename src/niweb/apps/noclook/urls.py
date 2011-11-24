@@ -25,7 +25,7 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^site/(?P<handle_id>\d+)/$', 'site_detail'),
     (r'^site-owner/(?P<handle_id>\d+)/$', 'site_owner_detail'),
     # Visualize views
-    
+    (r'^visualize/(?P<node_id>\d+)\.json$', 'visualize_json'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', 
                                                          'visualize_maximize'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'visualize'),
