@@ -696,7 +696,6 @@ def search(request, value='', form=None):
         csvfile = nc.nodes_to_csv(nodes)
         return HttpResponse(csvfile, mimetype='application/text')
     for node in nodes:
-        node_name = node['name']
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
         item = {'node': node, 'nh': nh}
         result.append(item)
@@ -768,3 +767,41 @@ def find_all(request, slug=None, key=None, value=None, form=None):
                              'value': value, 'result': result, 
                              'node_meta_type': node_meta_type},
                             context_instance=RequestContext(request))
+# Google maps views
+@login_required
+def gmaps_json(request, slug):
+    '''
+    Directs gmap json requests to the right view.
+    '''
+    gmap_views = {'sites': gmaps_sites}
+    try:    
+        return gmap_views[slug](request)
+    except KeyError:
+        raise Http404
+
+@login_required
+def gmaps_sites(request):
+    '''
+    Return a json list with site dicts.
+    [{name: '', lng: 0.0, lat: 0.0}, ...]
+    '''
+    node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
+    hits = node_types_index['node_type']['Site']
+    site_list = []
+    for node in hits:
+        try:
+            site = {}
+            site['name'] = '%s-%s' % (node['country_code'], node['name'])
+            site['lng'] = node['longitude']
+            site['lat'] = node['latitude']
+        except KeyError:
+            break
+        if site:
+            site_list.append(site)
+    jsonstr = json.dumps(site_list)
+    return HttpResponse(jsonstr, mimetype='application/json')
+            
+@login_required
+def gmaps(request, slug):
+    return render_to_response('noclook/google_maps.html', {'slug': slug},
+        context_instance=RequestContext(request))

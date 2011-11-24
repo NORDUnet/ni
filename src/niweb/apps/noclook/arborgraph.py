@@ -40,6 +40,37 @@ LOCATION = {'color': '#FF4040'}
 #                nc.Undirected.Responsible_for,
 #                nc.Undirected.Located_in]
 
+def longlat_to_cords(lng, lat, scale=1, x_offset=0, y_offset=0):
+    '''
+    Computes the x and y cordinates from longitude and latitude.
+    Returns longitude as x and latitude as y.
+    Google Map function base:
+    function LongitudeToX( $lat, $lon, $map_zoom, $scale_value, $x_offset = 0 ) {
+        $offset=16777216;
+        $radius=$offset / pi();
+        return ( ( ($offset+$radius*$lon*pi()/180)>>$map_zoom ) * $scale_value ) + $x_offset;
+    }
+    function LatitudeToY( $lat, $lon, $map_zoom, $scale_value, $y_offset = 0 ) {
+        $offset=16777216;
+        $radius=$offset / pi();
+        return ( ( ($offset-$radius*log((1+sin($lat*pi()/180))/(1-sin($lat*pi()/180)))/2)>>$map_zoom ) * $scale_value ) + $y_offset;
+    }
+    '''
+    import math
+    try:
+        longitude = float(lng)
+        latitude = float(lat)
+    except ValueError:
+        print 'I could not handle the longitude or latitude I got.'
+        raise
+    offset = 16777216
+    radius = offset / math.pi
+    x = ((offset + radius * longitude * math.pi / 180) * scale) + x_offset
+    y = ((offset - radius * math.log((1 + math.sin(
+        latitude * math.pi / 180)) / (1-math.sin(
+        latitude * math.pi / 180)) / 2 )) * scale) + y_offset
+    return x,y
+
 def get_arbor_node(node):
     '''
     Creates the data structure for JSON export from a neo4j node.
@@ -49,24 +80,19 @@ def get_arbor_node(node):
     {id: {
         "color": "", 
         "label": "", 
-        "data": {
-            "node_handle": "", 
-            "node_type": ""
-        }
+        "mass": 0,
     }}
     '''
     structure = {
         node.id: {
             'color': '',
             'label': '%s %s' % (node['node_type'], node['name']),
-            'mass': 1,
-            'data':{}
+            #'mass': len(node.relationships),
         }
     }
     # Set node specific apperance
     if node['node_type'] == 'meta':
         structure[node.id].update(META)
-        structure[node.id]['data']['node_handle'] = None
     else:
         meta_type = nc.get_node_meta_type(node)
         if meta_type == 'physical':
@@ -75,13 +101,15 @@ def get_arbor_node(node):
             structure[node.id].update(LOGICAL)
         elif meta_type == 'relation':
             structure[node.id].update(RELATION)
+            #structure[node.id].update({'x': 0, 'y': 0, 'fixed': True})
         elif meta_type == 'location':
             structure[node.id].update(LOCATION)
-            #structure[node.id].update({'p': {
-            #                            'x': node.latitude,
-            #                            'y': node.longitude
-            #                            }
-            #                        })
+            #point_x, point_y = longlat_to_cords(node['longitud'],
+            #                                    node['latitud'],
+            #                                    scale=0.000001,
+            #                                    x_offset=0,
+            #                                    y_offset=0)
+            #structure[node.id].update({'x': point_x, 'y': point_y, 'fixed': True})
     return structure
 
 def get_directed_adjacencie(rel):
@@ -103,7 +131,8 @@ def get_directed_adjacencie(rel):
         rel.start.id: {
             rel.end.id: {
                 'directed': True,
-                'label': str(rel.type).replace('_', ' ')
+                'label': str(rel.type).replace('_', ' '),
+                #'lenght': 1
             }
         }
     }
