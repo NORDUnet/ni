@@ -23,7 +23,6 @@
 from norduni_client_exceptions import *
 from neo4j import GraphDatabase, Uniqueness, Evaluation, OUTGOING, INCOMING, ANY
 from lucenequerybuilder import Q
-from django.conf import settings as django_settings
 from django.template.defaultfilters import slugify
 from datetime import datetime, timedelta
 import json
@@ -39,8 +38,15 @@ according to the NORDUnet Network Inventory data model.
 More information about NORDUnet Network Inventory: 
 https://portal.nordu.net/display/NI/
 '''
-
-NEO4J_URI = django_settings.NEO4J_RESOURCE_URI
+# Load Django settings
+try:
+    from django.conf import settings as django_settings
+    NEO4J_URI = django_settings.NEO4J_RESOURCE_URI
+except ImportError:
+    NEO4J_URI = None
+    print 'Starting up without a Django environment.'
+    print 'norduni_client.neo4jdb == None'
+    pass
 
 # Helper functions
 def normalize_whitespace(s):
@@ -151,7 +157,8 @@ def open_db(uri=NEO4J_URI):
     opens the database located at NEO4J_URI when imported you shouldn't have
     to use this.
     '''
-    return GraphDatabase(uri)
+    if uri:
+        return GraphDatabase(uri)
 
 def create_node(db, n='', t=''):
     '''
