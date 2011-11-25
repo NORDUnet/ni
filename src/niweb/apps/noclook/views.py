@@ -728,7 +728,7 @@ def search_autocomplete(request):
     return False
     
 @login_required
-def find_all(request, slug=None, key=None, value=None, form=None):
+def find_all(request, slug='', key='', value='', form=None):
     '''
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/, /slug/value/ /key/value/, /value/ or /key/.
@@ -749,11 +749,15 @@ def find_all(request, slug=None, key=None, value=None, form=None):
     else:
         node_meta_type = None
         node_type = None
-    nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value,
+    if value:
+        nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value,
                                  node_property=key)
+    else:
+        node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
+        nodes = node_types_index['node_type'][str(node_type)]
     if form == 'csv':
         csvfile = nc.nodes_to_csv(nodes)
-        return HttpResponse(csvfile, mimetype='application/text')
+        return HttpResponse(csvfile, mimetype='text/csv')
     result = []
     for node in nodes:
         # Check so that the node_types are equal. A problem with meta type.
