@@ -45,16 +45,19 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^edit/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'edit_node'),
     (r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
     (r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
+    # Get all
+    (r'^getall/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     # Find all
-    (r'^findall/(?P<key>[-\w]+)/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
-    (r'^findall/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
+    (r'^findall/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'find_all'),
+    (r'^findall/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     # Find in
-    (r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
-    (r'^findin/(?P<slug>[-\w]+)/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
+    (r'^findin/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
+    (r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'find_all'),
+    (r'^findin/(?P<slug>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     # Search
     (r'^search/$', 'search'),
     (r'^search/autocomplete$', 'search_autocomplete'),
-    (r'^search/(?P<value>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'search'),
+    (r'^search/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'search'),
     # List views
     (r'^peering-partner/$', 'list_peering_partners'),
     (r'^host/$', 'list_hosts'),
