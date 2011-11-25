@@ -145,20 +145,16 @@
                 // set up a handler object that will initially listen for mousedowns then
                 // for moves and mouseups while dragging
                 var handler = {
-                    //clicked:function(e){
-                    //var clicked, slug, handleId;
-                    //var pos = $(canvas).offset();
-                    //_mouseP = arbor.Point(e.pageX-pos.left, e.pageY-pos.top);
-                    //clicked = particleSystem.nearest(_mouseP);
-                    //if (clicked.node !== null) {
-                    //$("#debug").append("<li>" + clicked.node.data + "</li>")
-                    //slug = clicked.node.data["node_type"].replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase();
-                    //handleId = clicked.node.data["node_handle"]
-                    //$.getJSON('/visualize/' + slug + '/' + handleId + '.json', function(json) {
-                    //sys.graft(json);
-                    //});
-                    //}
-                    //},
+                    dblclicked: function(e) {
+                        var pos = $(canvas).offset();
+                        _mouseP = arbor.Point(e.pageX - pos.left, e.pageY - pos.top);
+                        selected = particleSystem.nearest(_mouseP);
+                        if (selected.node !== null) {
+                            $.getJSON('/visualize/' + selected.node.name + '.json', function(json) {
+                                particleSystem.graft(json);
+                            });
+                        }
+                    },
                     clicked: function(e) {
                         var pos = $(canvas).offset();
                         _mouseP = arbor.Point(e.pageX - pos.left, e.pageY - pos.top);
@@ -166,17 +162,13 @@
 
                         if (dragged.node !== null) {
                             dragged.node.fixed = true;
-                            $.getJSON('/visualize/' + dragged.node.name + '.json', function(json) {
-                                particleSystem.graft(json);
-                            });
+                            var nName, nLevel;
+                            //n = dragged.node;
+                            //$("#debug").append("<li>" + n["name"] + "</li>")
+                            //console.log( dragged.node.p.x, dragged.node.p.y )
                         }
-                        var nName, nLevel;
-                        n = dragged.node;
-                        $("#debug").append("<li>" + n["name"] + "</li>")
-                        console.log( dragged.node.p.x, dragged.node.p.y )
                         $(canvas).bind('mousemove', handler.dragged);
                         $(window).bind('mouseup', handler.dropped);
-
                         return false
                     },
                     dragged: function(e) {
@@ -206,6 +198,7 @@
                     }
                 }
                 $(canvas).mousedown(handler.clicked);
+                $(canvas).bind('dblclick', handler.dblclicked);
             }
         }
 
