@@ -270,10 +270,7 @@ def test_db():
 
 def purge_db():
     for nh in NodeHandle.objects.all():
-        try:
-            nh.delete()
-        except KeyError:
-            print 'Could not delete the Neo4j node.' 
+        nh.delete()
 
 def main():
     # User friendly usage output
