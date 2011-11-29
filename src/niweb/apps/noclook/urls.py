@@ -48,8 +48,8 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     # Get all
     (r'^getall/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     # Find all
-    (r'^findall/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     (r'^findall/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'find_all'),
+    (r'^findall/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     # Find in
     (r'^findin/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
     (r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv)?)$', 'find_all'),
