@@ -221,12 +221,11 @@ def get_all_relationships(db):
         relationships.append(relationship)
     return relationships
 
-def delete_node(db, node_id):
+def delete_node(db, node):
     '''
     Deletes the node with the supplied id and returns True. Returns False
     if the node wasn't found.
     '''
-    node = get_node_by_id(db, node_id)
     if node:
         with db.transaction:
             for rel in node.relationships:

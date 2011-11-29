@@ -795,6 +795,7 @@ def gmaps_sites(request):
     for node in hits:
         try:
             site = {}
+            site['id'] = node.id
             site['name'] = '%s-%s' % (node['country_code'], node['name'])
             site['lng'] = node['longitude']
             site['lat'] = node['latitude']
