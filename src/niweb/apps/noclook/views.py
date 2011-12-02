@@ -777,17 +777,22 @@ def gmaps_json(request, slug):
     '''
     Directs gmap json requests to the right view.
     '''
-    gmap_views = {'sites': gmaps_sites}
-    try:    
-        return gmap_views[slug](request)
-    except KeyError:
-        raise Http404
+    gmap_views = {'sites': gmaps_sites, 'optical-nodes': gmaps_optical_nodes}
+#    try:    
+    return gmap_views[slug](request)
+#    except KeyError:
+#        raise Http404
 
 @login_required
 def gmaps_sites(request):
     '''
     Return a json list with site dicts.
-    [{name: '', lng: 0.0, lat: 0.0}, ...]
+    [{
+        name: '',
+        type: 'node',
+        lng: 0.0,
+        lat: 0.0
+    }, ...]
     '''
     node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
     hits = node_types_index['node_type']['Site']
@@ -797,6 +802,7 @@ def gmaps_sites(request):
             site = {}
             site['id'] = node.id
             site['name'] = '%s-%s' % (node['country_code'], node['name'])
+            site['type'] = 'node'
             site['lng'] = node['longitude']
             site['lat'] = node['latitude']
         except KeyError:
@@ -804,6 +810,56 @@ def gmaps_sites(request):
         if site:
             site_list.append(site)
     jsonstr = json.dumps(site_list)
+    return HttpResponse(jsonstr, mimetype='application/json')
+
+@login_required
+def gmaps_optical_nodes(request):
+    '''
+    Return a json list with dicts of optical node and cables.
+    [{
+        name: '',
+        type: 'node',
+        lng: 0.0,
+        lat: 0.0,
+    },{
+        name: '',
+        type: 'edge',
+        start_lng: 0.0,
+        start_lat: 0.0,
+        end_lng: 0.0,
+        end_lat: 0.0
+    }]
+    '''
+    # Cypher query to get all cables with cable type fiber that are connected
+    # to two optical node.
+    cypher_query = '''
+START optical_node = node:node_types(node_type="Optical Node")
+MATCH optical_node<-[:Connected_to]-cable-[Connected_to]->other_optical_node
+WHERE (cable.cable_type = "Fiber") and optical_node.type and not (optical_node.type =~ /.*tss.*/)
+RETURN distinct cable
+'''
+    query = nc.neo4jdb.query(cypher_query)
+    optical_node_list = []
+    for hit in query:
+        cords = []
+        for rel in hit['cable'].Connected_to.outgoing:
+            for loc_rel in rel.end.Located_in.outgoing:
+                lng = loc_rel.end['longitude']
+                lat = loc_rel.end['latitude']
+            node = {'name': rel.end['name'], 'type': 'node', 'lng': lng,
+                    'lat': lat}
+            cords.append({'lng': lng, 'lat': lat})
+            optical_node_list.append(node)
+        edge = {'name': hit['cable']['name'], 'type': 'edge'}
+        if len(cords) == 2:
+            edge['start_lng'] = cords[0]['lng']
+            edge['start_lat'] = cords[0]['lat']
+            edge['end_lng'] = cords[1]['lng']
+            edge['end_lat'] = cords[1]['lat']
+            optical_node_list.append(edge)
+        else:
+            raise Exception('Fiber cable terminates in too many points.')
+    jsonstr = json.dumps(optical_node_list)
     return HttpResponse(jsonstr, mimetype='application/json')
             
 @login_required

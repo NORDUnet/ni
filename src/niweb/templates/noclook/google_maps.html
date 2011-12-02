@@ -25,10 +25,18 @@
         var map = map
         $.getJSON('/gmaps/{{ slug }}.json', function(json) {
             for (var i = 0;i < json.length; i += 1) {
-                var lat = json[i].lat;
-                var lng = json[i].lng;
                 var label = json[i].name;
-                addMarker(lat,lng,label);
+                if (json[i].type === "node") {
+                    var lat = json[i].lat;
+                    var lng = json[i].lng;
+                    addMarker(lat,lng,label);
+                } else if (json[i].type === "edge") {
+                    var start_lat = json[i].start_lat;
+                    var start_lng = json[i].start_lng;
+                    var end_lat = json[i].end_lat;
+                    var end_lng = json[i].end_lng;
+                    addLine(start_lat, start_lng, end_lat, end_lng, label);
+                };
             };
 
             function addMarker(lat,lng,label){
@@ -37,6 +45,27 @@
                     position: latlng,
                     title: label,
                     map: map
+                });
+            };
+
+            function addLine(start_lat, start_lng, end_lat, end_lng, label){
+                var path = [
+                    new google.maps.LatLng(start_lat, start_lng),
+                    new google.maps.LatLng(end_lat, end_lng)
+                ];
+                var line = new google.maps.Polyline({
+                    path: path,
+                    title: label,
+                    strokeWeight: 2,
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 0.5,
+                    map: map
+                });
+                google.maps.event.addListener(line, 'mouseover', function(event) {
+                    console.log('mouseover', event.latLng)
+                });
+                google.maps.event.addListener(line, 'mouseout', function() {
+                    console.log('mouse left')
                 });
             };
         });
