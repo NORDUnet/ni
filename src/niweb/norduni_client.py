@@ -77,6 +77,29 @@ def get_node_url(node):
     return '%s%s/%d/' % (django_settings.NIWEB_URL, slugify(node['node_type']),
                                                     node['handle_id'])
 
+def set_noclook_auto_manage(db, item, auto_manage):
+    '''
+    Sets the node or relationship noclook_auto_manage flag to True or False. 
+    Also sets the noclook_last_seen flag to now.
+    '''
+    with db.transaction:
+        item['noclook_auto_manage'] = auto_manage
+        item['noclook_last_seen'] = datetime.datetime.now().isoformat()
+    return True
+    
+def update_noclook_auto_manage(db, item):
+    '''
+    Updates the noclook_auto_manage and noclook_last_seen properties. If 
+    noclook_auto_manage is not set, it is set to True.
+    '''
+    with db.transaction:
+        try:
+            item['noclook_auto_manage']
+        except KeyError:
+            item['noclook_auto_manage'] = True
+        item['noclook_last_seen'] = datetime.datetime.now().isoformat()
+    return True
+
 def isots_to_dt(item):
     '''
     Returns noclook_last_seen property as a datetime.datetime. If the property
@@ -295,7 +318,8 @@ def get_root_parent(db, node):
     '''
     # TODO: When traversels support just relationships directions without type 
     # rewrite this function.
-    types = {'physical': 'Has', 'logical': 'Depends_on', 'location': 'Has'}
+    types = {'physical': 'Has', 'logical': 'Depends_on', 'location': 'Has',
+             'relation': 'None'} # Relations cant have parent nodes.
     meta_type = nc.get_node_meta_type(node)
     relationship_type = types[meta_type]
     traverser = db.traversal().relationships(
