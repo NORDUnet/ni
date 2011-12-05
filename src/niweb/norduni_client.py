@@ -84,7 +84,7 @@ def set_noclook_auto_manage(db, item, auto_manage):
     '''
     with db.transaction:
         item['noclook_auto_manage'] = auto_manage
-        item['noclook_last_seen'] = datetime.datetime.now().isoformat()
+        item['noclook_last_seen'] = datetime.now().isoformat()
     return True
     
 def update_noclook_auto_manage(db, item):
@@ -97,7 +97,7 @@ def update_noclook_auto_manage(db, item):
             item['noclook_auto_manage']
         except KeyError:
             item['noclook_auto_manage'] = True
-        item['noclook_last_seen'] = datetime.datetime.now().isoformat()
+        item['noclook_last_seen'] = datetime.now().isoformat()
     return True
 
 def isots_to_dt(item):
