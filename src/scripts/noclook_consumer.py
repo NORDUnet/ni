@@ -105,29 +105,6 @@ def get_user(username='noclook'):
         user = User.objects.create_user(username, '', passwd)
     return user
 
-def set_noclook_auto_manage(db, item, auto_manage):
-    '''
-    Sets the node or relationship noclook_auto_manage flag to True or False. 
-    Also sets the noclook_last_seen flag to now.
-    '''
-    with db.transaction:
-        item['noclook_auto_manage'] = auto_manage
-        item['noclook_last_seen'] = datetime.datetime.now().isoformat()
-    return True
-    
-def update_noclook_auto_manage(db, item):
-    '''
-    Updates the noclook_auto_manage and noclook_last_seen properties. If 
-    noclook_auto_manage is not set, it is set to True.
-    '''
-    with db.transaction:
-        try:
-            item['noclook_auto_manage']
-        except KeyError:
-            item['noclook_auto_manage'] = True
-        item['noclook_last_seen'] = datetime.datetime.now().isoformat()
-    return True
-
 def get_node_type(type_name):
     '''
     Returns or creates and returns the NodeType object with the supplied
