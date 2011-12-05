@@ -83,7 +83,7 @@ def insert_services(service_dict, host_node):
                                                             node_type, 
                                                             meta_type)
                     service_node = node_handle.get_node()
-                    nt.update_noclook_auto_manage(nc.neo4jdb, service_node)
+                    nc.update_noclook_auto_manage(nc.neo4jdb, service_node)
                     service_nodes.append(service_node)
                     # Get existing relationships between the two nodes
                     rel_index = nc.get_relationship_index(nc.neo4jdb, 
@@ -95,7 +95,7 @@ def insert_services(service_dict, host_node):
                     for rel in service_rels:
                         if rel['protocol'] == protocol and rel['port'] == port:
                             create = False
-                            nt.update_noclook_auto_manage(nc.neo4jdb, rel)
+                            nc.update_noclook_auto_manage(nc.neo4jdb, rel)
                             break
                     if create:
                         # Create a relationship between the service and host
@@ -109,7 +109,7 @@ def insert_services(service_dict, host_node):
                             new_rel['port'] = port
                             for key, value in service.items():
                                 new_rel[key] = value
-                        nt.update_noclook_auto_manage(nc.neo4jdb, new_rel)
+                        nc.update_noclook_auto_manage(nc.neo4jdb, new_rel)
     return service_nodes
 
 def insert_nmap(json_list):
@@ -127,7 +127,7 @@ def insert_nmap(json_list):
                                                 meta_type)
         # Set Node attributes
         node = node_handle.get_node()
-        nt.update_noclook_auto_manage(nc.neo4jdb, node)
+        nc.update_noclook_auto_manage(nc.neo4jdb, node)
         nc.merge_properties(nc.neo4jdb, node, 'hostnames',
                             i['host']['hostnames'])
         nc.merge_properties(nc.neo4jdb, node, 'addresses', i['host']['addrs'])
