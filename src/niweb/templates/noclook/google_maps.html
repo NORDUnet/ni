@@ -41,14 +41,30 @@
 
             function addMarker(lat,lng,label){
                 var latlng = new google.maps.LatLng(lat,lng);
+
+                var infowindow = new google.maps.InfoWindow({
+                    content: "Optical Node:<br />" + label
+                });
+
                 var marker = new google.maps.Marker({
                     position: latlng,
-                    title: label,
                     map: map
+                });
+
+                google.maps.event.addListener(marker, 'mouseover', function() {
+                    infowindow.open(map, marker);
+                });
+
+                google.maps.event.addListener(marker, 'mouseout', function() {
+                    infowindow.close()
                 });
             };
 
             function addLine(start_lat, start_lng, end_lat, end_lng, label){
+                var infowindow = new google.maps.InfoWindow({
+                    content: "Cable:<br />" + label
+                });
+
                 var path = [
                     new google.maps.LatLng(start_lat, start_lng),
                     new google.maps.LatLng(end_lat, end_lng)
@@ -61,11 +77,16 @@
                     strokeOpacity: 0.5,
                     map: map
                 });
+
                 google.maps.event.addListener(line, 'mouseover', function(event) {
-                    console.log('mouseover', event.latLng)
+                    infowindow.open(map);
+                    infowindow.setPosition(event.latLng)
+                    line.setOptions({strokeWeight: 3, strokeOpacity: 0.8})
                 });
+
                 google.maps.event.addListener(line, 'mouseout', function() {
-                    console.log('mouse left')
+                    infowindow.close()
+                    line.setOptions({strokeWeight: 2, strokeOpacity: 0.5})
                 });
             };
         });
