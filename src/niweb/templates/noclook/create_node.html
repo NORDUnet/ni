@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-        {{ form.as_p }}
+        <form action="." method="post">{% csrf_token %}
+            <h2>Name of site</h2>
+            {{ form.name }}
+            <br><br>
+            <h2>Where is the site located?</h2>
+            {{ form.country_code }}
+            <input type="submit" value="Save" class="btn primary" />
+        </form>
+
 {% endblock %}
 
         
