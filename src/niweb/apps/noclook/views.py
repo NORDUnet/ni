@@ -442,15 +442,15 @@ def visualize_maximize(request, slug, handle_id):
 
 # Node manipulation views
 @login_required
-def new_node(request, node_type=None):
+def new_node(request, slug=None):
     if not request.user.is_staff:
         raise Http404
     forms = {'site': SiteForm}
     if request.POST:
-        form = forms[node_type](request.POST)
+        form = forms[slug](request.POST)
         if form.is_valid():
             node_name = form.cleaned_data['name']
-            node_type = get_object_or_404(NodeType, slug = node_type)
+            node_type = get_object_or_404(NodeType, slug=slug)
             node_meta_type = request.POST['meta_type']
             node_handle = NodeHandle(node_name=node_name,
                                 node_type=node_type,
@@ -460,26 +460,26 @@ def new_node(request, node_type=None):
             nc.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
                                        False)
             # Type specific finishing
-            type_func = {'site': new_site}
-            type_func['node_type'](request, node_handle, form)
-    if not node_type:
+            type_func = {'Site': new_site}
+            return type_func[str(node_type)](request, node_handle, form)
+    if not slug:
         node_types = get_list_or_404(NodeType)
         return render_to_response('noclook/new_node.html', 
                               {'node_types': node_types})
     else:
         return render_to_response('noclook/create_node.html', 
-                                  {'form': forms[node_type]},
+                                  {'form': forms[slug]},
                                 context_instance=RequestContext(request))
                                 
 @login_required
 def new_site(request, node_handle, form):
     node = node_handle.get_node()
-    keys = ['country_code']
-    for key in keys:
-        node['key'] = form.cleaned_date['key']    
-    return render_to_response('noclook/site/%d' % node_handle.id, 
-                              {'form': forms[node_type]},
-                            context_instance=RequestContext(request))
+    with nc.neo4jdb.transaction:
+        node['name'] = form.cleaned_data['name'].upper()
+        keys = ['country_code']
+        for key in keys:
+            node[key] = form.cleaned_data[key]    
+    return HttpResponseRedirect('/site/%d' % node_handle.handle_id)
 
 @login_required
 def save_node(request):
