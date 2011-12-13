@@ -451,7 +451,7 @@ def new_node(request, node_type=None):
         if form.is_valid():
             node_name = form.cleaned_data['name']
             node_type = get_object_or_404(NodeType, slug = node_type)
-            node_meta_type = form.cleaned_data['meta_type']
+            node_meta_type = request.POST['meta_type']
             node_handle = NodeHandle(node_name=node_name,
                                 node_type=node_type,
                                 node_meta_type=node_meta_type,
