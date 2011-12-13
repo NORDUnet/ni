@@ -6,6 +6,7 @@ from django.shortcuts import render_to_response, get_object_or_404, get_list_or_
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
+from niweb.apps.noclook.forms import *
 
 import norduni_client as nc
 import ipaddr
@@ -441,7 +442,30 @@ def visualize_maximize(request, slug, handle_id):
 
 # Node manipulation views
 @login_required
-def new_node(request):
+def new_node(request, node_type=None):
+    if not request.user.is_staff:
+        raise Http404
+    if not node_type:
+        node_types = get_list_or_404(NodeType)
+        return render_to_response('noclook/new_node.html', 
+                              {'node_types': node_types})
+    else:
+        
+        forms = {'site': SiteForm}
+        return render_to_response('noclook/create_node.html', 
+                                  {'form': forms[node_type]},
+                                context_instance=RequestContext(request))
+
+@login_required
+def save_node(request):
+    if not request.user.is_staff:
+        raise Http404 
+    if request.POST:
+        pass
+    
+
+@login_required
+def new_node_old(request):
     if not request.user.is_staff:
         raise Http404    
     if request.POST:
@@ -465,7 +489,7 @@ def new_node(request):
                             context_instance=RequestContext(request))
 
 @login_required
-def edit_node(request, slug, handle_id, node=None, message=None):
+def edit_node_old(request, slug, handle_id, node=None, message=None):
     '''
     View used to change and add properties to a node, also to delete
     a node relationships.
@@ -508,7 +532,7 @@ def edit_node(request, slug, handle_id, node=None, message=None):
                             context_instance=RequestContext(request))
 
 @login_required
-def save_node(request, slug, handle_id):
+def save_node_old(request, slug, handle_id):
     '''
     Updates the node and node_handle with new values.
     '''
@@ -545,7 +569,7 @@ def save_node(request, slug, handle_id):
     return edit_node(request, slug, handle_id, node=node)
     
 @login_required
-def delete_node(request, slug, handle_id):
+def delete_node_old(request, slug, handle_id):
     '''
     Deletes the NodeHandle from the SQL database and the node from the Neo4j
     database.
@@ -561,7 +585,7 @@ def delete_node(request, slug, handle_id):
     return edit_node(request, slug, handle_id)
 
 @login_required
-def new_relationship(request, slug, handle_id):
+def new_relationship_old(request, slug, handle_id):
     '''
     Create a new relationship between the node that was edited and another node.
     
@@ -611,7 +635,7 @@ def new_relationship(request, slug, handle_id):
                             context_instance=RequestContext(request))
 
 @login_required
-def edit_relationship(request, slug, handle_id, rel_id, rel=None, message=None):
+def edit_relationship_old(request, slug, handle_id, rel_id, rel=None, message=None):
     '''
     View to update, change or delete relationships properties.
     '''
@@ -630,7 +654,7 @@ def edit_relationship(request, slug, handle_id, rel_id, rel=None, message=None):
                             context_instance=RequestContext(request))
 
 @login_required
-def save_relationship(request, slug, handle_id, rel_id):
+def save_relationship_old(request, slug, handle_id, rel_id):
     if not request.user.is_staff:
         raise Http404
     rel = nc.get_relationship_by_id(nc.neo4jdb, rel_id)
@@ -659,7 +683,7 @@ def save_relationship(request, slug, handle_id, rel_id):
     return edit_relationship(request, slug, handle_id, rel_id, rel)
 
 @login_required
-def delete_relationship(request, slug, handle_id, rel_id):
+def delete_relationship_old(request, slug, handle_id, rel_id):
     '''
     Deletes the relationship if POST['confirmed']==True.
     '''
