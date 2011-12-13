@@ -441,7 +441,7 @@ def visualize_maximize(request, slug, handle_id):
 
 # Node manipulation views
 @login_required
-def new_node(request, slug):
+def new_node(request):
     if not request.user.is_staff:
         raise Http404    
     if request.POST:
@@ -460,7 +460,7 @@ def new_node(request, slug):
     else:
         node_types = get_list_or_404(NodeType)
 
-    return render_to_response('noclook/new_node.html',
+    return render_to_response('noclook/new_node2.html',
                             {'node_types': node_types},
                             context_instance=RequestContext(request))
 

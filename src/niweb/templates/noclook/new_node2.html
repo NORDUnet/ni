@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Create new node{% endblock %}
+
+{% block content %}
+    {% for item in node_types|dictsort:"type" %}
+        <a href="{{ item.slug }}">{{ item.type }}</a><br>
+    {% endfor %}
+
+
+{% endblock %}
