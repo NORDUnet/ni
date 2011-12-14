@@ -464,7 +464,7 @@ def new_node(request, slug=None):
             return type_func[str(node_type)](request, node_handle, form)
     if not slug:
         node_types = get_list_or_404(NodeType)
-        return render_to_response('noclook/new_node.html', 
+        return render_to_response('noclook/new_%s.html' % slug, 
                               {'node_types': node_types})
     else:
         return render_to_response('noclook/create_node.html', 
