@@ -64,16 +64,16 @@ def new_site(request, node_handle, form):
         node['country'] = COUNTRIES[node['country_code']]
     return HttpResponseRedirect('/site/%d' % node_handle.handle_id)
 
-#@login_required
-#def edit_node(request, slug):
-#    if not request.user.is_staff:
-#        raise Http404
-#    if request.POST:
-#        nh = get_object_or_404(NodeHandle, pk=handle_id)
-#    else:
-#        return render_to_response('noclook/edit_%s.html' % slug, 
-#                                  {'form': forms[slug]},
-#                                context_instance=RequestContext(request))
+@login_required
+def edit_node(request, slug):
+    if not request.user.is_staff:
+        raise Http404
+    if request.POST:
+        nh = get_object_or_404(NodeHandle, pk=handle_id)
+    else:
+        return render_to_response('noclook/edit_%s.html' % slug,
+                                  {'form': forms[slug]},
+                                context_instance=RequestContext(request))
 
 @login_required
 def save_node(request):
