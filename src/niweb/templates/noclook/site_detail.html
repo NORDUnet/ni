@@ -21,12 +21,28 @@ $(document).ready(
 
 {% block content %}
 {% load noclook_tags %}
-<div class="section">
-    <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.country_code }}-{{ node.name }}</h2>
-    <div class="info-container">
-        <div class="info">
-            <h4>Site information</h4>
-            <table class="info break-word">
+
+            <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.country_code }}-{{ node.name }}</h1>
+<br>
+{% load comments %}
+{% load markup %}
+{% get_comment_list for node_handle as comment_list %}
+{% if comment_list %}
+    {% for comment in comment_list|dictsortreversed:"submit_date" %}
+            <div class="alert-message block-message span13">
+            {{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}
+            <br>
+            {{ comment.comment|markdown:"safe" }}
+            </div>
+    {% endfor %}
+{% endif %}
+
+<br>
+
+            <div class="row">
+            <div class="span7">
+
+            <table>
                 {% if node.site_type %}
                     <tr>
                         <th>Type:</th><td>{{ node.site_type|capfirst }}</td>
@@ -63,10 +79,10 @@ $(document).ready(
                     </tr>
                 {% endif %}
             </table>
-        </div>
-        <div class="info">
-            <h4>Location information</h4>
-            <table class="info break-word">
+            </div>
+
+            <div class="span5 offset1">
+            <table>
                 {% if node.floor %}
                     <tr>
                         <th>Floor:</th><td>{{ node.floor }}</td>
@@ -91,11 +107,6 @@ $(document).ready(
                     <tr>
                         <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.country_code }}-{{ node.name }}" target="_blank">To Portal</td>
                     </tr>
-            </table>
-        </div>
-        <div class="info">
-            <h4>Meta information:</h4>
-            <table class="info break-word">
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
                 </tr>
@@ -105,29 +116,14 @@ $(document).ready(
                 <tr>
                     <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
                 </tr>
+
             </table>
-        </div>
-        <div class="info">
-            {% load comments %}
-            {% load markup %}
-            {% get_comment_list for node_handle as comment_list %}
-            {% if comment_list %}
-                <h4>User information:</h4>
-                <table class="info break-word">
-                {% for comment in comment_list|dictsortreversed:"submit_date" %}
-                    <tr>
-                        <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
-                    </tr>
-                    <tr>
-                        <td class="comment-cell">{{ comment.comment|markdown:"safe" }}</td>
-                    </tr>
-                {% endfor %}
-                </table>
-            {% endif %}
-        </div>
-    </div>
-</div>
-<div class="clear-float"></div>
+            </div>
+            </div>
+
+            <a href="edit" class="btn info">Edit</a>
+            <br><br><br>
+
 <div class="section">
     <h3>Equipment on site</h3>
     {% if equipment_relationships %}

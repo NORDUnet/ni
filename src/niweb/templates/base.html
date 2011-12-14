@@ -34,6 +34,10 @@
     <br>
     <div class="container-fluid">
         <div class="sidebar">
+            <!--
+            <img src="{% niweb_media_url %}/img/ndn-logo.jpg" width="220px">
+            <br><br>
+            -->
             <div class="well">
             {% block menu %}
             {% load noclook_tags %}
@@ -63,9 +67,11 @@
 
 
         <div class="content">
+            <!--
             <form action="/search/" method="post" class="search">{% csrf_token %}
                 <input type="search" id="autoc" name="query" /><button type="submit">Search</button>
             </form>
+            -->
 
             {% if node.noclook_auto_manage == "true" and expired %}
                 <div id="expired">Old data</div>

@@ -14,4 +14,7 @@ COUNTRIES = [
 
 class SiteForm(forms.Form):
     name = forms.CharField()
+    street = forms.CharField(required=False)
+    post_area = forms.CharField(required=False)
+    post_code = forms.CharField(required=False)
     country_code = forms.ChoiceField(choices=COUNTRIES, widget=forms.widgets.Select)
