@@ -1,17 +1,17 @@
 from django import forms
 
 COUNTRIES = [
-    ('SE', 'Sweden'),
-    ('DK', 'Denmark'),
-    ('FI', 'Finland'),
-    ('NO', 'Norway'),
-    ('DE', 'Germany'),
-    ('IS', 'Iceland'),
-    ('UK', 'Great Britain'),
-    ('US', 'United States'),
-    ('NL', 'Netherlands')
+    ('SE', 'SE'),
+    ('DK', 'DK'),
+    ('FI', 'FI'),
+    ('NO', 'NO'),
+    ('DE', 'DE'),
+    ('IS', 'IS'),
+    ('UK', 'UK'),
+    ('US', 'US'),
+    ('NL', 'NL')
 ]
 
 class SiteForm(forms.Form):
     name = forms.CharField()
-    country_code = forms.ChoiceField(choices=COUNTRIES, widget=forms.widgets.RadioSelect)
+    country_code = forms.ChoiceField(choices=COUNTRIES, widget=forms.widgets.Select)
