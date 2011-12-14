@@ -3,13 +3,10 @@
 {% block content %}
         <form action="." method="post">{% csrf_token %}
             <h2>Name of site</h2>
-            {{ form.name }}
+            {{ form.country_code }} - {{ form.name }}
             <br><br>
-            <h2>Where is the site located?</h2>
-            {{ form.country_code }}
-            <input type="hidden" name="meta_type" value="location">
+            <input type="hidden" name="meta_type" value="location" />
             <input type="submit" value="Save" class="btn primary" />
         </form>
-
 {% endblock %}
 
