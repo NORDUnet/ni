@@ -7,19 +7,19 @@
             <h3>Name</h3>
             {{ form.country_code }} - {{ form.name }}
             <br><br>
-            <h3>Address</h3>    
+            <h3>Address (optional)</h3>
 
             <table>
                 <td>
             <tr><label>Street</label></tr>
-            <tr>{{ form.street }}
+            <tr>{{ form.address }}
                     </tr></td>
             <br><br>
             <label>Postcode</label>
-            {{ form.street }}
+            {{ form.postcode }}
             <br><br>
             <label>Postarea</label>
-            {{ form.street }}
+            {{ form.postarea }}
             </table>
 
             <br><br>
