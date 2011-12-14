@@ -43,7 +43,7 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     #                                                     'delete_relationship'),
     (r'^new/$', 'new_node'),
     (r'^new/(?P<slug>[-\w]+)/$', 'new_node'),
-    #(r'^edit/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'edit_node'),
+    (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', 'edit_node'),
     #(r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
     #(r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
     # Get all
