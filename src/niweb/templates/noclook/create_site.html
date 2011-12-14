@@ -7,21 +7,22 @@
             <h3>Name</h3>
             {{ form.country_code }} - {{ form.name }}
             <br><br>
-            <h3>Address</h3>    
 
+            <h3>Address</h3>
             <table>
-                <td>
-            <tr><label>Street</label></tr>
-            <tr>{{ form.street }}
-                    </tr></td>
-            <br><br>
-            <label>Postcode</label>
-            {{ form.street }}
-            <br><br>
-            <label>Postarea</label>
-            {{ form.street }}
+                <tr>
+                    <td width="50px"><label>Street</label></td>
+                    <td>{{ form.address }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Postcode</label></td>
+                    <td>{{ form.postcode }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Postarea</label></td>
+                    <td>{{ form.postarea }}</td>
+                </tr>
             </table>
-
             <br><br>
             <input type="hidden" name="meta_type" value="location" />
             <input type="submit" value="Save" class="btn primary" />
