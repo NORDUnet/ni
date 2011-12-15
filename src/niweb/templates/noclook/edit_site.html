@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+        <form action="." method="post">{% csrf_token %}
+            <h1>Create new site</h1>
+
+            <h3>Name</h3>
+            {{ form.country_code }} - {{ form.name }}
+            <br><br>
+            <h3>Site Type</h3>
+            {{ form.site_type }}
+            <br><br>
+            <h3>Address</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Street</label></td>
+                    <td>{{ form.address }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Postcode</label></td>
+                    <td>{{ form.postcode }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Postarea</label></td>
+                    <td>{{ form.postarea }}</td>
+                </tr>
+            </table>
+            <br><br>
+            <h3>Location</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Country</label></td>
+                    <td>{{ form.country }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Area</label></td>
+                    <td>{{ form.area }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Longitude</label></td>
+                    <td>{{ form.longitude }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Latitude</label></td>
+                    <td>{{ form.latitude }}</td>
+                </tr>
+            </table>
+            <br><br>
+            <h3>Other IDs</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Owner Site ID</label></td>
+                    <td>{{ form.owner_id }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Telenor Subscription ID</label></td>
+                    <td>{{ form.telenor_subscription_id }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Longitude</label></td>
+                    <td>{{ form.longitude }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Latitude</label></td>
+                    <td>{{ form.latitude }}</td>
+                </tr>
+            </table>
+            <input type="submit" value="Save" class="btn primary" />
+        </form>
+{% endblock %}
+

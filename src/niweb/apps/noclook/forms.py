@@ -1,6 +1,6 @@
 from django import forms
 
-COUNTRIES = [
+COUNTRY_CODES = [
     ('SE', 'SE'),
     ('DK', 'DK'),
     ('FI', 'FI'),
@@ -30,6 +30,8 @@ class NewSiteForm(forms.Form):
     
 class EditSiteForm(forms.Form):
     name = forms.CharField()
+    country_code = forms.ChoiceField(choices=COUNTRY_CODES,
+                                     widget=forms.widgets.Select)
     country_code = forms.ChoiceField(choices=COUNTRIES,
                                      widget=forms.widgets.Select)
     site_type = forms.ChoiceField(choices=SITE_TYPES,
