@@ -12,7 +12,7 @@ from django.shortcuts import render_to_response, get_object_or_404, get_list_or_
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
-from niweb.apps.noclook.forms import NewSiteForm
+from niweb.apps.noclook.forms import NewSiteForm, EditSiteForm
 
 import norduni_client as nc
 import ipaddr
@@ -22,14 +22,16 @@ from lucenequerybuilder import Q
 COUNTRIES = {'DK': 'Denmark', 'FI': 'Finland', 'NL': 'Neatherlands',
              'NO': 'Norway', 'SE': 'Sweden', 'UK': 'United Kingdom', 
              'US': 'USA'}
+             
+NEW_FORMS =  {'site': NewSiteForm}
+EDIT_FORMS =  {'site': EditSiteForm}
 
 @login_required
 def new_node(request, slug=None):
     if not request.user.is_staff:
         raise Http404
-    forms = {'site': NewSiteForm}
     if request.POST:
-        form = forms[slug](request.POST)
+        form = NEW_FORMS[slug](request.POST)
         if form.is_valid():
             node_name = form.cleaned_data['name']
             node_type = get_object_or_404(NodeType, slug=slug)
@@ -41,16 +43,20 @@ def new_node(request, slug=None):
             node_handle.save()
             nc.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
                                        False)
-            # Type specific finishing
+            # Type sensitive finishing
             type_func = {'Site': new_site}
-            return type_func[str(node_type)](request, node_handle, form)
+            try:
+                func = type_func[str(node_type)]
+            except KeyError:
+                raise Http404
+            return func(request, node_handle, form)
     if not slug:
         node_types = get_list_or_404(NodeType)
         return render_to_response('noclook/new_node.html', 
                               {'node_types': node_types})
     else:
         return render_to_response('noclook/create_%s.html' % slug, 
-                                  {'form': forms[slug]},
+                                  {'form': NEW_FORMS[slug]},
                                 context_instance=RequestContext(request))
                                 
 @login_required
@@ -65,14 +71,44 @@ def new_site(request, node_handle, form):
     return HttpResponseRedirect('/site/%d' % node_handle.handle_id)
 
 @login_required
-def edit_node(request, slug):
+def edit_node(request, slug, handle_id):
     if not request.user.is_staff:
         raise Http404
+    # Send to type sensitive function
+    type_func = {'site': edit_site}
+    try:
+        func = type_func[slug]
+    except KeyError:
+        raise Http404
+    return func(request, handle_id)
+
+@login_required
+def edit_site(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    node = nh.get_node()
     if request.POST:
-        nh = get_object_or_404(NodeHandle, pk=handle_id)
+        form = form = EditSiteForm(request.POST)
+        if form.is_valid():
+            node_name = form.cleaned_data['name']
     else:
-        return render_to_response('noclook/edit_%s.html' % slug,
-                                  {'form': forms[slug]},
+        data = {'name': node.getProperty('name', None),
+                'country_code': node.getProperty('country_code', None),
+                'country': node.getProperty('country', None),
+                'site_type': node.getProperty('site_type', None),
+                'address': node.getProperty('address', None),
+                'postarea': node.getProperty('postarea', None),
+                'postcode': node.getProperty('postcode', None),
+                'area': node.getProperty('area', None),
+                'longitude': node.getProperty('longitude', None),
+                'latitude': node.getProperty('latitude', None),
+                'telenor_subscription_id': node.getProperty(
+                                            'telenor_subscription_id', None),
+                'owner_id': node.getProperty('owner_id', None)}
+        form = EditSiteForm(data)
+        return render_to_response('noclook/edit_site.html',
+                                  {'form': form},
                                 context_instance=RequestContext(request))
 
 @login_required

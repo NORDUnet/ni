@@ -7,6 +7,23 @@ urlpatterns = patterns('',
     #(r'^logout/$', 'niweb.apps.noclook.views.logout_page'),
 )
 
+urlpatterns += patterns('niweb.apps.noclook.edit_views',
+    # Manipulation views
+    #(r'^new/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/$',
+    #                                                     'new_relationship'),
+    #(r'^edit/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/$',
+    #                                                     'edit_relationship'),
+    #(r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/$',
+    #                                                     'save_relationship'),
+    #(r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/$',
+    #                                                     'delete_relationship'),
+    (r'^new/$', 'new_node'),
+    (r'^new/(?P<slug>[-\w]+)/$', 'new_node'),
+    (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', 'edit_node'),
+    #(r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
+    #(r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
+)
+
 urlpatterns += patterns('niweb.apps.noclook.views',
     # NOCLook views
     (r'^$', 'index'),
@@ -52,21 +69,4 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
     # Generic view
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
-)
-
-urlpatterns += patterns('niweb.apps.noclook.edit_views',
-    # Manipulation views
-    #(r'^new/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/$',
-    #                                                     'new_relationship'),
-    #(r'^edit/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/$',
-    #                                                     'edit_relationship'),
-    #(r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/$',
-    #                                                     'save_relationship'),
-    #(r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/$',
-    #                                                     'delete_relationship'),
-    (r'^new/$', 'new_node'),
-    (r'^new/(?P<slug>[-\w]+)/$', 'new_node'),
-    (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', 'edit_node'),
-    #(r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
-    #(r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
 )
