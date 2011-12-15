@@ -86,29 +86,40 @@ def edit_node(request, slug, handle_id):
 def edit_site(request, handle_id):
     if not request.user.is_staff:
         raise Http404
+    # Get needed data from node
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     node = nh.get_node()
+    site_owners = nc.iter2list(node.Responsible_for.incoming)
     if request.POST:
-        form = form = EditSiteForm(request.POST)
+        form = EditSiteForm(request.POST)
         if form.is_valid():
-            node_name = form.cleaned_data['name']
+            with nc.neo4jdb.transaction:
+                for field in form.base_fields:
+                    if field == 'relationship_site_owners' and form.cleaned_data[field]:
+                        owner_node = nc.get_node_by_id(nc.neo4jdb, 
+                                                       form.cleaned_data[field])
+                        rel_exist = nc.get_relationships(node, owner_node, 
+                                                         'Responsible_for')
+                        if not rel_exist:
+                            nc.iter2list(node.Responsible_for.incoming)[0].delete()
+                            nc.create_relationship(nc.neo4jdb, owner_node, node,
+                                                   'Responsible_for')
+                    else:
+                        try:
+                            node[field] = form.cleaned_data[field]
+                        except RuntimeError:
+                            # If type differs from what allowed in nodes 
+                            # properties.
+                            node[field] = unicode(form.cleaned_data[field])
+            return HttpResponseRedirect('/site/%d' % nh.handle_id)
+        else:
+            return render_to_response('noclook/edit_site.html',
+                                  {'form': form, 'site_owners': site_owners},
+                                context_instance=RequestContext(request))
     else:
-        data = {'name': node.getProperty('name', None),
-                'country_code': node.getProperty('country_code', None),
-                'country': node.getProperty('country', None),
-                'site_type': node.getProperty('site_type', None),
-                'address': node.getProperty('address', None),
-                'postarea': node.getProperty('postarea', None),
-                'postcode': node.getProperty('postcode', None),
-                'area': node.getProperty('area', None),
-                'longitude': node.getProperty('longitude', None),
-                'latitude': node.getProperty('latitude', None),
-                'telenor_subscription_id': node.getProperty(
-                                            'telenor_subscription_id', None),
-                'owner_id': node.getProperty('owner_id', None)}
-        form = EditSiteForm(data)
+        form = EditSiteForm(nc.node2dict(node))
         return render_to_response('noclook/edit_site.html',
-                                  {'form': form},
+                                  {'form': form, 'site_owners': site_owners},
                                 context_instance=RequestContext(request))
 
 @login_required

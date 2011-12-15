@@ -1,4 +1,5 @@
 from django import forms
+import norduni_client as nc
 
 COUNTRY_CODES = [
     ('SE', 'SE'),
@@ -25,7 +26,6 @@ COUNTRIES = [
 ]
 
 SITE_TYPES = [
-    ('Unknown', 'Unknown'),
     ('POP', 'POP'),
     ('Regenerator', 'Regenerator'),
     ('Optical Amplifier', 'Optical Amplifier')
@@ -56,5 +56,12 @@ class EditSiteForm(forms.Form):
     latitude = forms.DecimalField(required=False)
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
-    
+    # Get Site Owner nodes
+    index = nc.get_node_index(nc.neo4jdb, 'node_types')
+    site_owner_nodes = nc.iter2list(index['node_type']['Site Owner'])
+    site_owners = [('','')]
+    for owner_node in site_owner_nodes:
+        site_owners.append((owner_node.id, owner_node['name']))
+    relationship_site_owners = forms.ChoiceField(choices = site_owners,
+                                    widget=forms.widgets.Select, required=False)
     

@@ -1,14 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
-        <form action="." method="post">{% csrf_token %}
-            <h1>Create new site</h1>
-
+        <form action="" method="post">{% csrf_token %}
+            <h1>Edit site</h1>
+            {% if form.errors %}
+                <div class="alert-message error block-message span13">
+                    <p>The operation could not be performed because one or more error(s) occurred.<br>Please resubmit the form after making the following changes:</p>
+                    {{ form.errors }}
+                </div>
+            {% endif %}
             <h3>Name</h3>
             {{ form.country_code }} - {{ form.name }}
             <br><br>
             <h3>Site Type</h3>
             {{ form.site_type }}
+            <br><br>
+            <h3>Site Owner</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Current</label></td>
+                    <td>{% for item in site_owners %}
+                            {% if forloop.first %}
+                                {{item.start.name}}
+                            {% else %}
+                                , {{item.start.name}}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Change</label></td>
+                    <td>{{ form.relationship_site_owners }}</td>
+                </tr>
+            </table>
             <br><br>
             <h3>Address</h3>
             <table>

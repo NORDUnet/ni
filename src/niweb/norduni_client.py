@@ -534,7 +534,7 @@ def node2dict(node):
     '''
     Returns the nodes properties as a dictionary.
     '''
-    d = []
+    d = {}
     for key, value in node.items():
         d[key] = value
     return d
