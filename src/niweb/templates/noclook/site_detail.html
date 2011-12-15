@@ -120,8 +120,9 @@ $(document).ready(
             </table>
             </div>
             </div>
-
-            <a href="edit" class="btn info">Edit</a>
+            {% if user.is_staff %}
+                <a href="edit" class="btn info">Edit</a>
+            {% endif %}
             <br><br><br>
 
 <div class="section">
