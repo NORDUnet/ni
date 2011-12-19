@@ -2,30 +2,32 @@ from django import forms
 import norduni_client as nc
 
 COUNTRY_CODES = [
-    ('SE', 'SE'),
+    ('DE', 'DE'),    
     ('DK', 'DK'),
     ('FI', 'FI'),
-    ('NO', 'NO'),
-    ('DE', 'DE'),
     ('IS', 'IS'),
+    ('NL', 'NL'),
+    ('NO', 'NO'),
+    ('SE', 'SE'),    
     ('UK', 'UK'),
-    ('US', 'US'),
-    ('NL', 'NL')
+    ('US', 'US')
 ]
 
 COUNTRIES = [
-    ('Sweden', 'Sweden'),
+    ('',''),
     ('Denmark', 'Denmark'),
     ('Germany', 'Germany'),
     ('Finland', 'Finland'),
+    ('Iceland', 'Iceland'),
     ('Netherlands', 'Netherlands'),
     ('Norway', 'Norway'),
-    ('Island', 'Island'),
+    ('Sweden', 'Sweden'),
     ('United Kingdom', 'United Kingdom'),
     ('USA', 'USA'),
 ]
 
 SITE_TYPES = [
+    ('',''),
     ('POP', 'POP'),
     ('Regenerator', 'Regenerator'),
     ('Optical Amplifier', 'Optical Amplifier')
@@ -44,16 +46,17 @@ class EditSiteForm(forms.Form):
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES,
                                      widget=forms.widgets.Select)
-    country = forms.ChoiceField(choices=COUNTRIES,
-                                     widget=forms.widgets.Select)
+    country = forms.ChoiceField(choices=COUNTRIES, widget=forms.widgets.Select,
+                                required=False)
     site_type = forms.ChoiceField(choices=SITE_TYPES,
-                                  widget=forms.widgets.RadioSelect, required=False)
+                                  widget=forms.widgets.Select, required=False)
     address = forms.CharField(required=False)
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
-    area = forms.CharField(required=False)
-    longitude = forms.DecimalField(required=False)
-    latitude = forms.DecimalField(required=False)
+    area = forms.CharField(required=False,
+                           help_text='State, county or similar.')
+    longitude = forms.DecimalField(required=False, help_text='Decimal Degrees')
+    latitude = forms.DecimalField(required=False, help_text='Decimal Degrees')
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
     # Get Site Owner nodes
@@ -64,4 +67,11 @@ class EditSiteForm(forms.Form):
         site_owners.append((owner_node.id, owner_node['name']))
     relationship_site_owners = forms.ChoiceField(choices = site_owners,
                                     widget=forms.widgets.Select, required=False)
-    
+                                    
+class NewSiteOwnerForm(forms.Form):
+    name = forms.CharField()
+    url = forms.URLField(required=False, help_text='Link to more information.')
+
+class EditSiteOwnerForm(forms.Form):
+    name = forms.CharField()
+    url = forms.URLField(required=False, help_text='Link to more information.')

@@ -106,8 +106,7 @@ def isots_to_dt(item):
     does not exist we return datetime.datetime.min (0001-01-01 00:00:00).
     '''
     try:
-        ts = item['noclook_last_seen']
-        #2011-11-01T14:37:13.713434
+        ts = item['noclook_last_seen'] # ex. 2011-11-01T14:37:13.713434
         dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
     except KeyError:
         dt = datetime.min

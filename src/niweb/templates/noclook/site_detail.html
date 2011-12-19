@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_detail.html" %}
 
 {% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
 
@@ -20,111 +20,92 @@ $(document).ready(
 {% endblock %}
 
 {% block content %}
+{{ block.super }}
 {% load noclook_tags %}
-
-            <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.country_code }}-{{ node.name }}</h1>
-<br>
-{% load comments %}
-{% load markup %}
-{% get_comment_list for node_handle as comment_list %}
-{% if comment_list %}
-    {% for comment in comment_list|dictsortreversed:"submit_date" %}
-            <div class="alert-message block-message span13">
-            {{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}
-            <br>
-            {{ comment.comment|markdown:"safe" }}
-            </div>
-    {% endfor %}
-{% endif %}
-
-<br>
-
-            <div class="row">
-            <div class="span7">
-
-            <table>
-                {% if node.site_type %}
+<div class="row">
+    <div class="span7">
+        <table>
+            {% if node.site_type %}
+                <tr>
+                    <th>Type:</th><td>{{ node.site_type|capfirst }}</td>
+                </tr>
+            {% endif %}
+            {% if node.owner_id %}
+                <tr>
+                    <th>Owner Site ID:</th><td>{{ node.owner_id }}</td>
+                </tr>
+            {% endif %}
+            {% if node.telenor_subscription_id %}
+                <tr>
+                    <th>Telenor Subscription ID:</th><td>{{ node.telenor_subscription_id }}</td>
+                </tr>
+            {% endif %}
+            {% if node.address %}
+                <tr>
+                    <th>Address:</th><td>{{ node.address }}</td>
+                </tr>
+            {% endif %}
+            {% if node.postarea %}
+                <tr>
+                    <th></th><td>{{ node.postcode }} {{ node.postarea }}</td>
+                </tr>
+            {% endif %}
+            {% if node.area %}
+                <tr>
+                    <th>Area:</th><td>{{ node.area }}</td>
+                </tr>
+            {% endif %}
+            {% if node.country %}
+                <tr>
+                    <th>Country:</th><td>{{ node.country }}</td>
+                </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span5 offset1">
+        <table>
+            {% if node.floor %}
+                <tr>
+                    <th>Floor:</th><td>{{ node.floor }}</td>
+                </tr>
+            {% endif %}
+            {% if node.room %}
+                <tr>
+                    <th>Room:</th><td>{{ node.room }}</td>
+                </tr>
+            {% endif %}
+            {% for item in responsible_relationships %}
+                {% if forloop.first %}
                     <tr>
-                        <th>Type:</th><td>{{ node.site_type|capfirst }}</td>
+                        <th>Site contact:</td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td></td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
                     </tr>
                 {% endif %}
-                {% if node.owner_id %}
-                    <tr>
-                        <th>Owner Site ID:</th><td>{{ node.owner_id }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.telenor_subscription_id %}
-                    <tr>
-                        <th>Telenor Subscription ID:</th><td>{{ node.telenor_subscription_id }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.address %}
-                    <tr>
-                        <th>Address:</th><td>{{ node.address }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.postarea %}
-                    <tr>
-                        <th></th><td>{{ node.postcode }} {{ node.postarea }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.area %}
-                    <tr>
-                        <th>Area:</th><td>{{ node.area }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.country %}
-                    <tr>
-                        <th>Country:</th><td>{{ node.country }}</td>
-                    </tr>
-                {% endif %}
-            </table>
-            </div>
-
-            <div class="span5 offset1">
-            <table>
-                {% if node.floor %}
-                    <tr>
-                        <th>Floor:</th><td>{{ node.floor }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.room %}
-                    <tr>
-                        <th>Room:</th><td>{{ node.room }}</td>
-                    </tr>
-                {% endif %}
-                {% for item in responsible_relationships %}
-                    {% if forloop.first %}
-                        <tr>
-                            <th>Site contact:</td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td></td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
-                        </tr>
-                    {% endif %}
-                {% endfor %}
-                    <tr>
-                        <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.country_code }}-{{ node.name }}" target="_blank">To Portal</td>
-                    </tr>
+            {% endfor %}
+            <tr>
+                <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.country_code }}-{{ node.name }}" target="_blank">To Portal</td>
+            </tr>
+            {% if node.noclook_automanage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
                 </tr>
-                <tr>
-                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
-                </tr>
-                <tr>
-                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
-                </tr>
-
-            </table>
-            </div>
-            </div>
-            {% if user.is_staff %}
-                <a href="edit" class="btn info">Edit</a>
             {% endif %}
-            <br><br><br>
-
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn info">Edit</a>
+{% endif %}
+<br><br><br>
 <div class="section">
     <h3>Equipment on site</h3>
     {% if equipment_relationships %}

@@ -43,11 +43,11 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^site-owner/(?P<handle_id>\d+)/$', 'site_owner_detail'),
     # Visualize views
     (r'^visualize/(?P<node_id>\d+)\.json$', 'visualize_json'),
-    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', 
+    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$',
                                                          'visualize_maximize'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'visualize'),
     # Google maps views
-    (r'^gmaps/(?P<slug>[-\w]+).json$', 'gmaps_json'),
+    (r'^gmaps/(?P<slug>[-\w]+)\.json$', 'gmaps_json'),
     (r'^gmaps/(?P<slug>[-\w]+)/$', 'gmaps'),
     # Get all
     (r'^getall/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv)?)$', 'find_all'),
