@@ -12,22 +12,66 @@ from django.shortcuts import render_to_response, get_object_or_404, get_list_or_
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
-from niweb.apps.noclook.forms import NewSiteForm, EditSiteForm
+from niweb.apps.noclook.forms import *
 
 import norduni_client as nc
 import ipaddr
 import json
 from lucenequerybuilder import Q
-
-COUNTRIES = {'DK': 'Denmark', 'FI': 'Finland', 'NL': 'Neatherlands',
-             'NO': 'Norway', 'SE': 'Sweden', 'UK': 'United Kingdom', 
-             'US': 'USA'}
              
-NEW_FORMS =  {'site': NewSiteForm}
-EDIT_FORMS =  {'site': EditSiteForm}
+NEW_FORMS =  {'site': NewSiteForm, 'site-owner': NewSiteOwnerForm}
+EDIT_FORMS =  {'site': EditSiteForm, 'site-owner': EditSiteOwnerForm}
 
+COUNTRY_MAP = {
+    'DE': 'Germany',    
+    'DK': 'Denmark',
+    'FI': 'Finland',
+    'IS': 'Iceland',
+    'NL': 'Netherlands',
+    'NO': 'Norway',
+    'SE': 'Sweden',    
+    'UK': 'United Kingdom',
+    'US': 'USA'
+}
+
+# Helper functions
+def get_nh_node(node_handle_id):
+    '''
+    Takes a node handle id and returns the node handle and the node.
+    '''
+    nh = get_object_or_404(NodeHandle, pk=node_handle_id)
+    node = nh.get_node()
+    return nh, node
+
+def form_update_node(node, form, property_keys=None):
+    '''
+    Take a node, a form and the property keys that should be used to fill the
+    node if the property keys are omitted the form.base_fields will be used.
+    Returns True if all non-empty properties where added else False and 
+    rollbacks the node changes.
+    '''
+    if not property_keys:
+        property_keys = form.base_fields
+    with nc.neo4jdb.transaction:
+        for key in property_keys:
+            try:
+                if form.cleaned_data[key]:
+                    node[key] = form.cleaned_data[key]
+            except KeyError:
+                return False
+            except RuntimeError:
+                # If the property type differs from what is allowed in node 
+                # properties. Force string as last alternative.
+                node[key] = unicode(form.cleaned_data[key])
+    return True
+
+# Create functions
 @login_required
 def new_node(request, slug=None):
+    '''
+    Generic create function that creates a generic nide and redirects calls to 
+    node type sensitive create functions.
+    '''
     if not request.user.is_staff:
         raise Http404
     if request.POST:
@@ -44,12 +88,12 @@ def new_node(request, slug=None):
             nc.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
                                        False)
             # Type sensitive finishing
-            type_func = {'Site': new_site}
+            type_func = {'Site': new_site, 'Site Owner': new_site_owner}
             try:
                 func = type_func[str(node_type)]
             except KeyError:
                 raise Http404
-            return func(request, node_handle, form)
+            return func(request, node_handle.id, form)
     if not slug:
         node_types = get_list_or_404(NodeType)
         return render_to_response('noclook/new_node.html', 
@@ -60,22 +104,33 @@ def new_node(request, slug=None):
                                 context_instance=RequestContext(request))
                                 
 @login_required
-def new_site(request, node_handle, form):
-    node = node_handle.get_node()
+def new_site(request, handle_id, form):
+    nh, node = get_nh_node(handle_id)
+    keys = ['country_code', 'address', 'postarea', 'postcode']
+    form_update_node(node, form, keys)
     with nc.neo4jdb.transaction:
         node['name'] = form.cleaned_data['name'].upper()
-        keys = ['country_code', 'address', 'postarea', 'postcode']
-        for key in keys:
-            node[key] = form.cleaned_data[key]
-        node['country'] = COUNTRIES[node['country_code']]
-    return HttpResponseRedirect('/site/%d' % node_handle.handle_id)
+        node['country'] = COUNTRY_MAP[node['country_code']]
+    return HttpResponseRedirect('/site/%d' % nh.handle_id)
+    
+@login_required
+def new_site_owner(request, handle_id, form):
+    nh, node = get_nh_node(handle_id)
+    keys = ['url']
+    form_update_node(node, form, keys)
+    return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
 
+# Edit functions
 @login_required
 def edit_node(request, slug, handle_id):
+    '''
+    Generic edit function that redirects calls to node type sensitive edit 
+    functions.
+    '''
     if not request.user.is_staff:
         raise Http404
     # Send to type sensitive function
-    type_func = {'site': edit_site}
+    type_func = {'site': edit_site, 'site-owner': edit_site_owner}
     try:
         func = type_func[slug]
     except KeyError:
@@ -87,34 +142,37 @@ def edit_site(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    node = nh.get_node()
+    nh, node = get_nh_node(handle_id)
     site_owners = nc.iter2list(node.Responsible_for.incoming)
     if request.POST:
         form = EditSiteForm(request.POST)
         if form.is_valid():
+            # Generic node update
+            form_update_node(node, form)
+            # Site specific updates
             with nc.neo4jdb.transaction:
-                for field in form.base_fields:
-                    if field == 'relationship_site_owners' and form.cleaned_data[field]:
-                        owner_node = nc.get_node_by_id(nc.neo4jdb, 
-                                                       form.cleaned_data[field])
-                        rel_exist = nc.get_relationships(node, owner_node, 
-                                                         'Responsible_for')
-                        if not rel_exist:
-                            nc.iter2list(node.Responsible_for.incoming)[0].delete()
-                            nc.create_relationship(nc.neo4jdb, owner_node, node,
-                                                   'Responsible_for')
-                    else:
-                        try:
-                            node[field] = form.cleaned_data[field]
-                        except RuntimeError:
-                            # If type differs from what allowed in nodes 
-                            # properties.
-                            node[field] = unicode(form.cleaned_data[field])
+                node['name'] = form.cleaned_data['name'].upper()
+                node['country'] = COUNTRY_MAP[node['country_code']]
+            if form.cleaned_data['relationship_site_owners']:
+                owner_id = form.cleaned_data['relationship_site_owners']
+                owner_node = nc.get_node_by_id(nc.neo4jdb, owner_id)
+                rel_exist = nc.get_relationships(node, owner_node, 
+                                                     'Responsible_for')
+                if not rel_exist:
+                    try:
+                        owner_rel = nc.iter2list(node.Responsible_for.incoming)
+                        with nc.neo4jdb.transaction:
+                            owner_rel[0].delete()
+                    except IndexError:
+                        # No site owner set
+                        pass
+                    nc.create_relationship(nc.neo4jdb, owner_node, node,
+                                               'Responsible_for')
             return HttpResponseRedirect('/site/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit_site.html',
-                                  {'form': form, 'site_owners': site_owners},
+                                  {'node': node, 'form': form,
+                                   'site_owners': site_owners},
                                 context_instance=RequestContext(request))
     else:
         form = EditSiteForm(nc.node2dict(node))
@@ -123,12 +181,27 @@ def edit_site(request, handle_id):
                                 context_instance=RequestContext(request))
 
 @login_required
-def save_node(request):
+def edit_site_owner(request, handle_id):
     if not request.user.is_staff:
-        raise Http404 
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
     if request.POST:
-        pass
-
+        form = EditSiteOwnerForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(node, form)
+            return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
+        else:
+            return render_to_response('noclook/edit_site_owner.html',
+                                  {'node': node, 'form': form},
+                                context_instance=RequestContext(request))
+    else:
+        form = EditSiteOwnerForm(nc.node2dict(node))
+        return render_to_response('noclook/edit_site_owner.html',
+                                  {'form': form},
+                                context_instance=RequestContext(request))
+            
 #@login_required
 #def new_node_old(request):
 #    if not request.user.is_staff:

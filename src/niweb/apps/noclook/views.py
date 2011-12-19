@@ -43,7 +43,10 @@ def list_peering_partners(request):
     for node in hits:
         partner = {}
         partner['name'] = node['name']
-        partner['as_number'] = node['as_number']
+        try:
+            partner['as_number'] = node['as_number']
+        except KeyError:
+            partner['as_number'] = ''
         partner['peering_partner'] = node
         partner_list.append(partner)
     return render_to_response('noclook/list_peering_partners.html',
@@ -81,6 +84,7 @@ def list_sites(request):
         site['name'] = node['name']
         try:
             site['country_code'] = node['country_code']
+            site['country'] = node['country']
         except KeyError:
             site['country_code'] = ''
         site['site'] = node
@@ -537,15 +541,20 @@ def find_all(request, slug='', key='', value='', form=None):
                             context_instance=RequestContext(request))
 # Google maps views
 @login_required
+def gmaps(request, slug):
+    return render_to_response('noclook/google_maps.html', {'slug': slug},
+        context_instance=RequestContext(request))
+        
+@login_required
 def gmaps_json(request, slug):
     '''
     Directs gmap json requests to the right view.
     '''
     gmap_views = {'sites': gmaps_sites, 'optical-nodes': gmaps_optical_nodes}
-#    try:    
-    return gmap_views[slug](request)
-#    except KeyError:
-#        raise Http404
+    try:    
+        return gmap_views[slug](request)
+    except KeyError:
+        raise Http404
 
 @login_required
 def gmaps_sites(request):
@@ -570,7 +579,7 @@ def gmaps_sites(request):
             site['lng'] = node['longitude']
             site['lat'] = node['latitude']
         except KeyError:
-            break
+            pass
         if site:
             site_list.append(site)
     jsonstr = json.dumps(site_list)
@@ -625,8 +634,3 @@ RETURN distinct cable
             raise Exception('Fiber cable terminates in too many points.')
     jsonstr = json.dumps(optical_node_list)
     return HttpResponse(jsonstr, mimetype='application/json')
-            
-@login_required
-def gmaps(request, slug):
-    return render_to_response('noclook/google_maps.html', {'slug': slug},
-        context_instance=RequestContext(request))

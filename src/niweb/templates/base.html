@@ -42,13 +42,19 @@
             {% block menu %}
             {% load noclook_tags %}
             {% type_menu %}
+            <ul class="menu">
+                <li><a href="/gmaps/sites/">Site map</a></li>
+                <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
+            </ul>
 
             {% if node_handle %}
                 <ul class="menu">
                     <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
+                <!--
                 {% if user.is_staff %}
-                    <li><a href="/edit{{ node_handle.get_absolute_url }}">Edit</a></li>
+                    <li><a href="/edit{{ node_handle.get_absolute_url }}">Advanced Edit</a></li>
                 {% endif %}
+                -->
                 </ul>
             {% endif %}
             {% if user.is_staff %}

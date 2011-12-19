@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} {{ node.node_type }} Detail {% endblock %}
+
+{% block js %}
+{% endblock %}
+
+{% block content %}
+<h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {% if node.country_code %}{{ node.country_code }}-{% endif %}{{ node.name }}</h1>
+<br>
+{% load comments %}
+{% load markup %}
+{% get_comment_list for node_handle as comment_list %}
+{% if comment_list %}
+    {% for comment in comment_list|dictsortreversed:"submit_date" %}
+            <div class="alert-message block-message span13">
+            {{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}
+            <br>
+            {{ comment.comment|markdown:"safe" }}
+            </div>
+    {% endfor %}
+{% endif %}
+<br>
+{% endblock %}

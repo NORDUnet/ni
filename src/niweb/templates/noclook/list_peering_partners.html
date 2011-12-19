@@ -20,20 +20,20 @@ $(document).ready(
 {% endblock %}
 
 {% block content %}
-    <div class="content">
-            <h3>Peering Partners</h3>
-            <table id="peering_partners" class="tablesorter" cellspacing="1">
-                <thead>
-                    <th>Peering Partner</th><th>AS Number</th>
-                </thead>
-                <tbody>
-                    {% load noclook_tags %}
-                    {% for partner in partner_list %}
-                            <tr>
-                                <td><a class="handle" href="{% noclook_node_to_url partner.peering_partner %}">{{ partner.name }}</a></td><td>{{ partner.as_number }}</td>
-                            </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-     </div>
+    <h3>Peering Partners</h3>
+    <div class="span7">
+        <table id="peering_partners" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>Peering Partner</th><th>AS Number</th>
+            </thead>
+            <tbody>
+                {% load noclook_tags %}
+                {% for partner in partner_list %}
+                        <tr>
+                            <td><a class="handle" href="{% noclook_node_to_url partner.peering_partner %}">{{ partner.name }}</a></td><td>{{ partner.as_number }}</td>
+                        </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}
