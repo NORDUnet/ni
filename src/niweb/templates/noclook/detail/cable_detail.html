@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#connections").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+{% block content %}
+<div class="section">
+    <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
+    <div class="info-container">
+        <div class="info">
+            <h4>{{ node.node_type }} information</h4>
+            <table class="info break-word">
+                <tr>
+                    <th>Cable type:</th><td>{{ node.cable_type|capfirst }}</td>
+                </tr>
+                {% if node.trunk_id %}
+                <tr>
+                    <th>Trunk ID:</th><td>{{ node.trunk_id }}</td>
+                </tr>
+                {% endif %}
+                {% if node.tn1 %}
+                <tr>
+                    <th>TN1 number:</th><td>{{ node.tn1 }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+    <div class="info">
+        <h4>Meta information:</h4>
+        <table class="info break-word">
+            <tr>
+                <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+            </tr>
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="info">
+        {% load comments %}
+        {% load markup %}
+        {% get_comment_list for node_handle as comment_list %}
+        {% if comment_list %}
+            <h4>User information:</h4>
+            <table class="info break-word">
+                {% for comment in comment_list|dictsortreversed:"submit_date" %}
+                <tr>
+                    <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
+                </tr>
+                <tr>
+                    <td class="comment-cell">{{ comment.comment|markdown:"safe" }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
+    </div>
+</div>
+<div class="clear-float"></div>
+<div class="section">
+    <h3>Connections</h3>
+    {% if opt_info %}
+    <table id="connections" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Connected to node</th>
+        </thead>
+        <tbody>
+        {% for item in opt_info %}
+            <tr>
+                <td><a href="{{ item.node_url }}">{{ item.node_name }}</a></td>
+            </tr>
+         {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No connections found.
+    {% endif %}
+</div>
+{% endblock %}

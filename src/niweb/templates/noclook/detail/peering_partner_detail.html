@@ -1,0 +1,100 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} | Detail{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#services").tablesorter(
+        {
+            sortList: [[1,0]],
+            headers:
+            {
+                0 : { sorter: "ipAddress"  },
+                2 : { sorter: "ipAddress"  },
+            },
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="section">
+    <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
+    <div class="info-container">
+        <div class="info">
+            <h4>{{ node.node_type }} information</h4>
+            <table>
+                <tr>
+                    <th>Name:</th><td>{{ node.name }}</td>
+                </tr>
+                <tr>
+                    <th>AS Number:</th><td>{{ node.as_number }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="info">
+            <h4>Meta information:</h4>
+            <table class="info break-word">
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                </tr>
+                <tr>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                </tr>
+                <tr>
+                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="info">
+            {% load comments %}
+            {% load markup %}
+            {% get_comment_list for node_handle as comment_list %}
+            {% if comment_list %}
+                <h4>User information:</h4>
+                <table>
+                    {% for comment in comment_list %}
+                    <tr>
+                        <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
+                    </tr>
+                    <tr>
+                        <td class="comment-cell break-word">{{ comment.comment|markdown:"safe" }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="clear-float"></div>
+<div class="section">
+    <h3>Services used</h3>
+    {% if peering_points %}
+    <table id="services" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>{{ node.name }} IP Address</th><th>Service</th><th>Interface Network</th><th>Unit</th><th>PIC</th><th>Router</th>
+        </thead>
+        <tbody>
+            {% for item in peering_points %}
+            <tr>
+                <td>{{ item.pp_ip }}</td>
+                <td><a href="{{ item.service_url }}">{{ item.service }}</a></td>
+                <td>{{ item.if_address }}</td>
+                <td>{{ item.unit }}</td>
+                <td><a href="{{ item.pic_url }}">{{ item.pic }}</a></td>
+                <td><a href="{{ item.router_url }}">{{ item.router }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No services used.
+    {% endif %}
+</div>
+{% endblock %}

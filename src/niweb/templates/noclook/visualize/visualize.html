@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Visualize {{ node_handle }}{% endblock %}
+
+{% block js %}
+<!-- Arbor Library File -->
+{% load niweb_tags %}
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/arbor.js"></script>
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/graphics.js"></script>
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/renderer.js"></script>
+<!-- First initialize -->
+<script type="text/javascript">
+window.onload = function(){
+    var sys = arbor.ParticleSystem({repulsion:1000, stiffness:100, friction:0.5, gravity: true, dt:0.02});
+    sys.parameters({gravity:true});
+    sys.screenPadding(20, 100, 20, 100)
+    sys.renderer = Renderer("#viewport");
+    //sys.screenSize(800,800)
+    $.getJSON('/visualize/{{ node_handle.node_id }}.json', function(json) {
+        sys.graft(json);
+    });
+};
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> <a href="/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}">{{ node.name }}</a></h2>
+
+    <canvas id="viewport" width="1000" height="500"></canvas>
+    <p><a href="/visualize/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}/maximized/" target="_blank">Maximize</a></p>
+    <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
+    <div id="debug">
+        <h4>Log</h4>
+        <div class="section">
+            <div id="log"></div>
+        </div>
+        <h4>Debug</h4>
+        <div class="section">
+            <div id="id-list"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

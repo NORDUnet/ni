@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+        <form action="." method="post">{% csrf_token %}
+            <h1>Create new site owner</h1>
+
+            <h3>Name</h3>
+            {{ form.name }}
+            <br><br>
+            <h3>Information URL (optional)</h3>
+            {{ form.url }}
+            <br><br>
+            <input type="hidden" name="meta_type" value="relation" />
+            <input type="submit" value="Save" class="btn primary" />
+        </form>
+{% endblock %}
+

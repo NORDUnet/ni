@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} All nodes{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#peering_partners").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+    <h3>Peering Partners</h3>
+    <div class="span7">
+        <table id="peering_partners" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>Peering Partner</th><th>AS Number</th>
+            </thead>
+            <tbody>
+                {% load noclook_tags %}
+                {% for partner in partner_list %}
+                        <tr>
+                            <td><a class="handle" href="{% noclook_node_to_url partner.peering_partner %}">{{ partner.name }}</a></td><td>{{ partner.as_number }}</td>
+                        </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
