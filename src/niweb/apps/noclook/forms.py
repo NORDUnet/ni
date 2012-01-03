@@ -33,6 +33,12 @@ SITE_TYPES = [
     ('Optical Amplifier', 'Optical Amplifier')
 ]
 
+CABLE_TYPES = [
+    ('',''),
+    ('Fiber', 'Fiber'),
+    ('TP', 'TP')
+]
+
 class NewSiteForm(forms.Form):
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES,
@@ -67,11 +73,29 @@ class EditSiteForm(forms.Form):
         site_owners.append((owner_node.id, owner_node['name']))
     relationship_site_owners = forms.ChoiceField(choices = site_owners,
                                     widget=forms.widgets.Select, required=False)
-                                    
+                              
+                              
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
 
+
 class EditSiteOwnerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+
+
+class NewCableForm(forms.Form):
+    name = forms.CharField()
+    cable_type = forms.ChoiceField(choices=CABLE_TYPES,
+                                   widget=forms.widgets.Select)
+                                   
+                                       
+class EditCableForm(forms.Form):
+    name = forms.CharField()
+    cable_type = forms.ChoiceField(choices=CABLE_TYPES,
+                                   widget=forms.widgets.Select)
+    telenor_tn1_number = forms.CharField(required=False,
+                                  help_text='Telenor TN1 number, nnn-nnnn.')
+    telenor_trunk_id = forms.CharField(required=False, 
+                                       help_text='Telenor Trunk ID, nnnnn.')
