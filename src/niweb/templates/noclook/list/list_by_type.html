@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }}{{node_type}} list{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#nodes").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+    <h3>{{node_type}}s</h3>
+    <div class="span7">
+        <table id="nodes" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>Name</th>
+            </thead>
+            <tbody>
+                {% load noclook_tags %}
+                {% for nh in node_handle_list %}
+                        <tr>
+                            <td><a href="{{ nh.get_absolute_url }}">{{ nh.node_name }}</a></td>
+                        </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

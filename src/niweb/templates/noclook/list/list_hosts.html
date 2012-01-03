@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Hosts{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#hosts").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {
+                1 : { sorter: "ipAddress"  },
+            },
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+    <h3>Hosts</h3>
+    <div class="span7">
+        <table id="hosts" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>Host</th><th>Address</th>
+            </thead>
+            <tbody>
+                {% load noclook_tags %}
+                {% for host in host_list %}
+                        <tr>
+                            <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td><td>{{ host.address }}</td>
+                        </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

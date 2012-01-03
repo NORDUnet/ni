@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+        <form action="" method="post">{% csrf_token %}
+            <h1>Edit site {{ node.name }}</h1>
+            {% if form.errors %}
+                <div class="alert-message error block-message span13">
+                    <p>The operation could not be performed because one or more error(s) occurred.<br>Please resubmit the form after making the following changes:</p>
+                    {{ form.errors }}
+                </div>
+            {% endif %}
+            <h3>Name</h3>
+            {{ form.country_code }} - {{ form.name }}
+            <br><br>
+            <h3>Site Type (optional)</h3>
+            {{ form.site_type }}
+            <br><br>
+            <h3>Site Owner (optional)</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Current</label></td>
+                    <td>{% for item in site_owners %}
+                            {% if forloop.first %}
+                                {{item.start.name}}
+                            {% else %}
+                                , {{item.start.name}}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Change</label></td>
+                    <td>{{ form.relationship_site_owners }}</td>
+                </tr>
+            </table>
+            <br><br>
+            <h3>Address (optional)</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Street</label></td>
+                    <td>{{ form.address }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Postcode</label></td>
+                    <td>{{ form.postcode }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Postarea</label></td>
+                    <td>{{ form.postarea }}</td>
+                </tr>
+            </table>
+            <br><br>
+            <h3>Location (optional)</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Country</label></td>
+                    <td>{{ form.country }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Area</label></td>
+                    <td>
+                        {{ form.area }}
+                        <span class="help-block">{{ form.area.help_text }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Longitude</label></td>
+                    <td>
+                        {{ form.longitude }}
+                        <span class="help-block">{{ form.longitude.help_text }}</span></td>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Latitude</label></td>
+                    <td>
+                        {{ form.latitude }}
+                        <span class="help-block">{{ form.longitude.help_text }}</span></td>
+                    </td>
+                </tr>
+            </table>
+            <br><br>
+            <h3>Other IDs (optional)</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Owner Site ID</label></td>
+                    <td>{{ form.owner_id }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Telenor Subscription ID</label></td>
+                    <td>{{ form.telenor_subscription_id }}</td>
+                </tr>
+            </table>
+            <input type="submit" value="Save" class="btn primary" />
+        </form>
+{% endblock %}
+

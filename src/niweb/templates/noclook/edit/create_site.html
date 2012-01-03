@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+        <form action="." method="post">{% csrf_token %}
+            <h1>Create new site</h1>
+
+            <h3>Name</h3>
+            {{ form.country_code }} - {{ form.name }}
+            <br><br>
+            <h3>Address (optional)</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>Street</label></td>
+                    <td>{{ form.address }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Postcode</label></td>
+                    <td>{{ form.postcode }}</td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Postarea</label></td>
+                    <td>{{ form.postarea }}</td>
+                </tr>
+            </table>
+            <br><br>
+            <input type="hidden" name="meta_type" value="location" />
+            <input type="submit" value="Save" class="btn primary" />
+        </form>
+{% endblock %}
+
