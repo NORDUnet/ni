@@ -12,15 +12,20 @@ from django.shortcuts import render_to_response, get_object_or_404, get_list_or_
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
-from niweb.apps.noclook.forms import *
+from niweb.apps.noclook import forms
 
 import norduni_client as nc
 import ipaddr
 import json
 from lucenequerybuilder import Q
              
-NEW_FORMS =  {'site': NewSiteForm, 'site-owner': NewSiteOwnerForm}
-EDIT_FORMS =  {'site': EditSiteForm, 'site-owner': EditSiteOwnerForm}
+NEW_FORMS =  {'site': forms.NewSiteForm, 
+              'site-owner': forms.NewSiteOwnerForm,
+              'cable': forms.NewCableForm}
+              
+EDIT_FORMS =  {'site': forms.EditSiteForm,
+               'site-owner': forms.EditSiteOwnerForm,
+               'cable': forms.EditCableForm}
 
 COUNTRY_MAP = {
     'DE': 'Germany',    
@@ -88,19 +93,23 @@ def new_node(request, slug=None):
             nc.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
                                        False)
             # Type sensitive finishing
-            type_func = {'Site': new_site, 'Site Owner': new_site_owner}
+            type_func = {'Site': new_site,
+                         'Site Owner': new_site_owner,
+                         'Cable': new_cable}
             try:
                 func = type_func[str(node_type)]
             except KeyError:
                 raise Http404
-            return func(request, node_handle.id, form)
+            return func(request, node_handle.handle_id, form)
     if not slug:
         node_types = get_list_or_404(NodeType)
-        return render_to_response('noclook/new_node.html', 
+        return render_to_response('noclook/edit/new_node.html', 
                               {'node_types': node_types})
     else:
-        return render_to_response('noclook/create_%s.html' % slug, 
-                                  {'form': NEW_FORMS[slug]},
+        # Template name is create_type_slug.html.
+        template = 'noclook/edit/create_%s.html' % slug
+        template = template.replace('-', '_')
+        return render_to_response(template, {'form': NEW_FORMS[slug]},
                                 context_instance=RequestContext(request))
                                 
 @login_required
@@ -120,6 +129,13 @@ def new_site_owner(request, handle_id, form):
     form_update_node(node, form, keys)
     return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
 
+@login_required
+def new_cable(request, handle_id, form):
+    nh, node = get_nh_node(handle_id)
+    keys = ['cable_type']
+    form_update_node(node, form, keys)
+    return HttpResponseRedirect('/cable/%d' % nh.handle_id)
+
 # Edit functions
 @login_required
 def edit_node(request, slug, handle_id):
@@ -130,7 +146,9 @@ def edit_node(request, slug, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Send to type sensitive function
-    type_func = {'site': edit_site, 'site-owner': edit_site_owner}
+    type_func = {'site': edit_site, 
+                 'site-owner': edit_site_owner,
+                 'cable': edit_cable}
     try:
         func = type_func[slug]
     except KeyError:
@@ -145,7 +163,7 @@ def edit_site(request, handle_id):
     nh, node = get_nh_node(handle_id)
     site_owners = nc.iter2list(node.Responsible_for.incoming)
     if request.POST:
-        form = EditSiteForm(request.POST)
+        form = forms.EditSiteForm(request.POST)
         if form.is_valid():
             # Generic node update
             form_update_node(node, form)
@@ -170,13 +188,13 @@ def edit_site(request, handle_id):
                                                'Responsible_for')
             return HttpResponseRedirect('/site/%d' % nh.handle_id)
         else:
-            return render_to_response('noclook/edit_site.html',
+            return render_to_response('noclook/edit/edit_site.html',
                                   {'node': node, 'form': form,
                                    'site_owners': site_owners},
                                 context_instance=RequestContext(request))
     else:
-        form = EditSiteForm(nc.node2dict(node))
-        return render_to_response('noclook/edit_site.html',
+        form = forms.EditSiteForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_site.html',
                                   {'form': form, 'site_owners': site_owners},
                                 context_instance=RequestContext(request))
 
@@ -187,21 +205,47 @@ def edit_site_owner(request, handle_id):
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
     if request.POST:
-        form = EditSiteOwnerForm(request.POST)
+        form = forms.EditSiteOwnerForm(request.POST)
         if form.is_valid():
             # Generic node update
             form_update_node(node, form)
             return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
         else:
-            return render_to_response('noclook/edit_site_owner.html',
+            return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))
     else:
-        form = EditSiteOwnerForm(nc.node2dict(node))
-        return render_to_response('noclook/edit_site_owner.html',
+        form = forms.EditSiteOwnerForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'form': form},
                                 context_instance=RequestContext(request))
-            
+
+@login_required
+def edit_cable(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditCableForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(node, form)
+            # Cable specific update
+            if form.cleaned_data['telenor_trunk_id']:
+                with nc.neo4jdb.transaction:
+                    node['name'] = form.cleaned_data['telenor_trunk_id']
+            return HttpResponseRedirect('/cable/%d' % nh.handle_id)
+        else:
+            return render_to_response('noclook/edit/edit_cable.html',
+                                  {'node': node, 'form': form},
+                                context_instance=RequestContext(request))
+    else:
+        form = forms.EditCableForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_cable.html',
+                                  {'form': form},
+                                context_instance=RequestContext(request))
+                                
 #@login_required
 #def new_node_old(request):
 #    if not request.user.is_staff:

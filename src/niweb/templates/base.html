@@ -34,129 +34,103 @@
     <br>
     <div class="container-fluid">
         <div class="sidebar">
-            <!--
-            <img src="{% niweb_media_url %}/img/ndn-logo.jpg" width="220px">
-            <br><br>
-            -->
             <div class="well">
-            {% block menu %}
-            {% load noclook_tags %}
-            {% type_menu %}
-            <ul class="menu">
-                <li><a href="/gmaps/sites/">Site map</a></li>
-                <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
-            </ul>
+                <img src="{% niweb_media_url %}/img/noclook_logo.png" width="170px">
+                {% block menu %}
+                    {% load noclook_tags %}
+                    {% type_menu %}
+                    <ul class="menu">
+                        <li><a href="/gmaps/sites/">Site map</a></li>
+                        <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
+                    </ul>
 
-            {% if node_handle %}
-                <ul class="menu">
-                    <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
-                <!--
-                {% if user.is_staff %}
-                    <li><a href="/edit{{ node_handle.get_absolute_url }}">Advanced Edit</a></li>
-                {% endif %}
-                -->
-                </ul>
-            {% endif %}
-            {% if user.is_staff %}
-            <ul class="menu">
-                <li><a href="/new/">Create new node</a></li>
-            </ul>
-            {% endif %}
-            {% if user.is_authenticated %}
-            <ul class="menu">
-                <li><a href="/logout/">Log out</a></li>
-            </ul>
-            {% endif %}
-            {% endblock %}
+                    {% if node_handle %}
+                        <ul class="menu">
+                            <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
+                        <!--
+                        {% if user.is_staff %}
+                            <li><a href="/edit{{ node_handle.get_absolute_url }}">Advanced Edit</a></li>
+                        {% endif %}
+                        -->
+                        </ul>
+                    {% endif %}
+                    {% if user.is_staff %}
+                        <ul class="menu">
+                            <li><a href="/new/">Create new node</a></li>
+                        </ul>
+                    {% endif %}
+                    {% if user.is_authenticated %}
+                        <ul class="menu">
+                            <li><a href="/logout/">Log out</a></li>
+                        </ul>
+                    {% endif %}
+                {% endblock %}
+            </div>
         </div>
-        </div>
-
-
         <div class="content">
             <!--
             <form action="/search/" method="post" class="search">{% csrf_token %}
                 <input type="search" id="autoc" name="query" /><button type="submit">Search</button>
             </form>
             -->
-
             {% if node.noclook_auto_manage == "true" and expired %}
-                <div id="expired">Old data</div>
+                <span class="label important">Last seen {{ last_seen|timesince }} ago</span>
             {% endif %}
             {% block content %}{% endblock %}
-            <!-- Comments -->
-            {% if node_handle %}
-                <div class="section">
-                    {% load comments %}
-                    <h2>Add user information:</h2>
-                    {% get_comment_form for node_handle as form %}
-                    <form action="{% comment_form_target %}" method="POST">
-                        {% csrf_token %}
-                        {{ form.comment }}
-                        {{ form.honeypot }}
-                        {{ form.content_type }}
-                        {{ form.object_pk }}
-                        {{ form.timestamp }}
-                        {{ form.security_hash }}
-                        <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
-                        <br />
-                        <input type="submit" value="Submit" id="id_submit" />
-                    </form>
-                </div>
-            {% endif %}
-            <!-- End comments -->
+            {% block addcomment %}{% endblock %}
+
             <!-- DEBUG START -->
+            <br><br><br>
             {% if node %}
-                <div class="section">
-                    <p><a id="toggle_debug" href="javascript:toggle_debug()">Toggle debug information</a></p>
-                    <div id="debug">
-                        <h3>Debug</h3>
-                        <h4>Node properties</h4>
-                        <table>
-                        {% for key,value in node.items %}
-                            <tr>
-                                <td><b>{{key}}</b></td><td>{{value}}</td>
-                            </tr>
-                        {% endfor %}
-                        </table>
-                        <h4>Relationships</h4>
-                        <table>
-                        {% for rel in node.getRelationships %}
-                            <tr>
-                                <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
-                            </tr>
-                            <tr>
-                                <td></td><td>{{rel.properties}}</td><td></td>
-                            </tr>
-                        {% endfor %}
-                        </table>
-                        <h4>Meta information</h4>
-                        <table>
-                            <tr>
-                                <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
-                            </tr>
-                            <tr>
-                                <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
-                            </tr>
-                            <tr>
-                                <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
-                            </tr>
-                            <tr>
-                                <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
-                            </tr>
-                            <tr>
-                                <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
-                            </tr>
-                            <tr>
-                                <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
-                            </tr>
-                            <tr>
-                                <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
-                            </tr>
-                            <tr>
-                                <td><b>modified:</b> </td><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
-                            </tr>
-                        </table>
-                    </div>
+                <p><a href="javascript:toggle_debug()" class="btn">Toggle debug information</a></p>
+                <div id="debug" class="hidden">
+                    <h3>Debug</h3>
+                    <h4>Node properties</h4>
+                    <table>
+                    {% for key,value in node.items %}
+                        <tr>
+                            <td><b>{{key}}</b></td><td>{{value}}</td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                    <h4>Relationships</h4>
+                    <table>
+                    {% for rel in node.getRelationships %}
+                        <tr>
+                            <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                        </tr>
+                        <tr>
+                            <td></td><td>{{rel.properties}}</td><td></td>
+                        </tr>
+                    {% endfor %}
+                    </table>
+                    <h4>Meta information</h4>
+                    <table>
+                        <tr>
+                            <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
+                        </tr>
+                        <tr>
+                            <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
+                        </tr>
+                        <tr>
+                            <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
+                        </tr>
+                        <tr>
+                            <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
+                        </tr>
+                        <tr>
+                            <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
+                        </tr>
+                        <tr>
+                            <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
+                        </tr>
+                        <tr>
+                            <td><b>modified:</b> </td><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                        </tr>
+                    </table>
                 </div>
             {% endif %}
             <!-- DEBUG END -->

@@ -3,6 +3,13 @@
 {% block title %}{{ block.super }} {{ node.node_type }} Detail {% endblock %}
 
 {% block js %}
+<script type="text/javascript">
+    function toggle_comment() {
+        $('#add_comment').toggle('slow', function() {
+        });
+        $('#add_comment_btn').hide()
+    }
+</script>
 {% endblock %}
 
 {% block content %}
@@ -13,12 +20,40 @@
 {% get_comment_list for node_handle as comment_list %}
 {% if comment_list %}
     {% for comment in comment_list|dictsortreversed:"submit_date" %}
-            <div class="alert-message block-message span13">
-            {{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}
-            <br>
-            {{ comment.comment|markdown:"safe" }}
-            </div>
+        <div class="alert-message span13">
+            <a href="/comments/delete/{{ comment.id }}" class="close">×</a>
+            <p>
+                <strong>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</strong>
+                <br>
+                {{ comment.comment|markdown:"safe" }}
+            </p>
+        </div>
     {% endfor %}
 {% endif %}
 <br>
+{% endblock %}
+
+{% block addcomment %}
+{% if node_handle %}
+    <br>
+    <p><a href="javascript:toggle_comment()" id="add_comment_btn" class="btn info">Add a comment</a></p>
+    <div id="add_comment" class="hidden" >
+        <p>Add a comment</p>
+        {% get_comment_form for node_handle as form %}
+        <form action="{% comment_form_target %}" method="POST">
+            {% csrf_token %}
+            <!--{{ form.comment }}-->
+            <textarea class="xxlarge" id="id_comment" name="comment"></textarea>
+            {{ form.honeypot }}
+            {{ form.content_type }}
+            {{ form.object_pk }}
+            {{ form.timestamp }}
+            {{ form.security_hash }}
+            <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
+            <br><br>
+            <input class="btn small info" type="submit" value="Submit" id="comment_submit" />
+            <br>
+        </form>
+    </div>
+{% endif %}
 {% endblock %}

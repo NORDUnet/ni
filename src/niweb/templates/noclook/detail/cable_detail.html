@@ -1,52 +1,53 @@
-{% extends "base.html" %}
+{% extends "base_detail.html" %}
 
 {% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
 
 {% block js %}
+{{ block.super }}
 <script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#connections").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
+    $(document).ready(
+        function(){
+            $("#connections").tablesorter(
+            {
+                sortList: [[0,0]],
+                headers:
+                {},
+                widthFixed: true,
+                widgets: ['zebra']
+            });
+        }
+    );
 </script>
 {% endblock %}
+
 {% block content %}
-<div class="section">
-    <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
-    <div class="info-container">
-        <div class="info">
-            <h4>{{ node.node_type }} information</h4>
-            <table class="info break-word">
-                <tr>
-                    <th>Cable type:</th><td>{{ node.cable_type|capfirst }}</td>
-                </tr>
-                {% if node.trunk_id %}
-                <tr>
-                    <th>Trunk ID:</th><td>{{ node.trunk_id }}</td>
-                </tr>
-                {% endif %}
-                {% if node.tn1 %}
-                <tr>
-                    <th>TN1 number:</th><td>{{ node.tn1 }}</td>
-                </tr>
-                {% endif %}
-            </table>
-        </div>
-    </div>
-    <div class="info">
-        <h4>Meta information:</h4>
-        <table class="info break-word">
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span7">
+        <table>
             <tr>
-                <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                <th>Cable type:</th><td>{{ node.cable_type|capfirst }}</td>
             </tr>
+            {% if node.telenor_trunk_id %}
+            <tr>
+                <th>Trunk ID:</th><td>{{ node.telenor_trunk_id }}</td>
+            </tr>
+            {% endif %}
+            {% if node.telenor_tn1_number %}
+            <tr>
+                <th>TN1 number:</th><td>{{ node.telenor_tn1_number }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span5 offset1">
+        <table>
+            {% if node.noclook_automanage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                </tr>
+            {% endif %}
             <tr>
                 <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
             </tr>
@@ -55,26 +56,11 @@ $(document).ready(
             </tr>
         </table>
     </div>
-    <div class="info">
-        {% load comments %}
-        {% load markup %}
-        {% get_comment_list for node_handle as comment_list %}
-        {% if comment_list %}
-            <h4>User information:</h4>
-            <table class="info break-word">
-                {% for comment in comment_list|dictsortreversed:"submit_date" %}
-                <tr>
-                    <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
-                </tr>
-                <tr>
-                    <td class="comment-cell">{{ comment.comment|markdown:"safe" }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-        {% endif %}
-    </div>
 </div>
-<div class="clear-float"></div>
+{% if user.is_staff %}
+    <a href="edit" class="btn info">Edit</a>
+{% endif %}
+<br><br><br>
 <div class="section">
     <h3>Connections</h3>
     {% if opt_info %}
