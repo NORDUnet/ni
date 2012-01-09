@@ -1,7 +1,8 @@
-{% extends "base.html" %}
+{% extends "base_detail.html" %}
 
-{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+{% block title %}{{ block.super }}{% endblock %}
 {% block js %}
+{{ block.super }}
 <script type="text/javascript">
 $(document).ready(
     function(){
@@ -17,83 +18,53 @@ $(document).ready(
 );
 </script>
 {% endblock %}
+
 {% block content %}
-<div class="section">
-    <h3><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h3>
-    {% load noclook_tags %}
-    {% if location_relationships %}
-        <h5 class="site">Located in
-        {% for loc in location_relationships %}
-            <a href="{% noclook_node_to_url loc.end %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
-        {% endfor %}
-        </h5>
-    {% endif %}
-    <div class="info-container">
-        <div class="info">
-            <h4>{{ node.node_type }} information</h4>
-            <table class="info break-word">
-                <tr>
-                    <th>Name:</th><td>{{ node_handle.node_name }}</td>
-                </tr>
-                {% if node.type %}
-                <tr>
-                    <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.type }}/">{{ node.type }}</a></td>
-                </tr>
-                {% endif %}
-            </table>
-        </div>
-        {% if node.ots or node.link %}
-        <div class="info">
-            <h4>Network information</h4>
-            <table class="info break-word">
-                {% if node.ots %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span7">
+        <table>
+            <tr>
+                <th>Name:</th><td>{{ node_handle.node_name }}</td>
+            </tr>
+            {% if node.type %}
+            <tr>
+                <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.type }}/">{{ node.type }}</a></td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span5 offset1">
+        <table>
+            {% if node.ots %}
                 <tr>
                     <th>Optical Transport Section:</th><td><a href="/findin/optical-node/ots/{{ node.ots }}/">{{ node.ots }}</a></td>
                 </tr>
-                {% endif %}
-                {% if node.link %}
+            {% endif %}
+            {% if node.link %}
                 <tr>
                     <th>Link:</th><td><a href="/findin/optical-node/link/{{ node.link }}/">{{ node.link }}</a></td>
                 </tr>
-                {% endif %}
-            </table>
-        </div>
-        {% endif %}
-        <div class="info">
-            <h4>Meta information:</h4>
-            <table class="info break-word">
+            {% endif %}
+            {% ifequal node.noclook_auto_manage|stringformat:"s" 'true' %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
                 </tr>
-                <tr>
-                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
-                </tr>
-                <tr>
-                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
-                </tr>
-            </table>
-        </div>
-        <div class="info">
-            {% load comments %}
-            {% load markup %}
-            {% get_comment_list for node_handle as comment_list %}
-            {% if comment_list %}
-                <h4>User information:</h4>
-                <table class="info break-word">
-                {% for comment in comment_list|dictsortreversed:"submit_date" %}
-                    <tr>
-                        <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
-                    </tr>
-                    <tr>
-                        <td class="comment-cell break-word">{{ comment.comment|markdown:"safe" }}</td>
-                    </tr>
-                {% endfor %}
-                </table>
-            {% endif %}
-        </div>
+            {% endifequal %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+            </tr>
+        </table>
     </div>
 </div>
-<div class="clear-float"></div>
+{% if user.is_staff %}
+    <a href="edit" class="btn info">Edit</a>
+{% endif %}
+<br><br><br>
 <div class="section">
     <h3>Connections</h3>
     {% if opt_info %}

@@ -1,9 +1,9 @@
-{% extends "base.html" %}
+{% extends "base_detail.html" %}
 
-{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+{% block title %}{{ block.super }}{% endblock %}
 
 {% block content %}
-    <h2><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h2>
+    {{ block.super }}
     <h3>Debug</h3>
     {{ node.relationships }}
     <div class="section">

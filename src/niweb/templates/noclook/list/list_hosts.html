@@ -22,7 +22,8 @@ $(document).ready(
 {% endblock %}
 
 {% block content %}
-    <h3>Hosts</h3>
+{{ block.super }}
+    <h1>Hosts</h1>
     <div class="span7">
         <table id="hosts" class="tablesorter" cellspacing="1">
             <thead>

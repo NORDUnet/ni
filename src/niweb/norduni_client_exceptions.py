@@ -17,10 +17,10 @@ class NoRelationshipPossible(Exception):
         self.relationship_type = relationship_type
     
     def __str__(self):
-        node1_str = '%s node %s' % (nc.get_node_meta_type(self.node1), 
-                                    self.node1['name'])
-        node2_str = '%s node %s' % (nc.get_node_meta_type(self.node2), 
-                                    self.node2['name'])
+        node1_str = '%s node %s (%d)' % (nc.get_node_meta_type(self.node1), 
+                                    self.node1['name'], self.node1.id)
+        node2_str = '%s node %s (%d)' % (nc.get_node_meta_type(self.node2), 
+                                    self.node2['name'], self.node2.id)
         return '%s %s %s is not possible.' % (node1_str, self.relationship_type,
                                               node2_str)                       
 
@@ -29,9 +29,19 @@ class MetaNodeNamingError(Exception):
     Exception that explains that meta nodes must have special names defined
     in create_meta_node().
     '''
-    def __init__(self):
-        self.error = 'A meta node can not have that name.'
+    def __init__(self, names):
+        self.error = 'A meta node can not have that name. Accep'
         
     def __str__(self):
         return self.error
+
+class NoMetaNodeFound(Exception):
+    '''
+    All nodes need a meta type to function correctly in the NOCLook model. This
+    exception should be raised if the nodes meta node can't be found.
+    '''
+    def __init__(self, node):
+        self.node = node
         
+    def __str__(self):
+        return '%s %d' % (self.node['name'], self.node.id)
