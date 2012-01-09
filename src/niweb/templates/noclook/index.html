@@ -3,7 +3,29 @@
 {% block title %}{{ block.super }} | All nodes{% endblock %}
 
 {% block content %}
-    <div class="content">
-    <h2>Welcome to NOCLook</h2>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <div class="row">
+        <div class="span7 offset1">
+            <h1 class="text-centered">
+                Welcome to NOCLook<br />
+                <small>NORDUnet Network Inventory</small>
+            </h1>
+        </div>
+    </div>
+    <br />
+    <br />
+    <br />
+    <div class="row">
+        <div class="span7 offset1">
+            <form action="/search/" method="post" class="search text-centered">{% csrf_token %}
+                <input class="xlarge" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
+            </form>
+        </div>
     </div>
 {% endblock %}

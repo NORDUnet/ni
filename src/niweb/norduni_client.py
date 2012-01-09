@@ -273,13 +273,14 @@ def create_meta_node(db, meta_node_name):
     '''
     Creates a meta node and its' relationship to the root node.
     '''
-    if meta_node_name in ['physical', 'logical', 'relation', 'location']:
+    accepted_names = ['physical', 'logical', 'relation', 'location']
+    if meta_node_name in accepted_names:
         with db.transaction:
             meta_node = db.node(name=meta_node_name, node_type='meta')
             root = get_root_node(db)
             root.Consists_of(meta_node)
         return meta_node
-    raise MetaNodeNamingError()
+    raise MetaNodeNamingError(accepted_names)
     
 def get_meta_node(db, meta_node_name):
     '''
@@ -312,9 +313,11 @@ def get_node_meta_type(node):
     '''
     Returns the meta type of the supplied node as a string.
     '''
-    meta_type = None    
+    meta_type = None
     for rel in node.Contains.incoming:
         meta_type = rel.start['name']
+    if not meta_type:
+        raise NoMetaNodeFound()
     # I only want to do this line but it throws "ValueError: Too many items in 
     # the iterator" when using this function in a traverser.
     #return node.Contains.incoming.single.start['name']

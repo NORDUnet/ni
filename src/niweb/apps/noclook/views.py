@@ -451,9 +451,11 @@ def search(request, value='', form=None):
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/ or /slug/value/.
     '''
+    posted = False
     if request.POST:
         value = request.POST.get('query', '')
-    # See if value is from autocomplete
+        posted = True
+        # See if value is from autocomplete
     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     q = Q('all', '*%s*' % value, wildcard=True)
     nodes = nc.iter2list(index.query(str(q)))
@@ -468,7 +470,8 @@ def search(request, value='', form=None):
         item = {'node': node, 'nh': nh}
         result.append(item)
     return render_to_response('noclook/search_result.html',
-                            {'value': value, 'result': result},
+                            {'value': value, 'result': result,
+                             'posted': posted},
                             context_instance=RequestContext(request))    
 
                             

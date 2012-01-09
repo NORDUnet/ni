@@ -35,7 +35,7 @@
     <div class="container-fluid">
         <div class="sidebar">
             <div class="well">
-                <img src="{% niweb_media_url %}/img/noclook_logo.png" width="170px">
+                <a href="{% niweb_url %}"><img src="{% niweb_media_url %}/img/noclook_logo.png" width="170px"></a>
                 {% block menu %}
                     {% load noclook_tags %}
                     {% type_menu %}
@@ -68,15 +68,15 @@
             </div>
         </div>
         <div class="content">
-            <!--
-            <form action="/search/" method="post" class="search">{% csrf_token %}
-                <input type="search" id="autoc" name="query" /><button type="submit">Search</button>
-            </form>
-            -->
-            {% if node.noclook_auto_manage == "true" and expired %}
-                <span class="label important">Last seen {{ last_seen|timesince }} ago</span>
-            {% endif %}
-            {% block content %}{% endblock %}
+            {% block content %}
+            <div class="row">
+                <div class="span7">
+                    <form action="/search/" method="post" class="search">{% csrf_token %}
+                        <input class="xlarge" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
+                    </form>
+                </div>
+            </div>
+            {% endblock %}
             {% block addcomment %}{% endblock %}
 
             <!-- DEBUG START -->

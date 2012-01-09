@@ -5,6 +5,10 @@ ul.menu {
  margin-top: 20px;
 }
 
+.text-centered {
+ text-align: center;
+}
+
 .break-word {
   word-wrap: break-word;
 }

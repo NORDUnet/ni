@@ -20,7 +20,8 @@ $(document).ready(
 {% endblock %}
 
 {% block content %}
-    <h3>{{node_type}}s</h3>
+{{ block.super }}
+    <h1>{{node_type}}s</h1>
     <div class="span7">
         <table id="nodes" class="tablesorter" cellspacing="1">
             <thead>
