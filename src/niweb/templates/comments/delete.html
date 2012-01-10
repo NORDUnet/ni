@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Really remove this comment?</h1>
+    {% load markup %}
+    <div class="alert-message span13">
+    <strong>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</strong>
+    <br>
+    {{ comment.comment|markdown:"safe" }}
+    </div>
+  <form action="." method="post">{% csrf_token %}
+    <div><input type="hidden" name="next" value="{{ comment.get_absolute_url }}" id="next" /></div>
+    <p class="submit">
+    <input class="btn danger" type="submit" name="submit" value="Remove" /> or <a href="{{ comment.get_absolute_url }}" class="btn">Cancel</a>
+    </p>
+  </form>
+{% endblock %}

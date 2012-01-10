@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+        <form action="" method="post">{% csrf_token %}
+            <h1>Edit site owner {{ node.name }}</h1>
+            {% if form.errors %}
+                <div class="alert-message error block-message span13">
+                    <p>The operation could not be performed because one or more error(s) occurred.<br>Please resubmit the form after making the following changes:</p>
+                    {{ form.errors }}
+                </div>
+            {% endif %}
+            <h3>Name</h3>
+            {{ form.name }}
+            <br><br>
+            <h3>Type (optional)</h3>
+            {{ form.cable_type }}
+            <br><br>
+            <h3>Telenor Information (optional)</h3>
+            <table>
+                <tr>
+                    <td width="50px"><label>TN1 Number</label></td>
+                    <td>{{ form.telenor_tn1_number }}<span class="help-block">{{ form.telenor_tn1_number.help_text }}</span></td>
+                </tr>
+                <tr>
+                    <td width="50px"><label>Trunk ID</label></td>
+                    <td>{{ form.telenor_trunk_id }}<span class="help-block">{{ form.telenor_trunk_id.help_text }}</span></td>
+                </tr>
+            </table>
+            <br><br>
+            <input type="submit" value="Save" class="btn primary" />
+        </form>
+{% endblock %}
+
