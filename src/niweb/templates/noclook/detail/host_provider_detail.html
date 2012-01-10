@@ -35,11 +35,11 @@ $(document).ready(
     </div>
     <div class="span5 offset1">
         <table>
-            {% if noclook_boolean node.noclook_auto_manage %}
+            {% ifequal node.noclook_auto_manage|stringformat:"s" 'true' %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
                 </tr>
-            {% endif %}
+            {% endifequal %}
             <tr>
                 <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
             </tr>
@@ -49,10 +49,12 @@ $(document).ready(
         </table>
     </div>
 </div>
+<!--
 {% if user.is_staff %}
     <a href="edit" class="btn info">Edit</a>
 {% endif %}
 <br><br><br>
+-->
 <div class="section">
     {% if host_relationships %}
     <table id="hosts" class="tablesorter" cellspacing="1">
