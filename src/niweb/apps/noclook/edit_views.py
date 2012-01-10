@@ -109,7 +109,11 @@ def new_node(request, slug=None):
         # Template name is create_type_slug.html.
         template = 'noclook/edit/create_%s.html' % slug
         template = template.replace('-', '_')
-        return render_to_response(template, {'form': NEW_FORMS[slug]},
+        try:
+            form = NEW_FORMS[slug]
+        except KeyError:
+            raise Http404
+        return render_to_response(template, {'form': form},
                                 context_instance=RequestContext(request))
                                 
 @login_required
