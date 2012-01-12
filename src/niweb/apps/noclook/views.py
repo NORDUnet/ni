@@ -464,7 +464,10 @@ def search(request, value='', form=None):
     result = []
     if form == 'csv':
         csvfile = nc.nodes_to_csv(nodes)
-        return HttpResponse(csvfile, mimetype='application/text')
+        response = HttpResponse(csvfile, 
+                                mimetype='application/csv;charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename=result.csv'
+        return response
     for node in nodes:
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
         item = {'node': node, 'nh': nh}
@@ -528,7 +531,10 @@ def find_all(request, slug='', key='', value='', form=None):
         nodes = node_types_index['node_type'][str(node_type)]
     if form == 'csv':
         csvfile = nc.nodes_to_csv(nodes)
-        return HttpResponse(csvfile, mimetype='text/csv')
+        response = HttpResponse(csvfile, 
+                                mimetype='application/csv;charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename=result.csv'
+        return response
     result = []
     for node in nodes:
         # Check so that the node_types are equal. A problem with meta type.
