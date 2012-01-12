@@ -55,13 +55,19 @@ def form_update_node(node, form, property_keys=None):
     Returns True if all non-empty properties where added else False and 
     rollbacks the node changes.
     '''
+    nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         property_keys = form.base_fields
     with nc.neo4jdb.transaction:
         for key in property_keys:
             try:
                 if form.cleaned_data[key]:
-                    node[key] = form.cleaned_data[key]
+                    pre_value = node[key]
+                    if pre_value != form.cleaned_data[key]:
+                        node[key] = form.cleaned_data[key]
+                        if key == 'name':
+                            nh.node_name = form.cleaned_data[key]
+                        nh.save()
             except KeyError:
                 return False
             except RuntimeError:
@@ -199,7 +205,8 @@ def edit_site(request, handle_id):
     else:
         form = forms.EditSiteForm(nc.node2dict(node))
         return render_to_response('noclook/edit/edit_site.html',
-                                  {'form': form, 'site_owners': site_owners},
+                                  {'form': form, 'site_owners': site_owners,
+                                   'node': node},
                                 context_instance=RequestContext(request))
 
 @login_required
@@ -221,7 +228,7 @@ def edit_site_owner(request, handle_id):
     else:
         form = forms.EditSiteOwnerForm(nc.node2dict(node))
         return render_to_response('noclook/edit/edit_site_owner.html',
-                                  {'form': form},
+                                  {'form': form, 'node': node},
                                 context_instance=RequestContext(request))
 
 @login_required
@@ -247,7 +254,7 @@ def edit_cable(request, handle_id):
     else:
         form = forms.EditCableForm(nc.node2dict(node))
         return render_to_response('noclook/edit/edit_cable.html',
-                                  {'form': form},
+                                  {'form': form, 'node': node},
                                 context_instance=RequestContext(request))
                                 
 #@login_required

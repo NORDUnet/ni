@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Edit {{ node.node_type|lower }} {{ node.name }}  {% endblock %}
+
+{% block js %}{% endblock %}
+
+{% block content %}
+    <form action="" method="post">{% csrf_token %}
+        <h1>Edit {{ node.node_type|lower }} <a href=".">{{ node.name }}</a></h1>
+        {% if form.errors %}
+            <div class="alert-message error block-message span13">
+                <p>The operation could not be performed because one or more error(s) occurred.<br>Please resubmit the form after making the following changes:</p>
+                {{ form.errors }}
+            </div>
+        {% endif %}
+{% endblock %}
+
+{% block content_footer %}
+        <br><br>
+        <input type="submit" value="Save" class="btn primary" />
+        <a href="." class="btn">Cancel</a>
+    </form>
+{% endblock %}

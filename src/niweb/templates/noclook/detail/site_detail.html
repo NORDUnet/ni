@@ -1,8 +1,9 @@
-{% extends "base_detail.html" %}
+{% extends "noclook/detail/base_detail.html" %}
 
 {% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
 
 {% block js %}
+{{ block.super }}
 <script type="text/javascript">
 $(document).ready(
     function(){

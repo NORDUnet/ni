@@ -1,4 +1,4 @@
-{% extends "base_detail.html" %}
+{% extends "noclook/detail/base_detail.html" %}
 
 {% block title %}{{ block.super }}{% endblock %}
 {% block js %}
@@ -61,10 +61,12 @@ $(document).ready(
         </table>
     </div>
 </div>
+<!--
 {% if user.is_staff %}
     <a href="edit" class="btn info">Edit</a>
 {% endif %}
 <br><br><br>
+-->
 <div class="section">
     <h3>Connections</h3>
     {% if opt_info %}

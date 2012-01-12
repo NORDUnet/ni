@@ -9,7 +9,6 @@
     <br />
     <br />
     <br />
-    <br />
     <div class="row">
         <div class="span7 offset1">
             <h1 class="text-centered">
@@ -23,9 +22,11 @@
     <br />
     <div class="row">
         <div class="span7 offset1">
+        {% if user.is_authenticated %}
             <form action="/search/" method="post" class="search text-centered">{% csrf_token %}
                 <input class="xlarge" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
             </form>
+        {% endif %}
         </div>
     </div>
 {% endblock %}

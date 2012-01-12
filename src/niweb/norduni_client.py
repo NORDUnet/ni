@@ -150,7 +150,7 @@ def nodes_to_csv(node_list):
         line = []
         for key in key_set:
             try:
-                line.append(unicode(node[key]))
+                line.append('"%s"' % unicode(node[key]))
             except KeyError:
                 line.append('') # Node did not have that key, add a blank item.
         output.append(';'.join(line))
