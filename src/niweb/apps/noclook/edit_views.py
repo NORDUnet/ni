@@ -25,7 +25,8 @@ NEW_FORMS =  {'site': forms.NewSiteForm,
               
 EDIT_FORMS =  {'site': forms.EditSiteForm,
                'site-owner': forms.EditSiteOwnerForm,
-               'cable': forms.EditCableForm}
+               'cable': forms.EditCableForm,
+               'optical-node': forms.EditOpticalNodeForm}
 
 COUNTRY_MAP = {
     'DE': 'Germany',    
@@ -58,21 +59,24 @@ def form_update_node(node, form, property_keys=None):
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         property_keys = form.base_fields
-    with nc.neo4jdb.transaction:
-        for key in property_keys:
-            try:
-                if form.cleaned_data[key]:
-                    pre_value = node[key]
-                    if pre_value != form.cleaned_data[key]:
+    print property_keys
+    for key in property_keys:
+        try:
+            if form.cleaned_data[key]:
+                pre_value = node[key]
+                print key, pre_value, form.cleaned_data[key]
+                if pre_value != form.cleaned_data[key]:
+                    with nc.neo4jdb.transaction:
                         node[key] = form.cleaned_data[key]
-                        if key == 'name':
-                            nh.node_name = form.cleaned_data[key]
-                        nh.save()
-            except KeyError:
-                return False
-            except RuntimeError:
-                # If the property type differs from what is allowed in node 
-                # properties. Force string as last alternative.
+                    if key == 'name':
+                        nh.node_name = form.cleaned_data[key]
+                    nh.save()
+        except KeyError:
+            return False
+        except RuntimeError:
+            # If the property type differs from what is allowed in node 
+            # properties. Force string as last alternative.
+            with nc.neo4jdb.transaction:
                 node[key] = unicode(form.cleaned_data[key])
     return True
 
@@ -158,7 +162,8 @@ def edit_node(request, slug, handle_id):
     # Send to type sensitive function
     type_func = {'site': edit_site, 
                  'site-owner': edit_site_owner,
-                 'cable': edit_cable}
+                 'cable': edit_cable,
+                 'optical-node': edit_optical_node}
     try:
         func = type_func[slug]
     except KeyError:
@@ -257,6 +262,47 @@ def edit_cable(request, handle_id):
                                   {'form': form, 'node': node},
                                 context_instance=RequestContext(request))
                                 
+@login_required
+def edit_optical_node(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    locations = nc.iter2list(node.Located_in.outgoing)
+    if request.POST:
+        form = forms.EditOpticalNodeForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(node, form)
+            # Optical Node specific updates
+            if form.cleaned_data['relationship_location']:
+                location_id = form.cleaned_data['relationship_location']
+                location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
+                rel_exist = nc.get_relationships(node, location_node, 
+                                                     'Located_in')
+                if not rel_exist:
+                    try:
+                        location_rel = nc.iter2list(node.Located_in.outgoing)
+                        with nc.neo4jdb.transaction:
+                            location_rel[0].delete()
+                    except IndexError:
+                        # No site owner set
+                        pass
+                    nc.create_relationship(nc.neo4jdb, node, location_node,
+                                               'Located_in')
+            return HttpResponseRedirect('/optical-node/%d' % nh.handle_id)
+        else:
+            return render_to_response('noclook/edit/edit_optical_node.html',
+                                  {'node': node, 'form': form,
+                                   'locations': locations},
+                                context_instance=RequestContext(request))
+    else:
+        form = forms.EditOpticalNodeForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_optical_node.html',
+                                  {'form': form, 'locations': locations,
+                                   'node': node},
+                                context_instance=RequestContext(request))
+
 #@login_required
 #def new_node_old(request):
 #    if not request.user.is_staff:
