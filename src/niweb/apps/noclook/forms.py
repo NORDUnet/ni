@@ -41,14 +41,19 @@ CABLE_TYPES = [
 
 def get_node_type_tuples(node_type):
     '''
-    Returnes a list of tuples(.
+    Returns a list of tuples of node.id and node['name'] of the node_type.
     '''
     from operator import itemgetter
     index = nc.get_node_index(nc.neo4jdb, 'node_types')
     nodes = nc.iter2list(index['node_type'][node_type])
     node_list = [('','')]
     for node in nodes:
-        node_list.append((node.id, node['name']))
+        if node_type == 'Site':
+            site_name = '%s-%s' % (node.getProperty('country_code', ''), 
+                                   node['name'])
+            node_list.append((node.id, site_name))
+        else:
+            node_list.append((node.id, node['name']))
     node_list.sort(key=itemgetter(1))
     return node_list
 
