@@ -11,9 +11,9 @@
             <td width="50px"><label>Current</label></td>
             <td>{% for item in locations %}
                     {% if forloop.first %}
-                        {{item.end.name}}
+                        {{item.end.country_code}}-{{item.end.name}}
                     {% else %}
-                        , {{item.end.name}}
+                        , {{item.end.country_code}}-{{item.end.name}}
                     {% endif %}
                 {% endfor %}
             </td>
