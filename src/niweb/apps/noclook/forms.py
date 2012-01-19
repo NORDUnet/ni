@@ -39,6 +39,19 @@ CABLE_TYPES = [
     ('TP', 'TP')
 ]
 
+def get_node_type_tuples(node_type):
+    '''
+    Returnes a list of tuples(.
+    '''
+    from operator import itemgetter
+    index = nc.get_node_index(nc.neo4jdb, 'node_types')
+    nodes = nc.iter2list(index['node_type'][node_type])
+    node_list = [('','')]
+    for node in nodes:
+        node_list.append((node.id, node['name']))
+    node_list.sort(key=itemgetter(1))
+    return node_list
+
 class NewSiteForm(forms.Form):
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES,
@@ -65,12 +78,7 @@ class EditSiteForm(forms.Form):
     latitude = forms.DecimalField(required=False, help_text='Decimal Degrees')
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
-    # Get Site Owner nodes
-    index = nc.get_node_index(nc.neo4jdb, 'node_types')
-    site_owner_nodes = nc.iter2list(index['node_type']['Site Owner'])
-    site_owners = [('','')]
-    for owner_node in site_owner_nodes:
-        site_owners.append((owner_node.id, owner_node['name']))
+    site_owners = get_node_type_tuples('Site Owner')
     relationship_site_owners = forms.ChoiceField(choices = site_owners,
                                     widget=forms.widgets.Select, required=False)
                               
@@ -99,3 +107,12 @@ class EditCableForm(forms.Form):
                                   help_text='Telenor TN1 number, nnn-nnnn.')
     telenor_trunk_id = forms.CharField(required=False, 
                                        help_text='Telenor Trunk ID, nnnnn.')
+    global_crossing_circuit_id = forms.CharField(required=False,
+                                                 help_text='Global Crossing \
+                                                 circuit ID, nnnnnnnnnn')
+
+class EditOpticalNodeForm(forms.Form):
+    name = forms.CharField()
+    sites = get_node_type_tuples('Site')
+    relationship_location = forms.ChoiceField(required=False, choices=sites,
+                                              widget=forms.widgets.Select)
