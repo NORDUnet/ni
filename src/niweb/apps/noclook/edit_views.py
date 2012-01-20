@@ -63,7 +63,7 @@ def form_update_node(node, form, property_keys=None):
     for key in property_keys:
         try:
             if form.cleaned_data[key]:
-                pre_value = node[key]
+                pre_value = node.getProperty(key, '')
                 print key, pre_value, form.cleaned_data[key]
                 if pre_value != form.cleaned_data[key]:
                     with nc.neo4jdb.transaction:
