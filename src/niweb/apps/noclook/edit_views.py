@@ -59,12 +59,10 @@ def form_update_node(node, form, property_keys=None):
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         property_keys = form.base_fields
-    print property_keys
     for key in property_keys:
         try:
             if form.cleaned_data[key]:
                 pre_value = node.getProperty(key, '')
-                print key, pre_value, form.cleaned_data[key]
                 if pre_value != form.cleaned_data[key]:
                     with nc.neo4jdb.transaction:
                         node[key] = form.cleaned_data[key]
@@ -89,6 +87,9 @@ def new_node(request, slug=None):
     '''
     if not request.user.is_staff:
         raise Http404
+    # Template name is create_type_slug.html.
+    template = 'noclook/edit/create_%s.html' % slug
+    template = template.replace('-', '_')
     if request.POST:
         form = NEW_FORMS[slug](request.POST)
         if form.is_valid():
@@ -111,14 +112,14 @@ def new_node(request, slug=None):
             except KeyError:
                 raise Http404
             return func(request, node_handle.handle_id, form)
+        else:
+            return render_to_response(template, {'form': form},
+                                context_instance=RequestContext(request))
     if not slug:
         node_types = get_list_or_404(NodeType)
         return render_to_response('noclook/edit/new_node.html', 
                               {'node_types': node_types})
     else:
-        # Template name is create_type_slug.html.
-        template = 'noclook/edit/create_%s.html' % slug
-        template = template.replace('-', '_')
         try:
             form = NEW_FORMS[slug]
         except KeyError:
