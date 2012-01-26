@@ -3,13 +3,17 @@
 {% block content %}
         <form action="." method="post">{% csrf_token %}
             <h1>Create new cable</h1>
-
+            {% if form.errors %}
+                <div class="alert-message error block-message span13">
+                    <p>The operation could not be performed because one or more error(s) occurred.<br>Please resubmit the form after making the following changes:</p>
+                    {{ form.errors }}
+                </div>
+            {% endif %}
             <h3>Name</h3>
             {{ form.name }}
             <br><br>
-            <h3>Type (optional)</h3>
+            <h3>Cable Type</h3>
             {{ form.cable_type }}
-            <br><br>
             <input type="hidden" name="meta_type" value="physical" />
             <input type="submit" value="Save" class="btn primary" />
             <a href=".." class="btn">Cancel</a>
