@@ -556,6 +556,8 @@ def update_item_properties(db, item, new_properties):
                     item[fixed_key] = json.loads(value)
                 except ValueError:
                     item[fixed_key] = normalize_whitespace(value)
+                except TypeError:
+                    item[fixed_key] = value
             elif fixed_key in item.propertyKeys:
                 del item[fixed_key]
     return item
