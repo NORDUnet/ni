@@ -67,6 +67,11 @@ class NewSiteForm(forms.Form):
     
     
 class EditSiteForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(EditSiteForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_site_owners'].choices = get_node_type_tuples('Site Owner')
+    
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES,
                                      widget=forms.widgets.Select)
@@ -83,9 +88,8 @@ class EditSiteForm(forms.Form):
     latitude = forms.DecimalField(required=False, help_text='Decimal Degrees')
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
-    site_owners = get_node_type_tuples('Site Owner')
-    relationship_site_owners = forms.ChoiceField(choices = site_owners,
-                                    widget=forms.widgets.Select, required=False)
+    relationship_site_owners = forms.ChoiceField(widget=forms.widgets.Select,
+                                                 required=False)
                               
                               
 class NewSiteOwnerForm(forms.Form):
