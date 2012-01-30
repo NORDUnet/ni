@@ -65,17 +65,17 @@ class NodeHandle(models.Model):
             'slug': self.node_type.get_slug(),
             'handle_id': self.handle_id})
 
-    def save(self,):
+    def save(self, **kwargs):
         '''
         Create a new node and associate it to the handle.
         '''
         if self.node_id: # Not first save
-            super(NodeHandle, self).save()
+            super(NodeHandle, self).save(kwargs)
             return self
         node = nc.create_node(nc.neo4jdb, self.node_name, str(self.node_type))
         self.node_id = node.id
         try:
-            super(NodeHandle, self).save()
+            super(NodeHandle, self).save(kwargs)
         except utils.IntegrityError as e:
             print e
             print 'Node ID: %d' % node.id            

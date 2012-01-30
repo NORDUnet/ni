@@ -163,10 +163,11 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
         pass
-    node_handle = NodeHandle(node_name=node_name, node_type=node_type,
-                             node_meta_type=node_meta_type, creator=user,
-                             modifier=user)
-    node_handle.save()
+    node_handle = NodeHandle.objects.create(node_name=node_name,
+                                            node_type=node_type,
+                                            node_meta_type=node_meta_type,
+                                            creator=user,
+                                            modifier=user)
     return node_handle # No NodeHandle found return a new handle.
 
 def set_comment(node_handle, comment):
@@ -191,31 +192,39 @@ def consume_noclook(json_list):
             item = i['host']['noclook_producer']
             properties = item.get('properties')
             node_name = properties.get('name')
-            node_type = properties.get('type')
+            node_type = properties.get('node_type')
             meta_type = item.get('meta_type')
             # Get a node handle
-            nh = get_node_handle(node_name, node_type, meta_type) 
+            print node_name, node_type, meta_type # DEBUG
+            nh = get_node_handle(nc.neo4jdb, node_name, node_type, meta_type) 
             node = nh.get_node()
-            node['old_node_id'] = item.get('id')
+            with nc.neo4jdb.transaction:
+                node['old_node_id'] = item.get('id')
+                node['handle_id'] = int(nh.handle_id)
             # Add all properties except the old NodeHandle id
-            nc.update_node_properties(node.id, properties)
-            node['handle_id'] = int(nh.handle_id)
+            nc.update_item_properties(nc.neo4jdb, node, properties)
+            # Add the old node id to an index for fast relationship adding
+            index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
+            nc.add_index_item(nc.neo4jdb, index, node, 'old_node_id')
     # Loop through all files starting with relationship
     for i in json_list:
         if i['host']['name'].startswith('relationship'):
             item = i['host']['noclook_producer']
             properties = item.get('properties')
-            start_node = nc.get_node_by_value(node_value=item.get('start'),
-                                              node_property='old_node_id')
-            end_node = nc.get_node_by_value(node_value=item.get('end'),
-                                              node_property='old_node_id')
-            rel = start_node[0].relationships.create(item.get('type'), 
+            #start_node = nc.get_node_by_value(nc.neo4jdb, item.get('start'), 'old_node_id')
+            start_node = nc.iter2list(index['old_node_id'][item['start']])
+            end_node = nc.iter2list(index['old_node_id'][item['end']])
+            #end_node = nc.get_node_by_value(nc.neo4jdb, item.get('end'), 'old_node_id')
+            with nc.neo4jdb.transaction:
+                rel = start_node[0].relationships.create(item.get('type'), 
                                                                     end_node[0])
-            nc.update_relationship_properties(start_node.id, rel.id, properties)
+                print start_node[0]['name'], item.get('type'), end_node[0]['name']
+            nc.update_item_properties(nc.neo4jdb, rel, properties)
     # Remove the 'old_node_id' property from all nodes
-    for n in nc.get_all_nodes():
-        if 'old_node_id' in n:
-            del n['old_node_id']
+    for n in nc.get_all_nodes(nc.neo4jdb):
+        if n.getProperty('old_node_id', None):
+            with nc.neo4jdb.transaction:
+                del n['old_node_id']
 
 def run_consume(config_file):
     '''

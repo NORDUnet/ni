@@ -24,6 +24,7 @@ import sys
 import os
 import json
 import argparse
+import jpype
 ## Need to change this path depending on where the Django project is
 ## located.
 #path = '/var/norduni/src/niweb/'
@@ -38,6 +39,19 @@ import norduni_client as nc
 A NERDS producer for the NOCLook application. It should be used to take
 backups of the data inserted manually in to the databases.
 '''
+
+def convert_property_type(value):
+    '''
+    For neo4j-embedded < 1.6.b3.
+    Checks is the property is of the jpype.java.lang.Boolean or 
+    jpype._jarray._JavaArrayClass.
+    '''
+    if isinstance(value, jpype.java.lang.Boolean):
+        return bool(value)
+    elif isinstance(value, jpype._jarray._JavaArrayClass):
+        return list(value)
+    else:
+        return value
 
 def main():
     # User friendly usage output
@@ -58,32 +72,31 @@ def main():
     out = []
     for node in nodes:
         # Disregard node 0 and the meta nodes
-        if node.id:
-            if node['node_type'] != 'meta':
-                meta_type = nc.get_node_meta_type(node)
-                # Put the nodes json into the nerds format
-                properties = {}
-                for key in node.getPropertyKeys():
-                    properties[key] = node[key]
-                out.append({'host':
-                            {'name': 'node_%d' % node.id,
-                            'version': 1,
-                            'noclook_producer': {'id': node.id,
-                                                 'meta_type': meta_type,
-                                                 'properties': properties}
-                            }})
+        if node.id and node['node_type'] != 'meta':
+            meta_type = nc.get_node_meta_type(node)
+            # Put the nodes json into the nerds format
+            properties = {}
+            for key in node.getPropertyKeys():
+                properties[key] = convert_property_type(node[key])
+            out.append({'host':
+                        {'name': 'node_%d' % node.id,
+                        'version': 1,
+                        'noclook_producer': {'id': node.id,
+                                             'meta_type': meta_type,
+                                             'properties': properties}
+                        }})
                     
     for rel in rels:
         # Disregard the relationships connecting to node 0 or the meta nodes
         if rel.start.id and rel.start['node_type'] != 'meta':
             properties = {}
             for key in rel.getPropertyKeys():
-                properties[key] = rel[key]
+                properties[key] = convert_property_type(rel[key])
             out.append({'host':
                         {'name': 'relationship_%d' % rel.id,
                         'version': 1,
                         'noclook_producer': {'id': rel.id,
-                                             'type': rel.type,
+                                             'type': str(rel.type),
                                              'start': rel.start.id,
                                              'end': rel.end.id,
                                              'properties': properties}
