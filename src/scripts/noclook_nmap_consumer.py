@@ -90,13 +90,15 @@ def insert_services(service_dict, host_node):
                                                          nc.search_index_name())
                     q = Q('ip_address', '%s' % address)
                     service_rels = rel_index.query(str(q))
-                    service_rels = list(service_rels)
-                    create = True
+                    create = True                    
                     for rel in service_rels:
-                        if rel['protocol'] == protocol and rel['port'] == port:
-                            create = False
-                            nc.update_noclook_auto_manage(nc.neo4jdb, rel)
-                            break
+                        try:
+                            if rel['protocol'] == protocol and rel['port'] == port:
+                                create = False
+                                nc.update_noclook_auto_manage(nc.neo4jdb, rel)
+                                break
+                        except KeyError:
+                            continue
                     if create:
                         # Create a relationship between the service and host
                         new_rel = nc.create_suitable_relationship(nc.neo4jdb,
@@ -109,6 +111,8 @@ def insert_services(service_dict, host_node):
                             new_rel['port'] = port
                             for key, value in service.items():
                                 new_rel[key] = value
+                        nc.add_index_item(nc.neo4jdb, rel_index, new_rel,
+                                          'ip_address')
                         nc.update_noclook_auto_manage(nc.neo4jdb, new_rel)
     return service_nodes
 
@@ -137,7 +141,7 @@ def insert_nmap(json_list):
         nc.add_index_item(nc.neo4jdb, index, node, 'ip_addresses')
         try:
             insert_services(i['host']['services'], node)
-        except KeyError:
+        except KeyError as e:
             pass
 
 def main():
