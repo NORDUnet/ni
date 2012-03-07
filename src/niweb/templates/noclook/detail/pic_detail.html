@@ -1,8 +1,9 @@
 {% extends "noclook/detail/base_detail.html" %}
 
-{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+{% block title %}{{ block.super }}{% endblock %}
 
 {% block js %}
+{{ block.super }}
 <script type="text/javascript">
 $(document).ready(
     function(){
@@ -33,55 +34,35 @@ $(document).ready(
 {% endblock %}
 
 {% block content %}
-<div class="section">
-    <h2><a href="/{{ router.node_type|slugify }}/{{ router.handle_id }}/">{{ router.name }}</a> {{ node.name }}</h2>
-    <div class="info-container">
-        <div class="info">
-            <h4>{{ node.node_type }} information</h4>
-            <table class="info break-word">
-                <tr>
-                    <th>Name:</th><td>{{ node.name }}</td>
-                </tr>
-                <tr>
-                    <th>Description:</th><td>{{ node.description }}</td>
-                </tr>
-            </table>
-        </div>
-        <div class="info">
-            <h4>Meta information:</h4>
-            <table class="info break-word">
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span7">
+        <table>
+            <tr>
+                <th>Name:</th><td>{{ node.name }}</td>
+            </tr>
+            <tr>
+                <th>Description:</th><td>{{ node.description }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="span5 offset1">
+        <table>
+            {% ifequal node.noclook_auto_manage|stringformat:"s" 'true' %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
                 </tr>
-                <tr>
-                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
-                </tr>
-                <tr>
-                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
-                </tr>
-            </table>
-        </div>
-        <div class="info">
-            {% load comments %}
-            {% load markup %}
-            {% get_comment_list for node_handle as comment_list %}
-            {% if comment_list %}
-                <h4>User information:</h4>
-                <table class="info break-word">
-                    {% for comment in comment_list|dictsortreversed:"submit_date" %}
-                    <tr>
-                        <th>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</th>
-                    </tr>
-                    <tr>
-                        <td class="comment-cell">{{ comment.comment|markdown:"safe" }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            {% endif %}
-        </div>
+            {% endifequal %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+            </tr>
+        </table>
     </div>
 </div>
-<div class="clear-float"></div>
 <div class="section">
     <h3>Units</h3>
     {% if units %}
@@ -106,6 +87,12 @@ $(document).ready(
         No units found.
     {% endif %}
 </div>
+<!--
+{% if user.is_staff %}
+    <a href="edit" class="btn info">Edit</a>
+{% endif %}
+<br><br><br>
+-->
 <div class="section">
     {% load noclook_tags %}
     <h3>Depends on this PIC</h3>
