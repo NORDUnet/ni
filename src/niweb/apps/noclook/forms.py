@@ -57,6 +57,7 @@ def get_node_type_tuples(node_type):
     node_list.sort(key=itemgetter(1))
     return node_list
 
+
 class NewSiteForm(forms.Form):
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES,
@@ -120,8 +121,14 @@ class EditCableForm(forms.Form):
                                                  help_text='Global Crossing \
                                                  circuit ID, nnnnnnnnnn')
 
+
 class EditOpticalNodeForm(forms.Form):
     name = forms.CharField()
     sites = get_node_type_tuples('Site')
     relationship_location = forms.ChoiceField(required=False, choices=sites,
                                               widget=forms.widgets.Select)
+                                              
+
+class EditPeeringPartnerForm(forms.Form):
+    name = forms.CharField()
+    
