@@ -14,7 +14,7 @@
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
-{% if node.noclook_auto_manage|stringformat:"s" == 'true' and expired %}
+{% if node.noclook_auto_manage and expired %}
     <span class="label important">Last seen {{ last_seen|timesince }} ago</span>
 {% endif %}
 <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {% if node.country_code %}{{ node.country_code }}-{% endif %}{{ node.name }}</h1>
