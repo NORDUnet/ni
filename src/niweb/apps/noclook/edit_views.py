@@ -82,7 +82,7 @@ def form_update_node(node, form, property_keys=None):
 @login_required
 def new_node(request, slug=None):
     '''
-    Generic create function that creates a generic nide and redirects calls to 
+    Generic create function that creates a generic node and redirects calls to 
     node type sensitive create functions.
     '''
     if not request.user.is_staff:
@@ -164,7 +164,8 @@ def edit_node(request, slug, handle_id):
     type_func = {'site': edit_site, 
                  'site-owner': edit_site_owner,
                  'cable': edit_cable,
-                 'optical-node': edit_optical_node}
+                 'optical-node': edit_optical_node,
+                 'peering-partner': edit_peering_partner}
     try:
         func = type_func[slug]
     except KeyError:
@@ -303,7 +304,28 @@ def edit_optical_node(request, handle_id):
                                   {'form': form, 'locations': locations,
                                    'node': node},
                                 context_instance=RequestContext(request))
-
+@login_required        
+def edit_peering_partner(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditPeeringPartnerForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(node, form)
+            return HttpResponseRedirect('/peering-partner/%d' % nh.handle_id)
+        else:
+            return render_to_response('noclook/edit/edit_peering_partner.html',
+                                  {'node': node, 'form': form},
+                                context_instance=RequestContext(request))
+    else:
+        form = forms.EditPeeringPartnerForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_peering_partner.html',
+                                  {'node': node, 'form': form},
+                                context_instance=RequestContext(request))            
+            
 #@login_required
 #def new_node_old(request):
 #    if not request.user.is_staff:
