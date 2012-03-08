@@ -34,11 +34,11 @@ $(document).ready(
     </div>
     <div class="span5 offset1">
         <table>
-            {% ifequal node.noclook_auto_manage|stringformat:"s" 'true' %}
+            {% if node.noclook_auto_manage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
                 </tr>
-            {% endifequal %}
+            {% endif %}
             <tr>
                 <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
             </tr>
