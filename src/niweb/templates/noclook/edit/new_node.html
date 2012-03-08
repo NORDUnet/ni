@@ -5,7 +5,7 @@
 {% block content %}
     <h1>Create new</h1>
     <p>Choose type to create:</p>
-    {% for item in node_types|dictsort:"type" %}
-        <a href="{{ item.slug }}">{{ item.type }}</a><br>
-    {% endfor %}
+    <a href="cable">Cable</a><br />
+    <a href="site">Site</a><br />
+    <a href="site-owner">Site Owner</a><br />
 {% endblock %}
