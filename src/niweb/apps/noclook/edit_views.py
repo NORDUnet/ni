@@ -49,7 +49,7 @@ def get_nh_node(node_handle_id):
     node = nh.get_node()
     return nh, node
 
-def form_update_node(node, form, property_keys=None):
+def form_update_node(user, node, form, property_keys=None):
     '''
     Take a node, a form and the property keys that should be used to fill the
     node if the property keys are omitted the form.base_fields will be used.
@@ -68,6 +68,7 @@ def form_update_node(node, form, property_keys=None):
                         node[key] = form.cleaned_data[key]
                     if key == 'name':
                         nh.node_name = form.cleaned_data[key]
+                    nh.modifier = user
                     nh.save()
         except KeyError:
             return False
@@ -131,7 +132,7 @@ def new_node(request, slug=None):
 def new_site(request, handle_id, form):
     nh, node = get_nh_node(handle_id)
     keys = ['country_code', 'address', 'postarea', 'postcode']
-    form_update_node(node, form, keys)
+    form_update_node(request.user, node, form, keys)
     with nc.neo4jdb.transaction:
         node['name'] = form.cleaned_data['name'].upper()
         node['country'] = COUNTRY_MAP[node['country_code']]
@@ -141,14 +142,14 @@ def new_site(request, handle_id, form):
 def new_site_owner(request, handle_id, form):
     nh, node = get_nh_node(handle_id)
     keys = ['url']
-    form_update_node(node, form, keys)
+    form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
 
 @login_required
 def new_cable(request, handle_id, form):
     nh, node = get_nh_node(handle_id)
     keys = ['cable_type']
-    form_update_node(node, form, keys)
+    form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect('/cable/%d' % nh.handle_id)
 
 # Edit functions
@@ -183,7 +184,7 @@ def edit_site(request, handle_id):
         form = forms.EditSiteForm(request.POST)
         if form.is_valid():
             # Generic node update
-            form_update_node(node, form)
+            form_update_node(request.user, node, form)
             # Site specific updates
             with nc.neo4jdb.transaction:
                 node['name'] = form.cleaned_data['name'].upper()
@@ -226,7 +227,7 @@ def edit_site_owner(request, handle_id):
         form = forms.EditSiteOwnerForm(request.POST)
         if form.is_valid():
             # Generic node update
-            form_update_node(node, form)
+            form_update_node(request.user, node, form)
             return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_site_owner.html',
@@ -248,7 +249,7 @@ def edit_cable(request, handle_id):
         form = forms.EditCableForm(request.POST)
         if form.is_valid():
             # Generic node update
-            form_update_node(node, form)
+            form_update_node(request.user, node, form)
             # Cable specific update
             if form.cleaned_data['telenor_trunk_id']:
                 with nc.neo4jdb.transaction:
@@ -275,7 +276,7 @@ def edit_optical_node(request, handle_id):
         form = forms.EditOpticalNodeForm(request.POST)
         if form.is_valid():
             # Generic node update
-            form_update_node(node, form)
+            form_update_node(request.user, node, form)
             # Optical Node specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
@@ -314,7 +315,7 @@ def edit_peering_partner(request, handle_id):
         form = forms.EditPeeringPartnerForm(request.POST)
         if form.is_valid():
             # Generic node update
-            form_update_node(node, form)
+            form_update_node(request.user, node, form)
             return HttpResponseRedirect('/peering-partner/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_peering_partner.html',
