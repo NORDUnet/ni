@@ -34,6 +34,20 @@
             <td>{{ form.address }}</td>
         </tr>
         <tr>
+            <td width="50px"><label>Floor</label></td>
+            <td>
+                {{ form.floor }}
+                <span class="help-block">{{ form.floor.help_text }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td width="50px"><label>Room</label></td>
+            <td>
+                {{ form.room }}
+                <span class="help-block">{{ form.room.help_text }}</span>
+            </td>
+        </tr>
+        <tr>
             <td width="50px"><label>Postcode</label></td>
             <td>{{ form.postcode }}</td>
         </tr>

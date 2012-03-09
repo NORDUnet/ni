@@ -30,7 +30,8 @@ SITE_TYPES = [
     ('',''),
     ('POP', 'POP'),
     ('Regenerator', 'Regenerator'),
-    ('Optical Amplifier', 'Optical Amplifier')
+    ('Optical Amplifier', 'Optical Amplifier'),
+    ('Passive ODF', 'Passive ODF')
 ]
 
 CABLE_TYPES = [
@@ -81,12 +82,16 @@ class EditSiteForm(forms.Form):
     site_type = forms.ChoiceField(choices=SITE_TYPES,
                                   widget=forms.widgets.Select, required=False)
     address = forms.CharField(required=False)
+    floor = forms.CharField(required=False,
+                            help_text='Floor of building if applicable.')
+    room = forms.CharField(required=False,
+                         help_text='Room identifier in building if applicable.')
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
     area = forms.CharField(required=False,
                            help_text='State, county or similar.')
-    longitude = forms.DecimalField(required=False, help_text='Decimal Degrees')
-    latitude = forms.DecimalField(required=False, help_text='Decimal Degrees')
+    longitude = forms.FloatField(required=False, help_text='Decimal Degrees')
+    latitude = forms.FloatField(required=False, help_text='Decimal Degrees')
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
     relationship_site_owners = forms.ChoiceField(widget=forms.widgets.Select,
