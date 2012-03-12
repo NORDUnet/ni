@@ -192,7 +192,7 @@ def upgrade_db(uri=NEO4J_URI):
         db.shutdown()
         print 'Database upgraded!'
     else:
-        print 'You did not provide an URI or forgot to close the running db.'
+        print 'You did not provide an URI to the database location.'
 
 def create_node(db, n='', t=''):
     '''
@@ -262,8 +262,17 @@ def delete_node(db, node):
     '''
     if node:
         with db.transaction:
+            # Delete the nodes all relationships
             for rel in node.relationships:
+                # Delete the relationship from all indexes
+                for index in get_relationship_indexes(db):
+                    del_index_item(db, rel, index)
+                # Delete relationship
                 rel.delete()
+            # Delete the node from all indexes
+            for index in get_node_indexes(db):
+                del_index_item(db, node, index)
+            # Delete the node
             node.delete()
             return True
     return False
@@ -606,6 +615,19 @@ def merge_properties_list(prop_name, new_prop_list, existing_prop_list):
     return existing_prop_list
 
 # Indexes
+def get_node_indexes(db):
+    '''
+    Returns a list of all node indexes in the database.
+    '''
+    return [get_node_index(db, name) for name in db.index().nodeIndexNames()]
+
+def get_relationship_indexes(db):
+    '''
+    Returns a list of all relationship indexes in the database.
+    '''
+    return [get_relationship_index(db, name) 
+            for name in db.index().relationshipIndexNames()]
+
 def search_index_name():
     '''
     Set the name of the index that is used for autocomplete and search in the
@@ -652,15 +674,15 @@ def add_index_item(db, index, item, key):
         return True
     return False
 
-def del_index_item(db, index, item, key=None):
+def del_index_item(db, item, index, key=None):
     '''
-    Removes the node from the index. If key is not None, only the indexed
-    node[key] will be removed.
+    Removes the node from the index[key]. If key is None all occurences of the
+    node in the index will be removed.
     '''
     with db.transaction:
-        if key:
+        if index and key:
             del index[key][item]
-        else:
+        elif key:
             del index[item]
     return True
 
