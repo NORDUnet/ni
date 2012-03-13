@@ -31,7 +31,7 @@ class NodeType(models.Model):
 class NodeHandle(models.Model):
     # Handle <-> Node data
     handle_id = models.AutoField(primary_key=True)
-    node_id = models.BigIntegerField(blank=True, unique=True,
+    node_id = models.BigIntegerField(null=True, blank=True, unique=True,
         editable=False)
     # Data shared with the node
     node_name = models.CharField(max_length=200)
