@@ -170,6 +170,26 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
                                             modifier=user)
     return node_handle # No NodeHandle found return a new handle.
 
+def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
+    '''
+    Tries to get a existing node handle from the SQL database before creating
+    a new handle with an old handle id.
+    '''
+    user = get_user()
+    node_type = get_node_type(node_type_name)
+    try:
+        node_handle = NodeHandle.objects.get(handle_id=handle_id)
+        node_handle.save()
+    except ObjectDoesNotExist:
+        # A NodeHandle was not found, create one
+        node_handle = NodeHandle.objects.create(handle_id=handle_id, 
+                                                node_name=node_name,
+                                                node_type=node_type,
+                                                node_meta_type=node_meta_type,
+                                                creator=user,
+                                                modifier=user)
+    return node_handle
+
 def set_comment(node_handle, comment):
     '''
     Sets the comment string as a comment for the provided node_handle.
@@ -186,17 +206,23 @@ def consume_noclook(json_list):
     '''
     Inserts the backup made with NOCLook producer.
     '''
+    # Remove all old node ids.
+    for handle in NodeHandle.objects.all():
+        handle.node_id = ''
+        handle.save()
     # Loop through all files starting with node
     for i in json_list:
         if i['host']['name'].startswith('node'):
             item = i['host']['noclook_producer']
             properties = item.get('properties')
             node_name = properties.get('name')
+            handle_id = properties.get('handle_id')
             node_type = properties.get('node_type')
             meta_type = item.get('meta_type')
             # Get a node handle
             print node_name, node_type, meta_type # DEBUG
-            nh = get_node_handle(nc.neo4jdb, node_name, node_type, meta_type) 
+            nh = restore_node(nc.neo4jdb, handle_id, node_name, node_type, 
+                                 meta_type) 
             node = nh.get_node()
             with nc.neo4jdb.transaction:
                 node['old_node_id'] = item.get('id')

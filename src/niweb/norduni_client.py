@@ -644,8 +644,7 @@ def get_node_index(db, index_name):
         index = db.nodes.indexes.get(index_name)
     except ValueError:
         with db.transaction:
-            index = db.nodes.indexes.create(index_name, type="fulltext", 
-                                            provider="lucene")
+            index = db.nodes.indexes.create(index_name, type="fulltext")
     return index
     
 def get_relationship_index(db, index_name):
@@ -657,8 +656,7 @@ def get_relationship_index(db, index_name):
         index = db.relationships.indexes.get(index_name)
     except ValueError:
         with db.transaction:
-            index = db.relationships.indexes.create(index_name, type="fulltext", 
-                                            provider="lucene")
+            index = db.relationships.indexes.create(index_name, type="fulltext")
     return index
 
 def add_index_item(db, index, item, key):
