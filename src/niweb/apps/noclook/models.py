@@ -60,7 +60,7 @@ class NodeHandle(models.Model):
         generated in the save call.
         '''
         self.node_id = None
-        self.save(create_node=create_node)
+        self.save(create_node=create_node, force_update=True)
         return self
 
     @models.permalink
@@ -75,17 +75,17 @@ class NodeHandle(models.Model):
             'slug': self.node_type.get_slug(),
             'handle_id': self.handle_id})
 
-    def save(self, **kwargs):
+    def save(self, create_node=True, *args, **kwargs):
         '''
         Create a new node and associate it to the handle.
         '''
-        if self.node_id or not kwargs['create_node']: # Don't create a node
-            super(NodeHandle, self).save(kwargs)
+        if self.node_id or not create_node: # Don't create a node
+            super(NodeHandle, self).save(*args, **kwargs)
             return self
         node = nc.create_node(nc.neo4jdb, self.node_name, str(self.node_type))
         self.node_id = node.id
         try:
-            super(NodeHandle, self).save(kwargs)
+            super(NodeHandle, self).save(*args, **kwargs)
         except utils.IntegrityError as e:
             print e
             print 'Node ID: %d' % node.id            
