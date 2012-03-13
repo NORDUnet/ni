@@ -52,6 +52,16 @@ class NodeHandle(models.Model):
         Returns the NodeHandles node.
         '''
         return nc.get_node_by_id(nc.neo4jdb, self.node_id)
+    
+    def delete_node_id(self, create_node=True):
+        '''
+        Sets the node_id property to None to be able to create a new node for 
+        the NodeHandle in a later stage. If create_node is True a new node is
+        generated in the save call.
+        '''
+        self.node_id = None
+        self.save(create_node)
+        return self
 
     @models.permalink
     def get_absolute_url(self):
@@ -69,7 +79,7 @@ class NodeHandle(models.Model):
         '''
         Create a new node and associate it to the handle.
         '''
-        if self.node_id: # Not first save
+        if self.node_id or not kwargs['create_node']: # Don't create a node
             super(NodeHandle, self).save(kwargs)
             return self
         node = nc.create_node(nc.neo4jdb, self.node_name, str(self.node_type))
