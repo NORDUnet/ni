@@ -208,8 +208,7 @@ def consume_noclook(json_list):
     '''
     # Remove all old node ids.
     for handle in NodeHandle.objects.all():
-        handle.node_id = ''
-        handle.save()
+        handle.delete_node_id(create_node=False)
     # Loop through all files starting with node
     for i in json_list:
         if i['host']['name'].startswith('node'):
