@@ -60,7 +60,7 @@ class NodeHandle(models.Model):
         generated in the save call.
         '''
         self.node_id = None
-        self.save(create_node)
+        self.save(create_node=create_node)
         return self
 
     @models.permalink
