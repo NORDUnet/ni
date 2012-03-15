@@ -261,6 +261,10 @@ def consume_noclook(json_list):
         if n.getProperty('old_node_id', None):
             with nc.neo4jdb.transaction:
                 del n['old_node_id']
+    # Remove the temporary old_node_id index.
+    with nc.neo4jdb.transaction:
+        index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
+        index.delete()
 
 def run_consume(config_file):
     '''
