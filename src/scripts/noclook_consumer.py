@@ -219,7 +219,6 @@ def consume_noclook(json_list):
             node_type = properties.get('node_type')
             meta_type = item.get('meta_type')
             # Get a node handle
-            print node_name, node_type, meta_type # DEBUG
             nh = restore_node(nc.neo4jdb, handle_id, node_name, node_type, 
                                  meta_type) 
             node = nh.get_node()
@@ -231,6 +230,13 @@ def consume_noclook(json_list):
             # Add the old node id to an index for fast relationship adding
             index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
             nc.add_index_item(nc.neo4jdb, index, node, 'old_node_id')
+            try:
+                print 'Added node %d: %s %s %s. Handle ID: %d' % (node.id,
+                    node['name'], node['node_type'], meta_type, nh.handle_id)
+            except KeyError as e:
+                print e
+                print 'Handle ID: %d, node ID: %d' % (nh.handle_id, node.id)
+                sys.exit(1)
     # Loop through all files starting with relationship
     for i in json_list:
         if i['host']['name'].startswith('relationship'):
@@ -243,7 +249,12 @@ def consume_noclook(json_list):
             with nc.neo4jdb.transaction:
                 rel = start_node[0].relationships.create(item.get('type'), 
                                                                     end_node[0])
+            try:
                 print start_node[0]['name'], item.get('type'), end_node[0]['name']
+            except KeyError as e:
+                print e
+                print i
+                sys.exit(1)
             nc.update_item_properties(nc.neo4jdb, rel, properties)
     # Remove the 'old_node_id' property from all nodes
     for n in nc.get_all_nodes(nc.neo4jdb):
