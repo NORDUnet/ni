@@ -198,8 +198,6 @@ def create_node(db, n='', t=''):
     '''
     Creates a node with the mandatory attributes name and type.
     '''
-    n = normalize_whitespace(n)
-    t = normalize_whitespace(t)
     with db.transaction:
         node = db.node(name=n, node_type=t)
         # Add the nodes name and type to indexes
@@ -555,11 +553,11 @@ def update_item_properties(db, item, new_properties):
     Take a node or a relationship and a dictionary of properties. Updates the
     item and returns it.
     '''
-    with db.transaction:
     # We might want to do a better check of the data...
+    with db.transaction:
         for key, value in new_properties.items():
             fixed_key = key.replace(' ','_').lower() # No spaces or caps
-            if value:
+            if value or value is 0:
                 try:
                     # Handle string representations of lists and booleans
                     item[fixed_key] = json.loads(value)
