@@ -255,25 +255,34 @@ def get_all_relationships(db):
 
 def delete_node(db, node):
     '''
-    Deletes the node with the supplied id and returns True. Returns False
-    if the node wasn't found.
+    Deletes the node and all its relationships. Removes the node from all node
+    indexes.
+    Returns True on success.
     '''
-    if node:
-        with db.transaction:
-            # Delete the nodes all relationships
-            for rel in node.relationships:
-                # Delete the relationship from all indexes
-                for index in get_relationship_indexes(db):
-                    del_index_item(db, rel, index)
-                # Delete relationship
-                rel.delete()
-            # Delete the node from all indexes
-            for index in get_node_indexes(db):
-                del_index_item(db, node, index)
-            # Delete the node
-            node.delete()
-            return True
-    return False
+    with db.transaction:
+        # Delete the nodes all relationships
+        for rel in node.relationships:
+            delete_relationship(db, rel)
+        # Delete the node from all indexes
+        for index in get_node_indexes(db):
+            del_index_item(db, node, index)
+        # Delete the node
+        node.delete()
+    return True
+
+def delete_relationship(db, rel):
+    '''
+    Deletes the relationship and removes the relationship from all relationship
+    indexes.
+    Returns True on success.
+    '''
+    with db.transaction:
+        # Delete the relationship from all indexes
+        for index in get_relationship_indexes(db):
+            del_index_item(db, rel, index)
+        # Delete relationship
+        rel.delete()
+    return True    
 
 # NORDUni functions
 def create_meta_node(db, meta_node_name):
