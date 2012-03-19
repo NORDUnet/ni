@@ -53,6 +53,10 @@ This script is used for adding the objects collected with the
 NERDS producers to the noclook database viewer.
 '''
 
+# SEARCH_INDEX_KEYS are only used when restoring backup nodes.
+SEARCH_INDEX_KEYS = ['name', 'description', 'ip_address', 'ip_addresses',
+                     'as_number', 'hostname']
+
 def init_config(path):
     '''
     Initializes the configuration file located in the path provided.
@@ -127,7 +131,6 @@ def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
     the same one.
     Returns a NodeHandle object.
     '''
-    # Hard coded user value that we can't get on the fly right now
     user = get_user()
     node_type = get_node_type(node_type_name)
     try:
@@ -168,6 +171,7 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
                                             node_meta_type=node_meta_type,
                                             creator=user,
                                             modifier=user)
+    node_handle.save()
     return node_handle # No NodeHandle found return a new handle.
 
 def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
@@ -179,7 +183,7 @@ def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
     node_type = get_node_type(node_type_name)
     try:
         node_handle = NodeHandle.objects.get(handle_id=handle_id)
-        node_handle.save()
+        node_handle.save(create_node=True)
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
         node_handle = NodeHandle.objects.create(handle_id=handle_id, 
@@ -188,7 +192,34 @@ def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
                                                 node_meta_type=node_meta_type,
                                                 creator=user,
                                                 modifier=user)
+        node_handle.save()
     return node_handle
+    
+def add_node_to_indexes(node, keys):
+    '''
+    If the node has any property keys matching the SEARCH_INDEX_KEYS the node
+    will be added to the index with those values. The node will also be added
+    to the node_types index.
+    '''
+    # Add the node_type to the node_types index.
+    type_index = nc.get_node_index(nc.neo4jdb, 'node_types')
+    nc.add_index_item(nc.neo4jdb, type_index, node, 'node_type')
+    # Add the nodes to the search indexe
+    search_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    for key in keys:
+        nc.add_index_item(nc.neo4jdb, search_index, node, key)
+    return node
+    
+def add_relationship_to_indexes(rel, keys):
+    '''
+    If the relationship has any property keys matching the SEARCH_INDEX_KEYS the 
+    relationship will be added to the index with those values.
+    '''
+    # Add the nodes to the search indexe
+    search_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
+    for key in keys:
+        nc.add_index_item(nc.neo4jdb, search_index, rel, key)
+    return rel
 
 def set_comment(node_handle, comment):
     '''
@@ -230,6 +261,8 @@ def consume_noclook(json_list):
             # Add the old node id to an index for fast relationship adding
             index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
             nc.add_index_item(nc.neo4jdb, index, node, 'old_node_id')
+            # Add the node to other indexes needed for NOCLook
+            add_node_to_indexes(node, SEARCH_INDEX_KEYS)
             try:
                 print 'Added node %d: %s %s %s. Handle ID: %d' % (node.id,
                     node['name'], node['node_type'], meta_type, nh.handle_id)
@@ -256,6 +289,8 @@ def consume_noclook(json_list):
                 print i
                 sys.exit(1)
             nc.update_item_properties(nc.neo4jdb, rel, properties)
+            # Add the relationship to indexes needed for NOCLook
+            add_relationship_to_indexes(rel, SEARCH_INDEX_KEYS)
     # Remove the 'old_node_id' property from all nodes
     for n in nc.get_all_nodes(nc.neo4jdb):
         if n.getProperty('old_node_id', None):
