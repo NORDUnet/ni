@@ -75,11 +75,11 @@ class NodeHandle(models.Model):
             'slug': self.node_type.get_slug(),
             'handle_id': self.handle_id})
 
-    def save(self, create_node=True, *args, **kwargs):
+    def save(self, create_node=False, *args, **kwargs):
         '''
         Create a new node and associate it to the handle.
         '''
-        if self.node_id or not create_node: # Don't create a node
+        if self.node_id and not create_node: # Don't create a node
             super(NodeHandle, self).save(*args, **kwargs)
             return self
         node = nc.create_node(nc.neo4jdb, self.node_name, str(self.node_type))
@@ -105,7 +105,6 @@ class NodeHandle(models.Model):
         try:
             node = self.get_node()
             nc.delete_node(nc.neo4jdb, node)
-            del node
         except KeyError:
             # Node already deleted
             pass
