@@ -364,9 +364,8 @@ def get_root_parent(db, node):
     
 def get_node_by_value(db, node_value, node_property=None):
     '''
-    Traverses the meta node, if any, else it traverses all
-    available meta nodes and compares the property of the nodes
-    with the supplied strings. Returns a list of matching nodes.
+    Traverses all nodes and compares the property of the node
+    with the supplied string. Returns a list of matching nodes.
     '''
     def value_evaluator(path):
         # Filter on the nodes property values
@@ -672,7 +671,7 @@ def add_index_item(db, index, item, key):
     None. Also adds the node to the index key "all".
     '''
     value = item.getProperty(key, None)
-    if value:
+    if value or value == 0:
         with db.transaction:
             index[key][value] = item
             index['all'][value] = item
