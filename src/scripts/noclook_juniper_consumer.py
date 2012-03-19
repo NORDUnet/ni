@@ -106,7 +106,7 @@ def insert_interface_unit(interf_node, unit):
     # Unit numbers are unique per interface
     create = True
     for rel in interf_node.Depends_on.incoming:
-        if rel.start['name'] == unit['unit']:
+        if int(rel.start['name']) == int(unit['unit']):
             create = False
             node = rel.start
             break
@@ -188,14 +188,14 @@ def get_peering_partner(peering):
         as_number = '0'
     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     try:
-        node = list(index['as_number'][as_number])[0]
+        node = nc.iter2list(index['as_number'][as_number])[0]
         nc.set_noclook_auto_manage(nc.neo4jdb, node, True)
         if node['name'] != name:
             with nc.neo4jdb.transaction:        
                 node['name'] = name
     except IndexError:
-        node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 
-                                                'Peering Partner', 'relation')
+        node_handle = nt.get_node_handle(nc.neo4jdb, name, 'Peering Partner',
+                                         'relation')
         node = node_handle.get_node()
         nc.set_noclook_auto_manage(nc.neo4jdb, node, True)
         with nc.neo4jdb.transaction:
