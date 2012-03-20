@@ -123,7 +123,7 @@ def neo4j_data_age(item):
     now = datetime.now()
     last_seen = isots_to_dt(item)
     expired = False
-    if (now-last_seen) > max_age and item['noclook_auto_manage']:
+    if (now-last_seen) > max_age and item.getProperty('noclook_auto_manage', False):
         expired = True
     return last_seen, expired
 
