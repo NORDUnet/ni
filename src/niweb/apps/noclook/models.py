@@ -27,6 +27,16 @@ class NodeType(models.Model):
     def get_absolute_url(self):
         return('niweb.apps.noclook.views.list_by_type', (), {
             'slug': self.slug})
+            
+    def delete(self):
+        '''
+        Delete the NodeType object with all associated NodeHandles.
+        '''
+        for nh in NodeHandle.objects.filter(node_type=self.pk):
+            nh.delete() 
+        super(NodeType, self).delete()
+        return True
+    delete.alters_data = True
 
 class NodeHandle(models.Model):
     # Handle <-> Node data
