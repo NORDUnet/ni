@@ -138,9 +138,11 @@ def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
                                             node_type=node_type)
     except NodeHandle.DoesNotExist:
         # The NodeHandle was not found, create one
-        node_handle = NodeHandle(node_name=node_name, node_type=node_type,
-                                 node_meta_type=node_meta_type, creator=user,
-                                 modifier=user)
+        node_handle = NodeHandle.objects.create(node_name=node_name,
+                                                node_type=node_type,
+                                                node_meta_type=node_meta_type,
+                                                creator=user,
+                                                modifier=user)
         node_handle.save()
     return node_handle
 
@@ -155,9 +157,9 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
     user = get_user()
     node_type = get_node_type(node_type_name)
     try:
-        node_handles = NodeHandle.objects.filter(node_name__in=[node_name]
-                                            ).filter(node_type__in=[node_type])
         if parent:
+            node_handles = NodeHandle.objects.filter(node_name__in=[node_name]
+                                            ).filter(node_type__in=[node_type])
             for node_handle in node_handles:
                 node = node_handle.get_node()
                 node_parent = nc.get_root_parent(db, node)
@@ -238,8 +240,7 @@ def consume_noclook(json_list):
     Inserts the backup made with NOCLook producer.
     '''
     # Remove all old node ids.
-    for handle in NodeHandle.objects.all():
-        handle.delete_node_id(create_node=False)
+    NodeHandle.objects.all().update(node_id=None)
     # Loop through all files starting with node
     for i in json_list:
         if i['host']['name'].startswith('node'):
