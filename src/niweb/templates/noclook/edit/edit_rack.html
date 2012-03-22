@@ -1,0 +1,54 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block content %}
+{{ block.super }}
+    <h3>Name</h3>
+    {{ form.name }}
+    <br />
+    <br />
+    <h3>Site (optional)</h3>
+    <table>
+        <tr>
+            <td width="50px"><label>Current</label></td>
+            <td>{% for item in locations %}
+                    {% if forloop.first %}
+                        {{ item.start.country_code }}-{{ item.start.name }}
+                    {% else %}
+                        , {{ item.start.country_code }}-{{ item.start.name }}
+                    {% endif %}
+                {% endfor %}
+            </td>
+        </tr>
+        <tr>
+            <td width="50px"><label>Change</label></td>
+            <td>{{ form.relationship_location }}</td>
+        </tr>
+    </table>
+    <br />
+    <br />
+    <h3>Dimensions</h3>
+    <table>
+        <tr>
+            <td width="50px"><label>Height</label></td>
+            <td>
+                {{ form.height }}
+                 <span class="help-block">{{ form.height.help_text }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td width="50px"><label>Depth</label></td>
+            <td>
+                {{ form.depth }}
+                 <span class="help-block">{{ form.depth.help_text }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td width="50px"><label>Width</label></td>
+            <td>
+                {{ form.width }}
+                 <span class="help-block">{{ form.width.help_text }}</span>
+            </td>
+        </tr>
+    </table>
+{% endblock %}
+

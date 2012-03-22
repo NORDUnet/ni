@@ -21,7 +21,12 @@
 {% if location_relationships %}
     <h5 class="site">Located in
     {% for loc in location_relationships %}
-        <a href="{% noclook_node_to_url loc.end %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
+        {% if loc.end.country_code %}
+            <a href="{% noclook_node_to_url loc.end %}">{{ loc.end.country_code }}-{{ loc.end.name }}</a>
+        {% endif %}
+        {% if loc.start.country_code %}
+            <a href="{% noclook_node_to_url loc.start %}">{{ loc.start.country_code }}-{{ loc.start.name }}</a>
+        {% endif %}
     {% endfor %}
     </h5>
 {% endif %}

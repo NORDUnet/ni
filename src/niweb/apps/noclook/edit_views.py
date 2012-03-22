@@ -18,16 +18,8 @@ import norduni_client as nc
 import ipaddr
 import json
 from lucenequerybuilder import Q
-             
-NEW_FORMS =  {'site': forms.NewSiteForm, 
-              'site-owner': forms.NewSiteOwnerForm,
-              'cable': forms.NewCableForm}
-              
-EDIT_FORMS =  {'site': forms.EditSiteForm,
-               'site-owner': forms.EditSiteOwnerForm,
-               'cable': forms.EditCableForm,
-               'optical-node': forms.EditOpticalNodeForm}
 
+# We should move this kind of data to the SQL database.
 COUNTRY_MAP = {
     'DE': 'Germany',    
     'DK': 'Denmark',
@@ -48,6 +40,17 @@ def get_nh_node(node_handle_id):
     nh = get_object_or_404(NodeHandle, pk=node_handle_id)
     node = nh.get_node()
     return nh, node
+    
+def slug_to_node_type(slug):
+    '''
+    Returns or creates and returns the NodeType object from the supplied slug.
+    '''
+    node_type, created = NodeType.objects.get_or_create(slug=slug)
+    if created:
+        type_name = slug.replace('-', ' ').title()
+        node_type.type = type_name
+        node_type.save()
+    return node_type
 
 def form_update_node(user, node, form, property_keys=None):
     '''
@@ -61,7 +64,7 @@ def form_update_node(user, node, form, property_keys=None):
         property_keys = form.base_fields
     for key in property_keys:
         try:
-            if form.cleaned_data[key]:
+            if form.cleaned_data[key] or form.cleaned_data[key] == 0:
                 pre_value = node.getProperty(key, '')
                 if pre_value != form.cleaned_data[key]:
                     with nc.neo4jdb.transaction:
@@ -70,6 +73,9 @@ def form_update_node(user, node, form, property_keys=None):
                         nh.node_name = form.cleaned_data[key]
                     nh.modifier = user
                     nh.save()
+            elif not form.cleaned_data[key] and key != 'name':
+                with nc.neo4jdb.transaction:
+                    del node[key] 
         except KeyError:
             return False
         except RuntimeError:
@@ -78,6 +84,48 @@ def form_update_node(user, node, form, property_keys=None):
             with nc.neo4jdb.transaction:
                 node[key] = unicode(form.cleaned_data[key])
     return True
+    
+# Form data returns
+@login_required
+def get_node_type(request, slug):
+    '''
+    Compiles a list of alla nodes of that node type and returns a list of
+    node name, node id tuples.
+    '''
+    node_type = slug_to_node_type(slug)
+    q = '''                   
+        START node=node:node_types(node_type="%s")
+        RETURN node
+        ''' % node_type
+    hits = nc.neo4jdb.query(q)
+    type_list = []
+    for hit in hits:
+        type_list.append((hit['node'].id, hit['node']['name']))
+    return HttpResponse(json.dumps(type_list), mimetype='application/json')
+
+@login_required
+def get_children(request, node_id):
+    '''
+    Compiles a list of the nodes children and returns a list of
+    node name, node id tuples.
+    '''
+    from operator import itemgetter
+    q = '''                   
+        START parent=node(%d)
+        MATCH parent--child
+        WHERE parent-[:Has]->child or parent<-[:Located_in]-child
+        return child
+        ''' % int(node_id)
+    hits = nc.neo4jdb.query(q)
+    child_list = []
+    try:
+        for hit in hits:
+            name = '%s %s' % (hit['child']['node_type'], hit['child']['name'])
+            child_list.append((hit['child'].id, name))
+    except AttributeError:
+        pass
+    child_list.sort(key=itemgetter(1))
+    return HttpResponse(json.dumps(child_list), mimetype='application/json')
 
 # Create functions
 @login_required
@@ -95,7 +143,7 @@ def new_node(request, slug=None):
         form = NEW_FORMS[slug](request.POST)
         if form.is_valid():
             node_name = form.cleaned_data['name']
-            node_type = get_object_or_404(NodeType, slug=slug)
+            node_type = slug_to_node_type(slug)
             node_meta_type = request.POST['meta_type']
             node_handle = NodeHandle(node_name=node_name,
                                 node_type=node_type,
@@ -104,12 +152,8 @@ def new_node(request, slug=None):
             node_handle.save()
             nc.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
                                        False)
-            # Type sensitive finishing
-            type_func = {'Site': new_site,
-                         'Site Owner': new_site_owner,
-                         'Cable': new_cable}
             try:
-                func = type_func[str(node_type)]
+                func = NEW_FUNC[str(node_type)]
             except KeyError:
                 raise Http404
             return func(request, node_handle.handle_id, form)
@@ -117,9 +161,7 @@ def new_node(request, slug=None):
             return render_to_response(template, {'form': form},
                                 context_instance=RequestContext(request))
     if not slug:
-        node_types = get_list_or_404(NodeType)
-        return render_to_response('noclook/edit/new_node.html', 
-                              {'node_types': node_types})
+        return render_to_response('noclook/edit/new_node.html', {})
     else:
         try:
             form = NEW_FORMS[slug]
@@ -136,7 +178,8 @@ def new_site(request, handle_id, form):
     with nc.neo4jdb.transaction:
         node['name'] = form.cleaned_data['name'].upper()
         node['country'] = COUNTRY_MAP[node['country_code']]
-    return HttpResponseRedirect('/site/%d' % nh.handle_id)
+    #return HttpResponseRedirect('/site/%d' % nh.handle_id)
+    HttpResponseRedirect(nh.get_absolute_url())
     
 @login_required
 def new_site_owner(request, handle_id, form):
@@ -144,13 +187,38 @@ def new_site_owner(request, handle_id, form):
     keys = ['url']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
-
+    
 @login_required
 def new_cable(request, handle_id, form):
     nh, node = get_nh_node(handle_id)
     keys = ['cable_type']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect('/cable/%d' % nh.handle_id)
+
+@login_required
+def new_rack(request, handle_id, form):
+    nh, node = get_nh_node(handle_id)
+    keys = []
+    form_update_node(request.user, node, form, keys)
+    if form.cleaned_data['relationship_location']:
+        location_id = form.cleaned_data['relationship_location']
+        location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
+        rel_exist = nc.get_relationships(location_node, node, 'Has')
+        if not rel_exist:
+            try:
+                location_rel = nc.iter2list(node.Has.incoming)
+                with nc.neo4jdb.transaction:
+                    location_rel[0].delete()
+            except IndexError:
+                # No site set
+                pass
+            nc.create_relationship(nc.neo4jdb, location_node, node, 'Has')
+    return HttpResponseRedirect('/rack/%d' % nh.handle_id)    
+
+@login_required        
+def new_odf(request, handle_id, form):
+    # TODO:    
+    pass
 
 # Edit functions
 @login_required
@@ -161,14 +229,8 @@ def edit_node(request, slug, handle_id):
     '''
     if not request.user.is_staff:
         raise Http404
-    # Send to type sensitive function
-    type_func = {'site': edit_site, 
-                 'site-owner': edit_site_owner,
-                 'cable': edit_cable,
-                 'optical-node': edit_optical_node,
-                 'peering-partner': edit_peering_partner}
     try:
-        func = type_func[slug]
+        func = EDIT_FUNC[slug]
     except KeyError:
         raise Http404
     return func(request, handle_id)
@@ -202,8 +264,8 @@ def edit_site(request, handle_id):
                     except IndexError:
                         # No site owner set
                         pass
-                    nc.create_relationship(nc.neo4jdb, owner_node, node,
-                                               'Responsible_for')
+                    nc.create_suitable_relationship(nc.neo4jdb, owner_node,
+                                                    node, 'Responsible_for')
             return HttpResponseRedirect('/site/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_site.html',
@@ -281,6 +343,7 @@ def edit_optical_node(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
+                # TODO: Fix the relationship adding in a nice way
                 rel_exist = nc.get_relationships(node, location_node, 
                                                      'Located_in')
                 if not rel_exist:
@@ -289,10 +352,10 @@ def edit_optical_node(request, handle_id):
                         with nc.neo4jdb.transaction:
                             location_rel[0].delete()
                     except IndexError:
-                        # No site owner set
+                        # No site set
                         pass
-                    nc.create_relationship(nc.neo4jdb, node, location_node,
-                                               'Located_in')
+                    nc.create_suitable_relationship(nc.neo4jdb, node,
+                                                    location_node, 'Located_in')
             return HttpResponseRedirect('/optical-node/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_optical_node.html',
@@ -326,7 +389,136 @@ def edit_peering_partner(request, handle_id):
         return render_to_response('noclook/edit/edit_peering_partner.html',
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))            
-            
+
+@login_required        
+def edit_rack(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    locations = nc.iter2list(node.Has.incoming)
+    if request.POST:
+        form = forms.EditRackForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            # Rack specific updates
+            if form.cleaned_data['relationship_location']:
+                location_id = form.cleaned_data['relationship_location']
+                location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
+                # TODO: Fix the relationship adding in a nice way
+                rel_exist = nc.get_relationships(location_node, node, 'Has')
+                if not rel_exist:
+                    try:
+                        location_rel = nc.iter2list(node.Has.incoming)
+                        with nc.neo4jdb.transaction:
+                            location_rel[0].delete()
+                    except IndexError:
+                        # No site set
+                        pass
+                    nc.create_suitable_relationship(nc.neo4jdb, location_node,
+                                                    node, 'Has')
+            return HttpResponseRedirect('/rack/%d' % nh.handle_id)
+        else:
+            return render_to_response('noclook/edit/edit_rack.html',
+                                  {'node': node, 'form': form,
+                                   'locations': locations},
+                                context_instance=RequestContext(request))
+    else:
+        form = forms.EditRackForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_rack.html',
+                                  {'form': form, 'locations': locations,
+                                   'node': node},
+                                context_instance=RequestContext(request))
+
+@login_required        
+def edit_host(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    locations = nc.iter2list(node.Located_in.outgoing)
+    if request.POST:
+        form = forms.EditHostForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            # Host specific updates
+            location_id = request.POST.get('rack', None)
+            if not location_id and form.cleaned_data['relationship_location']:
+                location_id = form.cleaned_data['relationship_location']
+            if location_id:
+                nh, node = place_host(nh, node, location_id)                
+            return HttpResponseRedirect('/host/%d' % nh.handle_id)
+        else:
+            return render_to_response('noclook/edit/edit_host.html',
+                                  {'node': node, 'form': form,
+                                   'locations': locations},
+                                context_instance=RequestContext(request))
+    else:
+        form = forms.EditHostForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_host.html',
+                                  {'form': form, 'locations': locations,
+                                   'node': node},
+                                context_instance=RequestContext(request))
+
+def place_host(nh, node, location_id):
+    '''
+    Places the host in a rack or on a site. Also converts it to a physical
+    host if it still is a logical one.
+    ''' 
+    meta_type = nc.get_node_meta_type(node)
+    if meta_type == 'logical':
+        with nc.neo4jdb.transaction:        
+            nc.delete_relationship(nc.neo4jdb,
+                                   nc.iter2list(node.Contains.incoming)[0])
+            physical = nc.get_meta_node(nc.neo4jdb, 'physical')
+            nc.create_relationship(nc.neo4jdb, physical, node, 'Contains')
+            nh.node_meta_type = 'physical'
+            nh.save()
+    location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
+    rel_exist = nc.get_relationships(node, location_node, 'Located_in')
+    if rel_exist:
+        location_rel = nc.iter2list(node.Located_in.outgoing)
+        with nc.neo4jdb.transaction:
+            location_rel[0].delete()
+    nc.create_suitable_relationship(nc.neo4jdb, node, 
+                                        location_node, 'Located_in')
+    return nh, node
+
+@login_required
+def edit_odf(request, handle_id):
+    # TODO:    
+    pass
+
+NEW_FORMS =  {'cable': forms.NewCableForm,
+              'rack': forms.NewRackForm,
+              'site': forms.NewSiteForm, 
+              'site-owner': forms.NewSiteOwnerForm,
+             }
+              
+EDIT_FORMS =  {'cable': forms.EditCableForm,
+               'host': forms.EditHostForm,
+               'optical-node': forms.EditOpticalNodeForm,
+               'site': forms.EditSiteForm,
+               'site-owner': forms.EditSiteOwnerForm,
+               }
+
+NEW_FUNC = {'Cable': new_cable,
+            'Rack': new_rack,
+            'Site': new_site,
+            'Site Owner': new_site_owner,
+            }
+
+EDIT_FUNC = {'cable': edit_cable,
+             'host': edit_host,
+             'optical-node': edit_optical_node,
+             'peering-partner': edit_peering_partner,
+             'rack': edit_rack,
+             'site': edit_site, 
+             'site-owner': edit_site_owner,
+             }
+
 #@login_required
 #def new_node_old(request):
 #    if not request.user.is_staff:

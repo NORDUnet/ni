@@ -36,6 +36,11 @@ $(document).ready(
                     <th>Owner Site ID:</th><td>{{ node.owner_id }}</td>
                 </tr>
             {% endif %}
+            {% if node.owner_site_name %}
+                <tr>
+                    <th>Owner Site Name:</th><td>{{ node.owner_site_name }}</td>
+                </tr>
+            {% endif %}
             {% if node.telenor_subscription_id %}
                 <tr>
                     <th>Telenor Subscription ID:</th><td>{{ node.telenor_subscription_id }}</td>
