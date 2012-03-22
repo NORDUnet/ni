@@ -403,6 +403,23 @@ def site_owner_detail(request, handle_id):
                                'site_relationships': site_relationships},
                                context_instance=RequestContext(request))
 
+@login_required
+def rack_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = nc.neo4j_data_age(node)
+    # Get equipment in rack
+    physical_relationships = nc.iter2list(node.Located_in.incoming)
+    # Get rack location
+    location_relationships = nc.iter2list(node.Has.incoming)
+    return render_to_response('noclook/detail/rack_detail.html',
+                             {'node': node, 'node_handle': nh, 
+                              'last_seen': last_seen, 'expired': expired, 
+                              'physical_relationships': physical_relationships,
+                              'location_relationships': location_relationships},
+                              context_instance=RequestContext(request))
+
 # Visualization views
 @login_required
 def visualize_json(request, node_id):
@@ -535,6 +552,9 @@ def find_all(request, slug='', key='', value='', form=None):
                                 mimetype='application/csv;charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename=result.csv'
         return response
+    elif form == 'json':
+        # TODO: 
+        pass
     result = []
     for node in nodes:
         # Check so that the node_types are equal. A problem with meta type.
@@ -615,11 +635,11 @@ def gmaps_optical_nodes(request):
     # Cypher query to get all cables with cable type fiber that are connected
     # to two optical node.
     cypher_query = '''
-START optical_node = node:node_types(node_type="Optical Node")
-MATCH optical_node<-[:Connected_to]-cable-[Connected_to]->other_optical_node
-WHERE (cable.cable_type = "Fiber") and optical_node.type and not (optical_node.type =~ /.*tss.*/)
-RETURN distinct cable
-'''
+        START optical_node = node:node_types(node_type="Optical Node")
+        MATCH optical_node<-[:Connected_to]-cable-[Connected_to]->other_optical_node
+        WHERE (cable.cable_type = "Fiber") and optical_node.type and not (optical_node.type =~ /.*tss.*/)
+        RETURN distinct cable
+        '''
     query = nc.neo4jdb.query(cypher_query)
     optical_node_list = []
     for hit in query:
@@ -633,6 +653,8 @@ RETURN distinct cable
             cords.append({'lng': lng, 'lat': lat})
             optical_node_list.append(node)
         edge = {'name': hit['cable']['name'], 'type': 'edge'}
+        # TODO: Needs to be revisited when/if cables terminate in more than two 
+        # points.
         if len(cords) == 2:
             edge['start_lng'] = cords[0]['lng']
             edge['start_lat'] = cords[0]['lat']
@@ -643,3 +665,4 @@ RETURN distinct cable
             raise Exception('Fiber cable terminates in too many points.')
     jsonstr = json.dumps(optical_node_list)
     return HttpResponse(jsonstr, mimetype='application/json')
+        

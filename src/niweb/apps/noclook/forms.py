@@ -1,6 +1,7 @@
 from django import forms
 import norduni_client as nc
 
+# We should move this kind of data to the SQL database.
 COUNTRY_CODES = [
     ('DE', 'DE'),    
     ('DK', 'DK'),
@@ -69,7 +70,6 @@ class NewSiteForm(forms.Form):
     
     
 class EditSiteForm(forms.Form):
-
     def __init__(self, *args, **kwargs):
         super(EditSiteForm, self).__init__(*args, **kwargs)
         self.fields['relationship_site_owners'].choices = get_node_type_tuples('Site Owner')
@@ -94,6 +94,7 @@ class EditSiteForm(forms.Form):
     latitude = forms.FloatField(required=False, help_text='Decimal Degrees')
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
+    owner_site_name = forms.CharField(required=False)
     relationship_site_owners = forms.ChoiceField(widget=forms.widgets.Select,
                                                  required=False)
                               
@@ -128,12 +129,53 @@ class EditCableForm(forms.Form):
 
 
 class EditOpticalNodeForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewRackForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
+        
     name = forms.CharField()
     sites = get_node_type_tuples('Site')
-    relationship_location = forms.ChoiceField(required=False, choices=sites,
+    relationship_location = forms.ChoiceField(required=False,
                                               widget=forms.widgets.Select)
                                               
 
 class EditPeeringPartnerForm(forms.Form):
     name = forms.CharField()
+
+
+class NewRackForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewRackForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
     
+    name = forms.CharField(help_text='Name should be the grid location.')
+    relationship_location = forms.ChoiceField(required=False,
+                                              widget=forms.widgets.Select)
+                                              
+                                        
+class EditRackForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditRackForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
+    
+    name = forms.CharField(help_text='Name should be the site grid location.')
+    height = forms.IntegerField(required=False, 
+                                help_text='Height in millimeters (mm).')
+    depth = forms.IntegerField(required=False,
+                               help_text='Depth in millimeters (mm).')
+    width = forms.IntegerField(required=False,
+                               help_text='Width in millimeters (mm).')
+    relationship_location = forms.ChoiceField(required=False,
+                                              widget=forms.widgets.Select)
+                                    
+class EditHostForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditHostForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
+    #units = forms.IntegerField(required=False,
+    #                           help_text='Height in rack units (u).')
+    #start_unit = forms.IntegerField(required=False,
+    #                           help_text='Where the host starts in the rack. \
+    #                           Used for calculation of rack space.')
+    relationship_location = forms.ChoiceField(required=False,
+                                              widget=forms.widgets.Select)

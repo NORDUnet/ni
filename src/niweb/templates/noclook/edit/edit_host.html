@@ -1,0 +1,60 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+{{ block.super }}
+{% load niweb_tags %}
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#rack").jCombo("/formdata/{id}/children", {
+                        parent: "#id_relationship_location",
+                    });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+<!--
+    <h3>Dimensions</h3>
+    <table>
+        <tr>
+            <td width="50px"><label>Rack units</label></td>
+            <td>
+                {{ form.units }}
+                 <span class="help-block">{{ form.units.help_text }}</span>
+            </td>
+        </tr>
+    </table>
+-->
+    <h3>Location (optional)</h3>
+    <table>
+<!--
+        <tr>
+            <td width="50px"><label>Start unit</label></td>
+            <td>
+                {{ form.start_unit }}
+                 <span class="help-block">{{ form.start_unit.help_text }}</span>
+            </td>
+        </tr>
+-->
+        <tr>
+            <td width="50px"><label>Current</label></td>
+            <td>{% for item in locations %}
+                    {% if forloop.first %}
+                        {{ item.end.name }}
+                    {% else %}
+                        , {{ item.end.name }}
+                    {% endif %}
+                {% endfor %}
+            </td>
+        </tr>
+        <tr>
+            <td width="50px"><label>Change</label></td>
+            <td>{{ form.relationship_location }} <select name="rack" id="rack"></select></td>
+        </tr>
+    </table>
+{% endblock %}
+

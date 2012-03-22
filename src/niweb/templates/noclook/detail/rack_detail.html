@@ -1,0 +1,87 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#equipment").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span7">
+        <table>
+            {% if node.height %}
+                <tr>
+                    <th>Height:</th><td>{{ node.height }} mm</td>
+                </tr>
+            {% endif %}
+            {% if node.depth %}
+                <tr>
+                    <th>Depth:</th><td>{{ node.depth }} mm</td>
+                </tr>
+            {% endif %}
+            {% if node.width %}
+                <tr>
+                    <th>Width:</th><td>{{ node.width }} mm</td>
+                </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span5 offset1">
+        <table>
+            {% if node.noclook_automanage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn info">Edit</a>
+{% endif %}
+<br><br><br>
+<div class="section">
+    <h3>Equipment in rack</h3>
+    {% if equipment_relationships %}
+    <table id="equipment" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Type</th><th>Name</th>
+        </thead>
+        <tbody>
+        {% for equip in equipment_relationships %}
+            <tr>
+                <td><a href="/{{ equip.start.node_type|slugify }}/">{{ equip.start.node_type }}</a></td>
+                <td><a href="{% noclook_node_to_url equip.start %}">{{ equip.start.name }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No equipment on site.
+    {% endif %}
+</div>
+{% endblock %}
+
