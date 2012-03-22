@@ -180,6 +180,9 @@ def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
     '''
     Tries to get a existing node handle from the SQL database before creating
     a new handle with an old handle id.
+    
+    When we are setting the handle_id explicitly we need to run django-admin.py
+    sqlsequencereset noclook and paste that SQL statements in to the dbhell.
     '''
     user = get_user()
     node_type = get_node_type(node_type_name)
