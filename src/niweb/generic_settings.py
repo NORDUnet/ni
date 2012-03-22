@@ -1,3 +1,4 @@
+from os import environ
 from os.path import join
 from sys import path
 
@@ -53,7 +54,8 @@ DATABASES = {
 }
 
 # Neo4j settings
-NEO4J_RESOURCE_URI = 'http://localhost:7474/db/data/'
+NEO4J_RESOURCE_URI = '/path/to/neo4jdb/'
+environ['NEO4J_PYTHON_JVMARGS'] = '-Xms128M -Xmx512M'
 NEO4J_MAX_DATA_AGE = '24' # hours
 
 # Local time zone for this installation. Choices can be found here:
