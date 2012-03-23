@@ -32,33 +32,33 @@
         }
         if (user_options.parent_value!="") {
             __fill(obj,url,user_options.parent_value,user_options.initial_text,user_options.selected_value);
-            function __fill($obj,$url,$id,$initext,$inival) {
-                $.ajax({
-                    type: "GET",
-                    dataType:"json",
-                    url: $url.replace("{id}", $id),
-                    success: function(j){
-                        var choices = '';
-                        if (j.length == 0) {
-                            choices += '<option value="0"></option>';
-                            $obj.html(choices);
-                        } else {
-                            if($initext!="" && $initext!=null) {
-                                choices += '<option value="0">' + $initext + '</option>';
-                            }
-                            for (var i = 0; i < j.length; i++) {
-                                selected = (j[i][0]==$inival)?' selected="selected"':'';
-                                c = j[i];
-                                choices += '<option value="' + c[0] + '"' +
-                                selected + '>' + c[1] +
-                                '</option>';
-                            }
-                            $obj.html(choices);
+        }
+        function __fill($obj,$url,$id,$initext,$inival) {
+            $.ajax({
+                type: "GET",
+                dataType:"json",
+                url: $url.replace("{id}", $id),
+                success: function(j){
+                    var choices = '';
+                    if (j.length == 0) {
+                        choices += '<option value="0"></option>';
+                        $obj.html(choices);
+                    } else {
+                        if($initext!="" && $initext!=null) {
+                            choices += '<option value="0">' + $initext + '</option>';
                         }
-                        $obj.trigger("change");
+                        for (var i = 0; i < j.length; i++) {
+                            selected = (j[i][0]==$inival)?' selected="selected"':'';
+                            c = j[i];
+                            choices += '<option value="' + c[0] + '"' +
+                            selected + '>' + c[1] +
+                            '</option>';
+                        }
+                        $obj.html(choices);
                     }
-                });
-            }
+                    $obj.trigger("change");
+                }
+            });
         }
     }
 })(jQuery);
