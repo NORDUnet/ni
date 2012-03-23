@@ -444,7 +444,7 @@ def edit_host(request, handle_id):
             # Generic node update
             form_update_node(request.user, node, form)
             # Host specific updates
-            location_id = request.POST.get('rack', None)
+            location_id = int(request.POST.get('rack', 0))
             if not location_id and form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
             if location_id:
@@ -467,8 +467,10 @@ def place_host(nh, node, location_id):
     Places the host in a rack or on a site. Also converts it to a physical
     host if it still is a logical one.
     ''' 
+    # Check if the host is logical
     meta_type = nc.get_node_meta_type(node)
     if meta_type == 'logical':
+        # Make the host physical
         with nc.neo4jdb.transaction:        
             nc.delete_relationship(nc.neo4jdb,
                                    nc.iter2list(node.Contains.incoming)[0])
@@ -476,13 +478,20 @@ def place_host(nh, node, location_id):
             nc.create_relationship(nc.neo4jdb, physical, node, 'Contains')
             nh.node_meta_type = 'physical'
             nh.save()
+    # If the location is the same as before just update relationship
+    # properties
     location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
     rel_exist = nc.get_relationships(node, location_node, 'Located_in')
     if rel_exist:
-        location_rel = nc.iter2list(node.Located_in.outgoing)
-        with nc.neo4jdb.transaction:
-            location_rel[0].delete()
-    nc.create_suitable_relationship(nc.neo4jdb, node, 
+        # Change properties here
+        #location_rel = nc.iter2list(node.Located_in.outgoing)
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        # Remove the old location and create a new
+        for rel in nc.iter2list(node.Located_in.outgoing):
+            nc.delete_relationship(nc.neo4jdb, rel)
+        nc.create_suitable_relationship(nc.neo4jdb, node, 
                                         location_node, 'Located_in')
     return nh, node
 
