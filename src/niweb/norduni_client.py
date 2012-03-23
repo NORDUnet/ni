@@ -171,7 +171,39 @@ def nodes_to_geoff(node_list):
     '''
     # TODO
     pass
-        
+    
+def get_location(node):
+    '''
+    Returns a list of the nodes locations as dicts with name and url.
+    '''
+    location = []
+    rels = nc.iter2list(node.Located_in.outgoing)
+    for rel in rels:
+        if rel.end['node_type'] == 'Site':
+            name = '%s-%s' % (rel.end['country_code'], rel.end['name'])
+        if rel.end['node_type'] == 'Rack':
+            # Get where the rack is placed
+            location += get_place(rel.end)
+            name = rel.end['name']
+        else:
+            name = rel.end['name']
+        location.append({'url': get_node_url(rel.end), 'name': name})
+    return location
+
+def get_place(node):
+    '''
+    Returns the nodes place in site or other equipment.
+    '''
+    location = []
+    rels = nc.iter2list(node.Has.incoming)
+    for rel in rels:
+        if rel.start['node_type'] == 'Site':
+            name = '%s-%s' % (rel.start['country_code'], rel.start['name'])
+        else:
+            name = rel.start['name']
+        location.append({'url': get_node_url(rel.start), 'name': name})
+    return location
+
 # Core functions
 def open_db(uri=NEO4J_URI):
     '''

@@ -140,7 +140,7 @@ def router_detail(request, handle_id):
             for service in dep_services:
                 pic['services'].append(service.start)
         pics.append(pic)
-    location_relationships = nc.iter2list(node.Located_in.outgoing)
+    location = nc.get_location(node)
     for address in loopback_addresses:
         try:
             ipaddr.IPNetwork(address)
@@ -149,7 +149,7 @@ def router_detail(request, handle_id):
             loopback_addresses.remove(address)
     return render_to_response('noclook/detail/router_detail.html',
         {'node_handle': nh, 'node': node, 'pics': pics, 'last_seen': last_seen,
-        'expired': expired, 'location_relationships': location_relationships,
+        'expired': expired, 'location': location,
         'loopback_addresses': loopback_addresses},
         context_instance=RequestContext(request))
 
@@ -213,12 +213,12 @@ def optical_node_detail(request, handle_id):
                 fibers['node_name'] = tmp['name']
                 fibers['node_url'] = nc.get_node_url(tmp)
         opt_info.append(fibers)
-    location_relationships = nc.iter2list(node.Located_in.outgoing)
+    location = nc.get_location(node)
     return render_to_response('noclook/detail/optical_node_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
                               'opt_info': opt_info,
-                              'location_relationships': location_relationships},
+                              'location': location},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -232,13 +232,15 @@ def host_detail(request, handle_id):
     user_relationships = nc.iter2list(node.Uses.incoming)
     provider_relationships = nc.iter2list(node.Provides.incoming)
     owner_relationships = nc.iter2list(node.Owns.incoming)
+    location = nc.get_location(node)
     return render_to_response('noclook/detail/host_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired, 
                                'service_relationships': service_relationships, 
                                'user_relationships': user_relationships,
                                'provider_relationships': provider_relationships,
-                               'owner_relationships': owner_relationships},
+                               'owner_relationships': owner_relationships,
+                               'location': location},
                                context_instance=RequestContext(request))
                 
 @login_required
@@ -412,12 +414,12 @@ def rack_detail(request, handle_id):
     # Get equipment in rack
     physical_relationships = nc.iter2list(node.Located_in.incoming)
     # Get rack location
-    location_relationships = nc.iter2list(node.Has.incoming)
+    location = nc.get_place(node)
     return render_to_response('noclook/detail/rack_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
                               'physical_relationships': physical_relationships,
-                              'location_relationships': location_relationships},
+                              'location': location},
                               context_instance=RequestContext(request))
 
 # Visualization views

@@ -409,13 +409,9 @@ def edit_rack(request, handle_id):
                 # TODO: Fix the relationship adding in a nice way
                 rel_exist = nc.get_relationships(location_node, node, 'Has')
                 if not rel_exist:
-                    try:
-                        location_rel = nc.iter2list(node.Has.incoming)
-                        with nc.neo4jdb.transaction:
-                            location_rel[0].delete()
-                    except IndexError:
-                        # No site set
-                        pass
+                    # Remove old locations, if any
+                    for rel in nc.iter2list(node.Has.incoming):
+                        nc.delete_relationship(nc.neo4jdb, rel)
                     nc.create_suitable_relationship(nc.neo4jdb, location_node,
                                                     node, 'Has')
             return HttpResponseRedirect('/rack/%d' % nh.handle_id)
@@ -448,7 +444,12 @@ def edit_host(request, handle_id):
             if not location_id and form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
             if location_id:
-                nh, node = place_host(nh, node, location_id)                
+                # Create location relationship
+                nh, node = place_physical(nh, node, location_id) 
+            else:
+                # Remove existing location if any
+                for rel in nc.iter2list(node.Located_in.outgoing):
+                    nc.delete_relationship(nc.neo4jdb, rel)
             return HttpResponseRedirect('/host/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_host.html',
@@ -462,15 +463,15 @@ def edit_host(request, handle_id):
                                    'node': node},
                                 context_instance=RequestContext(request))
 
-def place_host(nh, node, location_id):
+def place_physical(nh, node, location_id):
     '''
-    Places the host in a rack or on a site. Also converts it to a physical
-    host if it still is a logical one.
+    Places a physical node in a rack or on a site. Also converts it to a 
+    physical node if it still is a logical one.
     ''' 
-    # Check if the host is logical
+    # Check if the node is logical
     meta_type = nc.get_node_meta_type(node)
     if meta_type == 'logical':
-        # Make the host physical
+        # Make the node physical
         with nc.neo4jdb.transaction:        
             nc.delete_relationship(nc.neo4jdb,
                                    nc.iter2list(node.Contains.incoming)[0])
@@ -488,7 +489,7 @@ def place_host(nh, node, location_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        # Remove the old location and create a new
+        # Remove the old location(s) and create a new
         for rel in nc.iter2list(node.Located_in.outgoing):
             nc.delete_relationship(nc.neo4jdb, rel)
         nc.create_suitable_relationship(nc.neo4jdb, node, 
