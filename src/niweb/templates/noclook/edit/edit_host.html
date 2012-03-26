@@ -7,7 +7,7 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
-        $("#rack").jCombo("/formdata/{id}/children", {
+        $("#level1").jCombo("/formdata/{id}/children/rack", {
                         parent: "#id_relationship_location",
                     });
     }
@@ -53,7 +53,10 @@ $(document).ready(
         </tr>
         <tr>
             <td width="50px"><label>Change</label></td>
-            <td>{{ form.relationship_location }} <select name="rack" id="rack"></select></td>
+            <td>
+                {{ form.relationship_location }}<br /><br />
+                <select name="level1" id="level1"></select><br /><br />
+            </td>
         </tr>
     </table>
 {% endblock %}
