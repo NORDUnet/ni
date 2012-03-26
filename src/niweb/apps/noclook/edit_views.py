@@ -479,12 +479,12 @@ def place_physical(nh, node, location_id):
             nc.create_relationship(nc.neo4jdb, physical, node, 'Contains')
             nh.node_meta_type = 'physical'
             nh.save()
-    # If the location is the same as before just update relationship
-    # properties
     location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
     rel_exist = nc.get_relationships(node, location_node, 'Located_in')
+    # If the location is the same as before just update relationship
+    # properties
     if rel_exist:
-        # Change properties here
+        # TODO: Change properties here
         #location_rel = nc.iter2list(node.Located_in.outgoing)
         #with nc.neo4jdb.transaction:
         pass
