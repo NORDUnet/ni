@@ -161,7 +161,7 @@ def nodes_to_json(node_list):
     Takes a list of nodes and returns a json formated text with all node keys
     and their values.
     '''
-    # TODO
+    # TODO:
     pass
 
 def nodes_to_geoff(node_list):
@@ -169,7 +169,7 @@ def nodes_to_geoff(node_list):
     Takes a list of nodes and returns geoff format with all node keys
     and their values.
     '''
-    # TODO
+    # TODO:
     pass
     
 def get_location(node):
@@ -181,7 +181,7 @@ def get_location(node):
     for rel in rels:
         if rel.end['node_type'] == 'Site':
             name = '%s-%s' % (rel.end['country_code'], rel.end['name'])
-        if rel.end['node_type'] == 'Rack':
+        elif rel.end['node_type'] == 'Rack':
             # Get where the rack is placed
             location += get_place(rel.end)
             name = rel.end['name']
