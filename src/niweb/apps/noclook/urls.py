@@ -22,6 +22,7 @@ urlpatterns += patterns('niweb.apps.noclook.edit_views',
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', 'edit_node'),
     (r'^formdata/(?P<slug>[-\w]+)/$', 'get_node_type'),
     (r'^formdata/(?P<node_id>\d+)/children$', 'get_children'),
+    (r'^formdata/(?P<node_id>\d+)/children/(?P<slug>[-\w]+)/$', 'get_children'),
     #(r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
     #(r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
 )

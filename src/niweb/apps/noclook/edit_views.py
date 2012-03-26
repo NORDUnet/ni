@@ -104,18 +104,22 @@ def get_node_type(request, slug):
     return HttpResponse(json.dumps(type_list), mimetype='application/json')
 
 @login_required
-def get_children(request, node_id):
+def get_children(request, node_id, slug=None):
     '''
     Compiles a list of the nodes children and returns a list of
-    node name, node id tuples.
+    node name, node id tuples. If node_type is set the function will only return
+    nodes of that type.
     '''
-    from operator import itemgetter
+    type_filter = ''
+    if slug:
+        type_filter = 'and child.node_type = "%s"' % slug_to_node_type(slug)
     q = '''                   
         START parent=node(%d)
         MATCH parent--child
-        WHERE parent-[:Has]->child or parent<-[:Located_in]-child
-        return child
-        ''' % int(node_id)
+        WHERE (parent-[:Has]->child or parent<-[:Located_in]-child) %s
+        RETURN child
+        ORDER BY child.node_type, child.name
+        ''' % (int(node_id), type_filter)
     hits = nc.neo4jdb.query(q)
     child_list = []
     try:
@@ -124,7 +128,6 @@ def get_children(request, node_id):
             child_list.append((hit['child'].id, name))
     except AttributeError:
         pass
-    child_list.sort(key=itemgetter(1))
     return HttpResponse(json.dumps(child_list), mimetype='application/json')
 
 # Create functions
@@ -440,7 +443,7 @@ def edit_host(request, handle_id):
             # Generic node update
             form_update_node(request.user, node, form)
             # Host specific updates
-            location_id = int(request.POST.get('rack', 0))
+            location_id = int(request.POST.get('level1', 0))
             if not location_id and form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
             if location_id:
