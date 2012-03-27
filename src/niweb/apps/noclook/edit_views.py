@@ -404,7 +404,7 @@ def edit_optical_node(request, handle_id):
             # Generic node update
             form_update_node(request.user, node, form)
             # Optical Node specific updates
-            if form.cleaned_data['relationship_location'] != "0": # Initial value
+            if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id)
             return HttpResponseRedirect('/optical-node/%d' % nh.handle_id)
@@ -483,7 +483,7 @@ def edit_host(request, handle_id):
             # Generic node update
             form_update_node(request.user, node, form)
             # Host specific updates
-            if form.cleaned_data['relationship_location'] != "0": # Initial value
+            if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id) 
             else:

@@ -135,7 +135,7 @@ class EditCableForm(forms.Form):
 class EditOpticalNodeForm(forms.Form):        
     name = forms.CharField()
     sites = get_node_type_tuples('Site')
-    relationship_location = forms.CharField(required=False,
+    relationship_location = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
                                               
 
@@ -177,5 +177,5 @@ class EditHostForm(forms.Form):
     #start_unit = forms.IntegerField(required=False,
     #                           help_text='Where the host starts in the rack. \
     #                           Used for calculation of rack space.')
-    relationship_location = forms.CharField(required=False,
+    relationship_location = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
