@@ -43,11 +43,13 @@
                 success: function(j){
                     var choices = '';
                     if (j.length == 0) {
-                        choices += '<option value="0"></option>';
+                        choices += '<option value="0">' + "-- Empty List --" + '</option>';
                         $obj.html(choices);
+                        $obj.attr("disabled","disabled");
                     } else {
                         if($initext!="" && $initext!=null) {
                             choices += '<option value="0">' + $initext + '</option>';
+                            $obj.removeAttr("disabled");
                         }
                         for (var i = 0; i < j.length; i++) {
                             selected = (j[i][0]==$inival)?' selected="selected"':'';
