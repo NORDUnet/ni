@@ -1,9 +1,14 @@
 /*!
+ *
+ * Derived from:
  * jQuery jCombo Plugin
  * Carlos De Oliveira
  * cardeol@gmail.com
- *
  * Latest Release: Sep 2011
+ *
+ * Mar 2012
+ * Changes made by lundberg@nordu.net.
+ *
  */
 (function($) {
     $.fn.jCombo = function(url, user_options) {
@@ -11,9 +16,13 @@
                 parent: "",
                 selected_value : "0",
                 parent_value : "",
-                initial_text: "-- Please Select --"
+                initial_text: "-- Please Select --",
+                end_value_field: ""
         };
-        var user_options = $.extend(default_options, user_options) ;
+        $(this).click(function() {
+            $(user_options.end_value_field).val(obj.val());
+        });
+        var user_options = $.extend(default_options, user_options);
         var obj = $(this);
         $(this).hide();
         if(user_options.parent!="") {
