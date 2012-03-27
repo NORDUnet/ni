@@ -84,7 +84,61 @@ def form_update_node(user, node, form, property_keys=None):
             with nc.neo4jdb.transaction:
                 node[key] = unicode(form.cleaned_data[key])
     return True
-    
+
+def place_physical_in_location(nh, node, location_id):
+    '''
+    Places a physical node in a rack or on a site. Also converts it to a 
+    physical node if it still is a logical one.
+    ''' 
+    # Check if the node is logical
+    meta_type = nc.get_node_meta_type(node)
+    if meta_type == 'logical':
+        # Make the node physical
+        with nc.neo4jdb.transaction:        
+            nc.delete_relationship(nc.neo4jdb,
+                                   nc.iter2list(node.Contains.incoming)[0])
+            physical = nc.get_meta_node(nc.neo4jdb, 'physical')
+            nc.create_relationship(nc.neo4jdb, physical, node, 'Contains')
+            nh.node_meta_type = 'physical'
+            nh.save()
+    location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
+    rel_exist = nc.get_relationships(node, location_node, 'Located_in')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        # Remove the old location(s) and create a new
+        for rel in nc.iter2list(node.Located_in.outgoing):
+            nc.delete_relationship(nc.neo4jdb, rel)
+        nc.create_suitable_relationship(nc.neo4jdb, node, 
+                                        location_node, 'Located_in')
+    return nh, node
+
+def place_location_in_location(node, location_id):
+    '''
+    Places a location node in another location.
+    '''
+    location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
+    rel_exist = nc.get_relationships(location_node, node, 'Has')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        # Remove the old location(s) and create a new
+        for rel in nc.iter2list(node.Has.incoming):
+            nc.delete_relationship(nc.neo4jdb, rel)
+            nc.create_suitable_relationship(nc.neo4jdb, location_node,
+                                            node, 'Has')
+    return node
+
 # Form data returns
 @login_required
 def get_node_type(request, slug):
@@ -96,11 +150,16 @@ def get_node_type(request, slug):
     q = '''                   
         START node=node:node_types(node_type="%s")
         RETURN node
+        ORDER BY node.country_code?, node.name
         ''' % node_type
     hits = nc.neo4jdb.query(q)
     type_list = []
     for hit in hits:
-        type_list.append((hit['node'].id, hit['node']['name']))
+        if hit['node']['node_type'] == 'Site':
+            name = '%s-%s' % (hit['node']['country_code'], hit['node']['name'])
+        else:
+            name = hit['node']['name']
+        type_list.append((hit['node'].id, name))
     return HttpResponse(json.dumps(type_list), mimetype='application/json')
 
 @login_required
@@ -319,6 +378,8 @@ def edit_cable(request, handle_id):
             if form.cleaned_data['telenor_trunk_id']:
                 with nc.neo4jdb.transaction:
                     node['name'] = form.cleaned_data['telenor_trunk_id']
+                    nh.name = form.cleaned_data['telenor_trunk_id']
+                    nh.save()
             return HttpResponseRedirect('/cable/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_cable.html',
@@ -336,7 +397,7 @@ def edit_optical_node(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    locations = nc.iter2list(node.Located_in.outgoing)
+    location = nc.get_location(node)
     if request.POST:
         form = forms.EditOpticalNodeForm(request.POST)
         if form.is_valid():
@@ -345,30 +406,17 @@ def edit_optical_node(request, handle_id):
             # Optical Node specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
-                # TODO: Fix the relationship adding in a nice way
-                rel_exist = nc.get_relationships(node, location_node, 
-                                                     'Located_in')
-                if not rel_exist:
-                    try:
-                        location_rel = nc.iter2list(node.Located_in.outgoing)
-                        with nc.neo4jdb.transaction:
-                            location_rel[0].delete()
-                    except IndexError:
-                        # No site set
-                        pass
-                    nc.create_suitable_relationship(nc.neo4jdb, node,
-                                                    location_node, 'Located_in')
+                nh, node = place_physical_in_location(nh, node, location_id)
             return HttpResponseRedirect('/optical-node/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_optical_node.html',
                                   {'node': node, 'form': form,
-                                   'locations': locations},
+                                   'location': location},
                                 context_instance=RequestContext(request))
     else:
         form = forms.EditOpticalNodeForm(nc.node2dict(node))
         return render_to_response('noclook/edit/edit_optical_node.html',
-                                  {'form': form, 'locations': locations,
+                                  {'form': form, 'location': location,
                                    'node': node},
                                 context_instance=RequestContext(request))
 @login_required        
@@ -408,15 +456,7 @@ def edit_rack(request, handle_id):
             # Rack specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
-                # TODO: Fix the relationship adding in a nice way
-                rel_exist = nc.get_relationships(location_node, node, 'Has')
-                if not rel_exist:
-                    # Remove old locations, if any
-                    for rel in nc.iter2list(node.Has.incoming):
-                        nc.delete_relationship(nc.neo4jdb, rel)
-                    nc.create_suitable_relationship(nc.neo4jdb, location_node,
-                                                    node, 'Has')
+                node = place_location_in_location(node, location_id)
             return HttpResponseRedirect('/rack/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_rack.html',
@@ -436,19 +476,16 @@ def edit_host(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    locations = nc.iter2list(node.Located_in.outgoing)
+    location = nc.get_location(node)
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
             # Host specific updates
-            location_id = int(request.POST.get('level1', 0))
-            if not location_id and form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-            if location_id:
-                # Create location relationship
-                nh, node = place_physical(nh, node, location_id) 
+                nh, node = place_physical_in_location(nh, node, location_id) 
             else:
                 # Remove existing location if any
                 for rel in nc.iter2list(node.Located_in.outgoing):
@@ -457,47 +494,14 @@ def edit_host(request, handle_id):
         else:
             return render_to_response('noclook/edit/edit_host.html',
                                   {'node': node, 'form': form,
-                                   'locations': locations},
+                                   'location': location},
                                 context_instance=RequestContext(request))
     else:
         form = forms.EditHostForm(nc.node2dict(node))
         return render_to_response('noclook/edit/edit_host.html',
-                                  {'form': form, 'locations': locations,
+                                  {'form': form, 'location': location,
                                    'node': node},
                                 context_instance=RequestContext(request))
-
-def place_physical(nh, node, location_id):
-    '''
-    Places a physical node in a rack or on a site. Also converts it to a 
-    physical node if it still is a logical one.
-    ''' 
-    # Check if the node is logical
-    meta_type = nc.get_node_meta_type(node)
-    if meta_type == 'logical':
-        # Make the node physical
-        with nc.neo4jdb.transaction:        
-            nc.delete_relationship(nc.neo4jdb,
-                                   nc.iter2list(node.Contains.incoming)[0])
-            physical = nc.get_meta_node(nc.neo4jdb, 'physical')
-            nc.create_relationship(nc.neo4jdb, physical, node, 'Contains')
-            nh.node_meta_type = 'physical'
-            nh.save()
-    location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
-    rel_exist = nc.get_relationships(node, location_node, 'Located_in')
-    # If the location is the same as before just update relationship
-    # properties
-    if rel_exist:
-        # TODO: Change properties here
-        #location_rel = nc.iter2list(node.Located_in.outgoing)
-        #with nc.neo4jdb.transaction:
-        pass
-    else:
-        # Remove the old location(s) and create a new
-        for rel in nc.iter2list(node.Located_in.outgoing):
-            nc.delete_relationship(nc.neo4jdb, rel)
-        nc.create_suitable_relationship(nc.neo4jdb, node, 
-                                        location_node, 'Located_in')
-    return nh, node
 
 @login_required
 def edit_odf(request, handle_id):

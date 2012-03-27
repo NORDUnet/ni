@@ -126,17 +126,17 @@ class EditCableForm(forms.Form):
     global_crossing_circuit_id = forms.CharField(required=False,
                                                  help_text='Global Crossing \
                                                  circuit ID, nnnnnnnnnn')
+    relationship_end_a = forms.CharField(required=False,
+                                            widget=forms.widgets.HiddenInput)
+    relationship_end_b = forms.CharField(required=False,
+                                            widget=forms.widgets.HiddenInput)
 
 
-class EditOpticalNodeForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(NewRackForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
-        
+class EditOpticalNodeForm(forms.Form):        
     name = forms.CharField()
     sites = get_node_type_tuples('Site')
-    relationship_location = forms.ChoiceField(required=False,
-                                              widget=forms.widgets.Select)
+    relationship_location = forms.CharField(required=False,
+                                            widget=forms.widgets.HiddenInput)
                                               
 
 class EditPeeringPartnerForm(forms.Form):
@@ -169,13 +169,13 @@ class EditRackForm(forms.Form):
                                               widget=forms.widgets.Select)
                                     
 class EditHostForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditHostForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
+#    def __init__(self, *args, **kwargs):
+#        super(EditHostForm, self).__init__(*args, **kwargs)
+#        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
     #units = forms.IntegerField(required=False,
     #                           help_text='Height in rack units (u).')
     #start_unit = forms.IntegerField(required=False,
     #                           help_text='Where the host starts in the rack. \
     #                           Used for calculation of rack space.')
-    relationship_location = forms.ChoiceField(required=False,
-                                              widget=forms.widgets.Select)
+    relationship_location = forms.CharField(required=False,
+                                            widget=forms.widgets.HiddenInput)

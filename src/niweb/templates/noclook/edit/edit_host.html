@@ -7,8 +7,20 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
+        // Populate first level combo box
+        $.getJSON('/formdata/site/', function(data) {
+            $('#level0').append($('<option>').val("0").text("-- Please Select --"));
+            $.each(data, function(key, tuple) {
+                $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
+            });
+        });
+        $('#level0').click(function() {
+            $("#id_relationship_location").val($(this).val());
+        });
+        // Hook lower level combo boxes up to their parent
         $("#level1").jCombo("/formdata/{id}/children/rack", {
-                        parent: "#id_relationship_location",
+                        parent: "#level0",
+                        end_value_field: "#id_relationship_location",
                     });
     }
 );
@@ -42,19 +54,19 @@ $(document).ready(
 -->
         <tr>
             <td width="50px"><label>Current</label></td>
-            <td>{% for item in locations %}
-                    {% if forloop.first %}
-                        {{ item.end.name }}
-                    {% else %}
-                        , {{ item.end.name }}
-                    {% endif %}
-                {% endfor %}
+            <td>
+                {% if location %}
+                    {% for loc in location %}
+                        {{ loc.name }}
+                    {% endfor %}
+                {% endif %}
             </td>
         </tr>
         <tr>
             <td width="50px"><label>Change</label></td>
             <td>
-                {{ form.relationship_location }}<br /><br />
+                {{ form.relationship_location }}
+                <select name="level0" id="level0"></select><br /><br />
                 <select name="level1" id="level1"></select><br /><br />
             </td>
         </tr>
