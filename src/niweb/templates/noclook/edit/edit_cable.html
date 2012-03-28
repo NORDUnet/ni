@@ -1,13 +1,118 @@
 {% extends "noclook/edit/base_edit.html" %}
 
+{% block js %}
+{{ block.super }}
+{% load niweb_tags %}
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // End A //
+        // Populate first level combo box
+        $.getJSON('/formdata/site/', function(data) {
+            $('#level0A').append($('<option>').val("0").text("-- Please Select --"));
+            $.each(data, function(key, tuple) {
+                $('#level0A').append($('<option>').val(tuple[0]).text(tuple[1]));
+            });
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#level1A").jCombo("/formdata/{id}/children/rack", {
+                        parent: "#level0A",
+                        end_value_field: "#id_relationship_end_a",
+                    });
+        $("#level2A").jCombo("/formdata/{id}/children", {
+                        parent: "#level1A",
+                        end_value_field: "#id_relationship_end_a",
+                    });
+        // End B //
+        // Populate first level combo box
+        $.getJSON('/formdata/site/', function(data) {
+            $('#level0B').append($('<option>').val("0").text("-- Please Select --"));
+            $.each(data, function(key, tuple) {
+                $('#level0B').append($('<option>').val(tuple[0]).text(tuple[1]));
+            });
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#level1B").jCombo("/formdata/{id}/children/rack", {
+                        parent: "#level0B",
+                        end_value_field: "#id_relationship_end_b",
+                    });
+        $("#level2B").jCombo("/formdata/{id}/children", {
+                        parent: "#level1B",
+                        end_value_field: "#id_relationship_end_b",
+                    });
+
+        // Modal delete connection confirm
+        $("#dialog-confirm").dialog({
+          modal: true,
+                bgiframe: true,
+                width: 500,
+                height: 200,
+          autoOpen: false
+          });
+
+        $("#confirm").click(function(e) {
+            console.log('clickty')
+            e.preventDefault();
+            var theHREF = $(this).attr("href");
+
+
+            $("#dialog-confirm").dialog('option', 'buttons', {
+                    "Confirm" : function() {
+                        window.location.href = theHREF;
+                        },
+                    "Cancel" : function() {
+                        $(this).dialog("close");
+                        }
+                    });
+
+            $("#dialog-confirm").dialog("open");
+
+        });
+    }
+);
+</script>
+{% endblock %}
+
 {% block content %}
 {{ block.super }}
+<div id="dialog-confirm" title="Remove connection?">
+    <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The connection will be permanently deleted and cannot be recovered. Are you sure?</p>
+</div>
     <h3>Name</h3>
     {{ form.name }}
     <br><br>
     <h3>Type (optional)</h3>
     {{ form.cable_type }}
-    <br><br>
+    <br /><br />
+    <h3>Connections</h3>
+    <h5>Add Connection</h5>
+    <table>
+        <tr>
+            <td width="50px">
+                {{ form.relationship_end_a }}
+                <select class="stacked" name="level0A" id="level0A"></select><br />
+                <select class="stacked" name="level1A" id="level1A"></select><br />
+                <select class="stacked" name="level2A" id="level2A"></select><br />
+                <span class="help-block">Choose end A</span>
+            </td>
+            <td>
+                {{ form.relationship_end_b }}
+                <select class="stacked" name="level0B" id="level0B"></select><br />
+                <select class="stacked" name="level1B" id="level1B"></select><br />
+                <select class="stacked" name="level2B" id="level2B"></select><br />
+                <span class="help-block">Choose end B</span>
+            </td>
+        </tr>
+    </table>
+    <h5>Remove connection</h5>
+    <table>
+    {% for item in connect_rels %}
+        <tr>
+            <td><a href="{{ item.url }}">{{ item.name }}</a></td><td><a href="relationship/{{ item.rel.id }}/delete" id="confirm">Delete</a></td>
+        </tr>
+    {% endfor %}
+    </table>
     <h3>Telenor Information (optional)</h3>
     <table>
         <tr>

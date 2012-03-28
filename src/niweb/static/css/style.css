@@ -25,6 +25,8 @@ ul.menu {
 }
 
 /* Detailed views */
+
+/*
 .info-container {
  width: auto;
  vertical-align: top;
@@ -51,10 +53,16 @@ ul.menu {
 .comment-cell {
  width: 200px;
 }
+*/
 
 h5.site {
  margin-top: -15px;
 }
+
+select.stacked {
+ margin-bottom: 10px;
+}
+
 /*#content td.align_top {
  vertical-align: top;
 }

@@ -177,7 +177,7 @@ def get_location(node):
     Returns a list of the nodes locations as dicts with name and url.
     '''
     location = []
-    rels = nc.iter2list(node.Located_in.outgoing)
+    rels = iter2list(node.Located_in.outgoing)
     for rel in rels:
         if rel.end['node_type'] == 'Site':
             name = '%s-%s' % (rel.end['country_code'], rel.end['name'])
@@ -195,7 +195,7 @@ def get_place(node):
     Returns the nodes place in site or other equipment.
     '''
     location = []
-    rels = nc.iter2list(node.Has.incoming)
+    rels = iter2list(node.Has.incoming)
     for rel in rels:
         if rel.start['node_type'] == 'Site':
             name = '%s-%s' % (rel.start['country_code'], rel.start['name'])
@@ -203,6 +203,24 @@ def get_place(node):
             name = rel.start['name']
         location.append({'url': get_node_url(rel.start), 'name': name})
     return location
+    
+def get_connect_rels(node):
+    '''
+    Returns the nodes place in site or other equipment.
+    '''
+    connected = []
+    q = '''                   
+        START node=node(%d)
+        MATCH node-[rel:Connected_to]-(o)
+        RETURN rel, o
+        ORDER BY o.name
+        ''' % node.id
+    hits = nc.neo4jdb.query(q)
+    for hit in hits:
+        connected.append({'url': get_node_url(hit['o']),
+                          'name': hit['o']['name'],
+                          'rel': hit['rel']})
+    return connected
 
 # Core functions
 def open_db(uri=NEO4J_URI):

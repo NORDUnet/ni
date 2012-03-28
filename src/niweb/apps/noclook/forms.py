@@ -126,9 +126,9 @@ class EditCableForm(forms.Form):
     global_crossing_circuit_id = forms.CharField(required=False,
                                                  help_text='Global Crossing \
                                                  circuit ID, nnnnnnnnnn')
-    relationship_end_a = forms.CharField(required=False,
+    relationship_end_a = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
-    relationship_end_b = forms.CharField(required=False,
+    relationship_end_b = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
 
 
@@ -169,9 +169,6 @@ class EditRackForm(forms.Form):
                                               widget=forms.widgets.Select)
                                     
 class EditHostForm(forms.Form):
-#    def __init__(self, *args, **kwargs):
-#        super(EditHostForm, self).__init__(*args, **kwargs)
-#        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
     #units = forms.IntegerField(required=False,
     #                           help_text='Height in rack units (u).')
     #start_unit = forms.IntegerField(required=False,
