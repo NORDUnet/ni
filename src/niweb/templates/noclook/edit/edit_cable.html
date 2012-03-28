@@ -105,14 +105,16 @@ $(document).ready(
             </td>
         </tr>
     </table>
-    <h5>Remove connection</h5>
-    <table>
-    {% for item in connect_rels %}
-        <tr>
-            <td><a href="{{ item.url }}">{{ item.name }}</a></td><td><a href="relationship/{{ item.rel.id }}/delete" id="confirm">Delete</a></td>
-        </tr>
-    {% endfor %}
-    </table>
+    {% if connect_rels %}
+        <h5>Remove connection</h5>
+        <table>
+        {% for item in connect_rels %}
+            <tr>
+                <td><a href="{{ item.url }}">{{ item.name }}</a></td><td><a href="relationship/{{ item.rel.id }}/delete" id="confirm">Delete</a></td>
+            </tr>
+        {% endfor %}
+        </table>
+    {% endif %}
     <h3>Telenor Information (optional)</h3>
     <table>
         <tr>
