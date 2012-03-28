@@ -52,16 +52,19 @@ def slug_to_node_type(slug):
         node_type.save()
     return node_type
 
-def form_update_node(user, node, form, property_keys=None):
+def form_update_node(user, node, form, property_keys=[]):
     '''
     Take a node, a form and the property keys that should be used to fill the
     node if the property keys are omitted the form.base_fields will be used.
     Returns True if all non-empty properties where added else False and 
     rollbacks the node changes.
     '''
+    meta_fields = ['relationship_location']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
-        property_keys = form.base_fields
+        for field in form.base_fields.keys():
+            if field not in meta_fields:
+                property_keys.append(field)
     for key in property_keys:
         try:
             if form.cleaned_data[key] or form.cleaned_data[key] == 0:
@@ -410,7 +413,7 @@ def edit_cable(request, handle_id):
             if form.cleaned_data['telenor_trunk_id']:
                 with nc.neo4jdb.transaction:
                     node['name'] = form.cleaned_data['telenor_trunk_id']
-                    nh.name = form.cleaned_data['telenor_trunk_id']
+                    nh.node_name = form.cleaned_data['telenor_trunk_id']
                     nh.save()
             if form.cleaned_data['relationship_end_a']:
                 end_a = form.cleaned_data['relationship_end_a']
@@ -483,7 +486,7 @@ def edit_peering_partner(request, handle_id):
         form = forms.EditPeeringPartnerForm(nc.node2dict(node))
         return render_to_response('noclook/edit/edit_peering_partner.html',
                                   {'node': node, 'form': form},
-                                context_instance=RequestContext(request))            
+                                context_instance=RequestContext(request))
 
 @login_required        
 def edit_rack(request, handle_id):
@@ -551,6 +554,36 @@ def edit_host(request, handle_id):
                                    'node': node},
                                 context_instance=RequestContext(request))
 
+@login_required        
+def edit_router(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditRouterForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            # Router specific updates
+            if form.cleaned_data['relationship_location']:
+                location_id = form.cleaned_data['relationship_location']
+                nh, node = place_physical_in_location(nh, node, location_id) 
+            else:
+                # Remove existing location if any
+                for rel in nc.iter2list(node.Located_in.outgoing):
+                    nc.delete_relationship(nc.neo4jdb, rel)
+            return HttpResponseRedirect('/router/%d' % nh.handle_id)
+        else:
+            return render_to_response('noclook/edit/edit_router.html',
+                                  {'node': node, 'form': form},
+                                context_instance=RequestContext(request))
+    else:
+        form = forms.EditRouterForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_router.html',
+                                  {'node': node, 'form': form},
+                                context_instance=RequestContext(request)) 
+
 @login_required
 def edit_odf(request, handle_id):
     # TODO:    
@@ -562,12 +595,13 @@ NEW_FORMS =  {'cable': forms.NewCableForm,
               'site-owner': forms.NewSiteOwnerForm,
              }
               
-EDIT_FORMS =  {'cable': forms.EditCableForm,
-               'host': forms.EditHostForm,
-               'optical-node': forms.EditOpticalNodeForm,
-               'site': forms.EditSiteForm,
-               'site-owner': forms.EditSiteOwnerForm,
-               }
+#EDIT_FORMS =  {'cable': forms.EditCableForm,
+#               'host': forms.EditHostForm,
+#               'optical-node': forms.EditOpticalNodeForm,
+#               'router': forms.EditRouterForm,
+#               'site': forms.EditSiteForm,
+#               'site-owner': forms.EditSiteOwnerForm,
+#               }
 
 NEW_FUNC = {'Cable': new_cable,
             'Rack': new_rack,
@@ -580,6 +614,7 @@ EDIT_FUNC = {'cable': edit_cable,
              'optical-node': edit_optical_node,
              'peering-partner': edit_peering_partner,
              'rack': edit_rack,
+             'router': edit_router,
              'site': edit_site, 
              'site-owner': edit_site_owner,
              }

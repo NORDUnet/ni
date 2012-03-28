@@ -176,3 +176,12 @@ class EditHostForm(forms.Form):
     #                           Used for calculation of rack space.')
     relationship_location = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
+
+class EditRouterForm(forms.Form):
+    #units = forms.IntegerField(required=False,
+    #                           help_text='Height in rack units (u).')
+    #start_unit = forms.IntegerField(required=False,
+    #                           help_text='Where the host starts in the rack. \
+    #                           Used for calculation of rack space.')
+    relationship_location = forms.IntegerField(required=False,
+                                            widget=forms.widgets.HiddenInput)
