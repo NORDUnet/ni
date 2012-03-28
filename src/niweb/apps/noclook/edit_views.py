@@ -138,7 +138,38 @@ def place_location_in_location(node, location_id):
             nc.create_suitable_relationship(nc.neo4jdb, location_node,
                                             node, 'Has')
     return node
+    
+def connect_physical(node, other_node_id):
+    '''
+    Places a location node in another location.
+    '''
+    other_node = nc.get_node_by_id(nc.neo4jdb,  other_node_id)
+    rel_exist = nc.get_relationships(node, other_node, 'Connected_to')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        nc.create_suitable_relationship(nc.neo4jdb, node, other_node,
+                                        'Connected_to')
+    return node
 
+@login_required
+def remove_relationship(request, slug, handle_id, rel_id):
+    '''
+    Removes the relationship if the node has a relationship matching the
+    supplied id.
+    '''
+    nh, node = get_nh_node(handle_id)
+    rel = nc.get_relationship_by_id(nc.neo4jdb, rel_id)
+    if rel.start.id == node.id or rel.end.id == node.id:
+        if nc.delete_relationship(nc.neo4jdb, rel):
+            return HttpResponseRedirect('/%s/%d/edit' % (slug, nh.handle_id))
+    raise Http404
+    
 # Form data returns
 @login_required
 def get_node_type(request, slug):
@@ -369,6 +400,7 @@ def edit_cable(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
+    connect_rels = nc.get_connect_rels(node)
     if request.POST:
         form = forms.EditCableForm(request.POST)
         if form.is_valid():
@@ -380,15 +412,23 @@ def edit_cable(request, handle_id):
                     node['name'] = form.cleaned_data['telenor_trunk_id']
                     nh.name = form.cleaned_data['telenor_trunk_id']
                     nh.save()
+            if form.cleaned_data['relationship_end_a']:
+                end_a = form.cleaned_data['relationship_end_a']
+                connect_physical(node, end_a)
+            if form.cleaned_data['relationship_end_b']:
+                end_b = form.cleaned_data['relationship_end_b']
+                connect_physical(node, end_b)
             return HttpResponseRedirect('/cable/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_cable.html',
-                                  {'node': node, 'form': form},
+                                  {'node': node, 'form': form,
+                                   'connect_rels': connect_rels},
                                 context_instance=RequestContext(request))
     else:
         form = forms.EditCableForm(nc.node2dict(node))
         return render_to_response('noclook/edit/edit_cable.html',
-                                  {'form': form, 'node': node},
+                                  {'form': form, 'node': node,
+                                   'connect_rels': connect_rels},
                                 context_instance=RequestContext(request))
                                 
 @login_required
@@ -407,6 +447,10 @@ def edit_optical_node(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id)
+            else:
+                # Remove existing location if any
+                for rel in nc.iter2list(node.Located_in.outgoing):
+                    nc.delete_relationship(nc.neo4jdb, rel)
             return HttpResponseRedirect('/optical-node/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_optical_node.html',
@@ -457,6 +501,10 @@ def edit_rack(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 node = place_location_in_location(node, location_id)
+            else:
+                # Remove existing location if any
+                for rel in nc.iter2list(node.Has.incoming):
+                    nc.delete_relationship(nc.neo4jdb, rel)
             return HttpResponseRedirect('/rack/%d' % nh.handle_id)
         else:
             return render_to_response('noclook/edit/edit_rack.html',
