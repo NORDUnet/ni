@@ -208,6 +208,7 @@ def get_connect_rels(node):
     '''
     Returns the nodes place in site or other equipment.
     '''
+    # TODO: Rewrite so we get, at least, o's parent and its' parent
     connected = []
     q = '''                   
         START node=node(%d)

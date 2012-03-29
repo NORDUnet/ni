@@ -45,9 +45,13 @@ def slug_to_node_type(slug):
     '''
     Returns or creates and returns the NodeType object from the supplied slug.
     '''
+    acronym_types = ['odf']
     node_type, created = NodeType.objects.get_or_create(slug=slug)
     if created:
-        type_name = slug.replace('-', ' ').title()
+        if slug in acronym_types:
+            type_name = slug.upper()
+        else:
+            type_name = slug.replace('-', ' ').title()
         node_type.type = type_name
         node_type.save()
     return node_type
@@ -59,7 +63,7 @@ def form_update_node(user, node, form, property_keys=[]):
     Returns True if all non-empty properties where added else False and 
     rollbacks the node changes.
     '''
-    meta_fields = ['relationship_location']
+    meta_fields = ['relationship_location', 'number_of_ports']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         for field in form.base_fields.keys():
@@ -258,7 +262,7 @@ def new_node(request, slug=None):
             nc.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
                                        False)
             try:
-                func = NEW_FUNC[str(node_type)]
+                func = NEW_FUNC[node_type.slug]
             except KeyError:
                 raise Http404
             return func(request, node_handle.handle_id, form)
@@ -302,8 +306,7 @@ def new_cable(request, handle_id, form):
 @login_required
 def new_rack(request, handle_id, form):
     nh, node = get_nh_node(handle_id)
-    keys = []
-    form_update_node(request.user, node, form, keys)
+    form_update_node(request.user, node, form)
     if form.cleaned_data['relationship_location']:
         location_id = form.cleaned_data['relationship_location']
         location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
@@ -321,8 +324,22 @@ def new_rack(request, handle_id, form):
 
 @login_required        
 def new_odf(request, handle_id, form):
-    # TODO:    
-    pass
+    nh, node = get_nh_node(handle_id)
+    form_update_node(request.user, node, form)
+    if form.cleaned_data['number_of_ports']:
+        number_of_ports = int(form.cleaned_data['number_of_ports'])
+        node_type = slug_to_node_type('port')
+        node_meta_type='physical'
+        for port in range(1, number_of_ports+1):
+            node_handle = NodeHandle(node_name=port, node_type=node_type,
+                                    node_meta_type=node_meta_type,
+                                    modifier=request.user, creator=request.user)
+            node_handle.save()
+            port_node = node_handle.get_node()
+            nc.set_noclook_auto_manage(nc.neo4jdb, port_node, False)
+            nc.create_relationship(nc.neo4jdb, node, port_node, 'Has')
+            
+    return HttpResponseRedirect(nh.get_absolute_url())
 
 # Edit functions
 @login_required
@@ -594,10 +611,39 @@ def edit_router(request, handle_id):
 
 @login_required
 def edit_odf(request, handle_id):
-    # TODO:    
-    pass
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    location = nc.get_location(node)
+    if request.POST:
+        form = forms.EditOdfForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            # Host specific updates
+            if form.cleaned_data['relationship_location']:
+                location_id = form.cleaned_data['relationship_location']
+                nh, node = place_physical_in_location(nh, node, location_id) 
+            else:
+                # Remove existing location if any
+                for rel in nc.iter2list(node.Located_in.outgoing):
+                    nc.delete_relationship(nc.neo4jdb, rel)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_odf.html',
+                                  {'node': node, 'form': form,
+                                   'location': location},
+                                context_instance=RequestContext(request))
+    else:
+        form = forms.EditOdfForm(nc.node2dict(node))
+        return render_to_response('noclook/edit/edit_odf.html',
+                                  {'form': form, 'location': location,
+                                   'node': node},
+                                context_instance=RequestContext(request))
 
 NEW_FORMS =  {'cable': forms.NewCableForm,
+              'odf': forms.NewOdfForm,
               'rack': forms.NewRackForm,
               'site': forms.NewSiteForm, 
               'site-owner': forms.NewSiteOwnerForm,
@@ -611,14 +657,16 @@ NEW_FORMS =  {'cable': forms.NewCableForm,
 #               'site-owner': forms.EditSiteOwnerForm,
 #               }
 
-NEW_FUNC = {'Cable': new_cable,
-            'Rack': new_rack,
-            'Site': new_site,
-            'Site Owner': new_site_owner,
+NEW_FUNC = {'cable': new_cable,
+            'odf': new_odf,
+            'rack': new_rack,
+            'site': new_site,
+            'site-owner': new_site_owner,
             }
 
 EDIT_FUNC = {'cable': edit_cable,
              'host': edit_host,
+             'odf': edit_odf,
              'optical-node': edit_optical_node,
              'peering-partner': edit_peering_partner,
              'rack': edit_rack,
