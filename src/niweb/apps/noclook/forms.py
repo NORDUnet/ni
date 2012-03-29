@@ -167,7 +167,8 @@ class EditRackForm(forms.Form):
                                help_text='Width in millimeters (mm).')
     relationship_location = forms.ChoiceField(required=False,
                                               widget=forms.widgets.Select)
-                                    
+                
+                
 class EditHostForm(forms.Form):
     #units = forms.IntegerField(required=False,
     #                           help_text='Height in rack units (u).')
@@ -177,6 +178,7 @@ class EditHostForm(forms.Form):
     relationship_location = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
 
+
 class EditRouterForm(forms.Form):
     #units = forms.IntegerField(required=False,
     #                           help_text='Height in rack units (u).')
@@ -185,3 +187,33 @@ class EditRouterForm(forms.Form):
     #                           Used for calculation of rack space.')
     relationship_location = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
+    
+    
+class NewOdfForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewOdfForm, self).__init__(*args, **kwargs)
+        # Set max number of ports to choose from
+        num_of_ports = 20
+        choices = [(x,x) for x in range(1, num_of_ports+1) if x]
+        self.fields['number_of_ports'].choices = choices
+        
+    #units = forms.IntegerField(required=False,
+    #                           help_text='Height in rack units (u).')
+    #start_unit = forms.IntegerField(required=False,
+    #                           help_text='Where the host starts in the rack. \
+    #                           Used for calculation of rack space.')
+    name = forms.CharField()
+    number_of_ports = forms.ChoiceField(required=False,
+                                              widget=forms.widgets.Select)
+
+
+class EditOdfForm(forms.Form):
+    #units = forms.IntegerField(required=False,
+    #                           help_text='Height in rack units (u).')
+    #start_unit = forms.IntegerField(required=False,
+    #                           help_text='Where the host starts in the rack. \
+    #                           Used for calculation of rack space.')
+    name = forms.CharField()
+    relationship_location = forms.IntegerField(required=False,
+                                               widget=forms.widgets.HiddenInput)
+                                              
