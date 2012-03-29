@@ -274,22 +274,21 @@ def new_site(request, handle_id, form):
     with nc.neo4jdb.transaction:
         node['name'] = form.cleaned_data['name'].upper()
         node['country'] = COUNTRY_MAP[node['country_code']]
-    #return HttpResponseRedirect('/site/%d' % nh.handle_id)
-    HttpResponseRedirect(nh.get_absolute_url())
+    return HttpResponseRedirect(nh.get_absolute_url())
     
 @login_required
 def new_site_owner(request, handle_id, form):
     nh, node = get_nh_node(handle_id)
     keys = ['url']
     form_update_node(request.user, node, form, keys)
-    return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
+    return HttpResponseRedirect(nh.get_absolute_url())
     
 @login_required
 def new_cable(request, handle_id, form):
     nh, node = get_nh_node(handle_id)
     keys = ['cable_type']
     form_update_node(request.user, node, form, keys)
-    return HttpResponseRedirect('/cable/%d' % nh.handle_id)
+    return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required
 def new_rack(request, handle_id, form):
@@ -309,7 +308,7 @@ def new_rack(request, handle_id, form):
                 # No site set
                 pass
             nc.create_relationship(nc.neo4jdb, location_node, node, 'Has')
-    return HttpResponseRedirect('/rack/%d' % nh.handle_id)    
+    return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required        
 def new_odf(request, handle_id, form):
@@ -362,7 +361,7 @@ def edit_site(request, handle_id):
                         pass
                     nc.create_suitable_relationship(nc.neo4jdb, owner_node,
                                                     node, 'Responsible_for')
-            return HttpResponseRedirect('/site/%d' % nh.handle_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_site.html',
                                   {'node': node, 'form': form,
@@ -386,7 +385,7 @@ def edit_site_owner(request, handle_id):
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
-            return HttpResponseRedirect('/site-owner/%d' % nh.handle_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'node': node, 'form': form},
@@ -421,7 +420,7 @@ def edit_cable(request, handle_id):
             if form.cleaned_data['relationship_end_b']:
                 end_b = form.cleaned_data['relationship_end_b']
                 connect_physical(node, end_b)
-            return HttpResponseRedirect('/cable/%d' % nh.handle_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_cable.html',
                                   {'node': node, 'form': form,
@@ -454,7 +453,7 @@ def edit_optical_node(request, handle_id):
                 # Remove existing location if any
                 for rel in nc.iter2list(node.Located_in.outgoing):
                     nc.delete_relationship(nc.neo4jdb, rel)
-            return HttpResponseRedirect('/optical-node/%d' % nh.handle_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_optical_node.html',
                                   {'node': node, 'form': form,
@@ -477,7 +476,7 @@ def edit_peering_partner(request, handle_id):
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
-            return HttpResponseRedirect('/peering-partner/%d' % nh.handle_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_peering_partner.html',
                                   {'node': node, 'form': form},
@@ -508,7 +507,7 @@ def edit_rack(request, handle_id):
                 # Remove existing location if any
                 for rel in nc.iter2list(node.Has.incoming):
                     nc.delete_relationship(nc.neo4jdb, rel)
-            return HttpResponseRedirect('/rack/%d' % nh.handle_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_rack.html',
                                   {'node': node, 'form': form,
@@ -541,7 +540,7 @@ def edit_host(request, handle_id):
                 # Remove existing location if any
                 for rel in nc.iter2list(node.Located_in.outgoing):
                     nc.delete_relationship(nc.neo4jdb, rel)
-            return HttpResponseRedirect('/host/%d' % nh.handle_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_host.html',
                                   {'node': node, 'form': form,
@@ -573,7 +572,7 @@ def edit_router(request, handle_id):
                 # Remove existing location if any
                 for rel in nc.iter2list(node.Located_in.outgoing):
                     nc.delete_relationship(nc.neo4jdb, rel)
-            return HttpResponseRedirect('/router/%d' % nh.handle_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_router.html',
                                   {'node': node, 'form': form},
