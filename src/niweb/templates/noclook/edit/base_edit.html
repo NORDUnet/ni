@@ -2,9 +2,48 @@
 
 {% block title %}{{ block.super }} Edit {{ node.node_type|lower }} {{ node.name }}  {% endblock %}
 
-{% block js %}{% endblock %}
+{% block js %}
+{{ block.super }}
+{% load niweb_tags %}
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Modal delete connection confirm
+        $("#dialog-object-confirm").dialog({
+          modal: true,
+                bgiframe: true,
+                width: 500,
+                height: 200,
+          autoOpen: false
+          });
+
+        $("#object-confirm").click(function(e) {
+            e.preventDefault();
+            var theHREF = $(this).attr("href");
+
+
+            $("#dialog-object-confirm").dialog('option', 'buttons', {
+                    "Confirm" : function() {
+                        window.location.href = theHREF;
+                        },
+                    "Cancel" : function() {
+                        $(this).dialog("close");
+                        }
+                    });
+
+            $("#dialog-object-confirm").dialog("open");
+
+        });
+    }
+);
+</script>
+{% endblock %}
 
 {% block content %}
+    <div id="dialog-object-confirm" title="Delete {{ node.node_type }} {{ node.name }}?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The {{ node.node_type|lower }} will be permanently deleted and cannot be recovered. Are you sure?</p>
+    </div>
     <form action="" method="post">{% csrf_token %}
         <h1>Edit {{ node.node_type|lower }} <a href=".">{{ node.name }}</a></h1>
         {% if form.errors %}
@@ -17,7 +56,14 @@
 
 {% block content_footer %}
         <br><br>
-        <input type="submit" value="Save" class="btn primary" />
-        <a href="." class="btn">Cancel</a>
+        <div class="row">
+            <div class="span3">
+                <input type="submit" value="Save" class="btn primary" />
+                <a href="." class="btn">Cancel</a>
+            </div>
+            <div class="span1">
+                <a href="delete" class="btn danger" id="object-confirm">Delete</a>
+            </div>
+        </div>
     </form>
 {% endblock %}

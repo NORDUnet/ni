@@ -48,11 +48,6 @@
                     {% if node_handle %}
                         <ul class="menu">
                             <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
-                        <!--
-                        {% if user.is_staff %}
-                            <li><a href="/edit{{ node_handle.get_absolute_url }}">Advanced Edit</a></li>
-                        {% endif %}
-                        -->
                         </ul>
                     {% endif %}
                     {% if user.is_staff %}
@@ -72,8 +67,8 @@
             {% block content %}
             <div class="row">
                 <div class="span7">
-                    <form action="/search/" method="post" class="search">{% csrf_token %}
-                        <input class="xlarge" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
+                    <form action="/search/" method="post" class="form-search">{% csrf_token %}
+                        <input class="xlarge search-query" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
                     </form>
                 </div>
             </div>

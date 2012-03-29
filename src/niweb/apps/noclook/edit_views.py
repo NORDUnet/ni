@@ -161,7 +161,16 @@ def connect_physical(node, other_node_id):
     return node
 
 @login_required
-def remove_relationship(request, slug, handle_id, rel_id):
+def delete_node(request, slug, handle_id):
+    '''
+    Removes the node and all relationships to and from that node.
+    '''
+    nh, node = get_nh_node(handle_id)
+    nh.delete()
+    return HttpResponseRedirect('/%s' % slug)
+    
+@login_required
+def delete_relationship(request, slug, handle_id, rel_id):
     '''
     Removes the relationship if the node has a relationship matching the
     supplied id.
