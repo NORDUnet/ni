@@ -1,0 +1,75 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+{{ block.super }}
+{% load niweb_tags %}
+<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Populate first level combo box
+        $.getJSON('/formdata/site/', function(data) {
+            $('#level0').append($('<option>').val("0").text("-- Please Select --"));
+            $.each(data, function(key, tuple) {
+                $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
+            });
+        });
+        $('#level0').click(function() {
+            $("#id_relationship_location").val($(this).val());
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#level1").jCombo("/formdata/{id}/children/rack", {
+                        parent: "#level0",
+                        end_value_field: "#id_relationship_location",
+                    });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+<!--
+    <h3>Dimensions</h3>
+    <table>
+        <tr>
+            <td width="50px"><label>Rack units</label></td>
+            <td>
+                {{ form.units }}
+                 <span class="help-block">{{ form.units.help_text }}</span>
+            </td>
+        </tr>
+    </table>
+-->
+    <h3>Location (optional)</h3>
+    <table>
+<!--
+        <tr>
+            <td width="50px"><label>Start unit</label></td>
+            <td>
+                {{ form.start_unit }}
+                 <span class="help-block">{{ form.start_unit.help_text }}</span>
+            </td>
+        </tr>
+-->
+        <tr>
+            <td width="50px"><label>Current</label></td>
+            <td>
+                {% if location %}
+                    {% for loc in location %}
+                        {{ loc.name }}
+                    {% endfor %}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td width="50px"><label>Change</label></td>
+            <td>
+                {{ form.relationship_location }}
+                <select name="level0" id="level0"></select><br /><br />
+                <select name="level1" id="level1"></select><br /><br />
+            </td>
+        </tr>
+    </table>
+{% endblock %}
+
