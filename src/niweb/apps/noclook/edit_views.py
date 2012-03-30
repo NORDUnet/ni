@@ -63,7 +63,7 @@ def form_update_node(user, node, form, property_keys=[]):
     Returns True if all non-empty properties where added else False and 
     rollbacks the node changes.
     '''
-    meta_fields = ['relationship_location', 'number_of_ports']
+    meta_fields = ['relationship_location']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         for field in form.base_fields.keys():
@@ -170,6 +170,10 @@ def delete_node(request, slug, handle_id):
     Removes the node and all relationships to and from that node.
     '''
     nh, node = get_nh_node(handle_id)
+    if nc.get_node_meta_type(node) == 'physical':
+        for rel in node.Has.outgoing:
+            child_nh, child_node = get_nh_node(rel.end['handle_id'])
+            child_nh.delete()
     nh.delete()
     return HttpResponseRedirect('/%s' % slug)
     

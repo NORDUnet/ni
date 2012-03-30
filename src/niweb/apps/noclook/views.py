@@ -421,6 +421,28 @@ def rack_detail(request, handle_id):
                               'physical_relationships': physical_relationships,
                               'location': location},
                               context_instance=RequestContext(request))
+                              
+@login_required
+def odf_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = nc.neo4j_data_age(node)
+    # Get ports in ODF
+    connected_rels = []
+    has_rels = nc.iter2list(node.Has.outgoing)
+    for has in has_rels:
+        for con in nc.get_connect_rels(has.end):
+            con['port'] = has.end
+            connected_rels.append(con)
+    # Get location
+    location = nc.get_location(node)
+    return render_to_response('noclook/detail/odf_detail.html',
+                             {'node': node, 'node_handle': nh, 
+                              'last_seen': last_seen, 'expired': expired, 
+                              'connected_rels': connected_rels,
+                              'location': location},
+                              context_instance=RequestContext(request))
 
 # Visualization views
 @login_required

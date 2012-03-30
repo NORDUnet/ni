@@ -24,6 +24,15 @@ $(document).ready(
                         parent: "#level1A",
                         end_value_field: "#id_relationship_end_a",
                     });
+        // Hook lower level combo boxes up to their parent
+        $("#level3A").jCombo("/formdata/{id}/children", {
+                        parent: "#level2A",
+                        end_value_field: "#id_relationship_end_a",
+                    });
+        $("#level4A").jCombo("/formdata/{id}/children", {
+                        parent: "#level3A",
+                        end_value_field: "#id_relationship_end_a",
+                    });
         // End B //
         // Populate first level combo box
         $.getJSON('/formdata/site/', function(data) {
@@ -41,7 +50,15 @@ $(document).ready(
                         parent: "#level1B",
                         end_value_field: "#id_relationship_end_b",
                     });
-
+        // Hook lower level combo boxes up to their parent
+        $("#level3B").jCombo("/formdata/{id}/children", {
+                        parent: "#level2B",
+                        end_value_field: "#id_relationship_end_b",
+                    });
+        $("#level4B").jCombo("/formdata/{id}/children", {
+                        parent: "#level3B",
+                        end_value_field: "#id_relationship_end_b",
+                    });
         // Modal delete connection confirm
         $("#dialog-connection-confirm").dialog({
           modal: true,
@@ -93,6 +110,8 @@ $(document).ready(
                 <select class="stacked" name="level0A" id="level0A"></select><br />
                 <select class="stacked" name="level1A" id="level1A"></select><br />
                 <select class="stacked" name="level2A" id="level2A"></select><br />
+                <select class="stacked" name="level3A" id="level3A"></select><br />
+                <select class="stacked" name="level4A" id="level4A"></select><br />
                 <span class="help-block">Choose end A</span>
             </td>
             <td>
@@ -100,6 +119,8 @@ $(document).ready(
                 <select class="stacked" name="level0B" id="level0B"></select><br />
                 <select class="stacked" name="level1B" id="level1B"></select><br />
                 <select class="stacked" name="level2B" id="level2B"></select><br />
+                <select class="stacked" name="level3B" id="level3B"></select><br />
+                <select class="stacked" name="level4B" id="level4B"></select><br />
                 <span class="help-block">Choose end B</span>
             </td>
         </tr>
