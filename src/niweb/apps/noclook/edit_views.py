@@ -8,11 +8,12 @@ Node manipulation views.
 """
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.shortcuts import render_to_response, get_object_or_404, get_list_or_404
+from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook import forms
+from niweb.apps.noclook import helpers as h
 
 import norduni_client as nc
 import ipaddr
@@ -103,7 +104,7 @@ def place_physical_in_location(nh, node, location_id):
         # Make the node physical
         with nc.neo4jdb.transaction:        
             nc.delete_relationship(nc.neo4jdb,
-                                   nc.iter2list(node.Contains.incoming)[0])
+                                   h.iter2list(node.Contains.incoming)[0])
             physical = nc.get_meta_node(nc.neo4jdb, 'physical')
             nc.create_relationship(nc.neo4jdb, physical, node, 'Contains')
             nh.node_meta_type = 'physical'
@@ -119,7 +120,7 @@ def place_physical_in_location(nh, node, location_id):
         pass
     else:
         # Remove the old location(s) and create a new
-        for rel in nc.iter2list(node.Located_in.outgoing):
+        for rel in h.iter2list(node.Located_in.outgoing):
             nc.delete_relationship(nc.neo4jdb, rel)
         nc.create_suitable_relationship(nc.neo4jdb, node, 
                                         location_node, 'Located_in')
@@ -140,7 +141,7 @@ def place_location_in_location(node, location_id):
         pass
     else:
         # Remove the old location(s) and create a new
-        for rel in nc.iter2list(node.Has.incoming):
+        for rel in h.iter2list(node.Has.incoming):
             nc.delete_relationship(nc.neo4jdb, rel)
             nc.create_suitable_relationship(nc.neo4jdb, location_node,
                                             node, 'Has')
@@ -317,7 +318,7 @@ def new_rack(request, handle_id, form):
         rel_exist = nc.get_relationships(location_node, node, 'Has')
         if not rel_exist:
             try:
-                location_rel = nc.iter2list(node.Has.incoming)
+                location_rel = h.iter2list(node.Has.incoming)
                 with nc.neo4jdb.transaction:
                     location_rel[0].delete()
             except IndexError:
@@ -340,7 +341,7 @@ def new_odf(request, handle_id, form):
                                     modifier=request.user, creator=request.user)
             node_handle.save()
             port_node = node_handle.get_node()
-            nc.set_noclook_auto_manage(nc.neo4jdb, port_node, False)
+            h.set_noclook_auto_manage(nc.neo4jdb, port_node, False)
             nc.create_relationship(nc.neo4jdb, node, port_node, 'Has')
             
     return HttpResponseRedirect(nh.get_absolute_url())
@@ -366,7 +367,7 @@ def edit_site(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    site_owners = nc.iter2list(node.Responsible_for.incoming)
+    site_owners = h.iter2list(node.Responsible_for.incoming)
     if request.POST:
         form = forms.EditSiteForm(request.POST)
         if form.is_valid():
@@ -383,7 +384,7 @@ def edit_site(request, handle_id):
                                                      'Responsible_for')
                 if not rel_exist:
                     try:
-                        owner_rel = nc.iter2list(node.Responsible_for.incoming)
+                        owner_rel = h.iter2list(node.Responsible_for.incoming)
                         with nc.neo4jdb.transaction:
                             owner_rel[0].delete()
                     except IndexError:
@@ -398,7 +399,7 @@ def edit_site(request, handle_id):
                                    'site_owners': site_owners},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditSiteForm(nc.node2dict(node))
+        form = forms.EditSiteForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_site.html',
                                   {'form': form, 'site_owners': site_owners,
                                    'node': node},
@@ -421,7 +422,7 @@ def edit_site_owner(request, handle_id):
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditSiteOwnerForm(nc.node2dict(node))
+        form = forms.EditSiteOwnerForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'form': form, 'node': node},
                                 context_instance=RequestContext(request))
@@ -432,7 +433,7 @@ def edit_cable(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    connect_rels = nc.get_connect_rels(node)
+    connections = h.get_connected_cables(node)
     if request.POST:
         form = forms.EditCableForm(request.POST)
         if form.is_valid():
@@ -454,13 +455,13 @@ def edit_cable(request, handle_id):
         else:
             return render_to_response('noclook/edit/edit_cable.html',
                                   {'node': node, 'form': form,
-                                   'connect_rels': connect_rels},
+                                   'connections': connections},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditCableForm(nc.node2dict(node))
+        form = forms.EditCableForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_cable.html',
                                   {'form': form, 'node': node,
-                                   'connect_rels': connect_rels},
+                                   'connections': connections},
                                 context_instance=RequestContext(request))
                                 
 @login_required
@@ -469,7 +470,7 @@ def edit_optical_node(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    location = nc.get_location(node)
+    location = h.get_location(node)
     if request.POST:
         form = forms.EditOpticalNodeForm(request.POST)
         if form.is_valid():
@@ -481,7 +482,7 @@ def edit_optical_node(request, handle_id):
                 nh, node = place_physical_in_location(nh, node, location_id)
             else:
                 # Remove existing location if any
-                for rel in nc.iter2list(node.Located_in.outgoing):
+                for rel in h.iter2list(node.Located_in.outgoing):
                     nc.delete_relationship(nc.neo4jdb, rel)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
@@ -490,7 +491,7 @@ def edit_optical_node(request, handle_id):
                                    'location': location},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditOpticalNodeForm(nc.node2dict(node))
+        form = forms.EditOpticalNodeForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_optical_node.html',
                                   {'form': form, 'location': location,
                                    'node': node},
@@ -512,7 +513,7 @@ def edit_peering_partner(request, handle_id):
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditPeeringPartnerForm(nc.node2dict(node))
+        form = forms.EditPeeringPartnerForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_peering_partner.html',
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))
@@ -523,7 +524,7 @@ def edit_rack(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    locations = nc.iter2list(node.Has.incoming)
+    locations = h.iter2list(node.Has.incoming)
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():
@@ -535,7 +536,7 @@ def edit_rack(request, handle_id):
                 node = place_location_in_location(node, location_id)
             else:
                 # Remove existing location if any
-                for rel in nc.iter2list(node.Has.incoming):
+                for rel in h.iter2list(node.Has.incoming):
                     nc.delete_relationship(nc.neo4jdb, rel)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
@@ -544,7 +545,7 @@ def edit_rack(request, handle_id):
                                    'locations': locations},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditRackForm(nc.node2dict(node))
+        form = forms.EditRackForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_rack.html',
                                   {'form': form, 'locations': locations,
                                    'node': node},
@@ -556,7 +557,7 @@ def edit_host(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    location = nc.get_location(node)
+    location = h.get_location(node)
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
@@ -568,7 +569,7 @@ def edit_host(request, handle_id):
                 nh, node = place_physical_in_location(nh, node, location_id) 
             else:
                 # Remove existing location if any
-                for rel in nc.iter2list(node.Located_in.outgoing):
+                for rel in h.iter2list(node.Located_in.outgoing):
                     nc.delete_relationship(nc.neo4jdb, rel)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
@@ -577,7 +578,7 @@ def edit_host(request, handle_id):
                                    'location': location},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditHostForm(nc.node2dict(node))
+        form = forms.EditHostForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_host.html',
                                   {'form': form, 'location': location,
                                    'node': node},
@@ -600,7 +601,7 @@ def edit_router(request, handle_id):
                 nh, node = place_physical_in_location(nh, node, location_id) 
             else:
                 # Remove existing location if any
-                for rel in nc.iter2list(node.Located_in.outgoing):
+                for rel in h.iter2list(node.Located_in.outgoing):
                     nc.delete_relationship(nc.neo4jdb, rel)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
@@ -608,7 +609,7 @@ def edit_router(request, handle_id):
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditRouterForm(nc.node2dict(node))
+        form = forms.EditRouterForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_router.html',
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request)) 
@@ -619,7 +620,7 @@ def edit_odf(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    location = nc.get_location(node)
+    location = h.get_location(node)
     if request.POST:
         form = forms.EditOdfForm(request.POST)
         if form.is_valid():
@@ -631,7 +632,7 @@ def edit_odf(request, handle_id):
                 nh, node = place_physical_in_location(nh, node, location_id) 
             else:
                 # Remove existing location if any
-                for rel in nc.iter2list(node.Located_in.outgoing):
+                for rel in h.iter2list(node.Located_in.outgoing):
                     nc.delete_relationship(nc.neo4jdb, rel)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
@@ -640,7 +641,7 @@ def edit_odf(request, handle_id):
                                    'location': location},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditOdfForm(nc.node2dict(node))
+        form = forms.EditOdfForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_odf.html',
                                   {'form': form, 'location': location,
                                    'node': node},
