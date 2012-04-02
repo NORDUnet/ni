@@ -1,0 +1,72 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }}{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+    $(document).ready(
+        function(){
+            $("#connections").tablesorter(
+            {
+                sortList: [[0,0]],
+                headers:
+                {},
+                widthFixed: true,
+                widgets: ['zebra']
+            });
+        }
+    );
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span7">
+        <table>
+        </table>
+    </div>
+    <div class="span5 offset1">
+        <table>
+            {% if node.noclook_auto_manage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+<!--
+{% if user.is_staff %}
+    <a href="edit" class="btn info">Edit</a>
+{% endif %}
+-->
+<br><br><br>
+<div class="section">
+    <h3>Connected cables</h3>
+    {% if connected_to_rels %}
+    <table id="connections" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Cables</th>
+        </thead>
+        <tbody>
+        {% for rel in connected_to_rels %}
+            <tr>
+                <td><a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a></td>
+            </tr>
+         {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No connections found.
+    {% endif %}
+</div>
+{% endblock %}
