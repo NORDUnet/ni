@@ -7,6 +7,31 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
+        // Modal delete object confirm
+        $("#dialog-object-confirm").dialog({
+          modal: true,
+                bgiframe: true,
+                width: 500,
+                height: 200,
+          autoOpen: false
+          });
+
+        $("#object-confirm").click(function(e) {
+            e.preventDefault();
+            var theHREF = $(this).attr("href");
+
+
+            $("#dialog-object-confirm").dialog('option', 'buttons', {
+                    "Confirm" : function() {
+                        window.location.href = theHREF;
+                        },
+                    "Cancel" : function() {
+                        $(this).dialog("close");
+                        }
+                    });
+
+            $("#dialog-object-confirm").dialog("open");
+        });
         // End A //
         // Populate first level combo box
         $.getJSON('/formdata/site/', function(data) {
@@ -101,7 +126,7 @@ $(document).ready(
     <h3>Type (optional)</h3>
     {{ form.cable_type }}
     <br /><br />
-    <h3>Connections</h3>
+    <h3>Connections (optional)</h3>
     <h5>Add Connection</h5>
     <table>
         <tr>
@@ -125,12 +150,13 @@ $(document).ready(
             </td>
         </tr>
     </table>
-    {% if connect_rels %}
+    {% if connections %}
+        {% load noclook_tags %}
         <h5>Remove Connection</h5>
         <table>
-        {% for item in connect_rels %}
+        {% for con in connections %}
             <tr>
-                <td width="300px">Connected to <a href="{{ item.url }}">{{ item.name }}</a></td><td><a href="relationship/{{ item.rel.id }}/delete" class="important label" id="connection-confirm">Delete</a></td>
+                <td width="300px">Connected to <a href="{% noclook_node_to_url con.port %}">{{ con.end.name }} {{ con.port.name }}</a></td><td><a href="relationship/{{ con.rel.id }}/delete" class="important label" id="connection-confirm">Delete</a></td>
             </tr>
         {% endfor %}
         </table>

@@ -4,40 +4,6 @@
 
 {% block js %}
 {{ block.super }}
-{% load niweb_tags %}
-<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.jCombo.js"></script>
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Modal delete connection confirm
-        $("#dialog-object-confirm").dialog({
-          modal: true,
-                bgiframe: true,
-                width: 500,
-                height: 200,
-          autoOpen: false
-          });
-
-        $("#object-confirm").click(function(e) {
-            e.preventDefault();
-            var theHREF = $(this).attr("href");
-
-
-            $("#dialog-object-confirm").dialog('option', 'buttons', {
-                    "Confirm" : function() {
-                        window.location.href = theHREF;
-                        },
-                    "Cancel" : function() {
-                        $(this).dialog("close");
-                        }
-                    });
-
-            $("#dialog-object-confirm").dialog("open");
-
-        });
-    }
-);
-</script>
 {% endblock %}
 
 {% block content %}

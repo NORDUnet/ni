@@ -7,6 +7,30 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
+        // Modal delete object confirm
+        $("#dialog-object-confirm").dialog({
+          modal: true,
+                bgiframe: true,
+                width: 500,
+                height: 200,
+          autoOpen: false
+          });
+
+        $("#object-confirm").click(function(e) {
+            e.preventDefault();
+            var theHREF = $(this).attr("href");
+
+            $("#dialog-object-confirm").dialog('option', 'buttons', {
+                    "Confirm" : function() {
+                        window.location.href = theHREF;
+                        },
+                    "Cancel" : function() {
+                        $(this).dialog("close");
+                        }
+                    });
+
+            $("#dialog-object-confirm").dialog("open");
+        });
         // Populate first level combo box
         $.getJSON('/formdata/site/', function(data) {
             $('#level0').append($('<option>').val("0").text("-- Please Select --"));

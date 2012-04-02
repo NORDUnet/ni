@@ -6,7 +6,7 @@ from django.shortcuts import render_to_response, get_object_or_404, get_list_or_
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
-from niweb.apps.noclook.forms import *
+import niweb.apps.noclook.helpers as h
 
 import norduni_client as nc
 import ipaddr
@@ -125,7 +125,7 @@ def router_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Get all the PICs and the PICs services. Also get loopback addresses.
     loopback_addresses = []
     pics = []
@@ -140,7 +140,7 @@ def router_detail(request, handle_id):
             for service in dep_services:
                 pic['services'].append(service.start)
         pics.append(pic)
-    location = nc.get_location(node)
+    location = h.get_location(node)
     for address in loopback_addresses:
         try:
             ipaddr.IPNetwork(address)
@@ -158,7 +158,7 @@ def pic_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Get the top parent node
     router = nc.get_root_parent(nc.neo4jdb, node)
     # Get unit nodes
@@ -197,7 +197,7 @@ def optical_node_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     #get incoming rels of fibers
     connected_rel = node.Connected_to.incoming
     opt_info = []
@@ -205,15 +205,15 @@ def optical_node_detail(request, handle_id):
         fibers = {}
         fiber = rel.start
         fibers['fiber_name'] = fiber['name']
-        fibers['fiber_url'] = nc.get_node_url(fiber)
+        fibers['fiber_url'] = h.get_node_url(fiber)
         conn = fiber.Connected_to.outgoing
         for item in conn:
             tmp = item.end
             if tmp['name'] != node['name']:
                 fibers['node_name'] = tmp['name']
-                fibers['node_url'] = nc.get_node_url(tmp)
+                fibers['node_url'] = h.get_node_url(tmp)
         opt_info.append(fibers)
-    location = nc.get_location(node)
+    location = h.get_location(node)
     return render_to_response('noclook/detail/optical_node_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
@@ -226,13 +226,13 @@ def host_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Handle relationships
-    service_relationships = nc.iter2list(node.Depends_on.incoming)
-    user_relationships = nc.iter2list(node.Uses.incoming)
-    provider_relationships = nc.iter2list(node.Provides.incoming)
-    owner_relationships = nc.iter2list(node.Owns.incoming)
-    location = nc.get_location(node)
+    service_relationships = h.iter2list(node.Depends_on.incoming)
+    user_relationships = h.iter2list(node.Uses.incoming)
+    provider_relationships = h.iter2list(node.Provides.incoming)
+    owner_relationships = h.iter2list(node.Owns.incoming)
+    location = h.get_location(node)
     return render_to_response('noclook/detail/host_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired, 
@@ -248,8 +248,8 @@ def host_service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
-    service_relationships = nc.iter2list(node.Depends_on.outgoing)
+    last_seen, expired = h.neo4j_data_age(node)
+    service_relationships = h.iter2list(node.Depends_on.outgoing)
     return render_to_response('noclook/detail/host_service_detail.html', 
                               {'node_handle': nh, 'node': node,
                               'last_seen': last_seen, 'expired': expired, 
@@ -261,8 +261,8 @@ def host_provider_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
-    host_relationships = nc.iter2list(node.Provides.outgoing)
+    last_seen, expired = h.neo4j_data_age(node)
+    host_relationships = h.iter2list(node.Provides.outgoing)
     return render_to_response('noclook/detail/host_provider_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
@@ -274,8 +274,8 @@ def host_user_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
-    host_relationships = nc.iter2list(node.Uses.outgoing)
+    last_seen, expired = h.neo4j_data_age(node)
+    host_relationships = h.iter2list(node.Uses.outgoing)
     return render_to_response('noclook/detail/host_user_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
@@ -287,19 +287,12 @@ def cable_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
-    connected_rel = node.Connected_to.outgoing
-    opt_info = []
-    for equip in connected_rel:
-        equipment = {}
-        conn = equip.end
-        equipment['node_name'] = conn['name']
-        equipment['node_url'] = nc.get_node_url(conn)
-        opt_info.append(equipment)
+    last_seen, expired = h.neo4j_data_age(node)
+    connections = h.get_connected_cables(node)
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': node, 'node_handle': nh, 
                                'last_seen': last_seen, 'expired': expired, 
-                               'opt_info': opt_info},
+                               'connections': connections},
                                context_instance=RequestContext(request))
 
 @login_required
@@ -307,7 +300,7 @@ def peering_partner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Get services used
     services_rel = node.Uses.outgoing
     # services_rel are relations to bgp groups(Service)
@@ -316,7 +309,7 @@ def peering_partner_detail(request, handle_id):
         peering_point = {}
         peering_point['pp_ip'] = s_rel['ip_address']
         peering_point['service'] = s_rel.end['name']
-        peering_point['service_url'] = nc.get_node_url(s_rel.end)
+        peering_point['service_url'] = h.get_node_url(s_rel.end)
         unit_rels = s_rel.end.Depends_on.outgoing
         org_address = ipaddr.IPAddress(s_rel['ip_address'])
         for unit_rel in unit_rels:
@@ -326,10 +319,10 @@ def peering_partner_detail(request, handle_id):
                 peering_point['unit'] = unit_rel.end['name']
                 pic = unit_rel.end.Depends_on.outgoing.single.end
                 peering_point['pic'] = pic['name']
-                peering_point['pic_url'] = nc.get_node_url(pic)
+                peering_point['pic_url'] = h.get_node_url(pic)
                 router = nc.get_root_parent(nc.neo4jdb, pic)
                 peering_point['router'] = router['name']
-                peering_point['router_url'] = nc.get_node_url(router)
+                peering_point['router_url'] = h.get_node_url(router)
                 peering_points.append(peering_point)
     return render_to_response('noclook/detail/peering_partner_detail.html',
                               {'node_handle': nh, 'node': node,
@@ -342,7 +335,7 @@ def ip_service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Get the units dependendant on
     unit_rels = node.Depends_on.outgoing
     service_resources = []
@@ -378,11 +371,11 @@ def site_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Handle relationships
-    equipment_relationships = nc.iter2list(node.Located_in.incoming)
-    responsible_relationships =nc.iter2list(node.Responsible_for.incoming)
-    loc_relationships = nc.iter2list(node.Has.outgoing)
+    equipment_relationships = h.iter2list(node.Located_in.incoming)
+    responsible_relationships =h.iter2list(node.Responsible_for.incoming)
+    loc_relationships = h.iter2list(node.Has.outgoing)
     return render_to_response('noclook/detail/site_detail.html', 
                         {'node_handle': nh, 'node': node,
                          'last_seen': last_seen, 'expired': expired,
@@ -396,9 +389,9 @@ def site_owner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Handle relationships
-    site_relationships = nc.iter2list(node.Responsible_for.outgoing)
+    site_relationships = h.iter2list(node.Responsible_for.outgoing)
     return render_to_response('noclook/detail/site_owner_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
@@ -410,11 +403,11 @@ def rack_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Get equipment in rack
-    physical_relationships = nc.iter2list(node.Located_in.incoming)
+    physical_relationships = h.iter2list(node.Located_in.incoming)
     # Get rack location
-    location = nc.get_place(node)
+    location = h.get_place(node)
     return render_to_response('noclook/detail/rack_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
@@ -427,22 +420,35 @@ def odf_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
-    last_seen, expired = nc.neo4j_data_age(node)
+    last_seen, expired = h.neo4j_data_age(node)
     # Get ports in ODF
-    connected_rels = []
-    has_rels = nc.iter2list(node.Has.outgoing)
-    for has in has_rels:
-        for con in nc.get_connect_rels(has.end):
-            con['port'] = has.end
-            connected_rels.append(con)
+    connections = h.get_connected_equipment(node)
     # Get location
-    location = nc.get_location(node)
+    location = h.get_location(node)
     return render_to_response('noclook/detail/odf_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
-                              'connected_rels': connected_rels,
+                              'connections': connections,
                               'location': location},
                               context_instance=RequestContext(request))
+                              
+@login_required
+def port_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(node)
+    # Get cables connected to the port
+    connected_to_rels = h.iter2list(node.Connected_to.incoming)
+    # Get location
+    location = h.get_place(node)
+    return render_to_response('noclook/detail/port_detail.html',
+                             {'node': node, 'node_handle': nh, 
+                              'last_seen': last_seen, 'expired': expired, 
+                              'connected_to_rels': connected_to_rels,
+                              'location': location},
+                              context_instance=RequestContext(request))
+
 
 # Visualization views
 @login_required
@@ -499,7 +505,7 @@ def search(request, value='', form=None):
         # See if value is from autocomplete
     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     q = Q('all', '*%s*' % value, wildcard=True)
-    nodes = nc.iter2list(index.query(str(q)))
+    nodes = h.iter2list(index.query(str(q)))
     if not nodes:
         nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
     result = []

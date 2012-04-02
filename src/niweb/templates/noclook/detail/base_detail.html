@@ -21,7 +21,7 @@
 {% if location %}
     <h5 class="site">Located in
     {% for loc in location %}
-        <a href="{{ loc.url }}">{{ loc.name }}</a>
+        <a href="{% noclook_node_to_url loc.node %}">{{ loc.name }}</a>
     {% endfor %}
     </h5>
 {% endif %}

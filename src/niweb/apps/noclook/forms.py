@@ -1,4 +1,5 @@
 from django import forms
+from niweb.apps.noclook import helpers as h
 import norduni_client as nc
 
 # We should move this kind of data to the SQL database.
@@ -47,7 +48,7 @@ def get_node_type_tuples(node_type):
     '''
     from operator import itemgetter
     index = nc.get_node_index(nc.neo4jdb, 'node_types')
-    nodes = nc.iter2list(index['node_type'][node_type])
+    nodes = h.iter2list(index['node_type'][node_type])
     node_list = [('','')]
     for node in nodes:
         if node_type == 'Site':
