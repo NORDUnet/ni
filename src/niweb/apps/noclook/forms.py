@@ -121,9 +121,9 @@ class EditCableForm(forms.Form):
     cable_type = forms.ChoiceField(choices=CABLE_TYPES,
                                    widget=forms.widgets.Select)
     telenor_tn1_number = forms.CharField(required=False,
-                                  help_text='Telenor TN1 number, nnn-nnnn.')
+                                  help_text='Telenor TN1 number, nnnnn.')
     telenor_trunk_id = forms.CharField(required=False, 
-                                       help_text='Telenor Trunk ID, nnnnn.')
+                                       help_text='Telenor Trunk ID, nnn-nnnn.')
     global_crossing_circuit_id = forms.CharField(required=False,
                                                  help_text='Global Crossing \
                                                  circuit ID, nnnnnnnnnn')

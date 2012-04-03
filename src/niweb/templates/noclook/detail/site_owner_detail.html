@@ -22,8 +22,8 @@ $(document).ready(
 {{ block.super }}
 {% load noclook_tags %}
 <div class="row">
-    <div class="span7">
-        <table>
+    <div class="span4">
+        <table class="table">
             <tr>
                 {% if node.url %}
                     <th>More information:</th><td><a href="{{ node.url }}">Information link</td>
@@ -33,8 +33,8 @@ $(document).ready(
             </tr>
         </table>
     </div>
-    <div class="span5 offset1">
-        <table>
+    <div class="span3">
+        <table class="table">
             {% if node.noclook_automanage %}
             <tr>
                 <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
@@ -50,7 +50,7 @@ $(document).ready(
     </div>
 </div>
 {% if user.is_staff %}
-    <a href="edit" class="btn info">Edit</a>
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
 <div class="section">
