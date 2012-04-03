@@ -14,56 +14,58 @@
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
-{% if node.noclook_auto_manage and expired %}
-    <span class="label important">Last seen {{ last_seen|timesince }} ago</span>
-{% endif %}
-<h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {% if node.country_code %}{{ node.country_code }}-{% endif %}{{ node.name }}</h1>
-{% if location %}
-    <h5 class="site">Located in
-    {% for loc in location %}
-        <a href="{% noclook_node_to_url loc.node %}">{{ loc.name }}</a>
-    {% endfor %}
-    </h5>
-{% endif %}
-<br>
-{% load comments %}
-{% load markup %}
-{% get_comment_list for node_handle as comment_list %}
-{% if comment_list %}
-    {% for comment in comment_list|dictsortreversed:"submit_date" %}
-        <div class="alert-message span13">
-            <a href="/comments/delete/{{ comment.id }}" class="close">×</a>
-            <p>
-                <strong>{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</strong>
-                <br>
+<div class="span7">
+    {% if node.noclook_auto_manage and expired %}
+        <span class="label label-important">Last seen {{ last_seen|timesince }} ago</span>
+    {% endif %}
+    <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {% if node.country_code %}{{ node.country_code }}-{% endif %}{{ node.name }}</h1>
+    {% if location %}
+        <h5 class="site">Located in
+        {% for loc in location %}
+            <a href="{% noclook_node_to_url loc.node %}">{{ loc.name }}</a>
+        {% endfor %}
+        </h5>
+    {% endif %}
+    {% load comments %}
+    {% load markup %}
+    {% get_comment_list for node_handle as comment_list %}
+    {% if comment_list %}
+        {% for comment in comment_list|dictsortreversed:"submit_date" %}
+            <div class="alert alert-block">
+                <a href="/comments/delete/{{ comment.id }}" class="close">&times;</a>
+                <h4 class="alert-heading">{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</h4>
                 {{ comment.comment|markdown:"safe" }}
-            </p>
-        </div>
-    {% endfor %}
-{% endif %}
-<br>
-{% endblock %}
-
-{% block content_footer %}
-{% if node_handle %}
+            </div>
+        {% endfor %}
+    {% endif %}
     <br>
-    <p><a href="javascript:toggle_comment()" id="add_comment_btn" class="btn info">Add a comment</a></p>
-    <div id="add_comment" class="hidden" >
-        <strong>Add a comment or <a href="javascript:toggle_comment()">hide</a> the comment form.</strong>
-        {% get_comment_form for node_handle as form %}
-        <form action="{% comment_form_target %}" method="POST">
-            {% csrf_token %}
-            <textarea class="xxlarge" id="id_comment" name="comment"></textarea>
-            {{ form.honeypot }}
-            {{ form.content_type }}
-            {{ form.object_pk }}
-            {{ form.timestamp }}
-            {{ form.security_hash }}
-            <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
-            <br><br>
-            <input class="btn info" type="submit" value="Submit" id="comment_submit" />
-            <br>
-        </form>
-    </div>
-{% endif %}
+    {% endblock %}
+
+    {% block content_footer %}
+    {% if node_handle %}
+        <br>
+        <p>
+            <a href="javascript:toggle_comment()" id="add_comment_btn" class="btn btn-info">
+                <i class="icon-comment icon-white"></i> Add a comment
+            </a>
+        </p>
+        <div id="add_comment" class="hidden" >
+            <strong>Add a comment or <a href="javascript:toggle_comment()">hide</a> the comment form.</strong>
+            {% get_comment_form for node_handle as form %}
+            <form action="{% comment_form_target %}" method="POST">
+                {% csrf_token %}
+                <textarea class="xxlarge" id="id_comment" name="comment"></textarea>
+                {{ form.honeypot }}
+                {{ form.content_type }}
+                {{ form.object_pk }}
+                {{ form.timestamp }}
+                {{ form.security_hash }}
+                <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
+                <br><br>
+                <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
+                <br>
+            </form>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

@@ -23,8 +23,8 @@
     <div class="row">
         <div class="span7 offset1">
         {% if user.is_authenticated %}
-            <form action="/search/" method="post" class="search text-centered">{% csrf_token %}
-                <input class="xlarge" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
+            <form action="/search/" method="post" class="form-search text-centered">{% csrf_token %}
+                <input class="xlarge search-query" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
             </form>
         {% endif %}
         </div>

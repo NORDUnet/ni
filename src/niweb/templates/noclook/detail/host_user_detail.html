@@ -26,15 +26,15 @@ $(document).ready(
 {{ block.super }}
 {% load noclook_tags %}
 <div class="row">
-    <div class="span7">
-        <table>
+    <div class="span4">
+        <table class="table">
             <tr>
                 <th>Name:</th><td>{{ node.name }}</td>
             </tr>
         </table>
     </div>
-    <div class="span5 offset1">
-        <table>
+    <div class="span3">
+        <table class="table">
             {% if node.noclook_auto_manage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
@@ -49,9 +49,16 @@ $(document).ready(
         </table>
     </div>
 </div>
+<!--
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<br><br><br>
+-->
 <div class="section">
     {% load noclook_tags %}
     {% if host_relationships %}
+    <h3>Hosts used</h3>
     <table id="hosts" class="tablesorter" cellspacing="1">
         <thead>
             <th>Host</th>
