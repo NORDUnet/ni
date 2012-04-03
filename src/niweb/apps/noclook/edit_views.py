@@ -264,7 +264,7 @@ def new_node(request, slug=None):
                                 node_meta_type=node_meta_type,
                                 modifier=request.user, creator=request.user)
             node_handle.save()
-            nc.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
+            h.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
                                        False)
             try:
                 func = NEW_FUNC[node_type.slug]
