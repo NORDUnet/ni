@@ -39,35 +39,41 @@
                 <a href="{% niweb_url %}"><img class="logo" src="{% niweb_media_url %}/img/noclook_logo.png"></a>
                 {% block menu %}
                     {% load noclook_tags %}
-                    {% type_menu %}
-                    <ul class="menu">
-                        <li><a href="/gmaps/sites/">Site map</a></li>
-                        <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
+                    <ul class="parent-menu">
+                        <li><i class="icon-list"></i> Browse types</li>
+                        {% type_menu %}
                     </ul>
-
-                    {% if node_handle %}
-                        <ul class="menu">
-                            <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
-                        </ul>
-                    {% endif %}
+                    <ul class="parent-menu">
+                        <li><i class="icon-map-marker"></i> Maps</li>
+                            <ul class="menu">
+                                <li><a href="/gmaps/sites/">Site map</a></li>
+                                <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
+                            </ul>
+                    </ul>
                     {% if user.is_staff %}
-                        <ul class="menu">
-                            <li><a href="/new/">Create new node</a></li>
-                        </ul>
-                    {% endif %}
-                    {% if user.is_authenticated %}
-                        <ul class="menu">
-                            <li><a href="/logout/">Log out</a></li>
-                        </ul>
+                    <br />
+                    <br />
+                    <p class="text-centered">
+                        <a href="/new/" class="btn btn-small btn-info"><i class="icon-file icon-white"></i> Create new</a>
+                    </p>
                     {% endif %}
                 {% endblock %}
             </div>
             <div class="span9 content">
                 {% block content %}
-                <div class="span7">
-                    <form action="/search/" method="post" class="form-search">{% csrf_token %}
-                        <input class="xlarge search-query" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
-                    </form>
+                <div class="row">
+                    <div class="span7">
+                        <form action="/search/" method="post" class="form-search">{% csrf_token %}
+                            <input class="xlarge search-query" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
+                        </form>
+                    </div>
+                    <div class="span2">
+                        {% if user.is_authenticated %}
+
+                            <a href="/logout/" class="btn btn-small btn-info"><i class="icon-user icon-white"></i> Log out</a>
+
+                        {% endif %}
+                    </div>
                 </div>
                 {% endblock %}
 
