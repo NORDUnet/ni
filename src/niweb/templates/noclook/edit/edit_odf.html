@@ -54,50 +54,35 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-    <h3>Name</h3>
-    {{ form.name }}
-    <br><br>
+    <div class="well">
+        <h3>Name</h3>
+        {{ form.name }}
+    </div>
 <!--
     <h3>Dimensions</h3>
-    <table>
-        <tr>
-            <td width="50px"><label>Rack units</label></td>
-            <td>
-                {{ form.units }}
-                 <span class="help-block">{{ form.units.help_text }}</span>
-            </td>
-        </tr>
-    </table>
+    <label>Rack units</label></td>
+    {{ form.units }}
+    <span class="help-block">{{ form.units.help_text }}</span>
+    <label>Start unit</label>
+    {{ form.start_unit }}
+     <span class="help-block">{{ form.start_unit.help_text }}</span>
 -->
-    <h3>Location (optional)</h3>
-    <table>
-<!--
-        <tr>
-            <td width="50px"><label>Start unit</label></td>
-            <td>
-                {{ form.start_unit }}
-                 <span class="help-block">{{ form.start_unit.help_text }}</span>
-            </td>
-        </tr>
--->
-        <tr>
-            <td width="50px"><label>Current</label></td>
-            <td>
+    <div id="location-section">
+        <h3>Location (optional)</h3>
+        <div class="well">
+            <label>Current</label></td>
+            <span class="input-large uneditable-input">
                 {% if location %}
                     {% for loc in location %}
                         {{ loc.name }}
                     {% endfor %}
                 {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td width="50px"><label>Change</label></td>
-            <td>
-                {{ form.relationship_location }}
-                <select name="level0" id="level0"></select><br /><br />
-                <select name="level1" id="level1"></select><br /><br />
-            </td>
-        </tr>
-    </table>
+            </span>
+            <label>Change</label>
+            {{ form.relationship_location }}
+            <select class="stacked" name="level0" id="level0"></select><br />
+            <select class="stacked" name="level1" id="level1"></select>
+        </div>
+    </div>
 {% endblock %}
 

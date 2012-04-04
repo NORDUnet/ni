@@ -155,10 +155,6 @@ class NewRackForm(forms.Form):
                                               
                                         
 class EditRackForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditRackForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
-    
     name = forms.CharField(help_text='Name should be the site grid location.')
     height = forms.IntegerField(required=False, 
                                 help_text='Height in millimeters (mm).')
@@ -166,8 +162,8 @@ class EditRackForm(forms.Form):
                                help_text='Depth in millimeters (mm).')
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
-    relationship_location = forms.ChoiceField(required=False,
-                                              widget=forms.widgets.Select)
+    relationship_location = forms.IntegerField(required=False,
+                                            widget=forms.widgets.HiddenInput)
                 
                 
 class EditHostForm(forms.Form):

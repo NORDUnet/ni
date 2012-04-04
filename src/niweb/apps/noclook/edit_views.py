@@ -524,7 +524,7 @@ def edit_rack(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    locations = h.iter2list(node.Has.incoming)
+    location = h.get_place(node)
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():
@@ -542,12 +542,12 @@ def edit_rack(request, handle_id):
         else:
             return render_to_response('noclook/edit/edit_rack.html',
                                   {'node': node, 'form': form,
-                                   'locations': locations},
+                                   'location': location},
                                 context_instance=RequestContext(request))
     else:
         form = forms.EditRackForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_rack.html',
-                                  {'form': form, 'locations': locations,
+                                  {'form': form, 'location': location,
                                    'node': node},
                                 context_instance=RequestContext(request))
 
@@ -590,6 +590,7 @@ def edit_router(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
+    location = h.get_location(node)
     if request.POST:
         form = forms.EditRouterForm(request.POST)
         if form.is_valid():
@@ -606,12 +607,14 @@ def edit_router(request, handle_id):
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_router.html',
-                                  {'node': node, 'form': form},
+                                  {'node': node, 'form': form, 
+                                   'location': location},
                                 context_instance=RequestContext(request))
     else:
         form = forms.EditRouterForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_router.html',
-                                  {'node': node, 'form': form},
+                                  {'node': node, 'form': form,
+                                   'location': location},
                                 context_instance=RequestContext(request)) 
 
 @login_required
