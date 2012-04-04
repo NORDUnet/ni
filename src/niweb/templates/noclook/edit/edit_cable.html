@@ -41,7 +41,7 @@ $(document).ready(
             });
         });
         // Hook lower level combo boxes up to their parent
-        $("#level1A").jCombo("/formdata/{id}/children/rack", {
+        $("#level1A").jCombo("/formdata/{id}/children", {
                         parent: "#level0A",
                         end_value_field: "#id_relationship_end_a",
                     });
@@ -67,7 +67,7 @@ $(document).ready(
             });
         });
         // Hook lower level combo boxes up to their parent
-        $("#level1B").jCombo("/formdata/{id}/children/rack", {
+        $("#level1B").jCombo("/formdata/{id}/children", {
                         parent: "#level0B",
                         end_value_field: "#id_relationship_end_b",
                     });
@@ -168,20 +168,20 @@ $(document).ready(
             </div>
             {% if connections %}
             <div class="well">
-                    {% load noclook_tags %}
-                    <h4>Remove Connection</h4>
+                {% load noclook_tags %}
+                <h4>Remove Connection</h4>
+                {% for con in connections %}
                     <div class="row">
-                        {% for con in connections %}
-                            <div class="span3">
-                                Connected to <a href="{% noclook_node_to_url con.port %}">{{ con.end.name }} {{ con.port.name }}</a>
-                            </div>
-                            <div class="span3">
-                                <a href="relationship/{{ con.rel.id }}/delete" class="label label-important" id="connection-confirm">Delete</a>
-                            </div>
-                        {% endfor %}
+                        <div class="span5">
+                            Connected to <a href="{% noclook_node_to_url con.port %}">{{ con.end.name }} {{ con.port.name }}</a>
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ con.rel.id }}/delete" class="label label-important" id="connection-confirm">Delete</a>
+                        </div>
                     </div>
-                {% endif %}
+                {% endfor %}
             </div>
+            {% endif %}
         </div>
     </div>
     <div id="telenor-section">

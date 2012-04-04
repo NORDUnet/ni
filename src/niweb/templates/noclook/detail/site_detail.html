@@ -83,7 +83,7 @@ $(document).ready(
             {% for item in responsible_relationships %}
                 {% if forloop.first %}
                     <tr>
-                        <th>Site contact:</td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                        <th>Site owner:</td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
                     </tr>
                 {% else %}
                     <tr>

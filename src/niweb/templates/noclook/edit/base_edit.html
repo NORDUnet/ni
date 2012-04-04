@@ -14,8 +14,9 @@
         <form action="" method="post">{% csrf_token %}
             <h1>Edit {{ node.node_type|lower }} <a href=".">{{ node.name }}</a></h1>
             {% if form.errors %}
-                <div class="alert-message error block-message span13">
-                    <p>The operation could not be performed because one or more error(s) occurred.<br>Please resubmit the form after making the following changes:</p>
+                <div class="alert alert-error">
+                    <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
+                    Please resubmit the form after making the following changes:
                     {{ form.errors }}
                 </div>
             {% endif %}
