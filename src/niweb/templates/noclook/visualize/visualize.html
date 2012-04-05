@@ -25,9 +25,9 @@ window.onload = function(){
 {% endblock %}
 
 {% block content %}
-<div class="section">
+<div class="section span7">
     <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> <a href="/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}">{{ node.name }}</a></h1>
     <canvas id="viewport" width="1000" height="500"></canvas>
-    <p><a href="/visualize/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}/maximized/" target="_blank">Maximize</a></p>
+    <p><a href="/visualize/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}/maximized/" target="_blank" class="btn btn-info"><i class="icon-resize-full icon-white"></i> Maximize</a></p>
 </div>
 {% endblock %}
