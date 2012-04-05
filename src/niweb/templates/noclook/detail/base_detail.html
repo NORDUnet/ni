@@ -49,6 +49,9 @@
                 <a href="javascript:toggle_comment()" id="add_comment_btn" class="btn btn-info">
                     <i class="icon-comment icon-white"></i> Add a comment
                 </a>
+                <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
+                    <i class="icon-eye-open icon-white"></i> Visualize
+                </a>
             </p>
             <div id="add_comment" class="hidden" >
                 <strong>Add a comment or <a href="javascript:toggle_comment()">hide</a> the comment form.</strong>
@@ -67,12 +70,6 @@
                     <br>
                 </form>
             </div>
-        {% endif %}
-    </div>
-        {% if node_handle %}
-            <ul class="menu">
-                <li><a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-small btn-info">Visualize</a></li>
-            </ul>
         {% endif %}
     </div>
 </div>
