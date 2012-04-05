@@ -14,7 +14,6 @@
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
-<div class="row">
     <div class="span7">
         {% if node.noclook_auto_manage and expired %}
             <span class="label label-important">Last seen {{ last_seen|timesince }} ago</span>
@@ -72,5 +71,4 @@
             </div>
         {% endif %}
     </div>
-</div>
 {% endblock %}

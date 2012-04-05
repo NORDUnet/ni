@@ -22,8 +22,16 @@
 {% extends "base.html" %}
 
 {% block content %}
-<p>
-<a href="{% url loginfed %}?next={{ next }}">Click here to login via your Identity Provider</a>
-</p>
+    <div class="span7">
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <h1 class="text-centered">
+            <a href="{% url loginfed %}?next={{ next }}" class="btn btn-info">Click here to login via your Identity Provider</a>
+        </h1>
+    </div>
 {% endblock %}
 
