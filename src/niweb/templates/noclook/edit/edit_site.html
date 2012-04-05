@@ -39,6 +39,24 @@ $(document).ready(
         $('#level0').click(function() {
             $("#id_relationship_site_owner").val($(this).val());
         });
+
+        // Hide sections
+        $('#site-owner-section').find("> a").click(function() {
+            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
+            return false;
+        }).end().find("> div").hide();
+        $('#address-section').find("> a").click(function() {
+            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
+            return false;
+        }).end().find("> div").hide();
+        $('#location-section').find("> a").click(function() {
+            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
+            return false;
+        }).end().find("> div").hide();
+        $('#other-id-section').find("> a").click(function() {
+            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
+            return false;
+        }).end().find("> div").hide();
     }
 );
 </script>
@@ -51,8 +69,9 @@ $(document).ready(
         <h3>Site Type (optional)</h3>
         {{ form.site_type }}
     </div>
-    <h3>Site Owner (optional)</h3>
     <div id="site-owner-section">
+        <h3 class="hidden-section">Site Owner (optional)</h3>
+        <a href="#" class="section-closed">Show</a>
         <div class="well">
             <label>Current</label></td>
             <span class="input-large uneditable-input">
@@ -67,8 +86,9 @@ $(document).ready(
             <select class="stacked" name="level0" id="level0"></select>
         </div>
     </div>
-    <h3>Address (optional)</h3>
     <div id="address-section">
+        <h3 class="hidden-section">Address (optional)</h3>
+        <a href="#" class="section-closed">Show</a>
         <div class="well">
             <label>Street</label>
             {{ form.address }}
@@ -84,8 +104,9 @@ $(document).ready(
             {{ form.postarea }}
         </div>
     </div>
-    <h3>Location (optional)</h3>
     <div id="location-section">
+        <h3 class="hidden-section">Location (optional)</h3>
+        <a href="#" class="section-closed">Show</a>
         <div class="well">
             <label>Country</label>
             <span class="input-large uneditable-input">{{ node.country }}</span>
@@ -100,8 +121,9 @@ $(document).ready(
             <span class="help-inline">{{ form.longitude.help_text }}</span>
         </div>
     </div>
-    <h3>Other IDs (optional)</h3>
     <div id="other-id-section">
+        <h3 class="hidden-section">Other IDs (optional)</h3>
+        <a href="#" class="section-closed">Show</a>
         <div class="well">
             <label>Owner Site ID</label>
             {{ form.owner_id }}
