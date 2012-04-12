@@ -367,7 +367,7 @@ def edit_site(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    site_owners = h.iter2list(node.Responsible_for.incoming)
+    site_owner = h.iter2list(node.Responsible_for.incoming)
     if request.POST:
         form = forms.EditSiteForm(request.POST)
         if form.is_valid():
@@ -377,8 +377,8 @@ def edit_site(request, handle_id):
             with nc.neo4jdb.transaction:
                 node['name'] = form.cleaned_data['name'].upper()
                 node['country'] = COUNTRY_MAP[node['country_code']]
-            if form.cleaned_data['relationship_site_owners']:
-                owner_id = form.cleaned_data['relationship_site_owners']
+            if form.cleaned_data['relationship_site_owner']:
+                owner_id = form.cleaned_data['relationship_site_owner']
                 owner_node = nc.get_node_by_id(nc.neo4jdb, owner_id)
                 rel_exist = nc.get_relationships(node, owner_node, 
                                                      'Responsible_for')
@@ -396,12 +396,12 @@ def edit_site(request, handle_id):
         else:
             return render_to_response('noclook/edit/edit_site.html',
                                   {'node': node, 'form': form,
-                                   'site_owners': site_owners},
+                                   'site_owner': site_owner},
                                 context_instance=RequestContext(request))
     else:
         form = forms.EditSiteForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_site.html',
-                                  {'form': form, 'site_owners': site_owners,
+                                  {'form': form, 'site_owner': site_owner,
                                    'node': node},
                                 context_instance=RequestContext(request))
 
@@ -524,7 +524,7 @@ def edit_rack(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    locations = h.iter2list(node.Has.incoming)
+    location = h.get_place(node)
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():
@@ -542,12 +542,12 @@ def edit_rack(request, handle_id):
         else:
             return render_to_response('noclook/edit/edit_rack.html',
                                   {'node': node, 'form': form,
-                                   'locations': locations},
+                                   'location': location},
                                 context_instance=RequestContext(request))
     else:
         form = forms.EditRackForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_rack.html',
-                                  {'form': form, 'locations': locations,
+                                  {'form': form, 'location': location,
                                    'node': node},
                                 context_instance=RequestContext(request))
 
@@ -590,6 +590,7 @@ def edit_router(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
+    location = h.get_location(node)
     if request.POST:
         form = forms.EditRouterForm(request.POST)
         if form.is_valid():
@@ -606,12 +607,14 @@ def edit_router(request, handle_id):
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_router.html',
-                                  {'node': node, 'form': form},
+                                  {'node': node, 'form': form, 
+                                   'location': location},
                                 context_instance=RequestContext(request))
     else:
         form = forms.EditRouterForm(h.node2dict(node))
         return render_to_response('noclook/edit/edit_router.html',
-                                  {'node': node, 'form': form},
+                                  {'node': node, 'form': form,
+                                   'location': location},
                                 context_instance=RequestContext(request)) 
 
 @login_required

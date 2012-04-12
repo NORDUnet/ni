@@ -6,7 +6,7 @@
   {% load comments %}
   <form action="{% comment_form_target %}" method="post">{% csrf_token %}
     <h1>Please correct the error below</h1>
-    <label>{{ form.comment.label }}</label><br />
+    <label><strong>{{ form.comment.label }}</strong></label>
     <textarea class="xxlarge" id="id_comment" name="comment"></textarea>
     {{ form.comment.errors }}
     {{ form.honeypot }}
@@ -16,7 +16,7 @@
     {{ form.security_hash }}
     <input type="hidden" name="next" value="{{ next }}" />
     <p class="submit">
-    <input class="btn" type="submit" name="submit" value="Submit" /> or <a href="{{ next }}" class="btn danger">Cancel</a>
+    <input class="btn btn-info" type="submit" name="submit" value="Submit" /> or <a href="{{ next }}" class="btn btn-danger">Cancel</a>
     </p>
   </form>
 {% endblock %}

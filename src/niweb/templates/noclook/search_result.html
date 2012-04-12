@@ -13,7 +13,7 @@
                 {% else %}
                     <p>Get this result as: <a href="result.csv">CSV</a></p>
                 {% endif %}
-                <table>
+                <table class="table">
                 {% for item in result %}
                     <tr>
                         <td><a class="handle" href="{{ item.nh.get_absolute_url }}">{{ item.nh }}</a></td>

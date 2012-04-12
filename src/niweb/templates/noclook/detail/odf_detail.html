@@ -1,6 +1,7 @@
 {% extends "noclook/detail/base_detail.html" %}
 
-{% block title %}{{ block.super }}{% endblock %}
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
 {% block js %}
 {{ block.super }}
 <script type="text/javascript">
@@ -21,33 +22,31 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-{% load noclook_tags %}
 <div class="row">
     <div class="span4">
         <table class="table">
-            <tr>
-                <th>Name:</th><td>{{ node_handle.node_name }}</td>
-            </tr>
-            {% if node.type %}
-            <tr>
-                <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.type }}/">{{ node.type }}</a></td>
-            </tr>
+            {% if node.number_of_ports %}
+                <tr>
+                    <th>Ports:</th><td>{{ node.number_of_ports }}</td>
+                </tr>
             {% endif %}
+<!--
+            {% if node.depth %}
+                <tr>
+                    <th>Depth:</th><td>{{ node.depth }} mm</td>
+                </tr>
+            {% endif %}
+            {% if node.width %}
+                <tr>
+                    <th>Width:</th><td>{{ node.width }} mm</td>
+                </tr>
+            {% endif %}
+-->
         </table>
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.ots %}
-                <tr>
-                    <th>Optical Transport Section:</th><td><a href="/findin/optical-node/ots/{{ node.ots }}/">{{ node.ots }}</a></td>
-                </tr>
-            {% endif %}
-            {% if node.link %}
-                <tr>
-                    <th>Link:</th><td><a href="/findin/optical-node/link/{{ node.link }}/">{{ node.link }}</a></td>
-                </tr>
-            {% endif %}
-            {% if node.noclook_auto_manage %}
+            {% if node.noclook_automanage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
                 </tr>
@@ -66,23 +65,24 @@ $(document).ready(
 {% endif %}
 <br><br><br>
 <div class="section">
-    <h3>Connections</h3>
-    {% if opt_info %}
+    <h3>Ports</h3>
+    {% if connections %}
+    {% load noclook_tags %}
     <table id="connections" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Connected to node</th><th>via</th>
+            <th>Port</th><th>Cable</th><th>End</th>
         </thead>
         <tbody>
-        {% for item in opt_info %}
+        {% for con in connections %}
             <tr>
-                <td><a href="{{ item.node_url }}">{{ item.node_name }}</a></td>
-                <td><a href="{{ item.fiber_url }}">{{ item.fiber_name }}</a></td>
+                <td>{{ con.porta.name }}</td><td><a href="{% noclook_node_to_url con.cable %}">{{ con.cable.name }}</a></td><td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a> <a href="{% noclook_node_to_url con.portb %}">{{ con.portb.name }}</a></td>
             </tr>
-         {% endfor %}
+        {% endfor %}
         </tbody>
     </table>
     {% else %}
-        No connections found.
+        No ports used.
     {% endif %}
 </div>
 {% endblock %}
+

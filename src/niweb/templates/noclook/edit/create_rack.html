@@ -1,31 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <form action="." method="post">{% csrf_token %}
-        <h1>Create new rack</h1>
-        {% if form.errors %}
-            <div class="alert-message error block-message span13">
-                <p>The operation could not be performed because one or more error(s) occurred.<br>Please resubmit the form after making the following changes:</p>
-                {{ form.errors }}
-            </div>
-        {% endif %}
-
-        <h3>Name</h3>
-            {{ form.name }}
-        <br />
-        <br />
-        <h3>Location (optional)</h3>
-        <table>
-            <tr>
-                <td width="50px"><label>Site</label></td>
-                <td>{{ form.relationship_location }}</td>
-            </tr>
-        </table>
-        <br />
-        <br />
-        <input type="hidden" name="meta_type" value="location" />
-        <input type="submit" value="Save" class="btn primary" />
-        <a href=".." class="btn">Cancel</a>
-    </form>
+    <h1>Create new rack</h1>
+    {% if form.errors %}
+        <div class="alert alert-error">
+            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
+            Please resubmit the form after making the following changes:
+            {{ form.errors }}
+        </div>
+    {% endif %}
+    <div class="well">
+        <form action="." method="post">{% csrf_token %}
+            <h3>Name</h3>
+                {{ form.name }}
+            <br />
+            <br />
+            <h3>Location (optional)</h3>
+            <label>Site</label>
+            {{ form.relationship_location }}
+            <br />
+            <br />
+            <input type="hidden" name="meta_type" value="location" />
+            <input type="submit" value="Save" class="btn btn-primary" />
+            <a href=".." class="btn">Cancel</a>
+        </form>
+    </div>
 {% endblock %}
 

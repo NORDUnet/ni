@@ -35,15 +35,16 @@ $(document).ready(
 {% endblock %}
 {% block content %}
 {{ block.super }}
-    <h3>Name</h3>
-    {{ form.name }}
-    <br><br>
+    <div class="well">
+        <h3>Name</h3>
+        {{ form.name }}
+    </div>
     <h3>Information (optional)</h3>
-    <table>
-        <tr>
-            <td width="50px"><label>URL</label></td>
-            <td>{{ form.url }}<span class="help-block">{{ form.url.help_text }}</span></td>
-        </tr>
-    </table>
+    <div id="information-section">
+        <div class="well">
+            <label>URL</label>
+            {{ form.url }}<span class="help-inline">{{ form.url.help_text }}</span>
+        </div>
+    </div>
 {% endblock %}
 
