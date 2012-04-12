@@ -34,6 +34,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 sys.path.append(os.path.abspath(path))
 import noclook_consumer as nt
 import norduni_client as nc
+from apps.noclook import helpers as h
 
 '''
 This script is used for adding the objects collected with the
@@ -88,7 +89,7 @@ def consume_site_csv(json_list):
         nh = nt.get_unique_node_handle(nc.neo4jdb, i['host']['name'], node_type, 
                                        meta_type)
         node = nh.get_node()
-        nc.set_noclook_auto_manage(nc.neo4jdb, node, False)
+        h.set_noclook_auto_manage(nc.neo4jdb, node, False)
         special_keys = ['comment', 'responsible_for', 'meta_type']
         host_info = i['host']['csv_producer']
         for key in host_info:
@@ -103,13 +104,13 @@ def consume_site_csv(json_list):
             if value:
                 if key == 'responsible_for':
                     responsible_node = get_node(value, 'Site Owner', 'relation')
-                    nc.set_noclook_auto_manage(nc.neo4jdb, responsible_node,
+                    h.set_noclook_auto_manage(nc.neo4jdb, responsible_node,
                                                False)
                     rel = nc.create_suitable_relationship(nc.neo4jdb,
                                                           responsible_node, 
                                                           node, 
                                                           'Responsible_for')
-                    nc.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+                    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
                 if key == 'comment':
                     nt.set_comment(nh, value)
                 if key == 'meta_type':
@@ -121,7 +122,7 @@ def consume_site_csv(json_list):
             if equip_node['node_type'] in ['Optical Node', 'Router']:
                 rel = nc.create_suitable_relationship(nc.neo4jdb, equip_node, 
                                                       node, 'Located_in')
-                nc.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+                h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
    
 def main():
     # User friendly usage output

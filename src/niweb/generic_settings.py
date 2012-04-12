@@ -28,10 +28,7 @@ MEDIA_ROOT = join(NIWEB_ROOT, 'static/')
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
 MEDIA_URL = NIWEB_MEDIA_URL
 
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = join(NIWEB_URL, 'static/admin/')
+STATIC_URL = NIWEB_MEDIA_URL
 
 # Django mail settings, change these if needed.
 SERVER_EMAIL = 'django@example.com'
@@ -81,7 +78,7 @@ SECRET_KEY = ''
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.load_template_source',
+    'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
 #     'django.template.loaders.eggs.load_template_source',
 )
