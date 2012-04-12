@@ -1,0 +1,88 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#connections").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            {% if node.number_of_ports %}
+                <tr>
+                    <th>Ports:</th><td>{{ node.number_of_ports }}</td>
+                </tr>
+            {% endif %}
+<!--
+            {% if node.depth %}
+                <tr>
+                    <th>Depth:</th><td>{{ node.depth }} mm</td>
+                </tr>
+            {% endif %}
+            {% if node.width %}
+                <tr>
+                    <th>Width:</th><td>{{ node.width }} mm</td>
+                </tr>
+            {% endif %}
+-->
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.noclook_automanage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<br><br><br>
+<div class="section">
+    <h3>Ports</h3>
+    {% if connections %}
+    {% load noclook_tags %}
+    <table id="connections" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Port</th><th>Cable</th><th>End</th>
+        </thead>
+        <tbody>
+        {% for con in connections %}
+            <tr>
+                <td>{{ con.porta.name }}</td><td><a href="{% noclook_node_to_url con.cable %}">{{ con.cable.name }}</a></td><td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a> <a href="{% noclook_node_to_url con.portb %}">{{ con.portb.name }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No ports used.
+    {% endif %}
+</div>
+{% endblock %}
+
