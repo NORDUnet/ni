@@ -1,5 +1,12 @@
 from apps.noclook.models import NodeHandle, NodeType
 from django.contrib import admin
+from tastypie.admin import ApiKeyInline
+from tastypie.models import ApiAccess, ApiKey
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
+
+class UserModelAdmin(UserAdmin):
+    inlines = [ApiKeyInline]
 
 class NodeHandleAdmin(admin.ModelAdmin):
     list_filter = ('node_type', 'creator')
@@ -53,3 +60,7 @@ class NodeTypeAdmin(admin.ModelAdmin):
 
 admin.site.register(NodeHandle, NodeHandleAdmin)
 admin.site.register(NodeType, NodeTypeAdmin)
+admin.site.register(ApiKey)
+admin.site.register(ApiAccess)
+admin.site.unregister(User)
+admin.site.register(User,UserModelAdmin)
