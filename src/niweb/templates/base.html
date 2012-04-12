@@ -34,112 +34,117 @@
 <body>
     <br>
     <div class="container-fluid">
-        <div class="sidebar">
-            <div class="well">
-                <a href="{% niweb_url %}"><img src="{% niweb_media_url %}/img/noclook_logo.png" width="170px"></a>
+        <div class="row">
+            <div class="span3 well">
+                <a href="{% niweb_url %}"><img class="logo" src="{% niweb_media_url %}/img/noclook_logo.png"></a>
                 {% block menu %}
                     {% load noclook_tags %}
-                    {% type_menu %}
-                    <ul class="menu">
-                        <li><a href="/gmaps/sites/">Site map</a></li>
-                        <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
+                    <ul class="parent-menu">
+                        <li><i class="icon-list"></i> Browse types</li>
+                        {% type_menu %}
                     </ul>
-
-                    {% if node_handle %}
-                        <ul class="menu">
-                            <li><a href="/visualize{{ node_handle.get_absolute_url }}">Visualize</a></li>
-                        </ul>
-                    {% endif %}
+                    <ul class="parent-menu">
+                        <li><i class="icon-map-marker"></i> Maps</li>
+                            <ul class="menu">
+                                <li><a href="/gmaps/sites/">Site map</a></li>
+                                <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
+                            </ul>
+                    </ul>
                     {% if user.is_staff %}
-                        <ul class="menu">
-                            <li><a href="/new/">Create new node</a></li>
-                        </ul>
-                    {% endif %}
-                    {% if user.is_authenticated %}
-                        <ul class="menu">
-                            <li><a href="/logout/">Log out</a></li>
-                        </ul>
+                    <br />
+                    <br />
+                    <p class="text-centered">
+                        <a href="/new/" class="btn btn-small btn-info"><i class="icon-file icon-white"></i> Create new</a>
+                    </p>
                     {% endif %}
                 {% endblock %}
             </div>
-        </div>
-        <div class="content">
-            {% block content %}
-            <div class="row">
-                <div class="span7">
-                    <form action="/search/" method="post" class="form-search">{% csrf_token %}
-                        <input class="xlarge search-query" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
-                    </form>
+            <div class="span9 content">
+                {% block content %}
+                <div class="row">
+                    <div class="span7">
+                        <form action="/search/" method="post" class="form-search">{% csrf_token %}
+                            <input class="xlarge search-query" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
+                        </form>
+                    </div>
+                    <div class="span2">
+                        {% if user.is_authenticated %}
+                            <a href="/logout/" class="btn btn-small btn-info"><i class="icon-user icon-white"></i> Log out</a>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
-            {% endblock %}
-            {% block content_footer %}{% endblock %}
+                {% endblock %}
 
-            <!-- DEBUG START -->
-            <br><br><br>
-            {% if node %}
-                <p><a href="javascript:toggle_debug()" class="btn">Toggle debug information</a></p>
-                <div id="debug" class="hidden">
-                    <h3>Debug</h3>
-                    <h4>Node properties</h4>
-                    <table>
-                    {% for key,value in node.items %}
-                        <tr>
-                            <td><strong>{{key}}</strong></td><td>{{value}}</td>
-                        </tr>
-                    {% endfor %}
-                    </table>
-                    <h4>Relationships</h4>
-                    <table>
-                    {% for rel in node.getRelationships %}
-                        <tr>
-                            <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
-                        </tr>
-                        <tr>
-                            <td></td>
-                            <td>
-                                <table>
-                                {% for key, value in rel.items %}
-                                    <tr>
-                                        <td><strong>{{ key }}</strong></td><td>{{ value }}</td>
-                                    </tr>
-                                {% endfor %}
-                                </table>
-                            </td>
-                            <td></td>
-                        </tr>
-                    {% endfor %}
-                    </table>
-                    <h4>Meta information</h4>
-                    <table>
-                        <tr>
-                            <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
-                        </tr>
-                        <tr>
-                            <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
-                        </tr>
-                        <tr>
-                            <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
-                        </tr>
-                        <tr>
-                            <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
-                        </tr>
-                        <tr>
-                            <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
-                        </tr>
-                        <tr>
-                            <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
-                        </tr>
-                        <tr>
-                            <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
-                        </tr>
-                        <tr>
-                            <td><b>modified:</b> </td><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
-                        </tr>
-                    </table>
-                </div>
-            {% endif %}
-            <!-- DEBUG END -->
+                {% block content_footer %}{% endblock %}
+
+                {% if node %}
+                <!-- DEBUG START -->
+                    <div class="span7">
+                        <br><br><br>
+                        <p><a href="javascript:toggle_debug()" class="btn"><i class="icon-cog"></i> Toggle debug information</a></p>
+                        <div id="debug" class="hidden">
+                            <h2>Debug</h2>
+                            <h3>Node properties</h3>
+                            <table class="table">
+                            {% for key,value in node.items %}
+                                <tr>
+                                    <td><strong>{{key}}</strong></td><td>{{value}}</td>
+                                </tr>
+                            {% endfor %}
+                            </table>
+                            <h3>Relationships</h3>
+                            <table class="table">
+                            {% for rel in node.getRelationships %}
+                                <tr>
+                                    <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        <table>
+                                        {% for key, value in rel.items %}
+                                            <tr>
+                                                <td><strong>{{ key }}</strong></td><td>{{ value }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        </table>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            {% endfor %}
+                            </table>
+                            <h3>Meta information</h3>
+                            <table class="table">
+                                <tr>
+                                    <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
+                                </tr>
+                                <tr>
+                                    <td><b>modified:</b> </td><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                <!-- DEBUG END -->
+                {% endif %}
+            </div>
         </div>
     </div>
 </body>

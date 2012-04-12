@@ -71,10 +71,6 @@ class NewSiteForm(forms.Form):
     
     
 class EditSiteForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditSiteForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_site_owners'].choices = get_node_type_tuples('Site Owner')
-    
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES,
                                      widget=forms.widgets.Select)
@@ -96,8 +92,8 @@ class EditSiteForm(forms.Form):
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
     owner_site_name = forms.CharField(required=False)
-    relationship_site_owners = forms.ChoiceField(widget=forms.widgets.Select,
-                                                 required=False)
+    relationship_site_owner = forms.IntegerField(required=False,
+                                            widget=forms.widgets.HiddenInput)
                               
                               
 class NewSiteOwnerForm(forms.Form):
@@ -121,9 +117,9 @@ class EditCableForm(forms.Form):
     cable_type = forms.ChoiceField(choices=CABLE_TYPES,
                                    widget=forms.widgets.Select)
     telenor_tn1_number = forms.CharField(required=False,
-                                  help_text='Telenor TN1 number, nnn-nnnn.')
+                                  help_text='Telenor TN1 number, nnnnn.')
     telenor_trunk_id = forms.CharField(required=False, 
-                                       help_text='Telenor Trunk ID, nnnnn.')
+                                       help_text='Telenor Trunk ID, nnn-nnnn.')
     global_crossing_circuit_id = forms.CharField(required=False,
                                                  help_text='Global Crossing \
                                                  circuit ID, nnnnnnnnnn')
@@ -155,10 +151,6 @@ class NewRackForm(forms.Form):
                                               
                                         
 class EditRackForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditRackForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
-    
     name = forms.CharField(help_text='Name should be the site grid location.')
     height = forms.IntegerField(required=False, 
                                 help_text='Height in millimeters (mm).')
@@ -166,8 +158,8 @@ class EditRackForm(forms.Form):
                                help_text='Depth in millimeters (mm).')
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
-    relationship_location = forms.ChoiceField(required=False,
-                                              widget=forms.widgets.Select)
+    relationship_location = forms.IntegerField(required=False,
+                                            widget=forms.widgets.HiddenInput)
                 
                 
 class EditHostForm(forms.Form):

@@ -36,7 +36,9 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-    <h3>Name</h3>
-    {{ form.name }}
+    <div class="well">
+        <h3>Name</h3>
+        {{ form.name }}
+    </div>
 {% endblock %}
 

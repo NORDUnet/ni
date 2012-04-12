@@ -4,10 +4,14 @@
 
 {% block content %}
     <h1>Create new</h1>
-    <p>Choose type to create:</p>
-    <a href="cable">Cable</a><br />
-    <a href="odf">ODF</a><br />
-    <a href="rack">Rack</a><br />
-    <a href="site">Site</a><br />
-    <a href="site-owner">Site Owner</a><br />
+    <ul class='parent-menu'>
+        <li>Choose type to create:</li>
+        <ul class='menu'>
+            <li><a href="cable">Cable</a></li>
+            <li><a href="odf">ODF</a></li>
+            <li><a href="rack">Rack</a></li>
+            <li><a href="site">Site</a></li>
+            <li><a href="site-owner">Site Owner</a></li>
+        </ul>
+    </ul>
 {% endblock %}

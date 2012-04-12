@@ -3,30 +3,31 @@
 {% block title %}{{ block.super }} | Welcome{% endblock %}
 
 {% block content %}
-    <br />
-    <br />
-    <br />
-    <br />
-    <br />
-    <br />
     <div class="row">
-        <div class="span7 offset1">
+        <div class="span7">
+            <br />
+            <br />
+            <br />
+            <br />
+            <br />
+            <br />
             <h1 class="text-centered">
                 Welcome to NOCLook<br />
                 <small>NORDUnet Network Inventory</small>
             </h1>
+            <br />
+            <br />
+            <br />
+            {% if user.is_authenticated %}
+                <form action="/search/" method="post" class="form-search text-centered">{% csrf_token %}
+                    <input class="xlarge search-query" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
+                </form>
+            {% endif %}
         </div>
-    </div>
-    <br />
-    <br />
-    <br />
-    <div class="row">
-        <div class="span7 offset1">
-        {% if user.is_authenticated %}
-            <form action="/search/" method="post" class="search text-centered">{% csrf_token %}
-                <input class="xlarge" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
-            </form>
-        {% endif %}
+        <div class="span2">
+            {% if user.is_authenticated %}
+                <a href="/logout/" class="btn btn-small btn-info"><i class="icon-user icon-white"></i> Log out</a>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
