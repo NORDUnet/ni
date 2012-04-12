@@ -40,6 +40,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
+from apps.noclook import helpers as h
 from django.contrib.comments import Comment
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
@@ -280,8 +281,8 @@ def consume_noclook(json_list):
             item = i['host']['noclook_producer']
             properties = item.get('properties')
             #start_node = nc.get_node_by_value(nc.neo4jdb, item.get('start'), 'old_node_id')
-            start_node = nc.iter2list(index['old_node_id'][item['start']])
-            end_node = nc.iter2list(index['old_node_id'][item['end']])
+            start_node = h.iter2list(index['old_node_id'][item['start']])
+            end_node = h.iter2list(index['old_node_id'][item['end']])
             #end_node = nc.get_node_by_value(nc.neo4jdb, item.get('end'), 'old_node_id')
             with nc.neo4jdb.transaction:
                 rel = start_node[0].relationships.create(item.get('type'), 

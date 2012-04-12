@@ -35,6 +35,7 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import norduni_client as nc
 import noclook_consumer as nt
+from apps.noclook import helpers as h
 
 '''
 This script is used for adding the objects collected with the
@@ -83,7 +84,7 @@ def insert_services(service_dict, host_node):
                                                             node_type, 
                                                             meta_type)
                     service_node = node_handle.get_node()
-                    nc.update_noclook_auto_manage(nc.neo4jdb, service_node)
+                    h.update_noclook_auto_manage(nc.neo4jdb, service_node)
                     service_nodes.append(service_node)
                     # Get existing relationships between the two nodes
                     rel_index = nc.get_relationship_index(nc.neo4jdb, 
@@ -95,7 +96,7 @@ def insert_services(service_dict, host_node):
                         try:
                             if rel['protocol'] == protocol and rel['port'] == port:
                                 create = False
-                                nc.update_noclook_auto_manage(nc.neo4jdb, rel)
+                                h.update_noclook_auto_manage(nc.neo4jdb, rel)
                                 break
                         except KeyError:
                             continue
@@ -113,7 +114,7 @@ def insert_services(service_dict, host_node):
                                 new_rel[key] = value
                         nc.add_index_item(nc.neo4jdb, rel_index, new_rel,
                                           'ip_address')
-                        nc.update_noclook_auto_manage(nc.neo4jdb, new_rel)
+                        h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
     return service_nodes
 
 def insert_nmap(json_list):
@@ -131,7 +132,7 @@ def insert_nmap(json_list):
                                                 meta_type)
         # Set Node attributes
         node = node_handle.get_node()
-        nc.update_noclook_auto_manage(nc.neo4jdb, node)
+        h.update_noclook_auto_manage(nc.neo4jdb, node)
         nc.merge_properties(nc.neo4jdb, node, 'hostnames',
                             i['host']['hostnames'])
         nc.merge_properties(nc.neo4jdb, node, 'addresses', i['host']['addrs'])
