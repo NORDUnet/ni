@@ -82,12 +82,12 @@ def iter2list(pythonic_iterator):
         l.append(item)
     return l
 
-def node2dict(node):
+def item2dict(item):
     '''
-    Returns the nodes properties as a dictionary.
+    Returns the item properties as a dictionary.
     '''
     d = {}
-    for key, value in node.items():
+    for key, value in item.items():
         d[key] = value
     return d
 

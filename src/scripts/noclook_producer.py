@@ -41,9 +41,10 @@ A NERDS producer for the NOCLook application. It should be used to take
 backups of the data inserted manually in to the databases.
 '''
 
+# TODO: Remove when a fixed neo4j-embedded is released.
 def convert_property_type(value):
     '''
-    For neo4j-embedded < 1.6.b3.
+    For neo4j-embedded < 1.7.M3.
     Checks is the property is of the jpype.java.lang.Boolean or 
     jpype._jarray._JavaArrayClass.
     '''
