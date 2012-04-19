@@ -64,7 +64,8 @@ def form_update_node(user, node, form, property_keys=[]):
     Returns True if all non-empty properties where added else False and 
     rollbacks the node changes.
     '''
-    meta_fields = ['relationship_location']
+    meta_fields = ['relationship_location', 'relationship_end_a',
+                   'relationship_end_b']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         for field in form.base_fields.keys():

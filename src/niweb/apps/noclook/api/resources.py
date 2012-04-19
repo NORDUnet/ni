@@ -9,19 +9,20 @@ For use with neo4j-embedded >= 1.7.M3.
 
 from tastypie.resources import Resource, ModelResource
 from tastypie.bundle import Bundle
-from tastypie import fields
+from tastypie import fields, utils
 from tastypie.http import HttpGone, HttpMultipleChoices
 from tastypie.exceptions import ImmediateHttpResponse
-from tastypie.utils import trailing_slash
-from tastypie.constants import ALL_WITH_RELATIONS
+from tastypie.constants import ALL
 from tastypie.exceptions import NotFound
 from tastypie.authentication import Authentication
+from tastypie.authorization import Authorization
+from django.contrib.auth.models import User
 from django.conf.urls import url
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed
 from django.template.defaultfilters import slugify
-from niweb.apps.noclook.models import NodeHandle, NodeType
+from niweb.apps.noclook.models import NodeHandle, NodeType, NODE_META_TYPE_CHOICES
 from niweb.apps.noclook.helpers import item2dict
 import norduni_client as nc
 
@@ -45,7 +46,32 @@ def handle_id2resource_uri(handle_id):
             kwargs['api_name'] = nhr._meta.api_name
     return reverse(view, args=None, kwargs=kwargs)
     
+
+class FullUserResource(ModelResource):
     
+    class Meta:
+        queryset = User.objects.all()
+        resource_name = 'full_user'
+        authentication = Authentication()
+        authorization = Authorization()
+        excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
+        filtering = {
+            "username": ALL
+        }
+    
+    created = fields.ToManyField('niweb.apps.noclook.api.resources.NodeHandleResource', 
+                                      'creator', related_name='creator')
+    modified = fields.ToManyField('niweb.apps.noclook.api.resources.NodeHandleResource', 
+                                      'modifier', related_name='modifier')
+
+class UserResource(ModelResource):
+    class Meta:
+        queryset = User.objects.all()
+        resource_name = 'user'
+        authorization = Authorization()
+        authentication = Authentication()
+        excludes = ['email', 'password', 'is_staff', 'is_superuser']
+
 class NodeTypeResource(ModelResource):
     
     node_handles = fields.ToManyField('niweb.apps.noclook.api.resources.NodeHandleResource', 
@@ -54,7 +80,8 @@ class NodeTypeResource(ModelResource):
     class Meta:
         queryset = NodeType.objects.all()
         resource_name = 'node_type'
-        #authentication = ApiKeyAuthentication()  
+        authentication = Authentication()
+        authorization = Authorization() 
     
     
     def override_urls(self):
@@ -71,35 +98,55 @@ class NodeTypeResource(ModelResource):
 
 class NodeHandleResource(ModelResource):
     
-    node_type = fields.ToOneField(NodeTypeResource, 'node_type')
-    node = fields.DictField(attribute='node', default={})
+    handle_id = fields.IntegerField(readonly=True, unique=True)
+    node_id = fields.IntegerField(readonly=True)
+    node_name = fields.CharField(attribute='node_name')
+    node_type = fields.ForeignKey(NodeTypeResource, 'node_type')
+    node_meta_type = fields.CharField(attribute='node_meta_type')
+    creator = fields.ForeignKey(UserResource, 'creator')
+    created = fields.DateTimeField(readonly=True)
+    modifier = fields.ForeignKey(UserResource, 'modifier', blank=True,
+                                 default='', null=True)
+    modified = fields.DateTimeField(readonly=True)
+    node = fields.DictField(attribute='node', default={}, blank=True)
         
     class Meta:
         queryset = NodeHandle.objects.all()
         resource_name = 'node_handle'
         authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
 
 
-    def override_urls(self):
-        return [
-            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view('get_relationships'), name="api_get_relationships"),
-        ]
-    
-    def get_relationships(self, request, **kwargs):
-        try:
-            obj = self.cached_obj_get(request=request,
-                                      **self.remove_api_resource_names(kwargs))
-        except ObjectDoesNotExist:
-            return HttpGone()
-        except MultipleObjectsReturned:
-            return HttpMultipleChoices("More than one resource is found at this URI.")
-        
-        child_resource = RelationshipResource()
-        return child_resource.get_list(request, parent_obj=obj.pk)
+#    def override_urls(self):
+#        return [
+#            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (self._meta.resource_name, utils.trailing_slash()),
+#                self.wrap_view('get_relationships'), name="api_get_relationships"),
+#        ]
+#    
+#    def get_relationships(self, request, **kwargs):
+#        try:
+#            obj = self.cached_obj_get(request=request,
+#                                      **self.remove_api_resource_names(kwargs))
+#        except ObjectDoesNotExist:
+#            return HttpGone()
+#        except MultipleObjectsReturned:
+#            return HttpMultipleChoices("More than one resource is found at this URI.")
+#        
+#        child_resource = RelationshipResource()
+#        return child_resource.get_list(request, parent_obj=obj.pk)
         
     def dehydrate_node(self, bundle):
         return item2dict(bundle.obj.get_node())
+        
+    def hydrate_node(self, bundle):
+        try:
+            nc.update_item_properties(nc.neo4jdb, bundle.obj.get_node(), 
+                                      bundle.data['node'])
+        except TypeError:
+            # Node is not yet created, obj_create will take care of that.
+            pass
+        return bundle
         
     def dehydrate_node_type(self, bundle):
         return bundle.data['node_type'].replace(
@@ -117,7 +164,11 @@ class NodeHandleResource(ModelResource):
             tmp_obj.id = rel.id
             bundle.data['relationships'].append(rr.get_resource_uri(tmp_obj))
         return bundle
-
+    
+    def obj_create(self, bundle, request=None, **kwargs):
+        bundle = super(NodeHandleResource, self).obj_create(bundle, request,
+                                                            **kwargs)
+        return self.hydrate_node(bundle)
 
 class RelationshipObject(object):
     def __init__(self, initial=None):
@@ -142,7 +193,8 @@ class RelationshipResource(Resource):
     type = fields.CharField(attribute='type')
     start = fields.CharField(attribute='start')
     end = fields.CharField(attribute='end')
-    properties = fields.DictField(attribute='properties')
+    properties = fields.DictField(attribute='properties', default={},
+                                  blank=True)
     
     class Meta:
         resource_name = 'relationship'
@@ -166,7 +218,6 @@ class RelationshipResource(Resource):
             kwargs['pk'] = bundle_or_obj.obj.id
         else:
             kwargs['pk'] = bundle_or_obj.id
-
         if self._meta.api_name is not None:
             kwargs['api_name'] = self._meta.api_name
         return self._build_reverse_url('api_dispatch_detail', kwargs=kwargs)

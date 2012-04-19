@@ -9,11 +9,13 @@ from django.contrib import admin
 admin.autodiscover()
 
 v1_api = Api(api_name='v1')
-# Generic resources
+# Resources
 v1_api.register(NodeHandleResource())
 v1_api.register(NodeTypeResource())
 v1_api.register(RelationshipResource())
-# Specialized resources
+v1_api.register(UserResource())
+v1_api.register(FullUserResource())
+# Inheritated from NodeHandleResource
 v1_api.register(CableResource())
 v1_api.register(HostResource())
 v1_api.register(HostProviderResource())
