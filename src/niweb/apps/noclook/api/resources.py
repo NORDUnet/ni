@@ -11,29 +11,30 @@ from tastypie.resources import Resource, ModelResource
 from tastypie.bundle import Bundle
 from tastypie import fields
 from tastypie.http import HttpGone, HttpMultipleChoices
+from tastypie.exceptions import ImmediateHttpResponse
 from tastypie.utils import trailing_slash
 from tastypie.constants import ALL_WITH_RELATIONS
 from tastypie.exceptions import NotFound
-#from tastypie.authentication import ApiKeyAuthentication
+from tastypie.authentication import Authentication
 from django.conf.urls import url
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.http import HttpResponseNotAllowed
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook.helpers import item2dict
 import norduni_client as nc
 
-def node2resource_uri(node):
+def handle_id2resource_uri(handle_id):
     '''
-    Returns a NodeHandleResource URI from a Neo4j node.
+    Returns a  NodeHandleResource URI from a Neo4j node.
     '''
-    try:
-        pk = node['handle_id']
-        nh = NodeHandle.objects.get(pk=pk)
-    except KeyError:
+    if not handle_id:
         return 'Meta Node'
+    # str() is a neo4j-embedded hack handle_id can be a java.lang.Integer.
+    nh = NodeHandle.objects.get(pk=str(handle_id))
     view = 'api_dispatch_detail'
-    kwargs = {
+    kwargs = {                   
             'resource_name': slugify(nh.node_type),
             'pk': nh.handle_id
         }
@@ -44,7 +45,11 @@ def node2resource_uri(node):
             kwargs['api_name'] = nhr._meta.api_name
     return reverse(view, args=None, kwargs=kwargs)
     
+    
 class NodeTypeResource(ModelResource):
+    
+    node_handles = fields.ToManyField('niweb.apps.noclook.api.resources.NodeHandleResource', 
+                                      'nodehandle_set', related_name='node_type')
     
     class Meta:
         queryset = NodeType.objects.all()
@@ -56,22 +61,8 @@ class NodeTypeResource(ModelResource):
         return [
             url(r"^(?P<resource_name>%s)/(?P<slug>[-\w]+)/$" % self._meta.resource_name,
                 self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
-            #url(r"^(?P<resource_name>%s)/(?P<slug>[-\w]+)/children%s$" % (self._meta.resource_name, trailing_slash()),
-            #    self.wrap_view('get_children'), name="api_get_children"),
         ]
     
-#    def get_children(self, request, **kwargs):
-#        try:
-#            obj = self.cached_obj_get(request=request,
-#                                      **self.remove_api_resource_names(kwargs))
-#        except ObjectDoesNotExist:
-#            return HttpGone()
-#        except MultipleObjectsReturned:
-#            return HttpMultipleChoices("More than one resource is found at this URI.")
-#        
-#        child_resource = NodeHandleResource()
-#        return child_resource.get_list(request, node_type=obj.pk)
-
     def dehydrate(self, bundle):
         bundle.data['resource_uri'] = bundle.data['resource_uri'].replace(
                            '/%d/' % bundle.obj.pk,'/%s/' % bundle.obj.slug)
@@ -80,12 +71,13 @@ class NodeTypeResource(ModelResource):
 
 class NodeHandleResource(ModelResource):
     
-    node_type = fields.ToOneField(NodeTypeResource, 'node_type') 
-    
+    node_type = fields.ToOneField(NodeTypeResource, 'node_type')
+    node = fields.DictField(attribute='node', default={})
+        
     class Meta:
         queryset = NodeHandle.objects.all()
         resource_name = 'node_handle'
-        #authentication = ApiKeyAuthentication()
+        authentication = Authentication()
 
 
     def override_urls(self):
@@ -105,15 +97,25 @@ class NodeHandleResource(ModelResource):
         
         child_resource = RelationshipResource()
         return child_resource.get_list(request, parent_obj=obj.pk)
+        
+    def dehydrate_node(self, bundle):
+        return item2dict(bundle.obj.get_node())
+        
+    def dehydrate_node_type(self, bundle):
+        return bundle.data['node_type'].replace(
+                                        '/%d/' % bundle.obj.node_type_id,
+                                        '/%s/' % slugify(bundle.obj.node_type))
 
     def dehydrate(self, bundle):
-        bundle.data['node_type'] = bundle.data['node_type'].replace(
-                           '/%d/' % bundle.obj.node_type_id,
-                           '/%s/' % slugify(bundle.obj.node_type))
         bundle.data['resource_uri'] = bundle.data['resource_uri'].replace(
                    '/%s/' % self.Meta.resource_name,
                    '/%s/' % slugify(bundle.obj.node_type))
-        bundle.data['node'] = item2dict(bundle.obj.get_node())
+        bundle.data['relationships'] = []
+        rr = RelationshipResource()
+        tmp_obj = RelationshipObject()
+        for rel in bundle.obj.get_node().relationships:            
+            tmp_obj.id = rel.id
+            bundle.data['relationships'].append(rr.get_resource_uri(tmp_obj))
         return bundle
 
 
@@ -150,8 +152,10 @@ class RelationshipResource(Resource):
         new_obj = RelationshipObject(initial=item2dict(rel))
         new_obj.id = rel.getId()
         new_obj.type = rel.type.name()
-        new_obj.start = node2resource_uri(rel.start)
-        new_obj.end = node2resource_uri(rel.end)
+        new_obj.start = handle_id2resource_uri(
+                                    rel.start.getProperty('handle_id', None))
+        new_obj.end = handle_id2resource_uri(
+                                    rel.end.getProperty('handle_id', None))
         return new_obj
 
     def get_resource_uri(self, bundle_or_obj):
@@ -170,10 +174,13 @@ class RelationshipResource(Resource):
     def get_object_list(self, request, **kwargs):
         results = []
         if kwargs.get('parent_obj', None):
-            parent = NodeHandle.objects.get(kwargs['parent_obj'])
+            nh = NodeHandle.objects.get(pk=kwargs['parent_obj'])
+            parent = nh.get_node()
             for rel in parent.relationships:
                 results.append(self._new_rel_obj(rel))
-        return results
+            return results
+        else:
+            raise ImmediateHttpResponse(HttpResponseNotAllowed(['POST']))
     
     def obj_get_list(self, request = None, **kwargs):
         return self.get_object_list(request, **kwargs)
