@@ -18,12 +18,12 @@ from tastypie.authentication import Authentication
 from tastypie.authorization import Authorization
 from django.contrib.auth.models import User
 from django.conf.urls import url
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, resolve
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed
 from django.template.defaultfilters import slugify
-from niweb.apps.noclook.models import NodeHandle, NodeType, NODE_META_TYPE_CHOICES
-from niweb.apps.noclook.helpers import item2dict
+from niweb.apps.noclook.models import NodeHandle, NodeType
+from niweb.apps.noclook.helpers import item2dict, update_noclook_auto_manage
 import norduni_client as nc
 
 def handle_id2resource_uri(handle_id):
@@ -43,10 +43,15 @@ def handle_id2resource_uri(handle_id):
     if nhr._meta.urlconf_namespace:
         view = "%s:%s" % (nhr._meta.urlconf_namespace, view)
     if nhr._meta.api_name is not None:
-            kwargs['api_name'] = nhr._meta.api_name
+        kwargs['api_name'] = nhr._meta.api_name
     return reverse(view, args=None, kwargs=kwargs)
     
-
+def resource_uri2id(resource_uri):
+    '''
+    Takes a resource uri and returns the id.
+    '''
+    return resolve(resource_uri).kwargs.get('pk', None)
+                            
 class FullUserResource(ModelResource):
     
     class Meta:
@@ -98,16 +103,16 @@ class NodeTypeResource(ModelResource):
 
 class NodeHandleResource(ModelResource):
     
-    handle_id = fields.IntegerField(readonly=True, unique=True)
-    node_id = fields.IntegerField(readonly=True)
+    handle_id = fields.IntegerField(attribute='handle_id', readonly=True, unique=True)
+    node_id = fields.IntegerField(attribute='node_id', readonly=True)
     node_name = fields.CharField(attribute='node_name')
     node_type = fields.ForeignKey(NodeTypeResource, 'node_type')
     node_meta_type = fields.CharField(attribute='node_meta_type')
     creator = fields.ForeignKey(UserResource, 'creator')
-    created = fields.DateTimeField(readonly=True)
+    created = fields.DateTimeField(attribute='created', readonly=True)
     modifier = fields.ForeignKey(UserResource, 'modifier', blank=True,
-                                 default='', null=True)
-    modified = fields.DateTimeField(readonly=True)
+                                 null=True)
+    modified = fields.DateTimeField(attribute='modified', readonly=True)
     node = fields.DictField(attribute='node', default={}, blank=True)
         
     class Meta:
@@ -116,33 +121,43 @@ class NodeHandleResource(ModelResource):
         authentication = Authentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
 
 
-#    def override_urls(self):
-#        return [
-#            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (self._meta.resource_name, utils.trailing_slash()),
-#                self.wrap_view('get_relationships'), name="api_get_relationships"),
-#        ]
-#    
-#    def get_relationships(self, request, **kwargs):
-#        try:
-#            obj = self.cached_obj_get(request=request,
-#                                      **self.remove_api_resource_names(kwargs))
-#        except ObjectDoesNotExist:
-#            return HttpGone()
-#        except MultipleObjectsReturned:
-#            return HttpMultipleChoices("More than one resource is found at this URI.")
-#        
-#        child_resource = RelationshipResource()
-#        return child_resource.get_list(request, parent_obj=obj.pk)
+    def obj_create(self, bundle, request=None, **kwargs):
+        bundle = super(NodeHandleResource, self).obj_create(bundle, request,
+                                                            **kwargs)
+        return self.hydrate_node(bundle)
+
+    def override_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (self._meta.resource_name, utils.trailing_slash()),
+                self.wrap_view('get_relationships'), name="api_get_relationships"),
+        ]
+    
+    def get_relationships(self, request, **kwargs):
+        try:
+            obj = self.cached_obj_get(request=request,
+                                      **self.remove_api_resource_names(kwargs))
+        except ObjectDoesNotExist:
+            return HttpGone()
+        except MultipleObjectsReturned:
+            return HttpMultipleChoices("More than one resource is found at this URI.")
+        
+        child_resource = RelationshipResource()
+        return child_resource.get_list(request, parent_obj=obj.pk)
         
     def dehydrate_node(self, bundle):
         return item2dict(bundle.obj.get_node())
         
     def hydrate_node(self, bundle):
         try:
-            nc.update_item_properties(nc.neo4jdb, bundle.obj.get_node(), 
+            node = bundle.obj.get_node()
+            nc.update_item_properties(nc.neo4jdb, node, 
                                       bundle.data['node'])
+            update_noclook_auto_manage(nc.neo4j, node)
         except TypeError:
             # Node is not yet created, obj_create will take care of that.
             pass
@@ -164,18 +179,15 @@ class NodeHandleResource(ModelResource):
             tmp_obj.id = rel.id
             bundle.data['relationships'].append(rr.get_resource_uri(tmp_obj))
         return bundle
-    
-    def obj_create(self, bundle, request=None, **kwargs):
-        bundle = super(NodeHandleResource, self).obj_create(bundle, request,
-                                                            **kwargs)
-        return self.hydrate_node(bundle)
+
 
 class RelationshipObject(object):
+    
     def __init__(self, initial=None):
-        self.__dict__['_data'] = {'properties':{}}
-
+        self.__dict__['_data'] = {'properties': {}}
+        
         if hasattr(initial, 'items'):
-            self.__dict__['_data']['properties'] = initial
+            self.__dict__['_data'] = initial
 
     def __getattr__(self, name):
         return self._data.get(name, None)
@@ -189,7 +201,7 @@ class RelationshipObject(object):
 
 class RelationshipResource(Resource):
     
-    id = fields.IntegerField(attribute='id')
+    id = fields.IntegerField(attribute='id', readonly=True, unique=True)
     type = fields.CharField(attribute='type')
     start = fields.CharField(attribute='start')
     end = fields.CharField(attribute='end')
@@ -199,11 +211,15 @@ class RelationshipResource(Resource):
     class Meta:
         resource_name = 'relationship'
         object_class = RelationshipObject
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post', 'delete']
 
-    def _new_rel_obj(self, rel):
-        new_obj = RelationshipObject(initial=item2dict(rel))
+    def _new_obj(self, rel):
+        new_obj = RelationshipObject()
         new_obj.id = rel.getId()
         new_obj.type = rel.type.name()
+        new_obj.properties.update(item2dict(rel))
         new_obj.start = handle_id2resource_uri(
                                     rel.start.getProperty('handle_id', None))
         new_obj.end = handle_id2resource_uri(
@@ -228,7 +244,7 @@ class RelationshipResource(Resource):
             nh = NodeHandle.objects.get(pk=kwargs['parent_obj'])
             parent = nh.get_node()
             for rel in parent.relationships:
-                results.append(self._new_rel_obj(rel))
+                results.append(self._new_obj(rel))
             return results
         else:
             raise ImmediateHttpResponse(HttpResponseNotAllowed(['POST']))
@@ -239,20 +255,37 @@ class RelationshipResource(Resource):
     def obj_get(self, request = None, **kwargs):
         pk = int(kwargs['pk'])
         try:
-            return self._new_rel_obj(nc.neo4jdb.relationships[pk])
+            return self._new_obj(nc.neo4jdb.relationships[pk])
         except KeyError:
             raise NotFound("Object not found") 
     
-    def obj_create():
-        pass
+    def obj_create(self, bundle, request=None, **kwargs):
+        start_pk = resource_uri2id(bundle.data['start'])
+        start_nh = NodeHandle.objects.get(pk=start_pk)
+        start_node = start_nh.get_node()
+        end_pk = resource_uri2id(bundle.data['end'])        
+        end_nh = NodeHandle.objects.get(pk=end_pk)
+        end_node = end_nh.get_node()
+        rel = nc.create_suitable_relationship(nc.neo4jdb, start_node, end_node,
+                                              bundle.data['type'])
+        nc.update_item_properties(nc.neo4jdb, rel, bundle.data['properties'])
+        update_noclook_auto_manage(nc.neo4jdb, rel)
+        bundle.obj = self._new_obj(rel)
+        return bundle
     
-    def obj_update():
-        pass
+    def obj_update(self, bundle, request=None, **kwargs):
+        rel = nc.get_relationship_by_id(nc.neo4jdb, kwargs['pk'])
+        updated_rel = nc.update_item_properties(nc.neo4jdb, rel,
+                                                bundle.data['properties'])
+        update_noclook_auto_manage(nc.neo4jdb, updated_rel)                                        
+        bundle.obj = self._new_obj(updated_rel)
+        return bundle
+    
+    def obj_delete(self, request=None, **kwargs):
+        rel = nc.get_relationship_by_id(nc.neo4jdb, kwargs['pk'])
+        nc.delete_relationship(nc.neo4jdb, rel)
     
     def obj_delete_list():
-        pass
-    
-    def obj_delete():
         pass
     
     def rollback():
@@ -264,6 +297,12 @@ class CableResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='cable')
         resource_name = 'cable'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
         
 class HostResource(NodeHandleResource):
@@ -271,6 +310,12 @@ class HostResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host')
         resource_name = 'host'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
 
 class HostProviderResource(NodeHandleResource):
@@ -278,6 +323,12 @@ class HostProviderResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-provider')
         resource_name = 'host-provider'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
 
 class HostServiceResource(NodeHandleResource):
@@ -285,6 +336,12 @@ class HostServiceResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-service')
         resource_name = 'host-service'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
         
 class HostUserResource(NodeHandleResource):
@@ -292,6 +349,12 @@ class HostUserResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-user')
         resource_name = 'host-user'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }        
         
         
 class IPServiceResource(NodeHandleResource):
@@ -299,6 +362,12 @@ class IPServiceResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='ip-service')
         resource_name = 'ip-service'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
         
 class ODFResource(NodeHandleResource):
@@ -306,6 +375,12 @@ class ODFResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='odf')
         resource_name = 'odf'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
 
 class OpticalNodeResource(NodeHandleResource):
@@ -313,6 +388,12 @@ class OpticalNodeResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='optical-node')
         resource_name = 'optical-node'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
 
 class PeeringPartnerResource(NodeHandleResource):
@@ -320,6 +401,12 @@ class PeeringPartnerResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='peering-partner')
         resource_name = 'peering-partner'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
         
 class PICResource(NodeHandleResource):
@@ -327,6 +414,12 @@ class PICResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='pic')
         resource_name = 'pic'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
       
 class PortResource(NodeHandleResource):
@@ -334,6 +427,12 @@ class PortResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='port')
         resource_name = 'port'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
 
 class RackResource(NodeHandleResource):
@@ -341,6 +440,12 @@ class RackResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='rack')
         resource_name = 'rack'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
         
 class RouterResource(NodeHandleResource):
@@ -348,6 +453,12 @@ class RouterResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='router')
         resource_name = 'router'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
         
 class SiteResource(NodeHandleResource):
@@ -355,6 +466,12 @@ class SiteResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='site')
         resource_name = 'site'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
         
 class SiteOwnerResource(NodeHandleResource):
@@ -362,6 +479,12 @@ class SiteOwnerResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='site-owner')
         resource_name = 'site-owner'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
         
 
 class UnitResource(NodeHandleResource):
@@ -369,4 +492,10 @@ class UnitResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='unit')
         resource_name = 'unit'
+        authentication = Authentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
            
