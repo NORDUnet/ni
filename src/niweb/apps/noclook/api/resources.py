@@ -14,7 +14,7 @@ from tastypie.http import HttpGone, HttpMultipleChoices
 from tastypie.exceptions import ImmediateHttpResponse
 from tastypie.constants import ALL
 from tastypie.exceptions import NotFound
-from tastypie.authentication import Authentication
+from tastypie.authentication import ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from django.contrib.auth.models import User
 from django.conf.urls import url
@@ -57,7 +57,7 @@ class FullUserResource(ModelResource):
     class Meta:
         queryset = User.objects.all()
         resource_name = 'full_user'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         excludes = ['email', 'password', 'is_active', 'is_staff', 'is_superuser']
         filtering = {
@@ -74,7 +74,7 @@ class UserResource(ModelResource):
         queryset = User.objects.all()
         resource_name = 'user'
         authorization = Authorization()
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         excludes = ['email', 'password', 'is_staff', 'is_superuser']
 
 class NodeTypeResource(ModelResource):
@@ -85,7 +85,7 @@ class NodeTypeResource(ModelResource):
     class Meta:
         queryset = NodeType.objects.all()
         resource_name = 'node_type'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization() 
     
     
@@ -118,7 +118,7 @@ class NodeHandleResource(ModelResource):
     class Meta:
         queryset = NodeHandle.objects.all()
         resource_name = 'node_handle'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -211,7 +211,7 @@ class RelationshipResource(Resource):
     class Meta:
         resource_name = 'relationship'
         object_class = RelationshipObject
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post', 'delete']
 
@@ -297,7 +297,7 @@ class CableResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='cable')
         resource_name = 'cable'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -310,7 +310,7 @@ class HostResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host')
         resource_name = 'host'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -323,7 +323,7 @@ class HostProviderResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-provider')
         resource_name = 'host-provider'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -336,7 +336,7 @@ class HostServiceResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-service')
         resource_name = 'host-service'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -349,7 +349,7 @@ class HostUserResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-user')
         resource_name = 'host-user'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -362,7 +362,7 @@ class IPServiceResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='ip-service')
         resource_name = 'ip-service'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -375,7 +375,7 @@ class ODFResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='odf')
         resource_name = 'odf'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -388,7 +388,7 @@ class OpticalNodeResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='optical-node')
         resource_name = 'optical-node'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -401,7 +401,7 @@ class PeeringPartnerResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='peering-partner')
         resource_name = 'peering-partner'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -414,7 +414,7 @@ class PICResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='pic')
         resource_name = 'pic'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -427,7 +427,7 @@ class PortResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='port')
         resource_name = 'port'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -440,7 +440,7 @@ class RackResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='rack')
         resource_name = 'rack'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -453,7 +453,7 @@ class RouterResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='router')
         resource_name = 'router'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -466,7 +466,7 @@ class SiteResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='site')
         resource_name = 'site'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -479,7 +479,7 @@ class SiteOwnerResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='site-owner')
         resource_name = 'site-owner'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
@@ -492,7 +492,7 @@ class UnitResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='unit')
         resource_name = 'unit'
-        authentication = Authentication()
+        authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         filtering = {
