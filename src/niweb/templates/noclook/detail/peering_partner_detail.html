@@ -32,7 +32,10 @@ $(document).ready(
                 <th>Name:</th><td>{{ node.name }}</td>
             </tr>
             <tr>
-                <th>AS Number:</th><td>{{ node.as_number }}</td>
+		    <th>AS Number:</th><td>{{ node.as_number }}</td>
+            </tr>
+            <tr>
+		    <th>PeeringDB:</th><td><a href="http://www.peeringdb.com/view.php?asn={{ node.as_number }}" target="_blank">{{ node.as_number }}</a></td>
             </tr>
         </table>
     </div>
