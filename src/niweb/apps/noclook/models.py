@@ -51,7 +51,7 @@ class NodeHandle(models.Model):
     # Meta information
     creator = models.ForeignKey(User, related_name='creator')
     created = models.DateTimeField(auto_now_add=True)
-    modifier = models.ForeignKey(User, blank=True, related_name='modifier')
+    modifier = models.ForeignKey(User, null=True, blank=True, related_name='modifier')
     modified = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
@@ -98,7 +98,8 @@ class NodeHandle(models.Model):
             super(NodeHandle, self).save(*args, **kwargs)
         except utils.IntegrityError as e:
             print e
-            print 'Node ID: %d' % node.id            
+            print 'Node ID: %d' % node.id
+            raise Exception(e)
         meta_node = nc.get_meta_node(nc.neo4jdb, str(self.node_meta_type))
         node = nc.get_node_by_id(nc.neo4jdb, self.node_id)
         with nc.neo4jdb.transaction:
