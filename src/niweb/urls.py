@@ -43,7 +43,7 @@ urlpatterns = patterns('',
 
     # Static serve
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
-        {'document_root': settings.STATIC_DEV_MEDIA}),
+        {'document_root': settings.MEDIA_ROOT}),
 
     # Django Generic Login
     #(r'^accounts/login/$', 'django.contrib.auth.views.login'),
