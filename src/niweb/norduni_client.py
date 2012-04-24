@@ -43,7 +43,8 @@ try:
 except ImportError:
     NEO4J_URI = None
     print 'Starting up without a Django environment.'
-    print 'norduni_client.neo4jdb == None'
+    print 'Initial: norduni_client.neo4jdb == None.'
+    print 'Use norduni_client.open_db(path_to_directory) to open a database.'
     pass
 
 # Helper functions
@@ -607,7 +608,8 @@ except Exception as e:
 
 def _close_db():
     try:
-        neo4jdb.shutdown()
+        if neo4jdb:
+            neo4jdb.shutdown()
     except NameError:
         print 'Could not shutdown Neo4j database. Is it open in another process?'
 

@@ -8,7 +8,7 @@ Created on Mon Apr  2 11:17:57 2012
 from django.template.defaultfilters import slugify
 from django.conf import settings as django_settings
 from datetime import datetime, timedelta
-from apps.noclook.models import NodeHandle
+from niweb.apps.noclook.models import NodeHandle
 import norduni_client as nc
 
 def get_node_url(node):
@@ -82,12 +82,12 @@ def iter2list(pythonic_iterator):
         l.append(item)
     return l
 
-def node2dict(node):
+def item2dict(item):
     '''
-    Returns the nodes properties as a dictionary.
+    Returns the item properties as a dictionary.
     '''
     d = {}
-    for key, value in node.items():
+    for key, value in item.items():
         d[key] = value
     return d
 

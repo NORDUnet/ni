@@ -64,7 +64,8 @@ def form_update_node(user, node, form, property_keys=[]):
     Returns True if all non-empty properties where added else False and 
     rollbacks the node changes.
     '''
-    meta_fields = ['relationship_location']
+    meta_fields = ['relationship_location', 'relationship_end_a',
+                   'relationship_end_b']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         for field in form.base_fields.keys():
@@ -399,7 +400,7 @@ def edit_site(request, handle_id):
                                    'site_owner': site_owner},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditSiteForm(h.node2dict(node))
+        form = forms.EditSiteForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_site.html',
                                   {'form': form, 'site_owner': site_owner,
                                    'node': node},
@@ -422,7 +423,7 @@ def edit_site_owner(request, handle_id):
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditSiteOwnerForm(h.node2dict(node))
+        form = forms.EditSiteOwnerForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'form': form, 'node': node},
                                 context_instance=RequestContext(request))
@@ -458,7 +459,7 @@ def edit_cable(request, handle_id):
                                    'connections': connections},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditCableForm(h.node2dict(node))
+        form = forms.EditCableForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_cable.html',
                                   {'form': form, 'node': node,
                                    'connections': connections},
@@ -491,7 +492,7 @@ def edit_optical_node(request, handle_id):
                                    'location': location},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditOpticalNodeForm(h.node2dict(node))
+        form = forms.EditOpticalNodeForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_optical_node.html',
                                   {'form': form, 'location': location,
                                    'node': node},
@@ -513,7 +514,7 @@ def edit_peering_partner(request, handle_id):
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditPeeringPartnerForm(h.node2dict(node))
+        form = forms.EditPeeringPartnerForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_peering_partner.html',
                                   {'node': node, 'form': form},
                                 context_instance=RequestContext(request))
@@ -545,7 +546,7 @@ def edit_rack(request, handle_id):
                                    'location': location},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditRackForm(h.node2dict(node))
+        form = forms.EditRackForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_rack.html',
                                   {'form': form, 'location': location,
                                    'node': node},
@@ -578,7 +579,7 @@ def edit_host(request, handle_id):
                                    'location': location},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditHostForm(h.node2dict(node))
+        form = forms.EditHostForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_host.html',
                                   {'form': form, 'location': location,
                                    'node': node},
@@ -611,7 +612,7 @@ def edit_router(request, handle_id):
                                    'location': location},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditRouterForm(h.node2dict(node))
+        form = forms.EditRouterForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_router.html',
                                   {'node': node, 'form': form,
                                    'location': location},
@@ -644,7 +645,7 @@ def edit_odf(request, handle_id):
                                    'location': location},
                                 context_instance=RequestContext(request))
     else:
-        form = forms.EditOdfForm(h.node2dict(node))
+        form = forms.EditOdfForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_odf.html',
                                   {'form': form, 'location': location,
                                    'node': node},
