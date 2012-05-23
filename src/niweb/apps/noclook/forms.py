@@ -1,5 +1,6 @@
 from django import forms
-from niweb.apps.noclook import helpers as h
+
+import niweb.apps.noclook.helpers as h
 import norduni_client as nc
 
 # We should move this kind of data to the SQL database.
@@ -51,12 +52,7 @@ def get_node_type_tuples(node_type):
     nodes = h.iter2list(index['node_type'][node_type])
     node_list = [('','')]
     for node in nodes:
-        if node_type == 'Site':
-            site_name = '%s-%s' % (node.getProperty('country_code', ''), 
-                                   node['name'])
-            node_list.append((node.id, site_name))
-        else:
-            node_list.append((node.id, node['name']))
+        node_list.append((node.id, node['name']))
     node_list.sort(key=itemgetter(1))
     return node_list
 

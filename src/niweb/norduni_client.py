@@ -25,17 +25,16 @@ from neo4j import GraphDatabase, Uniqueness, Evaluation, OUTGOING, INCOMING, ANY
 from lucenequerybuilder import Q
 import json
 
-'''
-This started as an extension to the Neo4j REST client made by Versae, continued
-as an extension for the official Neo4j python bindings when they were released
-(Neo4j 1.5, http://docs.neo4j.org/chunked/milestone/python-embedded.html).
+# This started as an extension to the Neo4j REST client made by Versae, continued
+# as an extension for the official Neo4j python bindings when they were released
+# (Neo4j 1.5, http://docs.neo4j.org/chunked/milestone/python-embedded.html).
+#
+# The goal is to make it easier to add and retrieve data to a Neo4j database
+# according to the NORDUnet Network Inventory data model.
+#
+# More information about NORDUnet Network Inventory:
+# https://portal.nordu.net/display/NI/
 
-The goal is to make it easier to add and retrive data to a Neo4j database 
-according to the NORDUnet Network Inventory data model.
-
-More information about NORDUnet Network Inventory: 
-https://portal.nordu.net/display/NI/
-'''
 # Load Django settings
 try:
     from django.conf import settings as django_settings

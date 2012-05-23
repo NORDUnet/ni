@@ -11,14 +11,14 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
+from lucenequerybuilder import Q
+import json
+import ipaddr
+
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook import forms
-from niweb.apps.noclook import helpers as h
-
+import niweb.apps.noclook.helpers as h
 import norduni_client as nc
-import ipaddr
-import json
-from lucenequerybuilder import Q
 
 # We should move this kind of data to the SQL database.
 COUNTRY_MAP = {
@@ -208,10 +208,7 @@ def get_node_type(request, slug):
     hits = nc.neo4jdb.query(q)
     type_list = []
     for hit in hits:
-        if hit['node']['node_type'] == 'Site':
-            name = '%s-%s' % (hit['node']['country_code'], hit['node']['name'])
-        else:
-            name = hit['node']['name']
+        name = hit['node']['name']
         type_list.append((hit['node'].id, name))
     return HttpResponse(json.dumps(type_list), mimetype='application/json')
 
@@ -291,7 +288,7 @@ def new_site(request, handle_id, form):
     keys = ['country_code', 'address', 'postarea', 'postcode']
     form_update_node(request.user, node, form, keys)
     with nc.neo4jdb.transaction:
-        node['name'] = form.cleaned_data['name'].upper()
+        node['name'] = '%s-%s' % (form.cleaned_data['country_code'], form.cleaned_data['name'].upper())
         node['country'] = COUNTRY_MAP[node['country_code']]
     return HttpResponseRedirect(nh.get_absolute_url())
     

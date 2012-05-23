@@ -31,7 +31,7 @@ $(document).ready(
                 {% load noclook_tags %}
                 {% for site in site_list %}
                         <tr>
-                            <td><a href="/findin/site/country_code/{{ site.country_code }}/">{{ site.country }}</a></td><td><a href="{% noclook_node_to_url site.site %}">{% if site.country_code %}{{ site.country_code }}-{% endif %}{{ site.name }}</a></td>
+                            <td><a href="/findin/site/country_code/{{ site.country_code }}/">{{ site.country }}</a></td><td><a href="{% noclook_node_to_url site.site %}">{{ site.name }}</a></td>
                         </tr>
                 {% endfor %}
             </tbody>
