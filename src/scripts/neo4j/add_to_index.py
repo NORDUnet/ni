@@ -34,13 +34,14 @@ args = parser.parse_args()
 
 if args.list:
     print 'Available indexes:'
-    for i in nc.get_all_node_indexes().keys():
-        print i
+    for name in nc.neo4jdb.index().nodeIndexNames():
+        print name
     sys.exit(0)
 
 if args.index and args.property:
-    for node in nc.get_all_nodes():
-        added = nc.add_index_node(args.index, args.property, node.id)
+    for node in nc.get_all_nodes(nc.neo4jdb):
+        index = nc.get_node_index(nc.neo4jdb, args.index)
+        added = nc.add_index_item(nc.neo4jdb, index, node, args.property)
         if added:
             print 'Node(%d), \'%s\' = \'%s\', added to index %s' % (node.id,
                                                         args.property,
