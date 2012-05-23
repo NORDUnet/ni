@@ -47,7 +47,7 @@ $(document).ready(
         <table class="table">
             {% if node.noclook_automanage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
@@ -65,13 +65,13 @@ $(document).ready(
 <br><br><br>
 <div class="section">
     <h3>Equipment in rack</h3>
-    {% if equipment_relationships %}
+    {% if physical_relationships %}
     <table id="equipment" class="tablesorter" cellspacing="1">
         <thead>
             <th>Type</th><th>Name</th>
         </thead>
         <tbody>
-        {% for equip in equipment_relationships %}
+        {% for equip in physical_relationships %}
             <tr>
                 <td><a href="/{{ equip.start.node_type|slugify }}/">{{ equip.start.node_type }}</a></td>
                 <td><a href="{% noclook_node_to_url equip.start %}">{{ equip.start.name }}</a></td>
