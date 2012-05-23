@@ -18,11 +18,11 @@
         {% if node.noclook_auto_manage and expired %}
             <span class="label label-important">Last seen {{ last_seen|timesince }} ago</span>
         {% endif %}
-        <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {% if node.country_code %}{{ node.country_code }}-{% endif %}{{ node.name }}</h1>
+        <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h1>
         {% if location %}
             <h5 class="site">Located in
             {% for loc in location %}
-                <a href="{% noclook_node_to_url loc.node %}">{{ loc.name }}</a>
+                <a href="{% noclook_node_to_url loc.node %}"> {{ loc.name }}</a>
             {% endfor %}
             </h5>
         {% endif %}

@@ -6,7 +6,7 @@ Created on Fri Aug 19 11:28:13 2011
 """
 
 from django.core.management.base import BaseCommand, CommandError
-from apps.noclook.models import NodeHandle
+from niweb.apps.noclook.models import NodeHandle
 import datetime
 import norduni_client as nc
 

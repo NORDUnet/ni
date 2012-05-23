@@ -4,13 +4,14 @@ from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from niweb.apps.noclook.models import NodeHandle, NodeType
-import niweb.apps.noclook.helpers as h
-
-import norduni_client as nc
 import ipaddr
 import json
 from lucenequerybuilder import Q
+
+from niweb.apps.noclook.models import NodeHandle, NodeType
+import niweb.apps.noclook.helpers as h
+import norduni_client as nc
+
 
 def index(request):
     return render_to_response('noclook/index.html', {},
@@ -504,7 +505,7 @@ def search(request, value='', form=None):
         # See if value is from autocomplete
     i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     q = Q('all', '*%s*' % value, wildcard=True)
-    nodes = h.iter2list(i1.query(str(q)))
+    nodes = h.iter2list(i1.query(unicode(q)))
     if not nodes:
         nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
     result = []
@@ -540,7 +541,7 @@ def search_autocomplete(request):
         i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
         q = Q('name', '*%s*' % query, wildcard=True)
         suggestions = []
-        for node in i1.query(str(q)):
+        for node in i1.query(unicode(q)):
             suggestions.append(node['name'])
         jsonstr = json.dumps({'query': query, 'suggestions': suggestions,
                               'data': []})

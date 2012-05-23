@@ -1,9 +1,10 @@
-from apps.noclook.models import NodeHandle, NodeType
 from django.contrib import admin
 from tastypie.admin import ApiKeyInline
 from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+
+from niweb.apps.noclook.models import NodeHandle, NodeType
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]

@@ -5,10 +5,8 @@ Created on Tue Jul  5 15:39:31 2011
 @author: lundberg
 """
 
-'''
-Add nodes which has the supplied property/key to the index with the name 
-supplied.
-'''
+# Add nodes which has the supplied property/key to the index with the name
+# supplied.
 
 import sys
 import os

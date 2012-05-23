@@ -8,6 +8,7 @@ Created on Mon Apr  2 11:17:57 2012
 from django.template.defaultfilters import slugify
 from django.conf import settings as django_settings
 from datetime import datetime, timedelta
+
 from niweb.apps.noclook.models import NodeHandle
 import norduni_client as nc
 
@@ -134,9 +135,7 @@ def get_location(node):
     location = []
     rels = iter2list(node.Located_in.outgoing)
     for rel in rels:
-        if rel.end['node_type'] == 'Site':
-            name = '%s-%s' % (rel.end['country_code'], rel.end['name'])
-        elif rel.end['node_type'] == 'Rack':
+        if rel.end['node_type'] == 'Rack':
             # Get where the rack is placed
             location += get_place(rel.end)
             name = rel.end['name']
@@ -152,10 +151,7 @@ def get_place(node):
     location = []
     rels = iter2list(node.Has.incoming)
     for rel in rels:
-        if rel.start['node_type'] == 'Site':
-            name = '%s-%s' % (rel.start['country_code'], rel.start['name'])
-        else:
-            name = rel.start['name']
+        name = rel.start['name']
         location.append({'node': rel.start, 'name': name})
     return location
     
