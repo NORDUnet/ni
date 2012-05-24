@@ -374,7 +374,7 @@ def site_detail(request, handle_id):
     # Handle relationships
     equipment_relationships = h.iter2list(node.Located_in.incoming)
     responsible_relationships = h.iter2list(node.Responsible_for.incoming)
-    location_relationships = h.get_racks_and_equipment(node)
+    location_relationships = h.iter2list(h.get_racks_and_equipment(node))
     return render_to_response('noclook/detail/site_detail.html', 
                         {'node_handle': nh, 'node': node,
                          'last_seen': last_seen, 'expired': expired,
