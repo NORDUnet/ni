@@ -49,14 +49,12 @@ import noclook_juniper_consumer
 import noclook_nmap_consumer
 import noclook_alcatel_consumer
 
-'''
-This script is used for adding the objects collected with the
-NERDS producers to the noclook database viewer.
-'''
+# This script is used for adding the objects collected with the
+# NERDS producers to the NOCLook database viewer.
 
 # SEARCH_INDEX_KEYS are only used when restoring backup nodes.
 SEARCH_INDEX_KEYS = ['name', 'description', 'ip_address', 'ip_addresses',
-                     'as_number', 'hostname']
+                     'as_number', 'hostname', 'telenor_tn1_number']
 
 def init_config(path):
     '''
