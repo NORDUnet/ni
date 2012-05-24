@@ -7,7 +7,15 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
-        $("#services").tablesorter(
+        $("#equipment").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+        $("#locations").tablesorter(
         {
             sortList: [[0,0]],
             headers:
@@ -113,9 +121,29 @@ $(document).ready(
 {% endif %}
 <br><br><br>
 <div class="section">
-    <h3>Equipment on site</h3>
+    <h3>Racked equipment</h3>
+    {% if location_relationships %}
+        <table id="locations" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>Rack</th><th>Equipment</th>
+            </thead>
+            <tbody>
+            {% for loc in location_relationships %}
+                <tr>
+                    <td><a href="{% noclook_node_to_url loc.end %}">{{ loc.rack.name }}</a></td>
+                    <td><a href="/{{ loc.equipment.node_type|slugify }}/">{{ loc.equipment.node_type }}</a> <a href="{% noclook_node_to_url loc.equipment %}">{{ loc.equipment.name }}</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        No racks on the site.
+    {% endif %}
+</div>
+<div class="section">
+    <h3>Unracked equipment</h3>
     {% if equipment_relationships %}
-    <table id="services" class="tablesorter" cellspacing="1">
+    <table id="equipment" class="tablesorter" cellspacing="1">
         <thead>
             <th>Type</th><th>Name</th>
         </thead>
@@ -129,7 +157,7 @@ $(document).ready(
         </tbody>
     </table>
     {% else %}
-        No equipment on site.
+        No unracked equipment on site.
     {% endif %}
 </div>
 {% endblock %}
