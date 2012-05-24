@@ -181,5 +181,16 @@ def get_connected_equipment(equipment):
         START node=node(%d)
         MATCH node-[:Has*1..10]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..10]-end
         RETURN node,porta,r0,cable,r1,portb,end
-        ''' % equipment.id
+        ''' % equipment.getId()
+    return nc.neo4jdb.query(q)
+
+def get_racks_and_equipment(site):
+    """
+    Get all the racks on a site and the equipment, if any, in those racks.
+    """
+    q = '''
+        START node=node(%d)
+        MATCH node-[r0:Has]->rack<-[r1?:Located_in]-equipment
+        RETURN rack,r1,equipment
+        ''' % site.getId()
     return nc.neo4jdb.query(q)

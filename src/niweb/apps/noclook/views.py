@@ -344,8 +344,7 @@ def ip_service_detail(request, handle_id):
         interface = {}
         interface['unit'] = unit_rel.end
         interface['if_address'] = unit_rel['ip_address']
-        # TODO: If service depends on more than one PIC this won't show the
-        # corrent information.
+        # TODO: If service depends on more than one PIC this won't show the correct information.
         pic = unit_rel.end.Depends_on.outgoing.single.end
         interface['pic'] = pic
         router = nc.get_root_parent(nc.neo4jdb, pic)
@@ -374,14 +373,14 @@ def site_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     # Handle relationships
     equipment_relationships = h.iter2list(node.Located_in.incoming)
-    responsible_relationships =h.iter2list(node.Responsible_for.incoming)
-    loc_relationships = h.iter2list(node.Has.outgoing)
+    responsible_relationships = h.iter2list(node.Responsible_for.incoming)
+    location_relationships = h.get_racks_and_equipment(node)
     return render_to_response('noclook/detail/site_detail.html', 
                         {'node_handle': nh, 'node': node,
                          'last_seen': last_seen, 'expired': expired,
                          'equipment_relationships': equipment_relationships, 
                          'responsible_relationships': responsible_relationships,
-                         'loc_relationships': loc_relationships},
+                         'location_relationships': location_relationships},
                          context_instance=RequestContext(request))
 
 @login_required
@@ -453,11 +452,11 @@ def port_detail(request, handle_id):
 # Visualization views
 @login_required
 def visualize_json(request, node_id):
-    '''
+    """
     Creates a JSON representation of the nodes and its adjecencies.
     This JSON data is then used by Arbor.js (http://arborjs.org/) to make
     a visual representation.
-    '''
+    """
     import arborgraph
     # Get the node
     root_node = nc.get_node_by_id(nc.neo4jdb, node_id)
@@ -471,9 +470,9 @@ def visualize_json(request, node_id):
 
 @login_required
 def visualize(request, slug, handle_id):
-    '''
+    """
     Visualize view with JS that loads JSON data.
-    '''
+    """
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     node = nh.get_node()
     return render_to_response('noclook/visualize/visualize.html',
@@ -482,9 +481,9 @@ def visualize(request, slug, handle_id):
 
 @login_required
 def visualize_maximize(request, slug, handle_id):
-    '''
+    """
     Visualize view with JS that loads JSON data.
-    '''
+    """
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     node = nh.get_node()
     return render_to_response('noclook/visualize/visualize_maximize.html',
@@ -494,10 +493,10 @@ def visualize_maximize(request, slug, handle_id):
 # Search views
 @login_required
 def search(request, value='', form=None):
-    '''
+    """
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/ or /slug/value/.
-    '''
+    """
     posted = False
     if request.POST:
         value = request.POST.get('query', '')
@@ -527,7 +526,7 @@ def search(request, value='', form=None):
                             
 @login_required
 def search_autocomplete(request):
-    '''
+    """
     Search through a pre determined index for *[query]* and returns JSON data
     like below.
     {
@@ -535,7 +534,7 @@ def search_autocomplete(request):
      suggestions:['Liberia','Liechtenstein','Lithuania'],
      data:['LR','LY','LI','LT']
     }
-    '''
+    """
     query = request.GET.get('query', None)
     if query:
         i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
@@ -550,10 +549,10 @@ def search_autocomplete(request):
     
 @login_required
 def find_all(request, slug='', key='', value='', form=None):
-    '''
+    """
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/, /slug/value/ /key/value/, /value/ or /key/.
-    '''
+    """
     if request.POST:
         value = request.POST.get('query', '') # search for '' if blank
     if slug:
@@ -606,9 +605,9 @@ def gmaps(request, slug):
         
 @login_required
 def gmaps_json(request, slug):
-    '''
+    """
     Directs gmap json requests to the right view.
-    '''
+    """
     gmap_views = {'sites': gmaps_sites, 'optical-nodes': gmaps_optical_nodes}
     try:    
         return gmap_views[slug](request)
@@ -617,7 +616,7 @@ def gmaps_json(request, slug):
 
 @login_required
 def gmaps_sites(request):
-    '''
+    """
     Return a json list with site dicts.
     [{
         name: '',
@@ -625,7 +624,7 @@ def gmaps_sites(request):
         lng: 0.0,
         lat: 0.0
     }, ...]
-    '''
+    """
     node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
     hits = node_types_index['node_type']['Site']
     site_list = []
@@ -646,7 +645,7 @@ def gmaps_sites(request):
 
 @login_required
 def gmaps_optical_nodes(request):
-    '''
+    """
     Return a json list with dicts of optical node and cables.
     [{
         name: '',
@@ -661,7 +660,7 @@ def gmaps_optical_nodes(request):
         end_lng: 0.0,
         end_lat: 0.0
     }]
-    '''
+    """
     # Cypher query to get all cables with cable type fiber that are connected
     # to two optical node.
     cypher_query = '''
@@ -683,8 +682,7 @@ def gmaps_optical_nodes(request):
             cords.append({'lng': lng, 'lat': lat})
             optical_node_list.append(node)
         edge = {'name': hit['cable']['name'], 'type': 'edge'}
-        # TODO: Needs to be revisited when/if cables terminate in more than two 
-        # points.
+        # TODO: Needs to be revisited when/if cables terminate in more than two points.
         if len(cords) == 2:
             edge['start_lng'] = cords[0]['lng']
             edge['start_lat'] = cords[0]['lat']
