@@ -140,25 +140,26 @@ $(document).ready(
         No racks on the site.
     {% endif %}
 </div>
-<div class="section">
-    <h3>Unracked equipment</h3>
-    {% if equipment_relationships %}
-    <table id="equipment" class="tablesorter" cellspacing="1">
-        <thead>
-            <th>Type</th><th>Name</th>
-        </thead>
-        <tbody>
-        {% for equip in equipment_relationships %}
-            <tr>
-                <td><a href="/{{ equip.start.node_type|slugify }}/">{{ equip.start.node_type }}</a></td>
-                <td><a href="{% noclook_node_to_url equip.start %}">{{ equip.start.name }}</a></td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        No unracked equipment on site.
-    {% endif %}
-</div>
+{% if equipment_relationships %}
+    <div class="section">
+        <h3>Unracked equipment</h3>
+
+        <table id="equipment" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>Type</th><th>Name</th>
+            </thead>
+            <tbody>
+            {% for equip in equipment_relationships %}
+                <tr>
+                    <td><a href="/{{ equip.start.node_type|slugify }}/">{{ equip.start.node_type }}</a></td>
+                    <td><a href="{% noclook_node_to_url equip.start %}">{{ equip.start.name }}</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            No unracked equipment on the site.
+    </div>
+{% endif %}
 {% endblock %}
 
