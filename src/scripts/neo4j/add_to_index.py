@@ -44,11 +44,9 @@ if args.index and args.property:
         added = nc.add_index_item(nc.neo4jdb, index, node, args.property)
         if added:
             print 'Node(%d), \'%s\' = \'%s\', added to index %s' % (node.id,
-                                                        args.property,
-                                                        node[args.property],
-                                                        args.index)
-        else:
-            print 'Node(%d) NOT added to index %s' % (node.id, args.index)
+                                                                    args.property,
+                                                                    node[args.property],
+                                                                    args.index)
 else:
     parser.print_help()
 
