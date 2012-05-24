@@ -48,41 +48,41 @@ except ImportError:
 
 # Helper functions
 def normalize_whitespace(s):
-    '''
+    """
     Removes leading and ending whitespace from a string.
-    '''
+    """
     return ' '.join(s.split())
     
 def lowerstr(s):
-    '''
+    """
     Makes everything to a string and tries to make it lower case. Also
     normalizes whitespace.
-    '''
+    """
     return normalize_whitespace(unicode(s).lower())
     
 def is_meta_node(node):
-    '''
+    """
     Returns True if the provided node is of node_type == meta.
-    '''
+    """
     if node['node_type'] == 'meta':
         return True
     return False    
 
 # Core functions
 def open_db(uri=NEO4J_URI):
-    '''
+    """
     Open or create a Neo4j database in the supplied path. As the module
     opens the database located at NEO4J_URI when imported you shouldn't have
     to use this.
-    '''
+    """
     if uri:
         return GraphDatabase(uri)
         
 def upgrade_db(uri=NEO4J_URI):
-    '''
+    """
     Opens the Neo4j database with the option to allow upgrade then closes
     the database and reopen it as neo4jdb.
-    '''
+    """
     if uri:
         db = GraphDatabase(uri, allow_store_upgrade="true")
         db.shutdown()
@@ -91,9 +91,9 @@ def upgrade_db(uri=NEO4J_URI):
         print 'You did not provide an URI to the database location.'
 
 def create_node(db, n='', t=''):
-    '''
+    """
     Creates a node with the mandatory attributes name and type.
-    '''
+    """
     with db.transaction:
         node = db.node(name=n, node_type=t)
         # Add the nodes name and type to indexes
@@ -104,57 +104,41 @@ def create_node(db, n='', t=''):
     return node
     
 def get_root_node(db):
-    '''
+    """
     Returns the root node, also known as node[0].
-    '''
+    """
     return db.reference_node
 
 def get_node_by_id(db, node_id):
-    '''
+    """
     Returns the node with the supplied id or None if it doesn't exist.
-    '''
+    """
     return db.nodes.get(int(node_id))
     
 def get_all_nodes(db):
-    '''
+    """
     Returns all nodes in the database in a list. 
-    '''
-    root = get_root_node(db)
-    nodes = []
-    traverser = db.traversal().uniqueness(Uniqueness.NODE_GLOBAL).traverse(root)
-    for node in traverser.nodes:
-        nodes.append(node)
-    return nodes
+    """
+    return [node for node in db.nodes]
     
 def get_relationship_by_id(db, rel_id):
-    '''
+    """
     Returns the relationship with the supplied id.
-    '''
-    with db.transaction:
-        try:
-            rel = db.relationships[int(rel_id)]
-        except KeyError:
-            return None
-    return rel
+    """
+    return db.relationships.get(int(rel_id))
         
 def get_all_relationships(db):
-    '''
+    """
     Returns all relationships in the database in a list.
-    '''
-    root = get_root_node(db)
-    relationships = []
-    traverser = db.traversal().uniqueness(
-                                Uniqueness.RELATIONSHIP_GLOBAL).traverse(root)
-    for relationship in traverser.relationships:
-        relationships.append(relationship)
-    return relationships
+    """
+    return [rel for rel in db.relationships]
 
 def delete_node(db, node):
-    '''
+    """
     Deletes the node and all its relationships. Removes the node from all node
     indexes.
     Returns True on success.
-    '''
+    """
     with db.transaction:
         # Delete the nodes all relationships
         for rel in node.relationships:
@@ -167,11 +151,11 @@ def delete_node(db, node):
     return True
 
 def delete_relationship(db, rel):
-    '''
+    """
     Deletes the relationship and removes the relationship from all relationship
     indexes.
     Returns True on success.
-    '''
+    """
     with db.transaction:
         # Delete the relationship from all indexes
         for index in get_relationship_indexes(db):
@@ -182,9 +166,9 @@ def delete_relationship(db, rel):
 
 # NORDUni functions
 def create_meta_node(db, meta_node_name):
-    '''
+    """
     Creates a meta node and its' relationship to the root node.
-    '''
+    """
     accepted_names = ['physical', 'logical', 'relation', 'location']
     if meta_node_name in accepted_names:
         with db.transaction:
@@ -195,9 +179,9 @@ def create_meta_node(db, meta_node_name):
     raise MetaNodeNamingError(accepted_names)
     
 def get_meta_node(db, meta_node_name):
-    '''
+    """
     Will return the meta node requested or create it and return it.
-    '''
+    """
     root = get_root_node(db)
     if not len(root.relationships):
         # Set root name and node_type as it is the first run
@@ -213,56 +197,51 @@ def get_meta_node(db, meta_node_name):
     return meta_node
 
 def get_all_meta_nodes(db):
-    '''
+    """
     Will return all meta nodes.
-    '''
+    """
     root = get_root_node(db)
-    traverser = db.traversal().relationships('Consists_of').traverse(root)
-    meta_node_list = list(traverser.nodes)
-    return meta_node_list
+    q = '''
+        START root=node(%d)
+        MATCH root-[:Consists_of*0..1]->meta_node
+        RETURN meta_node
+        ''' % root.getId()
+    hits = db.query(q)
+    return [hit['meta_node'] for hit in hits]
     
 def get_node_meta_type(node):
-    '''
+    """
     Returns the meta type of the supplied node as a string.
-    '''
-    meta_type = None
-    for rel in node.Contains.incoming:
-        meta_type = rel.start['name']
-    if not meta_type:
-        raise NoMetaNodeFound()
-    # I only want to do this line but it throws "ValueError: Too many items in 
-    # the iterator" when using this function in a traverser.
-    #return node.Contains.incoming.single.start['name']
+    """
+    try:
+        meta_type = node.Contains.incoming.single.start['name']
+    except AttributeError:
+        raise NoMetaNodeFound(node)
     return meta_type
 
 def get_root_parent(db, node):
-    '''
-    Takes a node and a string representing the relationship type. Returns the 
-    physical nodes' most top parent (not meta node or root node). Returns
-    none if no parent was found.
-    *** This function does not handle multiple parents. ***
-    '''
-    # TODO: When traversels support just relationships directions without type 
-    # rewrite this function.
+    """
+    Takes a node and returns the nodes top most parent (not meta node or root node).
+    Returns an empty list if no parent was found.
+
+    One gotcha: I choose an arbitrary max depth of 30 to traverse.
+    """
     types = {'physical': 'Has', 'logical': 'Depends_on', 'location': 'Has',
              'relation': 'None'} # Relations cant have parent nodes.
-    meta_type = nc.get_node_meta_type(node)
-    relationship_type = types[meta_type]
-    traverser = db.traversal().relationships(
-        relationship_type, INCOMING).traverse(node)
-    for n in traverser.nodes:
-        if not n == node:
-            for rel in n.relationships.incoming:
-                if rel.type.name() == relationship_type:
-                    break
-                return n
-    return None
+    relationship_type = types[nc.get_node_meta_type(node)]
+    q = '''
+        START node=node(%d)
+        MATCH ()-[:Contains]->parent-[:%s*1..30]->node
+        RETURN parent
+        ''' % (node.getId(), relationship_type)
+    hits = nc.neo4jdb.query(q)
+    return [hit['parent'] for hit in hits]
     
 def get_node_by_value(db, node_value, node_property=None):
-    '''
+    """
     Traverses all nodes and compares the property of the node
     with the supplied string. Returns a list of matching nodes.
-    '''
+    """
     def value_evaluator(path):
         # Filter on the nodes property values
         if node_property:
@@ -283,10 +262,10 @@ def get_node_by_value(db, node_value, node_property=None):
     return list(traverser.nodes)
 
 def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
-    '''
+    """
     Searches through the node_types index for nodes matching node_type and
     the value or property/value pair. Returns a list of matching nodes.
-    '''
+    """
     node_types_index = get_node_index(db, 'node_types')
     q = Q('node_type', '%s' % node_type)
     hits = node_types_index.query('%s' % q)
@@ -302,13 +281,13 @@ def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
     return nodes
 
 def get_suitable_nodes(db, node):
-    '''
+    """
     Takes a reference node and returns all nodes that is suitable for a
     relationship with that node.
     
     Returns a dictionary with the suitable nodes in lists separated by 
     meta_type.
-    '''
+    """
     meta_type = get_node_meta_type(node).lower()
     # Spec which meta types can have a relationship with each other
     if meta_type == 'location':
@@ -335,31 +314,31 @@ def get_suitable_nodes(db, node):
     return node_dict
 
 def create_relationship(db, node, other_node, rel_type):
-    '''
+    """
     Makes a relationship between the two node of the rel_type relationship type.
     To be sure that relationship types are not misspelled or not following
     the database model you should use create_suitable_relationship().
-    '''
+    """
     with db.transaction:
         return node.relationship.create(rel_type, other_node)
 
 
 def create_location_relationship(db, location_node, other_node, rel_type):
-    '''
+    """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
-    '''
+    """
     if get_node_meta_type(other_node) == 'location' and rel_type == 'Has':
         return create_relationship(db, location_node, other_node, rel_type)
     raise NoRelationshipPossible(location_node, other_node, rel_type)
     
 def create_logical_relationship(db, logical_node, other_node, rel_type):
-    '''
+    """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
-    '''
+    """
     if rel_type == 'Depends_on':
         other_meta_type = get_node_meta_type(other_node)
         if other_meta_type == 'logical' or other_meta_type == 'physical':
@@ -367,11 +346,11 @@ def create_logical_relationship(db, logical_node, other_node, rel_type):
     raise NoRelationshipPossible(logical_node, other_node, rel_type)
     
 def create_relation_relationship(db, relation_node, other_node, rel_type):
-    '''
+    """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
-    '''
+    """
     other_meta_type = get_node_meta_type(other_node)
     if other_meta_type == 'logical':
         if rel_type == 'Uses' or rel_type == 'Provides':
@@ -384,11 +363,11 @@ def create_relation_relationship(db, relation_node, other_node, rel_type):
     raise NoRelationshipPossible(relation_node, other_node, rel_type)
     
 def create_physical_relationship(db, physical_node, other_node, rel_type):
-    '''
+    """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
-    '''
+    """
     other_meta_type = get_node_meta_type(other_node)
     if other_meta_type == 'physical':
         if rel_type == 'Has' or rel_type == 'Connected_to':
@@ -398,11 +377,11 @@ def create_physical_relationship(db, physical_node, other_node, rel_type):
     raise NoRelationshipPossible(physical_node, other_node, rel_type)
 
 def create_suitable_relationship(db, node, other_node, rel_type):
-    '''
+    """
     Makes a relationship from node to other_node depending on which
     meta_type the nodes are. Returns the relationship or raises
     NoRelationshipPossible exception.
-    '''
+    """
     meta_type = get_node_meta_type(node)    
     if meta_type == 'location':
         return create_location_relationship(db, node, other_node, rel_type)
@@ -415,11 +394,11 @@ def create_suitable_relationship(db, node, other_node, rel_type):
     raise NoRelationshipPossible(node, other_node, rel_type)
 
 def get_relationships(n1, n2, rel_type=None):
-    '''
+    """
     Takes a start and an end node with an optional relationship
     type.
     Returns the relationsships between the nodes or an empty list.
-    '''
+    """
     rel_list = []
     for rel in n1.relationships:
         if (rel.start.id == n1.id and rel.end.id == n2.id) or \
@@ -432,10 +411,10 @@ def get_relationships(n1, n2, rel_type=None):
     return rel_list
     
 def relationships_equal(rel1, rel2):
-    '''
+    """
     Takes two relationships and returns True if they have the same start and
     end node, are of the same type and have the same properties.
-    '''
+    """
     if rel1.type == rel2.type:
         if rel1.start == rel2.start and rel1.end == rel2.end:
             if rel1.propertyKeys.equals(rel2.propertyKeys):
@@ -444,10 +423,10 @@ def relationships_equal(rel1, rel2):
     return False
 
 def update_item_properties(db, item, new_properties):
-    '''
+    """
     Take a node or a relationship and a dictionary of properties. Updates the
     item and returns it.
-    '''
+    """
     # We might want to do a better check of the data...
     with db.transaction:
         for key, value in new_properties.items():
@@ -465,11 +444,11 @@ def update_item_properties(db, item, new_properties):
     return item
 
 def merge_properties(db, node, prop_name, new_props):
-    '''
+    """
     Tries to figure out which type of property value that should be merged and
     invoke the right function.
     Returns True if the merge was successfull otherwise False.
-    '''
+    """
     existing_properties = node.getProperty(prop_name, None)
     if not existing_properties: # A node without existing properties
         with db.transaction:
@@ -495,11 +474,11 @@ def merge_properties(db, node, prop_name, new_props):
         return False
 
 def merge_properties_list(prop_name, new_prop_list, existing_prop_list):
-    '''
+    """
     Takes the name of a property, a list of new property values and the existing
     node values.
     Returns the merged properties.
-    '''
+    """
     # Jpype returns lists as jpype._jarray.java.lang.String[].
     existing_prop_list = list(existing_prop_list)
     for item in new_prop_list:
@@ -509,30 +488,30 @@ def merge_properties_list(prop_name, new_prop_list, existing_prop_list):
 
 # Indexes
 def get_node_indexes(db):
-    '''
+    """
     Returns a list of all node indexes in the database.
-    '''
+    """
     return [get_node_index(db, name) for name in db.index().nodeIndexNames()]
 
 def get_relationship_indexes(db):
-    '''
+    """
     Returns a list of all relationship indexes in the database.
-    '''
+    """
     return [get_relationship_index(db, name) 
             for name in db.index().relationshipIndexNames()]
 
 def search_index_name():
-    '''
+    """
     Set the name of the index that is used for autocomplete and search in the
     gui.
-    '''
+    """
     return 'search'
   
 def get_node_index(db, index_name):
-    '''
+    """
     Returns the index with the supplied name. Creates a new index if it does
     not exist.
-    '''
+    """
     try:
         index = db.nodes.indexes.get(index_name)
     except ValueError:
@@ -541,10 +520,10 @@ def get_node_index(db, index_name):
     return index
     
 def get_relationship_index(db, index_name):
-    '''
+    """
     Returns the index with the supplied name. Creates a new index if it does
     not exist.
-    '''
+    """
     try:
         index = db.relationships.indexes.get(index_name)
     except ValueError:
@@ -553,10 +532,10 @@ def get_relationship_index(db, index_name):
     return index
 
 def add_index_item(db, index, item, key):
-    '''
+    """
     Adds the provided node to the index if the property/key exists and is not
     None. Also adds the node to the index key "all".
-    '''
+    """
     value = item.getProperty(key, None)
     if value or value == 0:
         with db.transaction:
@@ -566,10 +545,10 @@ def add_index_item(db, index, item, key):
     return False
 
 def del_index_item(db, item, index, key=None):
-    '''
+    """
     Removes the node from the index[key]. If key is None all occurences of the
     node in the index will be removed.
-    '''
+    """
     with db.transaction:
         if index and key:
             del index[key][item]

@@ -160,7 +160,7 @@ def pic_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     # Get the top parent node
-    router = nc.get_root_parent(nc.neo4jdb, node)
+    router = nc.get_root_parent(nc.neo4jdb, node)[0]
     # Get unit nodes
     units = []
     depending_services = []
@@ -320,7 +320,7 @@ def peering_partner_detail(request, handle_id):
                 pic = unit_rel.end.Depends_on.outgoing.single.end
                 peering_point['pic'] = pic['name']
                 peering_point['pic_url'] = h.get_node_url(pic)
-                router = nc.get_root_parent(nc.neo4jdb, pic)
+                router = nc.get_root_parent(nc.neo4jdb, pic)[0]
                 peering_point['router'] = router['name']
                 peering_point['router_url'] = h.get_node_url(router)
                 peering_points.append(peering_point)
@@ -347,7 +347,7 @@ def ip_service_detail(request, handle_id):
         # TODO: If service depends on more than one PIC this won't show the correct information.
         pic = unit_rel.end.Depends_on.outgoing.single.end
         interface['pic'] = pic
-        router = nc.get_root_parent(nc.neo4jdb, pic)
+        router = nc.get_root_parent(nc.neo4jdb, pic)[0]
         interface['router'] = router
         interface['relations'] = []
         # Get relations who uses the service
