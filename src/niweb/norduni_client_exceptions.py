@@ -8,9 +8,9 @@ Created on Thu Oct 13 16:36:31 2011
 import norduni_client as nc
 
 class NoRelationshipPossible(Exception):
-    '''
+    """
     Exception that explains why the nodes relationship was not possible.
-    '''
+    """
     def __init__(self, node1, node2, relationship_type):
         self.node1 = node1
         self.node2 = node2
@@ -25,23 +25,23 @@ class NoRelationshipPossible(Exception):
                                               node2_str)                       
 
 class MetaNodeNamingError(Exception):
-    '''
+    """
     Exception that explains that meta nodes must have special names defined
     in create_meta_node().
-    '''
+    """
     def __init__(self, names):
-        self.error = 'A meta node can not have that name. Accep'
+        self.error = 'A meta node can not have that name.'
         
     def __str__(self):
         return self.error
 
 class NoMetaNodeFound(Exception):
-    '''
+    """
     All nodes need a meta type to function correctly in the NOCLook model. This
     exception should be raised if the nodes meta node can't be found.
-    '''
+    """
     def __init__(self, node):
         self.node = node
         
     def __str__(self):
-        return '%s %d' % (self.node['name'], self.node.id)
+        return 'Node %s %d has no meta node.' % (self.node['name'], self.node.id)
