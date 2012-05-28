@@ -24,6 +24,7 @@ from norduni_client_exceptions import *
 from neo4j import GraphDatabase, Uniqueness, Evaluation, OUTGOING, INCOMING, ANY
 from lucenequerybuilder import Q
 import json
+import re
 
 # This started as an extension to the Neo4j REST client made by Versae, continued
 # as an extension for the official Neo4j python bindings when they were released
@@ -239,79 +240,81 @@ def get_root_parent(db, node):
     
 def get_node_by_value(db, node_value, node_property=None):
     """
-    Traverses all nodes and compares the property of the node
-    with the supplied string. Returns a list of matching nodes.
+    Traverses all nodes and compares the property/properties of the node
+    with the supplied string. Returns a generator of matching nodes.
     """
-    def value_evaluator(path):
-        # Filter on the nodes property values
-        if node_property:
-            # Compare supplied property
-            properties = [node_property]
-        else:
-            # Compare all the nodes properties
-            properties = list(path.end.keys())
-        for p in properties:
-            try:
-                if lowerstr(path.end[p]) == lowerstr(node_value):
-                    return Evaluation.INCLUDE_AND_CONTINUE
-            except KeyError:
-                    pass
-        return Evaluation.EXCLUDE_AND_CONTINUE
-    start_node = get_root_node(db)
-    traverser = db.traversal().evaluator(value_evaluator).traverse(start_node)
-    return list(traverser.nodes)
+    if node_property:
+        q = '''
+            START node=node(*)
+            WHERE node.%s! =~ /(?i).*%s.*/
+            RETURN node
+            ''' % (node_property, node_value)
+        hits = db.query(q)
+        for hit in hits:
+            yield hit['node']
+    else:
+        pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)
+        for node in nc.get_all_nodes(db):
+            for value in node.getPropertyValues():
+                if pattern.match(unicode(value)):
+                    yield node
 
 def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
     """
     Searches through the node_types index for nodes matching node_type and
     the value or property/value pair. Returns a list of matching nodes.
     """
-    node_types_index = get_node_index(db, 'node_types')
-    q = Q('node_type', '%s' % node_type)
-    hits = node_types_index.query('%s' % q)
-    nodes = []
-    for item in hits:
-        if node_property:
-            if lowerstr(item[node_property]) == lowerstr(node_value):
-                nodes.append(item)
-        else:
-            for val in item.propertyValues:
-                if lowerstr(val) == lowerstr(node_value):
-                    nodes.append(item)
-    return nodes
+    if node_property:
+        q = '''
+            START node=node:node_types(node_type = "%s")
+            WHERE node.%s! =~ /(?i).*%s.*/
+            RETURN node
+            ''' % (node_type, node_property, node_value)
+        hits = db.query(q)
+        for hit in hits:
+            yield hit['node']
+    else:
+        node_types_index = get_node_index(db, 'node_types')
+        q = Q('node_type', '%s' % node_type)
+        hits = node_types_index.query('%s' % q)
+        pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)
+        for hit in hits:
+            for value in hit.getPropertyValues():
+                if pattern.match(unicode(value)):
+                    yield hit
 
-def get_suitable_nodes(db, node):
-    """
-    Takes a reference node and returns all nodes that is suitable for a
-    relationship with that node.
-    
-    Returns a dictionary with the suitable nodes in lists separated by 
-    meta_type.
-    """
-    meta_type = get_node_meta_type(node).lower()
-    # Spec which meta types can have a relationship with each other
-    if meta_type == 'location':
-        suitable_types = ['physical', 'relation', 'location']
-    elif meta_type == 'logical':
-        suitable_types = ['physical', 'relation', 'logical']
-    elif meta_type == 'relation':
-        suitable_types = ['physical', 'location', 'logical']
-    elif meta_type == 'physical':
-        suitable_types = ['physical', 'relation', 'location', 'logical']
-    # Get all suitable nodes from graph db
-    def suitable_evaluator(path):
-    # Filter on the nodes meta type
-        if get_node_meta_type(path.end) in suitable_types:
-            return Evaluation.INCLUDE_AND_CONTINUE
-        return Evaluation.EXCLUDE_AND_CONTINUE
-    traverser = db.traversal().evaluator(suitable_evaluator).traverse(node)
-    # Create and fill the dictionary with nodes
-    node_dict = {'physical': [], 'logical': [], 'relation': [], 'location': []}
-    for item in traverser.nodes:
-        node_dict[get_node_meta_type(item)].append(item)
-    # Remove the reference node, can't have relationship with yourself        
-    node_dict[meta_type].remove(node)
-    return node_dict
+#def get_suitable_nodes(db, node):
+#    """
+#    Takes a reference node and returns all nodes that is suitable for a
+#    relationship with that node.
+#
+#    Returns a dictionary with the suitable nodes in lists separated by
+#    meta_type.
+#    """
+#    meta_type = get_node_meta_type(node).lower()
+#    # Spec which meta types can have a relationship with each other
+#    if meta_type == 'location':
+#        suitable_types = ['physical', 'relation', 'location']
+#    elif meta_type == 'logical':
+#        suitable_types = ['physical', 'relation', 'logical']
+#    elif meta_type == 'relation':
+#        suitable_types = ['physical', 'location', 'logical']
+#    elif meta_type == 'physical':
+#        suitable_types = ['physical', 'relation', 'location', 'logical']
+#    # Get all suitable nodes from graph db
+#    def suitable_evaluator(path):
+#    # Filter on the nodes meta type
+#        if get_node_meta_type(path.end) in suitable_types:
+#            return Evaluation.INCLUDE_AND_CONTINUE
+#        return Evaluation.EXCLUDE_AND_CONTINUE
+#    traverser = db.traversal().evaluator(suitable_evaluator).traverse(node)
+#    # Create and fill the dictionary with nodes
+#    node_dict = {'physical': [], 'logical': [], 'relation': [], 'location': []}
+#    for item in traverser.nodes:
+#        node_dict[get_node_meta_type(item)].append(item)
+#    # Remove the reference node, can't have relationship with yourself
+#    node_dict[meta_type].remove(node)
+#    return node_dict
 
 def create_relationship(db, node, other_node, rel_type):
     """
