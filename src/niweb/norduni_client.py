@@ -241,17 +241,25 @@ def get_root_parent(db, node):
 def get_node_by_value(db, node_value, node_property=None):
     """
     Traverses all nodes and compares the property/properties of the node
-    with the supplied string. Returns a generator of matching nodes.
+    with the supplied string. Returns a list of matching nodes.
     """
     if node_property:
+        #q = '''
+        #    START node=node(*)
+        #    WHERE node.%s! =~ /(?i).*%s.*/
+        #    RETURN node
+        #    ''' % (node_property, node_value)
+        # TODO: Use above when https://github.com/neo4j/community/issues/369 is resolved.
         q = '''
             START node=node(*)
-            WHERE node.%s! =~ /(?i).*%s.*/
+            WHERE has(node.%s)
             RETURN node
-            ''' % (node_property, node_value)
+            ''' % node_property                                     # Temp
         hits = db.query(q)
+        pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)  # Temp
         for hit in hits:
-            yield hit['node']
+            if pattern.match(unicode(hit['node'][node_property])):  # Temp
+                yield hit['node']
     else:
         pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)
         for node in nc.get_all_nodes(db):
@@ -265,14 +273,22 @@ def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
     the value or property/value pair. Returns a list of matching nodes.
     """
     if node_property:
+        #q = '''
+        #    START node=node:node_types(node_type = "%s")
+        #    WHERE node.%s! =~ /(?i).*%s.*/
+        #    RETURN node
+        #    ''' % (node_type, node_property, node_value)
+        # TODO: Use above when https://github.com/neo4j/community/issues/369 is resolved.
         q = '''
             START node=node:node_types(node_type = "%s")
-            WHERE node.%s! =~ /(?i).*%s.*/
+            WHERE has(node.%s)
             RETURN node
-            ''' % (node_type, node_property, node_value)
+            ''' % (node_type, node_property)                        # Temp
         hits = db.query(q)
+        pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)  # Temp
         for hit in hits:
-            yield hit['node']
+            if pattern.match(unicode(hit['node'][node_property])):  # Temp
+                yield hit['node']
     else:
         node_types_index = get_node_index(db, 'node_types')
         q = Q('node_type', '%s' % node_type)
