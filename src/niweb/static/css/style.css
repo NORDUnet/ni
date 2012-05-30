@@ -58,6 +58,7 @@ h5.site {
 }
 
 select.stacked {
+ display: block;
  margin-bottom: 10px;
 }
 

@@ -39,14 +39,23 @@ SITE_TYPES = [
 
 CABLE_TYPES = [
     ('',''),
-    ('Fiber', 'Fiber'),
-    ('TP', 'TP')
+    ('External inter-connection', 'External inter-connection'),
+    ('Patch', 'Patch'),
+    ('Power Cable', 'Power Cable')
+]
+
+PORT_TYPES = [
+    ('',''),
+    ('LC', 'LC'),
+    ('MU', 'MU'),
+    ('RJ45', 'RJ45'),
+    ('SC', 'SC'),
 ]
 
 def get_node_type_tuples(node_type):
-    '''
-    Returns a list of tuples of node.id and node['name'] of the node_type.
-    '''
+    """
+    Returns a list of tuple of node.id and node['name'] of the node_type.
+    """
     from operator import itemgetter
     index = nc.get_node_index(nc.neo4jdb, 'node_types')
     nodes = h.iter2list(index['node_type'][node_type])
@@ -182,9 +191,9 @@ class NewOdfForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewOdfForm, self).__init__(*args, **kwargs)
         # Set max number of ports to choose from
-        num_of_ports = 20
-        choices = [(x,x) for x in range(1, num_of_ports+1) if x]
-        self.fields['number_of_ports'].choices = choices
+        max_num_of_ports = 40
+        choices = [(x,x) for x in range(1, max_num_of_ports+1) if x]
+        self.fields['max_number_of_ports'].choices = choices
         
     #units = forms.IntegerField(required=False,
     #                           help_text='Height in rack units (u).')
@@ -192,7 +201,7 @@ class NewOdfForm(forms.Form):
     #                           help_text='Where the host starts in the rack. \
     #                           Used for calculation of rack space.')
     name = forms.CharField()
-    number_of_ports = forms.ChoiceField(required=False,
+    max_number_of_ports = forms.ChoiceField(required=False,
                                               widget=forms.widgets.Select)
 
 
@@ -203,6 +212,22 @@ class EditOdfForm(forms.Form):
     #                           help_text='Where the host starts in the rack. \
     #                           Used for calculation of rack space.')
     name = forms.CharField()
+    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.')
     relationship_location = forms.IntegerField(required=False,
                                                widget=forms.widgets.HiddenInput)
-                                              
+
+
+class NewPortForm(forms.Form):
+    name = forms.CharField()
+    port_type = forms.ChoiceField(choices=PORT_TYPES,
+                                   widget=forms.widgets.Select)
+    relationship_parent = forms.IntegerField(required=False,
+                                             widget=forms.widgets.HiddenInput)
+
+
+class EditPortForm(forms.Form):
+    name = forms.CharField()
+    port_type = forms.ChoiceField(choices=PORT_TYPES,
+                                   widget=forms.widgets.Select)
+    relationship_parent = forms.IntegerField(required=False,
+                                             widget=forms.widgets.HiddenInput)

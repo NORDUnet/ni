@@ -35,17 +35,17 @@ COUNTRY_MAP = {
 
 # Helper functions
 def get_nh_node(node_handle_id):
-    '''
+    """
     Takes a node handle id and returns the node handle and the node.
-    '''
+    """
     nh = get_object_or_404(NodeHandle, pk=node_handle_id)
     node = nh.get_node()
     return nh, node
     
 def slug_to_node_type(slug):
-    '''
+    """
     Returns or creates and returns the NodeType object from the supplied slug.
-    '''
+    """
     acronym_types = ['odf']
     node_type, created = NodeType.objects.get_or_create(slug=slug)
     if created:
@@ -58,14 +58,14 @@ def slug_to_node_type(slug):
     return node_type
 
 def form_update_node(user, node, form, property_keys=[]):
-    '''
+    """
     Take a node, a form and the property keys that should be used to fill the
     node if the property keys are omitted the form.base_fields will be used.
     Returns True if all non-empty properties where added else False and 
     rollbacks the node changes.
-    '''
+    """
     meta_fields = ['relationship_location', 'relationship_end_a',
-                   'relationship_end_b']
+                   'relationship_end_b', 'relationship_parent']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         for field in form.base_fields.keys():
@@ -95,10 +95,10 @@ def form_update_node(user, node, form, property_keys=[]):
     return True
 
 def place_physical_in_location(nh, node, location_id):
-    '''
+    """
     Places a physical node in a rack or on a site. Also converts it to a 
     physical node if it still is a logical one.
-    ''' 
+    """
     # Check if the node is logical
     meta_type = nc.get_node_meta_type(node)
     if meta_type == 'logical':
@@ -127,13 +127,13 @@ def place_physical_in_location(nh, node, location_id):
                                         location_node, 'Located_in')
     return nh, node
 
-def place_location_in_location(node, location_id):
-    '''
-    Places a location node in another location.
-    '''
-    location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
-    rel_exist = nc.get_relationships(location_node, node, 'Has')
-    # If the location is the same as before just update relationship
+def place_child_in_parent(node, parent_id):
+    """
+    Places a child node in a parent node with a Has relationship.
+    """
+    parent_node = nc.get_node_by_id(nc.neo4jdb,  parent_id)
+    rel_exist = nc.get_relationships(parent_node, node, 'Has')
+    # If the parent is the same as before just update relationship
     # properties
     if rel_exist:
         # TODO: Change properties here
@@ -141,17 +141,17 @@ def place_location_in_location(node, location_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        # Remove the old location(s) and create a new
+        # Remove the old parent(s) and create a new
         for rel in h.iter2list(node.Has.incoming):
             nc.delete_relationship(nc.neo4jdb, rel)
-            nc.create_suitable_relationship(nc.neo4jdb, location_node,
-                                            node, 'Has')
+        nc.create_suitable_relationship(nc.neo4jdb, parent_node,
+                                        node, 'Has')
     return node
     
 def connect_physical(node, other_node_id):
-    '''
-    Places a location node in another location.
-    '''
+    """
+    Connects a cable to a physical node.
+    """
     other_node = nc.get_node_by_id(nc.neo4jdb,  other_node_id)
     rel_exist = nc.get_relationships(node, other_node, 'Connected_to')
     # If the location is the same as before just update relationship
@@ -168,9 +168,9 @@ def connect_physical(node, other_node_id):
 
 @login_required
 def delete_node(request, slug, handle_id):
-    '''
+    """
     Removes the node and all relationships to and from that node.
-    '''
+    """
     nh, node = get_nh_node(handle_id)
     if nc.get_node_meta_type(node) == 'physical':
         for rel in node.Has.outgoing:
@@ -181,10 +181,10 @@ def delete_node(request, slug, handle_id):
     
 @login_required
 def delete_relationship(request, slug, handle_id, rel_id):
-    '''
+    """
     Removes the relationship if the node has a relationship matching the
     supplied id.
-    '''
+    """
     nh, node = get_nh_node(handle_id)
     rel = nc.get_relationship_by_id(nc.neo4jdb, rel_id)
     if rel.start.id == node.id or rel.end.id == node.id:
@@ -195,10 +195,10 @@ def delete_relationship(request, slug, handle_id, rel_id):
 # Form data returns
 @login_required
 def get_node_type(request, slug):
-    '''
+    """
     Compiles a list of alla nodes of that node type and returns a list of
     node name, node id tuples.
-    '''
+    """
     node_type = slug_to_node_type(slug)
     q = '''                   
         START node=node:node_types(node_type="%s")
@@ -214,11 +214,11 @@ def get_node_type(request, slug):
 
 @login_required
 def get_children(request, node_id, slug=None):
-    '''
+    """
     Compiles a list of the nodes children and returns a list of
     node name, node id tuples. If node_type is set the function will only return
     nodes of that type.
-    '''
+    """
     type_filter = ''
     if slug:
         type_filter = 'and child.node_type = "%s"' % slug_to_node_type(slug)
@@ -241,11 +241,11 @@ def get_children(request, node_id, slug=None):
 
 # Create functions
 @login_required
-def new_node(request, slug=None):
-    '''
+def new_node(request, slug=None, **kwargs):
+    """
     Generic create function that creates a generic node and redirects calls to 
     node type sensitive create functions.
-    '''
+    """
     if not request.user.is_staff:
         raise Http404
     # Template name is create_type_slug.html.
@@ -268,7 +268,7 @@ def new_node(request, slug=None):
                 func = NEW_FUNC[node_type.slug]
             except KeyError:
                 raise Http404
-            return func(request, node_handle.handle_id, form)
+            return func(request, node_handle.handle_id, form, **kwargs)
         else:
             return render_to_response(template, {'form': form},
                                 context_instance=RequestContext(request))
@@ -329,28 +329,22 @@ def new_rack(request, handle_id, form):
 def new_odf(request, handle_id, form):
     nh, node = get_nh_node(handle_id)
     form_update_node(request.user, node, form)
-    if form.cleaned_data['number_of_ports']:
-        number_of_ports = int(form.cleaned_data['number_of_ports'])
-        node_type = slug_to_node_type('port')
-        node_meta_type='physical'
-        for port in range(1, number_of_ports+1):
-            node_handle = NodeHandle(node_name=port, node_type=node_type,
-                                    node_meta_type=node_meta_type,
-                                    modifier=request.user, creator=request.user)
-            node_handle.save()
-            port_node = node_handle.get_node()
-            h.set_noclook_auto_manage(nc.neo4jdb, port_node, False)
-            nc.create_relationship(nc.neo4jdb, node, port_node, 'Has')
-            
+    return HttpResponseRedirect(nh.get_absolute_url())
+
+@login_required
+def new_port(request, handle_id, form):
+    nh, node = get_nh_node(handle_id)
+    keys = ['port_type']
+    form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
 
 # Edit functions
 @login_required
 def edit_node(request, slug, handle_id):
-    '''
+    """
     Generic edit function that redirects calls to node type sensitive edit 
     functions.
-    '''
+    """
     if not request.user.is_staff:
         raise Http404
     try:
@@ -531,7 +525,7 @@ def edit_rack(request, handle_id):
             # Rack specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                node = place_location_in_location(node, location_id)
+                place_child_in_parent(node, location_id)
             else:
                 # Remove existing location if any
                 for rel in h.iter2list(node.Has.incoming):
@@ -627,7 +621,7 @@ def edit_odf(request, handle_id):
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
-            # Host specific updates
+            # ODF specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id) 
@@ -648,8 +642,39 @@ def edit_odf(request, handle_id):
                                    'node': node},
                                 context_instance=RequestContext(request))
 
+@login_required
+def edit_port(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    nh, node = get_nh_node(handle_id)
+    location = h.get_place(node)
+    if request.POST:
+        form = forms.EditPortForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            # Port specific updates
+            if form.cleaned_data['relationship_parent']:
+                parent_id = form.cleaned_data['relationship_parent']
+                place_child_in_parent(node, parent_id)
+            else:
+                # Remove existing location if any
+                for rel in h.iter2list(node.Located_in.outgoing):
+                    nc.delete_relationship(nc.neo4jdb, rel)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_port.html',
+                                     {'node': node, 'form': form, 'location': location},
+                                     context_instance=RequestContext(request))
+    else:
+        form = forms.EditPortForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_port.html',
+                                 {'form': form, 'node': node, 'location': location},
+                                 context_instance=RequestContext(request))
+
 NEW_FORMS =  {'cable': forms.NewCableForm,
               'odf': forms.NewOdfForm,
+              'port': forms.NewPortForm,
               'rack': forms.NewRackForm,
               'site': forms.NewSiteForm, 
               'site-owner': forms.NewSiteOwnerForm,
@@ -665,6 +690,7 @@ NEW_FORMS =  {'cable': forms.NewCableForm,
 
 NEW_FUNC = {'cable': new_cable,
             'odf': new_odf,
+            'port': new_port,
             'rack': new_rack,
             'site': new_site,
             'site-owner': new_site_owner,
@@ -675,6 +701,7 @@ EDIT_FUNC = {'cable': edit_cable,
              'odf': edit_odf,
              'optical-node': edit_optical_node,
              'peering-partner': edit_peering_partner,
+             'port': edit_port,
              'rack': edit_rack,
              'router': edit_router,
              'site': edit_site, 
@@ -707,10 +734,10 @@ EDIT_FUNC = {'cable': edit_cable,
 #
 #@login_required
 #def edit_node_old(request, slug, handle_id, node=None, message=None):
-#    '''
+#    """
 #    View used to change and add properties to a node, also to delete
 #    a node relationships.
-#    '''
+#    """
 #    if not request.user.is_staff:
 #        raise Http404
 #    nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -750,9 +777,9 @@ EDIT_FUNC = {'cable': edit_cable,
 #
 #@login_required
 #def save_node_old(request, slug, handle_id):
-#    '''
+#    """
 #    Updates the node and node_handle with new values.
-#    '''
+#    """
 #    if not request.user.is_staff:
 #        raise Http404
 #    nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -787,10 +814,10 @@ EDIT_FUNC = {'cable': edit_cable,
 #    
 #@login_required
 #def delete_node_old(request, slug, handle_id):
-#    '''
+#    """
 #    Deletes the NodeHandle from the SQL database and the node from the Neo4j
 #    database.
-#    '''    
+#    """
 #    if not request.user.is_staff:
 #        raise Http404
 #    if request.POST:
@@ -803,12 +830,12 @@ EDIT_FUNC = {'cable': edit_cable,
 #
 #@login_required
 #def new_relationship_old(request, slug, handle_id):
-#    '''
+#    """
 #    Create a new relationship between the node that was edited and another node.
 #    
 #    The way to get the nodes that are suitible for relationships have to be
 #    tought over again. This way is pretty hary.
-#    '''
+#    """
 #    if not request.user.is_staff:
 #        raise Http404
 #    nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -853,9 +880,9 @@ EDIT_FUNC = {'cable': edit_cable,
 #
 #@login_required
 #def edit_relationship_old(request, slug, handle_id, rel_id, rel=None, message=None):
-#    '''
+#    """
 #    View to update, change or delete relationships properties.
-#    '''
+#    """
 #    if not request.user.is_staff:
 #        raise Http404
 #    nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -901,9 +928,9 @@ EDIT_FUNC = {'cable': edit_cable,
 #
 #@login_required
 #def delete_relationship_old(request, slug, handle_id, rel_id):
-#    '''
+#    """
 #    Deletes the relationship if POST['confirmed']==True.
-#    '''
+#    """
 #    if not request.user.is_staff or not request.POST:
 #        raise Http404
 #    if 'confirmed' in request.POST.keys():

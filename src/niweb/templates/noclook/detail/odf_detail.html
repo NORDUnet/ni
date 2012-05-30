@@ -25,9 +25,9 @@ $(document).ready(
 <div class="row">
     <div class="span4">
         <table class="table">
-            {% if node.number_of_ports %}
+            {% if node.max_number_of_ports %}
                 <tr>
-                    <th>Ports:</th><td>{{ node.number_of_ports }}</td>
+                    <th>Max ports:</th><td>{{ node.max_number_of_ports }}</td>
                 </tr>
             {% endif %}
 <!--
@@ -75,7 +75,7 @@ $(document).ready(
         <tbody>
         {% for con in connections %}
             <tr>
-                <td>{{ con.porta.name }}</td><td><a href="{% noclook_node_to_url con.cable %}">{{ con.cable.name }}</a></td><td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a> <a href="{% noclook_node_to_url con.portb %}">{{ con.portb.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.porta %}">{{ con.porta.name }}</a></a></td><td><a href="{% noclook_node_to_url con.cable %}">{{ con.cable.name }}</a></td><td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a> <a href="{% noclook_node_to_url con.portb %}">{{ con.portb.name }}</a></td>
             </tr>
         {% endfor %}
         </tbody>
