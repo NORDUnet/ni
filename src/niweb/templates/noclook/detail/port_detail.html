@@ -26,13 +26,16 @@
 <div class="row">
     <div class="span4">
         <table class="table">
+            <tr>
+                <th>Port Type:</th><td>{{ node.port_type }}</td>
+            </tr>
         </table>
     </div>
     <div class="span3">
         <table class="table">
             {% if node.noclook_auto_manage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
@@ -44,12 +47,9 @@
         </table>
     </div>
 </div>
-<!--
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
-<br><br><br>
--->
 <br><br><br>
 <div class="section">
     <h3>Connected cables</h3>

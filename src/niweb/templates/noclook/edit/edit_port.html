@@ -1,10 +1,95 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-    <title></title>
-</head>
-<body>
+{% extends "noclook/edit/base_edit.html" %}
 
-</body>
-</html>
+{% block js %}
+    {{ block.super }}
+    {% load niweb_tags %}
+    <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.jCombo.js"></script>
+    <script type="text/javascript">
+        $(document).ready(
+                function(){
+                    // Modal delete object confirm
+                    $("#dialog-object-confirm").dialog({
+                        modal: true,
+                        bgiframe: true,
+                        width: 500,
+                        height: 200,
+                        autoOpen: false
+                    });
+
+                    $("#object-confirm").click(function(e) {
+                        e.preventDefault();
+                        var theHREF = $(this).attr("href");
+
+
+                        $("#dialog-object-confirm").dialog('option', 'buttons', {
+                            "Confirm" : function() {
+                                window.location.href = theHREF;
+                            },
+                            "Cancel" : function() {
+                                $(this).dialog("close");
+                            }
+                        });
+
+                        $("#dialog-object-confirm").dialog("open");
+                    });
+                    // Parent //
+                    // Populate first level combo box
+                    $.getJSON('/formdata/site/', function(data) {
+                        $('#level0').append($('<option>').val("0").text("-- Please Select --"));
+                        $.each(data, function(key, tuple) {
+                            $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
+                        });
+                    });
+                    // Hook lower level combo boxes up to their parent
+                    $("#level1").jCombo("/formdata/{id}/children", {
+                        parent: "#level0",
+                        end_value_field: "#id_relationship_parent"
+                    });
+                    $("#level2").jCombo("/formdata/{id}/children", {
+                        parent: "#level1",
+                        end_value_field: "#id_relationship_parent"
+                    });
+                    $("#level3").jCombo("/formdata/{id}/children", {
+                        parent: "#level2",
+                        end_value_field: "#id_relationship_parent"
+                    });
+                    $("#level4").jCombo("/formdata/{id}/children", {
+                        parent: "#level3",
+                        end_value_field: "#id_relationship_parent"
+                    });
+                }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <div class="well">
+        <h3>Name</h3>
+        {{ form.name }}
+        <h3>Type (optional)</h3>
+        {{ form.port_type }}
+    </div>
+    <div id="parent-section">
+        <h3>Port location (optional)</h3>
+        <div class="well">
+            <label>Current</label></td>
+            <span class="input-large uneditable-input">
+                {% if location %}
+                    {% for loc in location %}
+                        {{ loc.name }}
+                    {% endfor %}
+                {% endif %}
+            </span>
+            <label>Change</label>
+            {{ form.relationship_parent }}
+            <select class="stacked" name="level0" id="level0"></select>
+            <select class="stacked" name="level1" id="level1"></select>
+            <select class="stacked" name="level2" id="level2"></select>
+            <select class="stacked" name="level3" id="level3"></select>
+            <select class="stacked" name="level4" id="level4"></select>
+            <span class="help-block">Choose port location</span>
+        </div>
+    </div>
+{% endblock %}
+

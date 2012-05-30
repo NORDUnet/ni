@@ -58,15 +58,22 @@ $(document).ready(
         <h3>Name</h3>
         {{ form.name }}
     </div>
-<!--
+
     <h3>Dimensions</h3>
-    <label>Rack units</label></td>
-    {{ form.units }}
-    <span class="help-block">{{ form.units.help_text }}</span>
-    <label>Start unit</label>
-    {{ form.start_unit }}
-     <span class="help-block">{{ form.start_unit.help_text }}</span>
--->
+    <div class="well">
+        <label>Max ports</label>
+        {{ form.max_number_of_ports }}
+        <span class="help-block">{{ form.max_number_of_ports.help_text }}</span>
+        <!--
+        <label>Rack units</label></td>
+        {{ form.units }}
+        <span class="help-block">{{ form.units.help_text }}</span>
+        <label>Start unit</label>
+        {{ form.start_unit }}
+         <span class="help-block">{{ form.start_unit.help_text }}</span>
+        -->
+    </div>
+
     <div id="location-section">
         <h3>Location (optional)</h3>
         <div class="well">

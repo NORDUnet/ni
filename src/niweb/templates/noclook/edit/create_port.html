@@ -1,10 +1,26 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-    <title></title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block content %}
+    <h1>Create new port</h1>
+    {% if form.errors %}
+        <div class="alert alert-error">
+            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
+            Please resubmit the form after making the following changes:
+            {{ form.errors }}
+        </div>
+    {% endif %}
+    <div class="well">
+        <form action="." method="post">{% csrf_token %}
+            <h3>Name</h3>
+            {{ form.name }}
+            <br><br>
+            <h3>Cable Type</h3>
+            {{ form.port_type }}
+            <br />
+            <br />
+            <input type="hidden" name="meta_type" value="physical" />
+            <input type="submit" value="Save" class="btn btn-primary" />
+            <a href=".." class="btn">Cancel</a>
+        </form>
+    </div>
+{% endblock %}
