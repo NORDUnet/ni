@@ -35,6 +35,7 @@ $(document).ready(
         // Populate first level combo box
         $.getJSON('/formdata/site/', function(data) {
             $('#level0').append($('<option>').val("0").text("-- Please Select --"));
+            $('#level0').append($('<option>').val("-1").text("-- Remove current --"));
             $.each(data, function(key, tuple) {
                 $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
             });
