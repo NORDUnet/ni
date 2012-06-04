@@ -203,11 +203,11 @@ def get_all_meta_nodes(db):
     """
     root = get_root_node(db)
     q = '''
-        START root=node(%d)
+        START root=node({id})
         MATCH root-[:Consists_of*0..1]->meta_node
         RETURN meta_node
-        ''' % root.getId()
-    hits = db.query(q)
+        '''
+    hits = db.query(q, id=root.getId())
     return [hit['meta_node'] for hit in hits]
     
 def get_node_meta_type(node):
@@ -231,11 +231,11 @@ def get_root_parent(db, node):
              'relation': 'None'} # Relations cant have parent nodes.
     relationship_type = types[nc.get_node_meta_type(node)]
     q = '''
-        START node=node(%d)
+        START node=node({id})
         MATCH ()-[:Contains]->parent-[:%s*1..30]->node
         RETURN parent
-        ''' % (node.getId(), relationship_type)
-    hits = nc.neo4jdb.query(q)
+        ''' % relationship_type
+    hits = db.query(q, id=node.getId())
     return [hit['parent'] for hit in hits]
     
 def get_node_by_value(db, node_value, node_property=None):
@@ -280,11 +280,11 @@ def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
         #    ''' % (node_type, node_property, node_value)
         # TODO: Use above when https://github.com/neo4j/community/issues/369 is resolved.
         q = '''
-            START node=node:node_types(node_type = "%s")
+            START node=node:node_types(node_type = {node_type})
             WHERE has(node.%s)
             RETURN node
-            ''' % (node_type, node_property)                        # Temp
-        hits = db.query(q)
+            ''' % node_property                        # Temp
+        hits = db.query(q, node_type=node_type)
         pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)  # Temp
         for hit in hits:
             if pattern.match(unicode(hit['node'][node_property])):  # Temp
@@ -372,12 +372,12 @@ def create_relation_relationship(db, relation_node, other_node, rel_type):
     """
     other_meta_type = get_node_meta_type(other_node)
     if other_meta_type == 'logical':
-        if rel_type == 'Uses' or rel_type == 'Provides':
+        if rel_type in ['Uses', 'Provides']:
             return create_relationship(db, relation_node, other_node, rel_type)
     elif other_meta_type == 'location' and rel_type == 'Responsible_for':
         return create_relationship(db, relation_node, other_node, rel_type)
     elif other_meta_type == 'physical':
-        if rel_type == 'Owns' or rel_type == 'Provides':
+        if rel_type in ['Owns', 'Provides']:
             return create_relationship(db, relation_node, other_node, rel_type)
     raise NoRelationshipPossible(relation_node, other_node, rel_type)
     
