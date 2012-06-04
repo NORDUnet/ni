@@ -275,7 +275,7 @@ def host_user_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
-    host_relationships = h.iter2list(node.Uses.outgoing)
+    host_relationships = h.iter2list(node.Uses.outgoing) + h.iter2list(node.Owns.outgoing)
     return render_to_response('noclook/detail/host_user_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
