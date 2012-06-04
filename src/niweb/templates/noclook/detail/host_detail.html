@@ -100,6 +100,11 @@ $(document).ready(
                     <th>Service tag:</th><td>{{node.service_tag}}</td>
                 </tr>
             {% endif %}
+            {% if node.end_support %}
+                <tr>
+                    <th>Support ends:</th><td>{{node.end_support}}</td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">
@@ -131,17 +136,10 @@ $(document).ready(
                 </tr>
             {% endif %}
         {% endif %}
-        {% if node.os or node.os_version %}
-            {% if node.os %}
-                <tr>
-                    <th>OS:</th><td>{{node.os}}</td>
-                </tr>
-            {% endif %}
-            {% if node.os_version %}
-                <tr>
-                    <th>OS version:</th><td>{{node.os_version}}</td>
-                </tr>
-            {% endif %}
+        {% if node.os %}
+            <tr>
+                <th>OS:</th><td>{{node.os}} {% if node.os_version %}{{node.os_version}}{% endif %}</td>
+            </tr>
         {% endif %}
             {% if node.noclook_auto_manage %}
                 <tr>
@@ -157,6 +155,22 @@ $(document).ready(
         </table>
     </div>
 </div>
+{% if node.description or node.responsible_person %}
+    <div>
+        <table class="table">
+            {% if node.description %}
+                <tr>
+                    <th>Description:</th><td>{{ node.description }}</td>
+                </tr>
+            {% endif %}
+            {% if node.responsible_person %}
+                <tr>
+                    <th>Responsible</th><td>{{ node.responsible_person }}</td>
+                </tr>
+            {% endif %}
+        </table>
+    </div>
+{% endif %}
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}

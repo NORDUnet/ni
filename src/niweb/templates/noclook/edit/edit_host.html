@@ -34,6 +34,7 @@ $(document).ready(
         // Populate first level combo box
         $.getJSON('/formdata/site/', function(data) {
             $('#level0').append($('<option>').val("0").text("-- Please Select --"));
+            $('#level0').append($('<option>').val("-1").text("-- Remove current --"));
             $.each(data, function(key, tuple) {
                 $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
             });
@@ -44,8 +45,34 @@ $(document).ready(
         // Hook lower level combo boxes up to their parent
         $("#level1").jCombo("/formdata/{id}/children/rack", {
                         parent: "#level0",
-                        end_value_field: "#id_relationship_location",
+                        end_value_field: "#id_relationship_location"
                     });
+        // Modal delete connection confirm
+        $("#dialog-user-confirm").dialog({
+            modal: true,
+            bgiframe: true,
+            width: 500,
+            height: 200,
+            autoOpen: false
+        });
+
+        $("a.user-confirm").click(function(e) {
+            e.preventDefault();
+            var theHREF = $(this).attr("href");
+
+
+            $("#dialog-user-confirm").dialog('option', 'buttons', {
+                "Confirm" : function() {
+                    window.location.href = theHREF;
+                },
+                "Cancel" : function() {
+                    $(this).dialog("close");
+                }
+            });
+
+            $("#dialog-user-confirm").dialog("open");
+
+        });
     }
 );
 </script>
@@ -53,6 +80,59 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
+    <div id="dialog-user-confirm" title="Remove relationship?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship to this user or owner will be permanently deleted and cannot be recovered. Are you sure?</p>
+    </div>
+    <div id="operation-section">
+        <h3>Operational information</h3>
+        <div class="well">
+            <label>Description</label>
+            {{ form.description }}
+            <span class="help-block">{{ form.description.help_text }}</span>
+            <label>Responsible</label>
+            {{ form.responsible_person }}
+            <span class="help-block">{{ form.responsible_person.help_text }}</span>
+            <label>Backup</label>
+            {{ form.backup }}
+            <span class="help-block">{{ form.backup.help_text }}</span>
+            <label>Syslog</label>
+            {{ form.syslog }}
+            <span class="help-block">{{ form.syslog.help_text }}</span>
+            <label>In operation</label>
+            {{ form.in_operation }}
+            <span class="help-block">{{ form.in_operation.help_text }}</span>
+        </div>
+    </div>
+
+    <div id="operation-optional-section">
+    <h3>Operational information (optional)</h3>
+    <div class="well">
+        <label>Operating system</label>
+        {{ form.os }}
+        <span class="help-block">{{ form.os.help_text }}</span>
+        <label>Operating system version</label>
+        {{ form.os_version }}
+        <span class="help-block">{{ form.os_version.help_text }}</span>
+        {% if node_handle.node_meta_type == 'physical' %}
+            <label>Vendor</label>
+            {{ form.vendor }}
+            <span class="help-block">{{ form.vendor.help_text }}</span>
+            <label>Hardware model</label>
+            {{ form.model }}
+            <span class="help-block">{{ form.model.help_text }}</span>
+            <label>Service tag</label>
+            {{ form.service_tag }}
+            <span class="help-block">{{ form.service_tag.help_text }}</span>
+            <label>End of support</label>
+            {{ form.end_support }}
+            <span class="help-block">{{ form.end_support.help_text }}</span>
+            <script>
+                $(function() {
+                    $( "#id_end_support" ).datepicker({ dateFormat: "yy-mm-dd" });
+                });
+            </script>
+        {% endif %}
+    </div>
 <!--
     <h3>Dimensions</h3>
 
@@ -66,7 +146,7 @@ $(document).ready(
     <div id="location-section">
         <h3>Location (optional)</h3>
         <div class="well">
-            <label>Current</label></td>
+            <label>Current</label>
             <span class="input-large uneditable-input">
                 {% if location %}
                     {% for loc in location %}
@@ -76,9 +156,56 @@ $(document).ready(
             </span>
             <label>Change</label>
             {{ form.relationship_location }}
-            <select class="stacked" name="level0" id="level0"></select><br />
+            <select class="stacked" name="level0" id="level0"></select>
             <select class="stacked" name="level1" id="level1"></select>
         </div>
     </div>
+    {% if node_handle.node_meta_type == 'logical' %}
+        <div id="user-section">
+            <h3>Host users (optional)</h3>
+            <div class="well">
+            {% if user_relationships %}
+                {% load noclook_tags %}
+                <h4>Remove user</h4>
+                {% for rel in user_relationships %}
+                    <div class="row">
+                        <div class="span5">
+                            <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <br /><br />
+            <h4>Add user</h4>
+            {{ form.relationship_user }}
+            </div>
+        </div>
+    {% endif %}
+    {% if node_handle.node_meta_type == 'physical' %}
+        <div id="owner-section">
+            <h3>Host owners (optional)</h3>
+            <div class="well">
+                {% if owner_relationships %}
+                    {% load noclook_tags %}
+                    <h4>Remove owner</h4>
+                    {% for rel in owner_relationships %}
+                        <div class="row">
+                            <div class="span5">
+                                <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
+                            </div>
+                            <div class="span1">
+                                <a href="relationship/{{ rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <br /><br />
+                <h4>Add owner</h4>
+                {{ form.relationship_owner }}
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
-

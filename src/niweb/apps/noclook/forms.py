@@ -39,6 +39,7 @@ SITE_TYPES = [
 
 CABLE_TYPES = [
     ('',''),
+    ('Fiber', 'Fiber'), # Until all fibers are changed to either patch or eic
     ('External inter-connection', 'External inter-connection'),
     ('Patch', 'Patch'),
     ('Power Cable', 'Power Cable')
@@ -168,13 +169,46 @@ class EditRackForm(forms.Form):
                 
                 
 class EditHostForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditHostForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Host User')
     #units = forms.IntegerField(required=False,
     #                           help_text='Height in rack units (u).')
     #start_unit = forms.IntegerField(required=False,
     #                           help_text='Where the host starts in the rack. \
     #                           Used for calculation of rack space.')
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of what the machine is used for.')
+    backup = forms.NullBooleanField(required=False, help_text='Is the host backed up?')
+    syslog = forms.NullBooleanField(required=False, help_text='Do the host log to the syslog machine?')
+    in_operation = forms.NullBooleanField(required=False, help_text='Backup and syslog has to be "yes" for a host to be set in operation.')
+    responsible_person = forms.CharField(required=False, help_text='Name of the person responsible for the host.')
+    os = forms.CharField(required=False, help_text='What operating system is running on the host?')
+    os_version = forms.CharField(required=False, help_text='Which version of the operating system is running on the host?')
+    model = forms.CharField(required=False, help_text='What is the hosts hardware model name?')
+    vendor = forms.CharField(required=False, help_text='Name of the vendor that should be contacted for hardware support?')
+    service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the host?')
+    end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
     relationship_location = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
+    relationship_user = forms.ChoiceField(required=False,
+                                          widget=forms.widgets.Select)
+    relationship_owner = forms.ChoiceField(required=False,
+                                          widget=forms.widgets.Select)
+
+    def clean(self):
+        cleaned_data = super(EditHostForm, self).clean()
+        backup = cleaned_data.get('backup')
+        syslog = cleaned_data.get('syslog')
+        in_operation = cleaned_data.get('in_operation')
+        if in_operation and not (backup and syslog):
+            msg = u'You can not set a host in operation without backup or syslog.'
+            self._errors["in_operation"] = self.error_class([msg])
+            del cleaned_data['in_operation']
+        # Always return the full collection of cleaned data.
+        return cleaned_data
 
 
 class EditRouterForm(forms.Form):
