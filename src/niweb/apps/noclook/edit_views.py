@@ -603,6 +603,12 @@ def edit_host(request, handle_id):
             # Generic node update
             form_update_node(request.user, node, form)
             # Host specific updates
+            if form.cleaned_data['relationship_user']:
+                user_id = form.cleaned_data['relationship_user']
+                node = set_user(node, user_id)
+            if form.cleaned_data['relationship_owner']:
+                owner_id = form.cleaned_data['relationship_owner']
+                node = set_owner(node, owner_id)
             if form.cleaned_data['relationship_location'] == -1:
                 # Remove existing location if any
                 for rel in h.iter2list(node.Located_in.outgoing):
@@ -610,12 +616,6 @@ def edit_host(request, handle_id):
             elif form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id)
-            if form.cleaned_data['relationship_user']:
-                user_id = form.cleaned_data['relationship_user']
-                node = set_user(node, user_id)
-            if form.cleaned_data['relationship_owner']:
-                owner_id = form.cleaned_data['relationship_owner']
-                node = set_owner(node, owner_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_host.html',
