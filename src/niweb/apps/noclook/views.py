@@ -693,4 +693,7 @@ def gmaps_optical_nodes(request):
             raise Exception('Fiber cable terminates in too many points.')
     jsonstr = json.dumps(optical_node_list)
     return HttpResponse(jsonstr, mimetype='application/json')
-        
+
+@login_required
+def qr_lookup(request, name):
+    pass
