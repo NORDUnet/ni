@@ -248,13 +248,10 @@ def get_node_type(request, slug):
     q = '''                   
         START node=node:node_types(node_type="%s")
         RETURN node
-        ORDER BY node.country_code?, node.name
+        ORDER BY node.name
         ''' % node_type
     hits = nc.neo4jdb.query(q)
-    type_list = []
-    for hit in hits:
-        name = hit['node']['name']
-        type_list.append((hit['node'].id, name))
+    type_list = [(hit['node'].getId(), hit['node']['name']) for hit in hits]
     return HttpResponse(json.dumps(type_list), mimetype='application/json')
 
 @login_required
@@ -268,13 +265,13 @@ def get_children(request, node_id, slug=None):
     if slug:
         type_filter = 'and child.node_type = "%s"' % slug_to_node_type(slug)
     q = '''                   
-        START parent=node(%d)
+        START parent=node({id})
         MATCH parent--child
         WHERE (parent-[:Has]->child or parent<-[:Located_in]-child) %s
         RETURN child
         ORDER BY child.node_type, child.name
-        ''' % (int(node_id), type_filter)
-    hits = nc.neo4jdb.query(q)
+        ''' % type_filter
+    hits = nc.neo4jdb.query(q, id=int(node_id))
     child_list = []
     try:
         for hit in hits:
@@ -377,10 +374,12 @@ def new_odf(request, handle_id, form):
     return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required
-def new_port(request, handle_id, form):
+def new_port(request, handle_id, form, parent_id=None):
     nh, node = get_nh_node(handle_id)
     keys = ['port_type']
     form_update_node(request.user, node, form, keys)
+    if parent_id:
+        place_child_in_parent(node, parent_id)
     return HttpResponseRedirect(nh.get_absolute_url())
 
 # Edit functions

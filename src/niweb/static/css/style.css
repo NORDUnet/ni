@@ -59,7 +59,8 @@ h5.site {
 
 select.stacked {
  display: block;
- margin-bottom: 10px;
+ margin-top: 10px;
+ margin-bottom: 5px;
 }
 
 #toggle_debug:link, #toggle_debug:visited {

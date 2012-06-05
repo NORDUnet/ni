@@ -19,6 +19,7 @@ urlpatterns += patterns('niweb.apps.noclook.edit_views',
     #                                                     'delete_relationship'),
     (r'^new/$', 'new_node'),
     (r'^new/(?P<slug>[-\w]+)/$', 'new_node'),
+    (r'^new/(?P<slug>[-\w]+)/(?P<parent_id>\d+)/$', 'new_node'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', 'edit_node'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/delete$', 'delete_node'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/delete$', 'delete_relationship'),
@@ -75,6 +76,8 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^host/$', 'list_hosts'),
     (r'^site/$', 'list_sites'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
+    # QR lookup
+    (r'^lu/(?P<name>)/$', 'qr_lookup'),
     # Generic view
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
 )
