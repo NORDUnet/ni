@@ -37,36 +37,70 @@ import norduni_client as nc
 import noclook_consumer as nt
 from apps.noclook import helpers as h
 
-'''
-This script is used for adding the objects collected with the
-NERDS producers to the noclook database viewer.
-'''
+# This script is used for adding the objects collected with the
+# NERDS producers to the NOCLook database viewer.
+
+HOST_USERS_MAP = {
+    'funet.fi':     'FUNET',
+    'lobber.se':    'SUNET',
+    'ndgf.org':     'NDGF',
+    'nordu.net':    'NORDUnet',
+    'nordunet.tv':  'NORDUnet',
+    'nunoc.org':    'NORDUnet',
+    'nunoc.se':     'NORDUnet',
+    'sunet.se':     'SUNET',
+    'rhnet.is':     'RHnet',
+    'swami.se':     'SUNET',
+    'uninett.no':   'UNINETT',
+    'wayf.dk':      'WAYF',
+}
+
+def set_host_user(node):
+    """
+    Tries to set a Uses or Owns relationship between the Host and a Host User if there are none.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node<-[r:Owns|Uses]-()
+        return COUNT(r) as rels
+        '''
+    hits = nc.neo4jdb.query(q, id=node.getId())
+    domain = '.'.join(node['name'].split('.')[-2:])
+    host_user_name = HOST_USERS_MAP.get(domain, None)
+    if not hits['rels'] and host_user_name:
+        node_handle = nt.get_unique_node_handle(nc.neo4jdb, host_user_name,
+                                                'Host User', 'relation')
+        host_user = node_handle.get_node()
+        if nc.get_node_meta_type(node) == 'logical':
+            nc.create_suitable_relationship(nc.neo4jdb, host_user, node, 'Uses')
+        elif nc.get_node_meta_type(node) == 'physical':
+            nc.create_suitable_relationship(nc.neo4jdb, host_user, node, 'Owns')
 
 def insert_services(service_dict, host_node):
-    '''
-    Takes a dictionary of services and a node id for a host. Gets or creates a 
+    """
+    Takes a dictionary of services and a node id for a host. Gets or creates a
     service and makes a Depends_on relationship between the service and host.
-    
+
     Example service_dict:
     {"ipv4": {
         "127.0.0.1": {
             "tcp": {
                 "1025": {
-                    "product": "Microsoft Windows RPC", 
-                    "confidence": "10", 
-                    "name": "msrpc", 
-                    "proto": "unknown"}, 
+                    "product": "Microsoft Windows RPC",
+                    "confidence": "10",
+                    "name": "msrpc",
+                    "proto": "unknown"},
                 "1029": {
-                    "product": "Microsoft Windows RPC over HTTP", 
-                    "confidence": "10", 
-                    "version": "1.0", 
-                    "name": "ncacn_http", 
-                    "proto": "unknown"}, 
+                    "product": "Microsoft Windows RPC over HTTP",
+                    "confidence": "10",
+                    "version": "1.0",
+                    "name": "ncacn_http",
+                    "proto": "unknown"},
                 }
             }
         }
     }
-    '''
+    """
     node_type = "Host Service"
     meta_type = 'logical'
     service_nodes = []
@@ -118,10 +152,10 @@ def insert_services(service_dict, host_node):
     return service_nodes
 
 def insert_nmap(json_list):
-    '''
+    """
     Inserts the data loaded from the json files created by
     the nerds producer nmap_services.
-    '''
+    """
     node_type = "Host"
     meta_type = 'logical'
     # Insert the host
@@ -144,6 +178,8 @@ def insert_nmap(json_list):
             insert_services(i['host']['services'], node)
         except KeyError as e:
             pass
+        # Set host user depending on the domain.
+        set_host_user(node)
 
 def main():
     # User friendly usage output

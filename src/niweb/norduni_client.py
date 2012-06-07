@@ -516,8 +516,7 @@ def get_relationship_indexes(db):
     """
     Returns a list of all relationship indexes in the database.
     """
-    return [get_relationship_index(db, name) 
-            for name in db.index().relationshipIndexNames()]
+    return [get_relationship_index(db, name) for name in db.index().relationshipIndexNames()]
 
 def search_index_name():
     """
