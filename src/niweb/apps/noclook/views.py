@@ -696,4 +696,10 @@ def gmaps_optical_nodes(request):
 
 @login_required
 def qr_lookup(request, name):
-    pass
+    search_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    hits = h.iter2list(search_index['name'][name])
+    if len(hits) == 1:
+        nh = get_object_or_404(NodeHandle, pk=hits[0]['handle_id'])
+        return HttpResponseRedirect(nh.get_absolute_url())
+    return render_to_response('noclook/qr_result.html',
+            {'hits': hits, 'name': name}, context_instance=RequestContext(request))

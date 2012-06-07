@@ -123,11 +123,11 @@ $(document).ready(
 <script type="text/javascript">
     function add_port_a() {
         var parent_id = $('#id_relationship_end_a').val();
-        window.open("/new/port/" + parent_id + "/");
+        window.open("/new/port/parent/" + parent_id + "/");
     }
     function add_port_b() {
         var parent_id = $('#id_relationship_end_b').val();
-        window.open("/new/port/" + parent_id + "/");
+        window.open("/new/port/parent/" + parent_id + "/");
     }
 </script>
 {% endblock %}

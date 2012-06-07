@@ -319,6 +319,8 @@ def new_node(request, slug=None, **kwargs):
     else:
         try:
             form = NEW_FORMS[slug]
+            if kwargs.get('name', None):
+                form = form(initial={'name': kwargs['name']})
         except KeyError:
             raise Http404
         return render_to_response(template, {'form': form},
@@ -342,7 +344,7 @@ def new_site_owner(request, handle_id, form):
     return HttpResponseRedirect(nh.get_absolute_url())
     
 @login_required
-def new_cable(request, handle_id, form):
+def new_cable(request, handle_id, form, **kwargs):
     nh, node = get_nh_node(handle_id)
     keys = ['cable_type']
     form_update_node(request.user, node, form, keys)
