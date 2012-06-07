@@ -1,10 +1,31 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-    <title></title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}{{ block.super }} QR result{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <div class="span7">
+        {% if hits %}
+            {% load noclook_tags %}
+            <h1>QR lookup result</h1>
+                <table class="table">
+                    {% for hit in hits %}
+                        <tr>
+                            <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {% for key,value in hit.items %}
+                                    <b>{{key}}</b>: {{value}}<br />
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+        {% else %}
+            <h1>Create new</h1>
+            <p>{{ name }} could not be found, create a new:</p>
+            <a href="/new/cable/name/{{ name }}" class="btn btn-info">Cable</a>
+        {% endif %}
+    </div>
+{% endblock %}
