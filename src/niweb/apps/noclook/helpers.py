@@ -9,7 +9,10 @@ from django.template.defaultfilters import slugify
 from django.conf import settings as django_settings
 from datetime import datetime, timedelta
 
-from niweb.apps.noclook.models import NodeHandle
+try:
+    from niweb.apps.noclook.models import NodeHandle
+except ImportError:
+    from apps.noclook.models import NodeHandle
 import norduni_client as nc
 
 def get_node_url(node):
