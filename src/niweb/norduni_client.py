@@ -247,13 +247,13 @@ def get_node_by_value(db, node_value, node_property=None):
         #q = '''
         #    START node=node(*)
         #    WHERE node.%s! =~ /(?i).*%s.*/
-        #    RETURN node
+        #    RETURN distinct node
         #    ''' % (node_property, node_value)
         # TODO: Use above when https://github.com/neo4j/community/issues/369 is resolved.
         q = '''
             START node=node(*)
             WHERE has(node.%s)
-            RETURN node
+            RETURN distinct node
             ''' % node_property                                     # Temp
         hits = db.query(q)
         pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)  # Temp
@@ -266,6 +266,9 @@ def get_node_by_value(db, node_value, node_property=None):
             for value in node.getPropertyValues():
                 if pattern.match(unicode(value)):
                     yield node
+                    break
+
+
 
 def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
     """
