@@ -162,7 +162,7 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
             for node_handle in node_handles:
                 node = node_handle.get_node()
                 node_parent = nc.get_root_parent(db, node)
-                if node_parent and parent.id == node_parent.id:
+                if node_parent and parent.id == node_parent[0].id:
                     return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
