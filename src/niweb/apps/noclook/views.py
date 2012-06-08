@@ -4,6 +4,7 @@ from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
+from django.utils.http import urlquote, urlunquote
 import ipaddr
 import json
 from lucenequerybuilder import Q
@@ -501,7 +502,7 @@ def search(request, value='', form=None):
     if request.POST:
         value = request.POST.get('query', '')
         posted = True
-        # See if the value is indexed
+    # See if the value is indexed
     i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     q = Q('all', '*%s*' % value, wildcard=True)
     nodes = h.iter2list(i1.query(unicode(q)))
@@ -509,11 +510,7 @@ def search(request, value='', form=None):
         nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
     result = []
     if form == 'csv':
-        csvfile = h.nodes_to_csv(nodes)
-        response = HttpResponse(csvfile, 
-                                mimetype='application/csv;charset=utf-8')
-        response['Content-Disposition'] = 'attachment; filename=result.csv'
-        return response
+        return h.nodes_to_csv([node for node in nodes])
     for node in nodes:
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
         item = {'node': node, 'nh': nh}
@@ -576,11 +573,7 @@ def find_all(request, slug='', key='', value='', form=None):
         node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
         nodes = node_types_index['node_type'][str(node_type)]
     if form == 'csv':
-        csvfile = h.nodes_to_csv(nodes)
-        response = HttpResponse(csvfile, 
-                                mimetype='application/csv;charset=utf-8')
-        response['Content-Disposition'] = 'attachment; filename=result.csv'
-        return response
+        return h.nodes_to_csv([node for node in nodes])
     elif form == 'json':
         # TODO: 
         pass

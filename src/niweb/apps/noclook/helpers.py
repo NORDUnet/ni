@@ -8,12 +8,44 @@ Created on Mon Apr  2 11:17:57 2012
 from django.template.defaultfilters import slugify
 from django.conf import settings as django_settings
 from datetime import datetime, timedelta
+import csv, codecs, cStringIO
+from django.http import HttpResponse
 
 try:
     from niweb.apps.noclook.models import NodeHandle
 except ImportError:
     from apps.noclook.models import NodeHandle
 import norduni_client as nc
+
+class UnicodeWriter:
+    """
+    A CSV writer which will write rows to CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        # Redirect output to a queue
+        self.queue = cStringIO.StringIO()
+        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
+        self.stream = f
+        self.encoder = codecs.getincrementalencoder(encoding)()
+
+    def writerow(self, row):
+        self.writer.writerow([s.encode("utf-8") for s in row])
+        # Fetch UTF-8 output from the queue ...
+        data = self.queue.getvalue()
+        data = data.decode("utf-8")
+        # ... and reencode it into the target encoding
+        data = self.encoder.encode(data)
+        # write to the target stream
+        self.stream.write(data)
+        # empty queue
+        self.queue.truncate(0)
+
+    def writerows(self, rows):
+        for row in rows:
+            self.writerow(row)
+
 
 def get_node_url(node):
     """
@@ -94,27 +126,31 @@ def item2dict(item):
 
 def nodes_to_csv(node_list):
     """
-    Takes a list of nodes and returns a comma separeted file with all node keys
+    Takes a list of nodes and returns a comma separated file with all node keys
     and their values.
     """
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(mimetype='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=result.csv'
+    writer = UnicodeWriter(response, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
     key_set = set()
     for node in node_list:
         key_set.update(node.propertyKeys)
     key_set = sorted(key_set)
-    output = [';'.join(key_set)] # Line collection with header
+    writer.writerow(key_set) # Line collection with header
     for node in node_list: 
         line = []
         for key in key_set:
             try:
-                line.append('"%s"' % unicode(node[key]))
+                line.append('%s' % unicode(node[key]))
             except KeyError:
                 line.append('') # Node did not have that key, add a blank item.
-        output.append(';'.join(line))
-    return '\n'.join(output)
+        writer.writerow(line)
+    return response
 
 def nodes_to_json(node_list):
     """
-    Takes a list of nodes and returns a json formated text with all node keys
+    Takes a list of nodes and returns a json formatted text with all node keys
     and their values.
     """
     # TODO:
