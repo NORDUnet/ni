@@ -9,9 +9,9 @@
             <p>Search for <i>{% if key %}{{ key }}:{% endif %}{{ value|lower }}{% if node_type %} in {{ node_type }}s{% endif %}</i>:</p>
             {% if result %}
                 {% if posted %}
-                    <p>Get this result as: <a href="{{ value }}/result.csv">CSV</a></p>
+                    <p>Get this result as: <a href="{{ value }}/result.csv">CSV</a> or <a href="{{ value }}/result.xls">Excel</a></p>
                 {% else %}
-                    <p>Get this result as: <a href="result.csv">CSV</a></p>
+                    <p>Get this result as: <a href="result.csv">CSV</a> or <a href="result.xls">Excel</a></p>
                 {% endif %}
                 <table class="table">
                 {% for item in result %}

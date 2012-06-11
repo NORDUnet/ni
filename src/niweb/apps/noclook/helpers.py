@@ -9,6 +9,7 @@ from django.template.defaultfilters import slugify
 from django.conf import settings as django_settings
 from datetime import datetime, timedelta
 import csv, codecs, cStringIO
+import xlwt
 from django.http import HttpResponse
 
 try:
@@ -131,7 +132,7 @@ def nodes_to_csv(node_list):
     """
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(mimetype='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=result.csv'
+    response['Content-Disposition'] = 'attachment; filename=result.csv; charset=utf-8;'
     writer = UnicodeWriter(response, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
     key_set = set()
     for node in node_list:
@@ -146,6 +147,29 @@ def nodes_to_csv(node_list):
             except KeyError:
                 line.append('') # Node did not have that key, add a blank item.
         writer.writerow(line)
+    return response
+
+def nodes_to_xls(node_list):
+    """
+    Takes a list of nodes and returns an Excel file of all node keys and their values.
+    """
+    # Create the HttpResponse object with the appropriate Excel header.
+    response = HttpResponse(mimetype='application/excel')
+    response['Content-Disposition'] = 'attachment; filename=result.xls;'
+    wb = xlwt.Workbook(encoding='utf-8')
+    ws = wb.add_sheet('NOCLook result')
+    key_set = set()
+    for node in node_list:
+        key_set.update(node.propertyKeys)
+    key_set = sorted(key_set)
+    # Write header
+    for i in range(0, len(key_set)):
+        ws.write(0, i, key_set[i])
+    # Write body
+    for i in range(0, len(node_list)):
+        for j in range(0, len(key_set)):
+            ws.write(i+1, j, unicode(node_list[i].getProperty(key_set[j], '')))
+    wb.save(response)
     return response
 
 def nodes_to_json(node_list):

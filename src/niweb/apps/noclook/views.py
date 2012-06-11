@@ -4,7 +4,6 @@ from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from django.utils.http import urlquote, urlunquote
 import ipaddr
 import json
 from lucenequerybuilder import Q
@@ -511,6 +510,8 @@ def search(request, value='', form=None):
     result = []
     if form == 'csv':
         return h.nodes_to_csv([node for node in nodes])
+    elif form == 'xls':
+        return h.nodes_to_xls([node for node in nodes])
     for node in nodes:
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
         item = {'node': node, 'nh': nh}
@@ -573,9 +574,11 @@ def find_all(request, slug='', key='', value='', form=None):
         node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
         nodes = node_types_index['node_type'][str(node_type)]
     if form == 'csv':
-        return h.nodes_to_csv([node for node in nodes])
+        return h.nodes_to_csv([node for node in nodes if node['node_type'] == str(node_type)])
+    elif form == 'xls':
+        return h.nodes_to_xls([node for node in nodes if node['node_type'] == str(node_type)])
     elif form == 'json':
-        # TODO: 
+        # TODO:
         pass
     result = []
     for node in nodes:
