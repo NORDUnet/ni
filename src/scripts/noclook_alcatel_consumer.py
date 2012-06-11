@@ -37,11 +37,11 @@ import norduni_client as nc
 import noclook_consumer as nt
 from apps.noclook import helpers as h
 
-'''
-This script is used for adding the objects collected with the
-NERDS producers alcatel_isis to the NOCLook database viewer.
+# This script is used for adding the objects collected with the
+# NERDS producers alcatel_isis to the NOCLook database viewer.
 
-JSON format used:
+# JSON format used:
+'''
 [{"host": {
     "alcatel_isis": {
         "data": {
@@ -64,12 +64,12 @@ JSON format used:
     "version": 1
     }
 }]
-The data block can hold any keys and don't necessarily have to be the ones
-listed above.
 '''
+# The data block can hold any keys and don't necessarily have to be the ones
+# listed above.
 
 def consume_alcatel_isis(json_list):
-    '''
+    """
     Inserts the data loaded from the json files created by the nerds
     producer alcatel_isis.
     
@@ -78,7 +78,7 @@ def consume_alcatel_isis(json_list):
     Metric = 19     "OMS - optical multiplex section connection"
                     (between LM's only)
     Metric = 20/21  "direct fiber connection"
-    '''
+    """
     # Insert the optical node
     for i in json_list:
         name = i['host']['alcatel_isis']['name']
