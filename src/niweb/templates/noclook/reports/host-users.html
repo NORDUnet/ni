@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} | Host reports | Host users{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(
+            function(){
+                $("#hosts").tablesorter(
+                    {
+                        sortList: [[0,0], [1,0]],
+                        headers:
+                        {
+                            2 : { sorter: "isoDate"  },
+                        },
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
+            }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <div class="span7">
+        <h1>Host users</h1>
+        <hr>
+        <ul class="nav nav-pills">
+            {% if not host_user_name %}
+                <li class="active"><a href="/reports/hosts/host-users/">All</a></li>
+            {% else %}
+                <li class=""><a href="/reports/hosts/host-users/">All</a></li>
+            {% endif %}
+            {% for key in host_users %}
+                {% if key == host_user_name %}
+                    <li class="active"><a href="/reports/hosts/host-users/{{ key }}/">{{ key }}</a></li>
+                {% else %}
+                    <li class=""><a href="/reports/hosts/host-users/{{ key }}/">{{ key }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if host_user_name == "Missing" %}
+                <li class="active"><a href="/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
+            {% else %}
+                <li class=""><a href="/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
+            {% endif %}
+        </ul>
+        <h3>Hosts for {{ host_user_name }}: {{ num_of_hosts }}</h3>
+        <table id="hosts" class="tablesorter" cellspacing="1"">
+            <thead>
+                <tr>
+                    <th>Host user</th><th>Host</th><th>Last seen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% load noclook_tags %}
+                {% for item in hosts %}
+                <tr>
+                    <td>{{ item.host_user }}</td>
+                    <td><a href="{% noclook_node_to_url item.host %}">{{ item.host_name }}</a></td>
+                    <td>{% noclook_last_seen_to_dt item.last_seen as last_seen%}{{ last_seen|date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
