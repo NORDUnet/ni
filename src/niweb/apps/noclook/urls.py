@@ -31,6 +31,12 @@ urlpatterns += patterns('niweb.apps.noclook.edit_views',
     #(r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
 )
 
+urlpatterns += patterns('niweb.apps.noclook.report_views',
+    (r'^reports/hosts/$', 'host_reports'),
+    (r'^reports/hosts/host-users/$', 'host_users'),
+    (r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/$', 'host_users'),
+)
+
 urlpatterns += patterns('niweb.apps.noclook.views',
     # NOCLook views
     (r'^$', 'index'),
@@ -72,13 +78,13 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^search/$', 'search'),
     (r'^search/autocomplete$', 'search_autocomplete'),
     (r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'search'),
+    # QR lookup
+    (r'^lu/(?P<name>[-\w]+)/$', 'qr_lookup'),
     # List views
     (r'^peering-partner/$', 'list_peering_partners'),
     (r'^host/$', 'list_hosts'),
     (r'^site/$', 'list_sites'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
-    # QR lookup
-    (r'^lu/(?P<name>[-\w]+)/$', 'qr_lookup'),
     # Generic view
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
 )
