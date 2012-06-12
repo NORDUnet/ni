@@ -12,7 +12,7 @@
                         sortList: [[0,0], [1,0]],
                         headers:
                         {
-                            2 : { sorter: "isoDate"  },
+                            2 : { sorter: "isoDate" }
                         },
                         widthFixed: true,
                         widgets: ['zebra']
@@ -28,7 +28,7 @@
         <h1>Host users</h1>
         <hr>
         <ul class="nav nav-pills">
-            {% if not host_user_name %}
+            {% if host_user_name == "All" %}
                 <li class="active"><a href="/reports/hosts/host-users/">All</a></li>
             {% else %}
                 <li class=""><a href="/reports/hosts/host-users/">All</a></li>
