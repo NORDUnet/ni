@@ -20,7 +20,9 @@
                 end_value_field: ""
         };
         $(this).click(function() {
-            $(user_options.end_value_field).val(obj.val());
+            if(obj.val()!="0") {
+                $(user_options.end_value_field).val(obj.val());
+            }
         });
         var user_options = $.extend(default_options, user_options);
         var obj = $(this);
