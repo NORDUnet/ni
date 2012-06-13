@@ -35,6 +35,7 @@ urlpatterns += patterns('niweb.apps.noclook.report_views',
     (r'^reports/hosts/$', 'host_reports'),
     (r'^reports/hosts/host-users/$', 'host_users'),
     (r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/$', 'host_users'),
+    (r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/(result.)?(?P<form>(csv|json|xls)?)$', 'host_users'),
 )
 
 urlpatterns += patterns('niweb.apps.noclook.views',

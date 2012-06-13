@@ -125,7 +125,7 @@ def item2dict(item):
         d[key] = value
     return d
 
-def nodes_to_csv(node_list):
+def nodes_to_csv(node_list, header=None):
     """
     Takes a list of nodes and returns a comma separated file with all node keys
     and their values.
@@ -134,11 +134,14 @@ def nodes_to_csv(node_list):
     response = HttpResponse(mimetype='text/csv')
     response['Content-Disposition'] = 'attachment; filename=result.csv; charset=utf-8;'
     writer = UnicodeWriter(response, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
-    key_set = set()
-    for node in node_list:
-        key_set.update(node.propertyKeys)
-    key_set = sorted(key_set)
-    writer.writerow(key_set) # Line collection with header
+    if not header:
+        key_set = set()
+        for node in node_list:
+            key_set.update(node.propertyKeys)
+        key_set = sorted(key_set)
+    else:
+        key_set = header
+        writer.writerow(key_set) # Line collection with header
     for node in node_list: 
         line = []
         for key in key_set:
@@ -149,7 +152,7 @@ def nodes_to_csv(node_list):
         writer.writerow(line)
     return response
 
-def nodes_to_xls(node_list):
+def nodes_to_xls(node_list, header=None):
     """
     Takes a list of nodes and returns an Excel file of all node keys and their values.
     """
@@ -158,17 +161,23 @@ def nodes_to_xls(node_list):
     response['Content-Disposition'] = 'attachment; filename=result.xls;'
     wb = xlwt.Workbook(encoding='utf-8')
     ws = wb.add_sheet('NOCLook result')
-    key_set = set()
-    for node in node_list:
-        key_set.update(node.propertyKeys)
-    key_set = sorted(key_set)
+    if not header:
+        key_set = set()
+        for node in node_list:
+            key_set.update(node.propertyKeys)
+        key_set = sorted(key_set)
+    else:
+        key_set = header
     # Write header
     for i in range(0, len(key_set)):
         ws.write(0, i, key_set[i])
     # Write body
     for i in range(0, len(node_list)):
         for j in range(0, len(key_set)):
-            ws.write(i+1, j, unicode(node_list[i].getProperty(key_set[j], '')))
+            try:
+                ws.write(i+1, j, unicode(node_list[i][key_set[j]]))
+            except KeyError:
+                ws.write(i+1, j, unicode(''))
     wb.save(response)
     return response
 
