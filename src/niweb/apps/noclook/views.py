@@ -6,6 +6,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 import ipaddr
 import json
+import arborgraph
 from lucenequerybuilder import Q
 
 from niweb.apps.noclook.models import NodeHandle, NodeType
@@ -453,11 +454,10 @@ def port_detail(request, handle_id):
 @login_required
 def visualize_json(request, node_id):
     """
-    Creates a JSON representation of the nodes and its adjecencies.
+    Creates a JSON representation of the node and the adjacent nodes.
     This JSON data is then used by Arbor.js (http://arborjs.org/) to make
     a visual representation.
     """
-    import arborgraph
     # Get the node
     root_node = nc.get_node_by_id(nc.neo4jdb, node_id)
     if root_node:
@@ -533,6 +533,7 @@ def search_autocomplete(request):
      data:['LR','LY','LI','LT']
     }
     """
+    response = HttpResponse(mimetype='application/json')
     query = request.GET.get('query', None)
     if query:
         i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
@@ -540,9 +541,9 @@ def search_autocomplete(request):
         suggestions = []
         for node in i1.query(unicode(q)):
             suggestions.append(node['name'])
-        jsonstr = json.dumps({'query': query, 'suggestions': suggestions,
-                              'data': []})
-        return HttpResponse(jsonstr, mimetype='application/json')
+        d = {'query': query, 'suggestions': suggestions, 'data': []}
+        json.dump(d, response)
+        return response
     return False
     
 @login_required
@@ -687,8 +688,9 @@ def gmaps_optical_nodes(request):
             optical_node_list.append(edge)
         else:
             raise Exception('Fiber cable terminates in too many points.')
-    jsonstr = json.dumps(optical_node_list)
-    return HttpResponse(jsonstr, mimetype='application/json')
+    response = HttpResponse(mimetype='application/json')
+    json.dump(optical_node_list, response)
+    return response
 
 @login_required
 def qr_lookup(request, name):
