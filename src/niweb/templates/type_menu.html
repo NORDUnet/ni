@@ -1,5 +1,3 @@
-<ul class="menu">
 {% for type in types|dictsort:"type" %}
     <li class="menu_item"><a href="{{ type.get_absolute_url }}">{{ type }}s</a></li>
 {% endfor %}
-</ul>

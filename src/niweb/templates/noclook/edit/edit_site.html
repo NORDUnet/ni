@@ -39,24 +39,8 @@ $(document).ready(
         $('#level0').click(function() {
             $("#id_relationship_site_owner").val($(this).val());
         });
-
-        // Hide sections
-        $('#site-owner-section').find("> a").click(function() {
-            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
-            return false;
-        }).end().find("> div").hide();
-        $('#address-section').find("> a").click(function() {
-            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
-            return false;
-        }).end().find("> div").hide();
-        $('#location-section').find("> a").click(function() {
-            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
-            return false;
-        }).end().find("> div").hide();
-        $('#other-id-section').find("> a").click(function() {
-            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
-            return false;
-        }).end().find("> div").hide();
+        // Accordion
+        $(".edit-accordion").collapse()
     }
 );
 </script>
@@ -69,68 +53,91 @@ $(document).ready(
         <h3>Site Type (optional)</h3>
         {{ form.site_type }}
     </div>
-    <div id="site-owner-section">
-        <h3 class="hidden-section">Site Owner (optional)</h3>
-        <a href="#" class="section-closed">Show</a>
-        <div class="well">
-            <label>Current</label></td>
-            <span class="input-large uneditable-input">
-                {% if site_owner %}
-                    {% for owner in site_owner %}
-                        {{ owner.start.name }}
-                    {% endfor %}
-                {% endif %}
-            </span>
-            <label>Change</label>
-            {{ form.relationship_site_owner }}
-            <select class="stacked" name="level0" id="level0"></select>
+
+    <div class="accordion" id="edit-accordion">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
+                    Address (optional)
+                </a>
+            </div>
+            <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <label>Street</label>
+                    {{ form.address }}
+                    <label>Floor</label>
+                    {{ form.floor }}
+                    <span class="help-inline">{{ form.floor.help_text }}</span>
+                    <label>Room</label>
+                    {{ form.room }}
+                    <span class="help-inline">{{ form.room.help_text }}</span>
+                    <label>Postcode</label>
+                    {{ form.postcode }}
+                    <label>Postarea</label>
+                    {{ form.postarea }}
+                </div>
+            </div>
         </div>
-    </div>
-    <div id="address-section">
-        <h3 class="hidden-section">Address (optional)</h3>
-        <a href="#" class="section-closed">Show</a>
-        <div class="well">
-            <label>Street</label>
-            {{ form.address }}
-            <label>Floor</label>
-            {{ form.floor }}
-            <span class="help-inline">{{ form.floor.help_text }}</span>
-            <label>Room</label>
-            {{ form.room }}
-            <span class="help-inline">{{ form.room.help_text }}</span>
-            <label>Postcode</label>
-            {{ form.postcode }}
-            <label>Postarea</label>
-            {{ form.postarea }}
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
+                    Location (optional)
+                </a>
+            </div>
+            <div id="collapseTwo" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <label>Country</label>
+                    <span class="input-large uneditable-input">{{ node.country }}</span>
+                    <label>Area</label>
+                    {{ form.area }}
+                    <span class="help-inline">{{ form.area.help_text }}</span>
+                    <label>Longitude</label>
+                    {{ form.longitude }}
+                    <span class="help-inline">{{ form.longitude.help_text }}</span>
+                    <label>Latitude</label>
+                    {{ form.latitude }}
+                    <span class="help-inline">{{ form.longitude.help_text }}</span>
+                </div>
+            </div>
         </div>
-    </div>
-    <div id="location-section">
-        <h3 class="hidden-section">Location (optional)</h3>
-        <a href="#" class="section-closed">Show</a>
-        <div class="well">
-            <label>Country</label>
-            <span class="input-large uneditable-input">{{ node.country }}</span>
-            <label>Area</label>
-            {{ form.area }}
-            <span class="help-inline">{{ form.area.help_text }}</span>
-            <label>Longitude</label>
-            {{ form.longitude }}
-            <span class="help-inline">{{ form.longitude.help_text }}</span>
-            <label>Latitude</label>
-            {{ form.latitude }}
-            <span class="help-inline">{{ form.longitude.help_text }}</span>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
+                    Site Owner (optional)
+                </a>
+            </div>
+            <div id="collapseThree" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <label>Current</label></td>
+                    <span class="input-large uneditable-input">
+                    {% if site_owner %}
+                        {% for owner in site_owner %}
+                            {{ owner.start.name }}
+                        {% endfor %}
+                    {% endif %}
+                    </span>
+                    <label>Change</label>
+                    {{ form.relationship_site_owner }}
+                    <select class="stacked" name="level0" id="level0"></select>
+                </div>
+            </div>
         </div>
-    </div>
-    <div id="other-id-section">
-        <h3 class="hidden-section">Other IDs (optional)</h3>
-        <a href="#" class="section-closed">Show</a>
-        <div class="well">
-            <label>Owner Site ID</label>
-            {{ form.owner_id }}
-            <label>Owner Site Name</label>
-            {{ form.owner_site_name }}
-            <label>Telenor Subscription ID</label>
-            {{ form.telenor_subscription_id }}
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
+                    Other IDs (optional)
+                </a>
+            </div>
+            <div id="collapseFour" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <label>Owner Site ID</label>
+                    {{ form.owner_id }}
+                    <label>Owner Site Name</label>
+                    {{ form.owner_site_name }}
+                    <label>Telenor Subscription ID</label>
+                    {{ form.telenor_subscription_id }}
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

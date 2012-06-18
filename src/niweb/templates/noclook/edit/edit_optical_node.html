@@ -47,6 +47,8 @@ $(document).ready(
                         parent: "#level0",
                         end_value_field: "#id_relationship_location",
                     });
+        // Accordion
+        $(".edit-accordion").collapse()
     }
 );
 </script>
@@ -58,30 +60,39 @@ $(document).ready(
         <h3>Name</h3>
         {{ form.name }}
     </div>
-<!--
-    <h3>Dimensions</h3>
-    <label>Rack units</label></td>
-    {{ form.units }}
-    <span class="help-block">{{ form.units.help_text }}</span>
-    <label>Start unit</label>
-    {{ form.start_unit }}
-     <span class="help-block">{{ form.start_unit.help_text }}</span>
--->
-    <div id="location-section">
-        <h3>Location (optional)</h3>
-        <div class="well">
-            <label>Current</label></td>
-            <span class="input-large uneditable-input">
-                {% if location %}
-                    {% for loc in location %}
-                        {{ loc.name }}
-                    {% endfor %}
-                {% endif %}
-            </span>
-            <label>Change</label>
-            {{ form.relationship_location }}
-            <select class="stacked" name="level0" id="level0"></select><br />
-            <select class="stacked" name="level1" id="level1"></select>
+
+    <div class="accordion" id="edit-accordion">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
+                    Location
+                </a>
+            </div>
+            <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <label>Current</label></td>
+                    <span class="input-large uneditable-input">
+                        {% if location %}
+                            {% for loc in location %}
+                                {{ loc.name }}
+                            {% endfor %}
+                        {% endif %}
+                    </span>
+                    <label>Change</label>
+                    {{ form.relationship_location }}
+                    <select class="stacked" name="level0" id="level0"></select>
+                    <select class="stacked" name="level1" id="level1"></select>
+                    <!--
+                    <hr />
+                    <label>Rack units</label></td>
+                    {{ form.units }}
+                    <span class="help-block">{{ form.units.help_text }}</span>
+                    <label>Start unit</label>
+                    {{ form.start_unit }}
+                     <span class="help-block">{{ form.start_unit.help_text }}</span>
+                    -->
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

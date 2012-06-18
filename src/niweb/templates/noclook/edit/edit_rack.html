@@ -42,6 +42,8 @@ $(document).ready(
         $('#level0').click(function() {
             $("#id_relationship_location").val($(this).val());
         });
+        // Accordion
+        $(".edit-accordion").collapse()
     }
 );
 </script>
@@ -53,34 +55,50 @@ $(document).ready(
         <h3>Name</h3>
         {{ form.name }}
     </div>
-    <div id="location-section">
-        <h3>Location (optional)</h3>
-        <div class="well">
-            <label>Current</label></td>
-            <span class="input-large uneditable-input">
-                {% if location %}
-                    {% for loc in location %}
-                        {{ loc.name }}
-                    {% endfor %}
-                {% endif %}
-            </span>
-            <label>Change</label>
-            {{ form.relationship_location }}
-            <select class="stacked" name="level0" id="level0"></select>
+
+    <div class="accordion" id="edit-accordion">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
+                    Dimensions (optional)
+                </a>
+            </div>
+            <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <label>Height</label>
+                    {{ form.height }}
+                    <span class="help-block">{{ form.height.help_text }}</span>
+                    <label>Depth</label>
+                    {{ form.depth }}
+                    <span class="help-block">{{ form.depth.help_text }}</span>
+                    <label>Width</label>
+                    {{ form.width }}
+                    <span class="help-block">{{ form.width.help_text }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
+                    Location (optional)
+                </a>
+            </div>
+            <div id="collapseTwo" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <label>Current</label></td>
+                    <span class="input-large uneditable-input">
+                    {% if location %}
+                        {% for loc in location %}
+                            {{ loc.name }}
+                        {% endfor %}
+                    {% endif %}
+                    </span>
+                    <label>Change</label>
+                    {{ form.relationship_location }}
+                    <select class="stacked" name="level0" id="level0"></select>
+                </div>
+            </div>
         </div>
     </div>
-    <div id="dimensions-section">
-        <h3>Dimensions</h3>
-        <div class="well">
-            <label>Height</label>
-            {{ form.height }}
-            <span class="help-block">{{ form.height.help_text }}</span>
-            <label>Depth</label>
-            {{ form.depth }}
-            <span class="help-block">{{ form.depth.help_text }}</span>
-            <label>Width</label>
-            {{ form.width }}
-            <span class="help-block">{{ form.width.help_text }}</span>
-        </div>
 {% endblock %}
 
