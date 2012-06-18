@@ -108,15 +108,8 @@ $(document).ready(
             $("#dialog-connection-confirm").dialog("open");
 
         });
-        // Hide sections
-        $('#telenor-section').find("> a").click(function() {
-            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
-            return false;
-        }).end().find("> div").hide();
-        $('#globalc-section').find("> a").click(function() {
-            $(this).toggleClass("section-closed").toggleClass("section-open").next().toggle();
-            return false;
-        }).end().find("> div").hide();
+        // Accordion
+        $(".edit-accordion").collapse()
     }
 );
 </script>
@@ -143,72 +136,87 @@ $(document).ready(
         <h3>Type (optional)</h3>
         {{ form.cable_type }}
     </div>
-    <div id="connection-section">
-        <h3>Connections (optional)</h3>
-        {% if connections %}
-            <div class="well">
-                {% load noclook_tags %}
-                <h4>Remove Connection</h4>
-                {% for con in connections %}
+
+    <div class="accordion" id="edit-accordion">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
+                    Connections (optional)
+                </a>
+            </div>
+            <div id="collapseOne" class="accordion-body in collapse" style="height: auto; ">
+                <div class="accordion-inner">
+                    {% if connections %}
+                        {% load noclook_tags %}
+                        <h4>Remove Connection</h4>
+                        {% for con in connections %}
+                            <div class="row">
+                                <div class="span5">
+                                    Connected to <a href="{% noclook_node_to_url con.port %}">{{ con.end.name }} {{ con.port.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ con.rel.id }}/delete" class="label label-important connection-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    <hr>
+                    {% endif %}
+                    <h4>Add Connection</h4>
                     <div class="row">
-                        <div class="span5">
-                            Connected to <a href="{% noclook_node_to_url con.port %}">{{ con.end.name }} {{ con.port.name }}</a>
+                        <div class="span4">
+                            {{ form.relationship_end_a }}
+                            <select class="stacked" name="level0A" id="level0A"></select>
+                            <select class="stacked" name="level1A" id="level1A"></select>
+                            <select class="stacked" name="level2A" id="level2A"></select>
+                            <select class="stacked" name="level3A" id="level3A"></select>
+                            <select class="stacked" name="level4A" id="level4A"></select>
+                            <span class="help-block">Choose end A</span>
+                            <a class="btn btn-mini" href="javascript:add_port_a()">Add port</a>
                         </div>
-                        <div class="span1">
-                            <a href="relationship/{{ con.rel.id }}/delete" class="label label-important connection-confirm">Delete</a>
+                        <div class="span4">
+                            {{ form.relationship_end_b }}
+                            <select class="stacked" name="level0B" id="level0B"></select>
+                            <select class="stacked" name="level1B" id="level1B"></select>
+                            <select class="stacked" name="level2B" id="level2B"></select>
+                            <select class="stacked" name="level3B" id="level3B"></select>
+                            <select class="stacked" name="level4B" id="level4B"></select>
+                            <span class="help-block">Choose end B</span>
+                            <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
                         </div>
                     </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-        <div class="well">
-            <h4>Add Connection</h4>
-            <div class="row">
-                <div class="span3">
-                    {{ form.relationship_end_a }}
-                    <select class="stacked" name="level0A" id="level0A"></select>
-                    <select class="stacked" name="level1A" id="level1A"></select>
-                    <select class="stacked" name="level2A" id="level2A"></select>
-                    <select class="stacked" name="level3A" id="level3A"></select>
-                    <select class="stacked" name="level4A" id="level4A"></select>
-                    <span class="help-block">Choose end A</span>
-                    <a class="btn btn-mini" href="javascript:add_port_a()">Add port</a>
-                </div>
-                <div class="span3">
-                    {{ form.relationship_end_b }}
-                    <select class="stacked" name="level0B" id="level0B"></select>
-                    <select class="stacked" name="level1B" id="level1B"></select>
-                    <select class="stacked" name="level2B" id="level2B"></select>
-                    <select class="stacked" name="level3B" id="level3B"></select>
-                    <select class="stacked" name="level4B" id="level4B"></select>
-                    <span class="help-block">Choose end B</span>
-                    <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="telenor-section">
-        <h3 class="hidden-section">Telenor Information (optional)</h3>
-        <a href="#" class="section-closed">Show</a>
-        <div class="well">
-            <label>TN1 Number</label>
-            {{ form.telenor_tn1_number }}
-            <span class="help-inline">{{ form.telenor_tn1_number.help_text }}</span>
-            <label>Trunk ID</label>
-            {{ form.telenor_trunk_id }}
-            <span class="help-inline">{{ form.telenor_trunk_id.help_text }}</span>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
+                    Telenor Information (optional)
+                </a>
+            </div>
+            <div id="collapseTwo" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <h4>TN1 Number</h4>
+                    {{ form.telenor_tn1_number }}
+                    <span class="help-inline">{{ form.telenor_tn1_number.help_text }}</span>
+                    <h4>Trunk ID</h4>
+                    {{ form.telenor_trunk_id }}
+                    <span class="help-inline">{{ form.telenor_trunk_id.help_text }}</span>
+                </div>
+            </div>
         </div>
-    </div>
-    <div id="globalc-section">
-        <h3 class="hidden-section">Global Crossing Information (optional)</h3>
-        <a href="#" class="section-closed">Show</a>
-        <div class="well">
-            <table>
-                <tr>
-                    <td width="50px"><label>Circuit ID</label></td>
-                    <td>{{ form.global_crossing_circuit_id }}<span class="help-inline">{{ form.global_crossing_circuit_id.help_text }}</span></td>
-                </tr>
-            </table>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
+                    Global Crossing Information (optional)
+                </a>
+            </div>
+            <div id="collapseThree" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <h4>Circuit ID</h4>
+                    {{ form.global_crossing_circuit_id }}
+                    <span class="help-inline">{{ form.global_crossing_circuit_id.help_text }}</span>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

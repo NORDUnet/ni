@@ -23,20 +23,18 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-    <div class="span7">
-        <h1>Hosts</h1>
-        <table id="hosts" class="tablesorter" cellspacing="1">
-            <thead>
-                <th>Host</th><th>Address</th>
-            </thead>
-            <tbody>
-                {% load noclook_tags %}
-                {% for host in host_list %}
-                        <tr>
-                            <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td><td>{{ host.address }}</td>
-                        </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <h1>Hosts</h1>
+    <table id="hosts" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Host</th><th>Address</th>
+        </thead>
+        <tbody>
+            {% load noclook_tags %}
+            {% for host in host_list %}
+                    <tr>
+                        <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td><td>{{ host.address }}</td>
+                    </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

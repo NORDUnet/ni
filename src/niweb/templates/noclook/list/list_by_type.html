@@ -21,20 +21,18 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-    <div class="span7">
-        <h1>{{node_type}}s</h1>
-        <table id="nodes" class="tablesorter" cellspacing="1">
-            <thead>
-                <th>Name</th>
-            </thead>
-            <tbody>
-                {% load noclook_tags %}
-                {% for nh in node_handle_list %}
-                    <tr>
-                        <td><a href="{{ nh.get_absolute_url }}">{{ nh.node_name }}</a></td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <h1>{{node_type}}s</h1>
+    <table id="nodes" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Name</th>
+        </thead>
+        <tbody>
+            {% load noclook_tags %}
+            {% for nh in node_handle_list %}
+                <tr>
+                    <td><a href="{{ nh.get_absolute_url }}">{{ nh.node_name }}</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

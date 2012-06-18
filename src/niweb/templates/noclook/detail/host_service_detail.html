@@ -25,14 +25,14 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
 <div class="row">
-    <div class="span4">
+    <div class="span5">
         <table class="table">
             <tr>
                 <th>Name:</th><td>{{ node.name }}</td>
             </tr>
         </table>
     </div>
-    <div class="span3">
+    <div class="span4">
         <table class="table">
             {% if node.noclook_auto_manage %}
                 <tr>
