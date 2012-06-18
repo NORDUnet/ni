@@ -629,7 +629,7 @@ def gmaps_sites(request):
         try:
             site = {}
             site['id'] = node.id
-            site['name'] = '%s-%s' % (node['country_code'], node['name'])
+            site['name'] = node['name']
             site['type'] = 'node'
             site['lng'] = node['longitude']
             site['lat'] = node['latitude']
