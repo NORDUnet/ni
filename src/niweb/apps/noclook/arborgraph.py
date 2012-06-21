@@ -6,6 +6,7 @@ Created on Thu Nov 10 14:52:53 2011
 """
 
 import json
+from niweb.apps.noclook.helpers import get_node_url
 import norduni_client as nc
 
 # Color and shape settings for know node types
@@ -41,7 +42,7 @@ LOCATION = {'color': '#FF4040'}
 #                nc.Undirected.Located_in]
 
 def longlat_to_cords(lng, lat, scale=1, x_offset=0, y_offset=0):
-    '''
+    """
     Computes the x and y cordinates from longitude and latitude.
     Returns longitude as x and latitude as y.
     Google Map function base:
@@ -55,7 +56,7 @@ def longlat_to_cords(lng, lat, scale=1, x_offset=0, y_offset=0):
         $radius=$offset / pi();
         return ( ( ($offset-$radius*log((1+sin($lat*pi()/180))/(1-sin($lat*pi()/180)))/2)>>$map_zoom ) * $scale_value ) + $y_offset;
     }
-    '''
+    """
     import math
     try:
         longitude = float(lng)
@@ -72,7 +73,7 @@ def longlat_to_cords(lng, lat, scale=1, x_offset=0, y_offset=0):
     return x,y
 
 def get_arbor_node(node):
-    '''
+    """
     Creates the data structure for JSON export from a neo4j node.
 
     Return None for nodes that should not be part of the visualization.
@@ -82,11 +83,12 @@ def get_arbor_node(node):
         "label": "", 
         "mass": 0,
     }}
-    '''
+    """
     structure = {
         node.id: {
             'color': '',
             'label': '%s %s' % (node['node_type'], node['name']),
+            'url': '%s' % get_node_url(node)
             #'mass': len(node.relationships),
         }
     }
@@ -112,8 +114,8 @@ def get_arbor_node(node):
             #structure[node.id].update({'x': point_x, 'y': point_y, 'fixed': True})
     return structure
 
-def get_directed_adjacencie(rel):
-    '''
+def get_directed_adjacency(rel):
+    """
     Creates the data structure for JSON export from the relationship.
 
     {id: {
@@ -126,7 +128,7 @@ def get_directed_adjacencie(rel):
             "label": ""
         }
     }}
-    '''
+    """
     structure = { 
         rel.start.id: {
             rel.end.id: {
@@ -139,10 +141,10 @@ def get_directed_adjacencie(rel):
     return structure
 
 #def traverse_relationships(root_node, types, graph_list):
-#    '''
+#    """
 #    Traverse the relationship we want and add the nodes and
 #    adjacencies to the JSON structure.
-#    '''
+#    """
 #    for rel in root_node.traverse(returns='relationship', types=types):
 #        jit_node_start = get_jit_node(rel.start)
 #        jit_node_end = get_jit_node(rel.end)
@@ -155,7 +157,7 @@ def get_directed_adjacencie(rel):
 #    return graph_list
 
 def create_generic_graph(root_node, graph_dict = None):
-    '''
+    """
     Creates a data structure from the root node and adjacent nodes.
     This will be done in a special way for known node types else a
     generic way will be used.
@@ -173,7 +175,7 @@ def create_generic_graph(root_node, graph_dict = None):
             }
         }
     }
-    '''
+    """
     if not graph_dict:
         graph_dict = {'nodes': {}, 'edges': {}}
     # Generic graph dict
@@ -186,7 +188,7 @@ def create_generic_graph(root_node, graph_dict = None):
             else:
                 arbor_node = get_arbor_node(rel.start)
             graph_dict['nodes'].update(arbor_node)
-            arbor_edge = get_directed_adjacencie(rel)
+            arbor_edge = get_directed_adjacency(rel)
             key = arbor_edge.keys()[0] # The only key in arbor_edge
             if graph_dict['edges'].has_key(key):
                 graph_dict['edges'][key].update(arbor_edge[key])
@@ -195,8 +197,8 @@ def create_generic_graph(root_node, graph_dict = None):
     return graph_dict
 
 def get_json(graph_dict):
-    '''
+    """
     Converts a graph_list to JSON and returns the JSON string.
-    '''
+    """
     #return json.dumps(graph_dict)
     return json.dumps(graph_dict, indent=4)

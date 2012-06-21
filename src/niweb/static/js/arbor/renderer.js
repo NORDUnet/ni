@@ -167,6 +167,8 @@
                             //$("#debug").append("<li>" + n["name"] + "</li>")
                             //console.log( dragged.node.p.x, dragged.node.p.y )
                         }
+                        data = selected.node.data;
+                        $("#clicked_node").html("Go to <a href=\"" + data["url"] + "\">" + data["label"] + "</a>.");
                         $(canvas).bind('mousemove', handler.dragged);
                         $(window).bind('mouseup', handler.dropped);
                         return false
@@ -187,7 +189,7 @@
 
                     dropped: function(e) {
                         if (dragged === null || dragged.node === undefined) return;
-                        if (dragged.node !== null) dragged.node.fixed = false;
+                        if (dragged.node !== null) dragged.node.fixed = true;
                         dragged.node.tempMass = 1000;
                         dragged = null;
                         selected = null;
