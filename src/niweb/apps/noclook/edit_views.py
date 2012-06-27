@@ -42,19 +42,22 @@ def get_nh_node(node_handle_id):
     node = nh.get_node()
     return nh, node
     
-def slug_to_node_type(slug):
+def slug_to_node_type(slug, create=False):
     """
     Returns or creates and returns the NodeType object from the supplied slug.
     """
     acronym_types = ['odf']
-    node_type, created = NodeType.objects.get_or_create(slug=slug)
-    if created:
-        if slug in acronym_types:
-            type_name = slug.upper()
-        else:
-            type_name = slug.replace('-', ' ').title()
-        node_type.type = type_name
-        node_type.save()
+    if create:
+        node_type, created = NodeType.objects.get_or_create(slug=slug)
+        if created:
+            if slug in acronym_types:
+                type_name = slug.upper()
+            else:
+                type_name = slug.replace('-', ' ').title()
+            node_type.type = type_name
+            node_type.save()
+    else:
+        node_type = get_object_or_404(NodeType, slug=slug)
     return node_type
 
 def form_update_node(user, node, form, property_keys=[]):
@@ -297,7 +300,7 @@ def new_node(request, slug=None, **kwargs):
         form = NEW_FORMS[slug](request.POST)
         if form.is_valid():
             node_name = form.cleaned_data['name']
-            node_type = slug_to_node_type(slug)
+            node_type = slug_to_node_type(slug, create=True)
             node_meta_type = request.POST['meta_type']
             node_handle = NodeHandle(node_name=node_name,
                                 node_type=node_type,
