@@ -499,7 +499,7 @@ def search(request, value='', form=None):
     """
     posted = False
     if request.POST:
-        value = request.POST.get('query', '')
+        value = request.POST.get('q', '')
         posted = True
     # See if the value is indexed
     i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
@@ -553,7 +553,7 @@ def find_all(request, slug='', key='', value='', form=None):
     URL like /slug/key/value/, /slug/value/ /key/value/, /value/ or /key/.
     """
     if request.POST:
-        value = request.POST.get('query', '') # search for '' if blank
+        value = request.POST.get('q', '') # search for '' if blank
     if slug:
         try:
             node_type = get_object_or_404(NodeType, slug=slug)
