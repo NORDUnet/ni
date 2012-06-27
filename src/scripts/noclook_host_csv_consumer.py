@@ -119,7 +119,7 @@ def consume_host_csv(json_list):
                         service_node = get_node(service, 'Host Service', 
                                                 'logical')
                         h.update_noclook_auto_manage(nc.neo4jdb, service_node)
-                        rel = nc.create_suitable_relationship(nc.neo4jdb,
+                        rel = nc.create_relationship(nc.neo4jdb,
                                                               service_node,
                                                               node, 
                                                               'Depends_on')
@@ -127,14 +127,14 @@ def consume_host_csv(json_list):
                 if key == 'user':
                     user_node = get_node(value, 'Host User', 'relation')
                     h.set_noclook_auto_manage(nc.neo4jdb, user_node, False)
-                    rel = nc.create_suitable_relationship(nc.neo4jdb,
+                    rel = nc.create_relationship(nc.neo4jdb,
                                                           user_node, 
                                                           node, 'Uses')
                     h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
                 if key == 'provider':
                     provider_node = get_node(value, 'Host Provider', 'relation')
                     h.set_noclook_auto_manage(nc.neo4jdb, provider_node, False)
-                    rel = nc.create_suitable_relationship(nc.neo4jdb, 
+                    rel = nc.create_relationship(nc.neo4jdb,
                                                           provider_node,
                                                           node, 'Provides')
                     h.set_noclook_auto_manage(nc.neo4jdb, rel, False)

@@ -39,61 +39,59 @@ import norduni_client as nc
 import noclook_consumer as nt
 from apps.noclook import helpers as h
 
-'''
-This script is used for adding the objects collected with the
-NERDS producers juniper_config to the NOCLook database viewer.
-
-JSON format used:
-{["host": {
-    "juniper_conf": {
-        "bgp_peerings": [
-            {    
-            "as_number": "", 
-            "group": "", 
-            "description": "", 
-            "remote_address": "", 
-            "local_address": "", 
-            "type": ""
-            },
-        ], 
-        "interfaces": [
-            {
-            "name": "", 
-            "bundle": "", 
-            "vlantagging": true/false, 
-            "units": [
-                {
-                "address": [
-                "", 
-                ""
-                ], 
-                "description": "", 
-                "unit": "", 
-                "vlanid": ""
-                }
-            ], 
-            "tunnels": [
-            {
-            "source": "", 
-            "destination": ""
-            }
-            ], 
-            "description": ""
-            }, 
-        ],
-        "name": ""
-        }, 
-        "version": 1, 
-        "name": ""        
-    }
-]}
-'''
+# This script is used for adding the objects collected with the
+# NERDS producers juniper_config to the NOCLook database viewer.
+#
+# JSON format used:
+#{["host": {
+#   "juniper_conf": {
+#       "bgp_peerings": [
+#            {
+#            "as_number": "",
+#            "group": "",
+#            "description": "",
+#            "remote_address": "",
+#            "local_address": "",
+#            "type": ""
+#            },
+#        ],
+#        "interfaces": [
+#            {
+#            "name": "",
+#            "bundle": "",
+#            "vlantagging": true/false,
+#            "units": [
+#                {
+#                "address": [
+#                "",
+#                ""
+#                ],
+#                "description": "",
+#                "unit": "",
+#                "vlanid": ""
+#                }
+#            ],
+#            "tunnels": [
+#            {
+#            "source": "",
+#            "destination": ""
+#            }
+#            ],
+#            "description": ""
+#            },
+#        ],
+#        "name": ""
+#        },
+#        "version": 1,
+#        "name": ""
+#    }
+#]}
 
 def insert_juniper_router(name):
-    '''
+    """
     Inserts a physical meta type node of the type Router.
     Returns the node created.
-    '''
+    """
     node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 'Router', 
                                             'physical')
     node = node_handle.get_node()
@@ -101,9 +99,9 @@ def insert_juniper_router(name):
     return node
 
 def insert_interface_unit(interf_node, unit):
-    '''
+    """
     Creates or updates logical interface units.
-    '''
+    """
     # Unit numbers are unique per interface
     create = True
     for rel in interf_node.Depends_on.incoming:
@@ -131,7 +129,7 @@ def insert_interface_unit(interf_node, unit):
             h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
     else:
         # Only create a relationship if it doesn't exist
-        rel = nc.create_suitable_relationship(nc.neo4jdb, node, interf_node, 
+        rel = nc.create_relationship(nc.neo4jdb, node, interf_node,
                                         'Depends_on')
         h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
     # Add the node description and IP addresses to search index
@@ -140,12 +138,12 @@ def insert_interface_unit(interf_node, unit):
     nc.add_index_item(nc.neo4jdb, index, node, 'ip_addresses')
 
 def insert_juniper_interfaces(router_node, interfaces):
-    '''
+    """
     Insert all interfaces in the interfaces list with a Has
     relationship from the router_node. Some filtering is done for
     interface names that are not interesting.
     Returns a list with all created nodes.
-    '''
+    """
     not_interesting_interfaces = re.compile(r'.*\*|\.|all|fxp0.*')
     for i in interfaces:
         name = i['name']
@@ -167,7 +165,7 @@ def insert_juniper_interfaces(router_node, interfaces):
                         h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
                     # Only create a relationship if it doesn't exist
                 else:
-                    rel =  nc.create_suitable_relationship(nc.neo4jdb, 
+                    rel =  nc.create_relationship(nc.neo4jdb,
                                                            router_node, node, 
                                                            'Has')
                     h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
@@ -176,11 +174,11 @@ def insert_juniper_interfaces(router_node, interfaces):
             nc.add_index_item(nc.neo4jdb, index, node, 'description')
 
 def get_peering_partner(peering):
-    '''
+    """
     Inserts a new node of the type Peering partner and ensures that this node
     is unique for AS number.
     Returns the created node.
-    '''
+    """
     name = peering.get('description', None)
     if not name:
         name = 'Missing description'
@@ -206,10 +204,10 @@ def get_peering_partner(peering):
     return node
 
 def match_remote_ip_address(remote_address):
-    '''
+    """
     Matches a remote address to a local interface.
     Returns a Unit node if match found or else None.
-    '''
+    """
     node_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     for prefix in [3, 2, 1]:
         if remote_address.version == 4:
@@ -229,17 +227,17 @@ def match_remote_ip_address(remote_address):
     return None, None
 
 def insert_internal_bgp_peering(peering, service_node):
-    '''
+    """
     Computes and creates/updates the relationship and nodes
     needed to express the internal peering.
-    '''
+    """
     pass
 
 def insert_external_bgp_peering(peering, service_node):
-    '''
+    """
     Computes and creates/updates the relationship and nodes
     needed to express the external peering.
-    '''
+    """
     # Get or create the peering partner, unique per AS
     peeringp_node = get_peering_partner(peering)
     # Get all relationships with this ip address, should never be more than one
@@ -255,7 +253,7 @@ def insert_external_bgp_peering(peering, service_node):
         h.set_noclook_auto_manage(nc.neo4jdb, list(peeringp_rel)[0], True)
     else:
         # Create a relationship if couldn't find it
-        peeringp_rel = nc.create_suitable_relationship(nc.neo4jdb, 
+        peeringp_rel = nc.create_relationship(nc.neo4jdb,
                                                        peeringp_node,
                                                        service_node, 'Uses')
         h.set_noclook_auto_manage(nc.neo4jdb, peeringp_rel, True)
@@ -282,12 +280,12 @@ def insert_external_bgp_peering(peering, service_node):
             nc.add_index_item(nc.neo4jdb, rel_index, rel, 'ip_address')
 
 def insert_juniper_bgp_peerings(bgp_peerings):
-    '''
+    """
     Inserts all BGP peerings for all routers collected by the
     juniper_conf producer. This is to be able to get all the internal
     peerings associated to the right interfaces.
     Returns a list of all created peering nodes.
-    '''
+    """
     for peering in bgp_peerings:
         ip_service = peering.get('group', 'Unknown IP Service')
         ip_service_handle = nt.get_unique_node_handle(nc.neo4jdb, ip_service, 
@@ -301,11 +299,11 @@ def insert_juniper_bgp_peerings(bgp_peerings):
             insert_external_bgp_peering(peering, ip_service_node)
 
 def consume_juniper_conf(json_list):
-    '''
+    """
     Inserts the data loaded from the json files created by the nerds
     producer juniper_conf.
     Some filtering is done for interface names that are not interesting.
-    '''
+    """
     bgp_peerings = []
     for i in json_list:
         name = i['host']['juniper_conf']['name']

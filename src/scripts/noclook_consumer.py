@@ -53,8 +53,7 @@ import noclook_alcatel_consumer
 # NERDS producers to the NOCLook database viewer.
 
 # SEARCH_INDEX_KEYS are only used when restoring backup nodes.
-SEARCH_INDEX_KEYS = ['name', 'description', 'ip_address', 'ip_addresses',
-                     'as_number', 'hostname', 'telenor_tn1_number']
+SEARCH_INDEX_KEYS = django_settings.SEARCH_INDEX_KEYS
 
 def init_config(path):
     '''

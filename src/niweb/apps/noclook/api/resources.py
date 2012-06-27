@@ -266,7 +266,7 @@ class RelationshipResource(Resource):
         end_pk = resource_uri2id(bundle.data['end'])        
         end_nh = NodeHandle.objects.get(pk=end_pk)
         end_node = end_nh.get_node()
-        rel = nc.create_suitable_relationship(nc.neo4jdb, start_node, end_node,
+        rel = nc.create_relationship(nc.neo4jdb, start_node, end_node,
                                               bundle.data['type'])
         nc.update_item_properties(nc.neo4jdb, rel, bundle.data['properties'])
         update_noclook_auto_manage(nc.neo4jdb, rel)

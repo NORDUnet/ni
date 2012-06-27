@@ -146,7 +146,7 @@ def delete_node(db, node):
             delete_relationship(db, rel)
         # Delete the node from all indexes
         for index in get_node_indexes(db):
-            del_index_item(db, node, index)
+            del_index_item(db, index, node)
         # Delete the node
         node.delete()
     return True
@@ -160,7 +160,7 @@ def delete_relationship(db, rel):
     with db.transaction:
         # Delete the relationship from all indexes
         for index in get_relationship_indexes(db):
-            del_index_item(db, rel, index)
+            del_index_item(db, index, rel)
         # Delete relationship
         rel.delete()
     return True    
@@ -398,7 +398,7 @@ def create_physical_relationship(db, physical_node, other_node, rel_type):
         return create_relationship(db, physical_node, other_node, rel_type)
     raise NoRelationshipPossible(physical_node, other_node, rel_type)
 
-def create_suitable_relationship(db, node, other_node, rel_type):
+def create_relationship(db, node, other_node, rel_type):
     """
     Makes a relationship from node to other_node depending on which
     meta_type the nodes are. Returns the relationship or raises
@@ -565,17 +565,20 @@ def add_index_item(db, index, item, key):
         return True
     return False
 
-def del_index_item(db, item, index, key=None):
+def del_index_item(db, index, item, key=None):
     """
-    Removes the node from the index[key]. If key is None all occurences of the
+    Removes the node from the index[key]. If key is None all occurrences of the
     node in the index will be removed.
     """
     with db.transaction:
-        if index and key:
+        if key:
             del index[key][item]
-        elif key:
+        else:
             del index[item]
     return True
+
+def update_index_item(db, item, index, key):
+    pass
 
 # Test and setup
 def test_db_setup(db_uri=None):

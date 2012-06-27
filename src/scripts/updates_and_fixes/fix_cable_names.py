@@ -55,6 +55,6 @@ for line in f:
     optical_node_node_handle = nt.get_unique_node_handle(nc.neo4jdb, name_list[1], 
                                                   'Optical Node','physical')
     optical_node_node = optical_node_node_handle.get_node()    
-    rel = nc.create_suitable_relationship(nc.neo4jdb, cable_node, optical_node_node,
+    rel = nc.create_relationship(nc.neo4jdb, cable_node, optical_node_node,
                                           'Connected_to')
     nc.set_noclook_auto_manage(nc.neo4jdb, rel, True)
