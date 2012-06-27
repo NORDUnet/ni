@@ -126,7 +126,7 @@ def consume_alcatel_isis(json_list):
                         h.update_noclook_auto_manage(nc.neo4jdb, rel)
                 else:
                     # Only create a relationship if it doesn't exist
-                    rel = nc.create_suitable_relationship(nc.neo4jdb, 
+                    rel = nc.create_relationship(nc.neo4jdb,
                                                           cable_node, node,
                                                           'Connected_to')
                     h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
@@ -137,7 +137,7 @@ def consume_alcatel_isis(json_list):
                         h.update_noclook_auto_manage(nc.neo4jdb, rel)
                 else:
                     # Only create a relationship if it doesn't exist
-                    rel = nc.create_suitable_relationship(nc.neo4jdb,
+                    rel = nc.create_relationship(nc.neo4jdb,
                                                           cable_node, 
                                                           neighbour_node,
                                                           'Connected_to')

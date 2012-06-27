@@ -106,7 +106,7 @@ def consume_site_csv(json_list):
                     responsible_node = get_node(value, 'Site Owner', 'relation')
                     h.set_noclook_auto_manage(nc.neo4jdb, responsible_node,
                                                False)
-                    rel = nc.create_suitable_relationship(nc.neo4jdb,
+                    rel = nc.create_relationship(nc.neo4jdb,
                                                           responsible_node, 
                                                           node, 
                                                           'Responsible_for')
@@ -120,7 +120,7 @@ def consume_site_csv(json_list):
         matching_nodes = search_index.query('name', '*%s*' % i['host']['name']) 
         for equip_node in matching_nodes:
             if equip_node['node_type'] in ['Optical Node', 'Router']:
-                rel = nc.create_suitable_relationship(nc.neo4jdb, equip_node, 
+                rel = nc.create_relationship(nc.neo4jdb, equip_node,
                                                       node, 'Located_in')
                 h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
    

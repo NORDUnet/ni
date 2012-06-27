@@ -41,18 +41,22 @@ from apps.noclook import helpers as h
 # NERDS producers to the NOCLook database viewer.
 
 HOST_USERS_MAP = {
-    'funet.fi':     'FUNET',
-    'lobber.se':    'SUNET',
-    'ndgf.org':     'NDGF',
-    'nordu.net':    'NORDUnet',
-    'nordunet.tv':  'NORDUnet',
-    'nunoc.org':    'NORDUnet',
-    'nunoc.se':     'NORDUnet',
-    'sunet.se':     'SUNET',
-    'rhnet.is':     'RHnet',
-    'swami.se':     'SUNET',
-    'uninett.no':   'UNINETT',
-    'wayf.dk':      'WAYF',
+    'eduroam.se':       'SUNET',
+    'eid2.se':          'SUNET',
+    'funet.fi':         'FUNET',
+    'lobber.se':        'SUNET',
+    'ndgf.org':         'NDGF',
+    'nordu.net':        'NORDUnet',
+    'nordunet.tv':      'NORDUnet',
+    'nunoc.org':        'NORDUnet',
+    'nunoc.se':         'NORDUnet',
+    'sunet.se':         'SUNET',
+    'rhnet.is':         'RHnet',
+    'skolfederation.se':'SUNET',
+    'swami.se':         'SUNET',
+    'swamid.se':        'SUNET',
+    'uninett.no':       'UNINETT',
+    'wayf.dk':          'WAYF',
 }
 
 def set_host_user(node):
@@ -72,9 +76,9 @@ def set_host_user(node):
                                                 'Host User', 'relation')
         host_user = node_handle.get_node()
         if nc.get_node_meta_type(node) == 'logical':
-            nc.create_suitable_relationship(nc.neo4jdb, host_user, node, 'Uses')
+            nc.create_relationship(nc.neo4jdb, host_user, node, 'Uses')
         elif nc.get_node_meta_type(node) == 'physical':
-            nc.create_suitable_relationship(nc.neo4jdb, host_user, node, 'Owns')
+            nc.create_relationship(nc.neo4jdb, host_user, node, 'Owns')
 
 def insert_services(service_dict, host_node):
     """
@@ -136,7 +140,7 @@ def insert_services(service_dict, host_node):
                             continue
                     if create:
                         # Create a relationship between the service and host
-                        new_rel = nc.create_suitable_relationship(nc.neo4jdb,
+                        new_rel = nc.create_relationship(nc.neo4jdb,
                                                                   service_node, 
                                                                   host_node, 
                                                                   'Depends_on')

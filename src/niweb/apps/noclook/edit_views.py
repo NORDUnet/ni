@@ -128,7 +128,7 @@ def place_physical_in_location(nh, node, location_id):
         # Remove the old location(s) and create a new
         for rel in h.iter2list(node.Located_in.outgoing):
             nc.delete_relationship(nc.neo4jdb, rel)
-        nc.create_suitable_relationship(nc.neo4jdb, node, 
+        nc.create_relationship(nc.neo4jdb, node,
                                         location_node, 'Located_in')
     return nh, node
 
@@ -149,7 +149,7 @@ def place_child_in_parent(node, parent_id):
         # Remove the old parent(s) and create a new
         for rel in h.iter2list(node.Has.incoming):
             nc.delete_relationship(nc.neo4jdb, rel)
-        nc.create_suitable_relationship(nc.neo4jdb, parent_node,
+        nc.create_relationship(nc.neo4jdb, parent_node,
                                         node, 'Has')
     return node
     
@@ -167,7 +167,7 @@ def connect_physical(node, other_node_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        nc.create_suitable_relationship(nc.neo4jdb, node, other_node,
+        nc.create_relationship(nc.neo4jdb, node, other_node,
                                         'Connected_to')
     return node
 
@@ -187,7 +187,7 @@ def set_owner(node, owner_node_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        nc.create_suitable_relationship(nc.neo4jdb, owner_node, node,
+        nc.create_relationship(nc.neo4jdb, owner_node, node,
                                         'Owns')
     return node
 
@@ -207,7 +207,7 @@ def set_user(node, user_node_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        nc.create_suitable_relationship(nc.neo4jdb, user_node, node,
+        nc.create_relationship(nc.neo4jdb, user_node, node,
                                         'Uses')
     return node
 
@@ -428,7 +428,7 @@ def edit_site(request, handle_id):
                     except IndexError:
                         # No site owner set
                         pass
-                    nc.create_suitable_relationship(nc.neo4jdb, owner_node,
+                    nc.create_relationship(nc.neo4jdb, owner_node,
                                                     node, 'Responsible_for')
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
