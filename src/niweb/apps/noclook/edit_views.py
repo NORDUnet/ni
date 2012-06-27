@@ -110,7 +110,7 @@ def place_physical_in_location(nh, node, location_id):
             nc.delete_relationship(nc.neo4jdb,
                                    h.iter2list(node.Contains.incoming)[0])
             physical = nc.get_meta_node(nc.neo4jdb, 'physical')
-            nc.create_relationship(nc.neo4jdb, physical, node, 'Contains')
+            nc._create_relationship(nc.neo4jdb, physical, node, 'Contains')
             nh.node_meta_type = 'physical'
             nh.save()
             # Convert Uses relationships to Owns.
