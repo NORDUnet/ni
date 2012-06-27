@@ -18,12 +18,16 @@
     <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/bootstrap/bootstrap.min.js"></script>
     <script type="text/javascript">
     $(document).ready(function() {
-        var options, a;
+        var options, a, b;
         jQuery(function(){
-          options = { serviceUrl:'/search/autocomplete' };
-          a = $('#autoc').autocomplete(options);
+          options = {
+                serviceUrl:'/search/autocomplete',
+                minChars:2,
+          };
+          a = $("#query").autocomplete(options);
+          b = $("#query2").autocomplete(options);
         });
-        $('.dropdown-toggle').dropdown()
+        $(".dropdown-toggle").dropdown()
         $(".debug-toggle").collapse()
         $(".nav-collapse").collapse()
     });
@@ -121,8 +125,8 @@
             <div class="span9 content">
                 <div class="row visible-desktop">
                     <div class="span7">
-                        <form action="/search/" method="post" class="form-search">{% csrf_token %}
-                            <input class="xlarge search-query" type="search" id="autoc" name="query" /> <button class="btn primary" type="submit">Search</button>
+                        <form id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
+                            <input class="xlarge search-query" type="search" id="query" name="q" /> <button class="btn primary" type="submit">Search</button>
                         </form>
                     </div>
                     <div class="span2">
