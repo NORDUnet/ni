@@ -335,7 +335,7 @@ def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
 #    node_dict[meta_type].remove(node)
 #    return node_dict
 
-def create_relationship(db, node, other_node, rel_type):
+def _create_relationship(db, node, other_node, rel_type):
     """
     Makes a relationship between the two node of the rel_type relationship type.
     To be sure that relationship types are not misspelled or not following
@@ -352,7 +352,7 @@ def create_location_relationship(db, location_node, other_node, rel_type):
     raised.
     """
     if get_node_meta_type(other_node) == 'location' and rel_type == 'Has':
-        return create_relationship(db, location_node, other_node, rel_type)
+        return _create_relationship(db, location_node, other_node, rel_type)
     raise NoRelationshipPossible(location_node, other_node, rel_type)
     
 def create_logical_relationship(db, logical_node, other_node, rel_type):
@@ -364,7 +364,7 @@ def create_logical_relationship(db, logical_node, other_node, rel_type):
     if rel_type == 'Depends_on':
         other_meta_type = get_node_meta_type(other_node)
         if other_meta_type == 'logical' or other_meta_type == 'physical':
-            return create_relationship(db, logical_node, other_node, rel_type)
+            return _create_relationship(db, logical_node, other_node, rel_type)
     raise NoRelationshipPossible(logical_node, other_node, rel_type)
     
 def create_relation_relationship(db, relation_node, other_node, rel_type):
@@ -376,12 +376,12 @@ def create_relation_relationship(db, relation_node, other_node, rel_type):
     other_meta_type = get_node_meta_type(other_node)
     if other_meta_type == 'logical':
         if rel_type in ['Uses', 'Provides']:
-            return create_relationship(db, relation_node, other_node, rel_type)
+            return _create_relationship(db, relation_node, other_node, rel_type)
     elif other_meta_type == 'location' and rel_type == 'Responsible_for':
-        return create_relationship(db, relation_node, other_node, rel_type)
+        return _create_relationship(db, relation_node, other_node, rel_type)
     elif other_meta_type == 'physical':
         if rel_type in ['Owns', 'Provides']:
-            return create_relationship(db, relation_node, other_node, rel_type)
+            return _create_relationship(db, relation_node, other_node, rel_type)
     raise NoRelationshipPossible(relation_node, other_node, rel_type)
     
 def create_physical_relationship(db, physical_node, other_node, rel_type):
@@ -393,9 +393,9 @@ def create_physical_relationship(db, physical_node, other_node, rel_type):
     other_meta_type = get_node_meta_type(other_node)
     if other_meta_type == 'physical':
         if rel_type == 'Has' or rel_type == 'Connected_to':
-            return create_relationship(db, physical_node, other_node, rel_type)
+            return _create_relationship(db, physical_node, other_node, rel_type)
     elif other_meta_type == 'location' and rel_type == 'Located_in':
-        return create_relationship(db, physical_node, other_node, rel_type)
+        return _create_relationship(db, physical_node, other_node, rel_type)
     raise NoRelationshipPossible(physical_node, other_node, rel_type)
 
 def create_relationship(db, node, other_node, rel_type):
@@ -419,7 +419,7 @@ def get_relationships(n1, n2, rel_type=None):
     """
     Takes a start and an end node with an optional relationship
     type.
-    Returns the relationsships between the nodes or an empty list.
+    Returns the relationships between the nodes or an empty list.
     """
     rel_list = []
     for rel in n1.relationships:
@@ -577,8 +577,14 @@ def del_index_item(db, index, item, key=None):
             del index[item]
     return True
 
-def update_index_item(db, item, index, key):
-    pass
+def update_index_item(db, index, item, key):
+    """
+    Updates the value of the items indexed property.
+    """
+    if del_index_item(db, index, item, key):
+        add_index_item(db, index, item, key)
+        return True
+    return False
 
 # Test and setup
 def test_db_setup(db_uri=None):
