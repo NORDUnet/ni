@@ -34,8 +34,8 @@ def host_users(request, host_user_name=None, form=None):
         num_of_hosts = [hit['num_of_hosts'] for hit in num_of_hosts_hits][0]
         hosts_q = '''
             START node=node({id})
-            MATCH node-[r:Uses|Owns]->host
-            RETURN node.name as host_user, host, host.name as host_name, host.noclook_last_seen as last_seen
+            MATCH node-[r:Uses|Owns]->host<-[:Contains]-meta
+            RETURN node.name as host_user, host, host.name as host_name, host.noclook_last_seen as last_seen, meta.name as meta
             '''
         hosts = nc.neo4jdb.query(hosts_q, id=host_user_id)
     elif host_user_name == 'Missing':
@@ -49,9 +49,9 @@ def host_users(request, host_user_name=None, form=None):
         num_of_hosts = [hit['num_of_hosts'] for hit in num_of_hosts_hits][0]
         hosts_q = '''
                 START host=node:node_types(node_type = "Host")
-                MATCH host<-[r?:Uses|Owns]-()
+                MATCH meta-[:Contains]->host<-[r?:Uses|Owns]-()
                 WHERE r is null
-                RETURN host, host.name as host_name, host.noclook_last_seen as last_seen
+                RETURN host, host.name as host_name, host.noclook_last_seen as last_seen, meta.name as meta
                 '''
         hosts = nc.neo4jdb.query(hosts_q, id=host_user_id)
     elif host_user_name == 'All':
@@ -60,14 +60,14 @@ def host_users(request, host_user_name=None, form=None):
                 MATCH node-[r:Uses|Owns]->host
                 RETURN COUNT(node) as num_of_hosts
                 '''
-        num_of_hosts_hits = nc.neo4jdb.query(num_of_hosts_q, id=host_user_id)
+        num_of_hosts_hits = nc.neo4jdb.query(num_of_hosts_q)
         num_of_hosts = [hit['num_of_hosts'] for hit in num_of_hosts_hits][0]
         hosts_q = '''
                 START node=node:node_types(node_type = "Host User")
-                MATCH node-[r:Uses|Owns]->host
-                RETURN node.name as host_user, host, host.name as host_name, host.noclook_last_seen as last_seen
+                MATCH node-[r:Uses|Owns]->host<-[:Contains]-meta
+                RETURN node.name as host_user, host, host.name as host_name, host.noclook_last_seen as last_seen, meta.name as meta
                 '''
-        hosts = nc.neo4jdb.query(hosts_q, id=host_user_id)
+        hosts = nc.neo4jdb.query(hosts_q)
     if form:
         header = ['host_user', 'host_name', 'last_seen']
         if form == 'csv':
