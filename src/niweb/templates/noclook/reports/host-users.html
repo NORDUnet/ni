@@ -51,7 +51,7 @@
         <table id="hosts" class="tablesorter" cellspacing="1"">
             <thead>
                 <tr>
-                    <th>Host user</th><th>Host</th><th>Last seen</th>
+                    <th>Host user</th><th>Host</th><th>Host type</th><th>Last seen</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,6 +60,7 @@
                 <tr>
                     <td>{{ item.host_user }}</td>
                     <td><a href="{% noclook_node_to_url item.host %}">{{ item.host_name }}</a></td>
+                    <td>{{ item.meta|capfirst }} host</td>
                     <td>{% noclook_last_seen_to_dt item.last_seen as last_seen%}{{ last_seen|date }}</td>
                 </tr>
                 {% endfor %}

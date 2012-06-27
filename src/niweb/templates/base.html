@@ -24,8 +24,9 @@
                 serviceUrl:'/search/autocomplete',
                 minChars:2,
           };
-          a = $("#query").autocomplete(options);
-          b = $("#query2").autocomplete(options);
+          a = $("#main").autocomplete(options);
+          b = $("#index").autocomplete(options);
+          c = $("#mobile").autocomplete(options);
         });
         $(".dropdown-toggle").dropdown()
         $(".debug-toggle").collapse()
@@ -81,7 +82,7 @@
                             {% endif %}
                             <li class="divider-vertical"></li>
                             <form action="/search/" method="post" class="navbar-search pull-left">{% csrf_token %}
-                                <input class="xlarge search-query" type="search" id="autoc" name="query" placeholder="Search" />
+                                <input class="xlarge search-query" type="search" id="mobile" name="q" placeholder="Search" />
                             </form>
                         </ul>
                         {% if user.is_authenticated %}
@@ -126,7 +127,7 @@
                 <div class="row visible-desktop">
                     <div class="span7">
                         <form id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
-                            <input class="xlarge search-query" type="search" id="query" name="q" /> <button class="btn primary" type="submit">Search</button>
+                            <input class="xlarge search-query" type="search" id="main" name="q" /> <button class="btn primary" type="submit">Search</button>
                         </form>
                     </div>
                     <div class="span2">
