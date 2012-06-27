@@ -34,6 +34,8 @@ for hit in hits:
         name = hit.getProperty('name')
         name = '%s-%s' % (cc, name)
         hit.setProperty('name', name)
+        index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+        nc.update_index_item(nc.neo4jdb, index, hit, 'name')
         nh = NodeHandle.objects.get(pk=int(hit['handle_id']))
         nh.node_name = name
         nh.save()
