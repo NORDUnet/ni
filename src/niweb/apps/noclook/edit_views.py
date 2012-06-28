@@ -10,11 +10,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from django.template.defaultfilters import slugify
-from lucenequerybuilder import Q
 import json
-import ipaddr
 
+from django.conf import settings as django_settings
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook import forms
 import niweb.apps.noclook.helpers as h
@@ -85,9 +83,15 @@ def form_update_node(user, node, form, property_keys=[]):
                         nh.node_name = form.cleaned_data[key]
                     nh.modifier = user
                     nh.save()
+                    if key in django_settings.SEARCH_INDEX_KEYS:
+                        index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                        nc.update_index_item(nc.neo4jdb, index, form.cleaned_data[key], key)
             elif not form.cleaned_data[key] and key != 'name':
                 with nc.neo4jdb.transaction:
-                    del node[key] 
+                    del node[key]
+                if key in django_settings.SEARCH_INDEX_KEYS:
+                    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                    nc.del_index_item(nc.neo4jdb, index, key)
         except KeyError:
             return False
         except Exception:
@@ -337,6 +341,9 @@ def new_site(request, handle_id, form):
     with nc.neo4jdb.transaction:
         node['name'] = '%s-%s' % (form.cleaned_data['country_code'], form.cleaned_data['name'].upper())
         node['country'] = COUNTRY_MAP[node['country_code']]
+    # Update search index
+    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    nc.update_index_item(nc.neo4jdb, index, node['name'], 'name')
     return HttpResponseRedirect(nh.get_absolute_url())
     
 @login_required
@@ -418,6 +425,10 @@ def edit_site(request, handle_id):
             with nc.neo4jdb.transaction:
                 node['name'] = form.cleaned_data['name'].upper()
                 node['country'] = COUNTRY_MAP[node['country_code']]
+            # Update search index
+            index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+            nc.update_index_item(nc.neo4jdb, index, node['name'], 'name')
+            # Set site owner
             if form.cleaned_data['relationship_site_owner']:
                 owner_id = form.cleaned_data['relationship_site_owner']
                 owner_node = nc.get_node_by_id(nc.neo4jdb, owner_id)
@@ -486,6 +497,9 @@ def edit_cable(request, handle_id):
                     node['name'] = form.cleaned_data['telenor_trunk_id']
                     nh.node_name = form.cleaned_data['telenor_trunk_id']
                     nh.save()
+                # Update search index
+                index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                nc.update_index_item(nc.neo4jdb, index, node['name'], 'name')
             if form.cleaned_data['relationship_end_a']:
                 end_a = form.cleaned_data['relationship_end_a']
                 connect_physical(node, end_a)

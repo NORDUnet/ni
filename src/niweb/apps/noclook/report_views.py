@@ -35,7 +35,8 @@ def host_users(request, host_user_name=None, form=None):
         hosts_q = '''
             START node=node({id})
             MATCH node-[r:Uses|Owns]->host<-[:Contains]-meta
-            RETURN node.name as host_user, host, host.name as host_name, host.noclook_last_seen as last_seen, meta.name as meta
+            RETURN node.name as host_user, host, host.name as host_name,
+            host.noclook_last_seen as last_seen, meta.name as meta
             '''
         hosts = nc.neo4jdb.query(hosts_q, id=host_user_id)
     elif host_user_name == 'Missing':
@@ -51,7 +52,8 @@ def host_users(request, host_user_name=None, form=None):
                 START host=node:node_types(node_type = "Host")
                 MATCH meta-[:Contains]->host<-[r?:Uses|Owns]-()
                 WHERE r is null
-                RETURN host, host.name as host_name, host.noclook_last_seen as last_seen, meta.name as meta
+                RETURN host, host.name as host_name, host.noclook_last_seen as last_seen,
+                meta.name as meta
                 '''
         hosts = nc.neo4jdb.query(hosts_q, id=host_user_id)
     elif host_user_name == 'All':
@@ -65,7 +67,8 @@ def host_users(request, host_user_name=None, form=None):
         hosts_q = '''
                 START node=node:node_types(node_type = "Host User")
                 MATCH node-[r:Uses|Owns]->host<-[:Contains]-meta
-                RETURN node.name as host_user, host, host.name as host_name, host.noclook_last_seen as last_seen, meta.name as meta
+                RETURN node.name as host_user, host, host.name as host_name,
+                host.noclook_last_seen as last_seen, meta.name as meta
                 '''
         hosts = nc.neo4jdb.query(hosts_q)
     if form:
