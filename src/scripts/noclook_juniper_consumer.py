@@ -35,9 +35,9 @@ path = '/home/lundberg/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-import norduni_client as nc
 import noclook_consumer as nt
 from apps.noclook import helpers as h
+import norduni_client as nc
 
 # This script is used for adding the objects collected with the
 # NERDS producers juniper_config to the NOCLook database viewer.
@@ -273,8 +273,7 @@ def insert_external_bgp_peering(peering, service_node):
                 return
         # No relationship was found, create one
         with nc.neo4jdb.transaction:
-            rel = nc.create_suitable_relationship(nc.neo4jdb, service_node, 
-                                                  unit_node, 'Depends_on')
+            rel = nc.create_relationship(nc.neo4jdb, service_node, unit_node, 'Depends_on')
             h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
             rel['ip_address'] = local_address
             nc.add_index_item(nc.neo4jdb, rel_index, rel, 'ip_address')

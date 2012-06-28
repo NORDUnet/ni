@@ -573,6 +573,7 @@ def del_index_item(db, index, item, key=None):
     with db.transaction:
         if key:
             del index[key][item]
+            del index['all'][item[key]][item]
         else:
             del index[item]
     return True

@@ -56,9 +56,9 @@ import noclook_alcatel_consumer
 SEARCH_INDEX_KEYS = django_settings.SEARCH_INDEX_KEYS
 
 def init_config(path):
-    '''
+    """
     Initializes the configuration file located in the path provided.
-    '''
+    """
     try:
        config = ConfigParser.SafeConfigParser()
        config.read(path)
@@ -67,16 +67,16 @@ def init_config(path):
         print "I/O error({0}): {1}".format(errno, strerror)
 
 def normalize_whitespace(text):
-    '''
+    """
     Remove redundant whitespace from a string.
-    '''
+    """
     text = text.replace('"', '').replace("'", '')
     return ' '.join(text.split())
         
 def load_json(json_dir):
-    '''
+    """
     Thinks all files in the supplied dir are text files containing json.
-    '''
+    """
     json_list = []
     try:
         for subdir, dirs, files in os.walk(json_dir):
@@ -89,18 +89,18 @@ def load_json(json_dir):
     return json_list
 
 def generate_password(n):
-    '''
+    """
     Returns a psudo random string of lenght n.
     http://code.activestate.com/recipes/576722-pseudo-random-string/
-    '''
+    """
     import os, math
     from base64 import b64encode
     return b64encode(os.urandom(int(math.ceil(0.75*n))),'-_')[:n]
 
 def get_user(username='noclook'):
-    '''
+    """
     Gets or creates a user that can be used to insert data.
-    '''
+    """
     try:
         user = User.objects.get(username=username)
     except User.DoesNotExist:
@@ -109,10 +109,10 @@ def get_user(username='noclook'):
     return user
 
 def get_node_type(type_name):
-    '''
+    """
     Returns or creates and returns the NodeType object with the supplied
     name.
-    '''
+    """
     try:
         node_type = NodeType.objects.get(type=type_name)
     except NodeType.DoesNotExist:
@@ -123,12 +123,12 @@ def get_node_type(type_name):
     return node_type
 
 def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
-    '''
+    """
     Takes the arguments needed to create a NodeHandle, if there already
     is a NodeHandle with the same name and type it will be considered
     the same one.
     Returns a NodeHandle object.
-    '''
+    """
     user = get_user()
     node_type = get_node_type(node_type_name)
     try:
@@ -144,14 +144,13 @@ def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
         node_handle.save()
     return node_handle
 
-def get_node_handle(db, node_name, node_type_name, node_meta_type,
-                                                        parent=None):
-    '''
+def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
+    """
     Takes the arguments needed to create a NodeHandle. If a parent is
     supplied the NodeHandle will be unique for that parent.
     Returns a NodeHandle object.
     *** This function does not handle multiple parents. ***
-    '''
+    """
     user = get_user()
     node_type = get_node_type(node_type_name)
     try:
@@ -174,14 +173,24 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type,
     node_handle.save()
     return node_handle # No NodeHandle found return a new handle.
 
+def update_node_search_index(node):
+    """
+    Adds or updates the node values in the search index.
+    """
+    node_keys = node.getPropertyKeys()
+    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    for key in django_settings.SEARCH_INDEX_KEYS:
+        if key in node_keys:
+            nc.update_index_item(nc.neo4jdb, index, node[key], key)
+
 def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
-    '''
+    """
     Tries to get a existing node handle from the SQL database before creating
     a new handle with an old handle id.
     
     When we are setting the handle_id explicitly we need to run django-admin.py
     sqlsequencereset noclook and paste that SQL statements in to the dbhell.
-    '''
+    """
     user = get_user()
     node_type = get_node_type(node_type_name)
     try:
@@ -199,11 +208,11 @@ def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
     return node_handle
     
 def add_node_to_indexes(node, keys):
-    '''
+    """
     If the node has any property keys matching the SEARCH_INDEX_KEYS the node
     will be added to the index with those values. The node will also be added
     to the node_types index.
-    '''
+    """
     # Add the node_type to the node_types index.
     type_index = nc.get_node_index(nc.neo4jdb, 'node_types')
     nc.add_index_item(nc.neo4jdb, type_index, node, 'node_type')
@@ -214,10 +223,10 @@ def add_node_to_indexes(node, keys):
     return node
     
 def add_relationship_to_indexes(rel, keys):
-    '''
+    """
     If the relationship has any property keys matching the SEARCH_INDEX_KEYS the 
     relationship will be added to the index with those values.
-    '''
+    """
     # Add the nodes to the search indexe
     search_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
     for key in keys:
@@ -225,9 +234,9 @@ def add_relationship_to_indexes(rel, keys):
     return rel
 
 def set_comment(node_handle, comment):
-    '''
+    """
     Sets the comment string as a comment for the provided node_handle.
-    '''
+    """
     content_type = ContentType.objects.get_for_model(NodeHandle)
     object_pk = node_handle.pk
     user = get_user()
@@ -237,9 +246,9 @@ def set_comment(node_handle, comment):
     c.save()
 
 def consume_noclook(json_list):
-    '''
+    """
     Inserts the backup made with NOCLook producer.
-    '''
+    """
     # Remove all old node ids.
     NodeHandle.objects.all().update(node_id=None)
     # Loop through all files starting with node
@@ -304,9 +313,9 @@ def consume_noclook(json_list):
         index.delete()
 
 def run_consume(config_file):
-    '''
+    """
     Function to start the consumer from another script.
-    '''
+    """
     config = init_config(config_file)
     juniper_conf_data = config.get('data', 'juniper_conf')
     nmap_services_data = config.get('data', 'nmap_services')
