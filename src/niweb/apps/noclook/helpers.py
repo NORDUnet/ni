@@ -83,6 +83,26 @@ def update_noclook_auto_manage(db, item):
         item['noclook_last_seen'] = datetime.now().isoformat()
     return True
 
+def update_node_search_index(db, node):
+    """
+    Adds or updates the node values in the search index.
+    """
+    node_keys = node.getPropertyKeys()
+    index = nc.get_node_index(db, nc.search_index_name())
+    for key in django_settings.SEARCH_INDEX_KEYS:
+        if key in node_keys:
+            nc.update_index_item(db, index, node, key)
+
+def update_relationship_search_index(db, rel):
+    """
+    Adds or updates the relationship values in the search index.
+    """
+    rel_keys = rel.getPropertyKeys()
+    index = nc.get_relationship_index(db, nc.search_index_name())
+    for key in django_settings.SEARCH_INDEX_KEYS:
+        if key in rel_keys:
+            nc.update_index_item(db, index, rel, key)
+
 def isots_to_dt(item):
     """
     Returns noclook_last_seen property as a datetime.datetime. If the property

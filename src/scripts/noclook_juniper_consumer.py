@@ -96,6 +96,7 @@ def insert_juniper_router(name):
                                             'physical')
     node = node_handle.get_node()
     h.set_noclook_auto_manage(nc.neo4jdb, node, True)
+    h.update_node_search_index(nc.neo4jdb, node)
     return node
 
 def insert_interface_unit(interf_node, unit):
@@ -133,9 +134,7 @@ def insert_interface_unit(interf_node, unit):
                                         'Depends_on')
         h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
     # Add the node description and IP addresses to search index
-    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    nc.add_index_item(nc.neo4jdb, index, node, 'description')
-    nc.add_index_item(nc.neo4jdb, index, node, 'ip_addresses')
+    h.update_node_search_index(nc.neo4jdb, node)
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
@@ -170,8 +169,7 @@ def insert_juniper_interfaces(router_node, interfaces):
                                                            'Has')
                     h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
             # Add the node description and IP addresses to search index
-            index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-            nc.add_index_item(nc.neo4jdb, index, node, 'description')
+            h.update_node_search_index(nc.neo4jdb, node)
 
 def get_peering_partner(peering):
     """
@@ -200,7 +198,7 @@ def get_peering_partner(peering):
         with nc.neo4jdb.transaction:
             node['as_number'] = as_number
             # Add the nodes as_number to search index        
-            nc.add_index_item(nc.neo4jdb, index, node, 'as_number')
+            h.update_node_search_index(nc.neo4jdb, node)
     return node
 
 def match_remote_ip_address(remote_address):
@@ -260,7 +258,7 @@ def insert_external_bgp_peering(peering, service_node):
         with nc.neo4jdb.transaction:
             peeringp_rel['ip_address'] = peeringp_ip
         # Add the relationship IP address to search index
-        nc.add_index_item(nc.neo4jdb, rel_index, peeringp_rel, 'ip_address')
+        h.update_relationship_search_index(nc.neo4jdb, peeringp_rel)
     # Match the remote address against a local network
     remote_addr = ipaddr.IPAddress(peeringp_ip)
     unit_node, local_address = match_remote_ip_address(remote_addr)
@@ -276,7 +274,7 @@ def insert_external_bgp_peering(peering, service_node):
             rel = nc.create_relationship(nc.neo4jdb, service_node, unit_node, 'Depends_on')
             h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
             rel['ip_address'] = local_address
-            nc.add_index_item(nc.neo4jdb, rel_index, rel, 'ip_address')
+            h.update_relationship_search_index(nc.neo4jdb, rel)
 
 def insert_juniper_bgp_peerings(bgp_peerings):
     """
