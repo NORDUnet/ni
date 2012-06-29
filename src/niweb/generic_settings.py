@@ -6,29 +6,29 @@ from sys import path
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
-STATIC_DEV_MEDIA = path_to_static_media_for_development
 
 NIWEB_ROOT = ''
 # URL without the host name,
 # eg. /niweb/ for http://www.example.com/niweb/.
 NIWEB_URL = '/'
-# URL without the host name,
-# eg. /niweb/media/ for http://www.example.com/niweb/media/.
-NIWEB_MEDIA_URL = '/site_media/'
 
 # Add niweb directory to the python path
 path.append(NIWEB_ROOT)
 
+# Static files collection
+STATIC_ROOT = join(NIWEB_ROOT, 'sitestatic/')
+
+# Static URL
+STATIC_URL = '/static/'
+
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = join(NIWEB_ROOT, 'static/')
+MEDIA_ROOT = join(NIWEB_ROOT, 'media/')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = NIWEB_MEDIA_URL
-
-STATIC_URL = NIWEB_MEDIA_URL
+MEDIA_URL = '/media/'
 
 # Django mail settings, change these if needed.
 SERVER_EMAIL = 'django@example.com'
@@ -98,6 +98,7 @@ MIDDLEWARE_CLASSES = (
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
+    'django.core.context_processors.static',
 )
 
 ROOT_URLCONF = 'niweb.urls'
@@ -109,6 +110,10 @@ TEMPLATE_DIRS = (
     join(NIWEB_ROOT, 'templates/'),
 )
 
+STATICFILES_DIRS = (
+    join(NIWEB_ROOT, 'static/'),
+    )
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -118,6 +123,7 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django.contrib.comments',
     'django.contrib.markup',
+    'django.contrib.staticfiles',
     'niweb_core',
     'apps.fedlogin',
     'apps.noclook',

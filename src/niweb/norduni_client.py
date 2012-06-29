@@ -572,8 +572,9 @@ def del_index_item(db, index, item, key=None):
     """
     with db.transaction:
         if key:
+            value = item.getProperty(key)
             del index[key][item]
-            del index['all'][item[key]][item]
+            del index['all'][value][item]
         else:
             del index[item]
     return True
@@ -582,10 +583,9 @@ def update_index_item(db, index, item, key):
     """
     Updates the value of the items indexed property.
     """
-    if del_index_item(db, index, item, key):
-        add_index_item(db, index, item, key)
-        return True
-    return False
+    del_index_item(db, index, item, key)
+    add_index_item(db, index, item, key)
+    return True
 
 # Test and setup
 def test_db_setup(db_uri=None):

@@ -173,16 +173,6 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
     node_handle.save()
     return node_handle # No NodeHandle found return a new handle.
 
-def update_node_search_index(node):
-    """
-    Adds or updates the node values in the search index.
-    """
-    node_keys = node.getPropertyKeys()
-    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    for key in django_settings.SEARCH_INDEX_KEYS:
-        if key in node_keys:
-            nc.update_index_item(nc.neo4jdb, index, node[key], key)
-
 def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
     """
     Tries to get a existing node handle from the SQL database before creating
@@ -207,7 +197,7 @@ def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
         node_handle.save()
     return node_handle
     
-def add_node_to_indexes(node, keys):
+def add_node_to_indexes(node):
     """
     If the node has any property keys matching the SEARCH_INDEX_KEYS the node
     will be added to the index with those values. The node will also be added
@@ -216,21 +206,25 @@ def add_node_to_indexes(node, keys):
     # Add the node_type to the node_types index.
     type_index = nc.get_node_index(nc.neo4jdb, 'node_types')
     nc.add_index_item(nc.neo4jdb, type_index, node, 'node_type')
-    # Add the nodes to the search indexe
+    # Add the nodes to the search index
     search_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    for key in keys:
-        nc.add_index_item(nc.neo4jdb, search_index, node, key)
+    node_keys = node.getPropertyKeys()
+    for key in django_settings.SEARCH_INDEX_KEYS:
+        if key in node_keys:
+            nc.add_index_item(nc.neo4jdb, search_index, node, key)
     return node
     
-def add_relationship_to_indexes(rel, keys):
+def add_relationship_to_indexes(rel):
     """
     If the relationship has any property keys matching the SEARCH_INDEX_KEYS the 
     relationship will be added to the index with those values.
     """
     # Add the nodes to the search indexe
     search_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
-    for key in keys:
-        nc.add_index_item(nc.neo4jdb, search_index, rel, key)
+    rel_keys = rel.getPropertyKeys()
+    for key in django_settings.SEARCH_INDEX_KEYS:
+        if key in rel_keys:
+            nc.add_index_item(nc.neo4jdb, search_index, rel, key)
     return rel
 
 def set_comment(node_handle, comment):
@@ -273,7 +267,7 @@ def consume_noclook(json_list):
             index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
             nc.add_index_item(nc.neo4jdb, index, node, 'old_node_id')
             # Add the node to other indexes needed for NOCLook
-            add_node_to_indexes(node, SEARCH_INDEX_KEYS)
+            add_node_to_indexes(node)
             try:
                 print 'Added node %d: %s %s %s. Handle ID: %d' % (node.id,
                     node['name'], node['node_type'], meta_type, nh.handle_id)
@@ -301,7 +295,7 @@ def consume_noclook(json_list):
                 sys.exit(1)
             nc.update_item_properties(nc.neo4jdb, rel, properties)
             # Add the relationship to indexes needed for NOCLook
-            add_relationship_to_indexes(rel, SEARCH_INDEX_KEYS)
+            add_relationship_to_indexes(rel)
     # Remove the 'old_node_id' property from all nodes
     for n in nc.get_all_nodes(nc.neo4jdb):
         if n.getProperty('old_node_id', None):
