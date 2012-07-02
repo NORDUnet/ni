@@ -3,7 +3,7 @@
 {% block js %}
 {{ block.super }}
 {% load niweb_tags %}
-<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery.jCombo.js"></script>
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
 <script type="text/javascript">
 $(document).ready(
     function(){

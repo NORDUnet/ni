@@ -3,12 +3,12 @@
         <title>Visualize {{ node_handle }}</title>
         <!-- Load the template tags before referencing them -->
         {% load niweb_tags %}
-        <link rel="stylesheet" href="{% niweb_media_url %}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
-        <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery-1.6.2.min.js"></script>
+        <link rel="stylesheet" href="{{ STATIC_URL }}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+        <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.6.2.min.js"></script>
         <!-- Arbor Library File -->
-        <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/arbor.js"></script>
-        <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/graphics.js"></script>
-        <script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/arbor/renderer.js"></script>
+        <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/arbor/arbor.js"></script>
+        <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/arbor/graphics.js"></script>
+        <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/arbor/renderer.js"></script>
         <!-- First initialize -->
         <script type="text/javascript">
         window.onload = function(){

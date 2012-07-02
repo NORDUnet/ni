@@ -288,12 +288,23 @@ def get_children(request, node_id, slug=None):
         pass
     return HttpResponse(json.dumps(child_list), mimetype='application/json')
 
+def form_to_generic_node_handle(request, form, slug, node_meta_type):
+    node_name = form.cleaned_data['name']
+    node_type = slug_to_node_type(slug, create=True)
+    node_handle = NodeHandle(node_name=node_name,
+                             node_type=node_type,
+                             node_meta_type=node_meta_type,
+                             modifier=request.user, creator=request.user)
+    node_handle.save()
+    h.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
+                              False)
+    return node_handle
+
 # Create functions
 @login_required
 def new_node(request, slug=None, **kwargs):
     """
-    Generic create function that creates a generic node and redirects calls to 
-    node type sensitive create functions.
+    Generic create function that redirects calls to node type sensitive create functions.
     """
     if not request.user.is_staff:
         raise Http404
@@ -303,26 +314,17 @@ def new_node(request, slug=None, **kwargs):
     if request.POST:
         form = NEW_FORMS[slug](request.POST)
         if form.is_valid():
-            node_name = form.cleaned_data['name']
-            node_type = slug_to_node_type(slug, create=True)
-            node_meta_type = request.POST['meta_type']
-            node_handle = NodeHandle(node_name=node_name,
-                                node_type=node_type,
-                                node_meta_type=node_meta_type,
-                                modifier=request.user, creator=request.user)
-            node_handle.save()
-            h.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
-                                       False)
             try:
-                func = NEW_FUNC[node_type.slug]
+                func = NEW_FUNC[slug]
             except KeyError:
                 raise Http404
-            return func(request, node_handle.handle_id, form, **kwargs)
+            return func(request, form, **kwargs)
         else:
             return render_to_response(template, {'form': form},
                                 context_instance=RequestContext(request))
     if not slug:
-        return render_to_response('noclook/edit/new_node.html', {})
+        return render_to_response('noclook/edit/new_node.html', {},
+                                  context_instance=RequestContext(request))
     else:
         try:
             form = NEW_FORMS[slug]
@@ -331,11 +333,12 @@ def new_node(request, slug=None, **kwargs):
         except KeyError:
             raise Http404
         return render_to_response(template, {'form': form},
-                                context_instance=RequestContext(request))
-                                
+                                  context_instance=RequestContext(request))
+
 @login_required
-def new_site(request, handle_id, form):
-    nh, node = get_nh_node(handle_id)
+def new_site(request, form):
+    nh = form_to_generic_node_handle(request, form, 'site', 'location')
+    node = nh.get_node()
     keys = ['country_code', 'address', 'postarea', 'postcode']
     form_update_node(request.user, node, form, keys)
     with nc.neo4jdb.transaction:
@@ -343,26 +346,29 @@ def new_site(request, handle_id, form):
         node['country'] = COUNTRY_MAP[node['country_code']]
     # Update search index
     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    nc.update_index_item(nc.neo4jdb, index, node['name'], 'name')
+    nc.update_index_item(nc.neo4jdb, index, node, 'name')
     return HttpResponseRedirect(nh.get_absolute_url())
     
 @login_required
-def new_site_owner(request, handle_id, form):
-    nh, node = get_nh_node(handle_id)
+def new_site_owner(request, form):
+    nh = form_to_generic_node_handle(request, form, 'site-owner', 'relation')
+    node = nh.get_node()
     keys = ['url']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
     
 @login_required
-def new_cable(request, handle_id, form, **kwargs):
-    nh, node = get_nh_node(handle_id)
+def new_cable(request, form, **kwargs):
+    nh = form_to_generic_node_handle(request, form, 'cable', 'physical')
+    node = nh.get_node()
     keys = ['cable_type']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required
-def new_rack(request, handle_id, form):
-    nh, node = get_nh_node(handle_id)
+def new_rack(request, form):
+    nh = form_to_generic_node_handle(request, form, 'rack', 'location')
+    node = nh.get_node()
     form_update_node(request.user, node, form)
     if form.cleaned_data['relationship_location']:
         location_id = form.cleaned_data['relationship_location']
@@ -380,14 +386,16 @@ def new_rack(request, handle_id, form):
     return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required        
-def new_odf(request, handle_id, form):
-    nh, node = get_nh_node(handle_id)
+def new_odf(request, form):
+    nh = form_to_generic_node_handle(request, form, 'odf', 'physical')
+    node = nh.get_node()
     form_update_node(request.user, node, form)
     return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required
-def new_port(request, handle_id, form, parent_id=None):
-    nh, node = get_nh_node(handle_id)
+def new_port(request, form, parent_id=None):
+    nh = form_to_generic_node_handle(request, form, 'port', 'physical')
+    node = nh.get_node()
     keys = ['port_type']
     form_update_node(request.user, node, form, keys)
     if parent_id:
