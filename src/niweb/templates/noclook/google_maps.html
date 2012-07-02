@@ -8,7 +8,7 @@
   #map_canvas { height: 100% }
 </style>
 {% load niweb_tags %}
-<script language="javascript" type="text/javascript" src="{% niweb_media_url %}js/jquery/jquery-1.6.2.min.js"></script>
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.6.2.min.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&key=AIzaSyCxqtNjP8a1vDnviEnktTPijjBYvqzeWTo" type="text/javascript"></script>
 <script type="text/javascript">
     function initialize() {

@@ -33,38 +33,37 @@ path = '/home/lundberg/norduni/src/niweb/'
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
-import norduni_client as nc
 import noclook_consumer as nt
 from apps.noclook import helpers as h
+import norduni_client as nc
 
 # This script is used for adding the objects collected with the
 # NERDS producers alcatel_isis to the NOCLook database viewer.
 
 # JSON format used:
-'''
-[{"host": {
-    "alcatel_isis": {
-        "data": {
-            "ip_address": "", 
-            "link": "",
-            "name": "",
-            "osi_address": "", 
-            "ots": "", 
-            "type": ""
-        }, 
-        "name": "", 
-        "neighbours": [
-            {
-                "metric": "", 
-                "name": ""
-            }, 
-        ]
-    }, 
-    "name": "", 
-    "version": 1
-    }
-}]
-'''
+# [{"host": {
+#     "alcatel_isis": {
+#         "data": {
+#             "ip_address": "",
+#             "link": "",
+#             "name": "",
+#             "osi_address": "",
+#             "ots": "",
+#             "type": ""
+#         },
+#         "name": "",
+#         "neighbours": [
+#             {
+#                 "metric": "",
+#                 "name": ""
+#             },
+#         ]
+#     },
+#     "name": "",
+#     "version": 1
+#     }
+# }]
+
 # The data block can hold any keys and don't necessarily have to be the ones
 # listed above.
 
@@ -93,9 +92,9 @@ def consume_alcatel_isis(json_list):
             if metric == '0':       # localhost
                 break
             elif metric == '12':    # LAN connection (copper)
-                cable_type = 'TP'
+                cable_type = 'Patch'
             else:                   # Fiber
-                cable_type = 'Fiber'
+                cable_type = 'Dark Fiber'
             # Get or create a neighbour node
             neighbour_node_handle = nt.get_unique_node_handle(nc.neo4jdb, 
                                             neighbour['name'], 'Optical Node', 

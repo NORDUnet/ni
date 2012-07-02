@@ -29,9 +29,9 @@ class NodeType(models.Model):
             'slug': self.slug})
             
     def delete(self):
-        '''
+        """
         Delete the NodeType object with all associated NodeHandles.
-        '''
+        """
         for nh in NodeHandle.objects.filter(node_type=self.pk):
             nh.delete() 
         super(NodeType, self).delete()
@@ -58,37 +58,37 @@ class NodeHandle(models.Model):
         return '%s %s' % (self.node_type, self.node_name)
         
     def get_node(self):
-        '''
+        """
         Returns the NodeHandles node.
-        '''
+        """
         return nc.get_node_by_id(nc.neo4jdb, self.node_id)
     
     def delete_node_id(self, create_node=True):
-        '''
+        """
         Sets the node_id property to None to be able to create a new node for 
         the NodeHandle in a later stage. If create_node is True a new node is
         generated in the save call.
-        '''
+        """
         self.node_id = None
         self.save(create_node=create_node, force_update=True)
         return self
 
     @models.permalink
     def get_absolute_url(self):
-        '''
+        """
         Should we instead import neo4jclient here and traverse the node
         to to root? That way we can do urls like se-tug/fpc/pic/port or
         dk-ore-lm-01/rack/sub_rack/.
-        '''
+        """
         #return '%s/%d/' % (self.node_type, self.handle_id)
         return('niweb.apps.noclook.views.generic_detail', (), {
             'slug': self.node_type.get_slug(),
             'handle_id': self.handle_id})
 
     def save(self, create_node=False, *args, **kwargs):
-        '''
+        """
         Create a new node and associate it to the handle.
-        '''
+        """
         if self.node_id and not create_node: # Don't create a node
             super(NodeHandle, self).save(*args, **kwargs)
             return self
@@ -110,9 +110,9 @@ class NodeHandle(models.Model):
     save.alters_data = True
 
     def delete(self):
-        '''
+        """
         Delete that node handle and the handles node.
-        '''
+        """
         try:
             node = self.get_node()
             nc.delete_node(nc.neo4jdb, node)
@@ -124,3 +124,23 @@ class NodeHandle(models.Model):
         return True
         
     delete.alters_data = True
+
+#class NORDUnetServiceId(models.Model):
+#    """
+#    Model to keep track of used NORDUnet Service IDs.
+#    """
+#    service_id = models.CharField(null=True, blank=True, unique=True, editable=False)
+#    # Meta information
+#    creator = models.ForeignKey(User, related_name='creator')
+#    created = models.DateTimeField(auto_now_add=True)
+#
+#    def __unicode__(self):
+#        return self.service_id
+#
+#    def save(self, *args, **kwargs):
+#        super(NORDUnetServiceId, self).save(*args, **kwargs)
+#        prefix = 'NU-S'
+#        self.service_id = '%s%s' % (prefix, str(self.id).zfill(6))
+#        return self
+#
+#    save.alters_data = True
