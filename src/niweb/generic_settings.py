@@ -112,7 +112,7 @@ TEMPLATE_DIRS = (
 
 STATICFILES_DIRS = (
     join(NIWEB_ROOT, 'static/'),
-    )
+)
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -124,6 +124,7 @@ INSTALLED_APPS = (
     'django.contrib.comments',
     'django.contrib.markup',
     'django.contrib.staticfiles',
+    'tastypie',
     'niweb_core',
     'apps.fedlogin',
     'apps.noclook',
