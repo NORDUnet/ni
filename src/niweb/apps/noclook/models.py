@@ -124,23 +124,52 @@ class NodeHandle(models.Model):
         return True
         
     delete.alters_data = True
+    
 
-#class NORDUnetServiceId(models.Model):
-#    """
-#    Model to keep track of used NORDUnet Service IDs.
-#    """
-#    service_id = models.CharField(null=True, blank=True, unique=True, editable=False)
-#    # Meta information
-#    creator = models.ForeignKey(User, related_name='creator')
-#    created = models.DateTimeField(auto_now_add=True)
-#
-#    def __unicode__(self):
-#        return self.service_id
-#
-#    def save(self, *args, **kwargs):
-#        super(NORDUnetServiceId, self).save(*args, **kwargs)
-#        prefix = 'NU-S'
-#        self.service_id = '%s%s' % (prefix, str(self.id).zfill(6))
-#        return self
-#
-#    save.alters_data = True
+class UniqueId(models.Model):
+    """
+    Model that provides a base id counter, prefix, suffix and id length. When a new
+    id is generated the base id counter will increase by 1.
+    """
+    name = models.CharField(max_length=256, unique=True)
+    base_id = models.IntegerField(default=1)
+    zfill = models.BooleanField()
+    base_id_length = models.IntegerField(default=0,
+                                         help_text="Base id will be filled with leading zeros to this length if zfill is checked.")
+    prefix = models.CharField(max_length=256, null=True, blank=True)
+    suffix = models.CharField(max_length=256, null=True, blank=True)
+    last_id = models.CharField(max_length=256, editable=False)
+    next_id = models.CharField(max_length=256, editable=False)
+    # Meta
+    creator = models.ForeignKey(User, related_name='unique_id_creator')
+    created = models.DateTimeField(auto_now_add=True)
+    modifier = models.ForeignKey(User, null=True, blank=True, related_name='unique_id_modifier')
+    modified = models.DateTimeField(auto_now=True)
+
+    def __unicode__(self):
+        return self.name
+
+    def get_id(self):
+        """
+        Returns the next id and increments the base_id field.
+        """
+        base_id = self.base_id
+        if self.zfill:
+            base_id = str(self.base_id).zfill(self.base_id_length)
+        unique_id = '%s%s%s' % (self.prefix, base_id, self.suffix)
+        self.last_id = unique_id
+        self.base_id += 1
+        self.save()
+        return unique_id
+
+    def save(self, *args, **kwargs):
+        """
+        Increments the base_id.
+        """
+        base_id = self.base_id
+        if self.zfill:
+            base_id = str(self.base_id).zfill(self.base_id_length)
+        self.next_id = '%s%s%s' % (self.prefix, base_id, self.suffix)
+        super(UniqueId, self).save(*args, **kwargs)
+
+    save.alters_data = True
