@@ -187,9 +187,10 @@ def get_peering_partner(peering):
     try:
         node = h.iter2list(index['as_number'][as_number])[0]
         h.set_noclook_auto_manage(nc.neo4jdb, node, True)
-        if node['name'] != name:
+        if node['name'] != name and name != 'Missing description':
             with nc.neo4jdb.transaction:        
                 node['name'] = name
+        h.update_node_search_index(nc.neo4jdb, node)
     except IndexError:
         node_handle = nt.get_node_handle(nc.neo4jdb, name, 'Peering Partner',
                                          'relation')

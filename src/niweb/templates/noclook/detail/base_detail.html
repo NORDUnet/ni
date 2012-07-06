@@ -25,6 +25,13 @@
     {% endfor %}
     </h5>
 {% endif %}
+{% if same_name_relations %}
+    <h5 class="site">also as
+        {% for hit in same_name_relations %}
+            <a href="{% noclook_node_to_url hit.relation %}"> {{ hit.relation.node_type }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    </h5>
+{% endif %}
 {% load comments %}
 {% load markup %}
 {% get_comment_list for node_handle as comment_list %}
