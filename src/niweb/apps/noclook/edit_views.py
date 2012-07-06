@@ -83,9 +83,7 @@ def form_update_node(user, node, form, property_keys=[]):
                         nh.node_name = form.cleaned_data[key]
                     nh.modifier = user
                     nh.save()
-                    if key in django_settings.SEARCH_INDEX_KEYS:
-                        index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-                        nc.update_index_item(nc.neo4jdb, index, form.cleaned_data[key], key)
+                    h.update_node_search_index(nc.neo4jdb, node)
             elif not form.cleaned_data[key] and key != 'name':
                 with nc.neo4jdb.transaction:
                     del node[key]

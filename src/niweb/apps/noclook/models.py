@@ -124,7 +124,7 @@ class NodeHandle(models.Model):
         return True
         
     delete.alters_data = True
-    
+
 
 class UniqueId(models.Model):
     """

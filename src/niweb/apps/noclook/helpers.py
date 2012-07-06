@@ -251,11 +251,11 @@ def get_connected_cables(cable):
     from operator import itemgetter
     connected = []
     q = '''                   
-        START node=node(%d)
+        START node=node({id})
         MATCH node-[r0:Connected_to]->port<-[?:Has*1..10]-end
         RETURN node, r0, port, end
-        ''' % cable.id
-    hits = nc.neo4jdb.query(q)
+        '''
+    hits = nc.neo4jdb.query(q, id=cable.getId())
     for hit in hits:
         connected.append({'cable': hit['node'], 'rel': hit['r0'], 
                           'port': hit['port'], 'end': hit['end']})
@@ -267,19 +267,32 @@ def get_connected_equipment(equipment):
     Get all the nodes Has relationships and what they are connected to.
     """
     q = '''
-        START node=node(%d)
+        START node=node({id})
         MATCH node-[:Has*1..10]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..10]-end
         RETURN node,porta,r0,cable,r1,portb,end
-        ''' % equipment.getId()
-    return nc.neo4jdb.query(q)
+        '''
+    return nc.neo4jdb.query(q, id=equipment.getId())
 
 def get_racks_and_equipment(site):
     """
     Get all the racks on a site and the equipment, if any, in those racks.
     """
     q = '''
-        START node=node(%d)
+        START node=node({id})
         MATCH node-[r0:Has]->rack<-[r1?:Located_in]-equipment
         RETURN rack,r1,equipment
-        ''' % site.getId()
-    return nc.neo4jdb.query(q)
+        '''
+    return nc.neo4jdb.query(q, id=site.getId())
+
+def get_same_name_relations(relation):
+    """
+    Get all relation meta typed nodes with the same name as the provided node.
+    """
+    q = '''
+        START node=node:search(name = {name})
+        MATCH meta-[:Contains]->node
+        WHERE (meta.name = 'relation') and not(node.node_type = {type})
+        RETURN node as relation
+        '''
+    return nc.neo4jdb.query(q, name=relation.getProperty('name', ''),
+                            type=relation.getProperty('node_type', ''))

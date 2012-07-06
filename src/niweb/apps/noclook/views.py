@@ -237,7 +237,7 @@ def host_detail(request, handle_id):
     return render_to_response('noclook/detail/host_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired, 
-                               'service_relationships': service_relationships, 
+                               'service_relationships': service_relationships,
                                'user_relationships': user_relationships,
                                'provider_relationships': provider_relationships,
                                'owner_relationships': owner_relationships,
@@ -263,10 +263,12 @@ def host_provider_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
+    same_name_relations = h.iter2list(h.get_same_name_relations(node))
     host_relationships = h.iter2list(node.Provides.outgoing)
     return render_to_response('noclook/detail/host_provider_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
+                               'same_name_relations': same_name_relations,
                                'host_relationships': host_relationships},
                                context_instance=RequestContext(request))
                                
@@ -276,10 +278,12 @@ def host_user_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
+    same_name_relations = h.iter2list(h.get_same_name_relations(node))
     host_relationships = h.iter2list(node.Uses.outgoing) + h.iter2list(node.Owns.outgoing)
     return render_to_response('noclook/detail/host_user_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
+                               'same_name_relations': same_name_relations,
                                'host_relationships': host_relationships},
                                context_instance=RequestContext(request))
 
@@ -302,6 +306,7 @@ def peering_partner_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
+    same_name_relations = h.iter2list(h.get_same_name_relations(node))
     # Get services used
     services_rel = node.Uses.outgoing
     # services_rel are relations to bgp groups(Service)
@@ -328,6 +333,7 @@ def peering_partner_detail(request, handle_id):
     return render_to_response('noclook/detail/peering_partner_detail.html',
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
+                               'same_name_relations': same_name_relations,
                                'peering_points': peering_points},
                                context_instance=RequestContext(request))
 
@@ -390,11 +396,13 @@ def site_owner_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
+    same_name_relations = h.iter2list(h.get_same_name_relations(node))
     # Handle relationships
     site_relationships = h.iter2list(node.Responsible_for.outgoing)
     return render_to_response('noclook/detail/site_owner_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
+                               'same_name_relations': same_name_relations,
                                'site_relationships': site_relationships},
                                context_instance=RequestContext(request))
 
