@@ -293,6 +293,7 @@ def get_same_name_relations(relation):
         MATCH meta-[:Contains]->node
         WHERE (meta.name = 'relation') and not(node.node_type = {type})
         RETURN node as relation
+        ORDER BY node.node_type
         '''
     return nc.neo4jdb.query(q, name=relation.getProperty('name', ''),
                             type=relation.getProperty('node_type', ''))
