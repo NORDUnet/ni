@@ -39,7 +39,6 @@ SITE_TYPES = [
 
 CABLE_TYPES = [
     ('',''),
-    ('Fiber', 'Fiber'), # Until all fibers are changed to either patch or dark fiber
     ('Dark fiber', 'Dark fiber'),
     ('Patch', 'Patch'),
     ('Power Cable', 'Power Cable')
