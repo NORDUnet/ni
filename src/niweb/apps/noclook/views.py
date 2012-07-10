@@ -663,7 +663,7 @@ def gmaps_optical_nodes(request):
     cypher_query = '''
         START optical_node = node:node_types(node_type="Optical Node")
         MATCH optical_node<-[:Connected_to]-cable-[Connected_to]->other_optical_node
-        WHERE (cable.cable_type = "Fiber") and not (optical_node.type? =~ /.*tss.*/)
+        WHERE (cable.cable_type = "Dark Fiber") and not (optical_node.type? =~ /.*tss.*/)
         RETURN distinct cable
         '''
     query = nc.neo4jdb.query(cypher_query)
