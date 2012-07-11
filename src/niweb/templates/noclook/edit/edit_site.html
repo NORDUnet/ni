@@ -49,7 +49,7 @@ $(document).ready(
 {{ block.super }}
     <div class="well">
         <h3>Name</h3>
-        {{ form.country_code }} - {{ form.name }}
+        {{ form.name }}
         <h3>Site Type (optional)</h3>
         {{ form.site_type }}
     </div>
@@ -87,7 +87,7 @@ $(document).ready(
             <div id="collapseTwo" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
                     <label>Country</label>
-                    <span class="input-large uneditable-input">{{ node.country }}</span>
+                    <span class="input-large">{{ form.country }}</span>
                     <label>Area</label>
                     {{ form.area }}
                     <span class="help-inline">{{ form.area.help_text }}</span>
