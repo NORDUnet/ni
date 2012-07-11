@@ -29,6 +29,18 @@ COUNTRIES = [
     ('USA', 'USA'),
 ]
 
+COUNTRY_MAP = {
+    'DE': 'Germany',
+    'DK': 'Denmark',
+    'FI': 'Finland',
+    'IS': 'Iceland',
+    'NL': 'Netherlands',
+    'NO': 'Norway',
+    'SE': 'Sweden',
+    'UK': 'United Kingdom',
+    'US': 'USA'
+}
+
 SITE_TYPES = [
     ('',''),
     ('POP', 'POP'),
@@ -77,8 +89,8 @@ class NewSiteForm(forms.Form):
     
 class EditSiteForm(forms.Form):
     name = forms.CharField()
-    country_code = forms.ChoiceField(choices=COUNTRY_CODES,
-                                     widget=forms.widgets.Select)
+    country_code = forms.ChoiceField(choices=COUNTRY_CODES, widget=forms.widgets.Select,
+                                     required=False)
     country = forms.ChoiceField(choices=COUNTRIES, widget=forms.widgets.Select,
                                 required=False)
     site_type = forms.ChoiceField(choices=SITE_TYPES,

@@ -42,31 +42,33 @@
 
 {% block content_footer %}
 {% if node_handle %}
-    <br>
-    <p>
-        <a href="javascript:toggle_comment()" id="add_comment_btn" class="btn btn-info">
-            <i class="icon-comment icon-white"></i> Add a comment
-        </a>
-        <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
-            <i class="icon-eye-open icon-white"></i> Visualize
-        </a>
-    </p>
-    <div id="add_comment" class="hidden" >
-        <strong>Add a comment or <a href="javascript:toggle_comment()">hide</a> the comment form.</strong>
-        {% get_comment_form for node_handle as form %}
-        <form action="{% comment_form_target %}" method="POST">
-            {% csrf_token %}
-            <textarea class="xxlarge" id="id_comment" name="comment"></textarea>
-            {{ form.honeypot }}
-            {{ form.content_type }}
-            {{ form.object_pk }}
-            {{ form.timestamp }}
-            {{ form.security_hash }}
-            <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
-            <br><br>
-            <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
-            <br>
-        </form>
+    <div class="section">
+        <br>
+        <p>
+            <a href="javascript:toggle_comment()" id="add_comment_btn" class="btn btn-info">
+                <i class="icon-comment icon-white"></i> Add a comment
+            </a>
+            <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
+                <i class="icon-eye-open icon-white"></i> Visualize
+            </a>
+        </p>
+        <div id="add_comment">
+            <strong>Add a comment or <a href="javascript:toggle_comment()">hide</a> the comment form.</strong>
+            {% get_comment_form for node_handle as form %}
+            <form action="{% comment_form_target %}" method="POST">
+                {% csrf_token %}
+                <textarea class="input-xlarge" rows="3" id="id_comment" name="comment"></textarea>
+                {{ form.honeypot }}
+                {{ form.content_type }}
+                {{ form.object_pk }}
+                {{ form.timestamp }}
+                {{ form.security_hash }}
+                <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
+                <br><br>
+                <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
+                <br>
+            </form>
+        </div>
     </div>
 {% endif %}
 {% endblock %}

@@ -31,7 +31,7 @@
             var $parent = $(user_options.parent);
             $parent.removeAttr("disabled","disabled");
             $parent.bind('change',  function(e) {
-                obj.attr("disabled","disabled");
+                obj.attr("disabled", true);
                 if($(this).val()!="0" && $(this).val()!="") {
                     obj.removeAttr("disabled");
                     obj.show();
