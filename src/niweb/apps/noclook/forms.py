@@ -51,7 +51,7 @@ SITE_TYPES = [
 
 CABLE_TYPES = [
     ('',''),
-    ('Dark fiber', 'Dark fiber'),
+    ('Dark Fiber', 'Dark Fiber'),
     ('Patch', 'Patch'),
     ('Power Cable', 'Power Cable')
 ]
