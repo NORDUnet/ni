@@ -41,19 +41,19 @@ $(document).ready(
             });
         });
         // Hook lower level combo boxes up to their parent
-        $("#level1A").jCombo("/formdata/{id}/children", {
+        $("#level1A").jCombo("/formdata/{id}/children/", {
                         parent: "#level0A",
                         end_value_field: "#id_relationship_end_a"
                     });
-        $("#level2A").jCombo("/formdata/{id}/children", {
+        $("#level2A").jCombo("/formdata/{id}/children/", {
                         parent: "#level1A",
                         end_value_field: "#id_relationship_end_a"
                     });
-        $("#level3A").jCombo("/formdata/{id}/children", {
+        $("#level3A").jCombo("/formdata/{id}/children/", {
                         parent: "#level2A",
                         end_value_field: "#id_relationship_end_a"
                     });
-        $("#level4A").jCombo("/formdata/{id}/children", {
+        $("#level4A").jCombo("/formdata/{id}/children/", {
                         parent: "#level3A",
                         end_value_field: "#id_relationship_end_a"
                     });
@@ -66,21 +66,21 @@ $(document).ready(
             });
         });
         // Hook lower level combo boxes up to their parent
-        $("#level1B").jCombo("/formdata/{id}/children", {
+        $("#level1B").jCombo("/formdata/{id}/children/", {
                         parent: "#level0B",
-                        end_value_field: "#id_relationship_end_b",
+                        end_value_field: "#id_relationship_end_b"
                     });
-        $("#level2B").jCombo("/formdata/{id}/children", {
+        $("#level2B").jCombo("/formdata/{id}/children/", {
                         parent: "#level1B",
-                        end_value_field: "#id_relationship_end_b",
+                        end_value_field: "#id_relationship_end_b"
                     });
-        $("#level3B").jCombo("/formdata/{id}/children", {
+        $("#level3B").jCombo("/formdata/{id}/children/", {
                         parent: "#level2B",
-                        end_value_field: "#id_relationship_end_b",
+                        end_value_field: "#id_relationship_end_b"
                     });
-        $("#level4B").jCombo("/formdata/{id}/children", {
+        $("#level4B").jCombo("/formdata/{id}/children/", {
                         parent: "#level3B",
-                        end_value_field: "#id_relationship_end_b",
+                        end_value_field: "#id_relationship_end_b"
                     });
         // Modal delete connection confirm
         $("#dialog-connection-confirm").dialog({
