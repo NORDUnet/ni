@@ -427,7 +427,7 @@ def edit_site(request, handle_id):
                     nh.save()
                 # Update search index
                 index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-                nc.update_index_item(nc.neo4jdb, index, node['name'], 'name')
+                nc.update_index_item(nc.neo4jdb, index, node, 'name')
             if form.cleaned_data['country']:
                 inverse_cm = dict((forms.COUNTRY_MAP[key], key) for key  in forms.COUNTRY_MAP)
                 with nc.neo4jdb.transaction:
