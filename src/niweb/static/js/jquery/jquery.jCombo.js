@@ -29,9 +29,9 @@
         $(this).hide();
         if(user_options.parent!="") {
             var $parent = $(user_options.parent);
-            $parent.removeAttr("disabled","disabled");
+            $parent.removeAttr("disabled");
             $parent.bind('change',  function(e) {
-                obj.attr("disabled","disabled");
+                obj.attr("disabled", true);
                 if($(this).val()!="0" && $(this).val()!="") {
                     obj.removeAttr("disabled");
                     obj.show();
@@ -56,7 +56,7 @@
                     if (j.length == 0) {
                         choices += '<option value="0">' + "-- Empty List --" + '</option>';
                         $obj.html(choices);
-                        $obj.attr("disabled","disabled");
+                        $obj.attr("disabled", true);
                     } else {
                         if($initext!="" && $initext!=null) {
                             choices += '<option value="0">' + $initext + '</option>';
