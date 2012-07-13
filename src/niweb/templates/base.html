@@ -18,7 +18,7 @@
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
     <script type="text/javascript">
     $(document).ready(function() {
-        var options, a, b;
+        var options, a, b, c;
         jQuery(function(){
           options = {
                 serviceUrl:'/search/autocomplete',
@@ -31,6 +31,8 @@
         $(".dropdown-toggle").dropdown()
         $(".debug-toggle").collapse()
         $(".nav-collapse").collapse()
+        $('#add_comment').toggle(false);
+        $('#add_comment_btn').toggle(true);
     });
     </script>
     {% block js %}{% endblock %}
@@ -51,7 +53,7 @@
                     </a>
 
                     <!-- Be sure to leave the brand out there if you want it shown -->
-                    <a class="brand" href="#">NOCLook</a>
+                    <a class="brand" href="/">NOCLook</a>
 
                     <!-- Everything you want hidden at 940px or less, place within here -->
                     <div class="nav-collapse in collapse">

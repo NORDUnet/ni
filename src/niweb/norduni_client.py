@@ -82,7 +82,7 @@ def open_db(uri=NEO4J_URI):
 def upgrade_db(uri=NEO4J_URI):
     """
     Opens the Neo4j database with the option to allow upgrade then closes
-    the database and reopen it as neo4jdb.
+    the database.
     """
     if uri:
         db = GraphDatabase(uri, allow_store_upgrade="true")

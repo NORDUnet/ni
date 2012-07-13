@@ -18,19 +18,6 @@ from niweb.apps.noclook import forms
 import niweb.apps.noclook.helpers as h
 import norduni_client as nc
 
-# We should move this kind of data to the SQL database.
-COUNTRY_MAP = {
-    'DE': 'Germany',    
-    'DK': 'Denmark',
-    'FI': 'Finland',
-    'IS': 'Iceland',
-    'NL': 'Netherlands',
-    'NO': 'Norway',
-    'SE': 'Sweden',    
-    'UK': 'United Kingdom',
-    'US': 'USA'
-}
-
 # Helper functions
 def get_nh_node(node_handle_id):
     """
@@ -341,7 +328,9 @@ def new_site(request, form):
     form_update_node(request.user, node, form, keys)
     with nc.neo4jdb.transaction:
         node['name'] = '%s-%s' % (form.cleaned_data['country_code'], form.cleaned_data['name'].upper())
-        node['country'] = COUNTRY_MAP[node['country_code']]
+        node['country'] = forms.COUNTRY_MAP[node['country_code']]
+        nh.node_name = node['name']
+        nh.save()
     # Update search index
     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     nc.update_index_item(nc.neo4jdb, index, node, 'name')
@@ -428,12 +417,19 @@ def edit_site(request, handle_id):
             # Generic node update
             form_update_node(request.user, node, form)
             # Site specific updates
-            with nc.neo4jdb.transaction:
-                node['name'] = form.cleaned_data['name'].upper()
-                node['country'] = COUNTRY_MAP[node['country_code']]
-            # Update search index
-            index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-            nc.update_index_item(nc.neo4jdb, index, node['name'], 'name')
+            if form.cleaned_data['name'].upper() != node['name']:
+                with nc.neo4jdb.transaction:
+                    node['name'] = form.cleaned_data['name'].upper()
+
+                    nh.node_name = node['name']
+                    nh.save()
+                # Update search index
+                index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                nc.update_index_item(nc.neo4jdb, index, node, 'name')
+            if form.cleaned_data['country']:
+                inverse_cm = dict((forms.COUNTRY_MAP[key], key) for key  in forms.COUNTRY_MAP)
+                with nc.neo4jdb.transaction:
+                    node['country_code'] = inverse_cm[node['country']]
             # Set site owner
             if form.cleaned_data['relationship_site_owner']:
                 owner_id = form.cleaned_data['relationship_site_owner']

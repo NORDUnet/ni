@@ -43,7 +43,7 @@ $(document).ready(
             $("#id_relationship_location").val($(this).val());
         });
         // Hook lower level combo boxes up to their parent
-        $("#level1").jCombo("/formdata/{id}/children/rack", {
+        $("#level1").jCombo("/formdata/{id}/children/rack/", {
                         parent: "#level0",
                         end_value_field: "#id_relationship_location",
                     });
