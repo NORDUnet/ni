@@ -273,6 +273,18 @@ def get_connected_equipment(equipment):
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
 
+def get_depends_on_equipment(equipment):
+    """
+    Get all the nodes Has or Depends_on relationships.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node-[?:Has*1..10]->port<-[?:Depends_on]-logical, node<-[?:Depends_on]-logical
+        WHERE node-[:Has]->port OR node<-[:Depends_on]-logical
+        RETURN node,logical,port
+        '''
+    return nc.neo4jdb.query(q, id=equipment.getId())
+
 def get_racks_and_equipment(site):
     """
     Get all the racks on a site and the equipment, if any, in those racks.

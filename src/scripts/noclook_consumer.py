@@ -122,6 +122,17 @@ def get_node_type(type_name):
         node_type.save()
     return node_type
 
+def get_unique_node(name, node_type, meta_type):
+    """
+    Gets or creates a NodeHandle with the provided name.
+    Returns the NodeHandles node.
+    """
+    name = normalize_whitespace(name)
+    node_handle = get_unique_node_handle(nc.neo4jdb, name, node_type,
+                                            meta_type)
+    node = node_handle.get_node()
+    return node
+
 def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
     """
     Takes the arguments needed to create a NodeHandle, if there already
@@ -149,6 +160,7 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
     Takes the arguments needed to create a NodeHandle. If a parent is
     supplied the NodeHandle will be unique for that parent.
     Returns a NodeHandle object.
+
     *** This function does not handle multiple parents. ***
     """
     user = get_user()

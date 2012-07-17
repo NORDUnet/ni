@@ -200,7 +200,8 @@ def optical_node_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     #get incoming rels of fibers
-    connected_rel = node.Connected_to.incoming
+    connected_rel = node.Connected_to.incoming # Legacy
+    depends_on = h.get_depends_on_equipment(node)
     opt_info = []
     for rel in connected_rel:
         fibers = {}
@@ -218,8 +219,8 @@ def optical_node_detail(request, handle_id):
     return render_to_response('noclook/detail/optical_node_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
-                              'opt_info': opt_info,
-                              'location': location},
+                              'opt_info': opt_info, 'location': location,
+                              'depends_on': depends_on},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -510,20 +511,21 @@ def search(request, value='', form=None):
         value = request.POST.get('q', '')
         posted = True
     # See if the value is indexed
-    i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    q = Q('all', '*%s*' % value, wildcard=True)
-    nodes = h.iter2list(i1.query(unicode(q)))
-    if not nodes:
-        nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
     result = []
-    if form == 'csv':
-        return h.nodes_to_csv([node for node in nodes])
-    elif form == 'xls':
-        return h.nodes_to_xls([node for node in nodes])
-    for node in nodes:
-        nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
-        item = {'node': node, 'nh': nh}
-        result.append(item)
+    if value:
+        i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+        q = Q('all', '*%s*' % value, wildcard=True)
+        nodes = h.iter2list(i1.query(unicode(q)))
+        if not nodes:
+            nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
+        if form == 'csv':
+            return h.nodes_to_csv([node for node in nodes])
+        elif form == 'xls':
+            return h.nodes_to_xls([node for node in nodes])
+        for node in nodes:
+            nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
+            item = {'node': node, 'nh': nh}
+            result.append(item)
     return render_to_response('noclook/search_result.html',
                             {'value': value, 'result': result,
                              'posted': posted},

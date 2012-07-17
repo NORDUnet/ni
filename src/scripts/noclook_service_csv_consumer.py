@@ -47,24 +47,72 @@ from apps.noclook import helpers as h
 #    "version": 1
 # }
 
+def set_customer(node, customer_name):
+    """
+    Get or creates the customer and depend the customer on the service.
+    """
+    customer = nt.get_unique_node(customer_name, 'Customer', 'relation')
+    rel = nc.create_relationship(nc.neo4jdb, customer, node, 'Uses')
+    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
+def set_end_user(node, end_user_name):
+    """
+    Get or creates the customer and depend the customer on the service.
+    """
+    end_user = nt.get_unique_node(end_user_name, 'End User', 'relation')
+    rel = nc.create_relationship(nc.neo4jdb, end_user, node, 'Uses')
+    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
-def get_node(name, node_type, meta_type):
-    '''
-    Gets or creates a NodeHandle with the provided name.
-    Returns the NodeHandles node.
-    '''
-    name = nt.normalize_whitespace(name)
-    node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type,
-                                            meta_type)
-    node = node_handle.get_node()
-    return node
+def depend_on_router(node, router_name, pic_name):
+    """
+    Depends the service on a router PIC.
+    PIC name is in Juniper notation xxx-X/X/X.
+    """
+    parent = nt.get_unique_node(router_name, 'Router', 'physical')
+    nh = nt.get_node_handle(nc.neo4jdb, pic_name, 'PIC', 'physical', parent)
+    pic_node = nh.get_node()
+    if not nc.get_relationships(pic_node, parent, 'Has'):
+        rel = nc.create_relationship(nc.neo4jdb, parent, pic_node, 'Has')
+        h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+    rel = nc.create_relationship(nc.neo4jdb, node, pic_node, 'Depends_on')
+    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
-def consume_site_csv(json_list):
-    '''
+def depend_on_service_component(node, component_name):
+    """
+    Tries to depend the service on a service component. The criteria is that
+    the component already is in the database else the component will be saved as
+    a string in the service_component property.
+    """
+    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    hit = h.iter2list(index['nordunet_id'][component_name])
+    if hit:
+        rel = nc.create_relationship(nc.neo4jdb, node, hit[0], 'Depends_on')
+        h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+    else:
+        if node.getProperty('nordunet_id', None):
+            with nc.neo4jdb.transaction:
+                node['nordunet_id'] = '%s, %s' % (node['nordunet_id'], component_name)
+        else:
+            with nc.neo4jdb.transaction:
+                node['nordunet_id'] = component_name
+
+def depend_on_service(node, service_name, supplier_name):
+    """
+    Depends the service on another service.
+    """
+    service = nt.get_unique_node(service_name, 'Service', 'logical')
+    rel = nc.create_relationship(nc.neo4jdb, node, service, 'Depends_on')
+    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+    if supplier_name:
+        supplier = nt.get_unique_node(supplier_name, 'Provider', 'relation')
+        if not nc.get_relationships(supplier, service, 'Provides'):
+            rel = nc.create_relationship(nc.neo4jdb, supplier, service, 'Provides')
+        h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+
+def consume_service_csv(json_list):
+    """
     Inserts the data collected with NOCLook csv producer.
-    '''
-    # Add all properties except the ones with "special keys".
+    """
     for i in json_list:
         node_type = i['host']['csv_producer']['node_type'].title()
         meta_type = i['host']['csv_producer']['meta_type'].lower()
@@ -72,39 +120,55 @@ def consume_site_csv(json_list):
                                        meta_type)
         node = nh.get_node()
         h.set_noclook_auto_manage(nc.neo4jdb, node, False)
-        special_keys = ['comment', 'responsible_for', 'meta_type']
-        host_info = i['host']['csv_producer']
-        for key in host_info:
-            if key not in special_keys:
-                value = host_info.get(key, None)
-                if value:
-                    with nc.neo4jdb.transaction:
-                        node[key] = value
-            # Handle the special data
-        for key in special_keys:
-            value = host_info.get(key, None)
-            if value:
-                if key == 'responsible_for':
-                    responsible_node = get_node(value, 'Site Owner', 'relation')
-                    h.set_noclook_auto_manage(nc.neo4jdb, responsible_node,
-                                              False)
-                    rel = nc.create_relationship(nc.neo4jdb,
-                                                 responsible_node,
-                                                 node,
-                                                 'Responsible_for')
-                    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
-                if key == 'comment':
-                    nt.set_comment(nh, value)
-                if key == 'meta_type':
-                    pass # This is saved in the NodeHandle
-            # Try to match equipment against sites
-        search_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-        matching_nodes = search_index.query('name', '*%s*' % i['host']['name'])
-        for equip_node in matching_nodes:
-            if equip_node['node_type'] in ['Optical Node', 'Router']:
-                rel = nc.create_relationship(nc.neo4jdb, equip_node,
-                                             node, 'Located_in')
-                h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+        with nc.neo4jdb.transaction:
+            node['service_type'] = i['host']['csv_producer']['service_type']
+            description = i['host']['csv_producer'].get('description', None)
+            if description:
+                node['description'] = description
+            node['nordunet_id'] = node['name']
+        h.update_node_search_index(nc.neo4jdb, node)
+        # TODO: Insert id in to NORDUnetIDSet table.
+        # Depend on router
+        equipment_a = i['host']['csv_producer'].get('equipment_a', None)
+        if equipment_a:
+            depend_on_router(node, equipment_a, i['host']['csv_producer']['port_a'])
+        equipment_b = i['host']['csv_producer'].get('equipment_b', None)
+        if equipment_b:
+            depend_on_router(node, equipment_b, i['host']['csv_producer']['port_b'])
+        # Set customer
+        customer_name = nt.normalize_whitespace(i['host']['csv_producer']['customer'])
+        set_customer(node, customer_name)
+        # Set end users
+        end_user_a = i['host']['csv_producer'].get('end_user_a', None)
+        if end_user_a:
+            end_user_a_name = nt.normalize_whitespace(end_user_a)
+            set_end_user(node, end_user_a_name)
+        end_user_b = i['host']['csv_producer'].get('end_user_b', None)
+        if end_user_b:
+            end_user_b_name = nt.normalize_whitespace(end_user_b)
+            set_end_user(node, end_user_b_name)
+        # Depend on service_component
+        service_components = i['host']['csv_producer'].get('service_component', None)
+        if service_components:
+            for component in service_components.split(','):
+                component_name = nt.normalize_whitespace(component)
+                depend_on_service_component(node, component_name)
+        # Depend on services
+        depends_on_services = i['host']['csv_producer'].get('depends_on_service', None)
+        depends_on_supplier = i['host']['csv_producer'].get('depends_on_supplier', None)
+        if depends_on_services and depends_on_supplier:
+            for service, supplier in zip(depends_on_services.split(','), depends_on_supplier.split(',')):
+                service_name = nt.normalize_whitespace(service)
+                supplier_name = nt.normalize_whitespace(supplier)
+                depend_on_service(node, service_name, supplier_name)
+        elif depends_on_services:
+            for service in depends_on_services.split(','):
+                service_name = nt.normalize_whitespace(service)
+                depend_on_service(node, service_name, None)
+        # Set comment
+        comment = i['host']['csv_producer'].get('comment', None)
+        if comment:
+            nt.set_comment(nh, comment)
 
 def main():
     # User friendly usage output
@@ -123,7 +187,7 @@ def main():
         print 'Loading data...'
         data = nt.load_json(args.D)
         print 'Inserting data...'
-        consume_site_csv(data)
+        consume_service_csv(data)
         print 'noclook consume done.'
     else:
         print 'Use -D to provide the path to the JSON files.'
