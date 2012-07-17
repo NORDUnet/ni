@@ -2,6 +2,7 @@
 from django.db import models, utils
 from django.contrib.auth.models import User
 from django.contrib.comments import Comment
+from django.db.models import Max
 
 import norduni_client as nc
 
@@ -171,5 +172,50 @@ class UniqueId(models.Model):
             base_id = str(self.base_id).zfill(self.base_id_length)
         self.next_id = '%s%s%s' % (self.prefix, base_id, self.suffix)
         super(UniqueId, self).save(*args, **kwargs)
+
+    save.alters_data = True
+
+
+class FreeRangeManager(models.Manager):
+    """
+    A manager that helps finding free ranged of NORDUnet IDs to reserve.
+    """
+    def find_range(self, min_base_id, max_base_id, quantity):
+        """
+        Recursively tries to find an unused range of quantity ids between min and max
+        base id.
+        """
+        for i in range(min_base_id, max_base_id):
+            self.get()
+
+    def reserve_range(self, min_base_id, quantity):
+        """
+        Reserves and returns a list of previous unused ids for the specified quantity.
+        """
+        max_base_id = self.aggregate(Max('base_id'))
+        range = self.find_range(min_base_id, max_base_id, quantity)
+        # TODO
+        # Create IDs and set reserved = True
+        # Return list of IDs
+
+
+class NORDUnetIdSet(models.Model):
+    """
+    Table for ensuring that NORDUnet IDs are unique.
+    """
+    nordunet_id = models.CharField(max_length=256, unique=True)
+    reserved = models.BooleanField()
+    base_id = models.IntegerField(null=True, blank=True)
+    objects = FreeRangeManager()
+    # Meta
+    creator = models.ForeignKey(User, related_name='nordunet_id_creator')
+    created = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        try:
+            self.base_id = int(self.nordunet_id.replace('NU-', ''))
+        except ValueError:
+            self.base_id = None
+        super(NORDUnetIdSet, self).save(*args, **kwargs)
 
     save.alters_data = True
