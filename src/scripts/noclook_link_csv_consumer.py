@@ -67,7 +67,6 @@ def consume_link_csv(json_list):
     """
     Inserts the data collected with NOCLook csv producer.
     """
-    # Add all properties except the ones with "special keys".
     for i in json_list:
         node_type = i['host']['csv_producer']['node_type'].title()
         meta_type = i['host']['csv_producer']['meta_type'].lower()

@@ -60,8 +60,9 @@ def set_end_user(node, end_user_name):
     Get or creates the customer and depend the customer on the service.
     """
     end_user = nt.get_unique_node(end_user_name, 'End User', 'relation')
-    rel = nc.create_relationship(nc.neo4jdb, end_user, node, 'Uses')
-    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+    if not nc.get_relationships(end_user, node, 'Uses'):
+        rel = nc.create_relationship(nc.neo4jdb, end_user, node, 'Uses')
+        h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
 def depend_on_router(node, router_name, pic_name):
     """
@@ -89,25 +90,27 @@ def depend_on_service_component(node, component_name):
         rel = nc.create_relationship(nc.neo4jdb, node, hit[0], 'Depends_on')
         h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
     else:
-        if node.getProperty('nordunet_id', None):
+        if node.getProperty('service_component', None):
             with nc.neo4jdb.transaction:
-                node['nordunet_id'] = '%s, %s' % (node['nordunet_id'], component_name)
+                node['service_component'] = '%s, %s' % (node['service_component'], component_name)
         else:
             with nc.neo4jdb.transaction:
-                node['nordunet_id'] = component_name
+                node['service_component'] = component_name
 
 def depend_on_service(node, service_name, supplier_name):
     """
     Depends the service on another service.
     """
-    service = nt.get_unique_node(service_name, 'Service', 'logical')
-    rel = nc.create_relationship(nc.neo4jdb, node, service, 'Depends_on')
-    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
     if supplier_name:
+        service = nt.get_unique_node(service_name, 'External Service', 'logical')
         supplier = nt.get_unique_node(supplier_name, 'Provider', 'relation')
         if not nc.get_relationships(supplier, service, 'Provides'):
             rel = nc.create_relationship(nc.neo4jdb, supplier, service, 'Provides')
-        h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+            h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+    else:
+        service = nt.get_unique_node(service_name, 'Service', 'logical')
+    rel = nc.create_relationship(nc.neo4jdb, node, service, 'Depends_on')
+    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
 def consume_service_csv(json_list):
     """
