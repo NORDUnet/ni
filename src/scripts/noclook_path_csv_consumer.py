@@ -42,7 +42,7 @@ def depend_on_link(node, link_name):
     Depends the link on supplied equipment and port.
     Port name is in Alcatel-Lucent notation rXsrXslX/port#X.
     """
-    link = nt.get_unique_node(link_name, 'Link', 'logical')
+    link = nt.get_unique_node(link_name, 'Optical Link', 'logical')
     rel = nc.create_relationship(nc.neo4jdb, node, link, 'Depends_on')
     h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
@@ -51,7 +51,6 @@ def consume_link_csv(json_list):
     """
     Inserts the data collected with NOCLook csv producer.
     """
-    # Add all properties except the ones with "special keys".
     for i in json_list:
         node_type = i['host']['csv_producer']['node_type'].title()
         meta_type = i['host']['csv_producer']['meta_type'].lower()
