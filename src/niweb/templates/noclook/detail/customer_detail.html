@@ -1,0 +1,76 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block js %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(
+                function(){
+                    $("#services").tablesorter(
+                            {
+                                sortList: [[0,0]],
+                                headers:
+                                {},
+                                widthFixed: true,
+                                widgets: ['zebra']
+                            });
+                }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    {% load noclook_tags %}
+    <div class="row">
+        <div class="span4">
+            <table class="table">
+                <tr>
+                    {% if node.url %}
+                        <th>More information:</th><td><a href="{{ node.url }}">Information link</td>
+                    {% else %}
+                        <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}">To Portal</td>
+                    {% endif %}
+                </tr>
+            </table>
+        </div>
+        <div class="span3">
+            <table class="table">
+                {% if node.noclook_automanage %}
+                    <tr>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                </tr>
+                <tr>
+                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <!--
+    {% if user.is_staff %}
+        <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+    {% endif %}
+    -->
+    <br><br><br>
+    {% if uses_relationships %}
+        <div class="section">
+            <h3>Services</h3>
+            <table id="services" class="tablesorter" cellspacing="1">
+                <thead>
+                <th>ID</th><th>Description</th>
+                </thead>
+                <tbody>
+                {% for uses in uses_relationships %}
+                    <tr>
+                        <td><a href="{% noclook_node_to_url uses.end %}">{{ uses.end.name }}</a></td>
+                        <td>{{ uses.end.description }}</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

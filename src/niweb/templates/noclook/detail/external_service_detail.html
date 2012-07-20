@@ -1,0 +1,121 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} Detail{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(
+                function(){
+                    $("#depend_inc").tablesorter(
+                            {
+                                sortList: [[0,0]],
+                                headers:
+                                {},
+                                widthFixed: true,
+                                widgets: ['zebra']
+                            });
+                    $("#depend_out").tablesorter(
+                            {
+                                sortList: [[0,0]],
+                                headers:
+                                {},
+                                widthFixed: true,
+                                widgets: ['zebra']
+                            });
+                }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    {% load noclook_tags %}
+    <div class="row">
+        <div class="span4">
+            <table class="table">
+                <tr>
+                    <th>Name:</th><td>{{ node.name }}</td>
+                </tr>
+                <tr>
+                    <th>Providers:</th>
+                    <td>
+                        {% for provider in providers %}
+                            <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a><br>
+                        {% endfor %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div class="span3">
+            <table class="table">
+                {% if node.noclook_auto_manage %}
+                    <tr>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                </tr>
+                <tr>
+                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                </tr>
+            </table>
+        </div>
+        <div>
+            <table class="table">
+                {% if node.description %}
+                    <tr>
+                        <th>Description:</th><td>{{ node.description }}</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+    <!--
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<br><br><br>
+-->
+    <div class="section">
+        {% load noclook_tags %}
+        {% if depend_inc %}
+            <h3>Used by:</h3>
+            <table id="depend_inc" class="tablesorter" cellspacing="1">
+                <thead>
+                <th>ID</th><th>Type</th><th>Description</th>
+                </thead>
+                <tbody>
+                {% for service in depend_inc %}
+                    <tr>
+                        <td><a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a></td>
+                        <td>{{ service.start.node_type }}</td>
+                        <td>{{ service.start.description }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+    <div class="section">
+        {% load noclook_tags %}
+        {% if depend_out %}
+            <h3>This service depend on:</h3>
+            <table id="depend_out" class="tablesorter" cellspacing="1">
+                <thead>
+                <th>ID</th><th>Type</th><th>Description</th>
+                </thead>
+                <tbody>
+                {% for service in depend_out %}
+                    <tr>
+                        <td><a href="{% noclook_node_to_url service.end %}">{{ service.end.name }}</a></td>
+                        <td>{{ service.end.node_type }}</td>
+                        <td>{{ service.end.description }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+{% endblock %}

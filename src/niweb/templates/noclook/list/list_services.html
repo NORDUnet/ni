@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} All nodes{% endblock %}
+
+{% block js %}
+    <script type="text/javascript">
+        $(document).ready(
+                function(){
+                    $("#services").tablesorter(
+                            {
+                                sortList: [[0,0]],
+                                headers:
+                                {},
+                                widthFixed: true,
+                                widgets: ['zebra']
+                            });
+                }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <h1>Services</h1>
+    <table id="services" class="tablesorter" cellspacing="1">
+        <thead>
+        <th>Service</th><th>Service Type</th><th>Description</th>
+        </thead>
+        <tbody>
+        {% load noclook_tags %}
+        {% for service in service_list %}
+            <tr>
+                <td><a href="{% noclook_node_to_url service.node %}">{{ service.node.name }}</a></td><td>{{ service.service_type }}</td><td>{{ service.description }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

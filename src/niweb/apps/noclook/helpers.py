@@ -309,3 +309,15 @@ def get_same_name_relations(relation):
         '''
     return nc.neo4jdb.query(q, name=relation.getProperty('name', ''),
                             type=relation.getProperty('node_type', ''))
+
+def get_units(port):
+    """
+    Get all Unit nodes that depend on the port.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node<-[:Depends_on]-unit
+        WHERE unit.node_type = "Unit"
+        RETURN unit
+        '''
+    return nc.neo4jdb.query(q, id=port.getId())
