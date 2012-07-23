@@ -135,7 +135,7 @@ def router_detail(request, handle_id):
             for service in dep_services:
                 pic['services'].append(service.start)
         pics.append(pic)
-    location = h.get_location(node)
+    location = h.iter2list(h.get_location(node))
     for address in loopback_addresses:
         try:
             ipaddr.IPNetwork(address)
@@ -219,7 +219,7 @@ def optical_node_detail(request, handle_id):
                 fibers['node_name'] = tmp['name']
                 fibers['node_url'] = h.get_node_url(tmp)
         opt_info.append(fibers)
-    location = h.get_location(node)
+    location = h.iter2list(h.get_location(node))
     return render_to_response('noclook/detail/optical_node_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
@@ -238,7 +238,7 @@ def host_detail(request, handle_id):
     user_relationships = h.iter2list(node.Uses.incoming)
     provider_relationships = h.iter2list(node.Provides.incoming)
     owner_relationships = h.iter2list(node.Owns.incoming)
-    location = h.get_location(node)
+    location = h.iter2list(h.get_location(node))
     return render_to_response('noclook/detail/host_detail.html', 
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired, 
@@ -420,7 +420,7 @@ def rack_detail(request, handle_id):
     # Get equipment in rack
     physical_relationships = h.iter2list(node.Located_in.incoming)
     # Get rack location
-    location = h.get_place(node)
+    location = h.iter2list(h.get_place(node))
     return render_to_response('noclook/detail/rack_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
@@ -437,7 +437,7 @@ def odf_detail(request, handle_id):
     # Get ports in ODF
     connections = h.get_connected_equipment(node)
     # Get location
-    location = h.get_location(node)
+    location = h.iter2list(h.get_location(node))
     return render_to_response('noclook/detail/odf_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
@@ -453,12 +453,15 @@ def port_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     # Get cables connected to the port
     connected_to_rels = h.iter2list(node.Connected_to.incoming)
+    # Get things dependent on the port
+    depends_on_port = h.iter2list(h.get_depends_on_equipment(node))
     # Get location
-    location = h.get_place(node)
+    location = h.iter2list(h.get_place(node))
     return render_to_response('noclook/detail/port_detail.html',
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
                               'connected_to_rels': connected_to_rels,
+                              'depends_on_port': depends_on_port,
                               'location': location},
                               context_instance=RequestContext(request))
 
@@ -469,7 +472,7 @@ def service_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
-    depend_out = h.iter2list(node.Depends_on.outgoing)
+    depend_out = h.iter2list(h.get_logical_depends_on(node))
     users = h.iter2list(node.Uses.incoming)
     return render_to_response('noclook/detail/service_detail.html',
                              {'node': node, 'node_handle': nh,
@@ -485,7 +488,7 @@ def external_service_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
-    depend_out = h.iter2list(node.Depends_on.outgoing)
+    depend_out = h.iter2list(h.get_logical_depends_on(node))
     providers = h.iter2list(node.Provides.incoming)
     return render_to_response('noclook/detail/external_service_detail.html',
             {'node': node, 'node_handle': nh,
@@ -501,7 +504,7 @@ def optical_link_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
-    depend_out = h.iter2list(node.Depends_on.outgoing)
+    depend_out = h.iter2list(h.get_logical_depends_on(node))
     return render_to_response('noclook/detail/optical_link_detail.html',
                              {'node': node, 'node_handle': nh,
                               'last_seen': last_seen, 'expired': expired,
@@ -515,7 +518,7 @@ def optical_path_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
-    depend_out = h.iter2list(node.Depends_on.outgoing)
+    depend_out = h.iter2list(h.get_logical_depends_on(node))
     return render_to_response('noclook/detail/optical_path_detail.html',
             {'node': node, 'node_handle': nh,
              'last_seen': last_seen, 'expired': expired,

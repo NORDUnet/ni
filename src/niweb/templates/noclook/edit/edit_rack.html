@@ -34,13 +34,38 @@ $(document).ready(
         // Populate first level combo box
         $.getJSON('/formdata/site/', function(data) {
             $('#level0').append($('<option>').val("0").text("-- Please Select --"));
-            $('#level0').append($('<option>').val("-1").text("-- Remove current --"));
             $.each(data, function(key, tuple) {
                 $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
             });
         });
         $('#level0').click(function() {
             $("#id_relationship_location").val($(this).val());
+        });
+        // Modal delete connection confirm
+        $("#dialog-user-confirm").dialog({
+            modal: true,
+            bgiframe: true,
+            width: 500,
+            height: 200,
+            autoOpen: false
+        });
+
+        $("a.user-confirm").click(function(e) {
+            e.preventDefault();
+            var theHREF = $(this).attr("href");
+
+
+            $("#dialog-user-confirm").dialog('option', 'buttons', {
+                "Confirm" : function() {
+                    window.location.href = theHREF;
+                },
+                "Cancel" : function() {
+                    $(this).dialog("close");
+                }
+            });
+
+            $("#dialog-user-confirm").dialog("open");
+
         });
         // Accordion
         $(".edit-accordion").collapse()
@@ -51,6 +76,9 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
+    <div id="dialog-user-confirm" title="Remove relationship?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
+    </div>
     <div class="well">
         <h3>Name</h3>
         {{ form.name }}
@@ -85,15 +113,21 @@ $(document).ready(
             </div>
             <div id="collapseTwo" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
-                    <label>Current</label></td>
-                    <span class="input-large uneditable-input">
                     {% if location %}
-                        {% for loc in location %}
-                            {{ loc.name }}
+                        <label>Current location</label>
+                        {% load noclook_tags %}
+                        {% for hit in location %}
+                            <div class="row">
+                                <div class="span3">
+                                    <a href="{% noclook_node_to_url hit.loc %}">{{ hit.parent.name }} {{ hit.loc.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ hit.loc_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
                         {% endfor %}
                     {% endif %}
-                    </span>
-                    <label>Change</label>
+                    <label>Set location</label>
                     {{ form.relationship_location }}
                     <select class="stacked" name="level0" id="level0"></select>
                 </div>

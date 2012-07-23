@@ -527,18 +527,14 @@ def edit_optical_node(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    location = h.get_location(node)
+    location = h.iter2list(h.get_location(node))
     if request.POST:
         form = forms.EditOpticalNodeForm(request.POST)
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
             # Optical Node specific updates
-            if form.cleaned_data['relationship_location'] == -1:
-                # Remove existing location if any
-                for rel in h.iter2list(node.Located_in.outgoing):
-                    nc.delete_relationship(nc.neo4jdb, rel)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id)
             return HttpResponseRedirect(nh.get_absolute_url())
@@ -581,20 +577,16 @@ def edit_rack(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    location = h.get_place(node)
+    location = h.iter2list(h.get_place(node))
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
             # Rack specific updates
-            if form.cleaned_data['relationship_location'] == -1:
-                # Remove existing location if any
-                for rel in h.iter2list(node.Located_in.outgoing):
-                    nc.delete_relationship(nc.neo4jdb, rel)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                nh, node = place_physical_in_location(nh, node, location_id)
+                nh, node = place_child_in_parent(node, location_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_rack.html',
@@ -614,7 +606,7 @@ def edit_host(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    location = h.get_location(node)
+    location = h.iter2list(h.get_location(node))
     owner_relationships = h.iter2list(node.Owns.incoming)    # Physical hosts
     user_relationships = h.iter2list(node.Uses.incoming)     # Logical hosts
     if request.POST:
@@ -629,11 +621,7 @@ def edit_host(request, handle_id):
             if form.cleaned_data['relationship_owner']:
                 owner_id = form.cleaned_data['relationship_owner']
                 node = set_owner(node, owner_id)
-            if form.cleaned_data['relationship_location'] == -1:
-                # Remove existing location if any
-                for rel in h.iter2list(node.Located_in.outgoing):
-                    nc.delete_relationship(nc.neo4jdb, rel)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id)
             return HttpResponseRedirect(nh.get_absolute_url())
@@ -657,18 +645,14 @@ def edit_router(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    location = h.get_location(node)
+    location = h.iter2list(h.get_location(node))
     if request.POST:
         form = forms.EditRouterForm(request.POST)
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
             # Router specific updates
-            if form.cleaned_data['relationship_location'] == -1:
-                # Remove existing location if any
-                for rel in h.iter2list(node.Located_in.outgoing):
-                    nc.delete_relationship(nc.neo4jdb, rel)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id)
             return HttpResponseRedirect(nh.get_absolute_url())
@@ -690,18 +674,14 @@ def edit_odf(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    location = h.get_location(node)
+    location = h.iter2list(h.get_location(node))
     if request.POST:
         form = forms.EditOdfForm(request.POST)
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
             # ODF specific updates
-            if form.cleaned_data['relationship_location'] == -1:
-                # Remove existing location if any
-                for rel in h.iter2list(node.Located_in.outgoing):
-                    nc.delete_relationship(nc.neo4jdb, rel)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = place_physical_in_location(nh, node, location_id)
             return HttpResponseRedirect(nh.get_absolute_url())
@@ -722,7 +702,7 @@ def edit_port(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     nh, node = get_nh_node(handle_id)
-    location = h.get_place(node)
+    location = h.iter2list(h.get_place(node))
     if request.POST:
         form = forms.EditPortForm(request.POST)
         if form.is_valid():

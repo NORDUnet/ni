@@ -154,23 +154,24 @@ $(document).ready(
             </tr>
         </table>
     </div>
+    {% if node.description or node.responsible_person %}
+        <div class="span7">
+            <table class="table">
+                {% if node.description %}
+                    <tr>
+                        <th>Description:</th><td>{{ node.description }}</td>
+                    </tr>
+                {% endif %}
+                {% if node.responsible_person %}
+                    <tr>
+                        <th>Responsible</th><td>{{ node.responsible_person }}</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+    {% endif %}
 </div>
-{% if node.description or node.responsible_person %}
-    <div>
-        <table class="table">
-            {% if node.description %}
-                <tr>
-                    <th>Description:</th><td>{{ node.description }}</td>
-                </tr>
-            {% endif %}
-            {% if node.responsible_person %}
-                <tr>
-                    <th>Responsible</th><td>{{ node.responsible_person }}</td>
-                </tr>
-            {% endif %}
-        </table>
-    </div>
-{% endif %}
+
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}

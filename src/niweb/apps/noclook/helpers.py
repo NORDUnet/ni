@@ -217,33 +217,55 @@ def nodes_to_geoff(node_list):
     # TODO:
     pass
     
+#def get_location(node):
+#    """
+#    Returns a list of the nodes locations as dicts with name and url.
+#    """
+#    location = []
+#    rels = iter2list(node.Located_in.outgoing)
+#    for rel in rels:
+#        if rel.end['node_type'] == 'Rack':
+#            # Get where the rack is placed
+#            location += get_place(rel.end)
+#            name = rel.end['name']
+#        else:
+#            name = rel.end['name']
+#        location.append({'node': rel.end, 'name': name})
+#    return location
+
+#def get_place(node):
+#    """
+#    Returns the nodes place in site or other equipment.
+#    """
+#    location = []
+#    rels = iter2list(node.Has.incoming)
+#    for rel in rels:
+#        name = rel.start['name']
+#        location.append({'node': rel.start, 'name': name})
+#    return location
+
 def get_location(node):
     """
-    Returns a list of the nodes locations as dicts with name and url.
+    Returns the nodes location and the locations parent, if any.
     """
-    location = []
-    rels = iter2list(node.Located_in.outgoing)
-    for rel in rels:
-        if rel.end['node_type'] == 'Rack':
-            # Get where the rack is placed
-            location += get_place(rel.end)
-            name = rel.end['name']
-        else:
-            name = rel.end['name']
-        location.append({'node': rel.end, 'name': name})
-    return location
+    q = '''
+        START node=node({id})
+        MATCH node-[loc_rel:Located_in]->loc<-[?:Has*1..]-parent
+        RETURN loc,loc_rel,parent
+        '''
+    return nc.neo4jdb.query(q, id=node.getId())
 
 def get_place(node):
     """
-    Returns the nodes place in site or other equipment.
+    Returns the node place and the places parent, if any.
     """
-    location = []
-    rels = iter2list(node.Has.incoming)
-    for rel in rels:
-        name = rel.start['name']
-        location.append({'node': rel.start, 'name': name})
-    return location
-    
+    q = '''
+        START node=node({id})
+        MATCH node<-[loc_rel:Has]-loc<-[?:Has*1..]-parent
+        RETURN loc,loc_rel,parent
+        '''
+    return nc.neo4jdb.query(q, id=node.getId())
+
 def get_connected_cables(cable):
     """
     Get the things the cable is connected to and their parents, if any.
@@ -284,6 +306,17 @@ def get_depends_on_equipment(equipment):
         RETURN node,logical,port
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
+
+def get_logical_depends_on(logical):
+    """
+    Get all nodes that the logical node depends on and their top parent if any.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node-[:Depends_on]->dep<-[?:Has*1..]-parent
+        RETURN dep,parent
+        '''
+    return nc.neo4jdb.query(q, id=logical.getId())
 
 def get_racks_and_equipment(site):
     """

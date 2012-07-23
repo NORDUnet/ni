@@ -78,10 +78,10 @@
     <div class="section">
         {% load noclook_tags %}
         {% if depend_inc %}
-            <h3>Used by:</h3>
+            <h3>Used by</h3>
             <table id="depend_inc" class="tablesorter" cellspacing="1">
                 <thead>
-                <th>ID</th><th>Type</th><th>Description</th>
+                <th>Name</th><th>Type</th><th>Description</th>
                 </thead>
                 <tbody>
                 {% for service in depend_inc %}
@@ -98,17 +98,17 @@
     <div class="section">
         {% load noclook_tags %}
         {% if depend_out %}
-            <h3>This service depend on:</h3>
+            <h3>This optical path depend on</h3>
             <table id="depend_out" class="tablesorter" cellspacing="1">
                 <thead>
-                <th>ID</th><th>Type</th><th>Description</th>
+                <th>Name</th><th>Type</th><th>Description</th>
                 </thead>
                 <tbody>
-                {% for service in depend_out %}
+                {% for hit in depend_out %}
                     <tr>
-                        <td><a href="{% noclook_node_to_url service.end %}">{{ service.end.name }}</a></td>
-                        <td>{{ service.end.node_type }}</td>
-                        <td>{{ service.end.description }}</td>
+                        <td><a href="{% noclook_node_to_url hit.dep %}">{{ hit.parent.name }} {{ hit.dep.name }}</a></td>
+                        <td>{{ hit.dep.node_type }}</td>
+                        <td>{{ hit.dep.description }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
