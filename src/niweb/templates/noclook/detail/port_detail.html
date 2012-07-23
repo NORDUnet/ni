@@ -15,6 +15,14 @@
                 widthFixed: true,
                 widgets: ['zebra']
             });
+            $("#depends").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers:
+                        {},
+                        widthFixed: true,
+                        widgets: ['zebra']
+            });
         }
     );
 </script>
@@ -67,7 +75,27 @@
         </tbody>
     </table>
     {% else %}
-        No connections found.
+        No cables connected to the port.
     {% endif %}
 </div>
+    <div class="section">
+        <h3>Depends on this port</h3>
+        {% if depends_on_port %}
+            <table id="depends" class="tablesorter" cellspacing="1">
+                <thead>
+                <th>Name</th>
+                </thead>
+                <tbody>
+                {% for hit in depends_on_port %}
+                    <tr>
+                        <td><a href="{% noclook_node_to_url hit.logical %}">{{ hit.logical.name }}</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            No connections found.
+        {% endif %}
+    </div>
+
 {% endblock %}
