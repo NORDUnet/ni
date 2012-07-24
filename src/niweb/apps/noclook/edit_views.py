@@ -586,7 +586,7 @@ def edit_rack(request, handle_id):
             # Rack specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                nh, node = place_child_in_parent(node, location_id)
+                place_child_in_parent(node, location_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_rack.html',
