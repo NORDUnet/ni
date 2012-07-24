@@ -276,3 +276,32 @@ class EditPortForm(forms.Form):
                                    widget=forms.widgets.Select)
     relationship_parent = forms.IntegerField(required=False,
                                              widget=forms.widgets.HiddenInput)
+
+class NewCustomerForm(forms.Form):
+    name = forms.CharField()
+    url = forms.URLField(required=False, help_text='Link to more information.')
+
+
+class EditCustomerForm(forms.Form):
+    name = forms.CharField()
+    url = forms.URLField(required=False, help_text='Link to more information.')
+
+
+class NewEndUserForm(forms.Form):
+    name = forms.CharField()
+    url = forms.URLField(required=False, help_text='Link to more information.')
+
+
+class EditEndUserForm(forms.Form):
+    name = forms.CharField()
+    url = forms.URLField(required=False, help_text='Link to more information.')
+
+
+class NewProviderForm(forms.Form):
+    name = forms.CharField()
+    url = forms.URLField(required=False, help_text='Link to more information.')
+
+
+class EditProviderForm(forms.Form):
+    name = forms.CharField()
+    url = forms.URLField(required=False, help_text='Link to more information.')
