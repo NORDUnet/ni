@@ -389,6 +389,30 @@ def new_port(request, form, parent_id=None):
         place_child_in_parent(node, parent_id)
     return HttpResponseRedirect(nh.get_absolute_url())
 
+@login_required
+def new_customer(request, form):
+    nh = form_to_generic_node_handle(request, form, 'customer', 'relation')
+    node = nh.get_node()
+    keys = ['url']
+    form_update_node(request.user, node, form, keys)
+    return HttpResponseRedirect(nh.get_absolute_url())
+
+@login_required
+def new_end_user(request, form):
+    nh = form_to_generic_node_handle(request, form, 'end-user', 'relation')
+    node = nh.get_node()
+    keys = ['url']
+    form_update_node(request.user, node, form, keys)
+    return HttpResponseRedirect(nh.get_absolute_url())
+
+@login_required
+def new_provider(request, form):
+    nh = form_to_generic_node_handle(request, form, 'provider', 'relation')
+    node = nh.get_node()
+    keys = ['url']
+    form_update_node(request.user, node, form, keys)
+    return HttpResponseRedirect(nh.get_absolute_url())
+
 # Edit functions
 @login_required
 def edit_node(request, slug, handle_id):
@@ -726,10 +750,78 @@ def edit_port(request, handle_id):
         return render_to_response('noclook/edit/edit_port.html',
                                  {'form': form, 'node': node, 'location': location},
                                  context_instance=RequestContext(request))
+@login_required
+def edit_customer(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditCustomerForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_customer.html',
+                    {'node': node, 'form': form},
+                                      context_instance=RequestContext(request))
+    else:
+        form = forms.EditCustomerForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_customer.html',
+                {'form': form, 'node': node},
+                                  context_instance=RequestContext(request))
+
+@login_required
+def edit_end_user(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditEndUserForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_end_user.html',
+                    {'node': node, 'form': form},
+                                      context_instance=RequestContext(request))
+    else:
+        form = forms.EditEndUserForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_end_user.html',
+                {'form': form, 'node': node},
+                                  context_instance=RequestContext(request))
+
+@login_required
+def edit_provider(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditProviderForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_provider.html',
+                    {'node': node, 'form': form},
+                                      context_instance=RequestContext(request))
+    else:
+        form = forms.EditProviderForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_provider.html',
+                {'form': form, 'node': node},
+                                  context_instance=RequestContext(request))
 
 NEW_FORMS =  {'cable': forms.NewCableForm,
+              'customer': forms.NewCustomerForm,
+              'end-user': forms.NewEndUserForm,
               'odf': forms.NewOdfForm,
               'port': forms.NewPortForm,
+              'provider': forms.NewProviderForm,
               'rack': forms.NewRackForm,
               'site': forms.NewSiteForm, 
               'site-owner': forms.NewSiteOwnerForm,
@@ -744,19 +836,25 @@ NEW_FORMS =  {'cable': forms.NewCableForm,
 #               }
 
 NEW_FUNC = {'cable': new_cable,
+            'customer': new_customer,
+            'end-user': new_end_user,
             'odf': new_odf,
             'port': new_port,
+            'provider': new_provider,
             'rack': new_rack,
             'site': new_site,
             'site-owner': new_site_owner,
             }
 
 EDIT_FUNC = {'cable': edit_cable,
+             'customer': edit_customer,
+             'end-user': edit_end_user,
              'host': edit_host,
              'odf': edit_odf,
              'optical-node': edit_optical_node,
              'peering-partner': edit_peering_partner,
              'port': edit_port,
+             'provider': edit_provider,
              'rack': edit_rack,
              'router': edit_router,
              'site': edit_site, 
