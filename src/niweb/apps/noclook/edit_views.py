@@ -10,12 +10,14 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
+from django.forms.util import ErrorDict, ErrorList
 import json
 
 from django.conf import settings as django_settings
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook import forms
 import niweb.apps.noclook.helpers as h
+from norduni_client_exceptions import UniqueNodeError
 import norduni_client as nc
 
 # Helper functions
@@ -203,6 +205,29 @@ def set_user(node, user_node_id):
                                         'Uses')
     return node
 
+def set_provider(node, provider_node_id):
+    """
+    Creates or updates an Provides relationship between the node and the
+    owner node.
+    Returns the node.
+    """
+    provider_node = nc.get_node_by_id(nc.neo4jdb,  provider_node_id)
+    rel_exist = nc.get_relationships(node, provider_node, 'Provides')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        # Remove the old provider and create a new
+        for rel in h.iter2list(node.Provides.incoming):
+            nc.delete_relationship(nc.neo4jdb, rel)
+        nc.create_relationship(nc.neo4jdb, provider_node, node,
+                               'Provides')
+    return node
+
 @login_required
 def delete_node(request, slug, handle_id):
     """
@@ -283,6 +308,21 @@ def form_to_generic_node_handle(request, form, slug, node_meta_type):
     node_handle.save()
     h.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(),
                               False)
+    return node_handle
+
+def form_to_unique_node_handle(request, form, slug, node_meta_type):
+    node_name = form.cleaned_data['name']
+    node_type = slug_to_node_type(slug, create=True)
+    try:
+        node_handle = NodeHandle.objects.get(node_name=node_name, node_type=node_type)
+        raise UniqueNodeError(node_handle.get_node())
+    except NodeHandle.DoesNotExist:
+        node_handle = NodeHandle.objects.create(node_name=node_name,
+                                                node_type=node_type,
+                                                node_meta_type=node_meta_type,
+                                                modifier=request.user,
+                                                creator=request.user)
+        h.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
     return node_handle
 
 # Create functions
@@ -410,6 +450,22 @@ def new_provider(request, form):
     nh = form_to_generic_node_handle(request, form, 'provider', 'relation')
     node = nh.get_node()
     keys = ['url']
+    form_update_node(request.user, node, form, keys)
+    return HttpResponseRedirect(nh.get_absolute_url())
+
+@login_required
+def new_external_service(request, form):
+    try:
+        nh = form_to_unique_node_handle(request, form, 'external-service', 'logical')
+    except UniqueNodeError:
+        form = forms.NewExternalServiceForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('An External Service with that name already exists.')
+        return render_to_response('noclook/edit/create_external_service.html', {'form': form},
+                                  context_instance=RequestContext(request))
+    node = nh.get_node()
+    keys = ['description']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
 
@@ -816,9 +872,38 @@ def edit_provider(request, handle_id):
                 {'form': form, 'node': node},
                                   context_instance=RequestContext(request))
 
+@login_required
+def edit_external_service(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    service_providers =  h.iter2list(node.Provides.incoming)
+    if request.POST:
+        form = forms.EditExternalServiceForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            if form.cleaned_data['relationship_provider']:
+                provider_id = form.cleaned_data['relationship_provider']
+                set_provider(node, provider_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_external_service.html',
+                                     {'node': node, 'form': form,
+                                      'service_providers': service_providers},
+                                     context_instance=RequestContext(request))
+    else:
+        form = forms.EditExternalServiceForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_external_service.html',
+                                 {'form': form, 'node': node,
+                                  'service_providers': service_providers},
+                                  context_instance=RequestContext(request))
+
 NEW_FORMS =  {'cable': forms.NewCableForm,
               'customer': forms.NewCustomerForm,
               'end-user': forms.NewEndUserForm,
+              'external-service': forms.NewExternalServiceForm,
               'odf': forms.NewOdfForm,
               'port': forms.NewPortForm,
               'provider': forms.NewProviderForm,
@@ -838,6 +923,7 @@ NEW_FORMS =  {'cable': forms.NewCableForm,
 NEW_FUNC = {'cable': new_cable,
             'customer': new_customer,
             'end-user': new_end_user,
+            'external-service': new_external_service,
             'odf': new_odf,
             'port': new_port,
             'provider': new_provider,
@@ -849,6 +935,7 @@ NEW_FUNC = {'cable': new_cable,
 EDIT_FUNC = {'cable': edit_cable,
              'customer': edit_customer,
              'end-user': edit_end_user,
+             'external-service': edit_external_service,
              'host': edit_host,
              'odf': edit_odf,
              'optical-node': edit_optical_node,

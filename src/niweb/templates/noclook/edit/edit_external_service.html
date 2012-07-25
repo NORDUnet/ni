@@ -1,0 +1,83 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+    {{ block.super }}
+    {% load niweb_tags %}
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+    <script type="text/javascript">
+        $(document).ready(
+                function(){
+                    // Modal delete object confirm
+                    $("#dialog-object-confirm").dialog({
+                        modal: true,
+                        bgiframe: true,
+                        width: 500,
+                        height: 200,
+                        autoOpen: false
+                    });
+
+                    $("#object-confirm").click(function(e) {
+                        e.preventDefault();
+                        var theHREF = $(this).attr("href");
+
+                        $("#dialog-object-confirm").dialog('option', 'buttons', {
+                            "Confirm" : function() {
+                                window.location.href = theHREF;
+                            },
+                            "Cancel" : function() {
+                                $(this).dialog("close");
+                            }
+                        });
+
+                        $("#dialog-object-confirm").dialog("open");
+                    });
+                    // Modal delete connection confirm
+                    $("#dialog-user-confirm").dialog({
+                        modal: true,
+                        bgiframe: true,
+                        width: 500,
+                        height: 200,
+                        autoOpen: false
+                    });
+
+                    $("a.user-confirm").click(function(e) {
+                        e.preventDefault();
+                        var theHREF = $(this).attr("href");
+
+
+                        $("#dialog-user-confirm").dialog('option', 'buttons', {
+                            "Confirm" : function() {
+                                window.location.href = theHREF;
+                            },
+                            "Cancel" : function() {
+                                $(this).dialog("close");
+                            }
+                        });
+
+                        $("#dialog-user-confirm").dialog("open");
+
+                    });
+                }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <div id="dialog-user-confirm" title="Remove relationship?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
+    </div>
+    <div id="description-section">
+        <h3>Description (optional)</h3>
+        <div class="well">
+            {{ form.description }}<br>
+            <span class="help-inline">{{ form.description.help_text }}</span>
+        </div>
+    </div>
+    <div id="provider-section">
+        <h3>Provider (optional)</h3>
+        <div class="well">
+            {{ form.relationship_provider }}
+        </div>
+    </div>
+{% endblock %}

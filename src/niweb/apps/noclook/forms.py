@@ -77,7 +77,6 @@ def get_node_type_tuples(node_type):
     node_list.sort(key=itemgetter(1))
     return node_list
 
-
 class NewSiteForm(forms.Form):
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES,
@@ -305,3 +304,21 @@ class NewProviderForm(forms.Form):
 class EditProviderForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+
+
+class NewExternalServiceForm(forms.Form):
+    name = forms.CharField()
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the service.')
+
+
+class EditExternalServiceForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditExternalServiceForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the service.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
