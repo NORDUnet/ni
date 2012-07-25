@@ -38,7 +38,7 @@
                     <th>Name:</th><td>{{ node.name }}</td>
                 </tr>
                 <tr>
-                    <th>Providers:</th>
+                    <th>Provider:</th>
                     <td>
                         {% for provider in providers %}
                             <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a><br>
@@ -74,12 +74,10 @@
             </div>
         {% endif %}
     </div>
-    <!--
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
--->
     <div class="section">
         {% load noclook_tags %}
         {% if depend_inc %}
