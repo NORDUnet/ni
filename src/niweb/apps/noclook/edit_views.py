@@ -362,7 +362,15 @@ def new_node(request, slug=None, **kwargs):
 
 @login_required
 def new_site(request, form):
-    nh = form_to_generic_node_handle(request, form, 'site', 'location')
+    try:
+        nh = form_to_unique_node_handle(request, form, 'site', 'location')
+    except UniqueNodeError:
+        form = forms.NewSiteForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('A Site with that name already exists.')
+        return render_to_response('noclook/edit/create_site.html', {'form': form},
+                                  context_instance=RequestContext(request))
     node = nh.get_node()
     keys = ['country_code', 'address', 'postarea', 'postcode']
     form_update_node(request.user, node, form, keys)
@@ -378,7 +386,15 @@ def new_site(request, form):
     
 @login_required
 def new_site_owner(request, form):
-    nh = form_to_generic_node_handle(request, form, 'site-owner', 'relation')
+    try:
+        nh = form_to_unique_node_handle(request, form, 'site-owner', 'relation')
+    except UniqueNodeError:
+        form = forms.NewSiteOwnerForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('A Site Owner with that name already exists.')
+        return render_to_response('noclook/edit/create_site_owner.html', {'form': form},
+                                  context_instance=RequestContext(request))
     node = nh.get_node()
     keys = ['url']
     form_update_node(request.user, node, form, keys)
@@ -386,7 +402,15 @@ def new_site_owner(request, form):
     
 @login_required
 def new_cable(request, form, **kwargs):
-    nh = form_to_generic_node_handle(request, form, 'cable', 'physical')
+    try:
+        nh = form_to_unique_node_handle(request, form, 'cable', 'physical')
+    except UniqueNodeError:
+        form = forms.NewCableForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('A Cable with that name already exists.')
+        return render_to_response('noclook/edit/create_cable.html', {'form': form},
+                                  context_instance=RequestContext(request))
     node = nh.get_node()
     keys = ['cable_type']
     form_update_node(request.user, node, form, keys)
@@ -431,7 +455,15 @@ def new_port(request, form, parent_id=None):
 
 @login_required
 def new_customer(request, form):
-    nh = form_to_generic_node_handle(request, form, 'customer', 'relation')
+    try:
+        nh = form_to_unique_node_handle(request, form, 'customer', 'relation')
+    except UniqueNodeError:
+        form = forms.NewCustomerForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('A Customer with that name already exists.')
+        return render_to_response('noclook/edit/create_customer.html', {'form': form},
+                                  context_instance=RequestContext(request))
     node = nh.get_node()
     keys = ['url']
     form_update_node(request.user, node, form, keys)
@@ -439,7 +471,15 @@ def new_customer(request, form):
 
 @login_required
 def new_end_user(request, form):
-    nh = form_to_generic_node_handle(request, form, 'end-user', 'relation')
+    try:
+        nh = form_to_unique_node_handle(request, form, 'end-user', 'relation')
+    except UniqueNodeError:
+        form = forms.NewEndUserForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('An End User with that name already exists.')
+        return render_to_response('noclook/edit/create_end_user.html', {'form': form},
+                                  context_instance=RequestContext(request))
     node = nh.get_node()
     keys = ['url']
     form_update_node(request.user, node, form, keys)
@@ -447,7 +487,15 @@ def new_end_user(request, form):
 
 @login_required
 def new_provider(request, form):
-    nh = form_to_generic_node_handle(request, form, 'provider', 'relation')
+    try:
+        nh = form_to_unique_node_handle(request, form, 'provider', 'relation')
+    except UniqueNodeError:
+        form = forms.NewProviderForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('A Provider with that name already exists.')
+        return render_to_response('noclook/edit/create_provider.html', {'form': form},
+                                  context_instance=RequestContext(request))
     node = nh.get_node()
     keys = ['url']
     form_update_node(request.user, node, form, keys)
