@@ -56,9 +56,10 @@ def depend_on_equipment(node, equipment, rack, subrack, slot, port):
                                          int(slot), int(port))
     nh = nt.get_node_handle(nc.neo4jdb, port_name, 'Port', 'physical', parent)
     port_node = nh.get_node()
-    h.set_noclook_auto_manage(nc.neo4jdb, port_node, False)
-    rel = nc.create_relationship(nc.neo4jdb, parent, port_node, 'Has')
-    h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
+    if not nc.get_relationships(parent, port_node, 'Has'):
+        h.set_noclook_auto_manage(nc.neo4jdb, port_node, False)
+        rel = nc.create_relationship(nc.neo4jdb, parent, port_node, 'Has')
+        h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
     rel = nc.create_relationship(nc.neo4jdb, node, port_node, 'Depends_on')
     h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
