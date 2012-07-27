@@ -106,7 +106,7 @@ def insert_interface_unit(interf_node, unit):
     # Unit numbers are unique per interface
     create = True
     for rel in interf_node.Depends_on.incoming:
-        if int(rel.start['name']) == int(unit['unit']):
+        if rel.start['node_type'] == 'Unit' and int(rel.start['name']) == int(unit['unit']):
             create = False
             node = rel.start
             break
