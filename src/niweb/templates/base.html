@@ -128,9 +128,11 @@
             <div class="span9 content">
                 <div class="row visible-desktop">
                     <div class="span7">
+                        {% if user.is_authenticated %}
                         <form id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
                             <input class="xlarge search-query" type="search" id="main" name="q" /> <button class="btn primary" type="submit">Search</button>
                         </form>
+                        {% endif %}
                     </div>
                     <div class="span2">
                         {% if user.is_authenticated %}
