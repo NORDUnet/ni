@@ -62,6 +62,24 @@ SEARCH_INDEX_KEYS = ['name', 'description', 'ip_address', 'ip_addresses',
 # Other indexes used
 OTHER_INDEXES = ['node_types']
 
+# Login settings
+LOGIN_URL = '/login/'
+AUTH_PROFILE_MODULE = 'noclook.UserProfile'
+
+# djangosaml2 settings
+#LOGIN_URL = '/saml2/login/'
+#SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+#SAML_CREATE_UNKNOWN_USER = True
+
+#SAML_ATTRIBUTE_MAPPING = {
+#    'eduPersonPrincipalName': 'username',
+#    'mail': 'email',
+#    'givenName': 'first_name',
+#    'sn': 'last_name',
+#    }
+
+#SAML_CONFIG = saml2_settings.get_settings()
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -126,7 +144,7 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.staticfiles',
     'tastypie',
+    'djangosaml2',
     'niweb_core',
-    'apps.fedlogin',
     'apps.noclook',
 )
