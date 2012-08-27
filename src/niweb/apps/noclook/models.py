@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from django.db import models, utils
 from django.contrib.auth.models import User
+from django.dispatch.dispatcher import receiver
 from django.db.models.signals import post_save
 from django.contrib.comments import Comment
 from django.db.models import Max
 
 import norduni_client as nc
+
 
 NODE_META_TYPE_CHOICES = (
     ('logical', 'Logical'),
@@ -16,12 +18,14 @@ NODE_META_TYPE_CHOICES = (
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
+    display_name = models.CharField(max_length=255,blank=True,null=True)
 
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
+    def __unicode__(self):
+        return "%s [%s]" % (self.display_name, self.user.username)
 
-post_save.connect(create_user_profile, sender=User)
+@receiver(post_save,sender=User)
+def _create_profile(sender, **kwargs):
+    UserProfile.objects.get_or_create(user=sender)
 
 class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
