@@ -179,27 +179,27 @@ class UniqueId(models.Model):
     save.alters_data = True
 
 
-class FreeRangeManager(models.Manager):
-    """
-    A manager that helps finding free ranged of NORDUnet IDs to reserve.
-    """
-    def find_range(self, min_base_id, max_base_id, quantity):
-        """
-        Recursively tries to find an unused range of quantity ids between min and max
-        base id.
-        """
-        for i in range(min_base_id, max_base_id):
-            self.get()
-
-    def reserve_range(self, min_base_id, quantity):
-        """
-        Reserves and returns a list of previous unused ids for the specified quantity.
-        """
-        max_base_id = self.aggregate(Max('base_id'))
-        range = self.find_range(min_base_id, max_base_id, quantity)
-        # TODO
-        # Create IDs and set reserved = True
-        # Return list of IDs
+#class FreeRangeManager(models.Manager):
+#    """
+#    A manager that helps finding free ranged of NORDUnet IDs to reserve.
+#    """
+#    def find_range(self, min_base_id, max_base_id, quantity):
+#        """
+#        Recursively tries to find an unused range of quantity ids between min and max
+#        base id.
+#        """
+#        for i in range(min_base_id, max_base_id):
+#            self.get()
+#
+#    def reserve_range(self, min_base_id, quantity):
+#        """
+#        Reserves and returns a list of previous unused ids for the specified quantity.
+#        """
+#        max_base_id = self.aggregate(Max('base_id'))
+#        range = self.find_range(min_base_id, max_base_id, quantity)
+#        # TODO
+#        # Create IDs and set reserved = True
+#        # Return list of IDs
 
 
 class NORDUnetIdSet(models.Model):
@@ -209,7 +209,7 @@ class NORDUnetIdSet(models.Model):
     nordunet_id = models.CharField(max_length=256, unique=True)
     reserved = models.BooleanField()
     base_id = models.IntegerField(null=True, blank=True)
-    objects = FreeRangeManager()
+    #objects = FreeRangeManager()
     # Meta
     creator = models.ForeignKey(User, related_name='nordunet_id_creator')
     created = models.DateTimeField(auto_now_add=True)
