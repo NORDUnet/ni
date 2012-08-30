@@ -1,6 +1,7 @@
 from os import environ
 from os.path import join
 from sys import path
+from apps.saml2auth import config
 
 # Django settings for niweb project.
 
@@ -63,7 +64,23 @@ SEARCH_INDEX_KEYS = ['name', 'description', 'ip_address', 'ip_addresses',
 OTHER_INDEXES = ['node_types']
 
 # Login settings
-LOGIN_URL = '/login/'
+#LOGIN_URL = '/login/'
+AUTH_PROFILE_MODULE = 'userprofile.UserProfile'
+
+# djangosaml2 settings
+LOGIN_URL = '/saml2/login/'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SAML_CREATE_UNKNOWN_USER = True
+
+SAML_ATTRIBUTE_MAPPING = {
+    'eduPersonPrincipalName': ('username', ),
+    'mail': ('email', ),
+    'givenName': ('first_name', ),
+    'sn': ('last_name', ),
+    'displayName': ('display_name', ),
+    }
+
+SAML_CONFIG = config.SAML_CONFIG
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -100,6 +117,11 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'djangosaml2.backends.Saml2Backend',
+    )
+
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.static',
@@ -129,6 +151,40 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.staticfiles',
     'tastypie',
+    'djangosaml2',
     'niweb_core',
+    'apps.userprofile',
     'apps.noclook',
 )
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        }
+    },
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'django_error.log',
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            }
+    },
+    'loggers': {
+        '': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+            },
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': False,
+            },
+        }
+}
