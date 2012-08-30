@@ -16,17 +16,6 @@ NODE_META_TYPE_CHOICES = (
     ('location', 'Location'),
 )
 
-class UserProfile(models.Model):
-    user = models.OneToOneField(User)
-    display_name = models.CharField(max_length=255,blank=True,null=True)
-
-    def __unicode__(self):
-        return "%s [%s]" % (self.display_name, self.user.username)
-
-@receiver(post_save,sender=User)
-def _create_profile(sender, **kwargs):
-    UserProfile.objects.get_or_create(user=sender)
-
 class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
     slug = models.SlugField(unique=True, help_text='Suggested value \
