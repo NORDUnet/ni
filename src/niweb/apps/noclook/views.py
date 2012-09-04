@@ -832,6 +832,5 @@ def ip_address_lookup(request):
         ip_address = request.POST.get('ip_address', None)
         if ip_address:
             hostname = h.get_hostname_from_address(ip_address)
-        else:
-            hostname = 'An error occurred.'
-    return HttpResponse(json.dumps(hostname), mimetype='application/json')
+        return HttpResponse(json.dumps(hostname), mimetype='application/json')
+    raise Http404
