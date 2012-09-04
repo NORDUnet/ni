@@ -285,9 +285,9 @@ def insert_juniper_bgp_peerings(bgp_peerings):
     Returns a list of all created peering nodes.
     """
     for peering in bgp_peerings:
-        ip_service = peering.get('group', 'Unknown IP Service')
+        ip_service = peering.get('group', 'Unknown Peering Group')
         ip_service_handle = nt.get_unique_node_handle(nc.neo4jdb, ip_service, 
-                                                   'IP Service', 'logical')
+                                                   'Peering Group', 'logical')
         ip_service_node = ip_service_handle.get_node()
         h.set_noclook_auto_manage(nc.neo4jdb, ip_service_node, True)
         peering_type = peering.get('type')
