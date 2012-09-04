@@ -22,13 +22,14 @@ $(document).ready(
         $(".ip-address").click(function() {
             var ip_address = $(this).text();
             var elem = $(this)
+            elem.css('cursor','wait');
             $.post('/ajax/hostname/', {ip_address: ip_address},
                     function(data) {
                         elem.tooltip({title: data});
                         elem.tooltip('toggle');
+                        elem.css('cursor','pointer');
                     });
         });
-
     }
 );
 </script>
@@ -87,7 +88,7 @@ $(document).ready(
                                 <td>{{ resource.if_address }}</td>
                                 <td>{{ resource.unit.vlanid }}</td>
                                 <td><span class="ip-address">{{ relation.rel_address }}</span></td>
-                                <td><a href="{% noclook_node_to_url relation.relation %}">{{ relation.relation.name }}</a></td>
+                                <td><a href="{% noclook_node_to_url relation.relation %}">{{ relation.relation.name }} (AS{{ relation.relation.as_number }})</a></td>
                             </tr>
                         {% endfor %}
                     {% else %}

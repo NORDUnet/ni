@@ -365,4 +365,4 @@ def get_hostname_from_address(ip_address):
     try:
         return socket.gethostbyaddr(str(ip_address))[0]
     except (socket.herror, socket.gaierror):
-        return ''
+        return 'Request timed out'

@@ -18,6 +18,18 @@ $(document).ready(
             widthFixed: true,
             widgets: ['zebra']
         });
+        // IP address lookup
+        $(".ip-address").click(function() {
+            var ip_address = $(this).text();
+            var elem = $(this)
+            elem.css('cursor','wait');
+            $.post('/ajax/hostname/', {ip_address: ip_address},
+                    function(data) {
+                        elem.tooltip({title: data});
+                        elem.tooltip('toggle');
+                        elem.css('cursor','pointer');
+                    });
+        });
     }
 );
 </script>
@@ -69,7 +81,7 @@ $(document).ready(
         <tbody>
             {% for item in peering_points %}
             <tr>
-                <td>{{ item.pp_ip }}</td>
+                <td><span class="ip-address">{{ item.pp_ip }}</span></td>
                 <td><a href="{{ item.service_url }}">{{ item.service }}</a></td>
                 <td>{{ item.if_address }}</td>
                 <td>{{ item.unit }}</td>
