@@ -343,7 +343,7 @@ def peering_partner_detail(request, handle_id):
                                context_instance=RequestContext(request))
 
 @login_required
-def ip_service_detail(request, handle_id):
+def peering_group_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
@@ -371,7 +371,7 @@ def ip_service_detail(request, handle_id):
                             'relation': r_rel.start}
                 interface['relations'].append(relation)
         service_resources.append(interface)
-    return render_to_response('noclook/detail/ip_service_detail.html',
+    return render_to_response('noclook/detail/peering_group_detail.html',
                               {'node_handle': nh, 'node': node,
                                'last_seen': last_seen, 'expired': expired,
                                'service_resources': service_resources},
@@ -481,21 +481,21 @@ def service_detail(request, handle_id):
                               'users': users},
                               context_instance=RequestContext(request))
 
-@login_required
-def external_service_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    depend_inc = h.iter2list(node.Depends_on.incoming)
-    depend_out = h.iter2list(h.get_logical_depends_on(node))
-    providers = h.iter2list(node.Provides.incoming)
-    return render_to_response('noclook/detail/external_service_detail.html',
-            {'node': node, 'node_handle': nh,
-             'last_seen': last_seen, 'expired': expired,
-             'depend_inc': depend_inc, 'depend_out': depend_out,
-             'providers': providers},
-                              context_instance=RequestContext(request))
+#@login_required
+#def external_service_detail(request, handle_id):
+#    nh = get_object_or_404(NodeHandle, pk=handle_id)
+#    # Get node from neo4j-database
+#    node = nh.get_node()
+#    last_seen, expired = h.neo4j_data_age(node)
+#    depend_inc = h.iter2list(node.Depends_on.incoming)
+#    depend_out = h.iter2list(h.get_logical_depends_on(node))
+#    providers = h.iter2list(node.Provides.incoming)
+#    return render_to_response('noclook/detail/external_service_detail.html',
+#            {'node': node, 'node_handle': nh,
+#             'last_seen': last_seen, 'expired': expired,
+#             'depend_inc': depend_inc, 'depend_out': depend_out,
+#             'providers': providers},
+#                              context_instance=RequestContext(request))
 
 @login_required
 def optical_link_detail(request, handle_id):
@@ -825,3 +825,13 @@ def qr_lookup(request, name):
         return HttpResponseRedirect(nh.get_absolute_url())
     return render_to_response('noclook/qr_result.html',
             {'hits': hits, 'name': name}, context_instance=RequestContext(request))
+
+@login_required
+def ip_address_lookup(request):
+    if request.POST:
+        ip_address = request.POST.get('ip_address', None)
+        if ip_address:
+            hostname = h.get_hostname_from_address(ip_address)
+        else:
+            hostname = 'An error occurred.'
+    return HttpResponse(json.dumps(hostname), mimetype='application/json')

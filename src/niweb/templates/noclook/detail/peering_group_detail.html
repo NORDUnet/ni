@@ -1,0 +1,111 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#resources").tablesorter(
+        {
+            sortList: [[0,0],[1,0],[2,0]],
+            headers:
+            {
+                3 : { sorter: "ipAddress"  },
+                5 : { sorter: "ipAddress"  }
+            },
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+        // IP address lookup
+        $(".ip-address").click(function() {
+            var ip_address = $(this).text();
+            var elem = $(this)
+            $.post('/ajax/hostname/', {ip_address: ip_address},
+                    function(data) {
+                        elem.tooltip({title: data});
+                        elem.tooltip('toggle');
+                    });
+        });
+
+    }
+);
+</script>
+
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            <tr>
+                <th>Name:</th><td>{{ node.name }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.noclook_auto_manage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+<!--
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<br><br><br>
+-->
+<div class="section">
+    <h3>Resources used</h3>
+    {% load noclook_tags %}
+    {% if service_resources %}
+        <table id="resources" class="tablesorter" cellspacing="1">
+            <thead>
+                <th>Router</th><th>PIC</th><th>Unit</th><th>Interface Address</th><th>VLAN</th><th>User Address<th>User</th>
+            </thead>
+            <tbody>
+                {% for resource in service_resources %}
+                    {% if resource.relations %}
+                        {% for relation in resource.relations %}
+                            <tr>
+                                <td><a href="{% noclook_node_to_url resource.router %}">{{ resource.router.name }}</a></td>
+                                <td><a href="{% noclook_node_to_url resource.pic %}">{{ resource.pic.name }}</a></td>
+                                <td>{{ resource.unit.name }}</td>
+                                <td>{{ resource.if_address }}</td>
+                                <td>{{ resource.unit.vlanid }}</td>
+                                <td><span class="ip-address">{{ relation.rel_address }}</span></td>
+                                <td><a href="{% noclook_node_to_url relation.relation %}">{{ relation.relation.name }}</a></td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td><a href="{% noclook_node_to_url resource.router %}">{{ resource.router.name }}</a></td>
+                            <td><a href="{% noclook_node_to_url resource.pic %}">{{ resource.pic.name }}</a></td>
+                            <td>{{ resource.unit.name }}</td>
+                            <td>{{ resource.if_address }}</td>
+                            <td>{{ resource.unit.vlanid }}</td>
+                            <td>None</td>
+                            <td>None</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No resources used.</p>
+    {% endif %}
+</div>
+{% endblock %}
