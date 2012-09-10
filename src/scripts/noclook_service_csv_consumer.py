@@ -101,14 +101,14 @@ def depend_on_service(node, service_name, supplier_name):
     """
     Depends the service on another service.
     """
+    service = nt.get_unique_node(service_name, 'Service', 'logical')
     if supplier_name:
-        service = nt.get_unique_node(service_name, 'External Service', 'logical')
+        with nc.neo4jdb.transaction:
+            service['service_type'] = 'External'
         supplier = nt.get_unique_node(supplier_name, 'Provider', 'relation')
         if not nc.get_relationships(supplier, service, 'Provides'):
             rel = nc.create_relationship(nc.neo4jdb, supplier, service, 'Provides')
             h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
-    else:
-        service = nt.get_unique_node(service_name, 'Service', 'logical')
     rel = nc.create_relationship(nc.neo4jdb, node, service, 'Depends_on')
     h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 

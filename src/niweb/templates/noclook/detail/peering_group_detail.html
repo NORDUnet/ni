@@ -13,14 +13,27 @@ $(document).ready(
             headers:
             {
                 3 : { sorter: "ipAddress"  },
-                5 : { sorter: "ipAddress"  },
+                5 : { sorter: "ipAddress"  }
             },
             widthFixed: true,
             widgets: ['zebra']
         });
+        // IP address lookup
+        $(".ip-address").click(function() {
+            var ip_address = $(this).text();
+            var elem = $(this)
+            elem.css('cursor','wait');
+            $.post('/ajax/hostname/', {ip_address: ip_address},
+                    function(data) {
+                        elem.tooltip({title: data});
+                        elem.tooltip('toggle');
+                        elem.css('cursor','pointer');
+                    });
+        });
     }
 );
 </script>
+
 {% endblock %}
 
 {% block content %}
@@ -38,7 +51,7 @@ $(document).ready(
         <table class="table">
             {% if node.noclook_auto_manage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
@@ -74,8 +87,8 @@ $(document).ready(
                                 <td>{{ resource.unit.name }}</td>
                                 <td>{{ resource.if_address }}</td>
                                 <td>{{ resource.unit.vlanid }}</td>
-                                <td>{{ relation.rel_address }}</td>
-                                <td><a href="{% noclook_node_to_url relation.relation %}">{{ relation.relation.name }}</a></td>
+                                <td><span class="ip-address">{{ relation.rel_address }}</span></td>
+                                <td><a href="{% noclook_node_to_url relation.relation %}">{{ relation.relation.name }} (AS{{ relation.relation.as_number }})</a></td>
                             </tr>
                         {% endfor %}
                     {% else %}

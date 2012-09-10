@@ -173,3 +173,7 @@ table.tablesorter thead .header {
 ul.errorlist {
  list-style: none;
 }
+
+.ip-address {
+    cursor: pointer;
+}
