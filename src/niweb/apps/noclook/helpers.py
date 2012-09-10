@@ -6,6 +6,7 @@ Created on Mon Apr  2 11:17:57 2012
 """
 
 from django.template.defaultfilters import slugify
+import socket
 from django.conf import settings as django_settings
 from datetime import datetime, timedelta
 import csv, codecs, cStringIO
@@ -354,3 +355,14 @@ def get_units(port):
         RETURN unit
         '''
     return nc.neo4jdb.query(q, id=port.getId())
+
+def get_hostname_from_address(ip_address):
+    """
+    Return the DNS name for an IP address or an empty string if
+    any error occurred.
+    """
+    socket.setdefaulttimeout(0.5)
+    try:
+        return socket.gethostbyaddr(str(ip_address))[0]
+    except (socket.herror, socket.gaierror):
+        return 'Request timed out'

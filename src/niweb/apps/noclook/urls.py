@@ -1,5 +1,5 @@
 # This also imports the include function
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 
 urlpatterns = patterns('',
     # Login / logout.
@@ -46,7 +46,7 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^pic/(?P<handle_id>\d+)/$', 'pic_detail'),
     (r'^peering-partner/(?P<handle_id>\d+)/$',
                                         'peering_partner_detail'),
-    (r'^ip-service/(?P<handle_id>\d+)/$', 'ip_service_detail'),
+    (r'^peering-group/(?P<handle_id>\d+)/$', 'peering_group_detail'),
     (r'^optical-node/(?P<handle_id>\d+)/$', 'optical_node_detail'),
     (r'^cable/(?P<handle_id>\d+)/$', 'cable_detail'),
     (r'^host/(?P<handle_id>\d+)/$', 'host_detail'),
@@ -59,7 +59,6 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^rack/(?P<handle_id>\d+)/$', 'rack_detail'),
     (r'^site-owner/(?P<handle_id>\d+)/$', 'site_owner_detail'),
     (r'^service/(?P<handle_id>\d+)/$', 'service_detail'),
-    (r'^external-service/(?P<handle_id>\d+)/$', 'external_service_detail'),
     (r'^optical-link/(?P<handle_id>\d+)/$', 'optical_link_detail'),
     (r'^optical-path/(?P<handle_id>\d+)/$', 'optical_path_detail'),
     (r'^end-user/(?P<handle_id>\d+)/$', 'end_user_detail'),
@@ -88,6 +87,8 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'search'),
     # QR lookup
     (r'^lu/(?P<name>[-\w]+)/$', 'qr_lookup'),
+    # Hostname lookup
+    (r'^ajax/hostname/$', 'ip_address_lookup'),
     # List views
     (r'^peering-partner/$', 'list_peering_partners'),
     (r'^host/$', 'list_hosts'),

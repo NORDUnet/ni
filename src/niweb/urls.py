@@ -46,16 +46,16 @@ urlpatterns = patterns('',
         {'document_root': settings.MEDIA_ROOT}),
 
     # Django Generic Login
-    #(r'^accounts/login/$', 'django.contrib.auth.views.login'),
-    
+    (r'^accounts/login/$', 'django.contrib.auth.views.login'),
+
+    # Federated login
+    #(r'^saml2/', include('djangosaml2.urls')),
+
     # Tastypie URLs
     (r'^api/', include(v1_api.urls)),
 
     # Django Generic Comments
     (r'^comments/', include('django.contrib.comments.urls')),
-
-    # Federated login
-    (r'^accounts/', include('niweb.apps.fedlogin.urls')),
 
     # NOCLook URLs
     (r'', include('niweb.apps.noclook.urls')),

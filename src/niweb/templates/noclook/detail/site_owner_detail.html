@@ -26,9 +26,9 @@ $(document).ready(
         <table class="table">
             <tr>
                 {% if node.url %}
-                    <th>More information:</th><td><a href="{{ node.url }}">Information link</td>
+                    <th>More information:</th><td><a href="{{ node.url }}">Information link</a></td>
                 {% else %}
-                    <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}">To Portal</td>
+                    <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}">To Portal</a></td>
                 {% endif %}
             </tr>
         </table>
@@ -37,7 +37,7 @@ $(document).ready(
         <table class="table">
             {% if node.noclook_automanage %}
             <tr>
-                <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
             </tr>
             {% endif %}
             <tr>
@@ -64,7 +64,7 @@ $(document).ready(
         {% for equip in site_relationships %}
             <tr>
                 <td><a href="/findin/site/country_code/{{ equip.end.country_code }}/">{{ equip.end.country }}</a></td>
-                <td><a href="{% noclook_node_to_url equip.end %}">{{ equip.end.country_code }}-{{ equip.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url equip.end %}">{{ equip.end.name }}</a></td>
             </tr>
         {% endfor %}
         </tbody>
