@@ -87,6 +87,7 @@ def consume_alcatel_isis(json_list):
         h.set_noclook_auto_manage(nc.neo4jdb, node, True)
         data = i['host']['alcatel_isis']['data']
         nc.update_item_properties(nc.neo4jdb, node, data)
+        h.update_node_search_index(nc.neo4jdb, node)
         for neighbour in i['host']['alcatel_isis']['neighbours']:
             metric = neighbour['metric']
             if metric == '0':       # localhost
@@ -119,6 +120,7 @@ def consume_alcatel_isis(json_list):
                 h.set_noclook_auto_manage(nc.neo4jdb, cable_node, True)
                 with nc.neo4jdb.transaction:
                     cable_node['cable_type'] = cable_type
+                h.update_node_search_index(nc.neo4jdb, cable_node)
                 rels = nc.get_relationships(cable_node, node, 'Connected_to')
                 if rels:
                     for rel in rels:

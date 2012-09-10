@@ -79,6 +79,7 @@ def set_host_user(node):
             nc.create_relationship(nc.neo4jdb, host_user, node, 'Uses')
         elif nc.get_node_meta_type(node) == 'physical':
             nc.create_relationship(nc.neo4jdb, host_user, node, 'Owns')
+        h.update_node_search_index(nc.neo4jdb, host_user)
 
 def insert_services(service_dict, host_node):
     """
@@ -150,9 +151,8 @@ def insert_services(service_dict, host_node):
                             new_rel['port'] = port
                             for key, value in service.items():
                                 new_rel[key] = value
-                        nc.add_index_item(nc.neo4jdb, rel_index, new_rel,
-                                          'ip_address')
                         h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
+                        h.update_relationship_search_index(nc.neo4jdb, new_rel)
     return service_nodes
 
 def insert_nmap(json_list):
@@ -174,10 +174,8 @@ def insert_nmap(json_list):
         nc.merge_properties(nc.neo4jdb, node, 'hostnames',
                             i['host']['hostnames'])
         nc.merge_properties(nc.neo4jdb, node, 'addresses', i['host']['addrs'])
-        # Add the nodes hostnames and addresses to the search index                
-        index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-        nc.add_index_item(nc.neo4jdb, index, node, 'hostnames')
-        nc.add_index_item(nc.neo4jdb, index, node, 'ip_addresses')
+        # Add the nodes hostnames and addresses to the search index
+        h.update_node_search_index(nc.neo4jdb, node)
         try:
             insert_services(i['host']['services'], node)
         except KeyError as e:
