@@ -469,7 +469,7 @@ def merge_properties(db, node, prop_name, new_props):
     """
     Tries to figure out which type of property value that should be merged and
     invoke the right function.
-    Returns True if the merge was successfull otherwise False.
+    Returns True if the merge was successful otherwise False.
     """
     existing_properties = node.getProperty(prop_name, None)
     if not existing_properties: # A node without existing properties

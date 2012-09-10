@@ -14,6 +14,14 @@ $(document).ready(
             widthFixed: true,
             widgets: ['zebra']
         });
+        $("#ports").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers:
+                    {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+        });
     }
 );
 </script>
@@ -83,6 +91,26 @@ $(document).ready(
     </table>
     {% else %}
         No connections found.
+    {% endif %}
+</div>
+<div class="section">
+    <h3>Dependent on node</h3>
+    {% if depends_on %}
+        {% load noclook_tags %}
+        <table id="ports" class="tablesorter" cellspacing="1">
+            <thead>
+            <th>Dependent on node</th><th>Port</th>
+            </thead>
+            <tbody>
+            {% for dep in depends_on %}
+                <tr>
+                    <td><a href="{% noclook_node_to_url dep.logical %}">{{ dep.logical.name }}</a></td><td><a href="{% noclook_node_to_url dep.port %}">{{ dep.port.name }}</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        No ports used.
     {% endif %}
 </div>
 {% endblock %}

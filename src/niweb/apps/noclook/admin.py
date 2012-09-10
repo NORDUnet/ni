@@ -4,7 +4,7 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from niweb.apps.noclook.models import NodeHandle, NodeType
+from niweb.apps.noclook.models import NodeHandle, NodeType, UniqueId
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -59,9 +59,13 @@ class NodeTypeAdmin(admin.ModelAdmin):
     delete_object.short_description = "Deletes the selected NodeType and all NodeHandles of that type"
 
 
+class UniqueIdAdmin(admin.ModelAdmin):
+    readonly_fields=('last_id', 'next_id',)
+
 admin.site.register(NodeHandle, NodeHandleAdmin)
 admin.site.register(NodeType, NodeTypeAdmin)
 admin.site.register(ApiKey)
 admin.site.register(ApiAccess)
 admin.site.unregister(User)
 admin.site.register(User,UserModelAdmin)
+admin.site.register(UniqueId, UniqueIdAdmin)

@@ -20,9 +20,16 @@
 <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h1>
 {% if location %}
     <h5 class="site">Located in
-    {% for loc in location %}
-        <a href="{% noclook_node_to_url loc.node %}"> {{ loc.name }}</a>
+    {% for hit in location %}
+        <a href="{% noclook_node_to_url hit.parent %}"> {{ hit.parent.name }}</a> <a href="{% noclook_node_to_url hit.loc %}"> {{ hit.loc.name }}</a>
     {% endfor %}
+    </h5>
+{% endif %}
+{% if same_name_relations %}
+    <h5 class="site">also as
+        {% for hit in same_name_relations %}
+            <a href="{% noclook_node_to_url hit.relation %}"> {{ hit.relation.node_type }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
     </h5>
 {% endif %}
 {% load comments %}
