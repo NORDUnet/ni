@@ -1,5 +1,7 @@
 from django import forms
 
+from django.forms.util import ErrorDict, ErrorList
+from niweb.apps.noclook.models import UniqueId
 import niweb.apps.noclook.helpers as h
 import norduni_client as nc
 
@@ -63,6 +65,36 @@ PORT_TYPES = [
     ('RJ45', 'RJ45'),
     ('SC', 'SC'),
 ]
+
+SERVICE_TYPES = [
+    ('',''),
+    ('Alien wavelenght', 'Alien wavelenght'),
+    ('Backbone', 'Backbone'),
+    ('Customer Connection', 'Customer Connection'),
+    ('Ethernet', 'Ethernet'),
+    ('External', 'External'),
+    ('Internet Exchange', 'Internet Exchange'),
+    ('l2vpn', 'l2vpn'),
+    ('l3vpn', 'l3vpn'),
+    ('Private Interconnect', 'Private Interconnect'),
+    ('SDH', 'SDH'),
+    ('Transit', 'Transit'),
+    ('vpls', 'vpls'),
+]
+
+SERVICE_CLASS_MAPS = {
+    'Alien wavelenght': 'DWDM',
+    'Backbone': 'IP',
+    'Customer Connection': 'IP',
+    'Ethernet': 'DWDM',
+    'Internet Exchange': 'IP',
+    'l2vpn': 'MPLS',
+    'l3vpn': 'MPLS',
+    'Private Interconnect': 'IP',
+    'SDH': 'DWDM',
+    'Transit': 'IP',
+    'vpls': 'MPLS',
+}
 
 def get_node_type_tuples(node_type):
     """
@@ -306,18 +338,54 @@ class EditProviderForm(forms.Form):
     url = forms.URLField(required=False, help_text='Link to more information.')
 
 
-class NewExternalServiceForm(forms.Form):
-    name = forms.CharField()
+class NewServiceForm(forms.Form):
+    name = forms.CharField(required=False)
+    service_type = forms.ChoiceField(choices=SERVICE_TYPES,
+                                     widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
 
+    class Meta:
+        id_generator_name = None
+        manually_named_services = ['External'] # service_type of manually named services
 
-class EditExternalServiceForm(forms.Form):
+    def clean(self):
+        """
+        Get next service ID for internal services. Only expect a user
+        inputted name for manually named services.
+        """
+        cleaned_data = super(NewServiceForm, self).clean()
+        name = cleaned_data.get("name")
+        service_type = cleaned_data.get("service_type")
+        if not name and service_type not in self.Meta.manually_named_services:
+            if not self.Meta.id_generator_name:
+                raise Exception('You have to set id_generator_name in form Meta class.')
+            try:
+                id_generator = UniqueId.objects.get(name=self.Meta.id_generator_name)
+                cleaned_data['name'] = id_generator.get_id()
+            except UniqueId.DoesNotExist as e:
+                raise e
+        elif not name:
+            self._errors = ErrorDict()
+            self._errors['name'] = ErrorList()
+            self._errors['name'].append('Missing name for %s service.' % service_type)
+        return cleaned_data
+
+
+class NewNordunetServiceForm(NewServiceForm):
+
+    class Meta(NewServiceForm.Meta):
+        id_generator_name = 'nordunet_service_id'
+
+
+class EditServiceForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        super(EditExternalServiceForm, self).__init__(*args, **kwargs)
+        super(EditServiceForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
+    service_type = forms.ChoiceField(choices=SERVICE_TYPES,
+                                         widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')

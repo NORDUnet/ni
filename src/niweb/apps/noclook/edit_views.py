@@ -33,7 +33,7 @@ def slug_to_node_type(slug, create=False):
     """
     Returns or creates and returns the NodeType object from the supplied slug.
     """
-    acronym_types = ['odf']
+    acronym_types = ['odf'] # TODO: Move to sql db
     if create:
         node_type, created = NodeType.objects.get_or_create(slug=slug)
         if created:
@@ -47,13 +47,15 @@ def slug_to_node_type(slug, create=False):
         node_type = get_object_or_404(NodeType, slug=slug)
     return node_type
 
-def form_update_node(user, node, form, property_keys=[]):
+def form_update_node(user, node, form, property_keys=None):
     """
     Take a node, a form and the property keys that should be used to fill the
     node if the property keys are omitted the form.base_fields will be used.
     Returns True if all non-empty properties where added else False and 
     rollbacks the node changes.
     """
+    if not property_keys:
+        property_keys = []
     meta_fields = ['relationship_location', 'relationship_end_a',
                    'relationship_end_b', 'relationship_parent']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
@@ -502,17 +504,18 @@ def new_provider(request, form):
     return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required
-def new_external_service(request, form):
+def new_service(request, form):
     try:
-        nh = form_to_unique_node_handle(request, form, 'external-service', 'logical')
+        nh = form_to_unique_node_handle(request, form, 'service', 'logical')
     except UniqueNodeError:
-        form = forms.NewExternalServiceForm(request.POST)
+        form = forms.NewServiceForm(request.POST)
         form._errors = ErrorDict()
         form._errors['name'] = ErrorList()
-        form._errors['name'].append('An External Service with that name already exists.')
-        return render_to_response('noclook/edit/create_external_service.html', {'form': form},
+        form._errors['name'].append('A Service with that name already exists.')
+        return render_to_response('noclook/edit/create_service.html', {'form': form},
                                   context_instance=RequestContext(request))
     node = nh.get_node()
+    # TODO: Add the NORDUnet service ID to pool?
     keys = ['description']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
@@ -921,14 +924,14 @@ def edit_provider(request, handle_id):
                                   context_instance=RequestContext(request))
 
 @login_required
-def edit_external_service(request, handle_id):
+def edit_service(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
     service_providers =  h.iter2list(node.Provides.incoming)
     if request.POST:
-        form = forms.EditExternalServiceForm(request.POST)
+        form = forms.EditServiceForm(request.POST)
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
@@ -937,13 +940,13 @@ def edit_external_service(request, handle_id):
                 set_provider(node, provider_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
-            return render_to_response('noclook/edit/edit_external_service.html',
+            return render_to_response('noclook/edit/edit_service.html',
                                      {'node': node, 'form': form,
                                       'service_providers': service_providers},
                                      context_instance=RequestContext(request))
     else:
-        form = forms.EditExternalServiceForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_external_service.html',
+        form = forms.EditServiceForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_service.html',
                                  {'form': form, 'node': node,
                                   'service_providers': service_providers},
                                   context_instance=RequestContext(request))
@@ -951,7 +954,7 @@ def edit_external_service(request, handle_id):
 NEW_FORMS =  {'cable': forms.NewCableForm,
               'customer': forms.NewCustomerForm,
               'end-user': forms.NewEndUserForm,
-              'external-service': forms.NewExternalServiceForm,
+              'service': forms.NewServiceForm,
               'odf': forms.NewOdfForm,
               'port': forms.NewPortForm,
               'provider': forms.NewProviderForm,
@@ -971,7 +974,7 @@ NEW_FORMS =  {'cable': forms.NewCableForm,
 NEW_FUNC = {'cable': new_cable,
             'customer': new_customer,
             'end-user': new_end_user,
-            'external-service': new_external_service,
+            'service': new_service,
             'odf': new_odf,
             'port': new_port,
             'provider': new_provider,
@@ -983,7 +986,7 @@ NEW_FUNC = {'cable': new_cable,
 EDIT_FUNC = {'cable': edit_cable,
              'customer': edit_customer,
              'end-user': edit_end_user,
-             'external-service': edit_external_service,
+             'service': edit_service,
              'host': edit_host,
              'odf': edit_odf,
              'optical-node': edit_optical_node,

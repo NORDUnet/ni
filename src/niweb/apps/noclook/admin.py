@@ -64,7 +64,6 @@ class UniqueIdAdmin(admin.ModelAdmin):
 
 admin.site.register(NodeHandle, NodeHandleAdmin)
 admin.site.register(NodeType, NodeTypeAdmin)
-admin.site.register(ApiKey)
 admin.site.register(ApiAccess)
 admin.site.unregister(User)
 admin.site.register(User,UserModelAdmin)
