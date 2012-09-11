@@ -27,15 +27,15 @@ from niweb.apps.noclook.helpers import item2dict, update_noclook_auto_manage
 import norduni_client as nc
 
 def handle_id2resource_uri(handle_id):
-    '''
-    Returns a  NodeHandleResource URI from a Neo4j node.
-    '''
+    """
+    Returns a NodeHandleResource URI from a Neo4j node.
+    """
     if not handle_id:
         return 'Meta Node'
     # str() is a neo4j-embedded hack handle_id can be a java.lang.Integer.
     nh = NodeHandle.objects.get(pk=str(handle_id))
     view = 'api_dispatch_detail'
-    kwargs = {                   
+    kwargs = {
             'resource_name': slugify(nh.node_type),
             'pk': nh.handle_id
         }
@@ -47,9 +47,9 @@ def handle_id2resource_uri(handle_id):
     return reverse(view, args=None, kwargs=kwargs)
     
 def resource_uri2id(resource_uri):
-    '''
+    """
     Takes a resource uri and returns the id.
-    '''
+    """
     return resolve(resource_uri).kwargs.get('pk', None)
                             
 class FullUserResource(ModelResource):
@@ -106,12 +106,11 @@ class NodeHandleResource(ModelResource):
     handle_id = fields.IntegerField(attribute='handle_id', readonly=True, unique=True)
     node_id = fields.IntegerField(attribute='node_id', readonly=True)
     node_name = fields.CharField(attribute='node_name')
-    node_type = fields.ForeignKey(NodeTypeResource, 'node_type')
-    node_meta_type = fields.CharField(attribute='node_meta_type')
-    creator = fields.ForeignKey(UserResource, 'creator')
+    node_type = fields.ForeignKey(NodeTypeResource, 'node_type', readonly=True)
+    node_meta_type = fields.CharField(attribute='node_meta_type', readonly=True)
+    creator = fields.ForeignKey(UserResource, 'creator', readonly=True)
     created = fields.DateTimeField(attribute='created', readonly=True)
-    modifier = fields.ForeignKey(UserResource, 'modifier', blank=True,
-                                 null=True)
+    modifier = fields.ForeignKey(UserResource, 'modifier', readonly=True)
     modified = fields.DateTimeField(attribute='modified', readonly=True)
     node = fields.DictField(attribute='node', default={}, blank=True)
         
@@ -157,7 +156,7 @@ class NodeHandleResource(ModelResource):
             node = bundle.obj.get_node()
             nc.update_item_properties(nc.neo4jdb, node, 
                                       bundle.data['node'])
-            update_noclook_auto_manage(nc.neo4j, node)
+            update_noclook_auto_manage(nc.neo4jdb, node)
         except TypeError:
             # Node is not yet created, obj_create will take care of that.
             pass
@@ -169,9 +168,6 @@ class NodeHandleResource(ModelResource):
                                         '/%s/' % slugify(bundle.obj.node_type))
 
     def dehydrate(self, bundle):
-        bundle.data['resource_uri'] = bundle.data['resource_uri'].replace(
-                   '/%s/' % self.Meta.resource_name,
-                   '/%s/' % slugify(bundle.obj.node_type))
         bundle.data['relationships'] = []
         rr = RelationshipResource()
         tmp_obj = RelationshipObject()
@@ -285,10 +281,10 @@ class RelationshipResource(Resource):
         rel = nc.get_relationship_by_id(nc.neo4jdb, kwargs['pk'])
         nc.delete_relationship(nc.neo4jdb, rel)
     
-    def obj_delete_list():
+    def obj_delete_list(self):
         pass
-    
-    def rollback():
+
+    def rollback(self):
         pass
 
 
@@ -354,19 +350,6 @@ class HostUserResource(NodeHandleResource):
         allowed_methods = ['get', 'put', 'post']
         filtering = {
             "node_name": ALL,
-        }        
-        
-        
-class IPServiceResource(NodeHandleResource):
-    
-    class Meta:
-        queryset = NodeHandle.objects.filter(node_type__slug__exact='ip-service')
-        resource_name = 'ip-service'
-        authentication = ApiKeyAuthentication()
-        authorization = Authorization()
-        allowed_methods = ['get', 'put', 'post']
-        filtering = {
-            "node_name": ALL,
         }
         
         
@@ -394,7 +377,20 @@ class OpticalNodeResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
+
+
+class PeeringGroupResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='peering-group')
+        resource_name = 'peering-group'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+            }
+
 
 class PeeringPartnerResource(NodeHandleResource):
     
@@ -459,8 +455,45 @@ class RouterResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
-        
+
+
+class ServiceResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='service')
+        resource_name = 'service'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+            }
+
+
+class ServiceL2VPNResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='service')
+        resource_name = 'l2vpn'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+            }
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<node_name>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
+            ]
+
+    def dehydrate(self, bundle):
+        bundle = super(ServiceL2VPNResource, self).dehydrate(bundle)
+        bundle.data['resource_uri'] = bundle.data['resource_uri'].replace(
+            '/%s/' % bundle.obj.handle_id,
+            '/%s/' % bundle.obj.node_name)
+        return bundle
+
 class SiteResource(NodeHandleResource):
     
     class Meta:
@@ -498,4 +531,5 @@ class UnitResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-           
+
+

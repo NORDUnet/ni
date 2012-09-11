@@ -202,23 +202,17 @@ class UniqueId(models.Model):
 #        # Return list of IDs
 
 
-class NORDUnetIdSet(models.Model):
+class UniqueIdCollection(models.Model):
     """
-    Table for ensuring that NORDUnet IDs are unique.
+    Table for reserving ids and to help ensuring uniqueness.
     """
-    nordunet_id = models.CharField(max_length=256, unique=True)
+    unique_id = models.CharField(max_length=256, unique=True)
     reserved = models.BooleanField()
-    base_id = models.IntegerField(null=True, blank=True)
-    #objects = FreeRangeManager()
+    reserve_message = models.CharField(max_length=512, null=True, blank=True)
     # Meta
-    creator = models.ForeignKey(User, related_name='nordunet_id_creator')
+    creator = models.ForeignKey(User)
     created = models.DateTimeField(auto_now_add=True)
 
-    def save(self, *args, **kwargs):
-        try:
-            self.base_id = int(self.nordunet_id.replace('NU-', ''))
-        except ValueError:
-            self.base_id = None
-        super(NORDUnetIdSet, self).save(*args, **kwargs)
 
-    save.alters_data = True
+    def __unicode__(self):
+        return unicode(self.unique_id)
