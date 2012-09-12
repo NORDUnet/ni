@@ -38,8 +38,19 @@
                     <th>Name:</th><td>{{ node.name }}</td>
                 </tr>
                 <tr>
+                    <th>State:</th><td>{{ node.operational_state }}</td>
+                </tr
+                <tr>
+                    <th>Class:</th><td>{{ node.service_class }}</td>
+                </tr>
+                <tr>
                     <th>Type:</th><td>{{ node.service_type }}</td>
                 </tr>
+                {% if node.service_type == "Project" %}
+                    <tr>
+                        <th>Project end date:</th><td>{{ node.project_end_date }}</td>
+                    </tr>
+                {% endif %}
                 <tr>
                     <th>Customers:</th>
                     <td>
@@ -89,12 +100,10 @@
             </div>
         {% endif %}
     </div>
-    <!--
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
--->
     <div class="section">
         {% load noclook_tags %}
         {% if depend_inc %}

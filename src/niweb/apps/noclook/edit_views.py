@@ -504,7 +504,7 @@ def new_provider(request, form):
     return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required
-def new_service(request, form):
+def new_nordunet_service(request, form):
     try:
         nh = form_to_unique_node_handle(request, form, 'service', 'logical')
     except UniqueNodeError:
@@ -512,11 +512,11 @@ def new_service(request, form):
         form._errors = ErrorDict()
         form._errors['name'] = ErrorList()
         form._errors['name'].append('A Service with that name already exists.')
-        return render_to_response('noclook/edit/create_service.html', {'form': form},
+        return render_to_response('noclook/edit/create_nordunet_service.html', {'form': form},
                                   context_instance=RequestContext(request))
     node = nh.get_node()
     # TODO: Add the NORDUnet service ID to pool?
-    keys = ['description']
+    keys = ['description', 'service_class', 'service_type', 'operational_state', 'project_end_date']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
 
@@ -954,7 +954,7 @@ def edit_service(request, handle_id):
 NEW_FORMS =  {'cable': forms.NewCableForm,
               'customer': forms.NewCustomerForm,
               'end-user': forms.NewEndUserForm,
-              'service': forms.NewServiceForm,
+              'nordunet-service': forms.NewNordunetServiceForm,
               'odf': forms.NewOdfForm,
               'port': forms.NewPortForm,
               'provider': forms.NewProviderForm,
@@ -974,7 +974,7 @@ NEW_FORMS =  {'cable': forms.NewCableForm,
 NEW_FUNC = {'cable': new_cable,
             'customer': new_customer,
             'end-user': new_end_user,
-            'service': new_service,
+            'nordunet-service': new_nordunet_service,
             'odf': new_odf,
             'port': new_port,
             'provider': new_provider,

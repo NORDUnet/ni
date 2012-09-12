@@ -77,24 +77,35 @@ SERVICE_TYPES = [
     ('l2vpn', 'l2vpn'),
     ('l3vpn', 'l3vpn'),
     ('Private Interconnect', 'Private Interconnect'),
+    ('Project', 'Project'),
     ('SDH', 'SDH'),
     ('Transit', 'Transit'),
     ('vpls', 'vpls'),
 ]
 
-SERVICE_CLASS_MAPS = {
+SERVICE_CLASS_MAP = {
     'Alien wavelenght': 'DWDM',
     'Backbone': 'IP',
     'Customer Connection': 'IP',
     'Ethernet': 'DWDM',
+    'External': 'External',
     'Internet Exchange': 'IP',
     'l2vpn': 'MPLS',
     'l3vpn': 'MPLS',
     'Private Interconnect': 'IP',
+    'Project': 'Project',
     'SDH': 'DWDM',
     'Transit': 'IP',
     'vpls': 'MPLS',
 }
+
+OPERATIONAL_STATES = [
+    ('',''),
+    ('In service', 'In service'),
+    ('Reserved', 'Reserved'),
+    ('Decommissioned', 'Decommissioned'),
+    ('Testing', 'Testing'),
+]
 
 def get_node_type_tuples(node_type):
     """
@@ -339,23 +350,30 @@ class EditProviderForm(forms.Form):
 
 
 class NewServiceForm(forms.Form):
-    name = forms.CharField(required=False)
+    name = forms.CharField(required=False,
+                           help_text='Name will only be available for manually named service types.')
+    service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     service_type = forms.ChoiceField(choices=SERVICE_TYPES,
                                      widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
+                                        widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
 
     class Meta:
-        id_generator_name = None
+        id_generator_name = None # UniqueId name
         manually_named_services = ['External'] # service_type of manually named services
+
 
     def clean(self):
         """
-        Get next service ID for internal services. Only expect a user
+        Sets name to next service ID for internal services. Only expect a user
         inputted name for manually named services.
+        Sets the service class from the service type.
         """
         cleaned_data = super(NewServiceForm, self).clean()
+        # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
         service_type = cleaned_data.get("service_type")
         if not name and service_type not in self.Meta.manually_named_services:
@@ -370,23 +388,45 @@ class NewServiceForm(forms.Form):
             self._errors = ErrorDict()
             self._errors['name'] = ErrorList()
             self._errors['name'].append('Missing name for %s service.' % service_type)
+        # Set service_class depending on service_type.
+        cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
         return cleaned_data
 
 
 class NewNordunetServiceForm(NewServiceForm):
 
+    project_end_date = forms.DateField(required=False)
+
     class Meta(NewServiceForm.Meta):
         id_generator_name = 'nordunet_service_id'
+
+
+    def clean(self):
+        """
+        Checks that project_end_date was not omitted if service is of type project.
+        """
+        cleaned_data = super(NewNordunetServiceForm, self).clean()
+        if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
+            self._errors = ErrorDict()
+            self._errors['project_end_date'] = ErrorList()
+            self._errors['project_end_date'].append('Missing project end date.')
+        return cleaned_data
 
 
 class EditServiceForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(EditServiceForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['relationship_customer'].choices = get_node_type_tuples('Customer')
+        self.fields['relationship_end_user'].choices = get_node_type_tuples('End User')
 
     service_type = forms.ChoiceField(choices=SERVICE_TYPES,
-                                         widget=forms.widgets.Select)
+                                     widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
+                                          widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
