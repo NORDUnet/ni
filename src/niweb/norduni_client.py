@@ -609,6 +609,9 @@ def _init_db():
 
 try:
     neo4jdb = _init_db()
+    # Preload nodes and relationship from disk
+    get_all_nodes(neo4jdb)
+    get_all_relationships(neo4jdb)
 except Exception as e:
     print '*** WARNING ***'
     print 'Error: %s' % e
