@@ -1,7 +1,7 @@
 from django import forms
 
 from django.forms.util import ErrorDict, ErrorList
-from niweb.apps.noclook.models import UniqueId
+from niweb.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
 import niweb.apps.noclook.helpers as h
 import norduni_client as nc
 
@@ -380,9 +380,9 @@ class NewServiceForm(forms.Form):
             if not self.Meta.id_generator_name:
                 raise Exception('You have to set id_generator_name in form Meta class.')
             try:
-                id_generator = UniqueId.objects.get(name=self.Meta.id_generator_name)
+                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
                 cleaned_data['name'] = id_generator.get_id()
-            except UniqueId.DoesNotExist as e:
+            except UniqueIdGenerator.DoesNotExist as e:
                 raise e
         elif not name:
             self._errors = ErrorDict()
@@ -406,6 +406,8 @@ class NewNordunetServiceForm(NewServiceForm):
         Checks that project_end_date was not omitted if service is of type project.
         """
         cleaned_data = super(NewNordunetServiceForm, self).clean()
+        if cleaned_data['service_type'] not in self.Meta.manually_named_services:
+            NordunetUniqueId.objects.create(unique_id=cleaned_data['name'])
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
@@ -420,8 +422,10 @@ class EditServiceForm(forms.Form):
         self.fields['relationship_customer'].choices = get_node_type_tuples('Customer')
         self.fields['relationship_end_user'].choices = get_node_type_tuples('End User')
 
+    name = forms.CharField(required=False)
     service_type = forms.ChoiceField(choices=SERVICE_TYPES,
                                      widget=forms.widgets.Select)
+    project_end_date = forms.DateField(required=False)
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
                                           widget=forms.widgets.Select)
     description = forms.CharField(required=False,
@@ -430,3 +434,5 @@ class EditServiceForm(forms.Form):
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_end_point = forms.IntegerField(required=False,
+                                                widget=forms.widgets.HiddenInput)
