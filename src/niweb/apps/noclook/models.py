@@ -130,7 +130,7 @@ class NodeHandle(models.Model):
     delete.alters_data = True
 
 
-class UniqueId(models.Model):
+class UniqueIdGenerator(models.Model):
     """
     Model that provides a base id counter, prefix, suffix and id length. When a new
     id is generated the base id counter will increase by 1.
@@ -174,7 +174,7 @@ class UniqueId(models.Model):
         if self.zfill:
             base_id = str(self.base_id).zfill(self.base_id_length)
         self.next_id = '%s%s%s' % (self.prefix, base_id, self.suffix)
-        super(UniqueId, self).save(*args, **kwargs)
+        super(UniqueIdGenerator, self).save(*args, **kwargs)
 
     save.alters_data = True
 
@@ -202,17 +202,29 @@ class UniqueId(models.Model):
 #        # Return list of IDs
 
 
-class UniqueIdCollection(models.Model):
+class UniqueId(models.Model):
     """
-    Table for reserving ids and to help ensuring uniqueness.
+    Table for reserving ids and to help ensuring uniqueness across the
+    different node types.
     """
     unique_id = models.CharField(max_length=256, unique=True)
-    reserved = models.BooleanField()
+    reserved = models.BooleanField(default=False)
     reserve_message = models.CharField(max_length=512, null=True, blank=True)
+    reserver = models.ForeignKey(User, null=True, blank=True)
     # Meta
-    creator = models.ForeignKey(User)
     created = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        abstract = True
 
     def __unicode__(self):
         return unicode(self.unique_id)
+
+
+class NordunetUniqueId(UniqueId):
+    """
+    Collection of all NORDUnet IDs to ensire uniqueness.
+    """
+
+    def __unicode__(self):
+        return unicode('NORDUnet: %s' % self.unique_id)

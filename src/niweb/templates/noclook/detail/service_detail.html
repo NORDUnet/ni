@@ -41,16 +41,21 @@
                     <th>State:</th><td>{{ node.operational_state }}</td>
                 </tr
                 <tr>
-                    <th>Class:</th><td>{{ node.service_class }}</td>
-                </tr>
-                <tr>
-                    <th>Type:</th><td>{{ node.service_type }}</td>
+                    <th>Type:</th><td>{{ node.service_class }} {{ node.service_type }}</td>
                 </tr>
                 {% if node.service_type == "Project" %}
                     <tr>
                         <th>Project end date:</th><td>{{ node.project_end_date }}</td>
                     </tr>
                 {% endif %}
+                <tr>
+                    <th>Provider:</th>
+                    <td>
+                        {% for provider in providers %}
+                            <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a><br>
+                        {% endfor %}
+                    </td>
+                </tr>
                 <tr>
                     <th>Customers:</th>
                     <td>

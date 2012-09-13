@@ -314,8 +314,8 @@ def get_logical_depends_on(logical):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Depends_on]->dep<-[?:Has*1..]-parent
-        RETURN dep,parent
+        MATCH node-[dep_rel:Depends_on]->dep<-[?:Has*1..]-parent
+        RETURN dep,dep_rel,parent
         '''
     return nc.neo4jdb.query(q, id=logical.getId())
 
@@ -355,6 +355,30 @@ def get_units(port):
         RETURN unit
         '''
     return nc.neo4jdb.query(q, id=port.getId())
+
+def get_customer(service):
+    """
+    Get all nodes with Uses relationship and node_type Customer.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node<-[:Uses]-customer
+        WHERE customer.node_type = "Customer"
+        RETURN customer
+        '''
+    return nc.neo4jdb.query(q, id=service.getId())
+
+def get_end_user(service):
+    """
+    Get all nodes with Uses relationship and node_type End User.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node<-[:Uses]-end_user
+        WHERE end_user.node_type = "End User"
+        RETURN end_user
+        '''
+    return nc.neo4jdb.query(q, id=service.getId())
 
 def get_hostname_from_address(ip_address):
     """

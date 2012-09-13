@@ -929,7 +929,10 @@ def edit_service(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = get_nh_node(handle_id)
-    service_providers =  h.iter2list(node.Provides.incoming)
+    providers =  h.iter2list(node.Provides.incoming)
+    customers = h.iter2list(h.get_customer(node))
+    end_users = h.iter2list(h.get_end_user(node))
+    end_points = h.iter2list(h.get_logical_depends_on(node))
     if request.POST:
         form = forms.EditServiceForm(request.POST)
         if form.is_valid():
@@ -941,14 +944,16 @@ def edit_service(request, handle_id):
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_service.html',
-                                     {'node': node, 'form': form,
-                                      'service_providers': service_providers},
+                                     {'form': form, 'node': node,
+                                      'providers': providers, 'customers': customers,
+                                      'end_users': end_users, 'end_points': end_points},
                                      context_instance=RequestContext(request))
     else:
         form = forms.EditServiceForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_service.html',
                                  {'form': form, 'node': node,
-                                  'service_providers': service_providers},
+                                  'providers': providers, 'customers': customers,
+                                  'end_users': end_users, 'end_points': end_points},
                                   context_instance=RequestContext(request))
 
 NEW_FORMS =  {'cable': forms.NewCableForm,
