@@ -230,6 +230,26 @@ def set_provider(node, provider_node_id):
                                'Provides')
     return node
 
+def set_depends_on(node, depends_on_node_id):
+    """
+    Creates or updates an Depends_on relationship between the node and the
+    owner node.
+    Returns the node.
+    """
+    depends_on_node_id = nc.get_node_by_id(nc.neo4jdb,  depends_on_node_id)
+    rel_exist = nc.get_relationships(node, depends_on_node_id, 'Depends_on')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        nc.create_relationship(nc.neo4jdb, node, depends_on_node_id,
+            'Depends_on')
+    return node
+
 @login_required
 def delete_node(request, slug, handle_id):
     """
@@ -938,9 +958,19 @@ def edit_service(request, handle_id):
         if form.is_valid():
             # Generic node update
             form_update_node(request.user, node, form)
+            # Service node updates
             if form.cleaned_data['relationship_provider']:
                 provider_id = form.cleaned_data['relationship_provider']
                 set_provider(node, provider_id)
+            if form.cleaned_data['relationship_customer']:
+                customer_id = form.cleaned_data['relationship_customer']
+                set_user(node, customer_id)
+            if form.cleaned_data['relationship_end_user']:
+                end_user_id = form.cleaned_data['relationship_end_user']
+                set_user(node, end_user_id)
+            if form.cleaned_data['relationship_end_point']:
+                end_point_id = form.cleaned_data['relationship_end_point']
+                set_depends_on(node, end_point_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_service.html',
