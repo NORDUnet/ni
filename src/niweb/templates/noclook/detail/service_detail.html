@@ -41,7 +41,7 @@
                     <th>State:</th><td>{{ node.operational_state }}</td>
                 </tr
                 <tr>
-                    <th>Type:</th><td>{{ node.service_class }} {{ node.service_type }}</td>
+                    <th>Type:</th><td>{{ node.service_class }} - {{ node.service_type }}</td>
                 </tr>
                 {% if node.service_type == "Project" %}
                     <tr>
@@ -82,7 +82,7 @@
             <table class="table">
                 {% if node.noclook_auto_manage %}
                     <tr>
-                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                     </tr>
                 {% endif %}
                 <tr>

@@ -68,19 +68,19 @@ PORT_TYPES = [
 
 SERVICE_TYPES = [
     ('',''),
-    ('Alien wavelenght', 'Alien wavelenght'),
-    ('Backbone', 'Backbone'),
-    ('Customer Connection', 'Customer Connection'),
-    ('Ethernet', 'Ethernet'),
-    ('External', 'External'),
-    ('Internet Exchange', 'Internet Exchange'),
-    ('l2vpn', 'l2vpn'),
-    ('l3vpn', 'l3vpn'),
-    ('Private Interconnect', 'Private Interconnect'),
+    ('Alien wavelenght', 'DWDM - Alien wavelenght'),
+    ('Ethernet', 'DWDM - Ethernet'),
+    ('SDH', 'DWDM - SDH'),
+    ('External', 'External Service'),
+    ('Backbone', 'IP - Backbone'),
+    ('Customer Connection', 'IP - Customer Connection'),
+    ('Internet Exchange', 'IP - Internet Exchange'),
+    ('Private Interconnect', 'IP - Private Interconnect'),
+    ('Transit', 'IP - Transit'),
+    ('l2vpn', 'MPLS - l2vpn'),
+    ('l3vpn', 'MPLS - l3vpn'),
+    ('vpls', 'MPLS - vpls'),
     ('Project', 'Project'),
-    ('SDH', 'SDH'),
-    ('Transit', 'Transit'),
-    ('vpls', 'vpls'),
 ]
 
 SERVICE_CLASS_MAP = {
