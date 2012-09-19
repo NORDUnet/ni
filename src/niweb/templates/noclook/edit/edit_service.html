@@ -57,30 +57,62 @@
                     $("#dialog-user-confirm").dialog("open");
 
                 });
-                // End Point //
+{#                // End Point //#}
+{#                // Populate first level combo box#}
+{#                $.getJSON('/formdata/site/', function(data) {#}
+{#                    $('#level0A').append($('<option>').val("0").text("-- Please Select --"));#}
+{#                    $.each(data, function(key, tuple) {#}
+{#                        $('#level0A').append($('<option>').val(tuple[0]).text(tuple[1]));#}
+{#                    });#}
+{#                });#}
+{#                // Hook lower level combo boxes up to their parent#}
+{#                $("#level1A").jCombo("/formdata/{id}/children/", {#}
+{#                    parent: "#level0A",#}
+{#                    end_value_field: "#id_relationship_end_point"#}
+{#                });#}
+{#                $("#level2A").jCombo("/formdata/{id}/children/", {#}
+{#                    parent: "#level1A",#}
+{#                    end_value_field: "#id_relationship_end_point"#}
+{#                });#}
+{#                $("#level3A").jCombo("/formdata/{id}/children/", {#}
+{#                    parent: "#level2A",#}
+{#                    end_value_field: "#id_relationship_end_point"#}
+{#                });#}
+{#                $("#level4A").jCombo("/formdata/{id}/children/", {#}
+{#                    parent: "#level3A",#}
+{#                    end_value_field: "#id_relationship_end_point"#}
+{#                });#}
+                // Depends on //
                 // Populate first level combo box
-                $.getJSON('/formdata/site/', function(data) {
-                    $('#level0A').append($('<option>').val("0").text("-- Please Select --"));
-                    $.each(data, function(key, tuple) {
-                        $('#level0A').append($('<option>').val(tuple[0]).text(tuple[1]));
-                    });
+                var categories = [
+                    ['optical-path', 'Optical Paths'],
+                    ['site', 'Sites'],
+                    ['service', 'Services'],
+                ];
+                $('#categoryA').append($('<option>').val("0").text("-- Please Select --"));
+                $.each(categories, function(key, tuple) {
+                    $('#categoryA').append($('<option>').val(tuple[0]).text(tuple[1]));
                 });
                 // Hook lower level combo boxes up to their parent
+                $("#level0A").jCombo("/formdata/{id}/", {
+                    parent: "#categoryA",
+                    end_value_field: "#id_relationship_depends_on"
+                });
                 $("#level1A").jCombo("/formdata/{id}/children/", {
                     parent: "#level0A",
-                    end_value_field: "#id_relationship_end_point"
+                    end_value_field: "#id_relationship_depends_on"
                 });
                 $("#level2A").jCombo("/formdata/{id}/children/", {
                     parent: "#level1A",
-                    end_value_field: "#id_relationship_end_point"
+                    end_value_field: "#id_relationship_depends_on"
                 });
                 $("#level3A").jCombo("/formdata/{id}/children/", {
                     parent: "#level2A",
-                    end_value_field: "#id_relationship_end_point"
+                    end_value_field: "#id_relationship_depends_on"
                 });
                 $("#level4A").jCombo("/formdata/{id}/children/", {
                     parent: "#level3A",
-                    end_value_field: "#id_relationship_end_point"
+                    end_value_field: "#id_relationship_depends_on"
                 });
                 // Accordion
                 $(".edit-accordion").collapse();
@@ -111,8 +143,8 @@
         );
     </script>
     <script type="text/javascript">
-        function add_port() {
-            var parent_id = $('#id_relationship_end_point').val();
+        function add_depends_on_port() {
+            var parent_id = $('#id_relationship_depends_on').val();
             window.open("/new/port/parent/" + parent_id + "/");
         }
     </script>
@@ -164,7 +196,7 @@
                                     <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ provider.id }}/delete" class="label label-important connection-confirm">Delete</a>
+                                    <a href="relationship/{{ provider.id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -192,7 +224,7 @@
                                     <a href="{% noclook_node_to_url customer.start %}">{{ customer.start.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ customer.id }}/delete" class="label label-important connection-confirm">Delete</a>
+                                    <a href="relationship/{{ customer.id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -220,7 +252,7 @@
                                     <a href="{% noclook_node_to_url end_user.start %}">{{ end_user.start.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ end_user.id }}/delete" class="label label-important connection-confirm">Delete</a>
+                                    <a href="relationship/{{ end_user.id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -234,36 +266,37 @@
         <div class="accordion-group">
             <div class="accordion-heading">
                 <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
-                    End Points (optional)
+                    Service depends on (optional)
                 </a>
             </div>
             <div id="collapseFour" class="accordion-body collapse">
                 <div class="accordion-inner">
-                    {% if end_points %}
+                    {% if depends_on %}
                         {% load noclook_tags %}
-                        <h4>Remove End Point</h4>
-                        {% for end_point in end_points %}
+                        <h4>Remove depends on relationship</h4>
+                        {% for depend_on in depends_on %}
                             <div class="row">
                                 <div class="span5">
-                                    Connected to <a href="{% noclook_node_to_url end_point.dep %}">{{ end_point.dep.name }} {{ end_point.parent.name }}</a>
+                                    Depends on <a href="{% noclook_node_to_url depend_on.dep %}">{{ depend_on.dep.name }} {{ depend_on.parent.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ end_point.dep_rel.id }}/delete" class="label label-important connection-confirm">Delete</a>
+                                    <a href="relationship/{{ depend_on.dep_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
                         <hr>
                     {% endif %}
-                    <h4>Add End Point</h4>
+                    <h4>Add depends on relationship</h4>
                     <div class="span4">
-                        {{ form.relationship_end_point }}
+                        {{ form.relationship_depends_on }}
+                        <select class="stacked" name="categoryA" id="categoryA"></select>
                         <select class="stacked" name="level0A" id="level0A"></select>
                         <select class="stacked" name="level1A" id="level1A"></select>
                         <select class="stacked" name="level2A" id="level2A"></select>
                         <select class="stacked" name="level3A" id="level3A"></select>
                         <select class="stacked" name="level4A" id="level4A"></select>
-                        <span class="help-block">Choose an end point</span>
-                        <a class="btn btn-mini" href="javascript:add_port()">Add port</a>
+                        <span class="help-block">Choose a thing to depend service on</span>
+                        <a class="btn btn-mini" href="javascript:add_depends_on_port()">Add port</a>
                         <br>
                         <br>
                     </div>

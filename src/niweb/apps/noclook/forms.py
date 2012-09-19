@@ -77,9 +77,9 @@ SERVICE_TYPES = [
     ('Internet Exchange', 'IP - Internet Exchange'),
     ('Private Interconnect', 'IP - Private Interconnect'),
     ('Transit', 'IP - Transit'),
-    ('l2vpn', 'MPLS - l2vpn'),
-    ('l3vpn', 'MPLS - l3vpn'),
-    ('vpls', 'MPLS - vpls'),
+    ('L2VPN', 'MPLS - L2VPN'),
+    ('L3VPN', 'MPLS - L3VPN'),
+    ('VPLS', 'MPLS - VPLS'),
     ('Project', 'Project'),
 ]
 
@@ -90,13 +90,13 @@ SERVICE_CLASS_MAP = {
     'Ethernet': 'DWDM',
     'External': 'External',
     'Internet Exchange': 'IP',
-    'l2vpn': 'MPLS',
-    'l3vpn': 'MPLS',
+    'L2VPN': 'MPLS',
+    'L3VPN': 'MPLS',
     'Private Interconnect': 'IP',
     'Project': 'Project',
     'SDH': 'DWDM',
     'Transit': 'IP',
-    'vpls': 'MPLS',
+    'VPLS': 'MPLS',
 }
 
 OPERATIONAL_STATES = [
@@ -423,6 +423,7 @@ class EditServiceForm(forms.Form):
         self.fields['relationship_end_user'].choices = get_node_type_tuples('End User')
 
     name = forms.CharField(required=False)
+    service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     service_type = forms.ChoiceField(choices=SERVICE_TYPES,
                                      widget=forms.widgets.Select)
     project_end_date = forms.DateField(required=False)
@@ -434,5 +435,12 @@ class EditServiceForm(forms.Form):
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_end_point = forms.IntegerField(required=False,
-                                                widget=forms.widgets.HiddenInput)
+    relationship_depends_on = forms.IntegerField(required=False,
+                                                 widget=forms.widgets.HiddenInput)
+
+
+    def clean(self):
+        cleaned_data = super(EditServiceForm, self).clean()
+        # Set service_class depending on service_type.
+        cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
+        return cleaned_data
