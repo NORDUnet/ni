@@ -17,7 +17,7 @@ from django.conf import settings as django_settings
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook import forms
 import niweb.apps.noclook.helpers as h
-from norduni_client_exceptions import UniqueNodeError
+from norduni_client_exceptions import UniqueNodeError, NoRelationshipPossible
 import norduni_client as nc
 
 # Helper functions
@@ -472,7 +472,16 @@ def new_port(request, form, parent_id=None):
     keys = ['port_type']
     form_update_node(request.user, node, form, keys)
     if parent_id:
-        place_child_in_parent(node, parent_id)
+        try:
+            place_child_in_parent(node, parent_id)
+        except NoRelationshipPossible:
+            nh.delete()
+            form = forms.NewSiteForm(request.POST)
+            form._errors = ErrorDict()
+            form._errors['parent'] = ErrorList()
+            form._errors['parent'].append('Parent type can not have ports.')
+            return render_to_response('noclook/edit/create_port.html', {'form': form},
+                context_instance=RequestContext(request))
     return HttpResponseRedirect(nh.get_absolute_url())
 
 @login_required
@@ -952,7 +961,7 @@ def edit_service(request, handle_id):
     providers =  h.iter2list(node.Provides.incoming)
     customers = h.iter2list(h.get_customer(node))
     end_users = h.iter2list(h.get_end_user(node))
-    end_points = h.iter2list(h.get_logical_depends_on(node))
+    depends_on = h.iter2list(h.get_logical_depends_on(node))
     if request.POST:
         form = forms.EditServiceForm(request.POST)
         if form.is_valid():
@@ -968,22 +977,22 @@ def edit_service(request, handle_id):
             if form.cleaned_data['relationship_end_user']:
                 end_user_id = form.cleaned_data['relationship_end_user']
                 set_user(node, end_user_id)
-            if form.cleaned_data['relationship_end_point']:
-                end_point_id = form.cleaned_data['relationship_end_point']
-                set_depends_on(node, end_point_id)
+            if form.cleaned_data['relationship_depends_on']:
+                depends_on_id = form.cleaned_data['relationship_depends_on']
+                set_depends_on(node, depends_on_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_service.html',
                                      {'form': form, 'node': node,
                                       'providers': providers, 'customers': customers,
-                                      'end_users': end_users, 'end_points': end_points},
+                                      'end_users': end_users, 'depends_on': depends_on},
                                      context_instance=RequestContext(request))
     else:
         form = forms.EditServiceForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_service.html',
                                  {'form': form, 'node': node,
                                   'providers': providers, 'customers': customers,
-                                  'end_users': end_users, 'end_points': end_points},
+                                  'end_users': end_users, 'depends_on': depends_on},
                                   context_instance=RequestContext(request))
 
 NEW_FORMS =  {'cable': forms.NewCableForm,
