@@ -17,6 +17,7 @@ $(document).ready(
         service_type.change(function(e){
             if ($(this).val()!="External") {
                 name_field.prop("disabled", true);
+                name_field.val("");
             } else {
                 name_field.prop("disabled", false);
             }
@@ -24,6 +25,7 @@ $(document).ready(
                 project_end_date.show();
             } else {
                 project_end_date.hide();
+                project_end_date.val("");
             }
         });
         $("#id_project_end_date").datepicker({ dateFormat: "yy-mm-dd" });
