@@ -259,8 +259,14 @@ def delete_node(request, slug, handle_id):
     """
     nh, node = get_nh_node(handle_id)
     if nc.get_node_meta_type(node) == 'physical':
+        # Remove dependant equipment like Ports
         for rel in node.Has.outgoing:
             child_nh, child_node = get_nh_node(rel.end['handle_id'])
+            # Remove Units if any
+            for rel2 in child_node.Depends_on.incoming:
+                if rel2.start['node_type'] == 'Unit':
+                    unit_nh, unit_node = get_nh_node(rel2.start['handle_id'])
+                    unit_nh.delete()
             child_nh.delete()
     nh.delete()
     return HttpResponseRedirect('/%s' % slug)
@@ -308,7 +314,7 @@ def get_children(request, node_id, slug=None):
     q = '''                   
         START parent=node({id})
         MATCH parent--child
-        WHERE (parent-[:Has]->child or parent<-[:Located_in]-child) %s
+        WHERE (parent-[:Has]->child or parent<-[:Located_in]-child or (parent<-[:Depends_on]-child and child.node_type = "Unit")) %s
         RETURN child
         ORDER BY child.node_type, child.name
         ''' % type_filter

@@ -147,7 +147,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     for i in interfaces:
         name = i['name']
         if name and not not_interesting_interfaces.match(name):
-            node_handle = nt.get_node_handle(nc.neo4jdb, name, 'PIC', 
+            node_handle = nt.get_node_handle(nc.neo4jdb, name, 'Port',
                                              'physical', router_node)
             node = node_handle.get_node()
             h.set_noclook_auto_manage(nc.neo4jdb, node, True)

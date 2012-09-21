@@ -88,7 +88,7 @@
                 <tbody>
                 {% for hit in depends_on_port %}
                     <tr>
-                        <td><a href="{% noclook_node_to_url hit.logical %}">{{ hit.logical.name }}</a></td>
+                        <td><a href="{% noclook_node_to_url hit.logical %}">{{ hit.logical.node_type }} {{ hit.logical.name }}</a></td>
                     </tr>
                 {% endfor %}
                 </tbody>
