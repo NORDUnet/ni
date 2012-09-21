@@ -38,43 +38,7 @@
                     <th>Name:</th><td>{{ node.name }}</td>
                 </tr>
                 <tr>
-                    <th>State:</th><td>{{ node.operational_state }}</td>
-                </tr
-                <tr>
-                    <th>Type:</th><td>{{ node.service_class }} - {{ node.service_type }}</td>
-                </tr>
-                {% if node.service_type == "Project" %}
-                    <tr>
-                        <th>Project end date:</th><td>{{ node.project_end_date }}</td>
-                    </tr>
-                {% endif %}
-                <tr>
-                    <th>Provider:</th>
-                    <td>
-                        {% for provider in providers %}
-                            <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a><br>
-                        {% endfor %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>Customers:</th>
-                    <td>
-                        {% for user in users %}
-                            {% if user.start.node_type == "Customer" %}
-                                <a href="{% noclook_node_to_url user.start %}">{{ user.start.name }}</a><br>
-                            {% endif %}
-                        {% endfor %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>End Users:</th>
-                    <td>
-                        {% for user in users %}
-                            {% if user.start.node_type == "End User" %}
-                                <a href="{% noclook_node_to_url user.start %}">{{ user.start.name }}</a><br>
-                            {% endif %}
-                        {% endfor %}
-                    </td>
+                    <th>IP Addresses:</th><td class="break-word">{% for address in node.ip_addresses %}{{ address }}<br>{% endfor %}</td>
                 </tr>
             </table>
         </div>
@@ -105,22 +69,25 @@
             </div>
         {% endif %}
     </div>
+<!--
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
+-->
     <div class="section">
         {% load noclook_tags %}
         {% if depend_inc %}
-            <h3>Used by:</h3>
+            <h3>Used by</h3>
             <table id="depend_inc" class="tablesorter" cellspacing="1">
                 <thead>
-                <th>Name</th><th>Type</th><th>Description</th>
+                    <th>Name</th><th>IP Address</th><th>Type</th><th>Description</th>
                 </thead>
                 <tbody>
                 {% for service in depend_inc %}
                     <tr>
                         <td><a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a></td>
+                        <td>{{ service.ip_address }}</td>
                         <td>{{ service.start.node_type }}</td>
                         <td>{{ service.start.description }}</td>
                     </tr>
@@ -132,15 +99,15 @@
     <div class="section">
         {% load noclook_tags %}
         {% if depend_out %}
-            <h3>This service depend on</h3>
+            <h3>This unit depend on</h3>
             <table id="depend_out" class="tablesorter" cellspacing="1">
                 <thead>
-                <th>Name</th><th>Type</th><th>Description</th>
+                    <th>Name</th><th>Type</th><th>Description</th>
                 </thead>
                 <tbody>
                 {% for hit in depend_out %}
                     <tr>
-                        <td><a href="{% noclook_node_to_url hit.dep %}">{{ hit.parent.name }} {{ hit.dep.name }}</a></td>
+                        <td><a href="{% noclook_node_to_url hit.dep %}">{{ hit.root.name }} {{ hit.parent.name }} {{ hit.dep.name }}</a></td>
                         <td>{{ hit.dep.node_type }}</td>
                         <td>{{ hit.dep.description }}</td>
                     </tr>

@@ -466,6 +466,20 @@ def port_detail(request, handle_id):
                               context_instance=RequestContext(request))
 
 @login_required
+def unit_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(node)
+    depend_inc = h.iter2list(node.Depends_on.incoming)
+    depend_out = h.iter2list(h.get_logical_depends_on(node))
+    return render_to_response('noclook/detail/unit_detail.html',
+                             {'node': node, 'node_handle': nh,
+                              'last_seen': last_seen, 'expired': expired,
+                              'depend_inc': depend_inc, 'depend_out': depend_out},
+        context_instance=RequestContext(request))
+
+@login_required
 def service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database

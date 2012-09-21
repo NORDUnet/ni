@@ -314,8 +314,8 @@ def get_logical_depends_on(logical):
     """
     q = '''
         START node=node({id})
-        MATCH node-[dep_rel:Depends_on]->dep<-[?:Has*1..]-parent
-        RETURN dep,dep_rel,parent
+        MATCH node-[dep_rel:Depends_on]->dep, dep<-[?:Has*1..]-parent, dep-[?:Depends_on]->parent<-[:Has*1..]-root
+        RETURN dep,dep_rel,parent,root
         '''
     return nc.neo4jdb.query(q, id=logical.getId())
 
