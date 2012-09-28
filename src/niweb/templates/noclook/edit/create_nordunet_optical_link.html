@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Create new cable</h1>
+    <h1>Create new NORDUnet Optical Link</h1>
     {% if form.errors %}
         <div class="alert alert-error">
             <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
@@ -11,11 +11,17 @@
     {% endif %}
     <div class="well">
         <form action="." method="post">{% csrf_token %}
-            <h3>Name</h3>
-            {{ form.name }}
-            <br><br>
-            <h3>Cable Type</h3>
-            {{ form.cable_type }}
+            <h3>Link Type</h3>
+            {{ form.link_type }}
+            <br />
+            <br />
+            <h3>Operational State</h3>
+            {{ form.operational_state }}
+            <br />
+            <br />
+            <h3>Description (optional)</h3>
+            {{ form.description }}
+            <span class="help-block">{{ form.description.help_text }}</span>
             <br />
             <br />
             <input type="submit" value="Save" class="btn btn-primary" />

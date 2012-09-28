@@ -38,17 +38,21 @@
                     <th>Name:</th><td>{{ node.name }}</td>
                 </tr>
                 <tr>
-                    <th>Type:</th><td>{{ node.link_type }}</td>
+                    <th>Framing:</th><td>{{ node.framing }}</td>
+                </tr>
+                <tr>
+                    <th>Capacity:</th><td>{{ node.capacity }}</td>
+                </tr>
+                <tr>
+                    <th>State:</th><td>{{ node.operational_state }}</td>
                 </tr>
             </table>
             {% if node.description %}
                 <div>
                     <table class="table">
-                        {% if node.description %}
-                            <tr>
-                                <th>Description:</th><td>{{ node.description }}</td>
-                            </tr>
-                        {% endif %}
+                        <tr>
+                            <th>Description:</th><td>{{ node.description }}</td>
+                        </tr>
                     </table>
                 </div>
             {% endif %}
@@ -69,12 +73,10 @@
             </table>
         </div>
     </div>
-    <!--
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
--->
     <div class="section">
         {% load noclook_tags %}
         {% if depend_inc %}
