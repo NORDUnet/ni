@@ -20,6 +20,8 @@ sys.path.append(os.path.abspath(path))
 import noclook_consumer as nt
 import norduni_client as nc
 from apps.noclook import helpers as h
+from django.db import IntegrityError
+from apps.noclook.models import NordunetUniqueId
 
 # This script is used for adding the objects collected with the
 # NERDS csv producer from the NORDUnet service spreadsheets.
@@ -35,6 +37,7 @@ from apps.noclook import helpers as h
 #         "patches": "",
 #         "port_a": "",
 #         "port_b": "",
+#         "provider": "",
 #         "rack_a": "",
 #         "rack_b": "",
 #         "slot_a": "",
@@ -64,14 +67,21 @@ def depend_on_equipment(node, equipment, rack, subrack, slot, port):
     h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
 
-def consume_link_csv(json_list):
+def consume_link_csv(json_list, unique_id_set=None):
     """
     Inserts the data collected with NOCLook csv producer.
     """
     for i in json_list:
         node_type = i['host']['csv_producer']['node_type'].title()
         meta_type = i['host']['csv_producer']['meta_type'].lower()
-        nh = nt.get_unique_node_handle(nc.neo4jdb, i['host']['name'], node_type,
+        link_id = i['host']['name']
+        if unique_id_set:
+            try:
+                unique_id_set.objects.create(unique_id=link_id)
+            except IntegrityError:
+                print "%s already exists in the database. Please check and add manually" % link_id
+                continue
+        nh = nt.get_unique_node_handle(nc.neo4jdb, link_id, node_type,
                                        meta_type)
         node = nh.get_node()
         h.set_noclook_auto_manage(nc.neo4jdb, node, False)
@@ -82,7 +92,11 @@ def consume_link_csv(json_list):
                 node['patches'] = patches
             node['nordunet_id'] = node['name']
         h.update_node_search_index(nc.neo4jdb, node)
-        # TODO: Insert id in to NORDUnetIDSet table.
+        # Set provider
+        provider_name = i['host']['csv_producer'].get('provider')
+        provider = nt.get_unique_node(provider_name, 'Provider', 'relation')
+        rel = nc.create_relationship(nc.neo4jdb, provider, node, 'Provides')
+        h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
         # Depend on equipment
         equipment_a = i['host']['csv_producer'].get('equipment_a', None)
         if equipment_a:
@@ -116,7 +130,7 @@ def main():
         print 'Loading data...'
         data = nt.load_json(args.D)
         print 'Inserting data...'
-        consume_link_csv(data)
+        consume_link_csv(data, NordunetUniqueId)
         print 'noclook consume done.'
     else:
         print 'Use -D to provide the path to the JSON files.'
