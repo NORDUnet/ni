@@ -107,6 +107,25 @@ OPERATIONAL_STATES = [
     ('Testing', 'Testing'),
 ]
 
+OPTICAL_LINK_TYPES = [
+    ('',''),
+    ('OTS', 'OTS'),
+    ('OPS', 'OPS'),
+]
+
+OPTICAL_PATH_FRAMING = [
+    ('',''),
+    ('WDM', 'WDM'),
+    ('WDM (Ethernet)', 'WDM (Ethernet)'),
+]
+
+OPTICAL_PATH_CAPACITY = [
+    ('',''),
+    ('10GE', '10GE'),
+    ('CBR', 'CBR'),
+    ('CBR10G', 'CBR10G'),
+]
+
 def get_node_type_tuples(node_type):
     """
     Returns a list of tuple of node.id and node['name'] of the node_type.
@@ -444,3 +463,131 @@ class EditServiceForm(forms.Form):
         # Set service_class depending on service_type.
         cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
         return cleaned_data
+
+
+class NewOpticalLinkForm(forms.Form):
+    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
+    link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
+        widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
+        widget=forms.widgets.Select)
+    description = forms.CharField(required=False,
+        widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+        help_text='Short description of the optical link.')
+
+    class Meta:
+        id_generator_name = None # UniqueId name
+
+
+    def clean(self):
+        """
+        Sets name to next generated ID.
+        """
+        cleaned_data = super(NewOpticalLinkForm, self).clean()
+        # Set name to a generated id if the service is not a manually named service.
+        name = cleaned_data.get("name")
+        if not name:
+            if not self.Meta.id_generator_name:
+                raise Exception('You have to set id_generator_name in form Meta class.')
+            try:
+                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                cleaned_data['name'] = id_generator.get_id()
+            except UniqueIdGenerator.DoesNotExist as e:
+                raise e
+        return cleaned_data
+
+
+class NewNordunetOpticalLinkForm(NewOpticalLinkForm):
+
+    class Meta(NewOpticalLinkForm.Meta):
+        id_generator_name = 'nordunet_optical_link_id'
+
+
+    def clean(self):
+        cleaned_data = super(NewNordunetOpticalLinkForm, self).clean()
+        NordunetUniqueId.objects.create(unique_id=cleaned_data['name'])
+        return cleaned_data
+
+
+class EditOpticalLinkForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditOpticalLinkForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
+    link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
+                                  widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
+                                          widget=forms.widgets.Select)
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the optical link.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_end_a = forms.IntegerField(required=False,
+                                                   widget=forms.widgets.HiddenInput)
+    relationship_end_b = forms.IntegerField(required=False,
+                                                   widget=forms.widgets.HiddenInput)
+
+
+class NewOpticalPathForm(forms.Form):
+    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
+    framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
+                                widget=forms.widgets.Select)
+    capacity = forms.ChoiceField(choices=OPTICAL_PATH_CAPACITY,
+                                 widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
+                                          widget=forms.widgets.Select)
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the optical path.')
+
+    class Meta:
+        id_generator_name = None # UniqueId name
+
+
+    def clean(self):
+        """
+        Sets name to next generated ID.
+        """
+        cleaned_data = super(NewOpticalPathForm, self).clean()
+        # Set name to a generated id if the service is not a manually named service.
+        name = cleaned_data.get("name")
+        if not name:
+            if not self.Meta.id_generator_name:
+                raise Exception('You have to set id_generator_name in form Meta class.')
+            try:
+                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                cleaned_data['name'] = id_generator.get_id()
+            except UniqueIdGenerator.DoesNotExist as e:
+                raise e
+        return cleaned_data
+
+
+class NewNordunetOpticalPathForm(NewOpticalPathForm):
+
+    class Meta(NewOpticalLinkForm.Meta):
+        id_generator_name = 'nordunet_optical_path_id'
+
+
+    def clean(self):
+        cleaned_data = super(NewNordunetOpticalPathForm, self).clean()
+        NordunetUniqueId.objects.create(unique_id=cleaned_data['name'])
+        return cleaned_data
+
+
+class EditOpticalPathForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditOpticalPathForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['relationship_depends_on'].choices = get_node_type_tuples('Optical Link')
+
+    framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
+                                widget=forms.widgets.Select)
+    capacity = forms.ChoiceField(choices=OPTICAL_PATH_CAPACITY,
+                                 widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
+                                          widget=forms.widgets.Select)
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the optical path.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_depends_on = forms.ChoiceField(required=False, widget=forms.widgets.Select)

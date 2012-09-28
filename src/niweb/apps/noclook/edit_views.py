@@ -552,8 +552,39 @@ def new_nordunet_service(request, form):
         return render_to_response('noclook/edit/create_nordunet_service.html', {'form': form},
                                   context_instance=RequestContext(request))
     node = nh.get_node()
-    # TODO: Add the NORDUnet service ID to pool?
     keys = ['description', 'service_class', 'service_type', 'operational_state', 'project_end_date']
+    form_update_node(request.user, node, form, keys)
+    return HttpResponseRedirect(nh.get_absolute_url())
+
+@login_required
+def new_nordunet_optical_link(request, form):
+    try:
+        nh = form_to_unique_node_handle(request, form, 'optical-link', 'logical')
+    except UniqueNodeError:
+        form = forms.NewServiceForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('An Optical Link with that name already exists.')
+        return render_to_response('noclook/edit/create_nordunet_optical_link.html', {'form': form},
+            context_instance=RequestContext(request))
+    node = nh.get_node()
+    keys = ['link_type', 'operational_state']
+    form_update_node(request.user, node, form, keys)
+    return HttpResponseRedirect(nh.get_absolute_url())
+
+@login_required
+def new_nordunet_optical_path(request, form):
+    try:
+        nh = form_to_unique_node_handle(request, form, 'optical-path', 'logical')
+    except UniqueNodeError:
+        form = forms.NewServiceForm(request.POST)
+        form._errors = ErrorDict()
+        form._errors['name'] = ErrorList()
+        form._errors['name'].append('An Optical Path with that name already exists.')
+        return render_to_response('noclook/edit/create_nordunet_optical_path.html', {'form': form},
+            context_instance=RequestContext(request))
+    node = nh.get_node()
+    keys = ['framing', 'capacity', 'operational_state']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
 
@@ -1003,9 +1034,80 @@ def edit_service(request, handle_id):
                                   'end_users': end_users, 'depends_on': depends_on},
                                   context_instance=RequestContext(request))
 
+@login_required
+def edit_optical_link(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+        # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    providers =  h.iter2list(node.Provides.incoming)
+    depends_on = h.iter2list(h.get_logical_depends_on(node))
+    if request.POST:
+        form = forms.EditOpticalLinkForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            # Optical Link node updates
+            if form.cleaned_data['relationship_provider']:
+                provider_id = form.cleaned_data['relationship_provider']
+                set_provider(node, provider_id)
+            if form.cleaned_data['relationship_end_a']:
+                depends_on_id = form.cleaned_data['relationship_end_a']
+                set_depends_on(node, depends_on_id)
+            if form.cleaned_data['relationship_end_b']:
+                depends_on_id = form.cleaned_data['relationship_end_b']
+                set_depends_on(node, depends_on_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_optical_link.html',
+                {'form': form, 'node': node,
+                 'providers': providers, 'depends_on': depends_on},
+                context_instance=RequestContext(request))
+    else:
+        form = forms.EditOpticalLinkForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_optical_link.html',
+            {'form': form, 'node': node,
+             'providers': providers, 'depends_on': depends_on},
+            context_instance=RequestContext(request))
+
+@login_required
+def edit_optical_path(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+        # Get needed data from node
+    nh, node = get_nh_node(handle_id)
+    providers =  h.iter2list(node.Provides.incoming)
+    depends_on = h.iter2list(h.get_logical_depends_on(node))
+    if request.POST:
+        form = forms.EditOpticalPathForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            form_update_node(request.user, node, form)
+            # Optical Path node updates
+            if form.cleaned_data['relationship_provider']:
+                provider_id = form.cleaned_data['relationship_provider']
+                set_provider(node, provider_id)
+            if form.cleaned_data['relationship_depends_on']:
+                depends_on_id = form.cleaned_data['relationship_depends_on']
+                set_depends_on(node, depends_on_id)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_optical_path.html',
+                {'form': form, 'node': node,
+                 'providers': providers, 'depends_on': depends_on},
+                context_instance=RequestContext(request))
+    else:
+        form = forms.EditOpticalPathForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_optical_path.html',
+            {'form': form, 'node': node,
+             'providers': providers, 'depends_on': depends_on},
+            context_instance=RequestContext(request))
+
 NEW_FORMS =  {'cable': forms.NewCableForm,
               'customer': forms.NewCustomerForm,
               'end-user': forms.NewEndUserForm,
+              'nordunet-optical-link': forms.NewNordunetOpticalLinkForm,
+              'nordunet-optical-path': forms.NewNordunetOpticalPathForm,
               'nordunet-service': forms.NewNordunetServiceForm,
               'odf': forms.NewOdfForm,
               'port': forms.NewPortForm,
@@ -1014,18 +1116,12 @@ NEW_FORMS =  {'cable': forms.NewCableForm,
               'site': forms.NewSiteForm, 
               'site-owner': forms.NewSiteOwnerForm,
              }
-              
-#EDIT_FORMS =  {'cable': forms.EditCableForm,
-#               'host': forms.EditHostForm,
-#               'optical-node': forms.EditOpticalNodeForm,
-#               'router': forms.EditRouterForm,
-#               'site': forms.EditSiteForm,
-#               'site-owner': forms.EditSiteOwnerForm,
-#               }
 
 NEW_FUNC = {'cable': new_cable,
             'customer': new_customer,
             'end-user': new_end_user,
+            'nordunet-optical-link': new_nordunet_optical_link,
+            'nordunet-optical-path': new_nordunet_optical_path,
             'nordunet-service': new_nordunet_service,
             'odf': new_odf,
             'port': new_port,
@@ -1042,6 +1138,8 @@ EDIT_FUNC = {'cable': edit_cable,
              'host': edit_host,
              'odf': edit_odf,
              'optical-node': edit_optical_node,
+             'optical-link': edit_optical_link,
+             'optical-path': edit_optical_path,
              'peering-partner': edit_peering_partner,
              'port': edit_port,
              'provider': edit_provider,

@@ -58,12 +58,13 @@
         <h3>Services</h3>
         <table id="services" class="tablesorter" cellspacing="1">
             <thead>
-            <th>ID</th><th>Description</th>
+            <th>ID</th><th>Type</th><th>Description</th>
             </thead>
             <tbody>
             {% for provide in provides_relationships %}
                 <tr>
                     <td><a href="{% noclook_node_to_url provide.end %}">{{ provide.end.name }}</a></td>
+                    <td>{{ provide.end.node_type }}</a></td>
                     <td>{{ provide.end.description }}</a></td>
                 </tr>
             {% endfor %}
