@@ -217,33 +217,6 @@ def nodes_to_geoff(node_list):
     """
     # TODO:
     pass
-    
-#def get_location(node):
-#    """
-#    Returns a list of the nodes locations as dicts with name and url.
-#    """
-#    location = []
-#    rels = iter2list(node.Located_in.outgoing)
-#    for rel in rels:
-#        if rel.end['node_type'] == 'Rack':
-#            # Get where the rack is placed
-#            location += get_place(rel.end)
-#            name = rel.end['name']
-#        else:
-#            name = rel.end['name']
-#        location.append({'node': rel.end, 'name': name})
-#    return location
-
-#def get_place(node):
-#    """
-#    Returns the nodes place in site or other equipment.
-#    """
-#    location = []
-#    rels = iter2list(node.Has.incoming)
-#    for rel in rels:
-#        name = rel.start['name']
-#        location.append({'node': rel.start, 'name': name})
-#    return location
 
 def get_location(node):
     """
@@ -314,8 +287,8 @@ def get_logical_depends_on(logical):
     """
     q = '''
         START node=node({id})
-        MATCH node-[dep_rel:Depends_on]->dep, dep<-[?:Has*1..]-parent, dep-[?:Depends_on]->parent<-[:Has*1..]-root
-        RETURN dep,dep_rel,parent,root
+        MATCH node-[dep_rel:Depends_on]->dep<-[?:Has*1..]-parent
+        RETURN dep,dep_rel,parent
         '''
     return nc.neo4jdb.query(q, id=logical.getId())
 
