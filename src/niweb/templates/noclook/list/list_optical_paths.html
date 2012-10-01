@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Optical Path list{% endblock %}
+
+{% block js %}
+    <script type="text/javascript">
+        $(document).ready(
+                function(){
+                    $("#services").tablesorter(
+                            {
+                                sortList: [[0,0]],
+                                headers:
+                                {},
+                                widthFixed: true,
+                                widgets: ['zebra']
+                            });
+                }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <h1>Optical Paths</h1>
+    <table id="services" class="tablesorter" cellspacing="1">
+        <thead>
+        <th>Optical Link</th><th>Framing</th><th>Capacity</th><th>Description</th>
+        </thead>
+        <tbody>
+        {% load noclook_tags %}
+        {% for optical_path in optical_path_list %}
+            <tr>
+                <td><a href="{% noclook_node_to_url optical_path.node %}">{{ optical_path.node.name }}</a></td>
+                <td>{{ optical_path.framing }}</td>
+                <td>{{ optical_path.capacity }}</td>
+                <td>{{ optical_path.description }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

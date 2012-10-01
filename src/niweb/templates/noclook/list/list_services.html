@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ block.super }} All nodes{% endblock %}
+{% block title %}{{ block.super }} Service list{% endblock %}
 
 {% block js %}
     <script type="text/javascript">
@@ -24,13 +24,26 @@
     <h1>Services</h1>
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
-        <th>Service</th><th>Service Type</th><th>Description</th>
+        <th>Service</th><th>Service Class</th><th>Service Type</th><th>Description</th><th>Customers</th><th>End Users</th>
         </thead>
         <tbody>
         {% load noclook_tags %}
         {% for service in service_list %}
             <tr>
-                <td><a href="{% noclook_node_to_url service.node %}">{{ service.node.name }}</a></td><td>{{ service.service_type }}</td><td>{{ service.description }}</td>
+                <td><a href="{% noclook_node_to_url service.node %}">{{ service.node.name }}</a></td>
+                <td>{{ service.service_class }}</td>
+                <td>{{ service.service_type }}</td>
+                <td>{{ service.description }}</td>
+                <td>
+                    {% for customer in service.customers %}
+                        <a href="{% noclook_node_to_url customer.customer %}">{{ customer.customer.name }}</a><br>
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for end_user in service.end_users %}
+                        <a href="{% noclook_node_to_url end_user.end_user %}">{{ end_user.end_user.name }}</a><br>
+                    {% endfor %}
+                </td>
             </tr>
         {% endfor %}
         </tbody>

@@ -95,15 +95,58 @@ def list_sites(request):
                                 context_instance=RequestContext(request))
 
 @login_required
-def list_services(request):
+def list_services(request, service_class=None):
+    if service_class:
+        where_statement = 'WHERE node.service_class = "%s"' % service_class
+    else:
+        where_statement = ''
     q = '''
         START node=node:node_types(node_type = "Service")
-        RETURN node, node.service_type? as service_type, node.description? as description
-        '''
-    service_list = nc.neo4jdb.query(q)
+        %s
+        RETURN node, node.service_class? as service_class, node.service_type? as service_type, node.description? as description
+        ''' % where_statement
+    hits = nc.neo4jdb.query(q)
+    service_list = []
+    for hit in hits:
+        service = {
+            'node': hit['node'],
+            'service_class': hit['service_class'],
+            'service_type': hit['service_type'],
+            'description': hit['description'],
+            'customers': h.get_customer(hit['node']),
+            'end_users': h.get_end_user(hit['node']),
+        }
+        service_list.append(service)
     return render_to_response('noclook/list/list_services.html',
-            {'service_list': service_list},
-                              context_instance=RequestContext(request))
+                             {'service_list': service_list},
+                             context_instance=RequestContext(request))
+
+def list_optical_paths(request):
+    q = '''
+        START node=node:node_types(node_type = "Optical Path")
+        RETURN node, node.framing? as framing, node.capacity? as capacity
+        '''
+    optical_path_list = nc.neo4jdb.query(q)
+    return render_to_response('noclook/list/list_optical_paths.html',
+        {'optical_path_list': optical_path_list},
+        context_instance=RequestContext(request))
+
+def list_optical_links(request):
+    q = '''
+        START node=node:node_types(node_type = "Optical Link")
+        RETURN node
+        '''
+    hits = nc.neo4jdb.query(q)
+    optical_link_list = []
+    for hit in hits:
+        optical_link = {
+            'node': hit['node'],
+            'end_points': h.get_logical_depends_on(hit['node'])
+        }
+        optical_link_list.append(optical_link)
+    return render_to_response('noclook/list/list_optical_links.html',
+                             {'optical_link_list': optical_link_list},
+                             context_instance=RequestContext(request))
 
 # Detail views
 @login_required
@@ -495,22 +538,6 @@ def service_detail(request, handle_id):
                               'depend_inc': depend_inc, 'depend_out': depend_out,
                               'users': users, 'providers': providers},
                               context_instance=RequestContext(request))
-
-#@login_required
-#def external_service_detail(request, handle_id):
-#    nh = get_object_or_404(NodeHandle, pk=handle_id)
-#    # Get node from neo4j-database
-#    node = nh.get_node()
-#    last_seen, expired = h.neo4j_data_age(node)
-#    depend_inc = h.iter2list(node.Depends_on.incoming)
-#    depend_out = h.iter2list(h.get_logical_depends_on(node))
-#    providers = h.iter2list(node.Provides.incoming)
-#    return render_to_response('noclook/detail/external_service_detail.html',
-#            {'node': node, 'node_handle': nh,
-#             'last_seen': last_seen, 'expired': expired,
-#             'depend_inc': depend_inc, 'depend_out': depend_out,
-#             'providers': providers},
-#                              context_instance=RequestContext(request))
 
 @login_required
 def optical_link_detail(request, handle_id):
