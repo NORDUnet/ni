@@ -108,6 +108,7 @@ def depend_on_service(node, service_name, supplier_name):
     service = nt.get_unique_node(service_name, 'Service', 'logical')
     if supplier_name:
         with nc.neo4jdb.transaction:
+            service['service_class'] = 'External'
             service['service_type'] = 'External'
         supplier = nt.get_unique_node(supplier_name, 'Provider', 'relation')
         if not nc.get_relationships(supplier, service, 'Provides'):

@@ -80,7 +80,7 @@ SERVICE_TYPES = [
     ('L2VPN', 'MPLS - L2VPN'),
     ('L3VPN', 'MPLS - L3VPN'),
     ('VPLS', 'MPLS - VPLS'),
-    ('Project', 'Project'),
+    ('IP Project', 'IP - Project'),
 ]
 
 SERVICE_CLASS_MAP = {
@@ -93,7 +93,7 @@ SERVICE_CLASS_MAP = {
     'L2VPN': 'MPLS',
     'L3VPN': 'MPLS',
     'Private Interconnect': 'IP',
-    'Project': 'Project',
+    'IP Project': 'IP Project',
     'SDH': 'DWDM',
     'Transit': 'IP',
     'VPLS': 'MPLS',
