@@ -1,21 +1,117 @@
 {% extends "base.html" %}
 
-{% block title %}{{ block.super }} Create new node{% endblock %}
+{% block title %}{{ block.super }} Reserve {{ slug|capfirst }} IDs{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+    $(document).ready(
+        function(){
+            $("#slider").slider({
+                value:1,
+                min: 1,
+                max: 1000,
+                step: 1,
+                slide: function(event, ui) {
+                    //Its setting the slider value to the element with id "amount"
+                    $( "#id_amount" ).val(ui.value);
+                }
+            });
+            // Modal reserve confirm
+            $("#dialog-reserve-confirm").dialog({
+                modal: true,
+                bgiframe: true,
+                width: 500,
+                height: 200,
+                autoOpen: false
+            });
+
+            $("#reserve-confirm").click(function(e) {
+                e.preventDefault();
+                var amount = $("#id_amount").val()
+                if (amount < 10) {
+                    $("#reserve-form").submit()
+                } else {
+                    var reserve_confirmation = "You want to reserve " + amount + " IDs. Are you sure?";
+                    $("#reserve-confirmation").text(reserve_confirmation);
+                    $("#dialog-reserve-confirm").dialog('option', 'buttons', {
+                        "Confirm" : function() {
+                            $("#reserve-form").submit()
+                        },
+                        "Cancel" : function() {
+                            $(this).dialog("close");
+                        }
+                    });
+                    $("#dialog-reserve-confirm").dialog("open");
+                }
+            });
+        });
+</script>
+{% endblock %}
 
 {% block content %}
-    <h1>Create new</h1>
-    <ul class="menu">
-        <li><a href="cable">Cable</a></li>
-        <li><a href="customer">Customer</a></li>
-        <li><a href="end-user">End User</a></li>
-        <li><a href="nordunet-optical-link">NORDUnet Optical Link</a></li>
-        <li><a href="nordunet-optical-path">NORDUnet Optical Path</a></li>
-        <li><a href="nordunet-service">NORDUnet Service</a></li>
-        <li><a href="odf">ODF</a></li>
-        <li><a href="port">Port</a></li>
-        <li><a href="provider">Provider</a></li>
-        <li><a href="rack">Rack</a></li>
-        <li><a href="site">Site</a></li>
-        <li><a href="site-owner">Site Owner</a></li>
-    </ul>
+    <div id="dialog-reserve-confirm" title="Reserve confirmation">
+        <p id="reserve-confirmation"><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span></p>
+    </div>
+    {% if not slug %}
+        <h1>Reserve IDs</h1>
+        <ul class="menu">
+            <li><a href="cable">Cable IDs</a></li>
+        </ul>
+    {% endif %}
+    {% if slug and not reserved_list %}
+        <h1>Reserve {{ slug|capfirst }} IDs</h1>
+        <form action="" id="reserve-form" method="post">{% csrf_token %}
+            {% if form.errors %}
+                <div class="alert alert-error">
+                    <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
+                    Please resubmit the form after making the following changes:
+                    {{ form.errors }}
+                </div>
+            {% endif %}
+                 <div class="well span7">
+                     <div class="span5">
+                         <h3>Amount of IDs</h3>
+                        <input type="text" class="input-mini" name="amount" value="1" id="id_amount"><br>
+                        <div id="slider"></div>
+                     </div>
+                     <div class="span5">
+                         <h3>Reserve message</h3>
+                         <input type="text" class="input-xxlarge" name="reserve_message" id="id_reserve_message">
+                        <span class="help-block">{{ form.reserve_message.help_text }}</span>
+                     </div>
+                </div>
+            <br>
+            <br>
+            <div class="row">
+                <div class="span3">
+                    <a href="#" class="btn btn-primary" id="reserve-confirm">Reserve</a>
+                    <a href=".." class="btn">Cancel</a>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+    {% if reserved_list %}
+        <h1>Reserved {{ slug|capfirst }} IDs</h1>
+        <div class="span7">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Reserve message</th><th>Error</th>
+                    </tr>
+                </thead>
+                {% for item in reserved_list %}
+                    {% if item.error_message != '' %}
+                        <tr class="error">
+                            <td>{{ item.id }}</td><td>{{ item.reserve_message }}</td><td>{{ item.error_message }}</td>
+                        </tr>
+                    {% else %}
+                        <tr class="success">
+                            <td>{{ item.id }}</td><td>{{ item.reserve_message }}</td><td></td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </table>
+        </div>
+    {% endif %}
 {% endblock %}

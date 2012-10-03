@@ -64,6 +64,8 @@ class UniqueIdGeneratorAdmin(admin.ModelAdmin):
 
 
 class UniqueIdAdmin(admin.ModelAdmin):
+    list_filter = ('reserved',)
+    list_display = ('unique_id', 'reserve_message')
     readonly_fields=('unique_id',)
 
 

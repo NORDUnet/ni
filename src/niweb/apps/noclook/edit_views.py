@@ -355,6 +355,27 @@ def form_to_unique_node_handle(request, form, slug, node_meta_type):
         h.set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
     return node_handle
 
+# Reserve Ids
+@login_required
+def reserve_id(request, slug=None):
+    if not slug:
+        return render_to_response('noclook/edit/reserve_id.html', {},
+                                  context_instance=RequestContext(request))
+    if request.POST:
+        form = forms.ReserveIdForm(request.POST)
+        if form.is_valid():
+            reserved_list = h.reserve_nordunet_id(slug, form.cleaned_data['amount'],
+                form.cleaned_data['reserve_message'], request.user)
+            return render_to_response('noclook/edit/reserve_id.html', {'reserved_list': reserved_list, 'slug': slug},
+                context_instance=RequestContext(request))
+        else:
+            return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},
+                                      context_instance=RequestContext(request))
+    else:
+        form = forms.ReserveIdForm()
+        return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},
+                                  context_instance=RequestContext(request))
+
 # Create functions
 @login_required
 def new_node(request, slug=None, **kwargs):
@@ -568,7 +589,7 @@ def new_nordunet_optical_link(request, form):
         return render_to_response('noclook/edit/create_nordunet_optical_link.html', {'form': form},
             context_instance=RequestContext(request))
     node = nh.get_node()
-    keys = ['link_type', 'operational_state']
+    keys = ['description', 'link_type', 'operational_state']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
 
@@ -584,7 +605,7 @@ def new_nordunet_optical_path(request, form):
         return render_to_response('noclook/edit/create_nordunet_optical_path.html', {'form': form},
             context_instance=RequestContext(request))
     node = nh.get_node()
-    keys = ['framing', 'capacity', 'operational_state']
+    keys = ['description', 'framing', 'capacity', 'operational_state']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
 

@@ -20,9 +20,9 @@ def index(request):
 
 @login_required
 def logout_page(request):
-    '''
+    """
     Log users out and redirects them to the index.
-    '''
+    """
     logout(request)
     return HttpResponseRedirect('/')
 
@@ -118,7 +118,8 @@ def list_services(request, service_class=None):
         }
         service_list.append(service)
     return render_to_response('noclook/list/list_services.html',
-                             {'service_list': service_list},
+                             {'service_list': service_list,
+                              'service_class': service_class},
                              context_instance=RequestContext(request))
 
 def list_optical_paths(request):

@@ -1,16 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}{{ block.super }} {{node_type}} list{% endblock %}
+{% block title %}{{ block.super }} {{ organisation }} reserved ID list{% endblock %}
 
 {% block js %}
 <script type="text/javascript">
 $(document).ready(
     function(){
-        $("#nodes").tablesorter(
+        $("#reserved").tablesorter(
         {
             sortList: [[0,0]],
             headers:
-            {},
+            {
+                3 : { sorter: "isoDate" }
+            },
             widthFixed: true,
             widgets: ['zebra']
         });
@@ -21,18 +23,27 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-    <h1>{{node_type}}s</h1>
-    <table id="nodes" class="tablesorter" cellspacing="1">
-        <thead>
-            <th>Name</th>
-        </thead>
-        <tbody>
-            {% load noclook_tags %}
-            {% for nh in node_handle_list %}
+    {% if not reserved_list %}
+        <h1>Reserved IDs</h1>
+        <dl>
+            <dt><a href="NORDUnet/">NORDUnet</a></dt>
+            <dd>Reserved IDs for NORDUnet.</dd>
+        </dl>
+    {% else %}
+        <h1>{{ organisation }} reserved IDs</h1>
+        <table id="reserved" class="tablesorter" cellspacing="1">
+            <thead>
                 <tr>
-                    <td><a href="{{ nh.get_absolute_url }}">{{ nh.node_name }}</a></td>
+                    <th>ID</th><th>Reserve message</th><th>Reserver</th><th>Reserved</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {% for reserved in reserved_list %}
+                    <tr>
+                        <td>{{ reserved.unique_id }}</td><td>{{ reserved.reserve_message }}</td><td>{{ reserved.reserver }}</td><td>{{ reserved.created }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
 {% endblock %}
