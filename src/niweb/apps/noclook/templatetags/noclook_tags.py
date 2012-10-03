@@ -11,7 +11,7 @@ def type_menu():
     handling.
     Just chain .exclude(type='name') to remove unwanted types.
     """
-    types = NodeType.objects.exclude(type='Port')
+    types = NodeType.objects.exclude(type='Port').exclude(type='Unit')
     return {'types': types}
 
 @register.simple_tag
