@@ -76,11 +76,12 @@ SERVICE_TYPES = [
     ('Customer Connection', 'IP - Customer Connection'),
     ('Internet Exchange', 'IP - Internet Exchange'),
     ('Private Interconnect', 'IP - Private Interconnect'),
+    ('Project', 'IP - Project'),
     ('Transit', 'IP - Transit'),
     ('L2VPN', 'MPLS - L2VPN'),
     ('L3VPN', 'MPLS - L3VPN'),
     ('VPLS', 'MPLS - VPLS'),
-    ('IP Project', 'IP - Project'),
+    ('Hosting', 'Hosting'),
 ]
 
 SERVICE_CLASS_MAP = {
@@ -93,10 +94,11 @@ SERVICE_CLASS_MAP = {
     'L2VPN': 'MPLS',
     'L3VPN': 'MPLS',
     'Private Interconnect': 'IP',
-    'IP Project': 'IP Project',
+    'Project': 'IP',
     'SDH': 'DWDM',
     'Transit': 'IP',
     'VPLS': 'MPLS',
+    'Hosting': 'Hosting',
 }
 
 OPERATIONAL_STATES = [
@@ -138,6 +140,11 @@ def get_node_type_tuples(node_type):
         node_list.append((node.id, node['name']))
     node_list.sort(key=itemgetter(1))
     return node_list
+
+class ReserveIdForm(forms.Form):
+    amount = forms.IntegerField()
+    reserve_message = forms.CharField(help_text='A message to help understand what the reservation was for.')
+
 
 class NewSiteForm(forms.Form):
     name = forms.CharField()
@@ -446,6 +453,7 @@ class EditServiceForm(forms.Form):
     service_type = forms.ChoiceField(choices=SERVICE_TYPES,
                                      widget=forms.widgets.Select)
     project_end_date = forms.DateField(required=False)
+    decommissioned_date = forms.DateField(required=False)
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
                                           widget=forms.widgets.Select)
     description = forms.CharField(required=False,
@@ -462,6 +470,16 @@ class EditServiceForm(forms.Form):
         cleaned_data = super(EditServiceForm, self).clean()
         # Set service_class depending on service_type.
         cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
+        # Check that project_end_date is filled in for Project service type
+        if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
+            self._errors = ErrorDict()
+            self._errors['project_end_date'] = ErrorList()
+            self._errors['project_end_date'].append('Missing project end date.')
+        # Check that decommissioned_date is filled in for operational state Decommissioned
+        if cleaned_data['operational_state'] == 'Decommissioned' and not cleaned_data['decommissioned_date']:
+            self._errors = ErrorDict()
+            self._errors['decommissioned_date'] = ErrorList()
+            self._errors['decommissioned_date'].append('Missing decommissioned date.')
         return cleaned_data
 
 

@@ -57,31 +57,6 @@
                     $("#dialog-user-confirm").dialog("open");
 
                 });
-{#                // End Point //#}
-{#                // Populate first level combo box#}
-{#                $.getJSON('/formdata/site/', function(data) {#}
-{#                    $('#level0A').append($('<option>').val("0").text("-- Please Select --"));#}
-{#                    $.each(data, function(key, tuple) {#}
-{#                        $('#level0A').append($('<option>').val(tuple[0]).text(tuple[1]));#}
-{#                    });#}
-{#                });#}
-{#                // Hook lower level combo boxes up to their parent#}
-{#                $("#level1A").jCombo("/formdata/{id}/children/", {#}
-{#                    parent: "#level0A",#}
-{#                    end_value_field: "#id_relationship_end_point"#}
-{#                });#}
-{#                $("#level2A").jCombo("/formdata/{id}/children/", {#}
-{#                    parent: "#level1A",#}
-{#                    end_value_field: "#id_relationship_end_point"#}
-{#                });#}
-{#                $("#level3A").jCombo("/formdata/{id}/children/", {#}
-{#                    parent: "#level2A",#}
-{#                    end_value_field: "#id_relationship_end_point"#}
-{#                });#}
-{#                $("#level4A").jCombo("/formdata/{id}/children/", {#}
-{#                    parent: "#level3A",#}
-{#                    end_value_field: "#id_relationship_end_point"#}
-{#                });#}
                 // Depends on //
                 // Populate first level combo box
                 var categories = [
@@ -119,28 +94,42 @@
                 // Service specific
                 var name_field = $('#id_name');
                 var project_end_date = $('#project_end_date');
+                var decommissioned_date = $('#decommissioned_date');
                 var service_type = $("#id_service_type");
-                if (service_type.val()!="External") {
+                var operational_state = $("#id_operational_state");
+                if (service_type.val()!=="External") {
                     name_field.prop("disabled", true);
                 }
-                if (service_type.val()=="Project") {
+                if (service_type.val()==="Project") {
                     project_end_date.show();
                 }
+                if (operational_state.val()==="Decommissioned") {
+                    decommissioned_date.show();
+                }
                 service_type.change(function(e){
-                    if ($(this).val()!="External") {
+                    if ($(this).val()!=="External") {
                         name_field.prop("disabled", true);
                         name_field.val("");
                     } else {
                         name_field.prop("disabled", false);
                     }
-                    if ($(this).val()=="Project") {
+                    if ($(this).val()==="Project") {
                         project_end_date.show();
                     } else {
                         project_end_date.hide();
                         $('#id_project_end_date').val("");
                     }
                 });
+                operational_state.change(function(e){
+                    if ($(this).val()==="Decommissioned") {
+                        decommissioned_date.show();
+                    } else {
+                        decommissioned_date.hide();
+                        $('#id_decommissioned_date').val("");
+                    }
+                })
                 $("#id_project_end_date").datepicker({ dateFormat: "yy-mm-dd" });
+                $("#id_decommissioned_date").datepicker({ dateFormat: "yy-mm-dd" });
             }
         );
     </script>
@@ -173,9 +162,17 @@
                 <span class="help-block">{{ form.project_end_date.help_text }}</span>
             </div>
         </div>
+        <div class="row">
+            <div class="span3">
         <h3>Operational State</h3>
         {{ form.operational_state }}
-        <br><br>
+            </div>
+            <div class="span3" id="decommissioned_date" style="display: none;">
+                <h3>Decomissioned Date</h3>
+                {{ form.decommissioned_date }}
+                <span class="help-block">{{ form.decommissioned_date.help_text }}</span>
+            </div>
+        </div>
         <h3>Description (optional)</h3>
         {{ form.description }}
         <span class="help-block">{{ form.description.help_text }}</span>

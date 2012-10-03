@@ -12,11 +12,12 @@ from datetime import datetime, timedelta
 import csv, codecs, cStringIO
 import xlwt
 from django.http import HttpResponse
+from django.db import IntegrityError
 
 try:
-    from niweb.apps.noclook.models import NodeHandle
+    from niweb.apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator
 except ImportError:
-    from apps.noclook.models import NodeHandle
+    from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator
 import norduni_client as nc
 
 class UnicodeWriter:
@@ -363,3 +364,26 @@ def get_hostname_from_address(ip_address):
         return socket.gethostbyaddr(str(ip_address))[0]
     except (socket.herror, socket.gaierror):
         return 'Request timed out'
+
+def reserve_nordunet_id(slug, amount, reserve_message, reserver):
+    """
+    :param slug: NodeType slug
+    :param amount: Integer
+    :param reserve_message: String
+    :return: List of id, reserve_message, error_message dicts
+    """
+    id_generator_map = {
+        'cable': 'nordunet_cable_id'
+    }
+    unique_id_generator = UniqueIdGenerator.objects.get(name=id_generator_map[slug])
+    reserve_list = []
+    for x in range(0, amount):
+        id = unique_id_generator.get_id()
+        try:
+            error_message = ''
+            NordunetUniqueId.objects.create(unique_id=id, reserved=True,
+                reserve_message=reserve_message, reserver=reserver)
+        except IntegrityError:
+            error_message = 'ID already in database. Manual check needed.'
+        reserve_list.append({'id': id, 'reserve_message': reserve_message, 'error_message': error_message})
+    return reserve_list
