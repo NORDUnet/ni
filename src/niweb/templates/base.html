@@ -68,6 +68,7 @@
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Reports <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     <li><a href="/reports/hosts/">Host reports</a></li>
+                                    <li><a href="/reports/reserved-ids/">Reserved IDs</a></li>
                                 </ul>
                             </li>
                             <li class="dropdown">
@@ -80,6 +81,7 @@
                             {% if user.is_staff %}
                                 <li>
                                     <a href="/new/">Create new</a>
+                                    <li><a href="/reserve-id/">Reserve IDs</a></li>
                                 </li>
                             {% endif %}
                             <li class="divider-vertical"></li>
