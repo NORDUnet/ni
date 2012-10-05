@@ -354,6 +354,26 @@ def get_end_user(service):
         '''
     return nc.neo4jdb.query(q, id=service.getId())
 
+def get_port(parent_name, port_name):
+    """
+    Parents should be uniquely named and ports should be uniquely named for each parent.
+    :param parent_name: String
+    :param port_name: String
+    :return:port Neo4j node
+    """
+    q = '''
+        START parent=node:search(name = {parent})
+        MATCH parent-[Has*1..]->port
+        WHERE port.node_type = "Port" and port.name = {port}
+        RETURN port
+        '''
+    hits = nc.neo4jdb.query(q, parent=parent_name, port=port_name)
+    try:
+        port = [hit['port'] for hit in hits][0]
+    except IndexError:
+        port = None
+    return port
+
 def get_hostname_from_address(ip_address):
     """
     Return the DNS name for an IP address or an empty string if
