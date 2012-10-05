@@ -224,15 +224,13 @@ def get_root_parent(db, node):
     """
     Takes a node and returns the nodes top most parent (not meta node or root node).
     Returns an empty list if no parent was found.
-
-    One gotcha: I choose an arbitrary max depth of 30 to traverse.
     """
     types = {'physical': 'Has', 'logical': 'Depends_on', 'location': 'Has',
              'relation': 'None'} # Relations cant have parent nodes.
     relationship_type = types[nc.get_node_meta_type(node)]
     q = '''
         START node=node({id})
-        MATCH ()-[:Contains]->parent-[:%s*1..30]->node
+        MATCH ()-[:Contains]->parent-[:%s*1..]->node
         RETURN parent
         ''' % relationship_type
     hits = db.query(q, id=node.getId())
@@ -269,6 +267,13 @@ def get_node_by_value(db, node_value, node_property=None):
                     break
 
 
+def get_child_by_value(db, parent_node, node_value, node_property=None):
+    """
+    Traversers all children of parent node in comparing property/properties of the node
+    with the supplied string. Returns a list of matching nodes.
+    """
+    # TODO: Do I need this?
+    pass
 
 def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
     """
