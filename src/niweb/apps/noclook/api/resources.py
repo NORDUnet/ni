@@ -17,7 +17,6 @@ from tastypie.exceptions import NotFound
 from tastypie.utils import trailing_slash
 from tastypie.authentication import ApiKeyAuthentication
 from tastypie.authorization import Authorization
-from tastypie.validation import CleanedDataFormValidation
 from django.contrib.auth.models import User
 from django.conf.urls import url
 from django.core.urlresolvers import reverse, resolve
@@ -25,9 +24,9 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
-from niweb.apps.noclook.forms import NewNordunetL2vpnServiceForm
-from niweb.apps.noclook.helpers import item2dict, update_noclook_auto_manage, get_port
-from niweb.apps.noclook.edit_views import set_depends_on
+from niweb.apps.noclook.forms import NewNordunetL2vpnServiceForm, EditServiceForm
+from niweb.apps.noclook.helpers import item2dict, get_port
+from niweb.apps.noclook.edit_views import set_depends_on, form_update_node
 import norduni_client as nc
 
 def handle_id2resource_uri(handle_id):
@@ -160,9 +159,7 @@ class NodeHandleResource(ModelResource):
         try:
             node = bundle.obj.get_node()
             nc.update_item_properties(nc.neo4jdb, node, 
-                                      bundle.data['node'])
-            if node.getProperty('noclook_auto_manage', ''):
-                update_noclook_auto_manage(nc.neo4jdb, node)
+                                      bundle.data.get('node', {}))
         except TypeError:
             # Node is not yet created, obj_create will take care of that.
             pass
@@ -271,8 +268,6 @@ class RelationshipResource(Resource):
         rel = nc.create_relationship(nc.neo4jdb, start_node, end_node,
                                               bundle.data['type'])
         nc.update_item_properties(nc.neo4jdb, rel, bundle.data['properties'])
-        if rel.getProperty('noclook_auto_manage', ''):
-            update_noclook_auto_manage(nc.neo4jdb, rel)
         bundle.obj = self._new_obj(rel)
         return bundle
     
@@ -280,8 +275,6 @@ class RelationshipResource(Resource):
         rel = nc.get_relationship_by_id(nc.neo4jdb, kwargs['pk'])
         updated_rel = nc.update_item_properties(nc.neo4jdb, rel,
                                                 bundle.data['properties'])
-        if updated_rel.getProperty('noclook_auto_manage', ''):
-            update_noclook_auto_manage(nc.neo4jdb, updated_rel)
         bundle.obj = self._new_obj(updated_rel)
         return bundle
     
@@ -461,6 +454,8 @@ class ServiceResource(NodeHandleResource):
     modifier = fields.ForeignKey(UserResource, 'modifier', blank=True)
     # Service specific fields
     description = fields.CharField(blank=True, null=True)
+    operational_state = fields.CharField(blank=True, null=True,
+                                help_text='Choices: In service, Reserved, Decommissioned, Testing')
 
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='service')
@@ -480,16 +475,32 @@ class ServiceResource(NodeHandleResource):
             url(r"^(?P<resource_name>%s)/(?P<node_name>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
             ]
 
+    def hydrate_node(self, bundle):
+        bundle = super(ServiceResource, self).hydrate_node(bundle)
+        try:
+            node = bundle.obj.get_node()
+            data = item2dict(node)
+            data.update(bundle.data)
+            form = EditServiceForm(data)
+            if form.is_valid():
+                form_update_node(bundle.request.user, node, form)
+        except TypeError:
+            # Node is not yet created, obj_create will take care of that.
+            pass
+        return bundle
+
     def dehydrate(self, bundle):
         bundle = super(ServiceResource, self).dehydrate(bundle)
         bundle.data['resource_uri'] = bundle.data['resource_uri'].replace(
             '/%s/' % bundle.obj.handle_id,
             '/%s/' % bundle.obj.node_name)
-        del bundle.data['description']
+        bundle.data['description'] = bundle.data['node'].get('description', None)
+        bundle.data['operational_state'] = bundle.data['node'].get('operational_state', None)
         return bundle
 
 class ServiceL2VPNResource(ServiceResource):
 
+    l2vpn_id = fields.IntegerField(readonly=True)
     end_points = fields.ListField(help_text='[{"equipment": "", "port": ""},]')
 
     class Meta(ServiceResource.Meta):
@@ -518,7 +529,7 @@ class ServiceL2VPNResource(ServiceResource):
                     'description': form.cleaned_data['description'],
                 },
             })
-            bundle = super(NodeHandleResource, self).obj_create(bundle, request,
+            bundle = super(ServiceL2VPNResource, self).obj_create(bundle, request,
                 **kwargs)
             # Depend the created service on provided end points
             node = bundle.obj.get_node()
@@ -530,6 +541,7 @@ class ServiceL2VPNResource(ServiceResource):
 
     def dehydrate(self, bundle):
         bundle = super(ServiceL2VPNResource, self).dehydrate(bundle)
+        bundle.data['l2vpn_id'] = bundle.data['node'].get('l2vpn_id')
         del bundle.data['end_points']
         return bundle
 
