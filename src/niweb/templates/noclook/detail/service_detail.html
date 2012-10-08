@@ -53,6 +53,11 @@
                         <th>Project end date:</th><td>{{ node.project_end_date }}</td>
                     </tr>
                 {% endif %}
+                {% if node.service_type == "L2VPN" %}
+                    <tr>
+                        <th>L2VPN ID:</th><td>{{ node.l2vpn_id }}</td>
+                    </tr>
+                {% endif %}
                 <tr>
                     <th>Provider:</th>
                     <td>
