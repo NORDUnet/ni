@@ -501,7 +501,7 @@ class ServiceResource(NodeHandleResource):
 class ServiceL2VPNResource(ServiceResource):
 
     l2vpn_id = fields.IntegerField(readonly=True)
-    end_points = fields.ListField(help_text='[{"equipment": "", "port": ""},]')
+    end_points = fields.ListField(help_text='[{"device": "", "port": ""},]')
 
     class Meta(ServiceResource.Meta):
         resource_name = 'l2vpn'
@@ -534,7 +534,7 @@ class ServiceL2VPNResource(ServiceResource):
             # Depend the created service on provided end points
             node = bundle.obj.get_node()
             for end_point in bundle.data.get('end_points', []):
-                port_node = get_port(end_point['equipment'], end_point['port'])
+                port_node = get_port(end_point['device'], end_point['port'])
                 if port_node:
                     set_depends_on(node, port_node.getId())
             return self.hydrate_node(bundle)
