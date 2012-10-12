@@ -489,6 +489,8 @@ class ServiceResource(NodeHandleResource):
         bundle = super(ServiceResource, self).dehydrate(bundle)
         bundle.data['description'] = bundle.data['node'].get('description', None)
         bundle.data['operational_state'] = bundle.data['node'].get('operational_state', None)
+        bundle.data['object_path'] = bundle.data['absolute_url']
+        del bundle.data['absolute_url']
         return bundle
 
 class ServiceL2VPNResource(ServiceResource):
