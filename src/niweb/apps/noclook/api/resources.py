@@ -123,6 +123,7 @@ class NodeHandleResource(ModelResource):
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
+        include_absolute_url = True
         always_return_data = True
         filtering = {
             "node_name": ALL,
@@ -463,6 +464,7 @@ class ServiceResource(NodeHandleResource):
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
+        include_absolute_url = True
         always_return_data = True
         filtering = {
             "node_name": ALL,
