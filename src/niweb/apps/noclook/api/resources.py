@@ -469,12 +469,6 @@ class ServiceResource(NodeHandleResource):
         }
 
 
-    def prepend_urls(self):
-        return [
-            url(r"^(?P<resource_name>%s)/schema%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('get_schema'), name="api_get_schema"),
-            url(r"^(?P<resource_name>%s)/(?P<node_name>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
-            ]
-
     def hydrate_node(self, bundle):
         bundle = super(ServiceResource, self).hydrate_node(bundle)
         try:
@@ -491,9 +485,6 @@ class ServiceResource(NodeHandleResource):
 
     def dehydrate(self, bundle):
         bundle = super(ServiceResource, self).dehydrate(bundle)
-        bundle.data['resource_uri'] = bundle.data['resource_uri'].replace(
-            '/%s/' % bundle.obj.handle_id,
-            '/%s/' % bundle.obj.node_name)
         bundle.data['description'] = bundle.data['node'].get('description', None)
         bundle.data['operational_state'] = bundle.data['node'].get('operational_state', None)
         return bundle
@@ -541,7 +532,7 @@ class ServiceL2VPNResource(ServiceResource):
 
     def dehydrate(self, bundle):
         bundle = super(ServiceL2VPNResource, self).dehydrate(bundle)
-        bundle.data['l2vpn_id'] = bundle.data['node'].get('l2vpn_id')
+        bundle.data['l2vpn_id'] = bundle.data['node'].get('l2vpn_id', '')
         del bundle.data['end_points']
         return bundle
 
