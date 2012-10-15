@@ -44,7 +44,10 @@
                     <th>Capacity:</th><td>{{ node.capacity }}</td>
                 </tr>
                 <tr>
-                    <th>State:</th><td>{{ node.operational_state }}</td>
+                    <th>Operational State:</th><td>{{ node.operational_state }}</td>
+                </tr>
+                <tr>
+                    <th>ENRs:</th><td>{% for enr in node.enrs %}{{ enr }}{% if not forloop.last %},<br>{% endif %}{% endfor %}</td>
                 </tr>
             </table>
             {% if node.description %}

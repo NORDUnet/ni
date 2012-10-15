@@ -118,14 +118,20 @@ OPTICAL_LINK_TYPES = [
 OPTICAL_PATH_FRAMING = [
     ('',''),
     ('WDM', 'WDM'),
-    ('WDM (Ethernet)', 'WDM (Ethernet)'),
+    ('WDM(Ethernet)', 'WDM(Ethernet)'),
+    ('WDM(CBR)', 'WDM(CBR)'),
 ]
 
 OPTICAL_PATH_CAPACITY = [
     ('',''),
-    ('10GE', '10GE'),
+    ('10Gb', '10Gb'),
     ('CBR', 'CBR'),
-    ('CBR10G', 'CBR10G'),
+    ('cbr 10Gb', 'cbr 10Gb'),
+]
+
+OPTICAL_LINK_INTERFACE_TYPE = [
+    ('',''),
+    ('WDM', 'WDM'),
 ]
 
 def get_node_type_tuples(node_type):
@@ -511,6 +517,7 @@ class NewOpticalLinkForm(forms.Form):
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
         widget=forms.widgets.Select)
+    inteface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
         widget=forms.widgets.Select)
     description = forms.CharField(required=False,
@@ -558,6 +565,7 @@ class EditOpticalLinkForm(forms.Form):
 
     link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
                                   widget=forms.widgets.Select)
+    inteface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
                                           widget=forms.widgets.Select)
     description = forms.CharField(required=False,

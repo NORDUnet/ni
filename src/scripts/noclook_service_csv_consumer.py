@@ -156,8 +156,9 @@ def consume_service_csv(json_list, unique_id_set=None):
         if equipment_b:
             depend_on_router(node, equipment_b, i['host']['csv_producer']['port_b'])
         # Set customer
-        customer_name = nt.normalize_whitespace(i['host']['csv_producer']['customer'])
-        set_customer(node, customer_name)
+        customer_name = i['host']['csv_producer'].get('customer', None)
+        if customer_name:
+            set_customer(node, nt.normalize_whitespace(customer_name))
         # Set end users
         end_user_a = i['host']['csv_producer'].get('end_user_a', None)
         if end_user_a:

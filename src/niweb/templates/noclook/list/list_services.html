@@ -21,7 +21,7 @@
 
 {% block content %}
     {{ block.super }}
-    <h1>{{ service_class }} Services</h1>
+    <h1>{% if service_class %}{{ service_class }}{% endif %} Services</h1>
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
         <th>Service</th><th>Service Class</th><th>Service Type</th><th>Description</th><th>Customers</th><th>End Users</th>

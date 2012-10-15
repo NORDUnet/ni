@@ -125,7 +125,7 @@ def list_services(request, service_class=None):
 def list_optical_paths(request):
     q = '''
         START node=node:node_types(node_type = "Optical Path")
-        RETURN node, node.framing? as framing, node.capacity? as capacity
+        RETURN node, node.framing? as framing, node.capacity? as capacity, node.enrs? as enrs
         '''
     optical_path_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_optical_paths.html',
@@ -192,54 +192,54 @@ def router_detail(request, handle_id):
         'loopback_addresses': loopback_addresses},
         context_instance=RequestContext(request))
 
-@login_required
-def pic_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    # Get the top parent node
-    router = nc.get_root_parent(nc.neo4jdb, node)[0]
-    # Get unit nodes
-    units = [unit['unit'] for unit in h.get_units(node)]
-    depending_services = []
-    for unit in units:
-        dep_services = unit.Depends_on.incoming
-        for dep_service in dep_services:
-            address = dep_service.getProperty('ip_address', None)
-            service = {}
-            service['if_address'] = address
-            service['service'] = dep_service.start
-            service['unit'] = unit 
-            service['relations'] = []
-            try:
-                if_address = ipaddr.IPNetwork(address)
-                # Get relations who uses the pic
-                relation_rels = dep_service.start.Uses.incoming
-                for r_rel in relation_rels:
-                    rel_address = ipaddr.IPAddress(r_rel['ip_address'])
-                    if rel_address in if_address:
-                        relation = {'rel_address': r_rel['ip_address'],
-                                    'relation': r_rel.start}
-                        service['relations'].append(relation)
-            except ValueError:
-                # Missing IP address
-                service['if_address'] = 'Missing'
-            depending_services.append(service)
-    # Get other stuff depending on this PIC
-    deps = node.Depends_on.incoming
-    for dep in deps:
-        if dep.start['node_type'] != 'Unit':
-            service = {
-                'service': dep.start,
-                'relations': [{'relation': rel.start} for rel in dep.start.Uses.incoming]
-            }
-            depending_services.append(service)
-    return render_to_response('noclook/detail/pic_detail.html',
-        {'node_handle': nh, 'node': node, 'router': router, 
-         'last_seen': last_seen, 'expired': expired, 'units': units,
-         'depending_services': depending_services}, 
-         context_instance=RequestContext(request))
+#@login_required
+#def pic_detail(request, handle_id):
+#    nh = get_object_or_404(NodeHandle, pk=handle_id)
+#    # Get node from neo4j-database
+#    node = nh.get_node()
+#    last_seen, expired = h.neo4j_data_age(node)
+#    # Get the top parent node
+#    router = nc.get_root_parent(nc.neo4jdb, node)[0]
+#    # Get unit nodes
+#    units = [unit['unit'] for unit in h.get_units(node)]
+#    depending_services = []
+#    for unit in units:
+#        dep_services = unit.Depends_on.incoming
+#        for dep_service in dep_services:
+#            address = dep_service.getProperty('ip_address', None)
+#            service = {}
+#            service['if_address'] = address
+#            service['service'] = dep_service.start
+#            service['unit'] = unit
+#            service['relations'] = []
+#            try:
+#                if_address = ipaddr.IPNetwork(address)
+#                # Get relations who uses the pic
+#                relation_rels = dep_service.start.Uses.incoming
+#                for r_rel in relation_rels:
+#                    rel_address = ipaddr.IPAddress(r_rel['ip_address'])
+#                    if rel_address in if_address:
+#                        relation = {'rel_address': r_rel['ip_address'],
+#                                    'relation': r_rel.start}
+#                        service['relations'].append(relation)
+#            except ValueError:
+#                # Missing IP address
+#                service['if_address'] = 'Missing'
+#            depending_services.append(service)
+#    # Get other stuff depending on this PIC
+#    deps = node.Depends_on.incoming
+#    for dep in deps:
+#        if dep.start['node_type'] != 'Unit':
+#            service = {
+#                'service': dep.start,
+#                'relations': [{'relation': rel.start} for rel in dep.start.Uses.incoming]
+#            }
+#            depending_services.append(service)
+#    return render_to_response('noclook/detail/pic_detail.html',
+#        {'node_handle': nh, 'node': node, 'router': router,
+#         'last_seen': last_seen, 'expired': expired, 'units': units,
+#         'depending_services': depending_services},
+#         context_instance=RequestContext(request))
 
 @login_required
 def optical_node_detail(request, handle_id):

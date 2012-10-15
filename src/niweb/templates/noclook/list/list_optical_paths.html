@@ -24,7 +24,7 @@
     <h1>Optical Paths</h1>
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
-        <th>Optical Link</th><th>Framing</th><th>Capacity</th><th>Description</th>
+        <th>Optical Link</th><th>Framing</th><th>Capacity</th><th>Description</th><th>ENRs</th>
         </thead>
         <tbody>
         {% load noclook_tags %}
@@ -34,6 +34,7 @@
                 <td>{{ optical_path.framing }}</td>
                 <td>{{ optical_path.capacity }}</td>
                 <td>{{ optical_path.description }}</td>
+                <td>{% for enr in optical_path.enrs %}{{ enr }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
             </tr>
         {% endfor %}
         </tbody>
