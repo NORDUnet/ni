@@ -7,7 +7,7 @@ Created on 2012-07-04 12:12 PM
 
 import sys
 import os
-import datetime
+from datetime import datetime
 import argparse
 
 ## Need to change this path depending on where the Django project is
@@ -29,6 +29,8 @@ from apps.noclook.models import NordunetUniqueId
 # "host": {
 #     "csv_producer": {
 #         "capacity": "",
+#         "created": "",
+#         "enrs": "",
 #         "framing": "",
 #         "links": "",
 #         "meta_type": "",
@@ -66,6 +68,9 @@ def consume_path_csv(json_list, unique_id_set=None):
                 continue
         nh = nt.get_unique_node_handle(nc.neo4jdb, path_id, node_type,
                                        meta_type)
+        dt = datetime.strptime(i['host']['csv_producer']['created'], '%Y/%m/%d-%H:%M:%S')
+        nh.created = dt
+        nh.save()
         node = nh.get_node()
         h.set_noclook_auto_manage(nc.neo4jdb, node, False)
         with nc.neo4jdb.transaction:
@@ -75,6 +80,9 @@ def consume_path_csv(json_list, unique_id_set=None):
             capacity = i['host']['csv_producer'].get('capacity', None)
             if capacity:
                 node['capacity'] = capacity
+            enrs = i['host']['csv_producer'].get('enrs', None)
+            if enrs:
+                node['enrs'] = nt.normalize_whitespace(enrs).split(',')
             node['nordunet_id'] = node['name']
         h.update_node_search_index(nc.neo4jdb, node)
         # Set provider
@@ -98,9 +106,8 @@ def main():
 
     args = parser.parse_args()
     # Start time
-    start = datetime.datetime.now()
-    timestamp_start = datetime.datetime.strftime(start,
-                                                 '%b %d %H:%M:%S')
+    start = datetime.now()
+    timestamp_start = datetime.strftime(start, '%b %d %H:%M:%S')
     print '%s noclook_consumer.py was started.' % timestamp_start
     # Insert data from known data sources if option -I was used
     if args.D:
@@ -113,9 +120,8 @@ def main():
         print 'Use -D to provide the path to the JSON files.'
         sys.exit(1)
         # end time
-    end = datetime.datetime.now()
-    timestamp_end = datetime.datetime.strftime(end,
-                                               '%b %d %H:%M:%S')
+    end = datetime.now()
+    timestamp_end = datetime.strftime(end, '%b %d %H:%M:%S')
     print '%s noclook_consumer.py ran successfully.' % timestamp_end
     timedelta = end - start
     print 'Total time: %s' % timedelta

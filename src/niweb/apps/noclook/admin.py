@@ -11,6 +11,7 @@ class UserModelAdmin(UserAdmin):
 
 class NodeHandleAdmin(admin.ModelAdmin):
     list_filter = ('node_type', 'creator')
+    search_fields = ['node_name']
     actions = ['delete_object']
     
     # Remove the bulk delete option from the admin interface as it does not
@@ -67,6 +68,7 @@ class UniqueIdAdmin(admin.ModelAdmin):
     list_filter = ('reserved',)
     list_display = ('unique_id', 'reserve_message')
     readonly_fields=('unique_id',)
+    search_fields = ['unique_id']
 
 
 admin.site.register(NodeHandle, NodeHandleAdmin)
