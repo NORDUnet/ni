@@ -12,7 +12,7 @@ Created on 2012-07-10 11:07 AM
 import sys
 import os
 
-path = '/home/lundberg/norduni/src/niweb/'
+path = '/var/opt/norduni/src/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))

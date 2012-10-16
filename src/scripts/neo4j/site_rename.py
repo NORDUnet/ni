@@ -11,7 +11,7 @@ Use this script to add the country code to the site name.
 import sys
 import os
 
-path = '/home/lundberg/norduni/src/niweb/'
+path = '/var/opt/norduni/src/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
