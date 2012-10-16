@@ -81,12 +81,14 @@ SERVICE_TYPES = [
     ('L2VPN', 'MPLS - L2VPN'),
     ('L3VPN', 'MPLS - L3VPN'),
     ('VPLS', 'MPLS - VPLS'),
+    ('Connect', 'SAAS - Connect'),
     ('Hosting', 'Hosting'),
 ]
 
 SERVICE_CLASS_MAP = {
     'Alien wavelenght': 'DWDM',
     'Backbone': 'IP',
+    'Connect': 'SAAS',
     'Customer Connection': 'IP',
     'Ethernet': 'DWDM',
     'External': 'External',
@@ -517,7 +519,7 @@ class NewOpticalLinkForm(forms.Form):
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
         widget=forms.widgets.Select)
-    inteface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
+    interface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
         widget=forms.widgets.Select)
     description = forms.CharField(required=False,
@@ -565,7 +567,7 @@ class EditOpticalLinkForm(forms.Form):
 
     link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
                                   widget=forms.widgets.Select)
-    inteface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
+    interface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
                                           widget=forms.widgets.Select)
     description = forms.CharField(required=False,
