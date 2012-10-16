@@ -830,7 +830,7 @@ def gmaps_optical_nodes(request):
     cypher_query = '''
         START optical_node = node:node_types(node_type="Optical Node")
         MATCH optical_node<-[:Connected_to]-cable-[Connected_to]->other_optical_node
-        WHERE (cable.cable_type = "Dark Fiber") and not (optical_node.type? =~ /.*tss.*/)
+        WHERE cable.cable_type = "Dark Fiber" and not optical_node.type? =~ "(?i).*tss.*"
         RETURN distinct cable
         '''
     query = nc.neo4jdb.query(cypher_query)
@@ -842,10 +842,10 @@ def gmaps_optical_nodes(request):
                 lng = loc_rel.end['longitude']
                 lat = loc_rel.end['latitude']
             node = {'name': rel.end['name'], 'type': 'node', 'lng': lng,
-                    'lat': lat}
+                    'lat': lat, 'url': h.get_node_url(rel.end)}
             cords.append({'lng': lng, 'lat': lat})
             optical_node_list.append(node)
-        edge = {'name': hit['cable']['name'], 'type': 'edge'}
+        edge = {'name': hit['cable']['name'], 'type': 'edge', 'url': h.get_node_url(hit['cable'])}
         # TODO: Needs to be revisited when/if cables terminate in more than two points.
         if len(cords) == 2:
             edge['start_lng'] = cords[0]['lng']
