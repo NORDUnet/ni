@@ -452,7 +452,7 @@ class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
     l2vpn_id = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
     class Meta(NewNordunetServiceForm.Meta):
-        l2vpn_id_generator_name = 'nordunet_l2vpn_id'
+        l2vpn_id_generator_name = 'nordunet_vpn_id'
 
 
     def clean(self):
