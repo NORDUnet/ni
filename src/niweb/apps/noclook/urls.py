@@ -48,7 +48,6 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^$', 'index'),
     # Detailed views
     (r'^router/(?P<handle_id>\d+)/$', 'router_detail'),
-    (r'^pic/(?P<handle_id>\d+)/$', 'pic_detail'),
     (r'^peering-partner/(?P<handle_id>\d+)/$',
                                         'peering_partner_detail'),
     (r'^peering-group/(?P<handle_id>\d+)/$', 'peering_group_detail'),
