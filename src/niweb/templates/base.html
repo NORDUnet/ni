@@ -85,9 +85,11 @@
                                 </li>
                             {% endif %}
                             <li class="divider-vertical"></li>
-                            <form action="/search/" method="post" class="navbar-search pull-left">{% csrf_token %}
-                                <input class="xlarge search-query" type="search" id="mobile" name="q" placeholder="Search" />
-                            </form>
+                            {% if user.is_authenticated %}
+                                <form action="/search/" method="post" class="navbar-search pull-left">{% csrf_token %}
+                                    <input class="xlarge search-query" type="search" id="mobile" name="q" placeholder="Search" />
+                                </form>
+                            {% endif %}
                         </ul>
                         {% if user.is_authenticated %}
                             <ul class="nav pull-right">
@@ -133,9 +135,9 @@
                 <div class="row visible-desktop">
                     <div class="span7">
                         {% if user.is_authenticated %}
-                        <form id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
-                            <input class="xlarge search-query" type="search" id="main" name="q" /> <button class="btn primary" type="submit">Search</button>
-                        </form>
+                            <form id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
+                                <input class="xlarge search-query" type="search" id="main" name="q" /> <button class="btn primary" type="submit">Search</button>
+                            </form>
                         {% endif %}
                     </div>
                     <div class="span2">
