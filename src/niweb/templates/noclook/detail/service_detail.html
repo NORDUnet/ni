@@ -38,8 +38,8 @@
                     <th>Name:</th><td>{{ node.name }}</td>
                 </tr>
                 <tr>
-                    <th>State:</th><td>{{ node.operational_state }}</td>
-                </tr
+                    <th>Operational State:</th><td>{{ node.operational_state }}</td>
+                </tr>
                 {% if node.operational_state == "Decommissioned" %}
                     <tr>
                         <th>Decommissioned:</th><td>{{ node.decommissioned_date }}</td>
