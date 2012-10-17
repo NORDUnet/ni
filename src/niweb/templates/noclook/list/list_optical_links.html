@@ -24,14 +24,15 @@
     <h1>Optical Links</h1>
     <table id="optical-links" class="tablesorter" cellspacing="1">
         <thead>
-        <th>Optical Link</th><th>Description</th><th>End points</th>
+        <th>Optical Link</th><th>Type</th><th>Description</th><th>End points</th>
         </thead>
         <tbody>
         {% load noclook_tags %}
         {% for optical_link in optical_link_list %}
             <tr>
                 <td><a href="{% noclook_node_to_url optical_link.node %}">{{ optical_link.node.name }}</a></td>
-                <td>{{ optical_link.description }}</td>
+                <td>{{ optical_link.node.link_type }}</td>
+                <td>{{ optical_link.node.description }}</td>
                 <td>
                     {% for end_point in optical_link.end_points %}
                         <a href="{% noclook_node_to_url end_point.dep %}">{{ end_point.parent.name }} {{ end_point.dep.name }}</a><br>
