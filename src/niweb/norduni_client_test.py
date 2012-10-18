@@ -7,7 +7,7 @@ Created on Wed Oct 12 14:26:53 2011
 import shutil
 import norduni_client as nc
 
-# Database will be deleted upon successfull test.
+# Database will be deleted upon successful test.
 TESTDB_URI = '/tmp/neo4jtestdb'
 
 nc.neo4jdb.shutdown()
