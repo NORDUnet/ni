@@ -25,8 +25,8 @@ from django.http import HttpResponseNotAllowed
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook.forms import NewNordunetL2vpnServiceForm, EditServiceForm
-from niweb.apps.noclook.helpers import item2dict, get_port
-from niweb.apps.noclook.edit_views import set_depends_on, form_update_node
+from niweb.apps.noclook.helpers import item2dict, get_port, set_depends_on
+from niweb.apps.noclook.edit_views import form_update_node
 import norduni_client as nc
 
 def handle_id2resource_uri(handle_id):
