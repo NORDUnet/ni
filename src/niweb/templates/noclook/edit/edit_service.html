@@ -220,7 +220,7 @@
                         {% for customer in customers %}
                             <div class="row">
                                 <div class="span5">
-                                    <a href="{% noclook_node_to_url customer.customer.start %}">{{ customer.customer.name }}</a>
+                                    <a href="{% noclook_node_to_url customer.customer %}">{{ customer.customer.name }}</a>
                                 </div>
                                 <div class="span1">
                                     <a href="relationship/{{ customer.rel.id }}/delete" class="label label-important user-confirm">Delete</a>
