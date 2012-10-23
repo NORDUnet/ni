@@ -336,9 +336,9 @@ def get_customer(service):
     """
     q = '''
         START node=node({id})
-        MATCH node<-[:Uses]-customer
+        MATCH node<-[rel:Uses]-customer
         WHERE customer.node_type = "Customer"
-        RETURN customer
+        RETURN customer, rel
         '''
     return nc.neo4jdb.query(q, id=service.getId())
 
@@ -348,9 +348,9 @@ def get_end_user(service):
     """
     q = '''
         START node=node({id})
-        MATCH node<-[:Uses]-end_user
+        MATCH node<-[rel:Uses]-end_user
         WHERE end_user.node_type = "End User"
-        RETURN end_user
+        RETURN end_user, rel
         '''
     return nc.neo4jdb.query(q, id=service.getId())
 

@@ -220,10 +220,10 @@
                         {% for customer in customers %}
                             <div class="row">
                                 <div class="span5">
-                                    <a href="{% noclook_node_to_url customer.start %}">{{ customer.start.name }}</a>
+                                    <a href="{% noclook_node_to_url customer.customer.start %}">{{ customer.customer.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ customer.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                    <a href="relationship/{{ customer.rel.id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -248,10 +248,10 @@
                         {% for end_user in end_users %}
                             <div class="row">
                                 <div class="span5">
-                                    <a href="{% noclook_node_to_url end_user.start %}">{{ end_user.start.name }}</a>
+                                    <a href="{% noclook_node_to_url end_user.end_user %}">{{ end_user.end_user.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ end_user.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                    <a href="relationship/{{ end_user.rel.id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
