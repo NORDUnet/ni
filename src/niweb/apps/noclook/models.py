@@ -32,7 +32,7 @@ class NodeType(models.Model):
         return('niweb.apps.noclook.views.list_by_type', (), {
             'slug': self.slug})
             
-    def delete(self):
+    def delete(self, **kwargs):
         """
         Delete the NodeType object with all associated NodeHandles.
         """
