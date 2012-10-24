@@ -120,7 +120,7 @@ class NodeHandle(models.Model):
         try:
             node = self.get_node()
             nc.delete_node(nc.neo4jdb, node)
-        except KeyError or TypeError:
+        except (KeyError, TypeError):
             # Node already deleted or None was passed as node id
             pass
         Comment.objects.filter(object_pk=self.pk).delete()
