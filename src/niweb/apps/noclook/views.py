@@ -178,8 +178,6 @@ def router_detail(request, handle_id):
             depends = None
             try:
                 if dep['node_type'] == 'Unit':
-                    if dep['name'] == 'lo0':
-                        loopback_addresses = dep['ip_addresses']
                     port['units'].append(dep)
                     try:
                         for unit_dep in h.get_depends_on_unit(dep):
