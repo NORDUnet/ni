@@ -25,7 +25,7 @@ from django.http import HttpResponseNotAllowed
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook.forms import NewNordunetL2vpnServiceForm, EditServiceForm
-from niweb.apps.noclook.helpers import item2dict, get_port, set_depends_on
+from niweb.apps.noclook.helpers import item2dict, get_port, create_port, set_depends_on
 from niweb.apps.noclook.edit_views import form_update_node
 import norduni_client as nc
 
@@ -530,8 +530,9 @@ class ServiceL2VPNResource(ServiceResource):
             node = bundle.obj.get_node()
             for end_point in bundle.data.get('end_points', []):
                 port_node = get_port(end_point['device'], end_point['port'])
-                if port_node:
-                    set_depends_on(node, port_node.getId())
+                if not port_node:
+                    port_node = create_port(end_point['device'], 'Router', end_point['port'], request.user)
+                set_depends_on(node, port_node.getId())
             return self.hydrate_node(bundle)
 
     def dehydrate(self, bundle):
