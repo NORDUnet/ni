@@ -282,6 +282,34 @@ def get_depends_on_equipment(equipment):
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
 
+def get_depends_on_router(router):
+    """
+    Get all router ports and what depends on them.
+    :param router: Neo4j node
+    :return: Cypher query iterator
+    """
+    q = '''
+        START router=node({id})
+        MATCH router-[:Has]->port<-[?:Depends_on]-logical
+        RETURN port, collect(logical) as depends_on_port
+        ORDER BY port.name
+        '''
+    return nc.neo4jdb.query(q, id=router.getId())
+
+def get_depends_on_unit(unit):
+    """
+    Get all logical nodes that depends on the Unit.
+    :param unit: Neo4j node
+    :return: Cypher query iterator
+    """
+    q = '''
+        START unit=node({id})
+        MATCH unit<-[:Depends_on]-logical
+        RETURN logical as depends_on_unit
+        ORDER BY logical.name
+        '''
+    return nc.neo4jdb.query(q, id=unit.getId())
+
 def get_logical_depends_on(logical):
     """
     Get all nodes that the logical node depends on and their top parent if any.
