@@ -113,15 +113,15 @@ class NodeHandle(models.Model):
     
     save.alters_data = True
 
-    def delete(self):
+    def delete(self, **kwargs):
         """
         Delete that node handle and the handles node.
         """
         try:
             node = self.get_node()
             nc.delete_node(nc.neo4jdb, node)
-        except KeyError:
-            # Node already deleted
+        except KeyError or TypeError:
+            # Node already deleted or None was passed as node id
             pass
         Comment.objects.filter(object_pk=self.pk).delete()
         super(NodeHandle, self).delete()
