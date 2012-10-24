@@ -15,9 +15,9 @@ from django.http import HttpResponse
 from django.db import IntegrityError
 
 try:
-    from niweb.apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator
+    from niweb.apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
 except ImportError:
-    from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator
+    from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
 import norduni_client as nc
 
 class UnicodeWriter:
@@ -401,6 +401,28 @@ def get_port(parent_name, port_name):
     except IndexError:
         port = None
     return port
+
+def create_port(parent_name, parent_type, port_name, creator):
+    """
+    Creates a port with the supplied parent.
+    :param parent_name: String
+    :param port_name: String
+    :param parent_type: String
+    :param creator: Django user
+    :return: Neo4j node
+    """
+    type_port = NodeType.objects.get(type="Port")
+    type_parent = NodeType.objects.get(type=parent_type)
+    nh = NodeHandle.objects.create(
+        node_name = port_name,
+        node_type = type_port,
+        node_meta_type = 'Physical',
+        modifier=creator, creator=creator
+    )
+    parent_nh = NodeHandle.objects.get(node_name=parent_name, node_type=type_parent)
+    place_child_in_parent(nh.get_node(), parent_nh.node_id)
+    return nh.get_node()
+
 
 def place_physical_in_location(nh, node, location_id):
     """
