@@ -165,20 +165,37 @@ def router_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
-    # Get all the PICs and the PICs services. Also get loopback addresses.
+    # Get all the Ports and what depends on the port. Also get loopback addresses.
     loopback_addresses = []
-    pics = []
-    for rel in node.Has.outgoing:
-        pic = {'pic': rel.end , 'services': []}
-        dep_units = pic['pic'].Depends_on.incoming
-        for dep_unit in dep_units:
-            unit = dep_unit.start
-            if pic['pic']['name'] == 'lo0':
-                loopback_addresses.extend(unit['ip_addresses'])
-            dep_services = unit.Depends_on.incoming
-            for service in dep_services:
-                pic['services'].append(service.start)
-        pics.append(pic)
+    ports = []
+    for hit in h.get_depends_on_router(node):
+        port = {
+            'port': hit['port'],
+            'units': [],
+            'depends_on_port': [],
+        }
+        for dep in hit['depends_on_port']:
+            depends = None
+            try:
+                if dep['node_type'] == 'Unit':
+                    port['units'].append(dep)
+                    try:
+                        for unit_dep in h.get_depends_on_unit(dep):
+                            depends = {
+                                'unit': dep,
+                                'dep': unit_dep['depends_on_unit']
+                            }
+                    except TypeError:
+                        pass
+                else:
+                    depends = {
+                        'dep': dep
+                    }
+                if depends:
+                    port['depends_on_port'].append(depends)
+            except TypeError:
+                pass
+        ports.append(port)
     location = h.iter2list(h.get_location(node))
     for address in loopback_addresses:
         try:
@@ -187,7 +204,7 @@ def router_detail(request, handle_id):
             # Remove the ISO address
             loopback_addresses.remove(address)
     return render_to_response('noclook/detail/router_detail.html',
-        {'node_handle': nh, 'node': node, 'pics': pics, 'last_seen': last_seen,
+        {'node_handle': nh, 'node': node, 'ports': ports, 'last_seen': last_seen,
         'expired': expired, 'location': location,
         'loopback_addresses': loopback_addresses},
         context_instance=RequestContext(request))

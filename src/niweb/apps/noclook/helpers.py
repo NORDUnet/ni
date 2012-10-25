@@ -15,9 +15,9 @@ from django.http import HttpResponse
 from django.db import IntegrityError
 
 try:
-    from niweb.apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator
+    from niweb.apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
 except ImportError:
-    from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator
+    from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
 import norduni_client as nc
 
 class UnicodeWriter:
@@ -265,7 +265,7 @@ def get_connected_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Has*1..10]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..10]-end
+        MATCH node-[:Has*1..]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..]-end
         RETURN node,porta,r0,cable,r1,portb,end
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
@@ -276,11 +276,38 @@ def get_depends_on_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[?:Has*1..10]->port<-[?:Depends_on]-logical, node<-[?:Depends_on]-logical
-        WHERE node-[:Has]->port OR node<-[:Depends_on]-logical
-        RETURN node,logical,port
+        MATCH node-[?:Has*1..]->port<-[:Depends_on]-port_logical, node<-[?:Depends_on]-direct_logical
+        RETURN port, port_logical, direct_logical
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
+
+def get_depends_on_router(router):
+    """
+    Get all router ports and what depends on them.
+    :param router: Neo4j node
+    :return: Cypher query iterator
+    """
+    q = '''
+        START router=node({id})
+        MATCH router-[:Has]->port<-[?:Depends_on]-logical
+        RETURN port, collect(logical) as depends_on_port
+        ORDER BY port.name
+        '''
+    return nc.neo4jdb.query(q, id=router.getId())
+
+def get_depends_on_unit(unit):
+    """
+    Get all logical nodes that depends on the Unit.
+    :param unit: Neo4j node
+    :return: Cypher query iterator
+    """
+    q = '''
+        START unit=node({id})
+        MATCH unit<-[:Depends_on]-logical
+        RETURN logical as depends_on_unit
+        ORDER BY logical.name
+        '''
+    return nc.neo4jdb.query(q, id=unit.getId())
 
 def get_logical_depends_on(logical):
     """
@@ -373,6 +400,28 @@ def get_port(parent_name, port_name):
     except IndexError:
         port = None
     return port
+
+def create_port(parent_name, parent_type, port_name, creator):
+    """
+    Creates a port with the supplied parent.
+    :param parent_name: String
+    :param port_name: String
+    :param parent_type: String
+    :param creator: Django user
+    :return: Neo4j node
+    """
+    type_port = NodeType.objects.get(type="Port")
+    type_parent = NodeType.objects.get(type=parent_type)
+    nh = NodeHandle.objects.create(
+        node_name = port_name,
+        node_type = type_port,
+        node_meta_type = 'Physical',
+        modifier=creator, creator=creator
+    )
+    parent_nh = NodeHandle.objects.get(node_name=parent_name, node_type=type_parent)
+    place_child_in_parent(nh.get_node(), parent_nh.node_id)
+    return nh.get_node()
+
 
 def place_physical_in_location(nh, node, location_id):
     """
