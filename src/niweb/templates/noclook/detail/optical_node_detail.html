@@ -104,7 +104,11 @@ $(document).ready(
             <tbody>
             {% for dep in depends_on %}
                 <tr>
-                    <td><a href="{% noclook_node_to_url dep.logical %}">{{ dep.logical.name }}</a></td><td><a href="{% noclook_node_to_url dep.port %}">{{ dep.port.name }}</a></td>
+                {% if dep.port_logical %}
+                    <td><a href="{% noclook_node_to_url dep.port_logical %}">{{ dep.port_logical.name }}</a></td><td><a href="{% noclook_node_to_url dep.port %}">{{ dep.port.name }}</a></td>
+                {% elif dep.direct_logical %}
+                    <td><a href="{% noclook_node_to_url dep.direct_logical %}">{{ dep.direct_logical.name }}</a></td><td>No Port</td>
+                {% endif %}
                 </tr>
             {% endfor %}
             </tbody>
