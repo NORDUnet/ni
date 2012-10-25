@@ -88,8 +88,12 @@
                 <tbody>
                 {% for hit in depends_on_port %}
                     <tr>
-                        <td><a href="{% noclook_node_to_url hit.logical %}">{{ hit.logical.node_type }} {{ hit.logical.name }}</a></td>
+                    {% if hit.port_logical %}
+                        <td><a href="{% noclook_node_to_url hit.port_logical %}">{{ hit.port_logical.node_type }} {{ hit.port_logical.name }}</a></td>
+                    {% else %}
+                        <td><a href="{% noclook_node_to_url hit.direct_logical %}">{{ hit.direct_logical.node_type }} {{ hit.direct_logical.name }}</a></td>
                     </tr>
+                    {% endif %}
                 {% endfor %}
                 </tbody>
             </table>

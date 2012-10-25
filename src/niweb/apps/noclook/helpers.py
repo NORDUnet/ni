@@ -265,7 +265,7 @@ def get_connected_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Has*1..10]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..10]-end
+        MATCH node-[:Has*1..]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..]-end
         RETURN node,porta,r0,cable,r1,portb,end
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
@@ -276,9 +276,8 @@ def get_depends_on_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[?:Has*1..10]->port<-[?:Depends_on]-logical, node<-[?:Depends_on]-logical
-        WHERE node-[:Has]->port OR node<-[:Depends_on]-logical
-        RETURN node,logical,port
+        MATCH node-[?:Has*1..]->port<-[:Depends_on]-port_logical, node<-[?:Depends_on]-direct_logical
+        RETURN port, port_logical, direct_logical
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
 
