@@ -7,6 +7,7 @@ Created on 2012-10-25 5:12 PM
 
 import sys
 import os
+import argparse
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -42,3 +43,18 @@ def run():
                 print '%s depends on %s' % (hit['node']['name'], comp['name'])
         except IndexError:
             pass
+
+def main():
+    # User friendly usage output
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-R', action='store_true',
+        help='Run script.')
+    args = parser.parse_args()
+    if not args.R:
+        print 'Are you sure you want to run this script? If you are use -R as argument.'
+        sys.exit(1)
+    else:
+        run()
+
+if __name__ == '__main__':
+    main()
