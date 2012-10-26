@@ -281,6 +281,15 @@ def get_depends_on_equipment(equipment):
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
 
+# Alternative get_depends_on_equipment query
+#q = '''
+#START node=node({id})
+#MATCH node-[?:Has*1..]->port<-[:Depends_on]-port_logical
+#WITH node, port, collect(port_logical) as port_logicals
+#MATCH node<-[?:Depends_on]-direct_logical
+#return port, port_logicals, collect(direct_logical) as direct_logicals
+#'''
+
 def get_depends_on_router(router):
     """
     Get all router ports and what depends on them.
