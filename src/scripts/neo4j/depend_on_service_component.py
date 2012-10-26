@@ -5,8 +5,18 @@ Created on 2012-10-25 5:12 PM
 @author: lundberg
 """
 
+## Need to change this path depending on where the Django project is
+## located.
+#path = '/var/opt/norduni/src/niweb/'
+#path = '/opt/norduni/src/niweb/'
+path = '/home/lundberg/norduni/src/niweb/'
+##
+##
+
+sys.path.append(os.path.abspath(path))
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+from apps.noclook import helpers as h
 import norduni_client as nc
-import apps.noclook.helpers as h
 
 def run():
     """
