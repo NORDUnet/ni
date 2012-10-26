@@ -5,6 +5,9 @@ Created on 2012-10-25 5:12 PM
 @author: lundberg
 """
 
+import sys
+import os
+
 ## Need to change this path depending on where the Django project is
 ## located.
 #path = '/var/opt/norduni/src/niweb/'
