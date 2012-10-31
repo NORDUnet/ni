@@ -79,7 +79,7 @@ def consume_link_csv(json_list, unique_id_set=None):
         link_id = i['host']['name']
         if unique_id_set:
             try:
-                unique_id_set.objects.create(unique_id=link_id)
+                h.register_unique_id(unique_id_set, link_id)
             except IntegrityError:
                 print "%s already exists in the database. Please check and add manually" % link_id
                 continue

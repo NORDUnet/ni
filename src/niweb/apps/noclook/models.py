@@ -213,7 +213,7 @@ class UniqueId(models.Model):
 
 class NordunetUniqueId(UniqueId):
     """
-    Collection of all NORDUnet IDs to ensire uniqueness.
+    Collection of all NORDUnet IDs to ensure uniqueness.
     """
 
     def __unicode__(self):

@@ -603,6 +603,21 @@ def get_hostname_from_address(ip_address):
     except (socket.herror, socket.gaierror):
         return 'Request timed out'
 
+def register_unique_id(unique_id_collection, unique_id):
+    """
+    Creates a new Unique ID or unreserves an already created but reserved id.
+    :param unique_id_collection: Instance of a UniqueId subclass.
+    :param unique_id: String
+    :return: True for success, raises IntegrityError for fault.
+    """
+    obj, created = unique_id_collection.objects.get_or_create(unique_id=unique_id)
+    if not created and not obj.reserved: # ID already in the db and in use, mayday.
+        raise IntegrityError
+    elif obj.reserved: # ID was reserved, unreserv it.
+        obj.reserved = False
+        obj.save()
+    return True
+
 def reserve_nordunet_id(slug, amount, reserve_message, reserver):
     """
     :param slug: NodeType slug

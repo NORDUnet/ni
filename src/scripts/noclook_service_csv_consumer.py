@@ -127,7 +127,7 @@ def consume_service_csv(json_list, unique_id_set=None):
         service_id = i['host']['name']
         if unique_id_set:
             try:
-                unique_id_set.objects.create(unique_id=service_id)
+                h.register_unique_id(unique_id_set, service_id)
             except IntegrityError:
                 print "%s already exists in the database. Please check and add manually" % service_id
                 continue

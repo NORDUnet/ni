@@ -441,7 +441,7 @@ class NewNordunetServiceForm(NewServiceForm):
         """
         cleaned_data = super(NewNordunetServiceForm, self).clean()
         if cleaned_data['service_type'] not in self.Meta.manually_named_services:
-            NordunetUniqueId.objects.create(unique_id=cleaned_data['name'])
+            h.register_unique_id(NordunetUniqueId, cleaned_data['name'])
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
@@ -556,7 +556,7 @@ class NewNordunetOpticalLinkForm(NewOpticalLinkForm):
 
     def clean(self):
         cleaned_data = super(NewNordunetOpticalLinkForm, self).clean()
-        NordunetUniqueId.objects.create(unique_id=cleaned_data['name'])
+        h.register_unique_id(NordunetUniqueId, cleaned_data['name'])
         return cleaned_data
 
 
@@ -622,7 +622,7 @@ class NewNordunetOpticalPathForm(NewOpticalPathForm):
 
     def clean(self):
         cleaned_data = super(NewNordunetOpticalPathForm, self).clean()
-        NordunetUniqueId.objects.create(unique_id=cleaned_data['name'])
+        h.register_unique_id(NordunetUniqueId, cleaned_data['name'])
         return cleaned_data
 
 
