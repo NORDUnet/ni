@@ -62,7 +62,7 @@ def consume_path_csv(json_list, unique_id_set=None):
         path_id = i['host']['name']
         if unique_id_set:
             try:
-                unique_id_set.objects.create(unique_id=path_id)
+                h.register_unique_id(unique_id_set, path_id)
             except IntegrityError:
                 print "%s already exists in the database. Please check and add manually" % path_id
                 continue
