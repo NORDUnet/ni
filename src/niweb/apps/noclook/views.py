@@ -102,21 +102,12 @@ def list_services(request, service_class=None):
         where_statement = ''
     q = '''
         START node=node:node_types(node_type = "Service")
+        MATCH node<-[?:Uses]-user
         %s
-        RETURN node, node.service_class? as service_class, node.service_type? as service_type, node.description? as description
+        RETURN node, node.service_class? as service_class, node.service_type? as service_type, node.description? as description, collect(user) as users
+        ORDER BY node.name
         ''' % where_statement
-    hits = nc.neo4jdb.query(q)
-    service_list = []
-    for hit in hits:
-        service = {
-            'node': hit['node'],
-            'service_class': hit['service_class'],
-            'service_type': hit['service_type'],
-            'description': hit['description'],
-            'customers': h.get_customer(hit['node']),
-            'end_users': h.get_end_user(hit['node']),
-        }
-        service_list.append(service)
+    service_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_services.html',
                              {'service_list': service_list,
                               'service_class': service_class},
@@ -892,5 +883,5 @@ def ip_address_lookup(request):
         ip_address = request.POST.get('ip_address', None)
         if ip_address:
             hostname = h.get_hostname_from_address(ip_address)
-        return HttpResponse(json.dumps(hostname), mimetype='application/json')
+            return HttpResponse(json.dumps(hostname), mimetype='application/json')
     raise Http404

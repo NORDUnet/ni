@@ -35,13 +35,17 @@
                 <td>{{ service.service_type }}</td>
                 <td>{{ service.description }}</td>
                 <td>
-                    {% for customer in service.customers %}
-                        <a href="{% noclook_node_to_url customer.customer %}">{{ customer.customer.name }}</a><br>
+                    {% for customer in service.users %}
+                        {% if customer.node_type == "Customer" %}
+                            <a href="{% noclook_node_to_url customer %}">{{ customer.name }}</a><br>
+                        {% endif %}
                     {% endfor %}
                 </td>
                 <td>
-                    {% for end_user in service.end_users %}
-                        <a href="{% noclook_node_to_url end_user.end_user %}">{{ end_user.end_user.name }}</a><br>
+                    {% for end_user in service.users %}
+                        {% if end_user.node_type == "End User" %}
+                            <a href="{% noclook_node_to_url end_user %}">{{ end_user.name }}</a><br>
+                        {% endif %}
                     {% endfor %}
                 </td>
             </tr>
