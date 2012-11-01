@@ -156,7 +156,7 @@ def router_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
-    # Get all the Ports and what depends on the port. Also get loopback addresses.
+    # Get all the Ports and what depends on the port.
     loopback_addresses = []
     ports = []
     for hit in h.get_depends_on_router(node):
@@ -258,6 +258,7 @@ def optical_node_detail(request, handle_id):
     #get incoming rels of fibers
     connected_rel = node.Connected_to.incoming # Legacy
     depends_on = h.get_depends_on_equipment(node)
+    services = h.iter2list(h.get_services_dependent_on_equipment(node))
     opt_info = []
     for rel in connected_rel:
         fibers = {}
@@ -276,7 +277,7 @@ def optical_node_detail(request, handle_id):
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
                               'opt_info': opt_info, 'location': location,
-                              'depends_on': depends_on},
+                              'depends_on': depends_on, 'services': services},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -351,10 +352,11 @@ def cable_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     connections = h.get_connected_cables(node)
+    services = h.iter2list(h.get_services_dependent_on_cable(node))
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': node, 'node_handle': nh, 
                                'last_seen': last_seen, 'expired': expired, 
-                               'connections': connections},
+                               'connections': connections, 'services': services},
                                context_instance=RequestContext(request))
 
 @login_required
