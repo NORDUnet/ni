@@ -30,6 +30,7 @@ $(document).ready(
                     widthFixed: true,
                     widgets: ['zebra']
         });
+        $('#servicecopy').popover();
     }
 );
 </script>
@@ -105,6 +106,7 @@ $(document).ready(
             {% endfor %}
             </tbody>
         </table>
+        <a id="servicecopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for hit in services %}{{ hit.service.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
     {% else %}
         No services found.
     {% endif %}
