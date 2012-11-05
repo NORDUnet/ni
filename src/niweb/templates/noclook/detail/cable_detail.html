@@ -23,6 +23,7 @@
                     widthFixed: true,
                     widgets: ['zebra']
                 });
+            $('#servicecopy').popover();
         }
     );
 </script>
@@ -80,7 +81,6 @@
             </thead>
             <tbody>
             {% for hit in services %}
-                {{ hit.service.relationships }}
                 <tr>
                     <td><a href="{% noclook_node_to_url hit.service %}">{{ hit.service.name }}</a></td>
                     <td>{{ hit.service.description }}</td>
@@ -93,6 +93,7 @@
             {% endfor %}
             </tbody>
         </table>
+        <a id="servicecopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for hit in services %}{{ hit.service.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
     {% else %}
         No services found.
     {% endif %}
