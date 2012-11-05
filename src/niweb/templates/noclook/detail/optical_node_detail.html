@@ -22,6 +22,15 @@ $(document).ready(
                     widthFixed: true,
                     widgets: ['zebra']
         });
+        $("#services").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers:
+                    {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+        });
+        $('#servicecopy').popover();
     }
 );
 </script>
@@ -73,6 +82,35 @@ $(document).ready(
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
+<div class="section">
+    <h3>Services dependent on equipment</h3>
+    {% if services %}
+        <table id="services" class="tablesorter" cellspacing="1">
+            <thead>
+            <tr>
+                <th>Service ID</th><th>Description</th><th>Customer</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for hit in services %}
+                {{ hit.service.relationships }}
+                <tr>
+                    <td><a href="{% noclook_node_to_url hit.service %}">{{ hit.service.name }}</a></td>
+                    <td>{{ hit.service.description }}</td>
+                    <td>
+                        {% for customer in hit.customers %}
+                            <a href="{% noclook_node_to_url customer %}">{{ customer.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <a id="servicecopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for hit in services %}{{ hit.service.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+    {% else %}
+        No services found.
+    {% endif %}
+</div>
 <div class="section">
     <h3>Connections</h3>
     {% if opt_info %}

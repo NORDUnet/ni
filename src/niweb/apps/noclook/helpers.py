@@ -390,6 +390,42 @@ def get_end_user(service):
         '''
     return nc.neo4jdb.query(q, id=service.getId())
 
+def get_services_dependent_on_cable(cable):
+    """
+    Get top services that depends on the supplied cable.
+    :param cable: Neo4j node
+    :return: Cypher ExecutionResult
+    """
+    q = '''
+        START node=node({id})
+        MATCH node-[:Connected_to]->equip
+        WITH equip
+        MATCH equip<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
+        WHERE (service.node_type = 'Service') AND (r is null)
+        WITH distinct service
+        MATCH service<-[:Uses]-user
+        WHERE user.node_type = 'Customer'
+        RETURN service, collect(user) as customers
+        '''
+    return nc.neo4jdb.query(q, id=cable.getId())
+
+def get_services_dependent_on_equipment(equipment):
+    """
+    Get top services that depends on the supplied cable.
+    :param equipment: Neo4j node
+    :return: Cypher ExecutionResult
+    """
+    q = """
+        START node=node({id})
+        MATCH node-[:Has|Depends_on]-()<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
+        WHERE (service.node_type = 'Service') AND (r is null)
+        WITH distinct service
+        MATCH service<-[:Uses]-user
+        WHERE user.node_type = 'Customer'
+        RETURN service, collect(user) as customers
+        """
+    return nc.neo4jdb.query(q, id=equipment.getId())
+
 def get_port(parent_name, port_name):
     """
     Parents should be uniquely named and ports should be uniquely named for each parent.

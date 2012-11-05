@@ -150,7 +150,10 @@ class UniqueIdGenerator(models.Model):
         base_id = self.base_id
         if self.zfill:
             base_id = str(self.base_id).zfill(self.base_id_length)
-        unique_id = '%s%s%s' % (self.prefix, base_id, self.suffix)
+        prefix = suffix = ''
+        if self.prefix: prefix = self.prefix
+        if self.suffix: suffix = self.suffix
+        unique_id = '%s%s%s' % (prefix, base_id, suffix)
         self.last_id = unique_id
         self.base_id += 1
         self.save()
@@ -163,7 +166,10 @@ class UniqueIdGenerator(models.Model):
         base_id = self.base_id
         if self.zfill:
             base_id = str(self.base_id).zfill(self.base_id_length)
-        self.next_id = '%s%s%s' % (self.prefix, base_id, self.suffix)
+            prefix = suffix = ''
+        if self.prefix: prefix = self.prefix
+        if self.suffix: suffix = self.suffix
+        self.next_id = '%s%s%s' % (prefix, base_id, suffix)
         super(UniqueIdGenerator, self).save(*args, **kwargs)
 
     save.alters_data = True
