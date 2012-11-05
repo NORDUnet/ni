@@ -400,7 +400,7 @@ def get_services_dependent_on_cable(cable):
         START node=node({id})
         MATCH node-[:Connected_to]->equip
         WITH equip
-        MATCH equip-[:Has|Depends_on]-()<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
+        MATCH equip<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
         WHERE (service.node_type = 'Service') AND (r is null)
         WITH distinct service
         MATCH service<-[:Uses]-user
