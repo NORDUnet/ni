@@ -639,12 +639,26 @@ def get_hostname_from_address(ip_address):
     except (socket.herror, socket.gaierror):
         return 'Request timed out'
 
+def get_collection_unique_id(unique_id_generator, unique_id_collection):
+    """
+    Return the next available unique id by counting up the id generator until an available id is found
+    in the unique id collection.
+    :param unique_id_generator: UniqueIdGenerator instance
+    :param unique_id_collection: UniqueId subclass instance
+    :return: String unique id
+    """
+    created = False
+    while not created:
+        id = unique_id_generator.get_id()
+        obj, created = unique_id_collection.objects.get_or_create(unique_id=id)
+    return id
+
 def register_unique_id(unique_id_collection, unique_id):
     """
     Creates a new Unique ID or unreserves an already created but reserved id.
     :param unique_id_collection: Instance of a UniqueId subclass.
     :param unique_id: String
-    :return: True for success, raises IntegrityError for fault.
+    :return: True for success, False for failure.
     """
     obj, created = unique_id_collection.objects.get_or_create(unique_id=unique_id)
     if not created and not obj.reserved: # ID already in the db and in use, mayday.
@@ -654,11 +668,46 @@ def register_unique_id(unique_id_collection, unique_id):
         obj.save()
     return True
 
+def bulk_reserve_id_range(start, end, unique_id_generator, unique_id_collection, reserve_message, reserver):
+    """
+    Reserves IDs start to end in the format used in the unique id generator in the unique id collection without
+    incrementing the unique ID generator.
+
+    bulk_reserve_ids(100, 102, nordunet_service_unique_id_generator, nordunet_unique_id_collection...) would try to
+    reserve NU-S000100, NU-S000101 and NU-S000102 in the NORDUnet unique ID collection.
+
+    :param start: Integer
+    :param end: Integer
+    :param unique_id_generator: Instance of UniqueIdGenerator
+    :param unique_id_collection: Instance of UniqueId subclass
+    :param reserve_message: String
+    :param reserver: Django user object
+    :return: List of reserved unique_id_collection objects.
+    """
+    reserve_list = []
+    prefix = suffix = ''
+    if unique_id_generator.prefix:
+        prefix = unique_id_generator.prefix
+    if unique_id_generator.suffix:
+        suffix = unique_id_generator.suffix
+    for id in range(start, end+1):
+        reserve_list.append(unique_id_collection(
+            unique_id= '%s%s%s' % (prefix, str(id).zfill(unique_id_generator.base_id_length), suffix),
+            reserved = True,
+            reserve_message = reserve_message,
+            reserver = reserver,
+        ))
+    unique_id_collection.objects.bulk_create(reserve_list)
+    return reserve_list
+
+# TODO: Rewrite as reserve_id_range
 def reserve_nordunet_id(slug, amount, reserve_message, reserver):
     """
+    Reserves IDs by incrementing the unique ID generator.
     :param slug: NodeType slug
     :param amount: Integer
     :param reserve_message: String
+    :param reserver: Django user object
     :return: List of id, reserve_message, error_message dicts
     """
     id_generator_map = {
