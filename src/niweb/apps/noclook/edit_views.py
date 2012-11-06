@@ -431,7 +431,7 @@ def new_nordunet_optical_link(request, form):
         return render_to_response('noclook/edit/create_nordunet_optical_link.html', {'form': form},
             context_instance=RequestContext(request))
     node = nh.get_node()
-    keys = ['description', 'link_type', 'operational_state', 'inteface_type']
+    keys = ['description', 'link_type', 'operational_state', 'interface_type']
     form_update_node(request.user, node, form, keys)
     return HttpResponseRedirect(nh.get_absolute_url())
 
