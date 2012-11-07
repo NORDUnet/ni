@@ -28,8 +28,8 @@ urlpatterns += patterns('niweb.apps.noclook.edit_views',
     (r'^formdata/(?P<node_id>\d+)/children/$', 'get_children'),
     (r'^formdata/(?P<node_id>\d+)/children/(?P<slug>[-\w]+)/$', 'get_children'),
     # Reserve IDs
-    (r'^reserve-id/$', 'reserve_id'),
-    (r'^reserve-id/(?P<slug>[-\w]+)/$', 'reserve_id'),
+    (r'^reserve-id/$', 'reserve_id_sequence'),
+    (r'^reserve-id/(?P<slug>[-\w]+)/$', 'reserve_id_sequence'),
     #(r'^save/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'save_node'),
     #(r'^delete/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'delete_node'),
 )
@@ -39,8 +39,8 @@ urlpatterns += patterns('niweb.apps.noclook.report_views',
     (r'^reports/hosts/host-users/$', 'host_users'),
     (r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/$', 'host_users'),
     (r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/(result.)?(?P<form>(csv|json|xls)?)$', 'host_users'),
-    (r'^reports/reserved-ids/(?P<organisation>[-\w]+)/$', 'reserved_ids'),
-    (r'^reports/reserved-ids/$', 'reserved_ids'),
+    (r'^reports/unique-ids/(?P<organisation>[-\w]+)/$', 'unique_ids'),
+    (r'^reports/unique-ids/$', 'unique_ids'),
 )
 
 urlpatterns += patterns('niweb.apps.noclook.views',

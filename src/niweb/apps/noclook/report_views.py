@@ -85,14 +85,14 @@ def host_users(request, host_user_name=None, form=None):
             context_instance=RequestContext(request))
 
 @login_required
-def reserved_ids(request, organisation=None):
+def unique_ids(request, organisation=None):
     if not organisation:
-        return render_to_response('noclook/reports/reserved_ids.html', {},
+        return render_to_response('noclook/reports/unique_ids.html', {},
             context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
-        reserved_list = NordunetUniqueId.objects.filter(reserved=True).order_by('unique_id')
+        id_list = NordunetUniqueId.objects.all().order_by('unique_id')
     else:
         raise Http404
-    return render_to_response('noclook/reports/reserved_ids.html',
-        {'reserved_list': reserved_list, 'organisation': organisation},
+    return render_to_response('noclook/reports/unique_ids.html',
+        {'id_list': id_list, 'organisation': organisation},
         context_instance=RequestContext(request))

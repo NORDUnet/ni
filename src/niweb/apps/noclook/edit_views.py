@@ -199,15 +199,22 @@ def form_to_unique_node_handle(request, form, slug, node_meta_type):
 
 # Reserve Ids
 @login_required
-def reserve_id(request, slug=None):
+def reserve_id_sequence(request, slug=None):
     if not slug:
         return render_to_response('noclook/edit/reserve_id.html', {},
                                   context_instance=RequestContext(request))
     if request.POST:
         form = forms.ReserveIdForm(request.POST)
         if form.is_valid():
-            reserved_list = h.reserve_nordunet_id(slug, form.cleaned_data['amount'],
-                form.cleaned_data['reserve_message'], request.user)
+            unique_id_generator, unique_id_collection = h.unique_id_map(slug)
+            if not unique_id_generator or unique_id_collection:
+                raise Http404
+            reserved_list = h.reserve_id_sequence(
+                form.cleaned_data['amount'],
+                unique_id_generator,
+                unique_id_collection,
+                form.cleaned_data['reserve_message'], request.user
+            )
             return render_to_response('noclook/edit/reserve_id.html', {'reserved_list': reserved_list, 'slug': slug},
                 context_instance=RequestContext(request))
         else:
