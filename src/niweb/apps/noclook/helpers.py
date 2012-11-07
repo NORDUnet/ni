@@ -668,6 +668,17 @@ def register_unique_id(unique_id_collection, unique_id):
         obj.save()
     return True
 
+# TODO: Maybe move this to settings.py?
+def unique_id_map(slug):
+    """
+    :param slug: A slug that specifies the type of object that we want to generate ID for.
+    :return: Tuple of UniqueIdGenerator instance and an optional subclass of UniqueId collection.
+    """
+    m = {
+        'nordunet-cable': (UniqueIdGenerator.objects.get(name='nordunet_cable_id'), NordunetUniqueId),
+    }
+    return m[slug]
+
 def bulk_reserve_id_range(start, end, unique_id_generator, unique_id_collection, reserve_message, reserver):
     """
     Reserves IDs start to end in the format used in the unique id generator in the unique id collection without
@@ -700,26 +711,22 @@ def bulk_reserve_id_range(start, end, unique_id_generator, unique_id_collection,
     unique_id_collection.objects.bulk_create(reserve_list)
     return reserve_list
 
-# TODO: Rewrite as reserve_id_range
-def reserve_nordunet_id(slug, amount, reserve_message, reserver):
+def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, reserve_message, reserver):
     """
     Reserves IDs by incrementing the unique ID generator.
-    :param slug: NodeType slug
-    :param amount: Integer
+    :param num_of_ids: Number of IDs to reserve.
+    :param unique_id_generator: Instance of UniqueIdGenerator
+    :param unique_id_collection: Instance of UniqueId subclass
     :param reserve_message: String
     :param reserver: Django user object
-    :return: List of id, reserve_message, error_message dicts
+    :return: List of dicts with reserved ids, reserve message and eventual error message.
     """
-    id_generator_map = {
-        'cable': 'nordunet_cable_id'
-    }
-    unique_id_generator = UniqueIdGenerator.objects.get(name=id_generator_map[slug])
     reserve_list = []
-    for x in range(0, amount):
+    for x in range(0, num_of_ids):
         id = unique_id_generator.get_id()
         try:
             error_message = ''
-            NordunetUniqueId.objects.create(unique_id=id, reserved=True,
+            unique_id_collection.objects.create(unique_id=id, reserved=True,
                 reserve_message=reserve_message, reserver=reserver)
         except IntegrityError:
             error_message = 'ID already in database. Manual check needed.'
