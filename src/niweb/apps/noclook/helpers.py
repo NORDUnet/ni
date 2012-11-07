@@ -661,8 +661,8 @@ def register_unique_id(unique_id_collection, unique_id):
     :return: True for success, False for failure.
     """
     obj, created = unique_id_collection.objects.get_or_create(unique_id=unique_id)
-    if not created and not obj.reserved: # ID already in the db and in use, mayday.
-        raise IntegrityError
+    if not created and not obj.reserved:
+        raise IntegrityError('ID: %s already in the db and in use.' % unique_id)
     elif obj.reserved: # ID was reserved, unreserv it.
         obj.reserved = False
         obj.save()
