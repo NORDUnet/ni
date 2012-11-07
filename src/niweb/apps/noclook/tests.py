@@ -1,8 +1,10 @@
 import datetime
+from django.test import TestCase
+from django.db import connection, DatabaseError
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
+from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, UniqueId
 from apps.noclook import helpers as h
 import norduni_client as nc
 
@@ -71,7 +73,68 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
 
 
+class UniqueIdGeneration(TestCase):
 
+    def setUp(self):
+        # Set up a user
+        self.username = 'TestUser'
+        self.password = 'password'
+        self.user,created = User.objects.get_or_create(username=self.username,
+            password=self.password)
+        # Set up an ID generator
+        self.id_generator, created = UniqueIdGenerator.objects.get_or_create(
+            name='Test ID Generator',
+            base_id_length=6,
+            zfill=True,
+            prefix='TEST-',
+            creator=self.user
+        )
+        # Set up an ID collection
+        try:
+            connection.cursor().execute("""
+                CREATE TABLE "noclook_testuniqueid" (
+                    "id" integer NOT NULL PRIMARY KEY,
+                    "unique_id" varchar(256) NOT NULL UNIQUE,
+                    "reserved" bool NOT NULL,
+                    "reserve_message" varchar(512),
+                    "reserver_id" integer REFERENCES "auth_user" ("id"),                                                                                                                             "created" datetime NOT NULL
+                );
+                """)
+        except DatabaseError:
+            # Table already created
+            pass
+        class TestUniqueId(UniqueId):
+            def __unicode__(self):
+                return unicode('Test: %s' % self.unique_id)
+        self.id_collection = TestUniqueId
+
+    def test_id_generation(self):
+        new_id = self.id_generator.get_id()
+        self.assertEqual(new_id, self.id_generator.last_id)
+        unique_id = self.id_collection.objects.create(unique_id=new_id)
+        self.assertEqual(unique_id.unique_id, new_id)
+
+    def test_helper_functions_basics(self):
+        new_id = self.id_generator.get_id()
+        return_value = h.register_unique_id(self.id_collection, new_id)
+        self.assertEqual(return_value, True)
+        next_id = self.id_generator.next_id
+        new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
+        self.assertEqual(new_id, next_id)
+
+    def test_bulk_reserve(self):
+        h.bulk_reserve_ids(1, 100, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        num_objects = self.id_collection.objects.count()
+        self.assertEqual(num_objects, 100)
+
+    def test_get_unique_id_jump(self):
+        h.bulk_reserve_ids(1, 99, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        self.assertEqual(self.id_generator.next_id, 'TEST-000001')
+        new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
+        self.assertEqual(new_id, 'TEST-000100')
+        h.bulk_reserve_ids(101, 199, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
+        self.assertEqual(new_id, 'TEST-000200')
 
 
 
