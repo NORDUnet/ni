@@ -185,6 +185,7 @@ class EditSiteForm(forms.Form):
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
     owner_site_name = forms.CharField(required=False)
+    url = forms.URLField(required=False)
     relationship_site_owner = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
                               

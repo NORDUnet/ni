@@ -91,7 +91,7 @@ $(document).ready(
             {% for item in responsible_relationships %}
                 {% if forloop.first %}
                     <tr>
-                        <th>Site owner:</td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                        <th>Site owner:</th><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
                     </tr>
                 {% else %}
                     <tr>
@@ -100,11 +100,18 @@ $(document).ready(
                 {% endif %}
             {% endfor %}
             <tr>
-                <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}" target="_blank">To Portal</td>
+                <th>More information:</th>
+                <td>
+                    {% if node.url %}
+                        <a href="{{ node.url }}" target="_blank">Link</a>
+                    {% else %}
+                        <a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}" target="_blank">To Portal</a>
+                    {% endif %}
+                </td>
             </tr>
             {% if node.noclook_automanage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
