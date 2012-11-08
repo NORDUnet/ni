@@ -185,6 +185,7 @@ class EditSiteForm(forms.Form):
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
     owner_site_name = forms.CharField(required=False)
+    url = forms.URLField(required=False)
     relationship_site_owner = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
                               
@@ -396,7 +397,8 @@ class NewServiceForm(forms.Form):
                                   help_text='Short description of the service.')
 
     class Meta:
-        id_generator_name = None # UniqueId name
+        id_generator_name = None # UniqueIdGenerator instance name
+        id_collection = None # Subclass of UniqueId
         manually_named_services = ['External'] # service_type of manually named services
 
 
@@ -411,11 +413,11 @@ class NewServiceForm(forms.Form):
         name = cleaned_data.get("name")
         service_type = cleaned_data.get("service_type")
         if not name and service_type not in self.Meta.manually_named_services:
-            if not self.Meta.id_generator_name:
-                raise Exception('You have to set id_generator_name in form Meta class.')
+            if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
                 id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = id_generator.get_id()
+                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
         elif not name:
@@ -433,6 +435,7 @@ class NewNordunetServiceForm(NewServiceForm):
 
     class Meta(NewServiceForm.Meta):
         id_generator_name = 'nordunet_service_id'
+        id_collection = NordunetUniqueId
 
 
     def clean(self):
@@ -440,8 +443,6 @@ class NewNordunetServiceForm(NewServiceForm):
         Checks that project_end_date was not omitted if service is of type project.
         """
         cleaned_data = super(NewNordunetServiceForm, self).clean()
-        if cleaned_data['service_type'] not in self.Meta.manually_named_services:
-            h.register_unique_id(NordunetUniqueId, cleaned_data['name'])
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
@@ -527,7 +528,8 @@ class NewOpticalLinkForm(forms.Form):
         help_text='Short description of the optical link.')
 
     class Meta:
-        id_generator_name = None # UniqueId name
+        id_generator_name = None # UniqueIdGenerator instance name
+        id_collection = None # Subclass of UniqueId
 
 
     def clean(self):
@@ -538,11 +540,11 @@ class NewOpticalLinkForm(forms.Form):
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
         if not name:
-            if not self.Meta.id_generator_name:
-                raise Exception('You have to set id_generator_name in form Meta class.')
+            if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
                 id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = id_generator.get_id()
+                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
         return cleaned_data
@@ -552,11 +554,11 @@ class NewNordunetOpticalLinkForm(NewOpticalLinkForm):
 
     class Meta(NewOpticalLinkForm.Meta):
         id_generator_name = 'nordunet_optical_link_id'
+        id_collection = NordunetUniqueId
 
 
     def clean(self):
         cleaned_data = super(NewNordunetOpticalLinkForm, self).clean()
-        h.register_unique_id(NordunetUniqueId, cleaned_data['name'])
         return cleaned_data
 
 
@@ -593,7 +595,8 @@ class NewOpticalPathForm(forms.Form):
                                   help_text='Short description of the optical path.')
 
     class Meta:
-        id_generator_name = None # UniqueId name
+        id_generator_name = None # UniqueIdGenerator instance name
+        id_collection = None # Subclass of UniqueId
 
 
     def clean(self):
@@ -604,11 +607,11 @@ class NewOpticalPathForm(forms.Form):
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
         if not name:
-            if not self.Meta.id_generator_name:
-                raise Exception('You have to set id_generator_name in form Meta class.')
+            if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
                 id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = id_generator.get_id()
+                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
         return cleaned_data
@@ -618,11 +621,11 @@ class NewNordunetOpticalPathForm(NewOpticalPathForm):
 
     class Meta(NewOpticalLinkForm.Meta):
         id_generator_name = 'nordunet_optical_path_id'
+        id_collection = NordunetUniqueId
 
 
     def clean(self):
         cleaned_data = super(NewNordunetOpticalPathForm, self).clean()
-        h.register_unique_id(NordunetUniqueId, cleaned_data['name'])
         return cleaned_data
 
 

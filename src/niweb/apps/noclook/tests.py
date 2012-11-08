@@ -122,19 +122,25 @@ class UniqueIdGeneration(TestCase):
         new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
         self.assertEqual(new_id, next_id)
 
-    def test_bulk_reserve(self):
-        h.bulk_reserve_ids(1, 100, self.id_generator, self.id_collection, 'Reserve message', self.user)
+    def test_reserve_range(self):
+        h.bulk_reserve_id_range(1, 100, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        num_objects = self.id_collection.objects.count()
+        self.assertEqual(num_objects, 100)
+
+    def test_reserve_sequence(self):
+        h.reserve_id_sequence(100, self.id_generator, self.id_collection, 'Reserve message', self.user)
         num_objects = self.id_collection.objects.count()
         self.assertEqual(num_objects, 100)
 
     def test_get_unique_id_jump(self):
-        h.bulk_reserve_ids(1, 99, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        h.bulk_reserve_id_range(1, 99, self.id_generator, self.id_collection, 'Reserve message', self.user)
         self.assertEqual(self.id_generator.next_id, 'TEST-000001')
         new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
         self.assertEqual(new_id, 'TEST-000100')
-        h.bulk_reserve_ids(101, 199, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        h.bulk_reserve_id_range(101, 150, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        h.reserve_id_sequence(100, self.id_generator, self.id_collection, 'Reserve message', self.user)
         new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
-        self.assertEqual(new_id, 'TEST-000200')
+        self.assertEqual(new_id, 'TEST-000201')
 
 
 
