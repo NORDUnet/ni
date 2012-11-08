@@ -385,6 +385,10 @@ class EditProviderForm(forms.Form):
 
 
 class NewServiceForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewServiceForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
     name = forms.CharField(required=False,
                            help_text='Name will only be available for manually named service types.')
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
@@ -395,6 +399,7 @@ class NewServiceForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
         id_generator_name = None # UniqueIdGenerator instance name
@@ -517,6 +522,10 @@ class EditServiceForm(forms.Form):
 
 
 class NewOpticalLinkForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewOpticalLinkForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
         widget=forms.widgets.Select)
@@ -526,6 +535,7 @@ class NewOpticalLinkForm(forms.Form):
     description = forms.CharField(required=False,
         widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
         help_text='Short description of the optical link.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
         id_generator_name = None # UniqueIdGenerator instance name
@@ -583,6 +593,10 @@ class EditOpticalLinkForm(forms.Form):
 
 
 class NewOpticalPathForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewOpticalPathForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
                                 widget=forms.widgets.Select)
@@ -593,6 +607,7 @@ class NewOpticalPathForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
         id_generator_name = None # UniqueIdGenerator instance name

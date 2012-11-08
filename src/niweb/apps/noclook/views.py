@@ -558,10 +558,12 @@ def optical_link_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
     depend_out = h.iter2list(h.get_logical_depends_on(node))
+    providers = h.iter2list(node.Provides.incoming)
     return render_to_response('noclook/detail/optical_link_detail.html',
                              {'node': node, 'node_handle': nh,
                               'last_seen': last_seen, 'expired': expired,
-                              'depend_inc': depend_inc, 'depend_out': depend_out,},
+                              'depend_inc': depend_inc, 'depend_out': depend_out,
+                              'providers': providers},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -572,10 +574,12 @@ def optical_path_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
     depend_out = h.iter2list(h.get_logical_depends_on(node))
+    providers = h.iter2list(node.Provides.incoming)
     return render_to_response('noclook/detail/optical_path_detail.html',
-            {'node': node, 'node_handle': nh,
-             'last_seen': last_seen, 'expired': expired,
-             'depend_inc': depend_inc, 'depend_out': depend_out,},
+                             {'node': node, 'node_handle': nh,
+                              'last_seen': last_seen, 'expired': expired,
+                              'depend_inc': depend_inc, 'depend_out': depend_out,
+                              'providers': providers},
                               context_instance=RequestContext(request))
 
 @login_required

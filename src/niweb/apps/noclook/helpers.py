@@ -8,16 +8,19 @@ Created on Mon Apr  2 11:17:57 2012
 from django.template.defaultfilters import slugify
 import socket
 from django.conf import settings as django_settings
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+from django.db import IntegrityError
 from datetime import datetime, timedelta
 import csv, codecs, cStringIO
 import xlwt
-from django.http import HttpResponse
-from django.db import IntegrityError
+
 
 try:
     from niweb.apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
 except ImportError:
     from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
+from norduni_client_exceptions import UniqueNodeError
 import norduni_client as nc
 
 class UnicodeWriter:
@@ -61,6 +64,85 @@ def get_node_url(node):
     except TypeError:
         # Node is most likely a None value
         return ''
+
+def get_nh_node(node_handle_id):
+    """
+    Takes a node handle id and returns the node handle and the node.
+    """
+    nh = get_object_or_404(NodeHandle, pk=node_handle_id)
+    node = nh.get_node()
+    return nh, node
+
+def form_update_node(user, node, form, property_keys=None):
+    """
+    Take a node, a form and the property keys that should be used to fill the
+    node if the property keys are omitted the form.base_fields will be used.
+    Returns True if all non-empty properties where added else False and
+    rollbacks the node changes.
+    """
+    if not property_keys:
+        property_keys = []
+    meta_fields = ['relationship_location', 'relationship_end_a',
+                   'relationship_end_b', 'relationship_parent',
+                   'relationship_provider', 'relationship_end_user',
+                   'relationship_customer', 'relationship_depends_on']
+    nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
+    if not property_keys:
+        for field in form.base_fields.keys():
+            if field not in meta_fields:
+                property_keys.append(field)
+    for key in property_keys:
+        try:
+            if form.cleaned_data[key] or form.cleaned_data[key] == 0:
+                pre_value = node.getProperty(key, '')
+                if pre_value != form.cleaned_data[key]:
+                    with nc.neo4jdb.transaction:
+                        node[key] = form.cleaned_data[key]
+                    if key == 'name':
+                        nh.node_name = form.cleaned_data[key]
+                    nh.modifier = user
+                    nh.save()
+                    update_node_search_index(nc.neo4jdb, node)
+            elif not form.cleaned_data[key] and key != 'name':
+                with nc.neo4jdb.transaction:
+                    del node[key]
+                if key in django_settings.SEARCH_INDEX_KEYS:
+                    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                    nc.del_index_item(nc.neo4jdb, index, key)
+        except KeyError:
+            return False
+        except Exception:
+            # If the property type differs from what is allowed in node
+            # properties. Force string as last alternative.
+            with nc.neo4jdb.transaction:
+                node[key] = unicode(form.cleaned_data[key])
+    return True
+
+def form_to_generic_node_handle(request, form, slug, node_meta_type):
+    node_name = form.cleaned_data['name']
+    node_type = slug_to_node_type(slug, create=True)
+    node_handle = NodeHandle(node_name=node_name,
+        node_type=node_type,
+        node_meta_type=node_meta_type,
+        modifier=request.user, creator=request.user)
+    node_handle.save()
+    set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
+    return node_handle
+
+def form_to_unique_node_handle(request, form, slug, node_meta_type):
+    node_name = form.cleaned_data['name']
+    node_type = slug_to_node_type(slug, create=True)
+    try:
+        node_handle = NodeHandle.objects.get(node_name=node_name, node_type=node_type)
+        raise UniqueNodeError(node_handle.get_node())
+    except NodeHandle.DoesNotExist:
+        node_handle = NodeHandle.objects.create(node_name=node_name,
+            node_type=node_type,
+            node_meta_type=node_meta_type,
+            modifier=request.user,
+            creator=request.user)
+        set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
+    return node_handle
 
 def set_noclook_auto_manage(db, item, auto_manage):
     """
@@ -218,6 +300,24 @@ def nodes_to_geoff(node_list):
     """
     # TODO:
     pass
+
+def slug_to_node_type(slug, create=False):
+    """
+    Returns or creates and returns the NodeType object from the supplied slug.
+    """
+    acronym_types = ['odf'] # TODO: Move to sql db
+    if create:
+        node_type, created = NodeType.objects.get_or_create(slug=slug)
+        if created:
+            if slug in acronym_types:
+                type_name = slug.upper()
+            else:
+                type_name = slug.replace('-', ' ').title()
+            node_type.type = type_name
+            node_type.save()
+    else:
+        node_type = get_object_or_404(NodeType, slug=slug)
+    return node_type
 
 def get_location(node):
     """
