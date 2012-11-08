@@ -49,6 +49,14 @@
                 <tr>
                     <th>ENRs:</th><td>{% for enr in node.enrs %}{{ enr }}{% if not forloop.last %},<br>{% endif %}{% endfor %}</td>
                 </tr>
+                <tr>
+                    <th>Provider:</th>
+                    <td>
+                        {% for provider in providers %}
+                            <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a><br>
+                        {% endfor %}
+                    </td>
+                </tr>
             </table>
             {% if node.description %}
                 <div>
