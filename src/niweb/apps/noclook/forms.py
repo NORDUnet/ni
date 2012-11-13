@@ -455,28 +455,28 @@ class NewNordunetServiceForm(NewServiceForm):
         return cleaned_data
 
 
-class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
-
-    l2vpn_id = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-
-    class Meta(NewNordunetServiceForm.Meta):
-        l2vpn_id_generator_name = 'nordunet_vpn_id'
-
-
-    def clean(self):
-        """
-        Checks that project_end_date was not omitted if service is of type project.
-        """
-        cleaned_data = super(NewNordunetL2vpnServiceForm, self).clean()
-        if not cleaned_data['l2vpn_id']:
-            if not self.Meta.l2vpn_id_generator_name:
-                raise Exception('You have to set l2vpn_id_generator_name in form Meta class.')
-            try:
-                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.l2vpn_id_generator_name)
-                cleaned_data['l2vpn_id'] = id_generator.get_id()
-            except UniqueIdGenerator.DoesNotExist as e:
-                raise e
-        return cleaned_data
+#class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
+#
+#    l2vpn_id = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+#
+#    class Meta(NewNordunetServiceForm.Meta):
+#        l2vpn_id_generator_name = 'nordunet_vpn_id'
+#
+#
+#    def clean(self):
+#        """
+#        Checks that project_end_date was not omitted if service is of type project.
+#        """
+#        cleaned_data = super(NewNordunetL2vpnServiceForm, self).clean()
+#        if not cleaned_data['l2vpn_id']:
+#            if not self.Meta.l2vpn_id_generator_name:
+#                raise Exception('You have to set l2vpn_id_generator_name in form Meta class.')
+#            try:
+#                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.l2vpn_id_generator_name)
+#                cleaned_data['l2vpn_id'] = id_generator.get_id()
+#            except UniqueIdGenerator.DoesNotExist as e:
+#                raise e
+#        return cleaned_data
 
 
 class EditServiceForm(forms.Form):

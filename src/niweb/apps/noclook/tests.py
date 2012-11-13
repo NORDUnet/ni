@@ -1,6 +1,6 @@
 import datetime
 from django.test import TestCase
-from django.db import connection, DatabaseError
+from django.db import connection, transaction, IntegrityError
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
@@ -75,6 +75,7 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
 
 class UniqueIdGeneration(TestCase):
 
+    #@transaction.autocommit
     def setUp(self):
         # Set up a user
         self.username = 'TestUser'
@@ -90,19 +91,33 @@ class UniqueIdGeneration(TestCase):
             creator=self.user
         )
         # Set up an ID collection
-        try:
-            connection.cursor().execute("""
+        #try:
+        # sqlite3
+#        connection.cursor().execute("""
+#            CREATE TABLE "noclook_testuniqueid" (
+#                "id" integer NOT NULL PRIMARY KEY,
+#                "unique_id" varchar(256) NOT NULL UNIQUE,
+#                "reserved" bool NOT NULL,
+#                "reserve_message" varchar(512),
+#                "reserver_id" integer REFERENCES "auth_user" ("id"),
+#                "created" datetime NOT NULL
+#            );
+#            """)
+        # postgresql
+        connection.cursor().execute("""
                 CREATE TABLE "noclook_testuniqueid" (
-                    "id" integer NOT NULL PRIMARY KEY,
+                    "id" serial NOT NULL PRIMARY KEY,
                     "unique_id" varchar(256) NOT NULL UNIQUE,
-                    "reserved" bool NOT NULL,
+                    "reserved" boolean NOT NULL,
                     "reserve_message" varchar(512),
-                    "reserver_id" integer REFERENCES "auth_user" ("id"),                                                                                                                             "created" datetime NOT NULL
+                    "reserver_id" integer REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED,
+                    "created" timestamp with time zone NOT NULL
                 );
                 """)
-        except DatabaseError:
+        #except DatabaseError as e:
             # Table already created
-            pass
+            #print e
+            #pass
         class TestUniqueId(UniqueId):
             def __unicode__(self):
                 return unicode('Test: %s' % self.unique_id)
@@ -126,11 +141,16 @@ class UniqueIdGeneration(TestCase):
         h.bulk_reserve_id_range(1, 100, self.id_generator, self.id_collection, 'Reserve message', self.user)
         num_objects = self.id_collection.objects.count()
         self.assertEqual(num_objects, 100)
+        new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
+        self.assertEqual(new_id, 'TEST-000101')
 
     def test_reserve_sequence(self):
         h.reserve_id_sequence(100, self.id_generator, self.id_collection, 'Reserve message', self.user)
         num_objects = self.id_collection.objects.count()
         self.assertEqual(num_objects, 100)
+        new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
+        self.assertEqual(new_id, 'TEST-000101')
+
 
     def test_get_unique_id_jump(self):
         h.bulk_reserve_id_range(1, 99, self.id_generator, self.id_collection, 'Reserve message', self.user)
@@ -138,9 +158,30 @@ class UniqueIdGeneration(TestCase):
         new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
         self.assertEqual(new_id, 'TEST-000100')
         h.bulk_reserve_id_range(101, 150, self.id_generator, self.id_collection, 'Reserve message', self.user)
-        h.reserve_id_sequence(100, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        seq = h.reserve_id_sequence(100, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        self.assertEqual(len(seq), 100)
         new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
         self.assertEqual(new_id, 'TEST-000201')
+
+    def test_register_reserved_id(self):
+        h.bulk_reserve_id_range(1, 99, self.id_generator, self.id_collection, 'Reserve message', self.user)
+        result = h.register_unique_id(self.id_collection, 'TEST-000001')
+        self.assertTrue(result)
+
+    def test_register_unreserved_id(self):
+        result = h.register_unique_id(self.id_collection, 'TEST-000001')
+        self.assertTrue(result)
+
+    def test_register_used_id(self):
+        result = h.register_unique_id(self.id_collection, 'TEST-000001')
+        self.assertTrue(result)
+        try:
+            sid = transaction.savepoint()
+            h.register_unique_id(self.id_collection, 'TEST-000001')
+            transaction.savepoint_commit(sid)
+        except IntegrityError as e:
+            transaction.savepoint_rollback(sid)
+        self.assertIsInstance(e, IntegrityError)
 
 
 
