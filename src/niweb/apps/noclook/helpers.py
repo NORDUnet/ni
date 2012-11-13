@@ -10,7 +10,7 @@ import socket
 from django.conf import settings as django_settings
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from datetime import datetime, timedelta
 import csv, codecs, cStringIO
 import xlwt
@@ -824,11 +824,14 @@ def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, r
     reserve_list = []
     for x in range(0, num_of_ids):
         id = unique_id_generator.get_id()
+        error_message = ''
         try:
-            error_message = ''
+            sid = transaction.savepoint()
             unique_id_collection.objects.create(unique_id=id, reserved=True,
                 reserve_message=reserve_message, reserver=reserver)
+            transaction.savepoint_commit(sid)
         except IntegrityError:
+            transaction.savepoint_rollback(sid)
             error_message = 'ID already in database. Manual check needed.'
         reserve_list.append({'id': id, 'reserve_message': reserve_message, 'error_message': error_message})
     return reserve_list
