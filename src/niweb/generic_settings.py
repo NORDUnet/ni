@@ -153,6 +153,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'tastypie',
     'djangosaml2',
+    'south',
     'niweb_core',
     'apps.userprofile',
     'apps.noclook',
