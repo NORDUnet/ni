@@ -7,7 +7,7 @@ urlpatterns = patterns('',
     (r'^logout/$', 'niweb.apps.noclook.views.logout_page'),
 )
 
-urlpatterns += patterns('niweb.apps.noclook.creation_views',
+urlpatterns += patterns('niweb.apps.noclook.create_views',
     (r'^new/$', 'new_node'),
     (r'^new/(?P<slug>[-\w]+)/$', 'new_node'),
     (r'^new/(?P<slug>[-\w]+)/parent/(?P<parent_id>\d+)/$', 'new_node'),

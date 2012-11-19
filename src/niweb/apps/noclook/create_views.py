@@ -48,40 +48,6 @@ def new_node(request, slug=None, **kwargs):
     return func(request, **kwargs)
 
 @login_required
-def new_node_old(request, slug=None, **kwargs):
-    """
-    Generic create function that redirects calls to node type sensitive create functions.
-    """
-    if not request.user.is_staff:
-        raise Http404
-        # Template name is create_type_slug.html.
-    template = 'noclook/edit/create_%s.html' % slug
-    template = template.replace('-', '_')
-    if request.POST:
-        form = NEW_FORMS[slug](request.POST)
-        if form.is_valid():
-            try:
-                func = NEW_FUNC[slug]
-            except KeyError:
-                raise Http404
-            return func(request, form, **kwargs)
-        else:
-            return render_to_response(template, {'form': form},
-                context_instance=RequestContext(request))
-    if not slug:
-        return render_to_response('noclook/edit/new_node.html', {},
-            context_instance=RequestContext(request))
-    else:
-        try:
-            form = NEW_FORMS[slug]
-            if kwargs.get('name', None):
-                form = form(initial={'name': kwargs['name']})
-        except KeyError:
-            raise Http404
-        return render_to_response(template, {'form': form},
-            context_instance=RequestContext(request))
-
-@login_required
 def new_site(request, **kwargs):
     if request.POST:
         form = forms.NewSiteForm(request.POST)
@@ -422,7 +388,7 @@ def reserve_id_sequence(request, slug=None):
         form = forms.ReserveIdForm(request.POST)
         if form.is_valid():
             unique_id_generator, unique_id_collection = h.unique_id_map(slug)
-            if not unique_id_generator or unique_id_collection:
+            if not unique_id_generator or not unique_id_collection:
                 raise Http404
             reserved_list = h.reserve_id_sequence(
                 form.cleaned_data['amount'],
