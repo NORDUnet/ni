@@ -53,11 +53,11 @@ $(document).ready(
                 {% for item in node.addresses %}
                     {% if forloop.first %}
                     <tr>
-                        <th>Addresses:</th><td>{{item}}</td>
+                        <th>Addresses:</th><td>{{ item }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td></td><td>{{item}}</td>
+                        <td></td><td>{{ item }}</td>
                     </tr>
                     {% endif %}
                 {% endfor %}
@@ -65,33 +65,33 @@ $(document).ready(
             {% for item in user_relationships %}
                 {% if forloop.first %}
                 <tr>
-                    <th>Users:</th><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                    <th>Users:</th><td><a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a></td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td></td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                    <td></td><td><a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a></td>
                 </tr>
                 {% endif %}
             {% endfor %}
             {% for item in provider_relationships %}
                 {% if forloop.first %}
                 <tr>
-                    <th>Providers:</th><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                    <th>Providers:</th><td><a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a></td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td></td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                    <td></td><td><a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a></td>
                 </tr>
                 {% endif %}
             {% endfor %}
             {% for item in owner_relationships %}
                 {% if forloop.first %}
                 <tr>
-                    <th>Owners:</th><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                    <th>Owners:</th><td><a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a></td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td></td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                    <td></td><td><a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a></td>
                 </tr>
                 {% endif %}
             {% endfor %}
@@ -143,14 +143,14 @@ $(document).ready(
         {% endif %}
             {% if node.noclook_auto_manage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
-                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
             </tr>
             <tr>
-                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
             </tr>
         </table>
     </div>
