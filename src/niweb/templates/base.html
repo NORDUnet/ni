@@ -31,8 +31,6 @@
         $(".dropdown-toggle").dropdown()
         $(".debug-toggle").collapse()
         $(".nav-collapse").collapse()
-        $('#add_comment').toggle(false);
-        $('#add_comment_btn').toggle(true);
     });
     </script>
     {% block js %}{% endblock %}
@@ -157,11 +155,11 @@
                         <div class="accordion" id="debug-accordion">
                             <div class="accordion-group">
                                 <div class="accordion-heading">
-                                    <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#debug-accordion" href="#collapseOne">
+                                    <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#debug-accordion" href="#collapseDebug">
                                         Debug
                                     </a>
                                 </div>
-                                <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
+                                <div id="collapseDebug" class="accordion-body collapse" style="height: 0px; ">
                                     <div class="accordion-inner">
                                         <h2>Debug</h2>
                                         <h3>Node properties</h3>

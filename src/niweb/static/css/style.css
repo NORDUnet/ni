@@ -26,6 +26,14 @@ ul.menu {
  width: 100%;
 }
 
+.top-space {
+    margin-top: 40px;
+}
+
+.no-border {
+    border: 0;
+}
+
 .clear-float {
  width: 100%;
  height: 1px;

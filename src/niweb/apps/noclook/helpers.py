@@ -14,6 +14,7 @@ from django.db import IntegrityError, transaction
 from datetime import datetime, timedelta
 import csv, codecs, cStringIO
 import xlwt
+from actstream import action
 
 
 try:
@@ -92,30 +93,47 @@ def form_update_node(user, node, form, property_keys=None):
             if field not in meta_fields:
                 property_keys.append(field)
     for key in property_keys:
-        try:
-            if form.cleaned_data[key] or form.cleaned_data[key] == 0:
-                pre_value = node.getProperty(key, '')
-                if pre_value != form.cleaned_data[key]:
-                    with nc.neo4jdb.transaction:
-                        node[key] = form.cleaned_data[key]
-                    if key == 'name':
-                        nh.node_name = form.cleaned_data[key]
-                    nh.modifier = user
-                    nh.save()
-                    update_node_search_index(nc.neo4jdb, node)
-            elif not form.cleaned_data[key] and key != 'name':
+        #try:
+        if form.cleaned_data[key] or form.cleaned_data[key] == 0:
+            pre_value = node.get_property(key, '')
+            if pre_value != form.cleaned_data[key]:
+                with nc.neo4jdb.transaction:
+                    node[key] = form.cleaned_data[key]
+                if key == 'name':
+                    nh.node_name = form.cleaned_data[key]
+                nh.modifier = user
+                nh.save()
+                action.send(
+                    user,
+                    verb='update',
+                    action_object=nh,
+                    noclook={
+                        'action_type': 'node_property', # node, relationship, relationship_property
+                        'property': key,
+                        'value_before': pre_value,
+                        'value_after': form.cleaned_data[key]
+                    }
+                )
+                update_node_search_index(nc.neo4jdb, node)
+        elif not form.cleaned_data[key] and key in node.propertyKeys:
+            if key != 'name': # Never delete name
+                pre_value = node.get_property(key, '')
                 with nc.neo4jdb.transaction:
                     del node[key]
+                action.send(
+                    user,
+                    verb='update',
+                    action_object=nh,
+                    noclook={
+                        'action_type': 'node_property', # node, relationship
+                        'property': key,
+                        'value_before': pre_value,
+                        'value_after': form.cleaned_data[key]
+                    }
+                )
                 if key in django_settings.SEARCH_INDEX_KEYS:
                     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
                     nc.del_index_item(nc.neo4jdb, index, key)
-        except KeyError:
-            return False
-        except Exception:
-            # If the property type differs from what is allowed in node
-            # properties. Force string as last alternative.
-            with nc.neo4jdb.transaction:
-                node[key] = unicode(form.cleaned_data[key])
     return True
 
 def form_to_generic_node_handle(request, form, slug, node_meta_type):
