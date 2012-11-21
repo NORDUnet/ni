@@ -3,12 +3,8 @@
 {% block title %}{{ block.super }} {{ node.node_type }} Detail {% endblock %}
 
 {% block js %}
+{{ block.super }}
 <script type="text/javascript">
-    // Comment show/hide
-    function toggle_comment() {
-        $('#add_comment').toggle();
-        $('#add_comment_btn').toggle();
-    }
     // AJAX setup
     function getCookie(name) {
         var cookieValue = null;
@@ -38,6 +34,13 @@
             }
         }
     });
+</script>
+<script type="text/javascript">
+    $(document).ready(
+        function(){
+            $(".detail-toggle").collapse()
+        }
+    );
 </script>
 {% endblock %}
 
@@ -79,32 +82,51 @@
 
 {% block content_footer %}
 {% if node_handle %}
-    <div class="section">
-        <br>
-        <p>
-            <a href="javascript:toggle_comment()" id="add_comment_btn" class="btn btn-info">
-                <i class="icon-comment icon-white"></i> Add a comment
-            </a>
-            <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
-                <i class="icon-eye-open icon-white"></i> Visualize
-            </a>
-        </p>
-        <div id="add_comment">
-            <strong>Add a comment or <a href="javascript:toggle_comment()">hide</a> the comment form.</strong>
-            {% get_comment_form for node_handle as form %}
-            <form action="{% comment_form_target %}" method="POST">
-                {% csrf_token %}
-                <textarea class="input-xlarge" rows="3" id="id_comment" name="comment"></textarea>
-                {{ form.honeypot }}
-                {{ form.content_type }}
-                {{ form.object_pk }}
-                {{ form.timestamp }}
-                {{ form.security_hash }}
-                <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
-                <br><br>
-                <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
-                <br>
-            </form>
+    <div class="section top-space">
+        <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseOne">
+            <i class="icon-comment icon-white"></i> Add a comment
+        </a>
+        <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseTwo">
+            <i class="icon-book icon-white"></i> History
+        </a>
+        <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
+            <i class="icon-eye-open icon-white"></i> Visualize
+        </a>
+        <div class="accordion" id="detail-accordion">
+            <div class="accordion-group no-border">
+                <div id="collapseOne" class="accordion-body collapse">
+                    <div class="accordion-inner no-border">
+                        <h2>Comment</h2>
+                        {% get_comment_form for node_handle as form %}
+                        <form action="{% comment_form_target %}" method="POST">
+                            {% csrf_token %}
+                            <textarea class="input-xlarge" rows="3" id="id_comment" name="comment"></textarea>
+                            {{ form.honeypot }}
+                            {{ form.content_type }}
+                            {{ form.object_pk }}
+                            {{ form.timestamp }}
+                            {{ form.security_hash }}
+                            <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
+                            <br><br>
+                            <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
+                            <br>
+                        </form>
+                    </div>
+                </div>
+                <div id="collapseTwo" class="accordion-body collapse">
+                    <div class="accordion-inner no-border">
+                        <h2>History</h2>
+                        {% if history %}
+                            {% for entry in history %}
+                                {{ entry }}<br>{{ entry.data.noclook }}<br><br>
+                            {% endfor %}
+                        {% else %}
+                            <p>No history recorded.</p>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 {% endif %}
