@@ -4,7 +4,7 @@
 
 {% block js %}
 {{ block.super }}
-<script type="text/javascript">
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html">
     // AJAX setup
     function getCookie(name) {
         var cookieValue = null;
@@ -95,7 +95,7 @@
         <div class="accordion" id="detail-accordion">
             <div class="accordion-group no-border">
                 <div id="collapseOne" class="accordion-body collapse">
-                    <div class="accordion-inner no-border">
+                    <div class="accordion-inner no-border well top-space">
                         <h2>Comment</h2>
                         {% get_comment_form for node_handle as form %}
                         <form action="{% comment_form_target %}" method="POST">
@@ -114,12 +114,24 @@
                     </div>
                 </div>
                 <div id="collapseTwo" class="accordion-body collapse">
-                    <div class="accordion-inner no-border">
+                    <div class="accordion-inner no-border well top-space">
                         <h2>History</h2>
                         {% if history %}
-                            {% for entry in history %}
-                                {{ entry }}<br>{{ entry.data.noclook }}<br><br>
-                            {% endfor %}
+                            <table class="table">
+                                {% for entry in history %}
+                                    <tr>
+                                        <td>
+                                            <span class="label label-info">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                                            {% if entry.data.noclook.action_type == 'node_property' %}
+                                                <strong>{{ entry.actor }} updated <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
+                                                <p>{{ entry.data.noclook.property }}: {{ entry.data.noclook.value_before }} <i class="icon-arrow-right"></i> {{ entry.data.noclook.value_after }}</p>
+                                            {% else %}
+                                                {{ entry.data.noclook }}
+                                            {% endif %}
+                                        <td>
+                                    </tr>
+                                {% endfor %}
+                            </table>
                         {% else %}
                             <p>No history recorded.</p>
                         {% endif %}
