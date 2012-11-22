@@ -118,6 +118,9 @@ def form_update_node(user, node, form, property_keys=None):
         elif not form.cleaned_data[key] and key in node.propertyKeys:
             if key != 'name': # Never delete name
                 pre_value = node.get_property(key, '')
+                if key in django_settings.SEARCH_INDEX_KEYS:
+                    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                    nc.del_index_item(nc.neo4jdb, index, node, key)
                 with nc.neo4jdb.transaction:
                     del node[key]
                 action.send(
@@ -131,9 +134,6 @@ def form_update_node(user, node, form, property_keys=None):
                         'value_after': form.cleaned_data[key]
                     }
                 )
-                if key in django_settings.SEARCH_INDEX_KEYS:
-                    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-                    nc.del_index_item(nc.neo4jdb, index, key)
     return True
 
 def form_to_generic_node_handle(request, form, slug, node_meta_type):
