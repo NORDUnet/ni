@@ -11,6 +11,7 @@ from lucenequerybuilder import Q
 from actstream.models import action_object_stream
 
 from niweb.apps.noclook.models import NodeHandle, NodeType
+from niweb.apps.userprofile.models import UserProfile
 import niweb.apps.noclook.helpers as h
 import norduni_client as nc
 
