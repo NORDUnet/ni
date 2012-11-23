@@ -14,13 +14,13 @@ from django.db import IntegrityError, transaction
 from datetime import datetime, timedelta
 import csv, codecs, cStringIO
 import xlwt
-from actstream import action
-
 
 try:
     from niweb.apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
+    from niweb.apps.noclook import activitylog
 except ImportError:
     from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
+    from apps.noclook import activitylog
 from norduni_client_exceptions import UniqueNodeError
 import norduni_client as nc
 
@@ -103,17 +103,7 @@ def form_update_node(user, node, form, property_keys=None):
                     nh.node_name = form.cleaned_data[key]
                 nh.modifier = user
                 nh.save()
-                action.send(
-                    user,
-                    verb='update',
-                    action_object=nh,
-                    noclook={
-                        'action_type': 'node_property', # node, relationship, relationship_property
-                        'property': key,
-                        'value_before': pre_value,
-                        'value_after': form.cleaned_data[key]
-                    }
-                )
+                activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
                 update_node_search_index(nc.neo4jdb, node)
         elif not form.cleaned_data[key] and key in node.propertyKeys:
             if key != 'name': # Never delete name
@@ -123,17 +113,7 @@ def form_update_node(user, node, form, property_keys=None):
                     nc.del_index_item(nc.neo4jdb, index, node, key)
                 with nc.neo4jdb.transaction:
                     del node[key]
-                action.send(
-                    user,
-                    verb='update',
-                    action_object=nh,
-                    noclook={
-                        'action_type': 'node_property', # node, relationship
-                        'property': key,
-                        'value_before': pre_value,
-                        'value_after': form.cleaned_data[key]
-                    }
-                )
+                activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
     return True
 
 def form_to_generic_node_handle(request, form, slug, node_meta_type):
@@ -144,6 +124,7 @@ def form_to_generic_node_handle(request, form, slug, node_meta_type):
         node_meta_type=node_meta_type,
         modifier=request.user, creator=request.user)
     node_handle.save()
+    activitylog.create_node(request.user, node_handle)
     set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
     return node_handle
 
@@ -159,6 +140,7 @@ def form_to_unique_node_handle(request, form, slug, node_meta_type):
             node_meta_type=node_meta_type,
             modifier=request.user,
             creator=request.user)
+        activitylog.create_node(request.user, node_handle)
         set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
     return node_handle
 
@@ -581,12 +563,12 @@ def create_port(parent_name, parent_type, port_name, creator):
         node_meta_type = 'Physical',
         modifier=creator, creator=creator
     )
+    activitylog.create_node(creator, nh)
     parent_nh = NodeHandle.objects.get(node_name=parent_name, node_type=type_parent)
-    place_child_in_parent(nh.get_node(), parent_nh.node_id)
+    place_child_in_parent(creator, nh.get_node(), parent_nh.node_id)
     return nh.get_node()
 
-
-def place_physical_in_location(nh, node, location_id):
+def place_physical_in_location(user, nh, node, location_id):
     """
     Places a physical node in a rack or on a site. Also converts it to a
     physical node if it still is a logical one.
@@ -605,7 +587,8 @@ def place_physical_in_location(nh, node, location_id):
             # Convert Uses relationships to Owns.
             user_relationships = node.Uses.incoming
             for rel in user_relationships:
-                set_owner(node, rel.start.id)
+                set_owner(user, node, rel.start.id)
+                activitylog.delete_relationship(user, rel)
                 nc.delete_relationship(nc.neo4jdb, rel)
     location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
     rel_exist = nc.get_relationships(node, location_node, 'Located_in')
@@ -620,11 +603,12 @@ def place_physical_in_location(nh, node, location_id):
         # Remove the old location(s) and create a new
         for rel in iter2list(node.Located_in.outgoing):
             nc.delete_relationship(nc.neo4jdb, rel)
-        nc.create_relationship(nc.neo4jdb, node,
+        rel = nc.create_relationship(nc.neo4jdb, node,
             location_node, 'Located_in')
+        activitylog.create_relationship(user, rel)
     return nh, node
 
-def place_child_in_parent(node, parent_id):
+def place_child_in_parent(user, node, parent_id):
     """
     Places a child node in a parent node with a Has relationship.
     """
@@ -640,12 +624,14 @@ def place_child_in_parent(node, parent_id):
     else:
         # Remove the old parent(s) and create a new
         for rel in iter2list(node.Has.incoming):
+            activitylog.delete_relationship(user, rel)
             nc.delete_relationship(nc.neo4jdb, rel)
-        nc.create_relationship(nc.neo4jdb, parent_node,
+        rel = nc.create_relationship(nc.neo4jdb, parent_node,
             node, 'Has')
+        activitylog.create_relationship(user, rel)
     return node
 
-def connect_physical(node, other_node_id):
+def connect_physical(user, node, other_node_id):
     """
     Connects a cable to a physical node.
     """
@@ -659,11 +645,12 @@ def connect_physical(node, other_node_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        nc.create_relationship(nc.neo4jdb, node, other_node,
+        rel = nc.create_relationship(nc.neo4jdb, node, other_node,
             'Connected_to')
+        activitylog.create_relationship(user, rel)
     return node
 
-def set_owner(node, owner_node_id):
+def set_owner(user, node, owner_node_id):
     """
     Creates or updates an Owns relationship between the node and the
     owner node.
@@ -679,11 +666,12 @@ def set_owner(node, owner_node_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        nc.create_relationship(nc.neo4jdb, owner_node, node,
+        rel = nc.create_relationship(nc.neo4jdb, owner_node, node,
             'Owns')
+        activitylog.create_relationship(user, rel)
     return node
 
-def set_user(node, user_node_id):
+def set_user(user, node, user_node_id):
     """
     Creates or updates an Uses relationship between the node and the
     owner node.
@@ -699,11 +687,12 @@ def set_user(node, user_node_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        nc.create_relationship(nc.neo4jdb, user_node, node,
+        rel = nc.create_relationship(nc.neo4jdb, user_node, node,
             'Uses')
+        activitylog.create_relationship(user, rel)
     return node
 
-def set_provider(node, provider_node_id):
+def set_provider(user, node, provider_node_id):
     """
     Creates or updates an Provides relationship between the node and the
     owner node.
@@ -721,19 +710,21 @@ def set_provider(node, provider_node_id):
     else:
         # Remove the old provider and create a new
         for rel in iter2list(node.Provides.incoming):
+            activitylog.delete_relationship(user, rel)
             nc.delete_relationship(nc.neo4jdb, rel)
-        nc.create_relationship(nc.neo4jdb, provider_node, node,
+        rel = nc.create_relationship(nc.neo4jdb, provider_node, node,
             'Provides')
+        activitylog.create_relationship(user, rel)
     return node
 
-def set_depends_on(node, depends_on_node_id):
+def set_depends_on(user, node, depends_on_node_id):
     """
     Creates or updates an Depends_on relationship between the node and the
     owner node.
     Returns the node.
     """
-    depends_on_node_id = nc.get_node_by_id(nc.neo4jdb,  depends_on_node_id)
-    rel_exist = nc.get_relationships(node, depends_on_node_id, 'Depends_on')
+    depends_on_node = nc.get_node_by_id(nc.neo4jdb,  depends_on_node_id)
+    rel_exist = nc.get_relationships(node, depends_on_node, 'Depends_on')
     # If the location is the same as before just update relationship
     # properties
     if rel_exist:
@@ -742,8 +733,30 @@ def set_depends_on(node, depends_on_node_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        nc.create_relationship(nc.neo4jdb, node, depends_on_node_id,
+        rel = nc.create_relationship(nc.neo4jdb, node, depends_on_node,
             'Depends_on')
+        activitylog.create_relationship(user, rel)
+    return node
+
+def set_responsible_for(user, node, responsible_for_node_id):
+    """
+    Creates or updates an Responsible_for relationship between the node and the
+    site owner node.
+    Returns the node.
+    """
+    responsible_for_node = nc.get_node_by_id(nc.neo4jdb, responsible_for_node_id)
+    rel_exist = nc.get_relationships(responsible_for_node, node, 'Responsible_for')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        rel = nc.create_relationship(nc.neo4jdb, responsible_for_node, node,
+            'Responsible_for')
+        activitylog.create_relationship(user, rel)
     return node
 
 def get_hostname_from_address(ip_address):

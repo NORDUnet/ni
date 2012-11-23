@@ -41,10 +41,28 @@
                 {% for entry in activities %}
                     <tr>
                         <td>
-                            <span class="label label-info">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                            {% if entry.verb == 'create' %}
+                                <span class="label label-success">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                            {% elif entry.verb == 'delete' %}
+                                <span class="label label-important">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                            {% else %}
+                                <span class="label label-info">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                            {% endif %}
                             {% if entry.data.noclook.action_type == 'node_property' %}
                                 <strong>{{ entry.actor }} updated <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
                                 <p>{{ entry.data.noclook.property }}: {{ entry.data.noclook.value_before|default:"<em>No value</em>" }} <i class="icon-arrow-right"></i> {{ entry.data.noclook.value_after|default:"<em>No value</em>" }}</p>
+                            {% elif entry.data.noclook.action_type == 'node' %}
+                                {% if entry.verb == 'create' %}
+                                    <strong>{{ entry.actor }} created <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
+                                {% else %}
+                                    <strong>{{ entry.actor }} deleted {{ entry.data.noclook.object_name }}</strong>
+                                {% endif %}
+                            {% elif entry.data.noclook.action_type == 'relationship' %}
+                                {% if entry.verb == 'create' %}
+                                    <strong>{{ entry.actor }} created {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                {% else %}
+                                    <strong>{{ entry.actor }} deleted {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                {% endif %}
                             {% else %}
                                 {{ entry.data.noclook }}
                             {% endif %}
