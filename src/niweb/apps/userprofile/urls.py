@@ -12,5 +12,6 @@ admin.autodiscover()
 
 urlpatterns = patterns('niweb.apps.userprofile.views',
     url(r'^$', 'list_userprofiles'),
-    url(r'^(?P<userprofile_id>\d+)/$', 'userprofile_detail'),
+    url(r'^(?P<userprofile_id>\d+)/all$', 'userprofile_detail'),
+    url(r'^(?P<userprofile_id>\d+)/$', 'userprofile_detail', {'num_act': 25}),
 )
