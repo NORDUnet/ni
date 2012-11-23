@@ -191,7 +191,7 @@ def new_port(request, **kwargs):
             h.form_update_node(request.user, node, form, keys)
             if kwargs.get('parent_id', None):
                 try:
-                    h.place_child_in_parent(node, kwargs['parent_id'])
+                    h.place_child_in_parent(request.user, node, kwargs['parent_id'])
                 except NoRelationshipPossible:
                     nh.delete()
                     form = forms.NewSiteForm(request.POST)
@@ -306,7 +306,7 @@ def new_nordunet_service(request, **kwargs):
             h.form_update_node(request.user, node, form, keys)
             if form.cleaned_data['relationship_provider']:
                 provider_id = form.cleaned_data['relationship_provider']
-                h.set_provider(node, provider_id)
+                h.set_provider(request.user, node, provider_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/create_nordunet_service.html', {'form': form},
@@ -336,7 +336,7 @@ def new_nordunet_optical_link(request, **kwargs):
             h.form_update_node(request.user, node, form, keys)
             if form.cleaned_data['relationship_provider']:
                 provider_id = form.cleaned_data['relationship_provider']
-                h.set_provider(node, provider_id)
+                h.set_provider(request.user, node, provider_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/create_nordunet_optical_link.html', {'form': form},
@@ -367,7 +367,7 @@ def new_nordunet_optical_path(request, **kwargs):
             h.form_update_node(request.user, node, form, keys)
             if form.cleaned_data['relationship_provider']:
                 provider_id = form.cleaned_data['relationship_provider']
-                h.set_provider(node, provider_id)
+                h.set_provider(request.user, node, provider_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/create_nordunet_optical_path.html', {'form': form},
