@@ -36,6 +36,9 @@
     </div>
     <div class="section">
         <h2>Activities</h2>
+        {% if num_act %}
+            Showing the {{ num_act }} latest activites. <a href="all" class="btn btn-mini pull-right">Show all</a>
+        {% endif %}
         {% if activities %}
             <table class="table">
                 {% for entry in activities %}

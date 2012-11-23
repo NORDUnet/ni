@@ -13,9 +13,12 @@ def list_userprofiles(request):
         context_instance=RequestContext(request))
 
 @login_required
-def userprofile_detail(request, userprofile_id):
+def userprofile_detail(request, userprofile_id, num_act=None):
     profile = get_object_or_404(UserProfile, pk=userprofile_id)
-    activities = actor_stream(profile.user)
+    if num_act:
+        activities = actor_stream(profile.user)[:num_act]
+    else:
+        activities = actor_stream(profile.user)
     return render_to_response('userprofile/userprofile_detail.html',
-        {'profile': profile, 'activities': activities},
+        {'profile': profile, 'activities': activities, 'num_act': num_act},
         context_instance=RequestContext(request))
