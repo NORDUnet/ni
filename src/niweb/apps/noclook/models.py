@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.db import models, utils
 from django.contrib.auth.models import User
-from django.dispatch.dispatcher import receiver
-from django.db.models.signals import post_save
+from django.contrib.comments.signals import comment_was_posted, comment_was_flagged
+from django.dispatch import receiver
 from django.contrib.comments import Comment
-from django.db.models import Max
+from actstream import action
 
 import norduni_client as nc
 
@@ -201,3 +201,29 @@ class NordunetUniqueId(UniqueId):
 
     def __unicode__(self):
         return unicode('NORDUnet: %s' % self.unique_id)
+
+
+## Signals
+@receiver(comment_was_posted, dispatch_uid="apps.noclook.models")
+def comment_posted_handler(sender, comment, request, **kwargs):
+    action.send(
+        comment.user,
+        verb='create',
+        action_object=comment,
+        target=comment.content_object,
+        noclook={
+            'action_type': 'comment',
+        }
+    )
+
+@receiver(comment_was_flagged, dispatch_uid="apps.noclook.models")
+def comment_removed_handler(sender, comment, flag, created, request, **kwargs):
+    action.send(
+        comment.user,
+        verb='delete',
+        action_object=comment,
+        target=comment.content_object,
+        noclook={
+            'action_type': 'comment',
+            }
+    )

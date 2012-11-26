@@ -66,6 +66,12 @@
                                 {% else %}
                                     <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
                                 {% endif %}
+                            {% elif entry.data.noclook.action_type == 'comment' %}
+                                {% if entry.verb == 'create' %}
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> <a href="{{ entry.action_object.get_absolute_url }}">commented</a> on <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                 {% else %}
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted a <a href="{{ entry.action_object.get_absolute_url }}">comment</a> from <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                {% endif %}
                             {% else %}
                                 {{ entry.data.noclook }}
                             {% endif %}
