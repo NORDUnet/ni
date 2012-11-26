@@ -70,7 +70,7 @@
                                 {% if entry.verb == 'create' %}
                                     <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> <a href="{{ entry.action_object.get_absolute_url }}">commented</a> on <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
                                  {% else %}
-                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted a <a href="{{ entry.action_object.get_absolute_url }}">comment</a> from <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted a comment from <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
                                 {% endif %}
                             {% else %}
                                 {{ entry.data.noclook }}
