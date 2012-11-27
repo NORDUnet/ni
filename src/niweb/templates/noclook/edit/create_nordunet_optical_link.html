@@ -13,19 +13,15 @@
         <form action="." method="post">{% csrf_token %}
             <h3>Link Type</h3>
             {{ form.link_type }}
-            <br />
-            <br />
             <h3>Interface Type</h3>
             {{ form.interface_type }}
-            <br />
-            <br />
             <h3>Operational State</h3>
             {{ form.operational_state }}
-            <br />
-            <br />
             <h3>Description (optional)</h3>
             {{ form.description }}
             <span class="help-block">{{ form.description.help_text }}</span>
+            <h3>Provider (optional)</h3>
+            {{ form.relationship_provider }}
             <br />
             <br />
             <input type="submit" value="Save" class="btn btn-primary" />

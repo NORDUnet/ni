@@ -282,8 +282,11 @@ def consume_noclook(json_list):
             # Add the node to other indexes needed for NOCLook
             add_node_to_indexes(node)
             try:
-                print 'Added node %d: %s %s %s. Handle ID: %d' % (node.id,
-                    node['name'], node['node_type'], meta_type, nh.handle_id)
+                try:
+                    print 'Added node %d: %s %s %s. Handle ID: %d' % (node.id,
+                        node['name'], node['node_type'], meta_type, nh.handle_id)
+                except UnicodeError:
+                    pass
             except KeyError as e:
                 print e
                 print 'Handle ID: %d, node ID: %d' % (nh.handle_id, node.id)

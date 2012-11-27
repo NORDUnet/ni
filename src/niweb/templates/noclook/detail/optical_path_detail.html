@@ -49,6 +49,14 @@
                 <tr>
                     <th>ENRs:</th><td>{% for enr in node.enrs %}{{ enr }}{% if not forloop.last %},<br>{% endif %}{% endfor %}</td>
                 </tr>
+                <tr>
+                    <th>Provider:</th>
+                    <td>
+                        {% for provider in providers %}
+                            <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a><br>
+                        {% endfor %}
+                    </td>
+                </tr>
             </table>
             {% if node.description %}
                 <div>
@@ -64,14 +72,14 @@
             <table class="table">
                 {% if node.noclook_auto_manage %}
                     <tr>
-                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                     </tr>
                 {% endif %}
                 <tr>
-                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
                 </tr>
                 <tr>
-                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
                 </tr>
             </table>
         </div>

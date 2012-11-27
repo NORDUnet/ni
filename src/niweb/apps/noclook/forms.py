@@ -185,7 +185,7 @@ class EditSiteForm(forms.Form):
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
     owner_site_name = forms.CharField(required=False)
-    url = forms.URLField(required=False)
+    url = forms.URLField(required=False, help_text='An URL to more information about the site.')
     relationship_site_owner = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
                               
@@ -385,6 +385,10 @@ class EditProviderForm(forms.Form):
 
 
 class NewServiceForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewServiceForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
     name = forms.CharField(required=False,
                            help_text='Name will only be available for manually named service types.')
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
@@ -395,6 +399,7 @@ class NewServiceForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
         id_generator_name = None # UniqueIdGenerator instance name
@@ -450,28 +455,28 @@ class NewNordunetServiceForm(NewServiceForm):
         return cleaned_data
 
 
-class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
-
-    l2vpn_id = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-
-    class Meta(NewNordunetServiceForm.Meta):
-        l2vpn_id_generator_name = 'nordunet_vpn_id'
-
-
-    def clean(self):
-        """
-        Checks that project_end_date was not omitted if service is of type project.
-        """
-        cleaned_data = super(NewNordunetL2vpnServiceForm, self).clean()
-        if not cleaned_data['l2vpn_id']:
-            if not self.Meta.l2vpn_id_generator_name:
-                raise Exception('You have to set l2vpn_id_generator_name in form Meta class.')
-            try:
-                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.l2vpn_id_generator_name)
-                cleaned_data['l2vpn_id'] = id_generator.get_id()
-            except UniqueIdGenerator.DoesNotExist as e:
-                raise e
-        return cleaned_data
+#class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
+#
+#    l2vpn_id = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+#
+#    class Meta(NewNordunetServiceForm.Meta):
+#        l2vpn_id_generator_name = 'nordunet_vpn_id'
+#
+#
+#    def clean(self):
+#        """
+#        Checks that project_end_date was not omitted if service is of type project.
+#        """
+#        cleaned_data = super(NewNordunetL2vpnServiceForm, self).clean()
+#        if not cleaned_data['l2vpn_id']:
+#            if not self.Meta.l2vpn_id_generator_name:
+#                raise Exception('You have to set l2vpn_id_generator_name in form Meta class.')
+#            try:
+#                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.l2vpn_id_generator_name)
+#                cleaned_data['l2vpn_id'] = id_generator.get_id()
+#            except UniqueIdGenerator.DoesNotExist as e:
+#                raise e
+#        return cleaned_data
 
 
 class EditServiceForm(forms.Form):
@@ -517,6 +522,10 @@ class EditServiceForm(forms.Form):
 
 
 class NewOpticalLinkForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewOpticalLinkForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
         widget=forms.widgets.Select)
@@ -526,6 +535,7 @@ class NewOpticalLinkForm(forms.Form):
     description = forms.CharField(required=False,
         widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
         help_text='Short description of the optical link.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
         id_generator_name = None # UniqueIdGenerator instance name
@@ -583,6 +593,10 @@ class EditOpticalLinkForm(forms.Form):
 
 
 class NewOpticalPathForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewOpticalPathForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
                                 widget=forms.widgets.Select)
@@ -593,6 +607,7 @@ class NewOpticalPathForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
         id_generator_name = None # UniqueIdGenerator instance name

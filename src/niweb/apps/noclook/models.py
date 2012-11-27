@@ -175,29 +175,6 @@ class UniqueIdGenerator(models.Model):
     save.alters_data = True
 
 
-#class FreeRangeManager(models.Manager):
-#    """
-#    A manager that helps finding free ranged of NORDUnet IDs to reserve.
-#    """
-#    def find_range(self, min_base_id, max_base_id, quantity):
-#        """
-#        Recursively tries to find an unused range of quantity ids between min and max
-#        base id.
-#        """
-#        for i in range(min_base_id, max_base_id):
-#            self.get()
-#
-#    def reserve_range(self, min_base_id, quantity):
-#        """
-#        Reserves and returns a list of previous unused ids for the specified quantity.
-#        """
-#        max_base_id = self.aggregate(Max('base_id'))
-#        range = self.find_range(min_base_id, max_base_id, quantity)
-#        # TODO
-#        # Create IDs and set reserved = True
-#        # Return list of IDs
-
-
 class UniqueId(models.Model):
     """
     Table for reserving ids and to help ensuring uniqueness across the
