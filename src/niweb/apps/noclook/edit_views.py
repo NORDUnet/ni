@@ -197,6 +197,8 @@ def edit_cable(request, handle_id):
     if request.POST:
         form = forms.EditCableForm(request.POST)
         if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, node, form)
             # Cable specific update
             if form.cleaned_data['telenor_trunk_id']:
                 if node['name'] != form.cleaned_data['telenor_trunk_id']:
@@ -211,20 +213,6 @@ def edit_cable(request, handle_id):
                             'name',
                             pre_value,
                             form.cleaned_data['telenor_trunk_id']
-                        )
-            elif form.cleaned_data['global_crossing_circuit_id']:
-                if node['name'] != form.cleaned_data['global_crossing_circuit_id']:
-                    pre_value = node['name']
-                    with nc.neo4jdb.transaction:
-                        node['name'] = form.cleaned_data['global_crossing_circuit_id']
-                        nh.node_name = form.cleaned_data['global_crossing_circuit_id']
-                        nh.save()
-                        activitylog.update_node_property(
-                            request.user,
-                            nh,
-                            'name',
-                            pre_value,
-                            form.cleaned_data['global_crossing_circuit_id']
                         )
             # Update search index for name
             index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
