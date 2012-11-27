@@ -187,8 +187,7 @@ def edit_site_owner(request, handle_id):
         return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'form': form, 'node': node},
                                 context_instance=RequestContext(request))
-#Global Crossing circuit ID should not be set as cable name.
-#Added standard form update function to edit_cable.
+
 @login_required
 def edit_cable(request, handle_id):
     if not request.user.is_staff:

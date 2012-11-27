@@ -48,6 +48,11 @@
                 <th>TN1 number:</th><td>{{ node.telenor_tn1_number }}</td>
             </tr>
             {% endif %}
+            {% if node.global_crossing_circuit_id %}
+                <tr>
+                    <th>Circuit ID:</th><td>{{ node.global_crossing_circuit_id }}</td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">
