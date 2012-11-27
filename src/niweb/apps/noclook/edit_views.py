@@ -187,7 +187,8 @@ def edit_site_owner(request, handle_id):
         return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'form': form, 'node': node},
                                 context_instance=RequestContext(request))
-
+#Global Crossing circuit ID should not be set as cable name.
+#Added standard form update function to edit_cable.
 @login_required
 def edit_cable(request, handle_id):
     if not request.user.is_staff:
@@ -198,16 +199,13 @@ def edit_cable(request, handle_id):
     if request.POST:
         form = forms.EditCableForm(request.POST)
         if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, node, form)
             # Cable specific update
             if form.cleaned_data['telenor_trunk_id']:
                 with nc.neo4jdb.transaction:
                     node['name'] = form.cleaned_data['telenor_trunk_id']
                     nh.node_name = form.cleaned_data['telenor_trunk_id']
-                    nh.save()
-            elif form.cleaned_data['global_crossing_circuit_id']:
-                with nc.neo4jdb.transaction:
-                    node['name'] = form.cleaned_data['global_crossing_circuit_id']
-                    nh.node_name = form.cleaned_data['global_crossing_circuit_id']
                     nh.save()
             # Update search index for name
             index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
