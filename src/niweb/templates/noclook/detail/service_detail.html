@@ -96,10 +96,10 @@
                     </tr>
                 {% endif %}
                 <tr>
-                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title }}</td>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
                 </tr>
                 <tr>
-                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                    <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
                 </tr>
             </table>
         </div>
@@ -150,7 +150,7 @@
                 <tbody>
                 {% for hit in depend_out %}
                     <tr>
-                        <td><a href="{% noclook_node_to_url hit.dep %}">{{ hit.root.name }} {{ hit.parent.name }} {{ hit.dep.name }}</a></td>
+                        <td><a href="{% noclook_node_to_url hit.dep %}">{{ hit.grand_parent.name }} {% if hit.grand_parent %}{{ hit.parent.name }}.{{ hit.dep.name }}{% else %}{{ hit.parent.name }} {{ hit.dep.name }}{% endif %}</a></td>
                         <td>{{ hit.dep.node_type }}</td>
                         <td>{{ hit.dep.description }}</td>
                     </tr>
