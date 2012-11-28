@@ -105,7 +105,7 @@ def insert_interface_unit(interf_node, unit):
     """
     # Unit numbers are unique per interface
     create = True
-    for rel in interf_node.Depends_on.incoming:
+    for rel in interf_node.Part_of.incoming:
         if rel.start['node_type'] == 'Unit' and int(rel.start['name']) == int(unit['unit']):
             create = False
             node = rel.start
@@ -124,14 +124,14 @@ def insert_interface_unit(interf_node, unit):
             node['ip_addresses'] = unit['address']
         if unit['vlanid']:
             node['vlanid'] = unit['vlanid']
-    rels = nc.get_relationships(node, interf_node, 'Depends_on')
+    rels = nc.get_relationships(node, interf_node, 'Part_of')
     if rels:
         for rel in rels:
             h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
     else:
         # Only create a relationship if it doesn't exist
         rel = nc.create_relationship(nc.neo4jdb, node, interf_node,
-                                        'Depends_on')
+                                        'Part_of')
         h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
     # Add the node description and IP addresses to search index
     h.update_node_search_index(nc.neo4jdb, node)

@@ -82,7 +82,7 @@ def get_children(request, node_id, slug=None):
     q = '''                   
         START parent=node({id})
         MATCH parent--child
-        WHERE (parent-[:Has]->child or parent<-[:Located_in]-child or (parent<-[:Depends_on]-child and child.node_type = "Unit")) %s
+        WHERE (parent-[:Has]->child or parent<-[:Located_in|Part_of]-child) %s
         RETURN child
         ORDER BY child.node_type, child.name
         ''' % type_filter

@@ -148,13 +148,13 @@
                     {% if depends_on %}
                         {% load noclook_tags %}
                         <h4>Remove depends on relationship</h4>
-                        {% for depend_on in depends_on %}
+                        {% for hit in depends_on %}
                             <div class="row">
                                 <div class="span5">
-                                    Depends on <a href="{% noclook_node_to_url depend_on.dep %}">{{ depend_on.dep.name }} {{ depend_on.parent.name }}</a>
+                                    Depends on <a href="{% noclook_node_to_url hit.dep %}">{{ hit.grand_parent.name }} {% if hit.grand_parent %}{{ hit.parent.name }}.{{ hit.dep.name }}{% else %}{{ hit.parent.name }} {{ hit.dep.name }}{% endif %}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ depend_on.dep_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                    <a href="relationship/{{ hit.dep_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
