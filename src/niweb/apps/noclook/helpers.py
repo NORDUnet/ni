@@ -376,7 +376,7 @@ def get_depends_on_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[?:Has*1..]->port<-[:Depends_on]-port_logical, node<-[?:Depends_on]-direct_logical
+        MATCH node-[?:Has*1..]->port<-[:Depends_on|Part_of]-port_logical, node<-[?:Depends_on]-direct_logical
         RETURN port, port_logical, direct_logical
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
@@ -398,7 +398,7 @@ def get_depends_on_router(router):
     """
     q = '''
         START router=node({id})
-        MATCH router-[:Has]->port<-[?:Depends_on]-logical
+        MATCH router-[:Has]->port<-[?:Depends_on|Part_of]-logical
         RETURN port, collect(logical) as depends_on_port
         ORDER BY port.name
         '''
@@ -424,8 +424,10 @@ def get_logical_depends_on(logical):
     """
     q = '''
         START node=node({id})
-        MATCH node-[dep_rel:Depends_on]->dep<-[?:Has*1..]-parent
-        RETURN dep,dep_rel,parent
+        MATCH node-[dep_rel:Depends_on|Part_of]->dep
+        WITH dep,dep_rel
+        MATCH dep<-[?:Has*1..]-parent, dep-[?:Part_of]->parent<-[?:Has*1..]-grand_parent
+        RETURN dep,dep_rel,parent,grand_parent
         '''
     return nc.neo4jdb.query(q, id=logical.getId())
 

@@ -48,20 +48,25 @@
                 <th>TN1 number:</th><td>{{ node.telenor_tn1_number }}</td>
             </tr>
             {% endif %}
+            {% if node.global_crossing_circuit_id %}
+                <tr>
+                    <th>Circuit ID:</th><td>{{ node.global_crossing_circuit_id }}</td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
             {% if node.noclook_auto_manage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
-                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
             </tr>
             <tr>
-                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
             </tr>
         </table>
     </div>
