@@ -116,6 +116,36 @@ def form_update_node(user, node, form, property_keys=None):
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
     return True
 
+def dict_update_node(user, node, dictionary, property_keys):
+    """
+    Take a node, a dict and the property keys that should be used to fill the
+    node.
+    Returns True if all non-empty properties where added.
+    """
+    nh = NodeHandle.objects.get(pk=node['handle_id'])
+    for key in property_keys:
+        if dictionary[key] or dictionary[key] == 0:
+            pre_value = node.get_property(key, '')
+            if pre_value != dictionary[key]:
+                with nc.neo4jdb.transaction:
+                    node[key] = dictionary[key]
+                if key == 'name':
+                    nh.node_name = dictionary[key]
+                nh.modifier = user
+                nh.save()
+                activitylog.update_node_property(user, nh, key, pre_value, dictionary[key])
+                update_node_search_index(nc.neo4jdb, node)
+        elif not dictionary[key] and key in node.propertyKeys:
+            if key != 'name': # Never delete name
+                pre_value = node.get_property(key, '')
+                if key in django_settings.SEARCH_INDEX_KEYS:
+                    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                    nc.del_index_item(nc.neo4jdb, index, node, key)
+                with nc.neo4jdb.transaction:
+                    del node[key]
+                activitylog.update_node_property(user, nh, key, pre_value, dictionary[key])
+    return True
+
 def form_to_generic_node_handle(request, form, slug, node_meta_type):
     node_name = form.cleaned_data['name']
     node_type = slug_to_node_type(slug, create=True)
