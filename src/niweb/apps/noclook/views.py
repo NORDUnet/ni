@@ -104,7 +104,7 @@ def list_services(request, service_class=None):
         START node=node:node_types(node_type = "Service")
         MATCH node<-[?:Uses]-user
         %s
-        RETURN node, node.service_class? as service_class, node.service_type? as service_type, node.description? as description, collect(user) as users
+        RETURN node, node.service_class? as service_class, node.service_type? as service_type, node.description? as description, node.operational_state? as operational_state, collect(user) as users
         ORDER BY node.name
         ''' % where_statement
     service_list = nc.neo4jdb.query(q)
@@ -116,7 +116,7 @@ def list_services(request, service_class=None):
 def list_optical_paths(request):
     q = '''
         START node=node:node_types(node_type = "Optical Path")
-        RETURN node, node.framing? as framing, node.capacity? as capacity, node.enrs? as enrs
+        RETURN node, node.framing? as framing, node.capacity? as capacity, node.enrs? as enrs, node.operational_state? as operational_state
         '''
     optical_path_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_optical_paths.html',

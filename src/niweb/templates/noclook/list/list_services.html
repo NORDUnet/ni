@@ -22,14 +22,29 @@
 {% block content %}
     {{ block.super }}
     <h1>{% if service_class %}{{ service_class }}{% endif %} Services</h1>
+    <div class="pull-right">
+        <span class="badge badge-info">Testing</span>
+        <span class="badge badge-warning">Reserved</span>
+        <span class="badge badge-important">Decommissioned</span>
+    </div>
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
-        <th>Service</th><th>Service Class</th><th>Service Type</th><th>Description</th><th>Customers</th><th>End Users</th>
+        <tr>
+            <th>Service</th><th>Service Class</th><th>Service Type</th><th>Description</th><th>Customers</th><th>End Users</th>
+        </tr>
         </thead>
         <tbody>
         {% load noclook_tags %}
         {% for service in service_list %}
-            <tr>
+            {% if service.node.operational_state == "Decommissioned" %}
+                <tr class="decommissioned">
+            {% elif service.node.operational_state == "Reserved" %}
+                <tr class="reserved">
+            {% elif service.node.operational_state == "Testing" %}
+                <tr class="testing">
+            {% else %}
+                <tr>
+            {% endif %}
                 <td><a href="{% noclook_node_to_url service.node %}">{{ service.node.name }}</a></td>
                 <td>{{ service.service_class }}</td>
                 <td>{{ service.service_type }}</td>
