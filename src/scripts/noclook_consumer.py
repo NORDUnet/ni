@@ -169,13 +169,28 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
     node_type = get_node_type(node_type_name)
     try:
         if parent:
-            node_handles = NodeHandle.objects.filter(node_name__in=[node_name]
-                                            ).filter(node_type__in=[node_type])
-            for node_handle in node_handles:
-                node = node_handle.get_node()
-                node_parent = nc.get_root_parent(db, node)
-                if node_parent and parent.id == node_parent[0].id:
-                    return node_handle # NodeHandle for that parent was found
+            q = """
+                START parent=node({id})
+                MATCH parent-->child
+                WHERE child.node_type = {node_type} AND child.name = {node_name}
+                RETURN child
+                """
+            hit = db.query(
+                q,
+                id=parent.getId(),
+                node_type=node_type_name,
+                node_name=node_name
+            ).single
+            if hit:
+                node = hit['child']
+                node_handle = NodeHandle.objects.get(pk=node['handle_id'])
+            #node_handles = NodeHandle.objects.filter(node_name__in=[node_name]
+            #                                ).filter(node_type__in=[node_type])
+            #for node_handle in node_handles:
+            #    node = node_handle.get_node()
+            #    node_parent = nc.get_root_parent(db, node)
+            #    if node_parent and parent.id == node_parent[0].id:
+                return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
         pass
