@@ -39,19 +39,14 @@ def list_by_type(request, slug):
         
 @login_required
 def list_peering_partners(request):
-    node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
-    q = Q('node_type', 'Peering Partner')
-    hits = node_types_index.query('%s' % q)
-    partner_list = []
-    for node in hits:
-        partner = {}
-        partner['name'] = node['name']
-        try:
-            partner['as_number'] = node['as_number']
-        except KeyError:
-            partner['as_number'] = ''
-        partner['peering_partner'] = node
-        partner_list.append(partner)
+    q = '''
+        START node=node:node_types(node_type = "Peering Partner")
+        MATCH node-[?:Uses]->peering_group
+        WITH distinct node,peering_group
+        RETURN node, collect(peering_group) as peering_groups
+        ORDER BY node.name
+        '''
+    partner_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_peering_partners.html',
                                 {'partner_list': partner_list},
                                 context_instance=RequestContext(request))
@@ -348,7 +343,7 @@ def peering_partner_detail(request, handle_id):
             if org_address in unit_address:
                 peering_point['if_address'] = unit_rel['ip_address']
                 peering_point['unit'] = unit_rel.end['name']
-                pic = unit_rel.end.Depends_on.outgoing.single.end
+                pic = unit_rel.end.Part_of.outgoing.single.end
                 peering_point['pic'] = pic['name']
                 peering_point['pic_url'] = h.get_node_url(pic)
                 router = nc.get_root_parent(nc.neo4jdb, pic)[0]
