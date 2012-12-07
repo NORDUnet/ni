@@ -115,7 +115,7 @@ def insert_interface_unit(interf_node, unit):
         WHERE unit.name = {unit_name}
         RETURN unit
         """
-    hit = nc.neo4jdb.query(q, id=interf_node.getId(), unit_name=int(unit['unit'])).single
+    hit = nc.neo4jdb.query(q, id=interf_node.getId(), unit_name=unit['unit']).single
     if hit:
         node = hit['unit']
     else:
