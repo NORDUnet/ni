@@ -25,7 +25,6 @@ $(document).ready(
 {% block content %}
 {% load noclook_tags %}
 {{ block.super }}
-{% load noclook_tags %}
 <div class="row">
     <div class="span4">
         <table class="table">
@@ -75,7 +74,12 @@ $(document).ready(
         </thead>
         <tbody>
         {% for port in ports %}
-            <tr>
+            {% noclook_has_expired port.port as expired %}
+            {% if expired %}
+                <tr class="expired">
+            {% else %}
+                <tr>
+            {% endif %}
                 <td><a href="{% noclook_node_to_url port.port %}">{{ port.port.name }}</a></td>
                 <td>{{ port.port.description }}</td>
                 <td>

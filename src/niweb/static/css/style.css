@@ -177,7 +177,12 @@ table.tablesorter thead .header {
  padding-right: 15px;
 }
 
+/* List color coding */
 tr.decommissioned {
+    border-left: 3px #B94A48 solid;
+}
+
+tr.expired {
     border-left: 3px #B94A48 solid;
 }
 
