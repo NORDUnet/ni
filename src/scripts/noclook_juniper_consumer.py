@@ -88,7 +88,7 @@ import norduni_client as nc
 #    }
 #]}
 
-VERBOSE = False
+VERBOSE = True
 
 def insert_juniper_router(name):
     """
@@ -179,6 +179,8 @@ def insert_juniper_interfaces(router_node, interfaces):
                 activitylog.create_relationship(user, rel)
             if VERBOSE:
                 print '%s done.' % node_handle
+        elif VERBOSE:
+                print 'Interface %s ignored.' % name
 
 def get_peering_partner(peering):
     """
