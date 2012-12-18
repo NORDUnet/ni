@@ -87,7 +87,7 @@ import norduni_client as nc
 #    }
 #]}
 
-def insert_juniper_router(name):
+def insert_juniper_router(name, version):
     """
     Inserts a physical meta type node of the type Router.
     Returns the node created.
@@ -95,6 +95,9 @@ def insert_juniper_router(name):
     node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 'Router', 
                                             'physical')
     node = node_handle.get_node()
+    # TODO: Change to the new way after upgrade
+    with nc.neo4jdb.transaction:
+        node['version'] = version
     h.set_noclook_auto_manage(nc.neo4jdb, node, True)
     h.update_node_search_index(nc.neo4jdb, node)
     return node
@@ -305,7 +308,8 @@ def consume_juniper_conf(json_list):
     bgp_peerings = []
     for i in json_list:
         name = i['host']['juniper_conf']['name']
-        router_node = insert_juniper_router(name)
+        version = i['host']['juniper_conf']['version']
+        router_node = insert_juniper_router(name, version)
         interfaces = i['host']['juniper_conf']['interfaces']
         insert_juniper_interfaces(router_node,
                             interfaces)
