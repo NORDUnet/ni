@@ -43,6 +43,9 @@ $(document).ready(
                         </tr>
                     {% endif %}
                 {% endfor %}
+            <tr>
+                <th>JUNOS Version:</th><td>{{ node.version }}</td>
+            </tr>
         </table>
     </div>
     <div class="span3">
