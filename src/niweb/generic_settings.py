@@ -59,7 +59,7 @@ NEO4J_MAX_DATA_AGE = '24' # hours
 # Properties that should be indexed in the search node or relationship index.
 SEARCH_INDEX_KEYS = ['name', 'description', 'ip_address', 'ip_addresses',
                      'as_number', 'hostname', 'hostnames', 'telenor_tn1_number',
-                     'nordunet_id']
+                     'nordunet_id', 'version']
 # Other indexes used
 OTHER_INDEXES = ['node_types']
 
