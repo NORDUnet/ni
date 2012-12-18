@@ -8,13 +8,22 @@
     $(document).ready(
         function(){
             $("#connections").tablesorter(
-            {
-                sortList: [[0,0]],
-                headers:
-                {},
-                widthFixed: true,
-                widgets: ['zebra']
-            });
+                {
+                    sortList: [[0,0]],
+                    headers:
+                    {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#services").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers:
+                    {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $('#servicecopy').popover();
         }
     );
 </script>
@@ -39,20 +48,25 @@
                 <th>TN1 number:</th><td>{{ node.telenor_tn1_number }}</td>
             </tr>
             {% endif %}
+            {% if node.global_crossing_circuit_id %}
+                <tr>
+                    <th>Circuit ID:</th><td>{{ node.global_crossing_circuit_id }}</td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
             {% if node.noclook_auto_manage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
-                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
             </tr>
             <tr>
-                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
             </tr>
         </table>
     </div>
@@ -61,6 +75,34 @@
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
+<div class="section">
+    <h3>Services dependent on cable</h3>
+    {% if services %}
+        <table id="services" class="tablesorter" cellspacing="1">
+            <thead>
+            <tr>
+                <th>Service ID</th><th>Description</th><th>Customer</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for hit in services %}
+                <tr>
+                    <td><a href="{% noclook_node_to_url hit.service %}">{{ hit.service.name }}</a></td>
+                    <td>{{ hit.service.description }}</td>
+                    <td>
+                        {% for customer in hit.customers %}
+                            <a href="{% noclook_node_to_url customer %}">{{ customer.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <a id="servicecopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for hit in services %}{{ hit.service.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+    {% else %}
+        No services found.
+    {% endif %}
+</div>
 <div class="section">
     <h3>Connections</h3>
     {% if connections %}

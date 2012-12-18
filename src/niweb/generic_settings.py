@@ -115,6 +115,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.http.ConditionalGetMiddleware',
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -152,6 +153,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'tastypie',
     'djangosaml2',
+    'south',
     'niweb_core',
     'apps.userprofile',
     'apps.noclook',

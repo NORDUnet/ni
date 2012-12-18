@@ -8,15 +8,19 @@ Created on Mon Apr  2 11:17:57 2012
 from django.template.defaultfilters import slugify
 import socket
 from django.conf import settings as django_settings
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+from django.db import IntegrityError, transaction
 from datetime import datetime, timedelta
 import csv, codecs, cStringIO
 import xlwt
-from django.http import HttpResponse
+
 
 try:
-    from niweb.apps.noclook.models import NodeHandle
+    from niweb.apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
 except ImportError:
-    from apps.noclook.models import NodeHandle
+    from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
+from norduni_client_exceptions import UniqueNodeError
 import norduni_client as nc
 
 class UnicodeWriter:
@@ -60,6 +64,85 @@ def get_node_url(node):
     except TypeError:
         # Node is most likely a None value
         return ''
+
+def get_nh_node(node_handle_id):
+    """
+    Takes a node handle id and returns the node handle and the node.
+    """
+    nh = get_object_or_404(NodeHandle, pk=node_handle_id)
+    node = nh.get_node()
+    return nh, node
+
+def form_update_node(user, node, form, property_keys=None):
+    """
+    Take a node, a form and the property keys that should be used to fill the
+    node if the property keys are omitted the form.base_fields will be used.
+    Returns True if all non-empty properties where added else False and
+    rollbacks the node changes.
+    """
+    if not property_keys:
+        property_keys = []
+    meta_fields = ['relationship_location', 'relationship_end_a',
+                   'relationship_end_b', 'relationship_parent',
+                   'relationship_provider', 'relationship_end_user',
+                   'relationship_customer', 'relationship_depends_on']
+    nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
+    if not property_keys:
+        for field in form.base_fields.keys():
+            if field not in meta_fields:
+                property_keys.append(field)
+    for key in property_keys:
+        try:
+            if form.cleaned_data[key] or form.cleaned_data[key] == 0:
+                pre_value = node.getProperty(key, '')
+                if pre_value != form.cleaned_data[key]:
+                    with nc.neo4jdb.transaction:
+                        node[key] = form.cleaned_data[key]
+                    if key == 'name':
+                        nh.node_name = form.cleaned_data[key]
+                    nh.modifier = user
+                    nh.save()
+                    update_node_search_index(nc.neo4jdb, node)
+            elif not form.cleaned_data[key] and key != 'name':
+                with nc.neo4jdb.transaction:
+                    del node[key]
+                if key in django_settings.SEARCH_INDEX_KEYS:
+                    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                    nc.del_index_item(nc.neo4jdb, index, key)
+        except KeyError:
+            return False
+        except Exception:
+            # If the property type differs from what is allowed in node
+            # properties. Force string as last alternative.
+            with nc.neo4jdb.transaction:
+                node[key] = unicode(form.cleaned_data[key])
+    return True
+
+def form_to_generic_node_handle(request, form, slug, node_meta_type):
+    node_name = form.cleaned_data['name']
+    node_type = slug_to_node_type(slug, create=True)
+    node_handle = NodeHandle(node_name=node_name,
+        node_type=node_type,
+        node_meta_type=node_meta_type,
+        modifier=request.user, creator=request.user)
+    node_handle.save()
+    set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
+    return node_handle
+
+def form_to_unique_node_handle(request, form, slug, node_meta_type):
+    node_name = form.cleaned_data['name']
+    node_type = slug_to_node_type(slug, create=True)
+    try:
+        node_handle = NodeHandle.objects.get(node_name=node_name, node_type=node_type)
+        raise UniqueNodeError(node_handle.get_node())
+    except NodeHandle.DoesNotExist:
+        node_handle = NodeHandle.objects.create(node_name=node_name,
+            node_type=node_type,
+            node_meta_type=node_meta_type,
+            modifier=request.user,
+            creator=request.user)
+        set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
+    return node_handle
 
 def set_noclook_auto_manage(db, item, auto_manage):
     """
@@ -217,33 +300,24 @@ def nodes_to_geoff(node_list):
     """
     # TODO:
     pass
-    
-#def get_location(node):
-#    """
-#    Returns a list of the nodes locations as dicts with name and url.
-#    """
-#    location = []
-#    rels = iter2list(node.Located_in.outgoing)
-#    for rel in rels:
-#        if rel.end['node_type'] == 'Rack':
-#            # Get where the rack is placed
-#            location += get_place(rel.end)
-#            name = rel.end['name']
-#        else:
-#            name = rel.end['name']
-#        location.append({'node': rel.end, 'name': name})
-#    return location
 
-#def get_place(node):
-#    """
-#    Returns the nodes place in site or other equipment.
-#    """
-#    location = []
-#    rels = iter2list(node.Has.incoming)
-#    for rel in rels:
-#        name = rel.start['name']
-#        location.append({'node': rel.start, 'name': name})
-#    return location
+def slug_to_node_type(slug, create=False):
+    """
+    Returns or creates and returns the NodeType object from the supplied slug.
+    """
+    acronym_types = ['odf'] # TODO: Move to sql db
+    if create:
+        node_type, created = NodeType.objects.get_or_create(slug=slug)
+        if created:
+            if slug in acronym_types:
+                type_name = slug.upper()
+            else:
+                type_name = slug.replace('-', ' ').title()
+            node_type.type = type_name
+            node_type.save()
+    else:
+        node_type = get_object_or_404(NodeType, slug=slug)
+    return node_type
 
 def get_location(node):
     """
@@ -291,7 +365,7 @@ def get_connected_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Has*1..10]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..10]-end
+        MATCH node-[:Has*1..]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..]-end
         RETURN node,porta,r0,cable,r1,portb,end
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
@@ -302,11 +376,47 @@ def get_depends_on_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[?:Has*1..10]->port<-[?:Depends_on]-logical, node<-[?:Depends_on]-logical
-        WHERE node-[:Has]->port OR node<-[:Depends_on]-logical
-        RETURN node,logical,port
+        MATCH node-[?:Has*1..]->port<-[:Depends_on]-port_logical, node<-[?:Depends_on]-direct_logical
+        RETURN port, port_logical, direct_logical
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
+
+# Alternative get_depends_on_equipment query
+#q = '''
+#START node=node({id})
+#MATCH node-[?:Has*1..]->port<-[:Depends_on]-port_logical
+#WITH node, port, collect(port_logical) as port_logicals
+#MATCH node<-[?:Depends_on]-direct_logical
+#return port, port_logicals, collect(direct_logical) as direct_logicals
+#'''
+
+def get_depends_on_router(router):
+    """
+    Get all router ports and what depends on them.
+    :param router: Neo4j node
+    :return: Cypher query iterator
+    """
+    q = '''
+        START router=node({id})
+        MATCH router-[:Has]->port<-[?:Depends_on]-logical
+        RETURN port, collect(logical) as depends_on_port
+        ORDER BY port.name
+        '''
+    return nc.neo4jdb.query(q, id=router.getId())
+
+def get_depends_on_unit(unit):
+    """
+    Get all logical nodes that depends on the Unit.
+    :param unit: Neo4j node
+    :return: Cypher query iterator
+    """
+    q = '''
+        START unit=node({id})
+        MATCH unit<-[:Depends_on]-logical
+        RETURN logical as depends_on_unit
+        ORDER BY logical.name
+        '''
+    return nc.neo4jdb.query(q, id=unit.getId())
 
 def get_logical_depends_on(logical):
     """
@@ -314,8 +424,8 @@ def get_logical_depends_on(logical):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Depends_on]->dep<-[?:Has*1..]-parent
-        RETURN dep,parent
+        MATCH node-[dep_rel:Depends_on]->dep<-[?:Has*1..]-parent
+        RETURN dep,dep_rel,parent
         '''
     return nc.neo4jdb.query(q, id=logical.getId())
 
@@ -356,6 +466,268 @@ def get_units(port):
         '''
     return nc.neo4jdb.query(q, id=port.getId())
 
+def get_customer(service):
+    """
+    Get all nodes with Uses relationship and node_type Customer.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node<-[rel:Uses]-customer
+        WHERE customer.node_type = "Customer"
+        RETURN customer, rel
+        '''
+    return nc.neo4jdb.query(q, id=service.getId())
+
+def get_end_user(service):
+    """
+    Get all nodes with Uses relationship and node_type End User.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node<-[rel:Uses]-end_user
+        WHERE end_user.node_type = "End User"
+        RETURN end_user, rel
+        '''
+    return nc.neo4jdb.query(q, id=service.getId())
+
+def get_services_dependent_on_cable(cable):
+    """
+    Get top services that depends on the supplied cable.
+    :param cable: Neo4j node
+    :return: Cypher ExecutionResult
+    """
+    q = '''
+        START node=node({id})
+        MATCH node-[:Connected_to]->equip
+        WITH equip
+        MATCH equip<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
+        WHERE (service.node_type = 'Service') AND (r is null)
+        WITH distinct service
+        MATCH service<-[:Uses]-user
+        WHERE user.node_type = 'Customer'
+        RETURN service, collect(user) as customers
+        '''
+    return nc.neo4jdb.query(q, id=cable.getId())
+
+def get_services_dependent_on_equipment(equipment):
+    """
+    Get top services that depends on the supplied cable.
+    :param equipment: Neo4j node
+    :return: Cypher ExecutionResult
+    """
+    q = """
+        START node=node({id})
+        MATCH node-[:Has|Depends_on]-()<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
+        WHERE (service.node_type = 'Service') AND (r is null)
+        WITH distinct service
+        MATCH service<-[:Uses]-user
+        WHERE user.node_type = 'Customer'
+        RETURN service, collect(user) as customers
+        """
+    return nc.neo4jdb.query(q, id=equipment.getId())
+
+def get_port(parent_name, port_name):
+    """
+    Parents should be uniquely named and ports should be uniquely named for each parent.
+    :param parent_name: String
+    :param port_name: String
+    :return:port Neo4j node
+    """
+    q = '''
+        START parent=node:search(name = {parent})
+        MATCH parent-[Has*1..]->port
+        WHERE port.node_type = "Port" and port.name = {port}
+        RETURN port
+        '''
+    hits = nc.neo4jdb.query(q, parent=parent_name, port=port_name)
+    try:
+        port = [hit['port'] for hit in hits][0]
+    except IndexError:
+        port = None
+    return port
+
+def create_port(parent_name, parent_type, port_name, creator):
+    """
+    Creates a port with the supplied parent.
+    :param parent_name: String
+    :param port_name: String
+    :param parent_type: String
+    :param creator: Django user
+    :return: Neo4j node
+    """
+    type_port = NodeType.objects.get(type="Port")
+    type_parent = NodeType.objects.get(type=parent_type)
+    nh = NodeHandle.objects.create(
+        node_name = port_name,
+        node_type = type_port,
+        node_meta_type = 'Physical',
+        modifier=creator, creator=creator
+    )
+    parent_nh = NodeHandle.objects.get(node_name=parent_name, node_type=type_parent)
+    place_child_in_parent(nh.get_node(), parent_nh.node_id)
+    return nh.get_node()
+
+
+def place_physical_in_location(nh, node, location_id):
+    """
+    Places a physical node in a rack or on a site. Also converts it to a
+    physical node if it still is a logical one.
+    """
+    # Check if the node is logical
+    meta_type = nc.get_node_meta_type(node)
+    if meta_type == 'logical':
+        with nc.neo4jdb.transaction:
+            # Make the node physical
+            nc.delete_relationship(nc.neo4jdb,
+                iter2list(node.Contains.incoming)[0])
+            physical = nc.get_meta_node(nc.neo4jdb, 'physical')
+            nc._create_relationship(nc.neo4jdb, physical, node, 'Contains')
+            nh.node_meta_type = 'physical'
+            nh.save()
+            # Convert Uses relationships to Owns.
+            user_relationships = node.Uses.incoming
+            for rel in user_relationships:
+                set_owner(node, rel.start.id)
+                nc.delete_relationship(nc.neo4jdb, rel)
+    location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
+    rel_exist = nc.get_relationships(node, location_node, 'Located_in')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        # Remove the old location(s) and create a new
+        for rel in iter2list(node.Located_in.outgoing):
+            nc.delete_relationship(nc.neo4jdb, rel)
+        nc.create_relationship(nc.neo4jdb, node,
+            location_node, 'Located_in')
+    return nh, node
+
+def place_child_in_parent(node, parent_id):
+    """
+    Places a child node in a parent node with a Has relationship.
+    """
+    parent_node = nc.get_node_by_id(nc.neo4jdb,  parent_id)
+    rel_exist = nc.get_relationships(parent_node, node, 'Has')
+    # If the parent is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        # Remove the old parent(s) and create a new
+        for rel in iter2list(node.Has.incoming):
+            nc.delete_relationship(nc.neo4jdb, rel)
+        nc.create_relationship(nc.neo4jdb, parent_node,
+            node, 'Has')
+    return node
+
+def connect_physical(node, other_node_id):
+    """
+    Connects a cable to a physical node.
+    """
+    other_node = nc.get_node_by_id(nc.neo4jdb,  other_node_id)
+    rel_exist = nc.get_relationships(node, other_node, 'Connected_to')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        nc.create_relationship(nc.neo4jdb, node, other_node,
+            'Connected_to')
+    return node
+
+def set_owner(node, owner_node_id):
+    """
+    Creates or updates an Owns relationship between the node and the
+    owner node.
+    Returns the node.
+    """
+    owner_node = nc.get_node_by_id(nc.neo4jdb,  owner_node_id)
+    rel_exist = nc.get_relationships(node, owner_node, 'Owns')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        nc.create_relationship(nc.neo4jdb, owner_node, node,
+            'Owns')
+    return node
+
+def set_user(node, user_node_id):
+    """
+    Creates or updates an Uses relationship between the node and the
+    owner node.
+    Returns the node.
+    """
+    user_node = nc.get_node_by_id(nc.neo4jdb,  user_node_id)
+    rel_exist = nc.get_relationships(node, user_node, 'Uses')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        nc.create_relationship(nc.neo4jdb, user_node, node,
+            'Uses')
+    return node
+
+def set_provider(node, provider_node_id):
+    """
+    Creates or updates an Provides relationship between the node and the
+    owner node.
+    Returns the node.
+    """
+    provider_node = nc.get_node_by_id(nc.neo4jdb,  provider_node_id)
+    rel_exist = nc.get_relationships(node, provider_node, 'Provides')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        # Remove the old provider and create a new
+        for rel in iter2list(node.Provides.incoming):
+            nc.delete_relationship(nc.neo4jdb, rel)
+        nc.create_relationship(nc.neo4jdb, provider_node, node,
+            'Provides')
+    return node
+
+def set_depends_on(node, depends_on_node_id):
+    """
+    Creates or updates an Depends_on relationship between the node and the
+    owner node.
+    Returns the node.
+    """
+    depends_on_node_id = nc.get_node_by_id(nc.neo4jdb,  depends_on_node_id)
+    rel_exist = nc.get_relationships(node, depends_on_node_id, 'Depends_on')
+    # If the location is the same as before just update relationship
+    # properties
+    if rel_exist:
+        # TODO: Change properties here
+        #location_rel = rel_exist[0]
+        #with nc.neo4jdb.transaction:
+        pass
+    else:
+        nc.create_relationship(nc.neo4jdb, node, depends_on_node_id,
+            'Depends_on')
+    return node
+
 def get_hostname_from_address(ip_address):
     """
     Return the DNS name for an IP address or an empty string if
@@ -366,3 +738,100 @@ def get_hostname_from_address(ip_address):
         return socket.gethostbyaddr(str(ip_address))[0]
     except (socket.herror, socket.gaierror):
         return 'Request timed out'
+
+def get_collection_unique_id(unique_id_generator, unique_id_collection):
+    """
+    Return the next available unique id by counting up the id generator until an available id is found
+    in the unique id collection.
+    :param unique_id_generator: UniqueIdGenerator instance
+    :param unique_id_collection: UniqueId subclass instance
+    :return: String unique id
+    """
+    created = False
+    while not created:
+        id = unique_id_generator.get_id()
+        obj, created = unique_id_collection.objects.get_or_create(unique_id=id)
+    return id
+
+def register_unique_id(unique_id_collection, unique_id):
+    """
+    Creates a new Unique ID or unreserves an already created but reserved id.
+    :param unique_id_collection: Instance of a UniqueId subclass.
+    :param unique_id: String
+    :return: True for success, False for failure.
+    """
+    obj, created = unique_id_collection.objects.get_or_create(unique_id=unique_id)
+    if not created and not obj.reserved:
+        raise IntegrityError('ID: %s already in the db and in use.' % unique_id)
+    elif obj.reserved: # ID was reserved, unreserv it.
+        obj.reserved = False
+        obj.save()
+    return True
+
+# TODO: Maybe move this to settings.py?
+def unique_id_map(slug):
+    """
+    :param slug: A slug that specifies the type of object that we want to generate ID for.
+    :return: Tuple of UniqueIdGenerator instance and an optional subclass of UniqueId collection.
+    """
+    m = {
+        'nordunet-cable': (UniqueIdGenerator.objects.get(name='nordunet_cable_id'), NordunetUniqueId),
+    }
+    return m[slug]
+
+def bulk_reserve_id_range(start, end, unique_id_generator, unique_id_collection, reserve_message, reserver):
+    """
+    Reserves IDs start to end in the format used in the unique id generator in the unique id collection without
+    incrementing the unique ID generator.
+
+    bulk_reserve_ids(100, 102, nordunet_service_unique_id_generator, nordunet_unique_id_collection...) would try to
+    reserve NU-S000100, NU-S000101 and NU-S000102 in the NORDUnet unique ID collection.
+
+    :param start: Integer
+    :param end: Integer
+    :param unique_id_generator: Instance of UniqueIdGenerator
+    :param unique_id_collection: Instance of UniqueId subclass
+    :param reserve_message: String
+    :param reserver: Django user object
+    :return: List of reserved unique_id_collection objects.
+    """
+    reserve_list = []
+    prefix = suffix = ''
+    if unique_id_generator.prefix:
+        prefix = unique_id_generator.prefix
+    if unique_id_generator.suffix:
+        suffix = unique_id_generator.suffix
+    for id in range(start, end+1):
+        reserve_list.append(unique_id_collection(
+            unique_id= '%s%s%s' % (prefix, str(id).zfill(unique_id_generator.base_id_length), suffix),
+            reserved = True,
+            reserve_message = reserve_message,
+            reserver = reserver,
+        ))
+    unique_id_collection.objects.bulk_create(reserve_list)
+    return reserve_list
+
+def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, reserve_message, reserver):
+    """
+    Reserves IDs by incrementing the unique ID generator.
+    :param num_of_ids: Number of IDs to reserve.
+    :param unique_id_generator: Instance of UniqueIdGenerator
+    :param unique_id_collection: Instance of UniqueId subclass
+    :param reserve_message: String
+    :param reserver: Django user object
+    :return: List of dicts with reserved ids, reserve message and eventual error message.
+    """
+    reserve_list = []
+    for x in range(0, num_of_ids):
+        id = unique_id_generator.get_id()
+        error_message = ''
+        try:
+            sid = transaction.savepoint()
+            unique_id_collection.objects.create(unique_id=id, reserved=True,
+                reserve_message=reserve_message, reserver=reserver)
+            transaction.savepoint_commit(sid)
+        except IntegrityError:
+            transaction.savepoint_rollback(sid)
+            error_message = 'ID already in database. Manual check needed.'
+        reserve_list.append({'id': id, 'reserve_message': reserve_message, 'error_message': error_message})
+    return reserve_list

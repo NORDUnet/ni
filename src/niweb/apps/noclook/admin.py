@@ -4,13 +4,14 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from niweb.apps.noclook.models import NodeHandle, NodeType, UniqueId
+from niweb.apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
 
 class NodeHandleAdmin(admin.ModelAdmin):
     list_filter = ('node_type', 'creator')
+    search_fields = ['node_name']
     actions = ['delete_object']
     
     # Remove the bulk delete option from the admin interface as it does not
@@ -31,7 +32,7 @@ class NodeHandleAdmin(admin.ModelAdmin):
         else:
             message_bit = "%s NodeHandles were" % deleted
         self.message_user(request, "%s successfully deleted." % message_bit)
-    delete_object.short_description = "Deletes the selected NodeHandles using the delete method"
+    delete_object.short_description = "Delete the selected NodeHandle(s)"
         
 
 class NodeTypeAdmin(admin.ModelAdmin):
@@ -56,16 +57,24 @@ class NodeTypeAdmin(admin.ModelAdmin):
         else:
             message_bit = "%s NodeTypes were" % deleted
         self.message_user(request, "%s successfully deleted." % message_bit)
-    delete_object.short_description = "Deletes the selected NodeType and all NodeHandles of that type"
+    delete_object.short_description = "Delete the selected NodeType and all NodeHandles of that type"
+
+
+class UniqueIdGeneratorAdmin(admin.ModelAdmin):
+    readonly_fields=('last_id', 'next_id',)
 
 
 class UniqueIdAdmin(admin.ModelAdmin):
-    readonly_fields=('last_id', 'next_id',)
+    list_filter = ('reserved', 'created',)
+    list_display = ('unique_id', 'reserve_message', 'created')
+    readonly_fields=('unique_id',)
+    search_fields = ['unique_id']
+
 
 admin.site.register(NodeHandle, NodeHandleAdmin)
 admin.site.register(NodeType, NodeTypeAdmin)
-admin.site.register(ApiKey)
 admin.site.register(ApiAccess)
 admin.site.unregister(User)
-admin.site.register(User,UserModelAdmin)
-admin.site.register(UniqueId, UniqueIdAdmin)
+admin.site.register(User, UserModelAdmin)
+admin.site.register(UniqueIdGenerator, UniqueIdGeneratorAdmin)
+admin.site.register(NordunetUniqueId, UniqueIdAdmin)

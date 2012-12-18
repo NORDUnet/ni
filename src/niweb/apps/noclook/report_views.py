@@ -8,9 +8,11 @@ Created on 2012-06-11 5:48 PM
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from django.http import Http404
 
 from niweb.apps.noclook.forms import get_node_type_tuples
 from niweb.apps.noclook.helpers import nodes_to_csv, nodes_to_xls
+from niweb.apps.noclook.models import NordunetUniqueId
 import norduni_client as nc
 
 @login_required
@@ -81,3 +83,16 @@ def host_users(request, host_user_name=None, form=None):
             {'host_user_name': host_user_name, 'host_users': host_users,
             'num_of_hosts': num_of_hosts, 'hosts': hosts},
             context_instance=RequestContext(request))
+
+@login_required
+def unique_ids(request, organisation=None):
+    if not organisation:
+        return render_to_response('noclook/reports/unique_ids.html', {},
+            context_instance=RequestContext(request))
+    if organisation == 'NORDUnet':
+        id_list = NordunetUniqueId.objects.all().order_by('unique_id')
+    else:
+        raise Http404
+    return render_to_response('noclook/reports/unique_ids.html',
+        {'id_list': id_list, 'organisation': organisation},
+        context_instance=RequestContext(request))

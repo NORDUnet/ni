@@ -91,27 +91,34 @@ $(document).ready(
             {% for item in responsible_relationships %}
                 {% if forloop.first %}
                     <tr>
-                        <th>Site owner:</td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                        <th>Site owner:</th><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</a></td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td></td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</td>
+                        <td></td><td><a href="{% noclook_node_to_url item.start %}">{{item.start.name}}</a></td>
                     </tr>
                 {% endif %}
             {% endfor %}
             <tr>
-                <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}" target="_blank">To Portal</td>
+                <th>More information:</th>
+                <td>
+                    {% if node.url %}
+                        <a href="{{ node.url }}" target="_blank">Link</a>
+                    {% else %}
+                        <a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}" target="_blank">To Portal</a>
+                    {% endif %}
+                </td>
             </tr>
             {% if node.noclook_automanage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
-                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
             </tr>
             <tr>
-                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
             </tr>
         </table>
     </div>

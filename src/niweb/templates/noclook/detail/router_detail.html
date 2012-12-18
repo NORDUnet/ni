@@ -7,12 +7,12 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
-        $("#pics").tablesorter(
+        $("#ports").tablesorter(
         {
             sortList: [[0,0]],
             headers:
             {
-                1 : { sorter: "ipAddress"  },
+                1 : { sorter: "ipAddress"  }
             },
             widthFixed: true,
             widgets: ['zebra']
@@ -52,14 +52,14 @@ $(document).ready(
         <table class="table">
             {% if node.noclook_auto_manage %}
                 <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</a></td>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
             {% endif %}
             <tr>
-                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
             </tr>
             <tr>
-                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator|title }}</td>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
             </tr>
         </table>
     </div>
@@ -70,20 +70,29 @@ $(document).ready(
 <br><br><br>
 <div class="section">
     <h3>Interfaces</h3>
-    {% if pics %}
-    <table id="pics" class="tablesorter" cellspacing="1">
+    {% if ports %}
+    <table id="ports" class="tablesorter" cellspacing="1">
         <thead>
-            <th>PIC</th><th>Description</th><th>Services</th>
+            <tr>
+                <th>Port</th><th>Description</th><th>Units</th><th>Depends on port</th>
+            </tr>
         </thead>
         <tbody>
-        {% for pic in pics %}
+        {% for port in ports %}
             <tr>
-                <td><a href="{% noclook_node_to_url pic.pic %}">{{ pic.pic.name }}</a></td>
-                <td>{{ pic.pic.description }}</td>
+                <td><a href="{% noclook_node_to_url port.port %}">{{ port.port.name }}</a></td>
+                <td>{{ port.port.description }}</td>
                 <td>
-                {% for service in pic.services %}
-                    <a href="{% noclook_node_to_url service %}">{{ service.name }}</a>{% if forloop.last %}{% else %},<br />{% endif %}
-                {% endfor %}
+                    {% for unit in port.units %}
+                        <a href="{% noclook_node_to_url unit %}">{{ unit.node_type }} {{ unit.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for depends in port.depends_on_port %}
+                        {% if depends.dep %}
+                            <a href="{% noclook_node_to_url depends.dep %}">{{ depends.dep.node_type }} {{ depends.dep.name }}</a>{% if depends.unit %} (<a href="{% noclook_node_to_url depends.unit %}">{{ depends.unit.node_type }} {{ depends.unit.name }}</a>){% endif %}{% if forloop.last %}{% else %},<br>{% endif %}
+                        {% endif %}
+                    {% endfor %}
                 </td>
             </tr>
         {% endfor %}
