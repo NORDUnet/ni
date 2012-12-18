@@ -146,7 +146,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     interface names that are not interesting.
     Returns a list with all created nodes.
     """
-    not_interesting_interfaces = re.compile(r'.*\*|\.|all|fxp0.*')
+    not_interesting_interfaces = re.compile(r'.*\*|\.|all|fxp.*|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|pp.*|pip.*|irb.*|demux.*|cbp.*|me.*')
     for i in interfaces:
         name = i['name']
         if name and not not_interesting_interfaces.match(name):
@@ -285,7 +285,6 @@ def insert_juniper_bgp_peerings(bgp_peerings):
     Inserts all BGP peerings for all routers collected by the
     juniper_conf producer. This is to be able to get all the internal
     peerings associated to the right interfaces.
-    Returns a list of all created peering nodes.
     """
     for peering in bgp_peerings:
         ip_service = peering.get('group', 'Unknown Peering Group')
@@ -308,7 +307,7 @@ def consume_juniper_conf(json_list):
     bgp_peerings = []
     for i in json_list:
         name = i['host']['juniper_conf']['name']
-        version = i['host']['juniper_conf']['version']
+        version = i['host']['juniper_conf'].get('version', 'Unknown')
         router_node = insert_juniper_router(name, version)
         interfaces = i['host']['juniper_conf']['interfaces']
         insert_juniper_interfaces(router_node,
