@@ -1,0 +1,9 @@
+*~
+*.pyc
+/logs
+/db
+/dependencies
+settings.py
+/.cache
+/.idea
+/src/niweb/sitestatic

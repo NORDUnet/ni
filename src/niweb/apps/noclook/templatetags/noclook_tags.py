@@ -1,4 +1,4 @@
-from niweb.apps.noclook.models import NodeType
+from niweb.apps.noclook.models import NodeType, NodeHandle
 from niweb.apps.noclook.helpers import get_node_url
 from datetime import datetime
 from django import template
@@ -11,7 +11,7 @@ def type_menu():
     handling.
     Just chain .exclude(type='name') to remove unwanted types.
     """
-    types = NodeType.objects.exclude(type='PIC').exclude(type='Unit').exclude(type='Port')
+    types = NodeType.objects.exclude(type='Port').exclude(type='Unit')
     return {'types': types}
 
 @register.simple_tag
@@ -20,6 +20,18 @@ def noclook_node_to_url(node):
     Takes a node id as a string and returns the absolute url for a node.
     """
     return get_node_url(node)
+
+@register.assignment_tag
+def noclook_node_to_node_handle(node):
+    """
+    :param node: Neo4j node
+    :return node_handle: Django NodeHandle or None
+    """
+    try:
+        node_handle = NodeHandle.objects.get(handle_id = node.getProperty('handle_id', ''))
+    except NodeHandle.DoesNotExist:
+        return None
+    return node_handle
 
 @register.assignment_tag
 def noclook_last_seen_to_dt(noclook_last_seen):

@@ -1,0 +1,226 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+    {{ block.super }}
+    {% load niweb_tags %}
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+    <script type="text/javascript">
+        $(document).ready(
+            function(){
+                // Modal delete object confirm
+                $("#dialog-object-confirm").dialog({
+                    modal: true,
+                    bgiframe: true,
+                    width: 500,
+                    height: 200,
+                    autoOpen: false
+                });
+
+                $("#object-confirm").click(function(e) {
+                    e.preventDefault();
+                    var theHREF = $(this).attr("href");
+
+                    $("#dialog-object-confirm").dialog('option', 'buttons', {
+                        "Confirm" : function() {
+                            window.location.href = theHREF;
+                        },
+                        "Cancel" : function() {
+                            $(this).dialog("close");
+                        }
+                    });
+
+                    $("#dialog-object-confirm").dialog("open");
+                });
+                // Modal delete connection confirm
+                $("#dialog-user-confirm").dialog({
+                    modal: true,
+                    bgiframe: true,
+                    width: 500,
+                    height: 200,
+                    autoOpen: false
+                });
+
+                $("a.user-confirm").click(function(e) {
+                    e.preventDefault();
+                    var theHREF = $(this).attr("href");
+
+
+                    $("#dialog-user-confirm").dialog('option', 'buttons', {
+                        "Confirm" : function() {
+                            window.location.href = theHREF;
+                        },
+                        "Cancel" : function() {
+                            $(this).dialog("close");
+                        }
+                    });
+
+                    $("#dialog-user-confirm").dialog("open");
+
+                });
+// End A //
+                // Populate first level combo box
+                $.getJSON('/formdata/site/', function(data) {
+                    $('#level0A').append($('<option>').val("0").text("-- Please Select --"));
+                    $.each(data, function(key, tuple) {
+                        $('#level0A').append($('<option>').val(tuple[0]).text(tuple[1]));
+                    });
+                });
+                // Hook lower level combo boxes up to their parent
+                $("#level1A").jCombo("/formdata/{id}/children/", {
+                    parent: "#level0A",
+                    end_value_field: "#id_relationship_end_a"
+                });
+                $("#level2A").jCombo("/formdata/{id}/children/", {
+                    parent: "#level1A",
+                    end_value_field: "#id_relationship_end_a"
+                });
+                $("#level3A").jCombo("/formdata/{id}/children/", {
+                    parent: "#level2A",
+                    end_value_field: "#id_relationship_end_a"
+                });
+                $("#level4A").jCombo("/formdata/{id}/children/", {
+                    parent: "#level3A",
+                    end_value_field: "#id_relationship_end_a"
+                });
+                // End B //
+                // Populate first level combo box
+                $.getJSON('/formdata/site/', function(data) {
+                    $('#level0B').append($('<option>').val("0").text("-- Please Select --"));
+                    $.each(data, function(key, tuple) {
+                        $('#level0B').append($('<option>').val(tuple[0]).text(tuple[1]));
+                    });
+                });
+                // Hook lower level combo boxes up to their parent
+                $("#level1B").jCombo("/formdata/{id}/children/", {
+                    parent: "#level0B",
+                    end_value_field: "#id_relationship_end_b"
+                });
+                $("#level2B").jCombo("/formdata/{id}/children/", {
+                    parent: "#level1B",
+                    end_value_field: "#id_relationship_end_b"
+                });
+                $("#level3B").jCombo("/formdata/{id}/children/", {
+                    parent: "#level2B",
+                    end_value_field: "#id_relationship_end_b"
+                });
+                $("#level4B").jCombo("/formdata/{id}/children/", {
+                    parent: "#level3B",
+                    end_value_field: "#id_relationship_end_b"
+                });
+                // Accordion
+                $(".edit-accordion").collapse();
+            }
+        );
+    </script>
+    <script type="text/javascript">
+        function add_port_a() {
+            var parent_id = $('#id_relationship_end_a').val();
+            window.open("/new/port/parent/" + parent_id + "/");
+        }
+        function add_port_b() {
+            var parent_id = $('#id_relationship_end_b').val();
+            window.open("/new/port/parent/" + parent_id + "/");
+        }
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <div id="dialog-user-confirm" title="Remove relationship?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
+    </div>
+
+    <div class="well">
+        <h3>Link Type</h3>
+        {{ form.link_type }}
+        <br><br>
+        <h3>Interface Type</h3>
+        {{ form.interface_type }}
+        <br><br>
+        <h3>Operational State</h3>
+        {{ form.operational_state }}
+        <br><br>
+        <h3>Description (optional)</h3>
+        {{ form.description }}
+        <span class="help-block">{{ form.description.help_text }}</span>
+    </div>
+    <div class="accordion" id="edit-accordion">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
+                    Provider (optional)
+                </a>
+            </div>
+            <div id="collapseOne" class="accordion-body in collapse">
+                <div class="accordion-inner">
+                    {% if providers %}
+                        {% load noclook_tags %}
+                        <h4>Remove Provider</h4>
+                        {% for provider in providers %}
+                            <div class="row">
+                                <div class="span5">
+                                    <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ provider.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add Provider</h4>
+                    {{ form.relationship_provider }}
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
+                    Link depends on (optional)
+                </a>
+            </div>
+            <div id="collapseTwo" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    {% if depends_on %}
+                        {% load noclook_tags %}
+                        <h4>Remove depends on relationship</h4>
+                        {% for depend_on in depends_on %}
+                            <div class="row">
+                                <div class="span5">
+                                    Depends on <a href="{% noclook_node_to_url depend_on.dep %}">{{ depend_on.dep.name }} {{ depend_on.parent.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ depend_on.dep_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add depends on relationships</h4>
+                    <div class="row">
+                        <div class="span4">
+                            {{ form.relationship_end_a }}
+                            <select class="stacked" name="level0A" id="level0A"></select>
+                            <select class="stacked" name="level1A" id="level1A"></select>
+                            <select class="stacked" name="level2A" id="level2A"></select>
+                            <select class="stacked" name="level3A" id="level3A"></select>
+                            <select class="stacked" name="level4A" id="level4A"></select>
+                            <span class="help-block">Choose end A</span>
+                            <a class="btn btn-mini" href="javascript:add_port_a()">Add port</a>
+                        </div>
+                        <div class="span4">
+                            {{ form.relationship_end_b }}
+                            <select class="stacked" name="level0B" id="level0B"></select>
+                            <select class="stacked" name="level1B" id="level1B"></select>
+                            <select class="stacked" name="level2B" id="level2B"></select>
+                            <select class="stacked" name="level3B" id="level3B"></select>
+                            <select class="stacked" name="level4B" id="level4B"></select>
+                            <span class="help-block">Choose end B</span>
+                            <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

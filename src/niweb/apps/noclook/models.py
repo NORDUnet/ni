@@ -32,7 +32,7 @@ class NodeType(models.Model):
         return('niweb.apps.noclook.views.list_by_type', (), {
             'slug': self.slug})
             
-    def delete(self):
+    def delete(self, **kwargs):
         """
         Delete the NodeType object with all associated NodeHandles.
         """
@@ -55,7 +55,7 @@ class NodeHandle(models.Model):
     # Meta information
     creator = models.ForeignKey(User, related_name='creator')
     created = models.DateTimeField(auto_now_add=True)
-    modifier = models.ForeignKey(User, null=True, blank=True, related_name='modifier')
+    modifier = models.ForeignKey(User, related_name='modifier')
     modified = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
@@ -66,16 +66,6 @@ class NodeHandle(models.Model):
         Returns the NodeHandles node.
         """
         return nc.get_node_by_id(nc.neo4jdb, self.node_id)
-    
-    def delete_node_id(self, create_node=True):
-        """
-        Sets the node_id property to None to be able to create a new node for 
-        the NodeHandle in a later stage. If create_node is True a new node is
-        generated in the save call.
-        """
-        self.node_id = None
-        self.save(create_node=create_node, force_update=True)
-        return self
 
     @models.permalink
     def get_absolute_url(self):
@@ -113,15 +103,15 @@ class NodeHandle(models.Model):
     
     save.alters_data = True
 
-    def delete(self):
+    def delete(self, **kwargs):
         """
         Delete that node handle and the handles node.
         """
         try:
             node = self.get_node()
             nc.delete_node(nc.neo4jdb, node)
-        except KeyError:
-            # Node already deleted
+        except (KeyError, TypeError):
+            # Node already deleted or None was passed as node id
             pass
         Comment.objects.filter(object_pk=self.pk).delete()
         super(NodeHandle, self).delete()
@@ -130,7 +120,7 @@ class NodeHandle(models.Model):
     delete.alters_data = True
 
 
-class UniqueId(models.Model):
+class UniqueIdGenerator(models.Model):
     """
     Model that provides a base id counter, prefix, suffix and id length. When a new
     id is generated the base id counter will increase by 1.
@@ -160,7 +150,10 @@ class UniqueId(models.Model):
         base_id = self.base_id
         if self.zfill:
             base_id = str(self.base_id).zfill(self.base_id_length)
-        unique_id = '%s%s%s' % (self.prefix, base_id, self.suffix)
+        prefix = suffix = ''
+        if self.prefix: prefix = self.prefix
+        if self.suffix: suffix = self.suffix
+        unique_id = '%s%s%s' % (prefix, base_id, suffix)
         self.last_id = unique_id
         self.base_id += 1
         self.save()
@@ -173,52 +166,38 @@ class UniqueId(models.Model):
         base_id = self.base_id
         if self.zfill:
             base_id = str(self.base_id).zfill(self.base_id_length)
-        self.next_id = '%s%s%s' % (self.prefix, base_id, self.suffix)
-        super(UniqueId, self).save(*args, **kwargs)
+            prefix = suffix = ''
+        if self.prefix: prefix = self.prefix
+        if self.suffix: suffix = self.suffix
+        self.next_id = '%s%s%s' % (prefix, base_id, suffix)
+        super(UniqueIdGenerator, self).save(*args, **kwargs)
 
     save.alters_data = True
 
 
-#class FreeRangeManager(models.Manager):
-#    """
-#    A manager that helps finding free ranged of NORDUnet IDs to reserve.
-#    """
-#    def find_range(self, min_base_id, max_base_id, quantity):
-#        """
-#        Recursively tries to find an unused range of quantity ids between min and max
-#        base id.
-#        """
-#        for i in range(min_base_id, max_base_id):
-#            self.get()
-#
-#    def reserve_range(self, min_base_id, quantity):
-#        """
-#        Reserves and returns a list of previous unused ids for the specified quantity.
-#        """
-#        max_base_id = self.aggregate(Max('base_id'))
-#        range = self.find_range(min_base_id, max_base_id, quantity)
-#        # TODO
-#        # Create IDs and set reserved = True
-#        # Return list of IDs
-
-
-class NORDUnetIdSet(models.Model):
+class UniqueId(models.Model):
     """
-    Table for ensuring that NORDUnet IDs are unique.
+    Table for reserving ids and to help ensuring uniqueness across the
+    different node types.
     """
-    nordunet_id = models.CharField(max_length=256, unique=True)
-    reserved = models.BooleanField()
-    base_id = models.IntegerField(null=True, blank=True)
-    #objects = FreeRangeManager()
+    unique_id = models.CharField(max_length=256, unique=True)
+    reserved = models.BooleanField(default=False)
+    reserve_message = models.CharField(max_length=512, null=True, blank=True)
+    reserver = models.ForeignKey(User, null=True, blank=True)
     # Meta
-    creator = models.ForeignKey(User, related_name='nordunet_id_creator')
     created = models.DateTimeField(auto_now_add=True)
 
-    def save(self, *args, **kwargs):
-        try:
-            self.base_id = int(self.nordunet_id.replace('NU-', ''))
-        except ValueError:
-            self.base_id = None
-        super(NORDUnetIdSet, self).save(*args, **kwargs)
+    class Meta:
+        abstract = True
 
-    save.alters_data = True
+    def __unicode__(self):
+        return unicode(self.unique_id)
+
+
+class NordunetUniqueId(UniqueId):
+    """
+    Collection of all NORDUnet IDs to ensure uniqueness.
+    """
+
+    def __unicode__(self):
+        return unicode('NORDUnet: %s' % self.unique_id)

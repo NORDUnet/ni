@@ -169,6 +169,18 @@ table.tablesorter thead .header {
  padding-right: 15px;
 }
 
+tr.decommissioned {
+    border-left: 3px #B94A48 solid;
+}
+
+tr.reserved {
+    border-left: 3px #F89406 solid;
+}
+
+tr.testing {
+    border-left: 3px #3A87AD solid;
+}
+
 /* Django form errorlist */
 ul.errorlist {
  list-style: none;

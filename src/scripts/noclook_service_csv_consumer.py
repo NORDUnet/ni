@@ -20,6 +20,8 @@ sys.path.append(os.path.abspath(path))
 import noclook_consumer as nt
 import norduni_client as nc
 from apps.noclook import helpers as h
+from django.db import IntegrityError
+from apps.noclook.models import NordunetUniqueId
 
 # This script is used for adding the objects collected with the
 # NERDS csv producer from the NORDUnet service spreadsheets.
@@ -40,7 +42,9 @@ from apps.noclook import helpers as h
 #        "node_type": "",
 #        "port_a": "",
 #        "port_b": "",
+#        "provider": "",
 #        "service_component": "",
+#        "service_class": "",
 #        "service_type": ""
 #    },
 #    "name": "",
@@ -64,18 +68,18 @@ def set_end_user(node, end_user_name):
         rel = nc.create_relationship(nc.neo4jdb, end_user, node, 'Uses')
         h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
-def depend_on_router(node, router_name, pic_name):
+def depend_on_router(node, router_name, port_name):
     """
-    Depends the service on a router PIC.
-    PIC name is in Juniper notation xxx-X/X/X.
+    Depends the service on a router port.
+    Port name is in Juniper notation xxx-X/X/X.
     """
     parent = nt.get_unique_node(router_name, 'Router', 'physical')
-    nh = nt.get_node_handle(nc.neo4jdb, pic_name, 'PIC', 'physical', parent)
-    pic_node = nh.get_node()
-    if not nc.get_relationships(pic_node, parent, 'Has'):
-        rel = nc.create_relationship(nc.neo4jdb, parent, pic_node, 'Has')
+    nh = nt.get_node_handle(nc.neo4jdb, port_name, 'Port', 'physical', parent)
+    port_node = nh.get_node()
+    if not nc.get_relationships(port_node, parent, 'Has'):
+        rel = nc.create_relationship(nc.neo4jdb, parent, port_node, 'Has')
         h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
-    rel = nc.create_relationship(nc.neo4jdb, node, pic_node, 'Depends_on')
+    rel = nc.create_relationship(nc.neo4jdb, node, port_node, 'Depends_on')
     h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
 def depend_on_service_component(node, component_name):
@@ -104,6 +108,7 @@ def depend_on_service(node, service_name, supplier_name):
     service = nt.get_unique_node(service_name, 'Service', 'logical')
     if supplier_name:
         with nc.neo4jdb.transaction:
+            service['service_class'] = 'External'
             service['service_type'] = 'External'
         supplier = nt.get_unique_node(supplier_name, 'Provider', 'relation')
         if not nc.get_relationships(supplier, service, 'Provides'):
@@ -112,25 +117,37 @@ def depend_on_service(node, service_name, supplier_name):
     rel = nc.create_relationship(nc.neo4jdb, node, service, 'Depends_on')
     h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
 
-def consume_service_csv(json_list):
+def consume_service_csv(json_list, unique_id_set=None):
     """
     Inserts the data collected with NOCLook csv producer.
     """
     for i in json_list:
         node_type = i['host']['csv_producer']['node_type'].title()
         meta_type = i['host']['csv_producer']['meta_type'].lower()
-        nh = nt.get_unique_node_handle(nc.neo4jdb, i['host']['name'], node_type,
+        service_id = i['host']['name']
+        if unique_id_set:
+            try:
+                h.register_unique_id(unique_id_set, service_id)
+            except IntegrityError:
+                print "%s already exists in the database. Please check and add manually" % service_id
+                continue
+        nh = nt.get_unique_node_handle(nc.neo4jdb, service_id, node_type,
                                        meta_type)
         node = nh.get_node()
         h.set_noclook_auto_manage(nc.neo4jdb, node, False)
         with nc.neo4jdb.transaction:
+            node['service_class'] = i['host']['csv_producer']['service_class']
             node['service_type'] = i['host']['csv_producer']['service_type']
             description = i['host']['csv_producer'].get('description', None)
             if description:
                 node['description'] = description
             node['nordunet_id'] = node['name']
         h.update_node_search_index(nc.neo4jdb, node)
-        # TODO: Insert id in to NORDUnetIDSet table.
+        # Set provider
+        provider_name = i['host']['csv_producer'].get('provider')
+        provider = nt.get_unique_node(provider_name, 'Provider', 'relation')
+        rel = nc.create_relationship(nc.neo4jdb, provider, node, 'Provides')
+        h.set_noclook_auto_manage(nc.neo4jdb, rel, False)
         # Depend on router
         equipment_a = i['host']['csv_producer'].get('equipment_a', None)
         if equipment_a:
@@ -139,8 +156,9 @@ def consume_service_csv(json_list):
         if equipment_b:
             depend_on_router(node, equipment_b, i['host']['csv_producer']['port_b'])
         # Set customer
-        customer_name = nt.normalize_whitespace(i['host']['csv_producer']['customer'])
-        set_customer(node, customer_name)
+        customer_name = i['host']['csv_producer'].get('customer', None)
+        if customer_name:
+            set_customer(node, nt.normalize_whitespace(customer_name))
         # Set end users
         end_user_a = i['host']['csv_producer'].get('end_user_a', None)
         if end_user_a:
@@ -190,7 +208,7 @@ def main():
         print 'Loading data...'
         data = nt.load_json(args.D)
         print 'Inserting data...'
-        consume_service_csv(data)
+        consume_service_csv(data, NordunetUniqueId)
         print 'noclook consume done.'
     else:
         print 'Use -D to provide the path to the JSON files.'

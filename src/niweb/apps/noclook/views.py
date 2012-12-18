@@ -20,9 +20,9 @@ def index(request):
 
 @login_required
 def logout_page(request):
-    '''
+    """
     Log users out and redirects them to the index.
-    '''
+    """
     logout(request)
     return HttpResponseRedirect('/')
 
@@ -95,15 +95,50 @@ def list_sites(request):
                                 context_instance=RequestContext(request))
 
 @login_required
-def list_services(request):
+def list_services(request, service_class=None):
+    if service_class:
+        where_statement = 'WHERE node.service_class = "%s"' % service_class
+    else:
+        where_statement = ''
     q = '''
         START node=node:node_types(node_type = "Service")
-        RETURN node, node.service_type? as service_type, node.description? as description
-        '''
+        MATCH node<-[?:Uses]-user
+        %s
+        RETURN node, node.service_class? as service_class, node.service_type? as service_type, node.description? as description, node.operational_state? as operational_state, collect(user) as users
+        ORDER BY node.name
+        ''' % where_statement
     service_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_services.html',
-            {'service_list': service_list},
-                              context_instance=RequestContext(request))
+                             {'service_list': service_list,
+                              'service_class': service_class},
+                             context_instance=RequestContext(request))
+
+def list_optical_paths(request):
+    q = '''
+        START node=node:node_types(node_type = "Optical Path")
+        RETURN node, node.framing? as framing, node.capacity? as capacity, node.enrs? as enrs, node.operational_state? as operational_state
+        '''
+    optical_path_list = nc.neo4jdb.query(q)
+    return render_to_response('noclook/list/list_optical_paths.html',
+        {'optical_path_list': optical_path_list},
+        context_instance=RequestContext(request))
+
+def list_optical_links(request):
+    q = '''
+        START node=node:node_types(node_type = "Optical Link")
+        RETURN node
+        '''
+    hits = nc.neo4jdb.query(q)
+    optical_link_list = []
+    for hit in hits:
+        optical_link = {
+            'node': hit['node'],
+            'end_points': h.get_logical_depends_on(hit['node'])
+        }
+        optical_link_list.append(optical_link)
+    return render_to_response('noclook/list/list_optical_links.html',
+                             {'optical_link_list': optical_link_list},
+                             context_instance=RequestContext(request))
 
 # Detail views
 @login_required
@@ -121,20 +156,37 @@ def router_detail(request, handle_id):
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
-    # Get all the PICs and the PICs services. Also get loopback addresses.
+    # Get all the Ports and what depends on the port.
     loopback_addresses = []
-    pics = []
-    for rel in node.Has.outgoing:
-        pic = {'pic': rel.end , 'services': []}
-        dep_units = pic['pic'].Depends_on.incoming
-        for dep_unit in dep_units:
-            unit = dep_unit.start
-            if pic['pic']['name'] == 'lo0':
-                loopback_addresses.extend(unit['ip_addresses'])
-            dep_services = unit.Depends_on.incoming
-            for service in dep_services:
-                pic['services'].append(service.start)
-        pics.append(pic)
+    ports = []
+    for hit in h.get_depends_on_router(node):
+        port = {
+            'port': hit['port'],
+            'units': [],
+            'depends_on_port': [],
+        }
+        for dep in hit['depends_on_port']:
+            depends = None
+            try:
+                if dep['node_type'] == 'Unit':
+                    port['units'].append(dep)
+                    try:
+                        for unit_dep in h.get_depends_on_unit(dep):
+                            depends = {
+                                'unit': dep,
+                                'dep': unit_dep['depends_on_unit']
+                            }
+                    except TypeError:
+                        pass
+                else:
+                    depends = {
+                        'dep': dep
+                    }
+                if depends:
+                    port['depends_on_port'].append(depends)
+            except TypeError:
+                pass
+        ports.append(port)
     location = h.iter2list(h.get_location(node))
     for address in loopback_addresses:
         try:
@@ -143,59 +195,59 @@ def router_detail(request, handle_id):
             # Remove the ISO address
             loopback_addresses.remove(address)
     return render_to_response('noclook/detail/router_detail.html',
-        {'node_handle': nh, 'node': node, 'pics': pics, 'last_seen': last_seen,
+        {'node_handle': nh, 'node': node, 'ports': ports, 'last_seen': last_seen,
         'expired': expired, 'location': location,
         'loopback_addresses': loopback_addresses},
         context_instance=RequestContext(request))
 
-@login_required
-def pic_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    # Get the top parent node
-    router = nc.get_root_parent(nc.neo4jdb, node)[0]
-    # Get unit nodes
-    units = [unit['unit'] for unit in h.get_units(node)]
-    depending_services = []
-    for unit in units:
-        dep_services = unit.Depends_on.incoming
-        for dep_service in dep_services:
-            address = dep_service.getProperty('ip_address', None)
-            service = {}
-            service['if_address'] = address
-            service['service'] = dep_service.start
-            service['unit'] = unit 
-            service['relations'] = []
-            try:
-                if_address = ipaddr.IPNetwork(address)
-                # Get relations who uses the pic
-                relation_rels = dep_service.start.Uses.incoming
-                for r_rel in relation_rels:
-                    rel_address = ipaddr.IPAddress(r_rel['ip_address'])
-                    if rel_address in if_address:
-                        relation = {'rel_address': r_rel['ip_address'],
-                                    'relation': r_rel.start}
-                        service['relations'].append(relation)
-            except ValueError:
-                # Missing IP address
-                service['if_address'] = 'Missing'
-            depending_services.append(service)
-    # Get other stuff depending on this PIC
-    deps = node.Depends_on.incoming
-    for dep in deps:
-        if dep.start['node_type'] != 'Unit':
-            service = {
-                'service': dep.start,
-                'relations': [{'relation': rel.start} for rel in dep.start.Uses.incoming]
-            }
-            depending_services.append(service)
-    return render_to_response('noclook/detail/pic_detail.html',
-        {'node_handle': nh, 'node': node, 'router': router, 
-         'last_seen': last_seen, 'expired': expired, 'units': units,
-         'depending_services': depending_services}, 
-         context_instance=RequestContext(request))
+#@login_required
+#def pic_detail(request, handle_id):
+#    nh = get_object_or_404(NodeHandle, pk=handle_id)
+#    # Get node from neo4j-database
+#    node = nh.get_node()
+#    last_seen, expired = h.neo4j_data_age(node)
+#    # Get the top parent node
+#    router = nc.get_root_parent(nc.neo4jdb, node)[0]
+#    # Get unit nodes
+#    units = [unit['unit'] for unit in h.get_units(node)]
+#    depending_services = []
+#    for unit in units:
+#        dep_services = unit.Depends_on.incoming
+#        for dep_service in dep_services:
+#            address = dep_service.getProperty('ip_address', None)
+#            service = {}
+#            service['if_address'] = address
+#            service['service'] = dep_service.start
+#            service['unit'] = unit
+#            service['relations'] = []
+#            try:
+#                if_address = ipaddr.IPNetwork(address)
+#                # Get relations who uses the pic
+#                relation_rels = dep_service.start.Uses.incoming
+#                for r_rel in relation_rels:
+#                    rel_address = ipaddr.IPAddress(r_rel['ip_address'])
+#                    if rel_address in if_address:
+#                        relation = {'rel_address': r_rel['ip_address'],
+#                                    'relation': r_rel.start}
+#                        service['relations'].append(relation)
+#            except ValueError:
+#                # Missing IP address
+#                service['if_address'] = 'Missing'
+#            depending_services.append(service)
+#    # Get other stuff depending on this PIC
+#    deps = node.Depends_on.incoming
+#    for dep in deps:
+#        if dep.start['node_type'] != 'Unit':
+#            service = {
+#                'service': dep.start,
+#                'relations': [{'relation': rel.start} for rel in dep.start.Uses.incoming]
+#            }
+#            depending_services.append(service)
+#    return render_to_response('noclook/detail/pic_detail.html',
+#        {'node_handle': nh, 'node': node, 'router': router,
+#         'last_seen': last_seen, 'expired': expired, 'units': units,
+#         'depending_services': depending_services},
+#         context_instance=RequestContext(request))
 
 @login_required
 def optical_node_detail(request, handle_id):
@@ -206,6 +258,7 @@ def optical_node_detail(request, handle_id):
     #get incoming rels of fibers
     connected_rel = node.Connected_to.incoming # Legacy
     depends_on = h.get_depends_on_equipment(node)
+    services = h.iter2list(h.get_services_dependent_on_equipment(node))
     opt_info = []
     for rel in connected_rel:
         fibers = {}
@@ -224,7 +277,7 @@ def optical_node_detail(request, handle_id):
                              {'node': node, 'node_handle': nh, 
                               'last_seen': last_seen, 'expired': expired, 
                               'opt_info': opt_info, 'location': location,
-                              'depends_on': depends_on},
+                              'depends_on': depends_on, 'services': services},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -299,10 +352,11 @@ def cable_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     connections = h.get_connected_cables(node)
+    services = h.iter2list(h.get_services_dependent_on_cable(node))
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': node, 'node_handle': nh, 
                                'last_seen': last_seen, 'expired': expired, 
-                               'connections': connections},
+                               'connections': connections, 'services': services},
                                context_instance=RequestContext(request))
 
 @login_required
@@ -466,6 +520,20 @@ def port_detail(request, handle_id):
                               context_instance=RequestContext(request))
 
 @login_required
+def unit_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(node)
+    depend_inc = h.iter2list(node.Depends_on.incoming)
+    depend_out = h.iter2list(h.get_logical_depends_on(node))
+    return render_to_response('noclook/detail/unit_detail.html',
+                             {'node': node, 'node_handle': nh,
+                              'last_seen': last_seen, 'expired': expired,
+                              'depend_inc': depend_inc, 'depend_out': depend_out},
+        context_instance=RequestContext(request))
+
+@login_required
 def service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
@@ -473,29 +541,14 @@ def service_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
     depend_out = h.iter2list(h.get_logical_depends_on(node))
+    providers = h.iter2list(node.Provides.incoming)
     users = h.iter2list(node.Uses.incoming)
     return render_to_response('noclook/detail/service_detail.html',
                              {'node': node, 'node_handle': nh,
                               'last_seen': last_seen, 'expired': expired,
                               'depend_inc': depend_inc, 'depend_out': depend_out,
-                              'users': users},
+                              'users': users, 'providers': providers},
                               context_instance=RequestContext(request))
-
-#@login_required
-#def external_service_detail(request, handle_id):
-#    nh = get_object_or_404(NodeHandle, pk=handle_id)
-#    # Get node from neo4j-database
-#    node = nh.get_node()
-#    last_seen, expired = h.neo4j_data_age(node)
-#    depend_inc = h.iter2list(node.Depends_on.incoming)
-#    depend_out = h.iter2list(h.get_logical_depends_on(node))
-#    providers = h.iter2list(node.Provides.incoming)
-#    return render_to_response('noclook/detail/external_service_detail.html',
-#            {'node': node, 'node_handle': nh,
-#             'last_seen': last_seen, 'expired': expired,
-#             'depend_inc': depend_inc, 'depend_out': depend_out,
-#             'providers': providers},
-#                              context_instance=RequestContext(request))
 
 @login_required
 def optical_link_detail(request, handle_id):
@@ -505,10 +558,12 @@ def optical_link_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
     depend_out = h.iter2list(h.get_logical_depends_on(node))
+    providers = h.iter2list(node.Provides.incoming)
     return render_to_response('noclook/detail/optical_link_detail.html',
                              {'node': node, 'node_handle': nh,
                               'last_seen': last_seen, 'expired': expired,
-                              'depend_inc': depend_inc, 'depend_out': depend_out,},
+                              'depend_inc': depend_inc, 'depend_out': depend_out,
+                              'providers': providers},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -519,10 +574,12 @@ def optical_path_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
     depend_out = h.iter2list(h.get_logical_depends_on(node))
+    providers = h.iter2list(node.Provides.incoming)
     return render_to_response('noclook/detail/optical_path_detail.html',
-            {'node': node, 'node_handle': nh,
-             'last_seen': last_seen, 'expired': expired,
-             'depend_inc': depend_inc, 'depend_out': depend_out,},
+                             {'node': node, 'node_handle': nh,
+                              'last_seen': last_seen, 'expired': expired,
+                              'depend_inc': depend_inc, 'depend_out': depend_out,
+                              'providers': providers},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -787,7 +844,7 @@ def gmaps_optical_nodes(request):
     cypher_query = '''
         START optical_node = node:node_types(node_type="Optical Node")
         MATCH optical_node<-[:Connected_to]-cable-[Connected_to]->other_optical_node
-        WHERE (cable.cable_type = "Dark Fiber") and not (optical_node.type? =~ /.*tss.*/)
+        WHERE cable.cable_type = "Dark Fiber" and not optical_node.type? =~ "(?i).*tss.*"
         RETURN distinct cable
         '''
     query = nc.neo4jdb.query(cypher_query)
@@ -799,10 +856,10 @@ def gmaps_optical_nodes(request):
                 lng = loc_rel.end['longitude']
                 lat = loc_rel.end['latitude']
             node = {'name': rel.end['name'], 'type': 'node', 'lng': lng,
-                    'lat': lat}
+                    'lat': lat, 'url': h.get_node_url(rel.end)}
             cords.append({'lng': lng, 'lat': lat})
             optical_node_list.append(node)
-        edge = {'name': hit['cable']['name'], 'type': 'edge'}
+        edge = {'name': hit['cable']['name'], 'type': 'edge', 'url': h.get_node_url(hit['cable'])}
         # TODO: Needs to be revisited when/if cables terminate in more than two points.
         if len(cords) == 2:
             edge['start_lng'] = cords[0]['lng']
@@ -832,5 +889,5 @@ def ip_address_lookup(request):
         ip_address = request.POST.get('ip_address', None)
         if ip_address:
             hostname = h.get_hostname_from_address(ip_address)
-        return HttpResponse(json.dumps(hostname), mimetype='application/json')
+            return HttpResponse(json.dumps(hostname), mimetype='application/json')
     raise Http404
