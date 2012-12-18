@@ -150,7 +150,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     interface names that are not interesting.
     Returns a list with all created nodes.
     """
-    not_interesting_interfaces = re.compile(r'.*\*|\.|all|fxp.*|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|pp.*|pip.*|irb.*|demux.*|cbp.*|me.*')
+    not_interesting_interfaces = re.compile(r'.*\*|\.|all|fxp.*|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|pp.*|pip.*|irb.*|demux.*|cbp.*|me.*|lo.*')
     for i in interfaces:
         name = i['name']
         if name and not not_interesting_interfaces.match(name):
@@ -343,6 +343,13 @@ def consume_juniper_conf(json_list):
         bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
     insert_juniper_bgp_peerings(bgp_peerings)
 
+def delete_juniper_conf(data_age):
+    """
+    :param data_age: Data older than this many days will be deleted.
+    :return: None
+    """
+    pass
+
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
@@ -357,6 +364,8 @@ def main():
         config = nt.init_config(args.C)
     if config.get('data', 'juniper_conf'):
         consume_juniper_conf(nt.load_json(config.get('data', 'juniper_conf')))
+    if config.getboolean('delete_data', 'juniper_conf'):
+        delete_juniper_conf(config.get('data_age', 'juniper_conf'))
     return 0
 
 if __name__ == '__main__':
