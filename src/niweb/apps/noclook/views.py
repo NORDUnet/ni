@@ -55,7 +55,7 @@ def list_peering_partners(request):
 def list_hosts(request):
     q = '''
         START host=node:node_types(node_type = "Host")
-        MATCH host<-[?:Uses]-user
+        MATCH host<-[?:Owns|Uses]-user
         RETURN host, host.name as name, host.addresses? as addresses, collect(user) as users
         ORDER BY host.name
         '''

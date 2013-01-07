@@ -36,15 +36,14 @@ $(document).ready(
         <tbody>
             {% load noclook_tags %}
             {% for host in host_list %}
-                {% noclook_has_expired host.host as expired %}
-                {% if expired %}
-                    <tr class="expired">
-                {% else %}
-                    <tr>
-                {% endif %}
                 {% if host.addresses %}
                     {% for address in host.addresses %}
-
+                        {% noclook_has_expired host.host as expired %}
+                        {% if expired %}
+                            <tr class="expired">
+                        {% else %}
+                            <tr>
+                        {% endif %}
                             <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td>
                             <td>{{ address }}</td>
                             <td>
@@ -55,8 +54,19 @@ $(document).ready(
                         </tr>
                     {% endfor %}
                 {% else %}
-                    <tr>
-                        <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td><td></td><td></td>
+                    {% noclook_has_expired host.host as expired %}
+                    {% if expired %}
+                        <tr class="expired">
+                            {% else %}
+                        <tr>
+                    {% endif %}
+                        <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td>
+                        <td>{{ address }}</td>
+                        <td>
+                            {% for user in host.users %}
+                                <a href="{% noclook_node_to_url user %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        </td>
                     </tr>
                 {% endif %}
             {% endfor %}

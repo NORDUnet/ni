@@ -88,7 +88,7 @@ import norduni_client as nc
 #    }
 #]}
 
-VERBOSE = True
+VERBOSE = False
 
 def insert_juniper_router(name):
     """
