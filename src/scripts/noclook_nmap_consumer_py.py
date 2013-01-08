@@ -73,9 +73,10 @@ def set_host_user(node):
         return COUNT(r) as rels
         '''
     hits = nc.neo4jdb.query(q, id=node.getId())
+    users = int(str(h.iter2list(hits['rels'])[0])) # Hack...hits['rels'] is of type java.lang.Long...
     domain = '.'.join(node['name'].split('.')[-2:])
     host_user_name = HOST_USERS_MAP.get(domain, None)
-    if not hits['rels'] and host_user_name:
+    if host_user_name and not users:
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, host_user_name,
                                                 'Host User', 'relation')
         host_user = node_handle.get_node()
@@ -193,6 +194,15 @@ def insert_nmap(json_list):
             'hostnames': i['host']['nmap_services_py']['hostnames'],
             'addresses': i['host']['nmap_services_py']['addresses']
         }
+        if i['host']['nmap_services_py'].has_key('os') and not node.get_property('os', None):
+            # Only set os if the property is missing as a user probably knows better than nmap
+            if i['host']['nmap_services_py']['os'].has_key('class'):
+                property_keys.extend(['os', 'os_version'])
+                host_properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
+                host_properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
+            elif i['host']['nmap_services_py']['os'].has_key('match'):
+                property_keys.extend(['os'])
+                host_properties['os'] = i['host']['nmap_services_py']['os']['match']['name']
         if i['host']['nmap_services_py'].has_key('uptime'):
             property_keys.extend(['lastboot', 'uptime'])
             host_properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
