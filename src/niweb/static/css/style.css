@@ -199,6 +199,6 @@ ul.errorlist {
  list-style: none;
 }
 
-.ip-address {
+.ip-address:hover {
     cursor: pointer;
 }
