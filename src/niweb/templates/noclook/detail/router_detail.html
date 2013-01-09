@@ -44,6 +44,9 @@ $(document).ready(
                     {% endif %}
                 {% endfor %}
             <tr>
+                <th>Model:</th><td>{{ node.model }}</td>
+            </tr>
+            <tr>
                 <th>JUNOS Version:</th><td>{{ node.version }}</td>
             </tr>
         </table>

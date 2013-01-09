@@ -24,13 +24,15 @@ $(document).ready(
     <h1>Routers</h1>
     <table id="routers" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Router</th><th>JUNOS version</th>
+            <tr>
+                <th>Router</th><th>Model</th><th>JUNOS version</th>
+            </tr>
         </thead>
         <tbody>
             {% load noclook_tags %}
             {% for router in router_list %}
                     <tr>
-                        <td><a class="handle" href="{% noclook_node_to_url router.node %}">{{ router.node.name }}</a></td><td>{{ router.version|default:"Unknown" }}</td>
+                        <td><a class="handle" href="{% noclook_node_to_url router.node %}">{{ router.node.name }}</a></td><td>{{ router.model|default:"Unknown" }}</td><td>{{ router.version|default:"Unknown" }}</td>
                     </tr>
             {% endfor %}
         </tbody>
