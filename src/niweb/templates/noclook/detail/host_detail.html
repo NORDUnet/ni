@@ -105,42 +105,47 @@ $(document).ready(
                     <th>Support ends:</th><td>{{node.end_support}}</td>
                 </tr>
             {% endif %}
+            {% if node.lastboot %}
+                <tr>
+                    <th>Last boot:</th><td>{{node.lastboot}}<br>({% if node.uptime %}{% timestamp_to_dt node.uptime as uptime %}{{ uptime }} ago{% endif %})</td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
-        {% if node.vendor or node.model or node.cpu or node.ram or node.hdd or node.service_tag %}
-            {% if node.vendor %}
+            {% if node.vendor or node.model or node.cpu or node.ram or node.hdd or node.service_tag %}
+                {% if node.vendor %}
+                    <tr>
+                        <th>Vendor:</th><td>{{node.vendor}}</td>
+                    </tr>
+                {% endif %}
+                {% if node.model %}
+                    <tr>
+                        <th>Model:</th><td>{{node.model}}</td>
+                    </tr>
+                {% endif %}
+                {% if node.cpu %}
+                    <tr>
+                        <th>CPU:</th><td>{{node.cpu}}</td>
+                    </tr>
+                {% endif %}
+                {% if node.ram %}
+                    <tr>
+                        <th>RAM:</th><td>{{node.ram}}</td>
+                    </tr>
+                {% endif %}
+                {% if node.hdd %}
+                    <tr>
+                        <th>HDD:</th><td>{{node.hdd}}</td>
+                    </tr>
+                {% endif %}
+            {% endif %}
+            {% if node.os %}
                 <tr>
-                    <th>Vendor:</th><td>{{node.vendor}}</td>
+                    <th>OS:</th><td>{{node.os}} {% if node.os_version %}{{node.os_version}}{% endif %}</td>
                 </tr>
             {% endif %}
-            {% if node.model %}
-                <tr>
-                    <th>Model:</th><td>{{node.model}}</td>
-                </tr>
-            {% endif %}
-            {% if node.cpu %}
-                <tr>
-                    <th>CPU:</th><td>{{node.cpu}}</td>
-                </tr>
-            {% endif %}
-            {% if node.ram %}
-                <tr>
-                    <th>RAM:</th><td>{{node.ram}}</td>
-                </tr>
-            {% endif %}
-            {% if node.hdd %}
-                <tr>
-                    <th>HDD:</th><td>{{node.hdd}}</td>
-                </tr>
-            {% endif %}
-        {% endif %}
-        {% if node.os %}
-            <tr>
-                <th>OS:</th><td>{{node.os}} {% if node.os_version %}{{node.os_version}}{% endif %}</td>
-            </tr>
-        {% endif %}
             {% if node.noclook_auto_manage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
@@ -194,7 +199,7 @@ $(document).ready(
                 <td>{{ service.product }}</td>
                 <td>{{ service.version }}</td>
                 <td>{{ service.extrainfo }}</td>
-                <td>{{ service.confidence }}</td>
+                <td>{{ service.conf }}</td>
             </tr>
         {% endfor %}
         </tbody>
