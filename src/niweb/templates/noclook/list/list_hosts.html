@@ -30,7 +30,7 @@ $(document).ready(
     <table id="hosts" class="tablesorter" cellspacing="1">
         <thead>
             <tr>
-                <th>Host</th><th>Address</th><th>User</th>
+                <th>Host</th><th>Address</th><th>OS</th><th>OS version</th><th>User</th>
             </tr>
         </thead>
         <tbody>
@@ -46,6 +46,8 @@ $(document).ready(
                         {% endif %}
                             <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td>
                             <td>{{ address }}</td>
+                            <td>{{ host.os|default:"" }}</td>
+                            <td>{{ host.os_version|default:"" }}</td>
                             <td>
                                 {% for user in host.users %}
                                     <a href="{% noclook_node_to_url user %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
@@ -61,7 +63,9 @@ $(document).ready(
                         <tr>
                     {% endif %}
                         <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td>
-                        <td>{{ address }}</td>
+                        <td>No address</td>
+                        <td>{{ host.os|default:"" }}</td>
+                        <td>{{ host.os_version|default:"" }}</td>
                         <td>
                             {% for user in host.users %}
                                 <a href="{% noclook_node_to_url user %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
