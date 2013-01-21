@@ -24,8 +24,16 @@
 {% block content_footer %}
         <br><br>
         <div class="row">
+            <div class="span1">
+                <div class="btn-group">
+                    <button type="submit" name="saveanddone" class="btn btn-primary">Save</button>
+                    <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" onclick="$(this).closest('form').submit()">Save and continue editing</a></li>
+                    </ul>
+                </div>
+            </div>
             <div class="span3">
-                <input type="submit" value="Save" class="btn btn-primary" />
                 <a href="." class="btn">Cancel</a>
             </div>
             <div class="span1">
