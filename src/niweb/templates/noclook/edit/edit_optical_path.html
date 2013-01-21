@@ -4,6 +4,8 @@
     {{ block.super }}
     {% load niweb_tags %}
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jeditable.mini.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.json-2.4.min.js"></script>
     <script type="text/javascript">
         $(document).ready(
             function(){
@@ -83,6 +85,73 @@
                 });
                 // Accordion
                 $(".edit-accordion").collapse();
+                // Editable list
+                function makeEditable()
+                {
+                    $('.editable').editable(function(value, settings)
+                    {
+                        /* Debug
+
+                         console.log(this);
+                         console.log(value);
+                         console.log(settings);
+                         */
+                        return(value);
+                    });
+                }
+                function makeDelable()
+                {
+                    $('a.delete').click(function(e)
+                    {
+                        e.preventDefault();
+                        $(this).parent().parent().remove();
+                        saveList();
+                    });
+                }
+                function loadList()
+                {
+                    var list = $.parseJSON($('#id_enrs').val());
+                    $(list).each(function(i, item) {
+                        addItem(item);
+                    });
+                }
+                function saveList()
+                {
+                    var list = [];
+                    $('.editable').each(function(i, item) {
+                       list.push($(item).html());
+                    });
+                    $('#id_enrs').val($.toJSON(list));
+
+                }
+                function addItem(itemName)
+                {
+                    $("#enrs").append('<div class="row"><div class="span5"><span class="editable">' + itemName + '</span></div><div class="span1"><a href="" class="delete label label-important">Delete</a></div></div>');
+                    makeEditable();
+                    makeDelable();
+                }
+                loadList();
+                makeEditable();
+                makeDelable();
+                // Disable Enter key in the text input so to now submit form when trying to add item
+                $('input[name=addenr]').keypress(function (e) {
+                    var code = (e.keyCode ? e.keyCode : e.which);
+                    if (code === 13) {
+                        var item = $('input[name=addenr]');
+                        addItem(item.val());
+                        item.val('');
+                        saveList();
+                    }
+                    return (code != 13);
+                });
+                $('a#add').click(function(e)
+                {
+                    e.preventDefault();
+                    var item = $('input[name=addenr]');
+                    addItem(item.val());
+                    item.val('');
+                    saveList();
+                });
             }
         );
     </script>
@@ -162,6 +231,30 @@
                     {% endif %}
                     <h4>Add depends on relationship</h4>
                     {{ form.relationship_depends_on }}
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
+                    ENRs (optional)
+                </a>
+            </div>
+            <div id="collapseThree" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <h4>Remove ENR</h4>
+                    {{ form.enrs }}
+                    <div id="enrs"></div>
+                    <hr>
+                    <h4>Add ENR</h4>
+                    <div class="row">
+                        <div class="span5">
+                            <input class="span4" type="text" name="addenr" />
+                        </div>
+                        <div class="span1">
+                            <a id="add" class="label label-success" href="">Add</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

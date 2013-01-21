@@ -1,6 +1,7 @@
 from django import forms
-
 from django.forms.util import ErrorDict, ErrorList
+from django.forms.widgets import HiddenInput
+from django.utils import simplejson
 from niweb.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
 import niweb.apps.noclook.helpers as h
 import norduni_client as nc
@@ -148,6 +149,26 @@ def get_node_type_tuples(node_type):
         node_list.append((node.id, node['name']))
     node_list.sort(key=itemgetter(1))
     return node_list
+
+class JSONField(forms.CharField):
+
+    def __init__(self, *args, **kwargs):
+        super(JSONField, self).__init__(*args, **kwargs)
+
+    def clean(self, value):
+        value = super(JSONField, self).clean(value)
+        try:
+            json_data = simplejson.loads(value)
+        except Exception, e:
+            raise forms.validators.ValidationError(self.error_messages['invalid'])
+        return json_data
+
+
+class JSONInput(HiddenInput):
+
+    def render(self, name, value, attrs=None):
+        return super(JSONInput, self).render(name, simplejson.dumps(value), attrs)
+
 
 class ReserveIdForm(forms.Form):
     amount = forms.IntegerField()
@@ -659,5 +680,17 @@ class EditOpticalPathForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
+    enrs = JSONField(required=False, widget=JSONInput)
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_depends_on = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+
+    def clean(self):
+        """
+        Check for enrs and transform JSON to a list.
+        """
+        cleaned_data = super(EditOpticalPathForm, self).clean()
+        # Expect a JSON array in enrs
+        enrs = cleaned_data.get("enrs")
+        #if enrs:
+            #cleaned_data['enrs'] = json.dumps(enrs)
+        return cleaned_data
