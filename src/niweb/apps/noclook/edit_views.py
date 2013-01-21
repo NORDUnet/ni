@@ -153,7 +153,10 @@ def edit_site(request, handle_id):
                         pass
                     nc.create_relationship(nc.neo4jdb, owner_node,
                                                     node, 'Responsible_for')
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_site.html',
                                   {'node': node, 'form': form,
@@ -177,7 +180,10 @@ def edit_site_owner(request, handle_id):
         if form.is_valid():
             # Generic node update
             h.form_update_node(request.user, node, form)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'node': node, 'form': form},
@@ -215,7 +221,10 @@ def edit_cable(request, handle_id):
             if form.cleaned_data['relationship_end_b']:
                 end_b = form.cleaned_data['relationship_end_b']
                 h.connect_physical(node, end_b)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_cable.html',
                                   {'node': node, 'form': form,
@@ -244,7 +253,10 @@ def edit_optical_node(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = h.place_physical_in_location(nh, node, location_id)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_optical_node.html',
                                   {'node': node, 'form': form,
@@ -267,7 +279,10 @@ def edit_peering_partner(request, handle_id):
         if form.is_valid():
             # Generic node update
             h.form_update_node(request.user, node, form)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_peering_partner.html',
                                   {'node': node, 'form': form},
@@ -294,7 +309,10 @@ def edit_rack(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 h.place_child_in_parent(node, location_id)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_rack.html',
                                   {'node': node, 'form': form,
@@ -331,7 +349,10 @@ def edit_host(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = h.place_physical_in_location(nh, node, location_id)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_host.html',
                                   {'node_handle': nh, 'node': node, 'form': form,
@@ -362,7 +383,10 @@ def edit_router(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = h.place_physical_in_location(nh, node, location_id)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_router.html',
                                   {'node': node, 'form': form, 
@@ -391,7 +415,10 @@ def edit_odf(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = h.place_physical_in_location(nh, node, location_id)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_odf.html',
                                   {'node': node, 'form': form,
@@ -423,7 +450,10 @@ def edit_port(request, handle_id):
                 # Remove existing location if any
                 for rel in h.iter2list(node.Located_in.outgoing):
                     nc.delete_relationship(nc.neo4jdb, rel)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_port.html',
                                      {'node': node, 'form': form, 'location': location},
@@ -444,7 +474,10 @@ def edit_customer(request, handle_id):
         if form.is_valid():
             # Generic node update
             h.form_update_node(request.user, node, form)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_customer.html',
                     {'node': node, 'form': form},
@@ -466,7 +499,10 @@ def edit_end_user(request, handle_id):
         if form.is_valid():
             # Generic node update
             h.form_update_node(request.user, node, form)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_end_user.html',
                     {'node': node, 'form': form},
@@ -488,7 +524,10 @@ def edit_provider(request, handle_id):
         if form.is_valid():
             # Generic node update
             h.form_update_node(request.user, node, form)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_provider.html',
                     {'node': node, 'form': form},
@@ -527,7 +566,10 @@ def edit_service(request, handle_id):
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_id = form.cleaned_data['relationship_depends_on']
                 h.set_depends_on(node, depends_on_id)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_service.html',
                                      {'form': form, 'node': node,
@@ -546,7 +588,7 @@ def edit_service(request, handle_id):
 def edit_optical_link(request, handle_id):
     if not request.user.is_staff:
         raise Http404
-        # Get needed data from node
+    # Get needed data from node
     nh, node = h.get_nh_node(handle_id)
     providers =  h.iter2list(node.Provides.incoming)
     depends_on = h.iter2list(h.get_logical_depends_on(node))
@@ -565,7 +607,10 @@ def edit_optical_link(request, handle_id):
             if form.cleaned_data['relationship_end_b']:
                 depends_on_id = form.cleaned_data['relationship_end_b']
                 h.set_depends_on(node, depends_on_id)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_optical_link.html',
                 {'form': form, 'node': node,
@@ -598,7 +643,10 @@ def edit_optical_path(request, handle_id):
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_id = form.cleaned_data['relationship_depends_on']
                 h.set_depends_on(node, depends_on_id)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_optical_path.html',
                 {'form': form, 'node': node,
