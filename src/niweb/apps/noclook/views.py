@@ -113,6 +113,7 @@ def list_services(request, service_class=None):
                               'service_class': service_class},
                              context_instance=RequestContext(request))
 
+@login_required
 def list_optical_paths(request):
     q = '''
         START node=node:node_types(node_type = "Optical Path")
@@ -123,6 +124,7 @@ def list_optical_paths(request):
         {'optical_path_list': optical_path_list},
         context_instance=RequestContext(request))
 
+@login_required
 def list_optical_links(request):
     q = '''
         START node=node:node_types(node_type = "Optical Link")
