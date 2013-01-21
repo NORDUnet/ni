@@ -1,7 +1,6 @@
 from django import forms
-
 from django.forms.util import ErrorDict, ErrorList
-from django.forms.widgets import TextInput
+from django.forms.widgets import HiddenInput
 from django.utils import simplejson
 from niweb.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
 import niweb.apps.noclook.helpers as h
@@ -164,11 +163,11 @@ class JSONField(forms.CharField):
             raise forms.validators.ValidationError(self.error_messages['invalid'])
         return json_data
 
-# TODO: Change TextInput to forms.widgets.HiddenInput
-class JSONInput(TextInput):
+
+class JSONInput(HiddenInput):
+
     def render(self, name, value, attrs=None):
-        jsonstr = simplejson.dumps(value)
-        return super(JSONInput, self).render(name, jsonstr, attrs)
+        return super(JSONInput, self).render(name, simplejson.dumps(value), attrs)
 
 
 class ReserveIdForm(forms.Form):
