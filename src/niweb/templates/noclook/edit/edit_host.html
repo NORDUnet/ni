@@ -156,10 +156,10 @@ $(document).ready(
     <div id="operation-section">
         <h3>Operational information</h3>
         <div class="well">
-            <label>Description</label>
+            <label><strong>Description</strong></label>
             {{ form.description }}
             <span class="help-block">{{ form.description.help_text }}</span>
-            <label>Responsible</label>
+            <label><strong>Responsible</strong></label>
             {{ form.responsible_persons }}
             <div id="responsible"></div>
             <div class="row">
@@ -170,14 +170,14 @@ $(document).ready(
                     <a id="add" class="label label-success" href="">Add</a>
                 </div>
             </div>
-            <span class="help-block">{{ form.responsible_person.help_text }}</span>
-            <label>Backup</label>
+            <span class="help-block">{{ form.responsible_persons.help_text }}</span>
+            <label><strong>Backup</strong></label>
             {{ form.backup }}
             <span class="help-block">{{ form.backup.help_text }}</span>
-            <label>Syslog</label>
+            <label><strong>Syslog</strong></label>
             {{ form.syslog }}
             <span class="help-block">{{ form.syslog.help_text }}</span>
-            <label>In operation</label>
+            <label><strong>In operation<strong></label>
             {{ form.in_operation }}
             <span class="help-block">{{ form.in_operation.help_text }}</span>
         </div>
