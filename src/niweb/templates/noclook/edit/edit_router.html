@@ -91,28 +91,28 @@ $(document).ready(
     {{ form.start_unit }}
      <span class="help-block">{{ form.start_unit.help_text }}</span>
 -->
-    <div id="location-section">
+    <div class="well">
+        <h3>Operational State</h3>
+        {{ form.operational_state }}
         <h3>Location (optional)</h3>
-        <div class="well">
-            {% if location %}
-                <label>Current location</label>
-                {% load noclook_tags %}
-                {% for hit in location %}
-                    <div class="row">
-                        <div class="span3">
-                            <a href="{% noclook_node_to_url hit.loc %}">{{ hit.parent.name }} {{ hit.loc.name }}</a>
-                        </div>
-                        <div class="span1">
-                            <a href="relationship/{{ hit.loc_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
-                        </div>
+        {% if location %}
+            <label>Current location</label>
+            {% load noclook_tags %}
+            {% for hit in location %}
+                <div class="row">
+                    <div class="span3">
+                        <a href="{% noclook_node_to_url hit.loc %}">{{ hit.parent.name }} {{ hit.loc.name }}</a>
                     </div>
-                {% endfor %}
-            {% endif %}
-            <label>Set location</label>
-            {{ form.relationship_location }}
-            <select class="stacked" name="level0" id="level0"></select><br />
-            <select class="stacked" name="level1" id="level1"></select>
-        </div>
+                    <div class="span1">
+                        <a href="relationship/{{ hit.loc_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+        <label>Set location</label>
+        {{ form.relationship_location }}
+        <select class="stacked" name="level0" id="level0"></select><br />
+        <select class="stacked" name="level1" id="level1"></select>
     </div>
 {% endblock %}
 
