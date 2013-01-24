@@ -32,6 +32,9 @@ $(document).ready(
             <tr>
                 <th>Name:</th><td>{{ node_handle.node_name }}</td>
             </tr>
+            <tr>
+                <th>Operational State:</th><td>{{ node.operational_state }}</td>
+            </tr>
             {% for address in loopback_addresses %}
                     {% if forloop.first %}
                         <tr>

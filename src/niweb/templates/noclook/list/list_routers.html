@@ -22,6 +22,11 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <h1>Routers</h1>
+    <div class="pull-right">
+        <span class="badge badge-info">Testing</span>
+        <span class="badge badge-warning">Reserved</span>
+        <span class="badge badge-important">Decommissioned</span>
+    </div>
     <table id="routers" class="tablesorter" cellspacing="1">
         <thead>
             <tr>
@@ -31,7 +36,15 @@ $(document).ready(
         <tbody>
             {% load noclook_tags %}
             {% for router in router_list %}
+                {% if router.node.operational_state == "Decommissioned" %}
+                    <tr class="decommissioned">
+                        {% elif router.node.operational_state == "Reserved" %}
+                    <tr class="reserved">
+                        {% elif router.node.operational_state == "Testing" %}
+                    <tr class="testing">
+                        {% else %}
                     <tr>
+                {% endif %}
                         <td><a class="handle" href="{% noclook_node_to_url router.node %}">{{ router.node.name }}</a></td><td>{{ router.model|default:"Unknown" }}</td><td>{{ router.version|default:"Unknown" }}</td>
                     </tr>
             {% endfor %}

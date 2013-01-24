@@ -154,6 +154,18 @@ def list_routers(request):
         {'router_list': router_list,},
         context_instance=RequestContext(request))
 
+@login_required
+def list_optical_nodes(request):
+    q = '''
+        START node=node:node_types(node_type = "Optical Node")
+        RETURN node, node.type? as type, node.link? as link, node.ots? as ots
+        ORDER BY node.name
+        '''
+    router_list = nc.neo4jdb.query(q)
+    return render_to_response('noclook/list/list_optical_nodes.html',
+        {'optical_node_list': router_list,},
+        context_instance=RequestContext(request))
+
 # Detail views
 @login_required
 def generic_detail(request, handle_id, slug):

@@ -45,6 +45,9 @@ $(document).ready(
             <tr>
                 <th>Name:</th><td>{{ node_handle.node_name }}</td>
             </tr>
+            <tr>
+                <th>Operational State:</th><td>{{ node.operational_state }}</td>
+            </tr>
             {% if node.type %}
             <tr>
                 <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.type }}/">{{ node.type }}</a></td>
