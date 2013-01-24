@@ -293,7 +293,7 @@ class EditHostForm(forms.Form):
     backup = forms.NullBooleanField(required=False, help_text='Is the host backed up?')
     syslog = forms.NullBooleanField(required=False, help_text='Do the host log to the syslog machine?')
     in_operation = forms.NullBooleanField(required=False, help_text='Backup and syslog has to be "yes" for a host to be set in operation.')
-    responsible_person = forms.CharField(required=False, help_text='Name of the person responsible for the host.')
+    responsible_persons = JSONField(required=False, widget=JSONInput, help_text='Name of the person responsible for the host.')
     os = forms.CharField(required=False, help_text='What operating system is running on the host?')
     os_version = forms.CharField(required=False, help_text='Which version of the operating system is running on the host?')
     model = forms.CharField(required=False, help_text='What is the hosts hardware model name?')
@@ -683,14 +683,3 @@ class EditOpticalPathForm(forms.Form):
     enrs = JSONField(required=False, widget=JSONInput)
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_depends_on = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-
-    def clean(self):
-        """
-        Check for enrs and transform JSON to a list.
-        """
-        cleaned_data = super(EditOpticalPathForm, self).clean()
-        # Expect a JSON array in enrs
-        enrs = cleaned_data.get("enrs")
-        #if enrs:
-            #cleaned_data['enrs'] = json.dumps(enrs)
-        return cleaned_data
