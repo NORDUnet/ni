@@ -20,6 +20,7 @@ from norduni_client_exceptions import UniqueNodeError, NoRelationshipPossible
 import norduni_client as nc
 
 # Helper functions
+# TODO: Split up delete functions and move the actual deletion to helpers.py
 @login_required
 def delete_node(request, slug, handle_id):
     """
