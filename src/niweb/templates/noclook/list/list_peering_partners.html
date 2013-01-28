@@ -24,13 +24,21 @@ $(document).ready(
     <h1>Peering Partners</h1>
     <table id="peering_partners" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Peering Partner</th><th>AS Number</th>
+            <tr>
+                </tr><th>Peering Partner</th><th>AS Number</th><th>Peering Groups</th>
+            </tr>
         </thead>
         <tbody>
             {% load noclook_tags %}
             {% for partner in partner_list %}
                     <tr>
-                        <td><a class="handle" href="{% noclook_node_to_url partner.peering_partner %}">{{ partner.name }}</a></td><td>{{ partner.as_number }}</td>
+                        <td><a href="{% noclook_node_to_url partner.node %}">{{ partner.node.name }}</a></td>
+                        <td>{{ partner.node.as_number }}</td>
+                        <td>
+                            {% for group in partner.peering_groups %}
+                                <a href="{% noclook_node_to_url group %}">{{ group.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                            {% endfor %}
+                        </td>
                     </tr>
             {% endfor %}
         </tbody>

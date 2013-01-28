@@ -41,6 +41,8 @@ from apps.noclook import helpers as h
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
 
+VERBOSE = True
+
 HOST_USERS_MAP = {
     'eduroam.se':       'SUNET',
     'eid2.se':          'SUNET',
@@ -71,9 +73,10 @@ def set_host_user(node):
         return COUNT(r) as rels
         '''
     hits = nc.neo4jdb.query(q, id=node.getId())
+    users = int(str(h.iter2list(hits['rels'])[0])) # Hack...hits['rels'] is of type java.lang.Long...
     domain = '.'.join(node['name'].split('.')[-2:])
     host_user_name = HOST_USERS_MAP.get(domain, None)
-    if not hits['rels'] and host_user_name:
+    if host_user_name and not users:
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, host_user_name,
                                                 'Host User', 'relation')
         host_user = node_handle.get_node()
@@ -84,6 +87,8 @@ def set_host_user(node):
             rel = nc.create_relationship(nc.neo4jdb, host_user, node, 'Owns')
             activitylog.create_relationship(user, rel)
         h.update_node_search_index(nc.neo4jdb, host_user)
+        if VERBOSE:
+            print 'User %s set for host %s...' % (host_user_name, node['name'])
 
 def insert_services(service_dict, host_node):
     """
@@ -91,21 +96,25 @@ def insert_services(service_dict, host_node):
     service and makes a Depends_on relationship between the service and host.
 
     Example service_dict:
-    {"ipv4": {
-        "127.0.0.1": {
-            "tcp": {
-                "1025": {
-                    "product": "Microsoft Windows RPC",
-                    "confidence": "10",
-                    "name": "msrpc",
-                    "proto": "unknown"},
-                "1029": {
-                    "product": "Microsoft Windows RPC over HTTP",
-                    "confidence": "10",
-                    "version": "1.0",
-                    "name": "ncacn_http",
-                    "proto": "unknown"},
-                }
+    {"127.0.0.1": {
+        "tcp": {
+            "80": {
+                "conf": "10",
+                "extrainfo": "",
+                "name": "http",
+                "product": "VMware ESXi Server httpd",
+                "reason": "syn-ack",
+                "state": "open",
+                "version": ""
+            },
+            "8443": {
+                "conf": "10",
+                "extrainfo": "",
+                "name": "ssl",
+                "product": "TLS",
+                "reason": "syn-ack",
+                "state": "open",
+                "version": "1.0"
             }
         }
     }
@@ -115,50 +124,52 @@ def insert_services(service_dict, host_node):
     meta_type = 'logical'
     service_nodes = []
     for key in service_dict.keys():
-        ipv = key
-        for key in service_dict[ipv].keys():
-            address = key
-            for key in service_dict[ipv][address].keys():
-                protocol = key
-                for key in service_dict[ipv][address][protocol].keys():
-                    port = key
-                    service = service_dict[ipv][address][protocol][port]
-                    node_handle = nt.get_unique_node_handle(nc.neo4jdb,
-                                                            service['name'], 
-                                                            node_type, 
-                                                            meta_type)
-                    service_node = node_handle.get_node()
-                    h.update_noclook_auto_manage(nc.neo4jdb, service_node)
-                    service_nodes.append(service_node)
-                    # Get existing relationships between the two nodes
-                    rel_index = nc.get_relationship_index(nc.neo4jdb, 
-                                                         nc.search_index_name())
-                    q = Q('ip_address', '%s' % address)
-                    service_rels = rel_index.query(str(q))
-                    create = True                    
-                    for rel in service_rels:
-                        try:
-                            if rel['protocol'] == protocol and rel['port'] == port:
-                                create = False
-                                h.update_noclook_auto_manage(nc.neo4jdb, rel)
-                                break
-                        except KeyError:
-                            continue
-                    if create:
-                        # Create a relationship between the service and host
-                        new_rel = nc.create_relationship(nc.neo4jdb,
-                                                                  service_node, 
-                                                                  host_node, 
-                                                                  'Depends_on')
-                        with nc.neo4jdb.transaction:
-                            new_rel['ip_address'] = address
-                            new_rel['protocol'] = protocol
-                            new_rel['port'] = port
-                            for key, value in service.items():
-                                new_rel[key] = value
-                        h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
-                        h.update_relationship_search_index(nc.neo4jdb, new_rel)
-                        activitylog.create_relationship(user, new_rel)
+        address = key
+        for key in service_dict[address].keys():
+            protocol = key
+            for key in service_dict[address][protocol].keys():
+                port = key
+                service = service_dict[address][protocol][port]
+                node_handle = nt.get_unique_node_handle(
+                    nc.neo4jdb,
+                    service['name'],
+                    node_type,
+                    meta_type
+                )
+                service_node = node_handle.get_node()
+                h.update_noclook_auto_manage(nc.neo4jdb, service_node)
+                service_nodes.append(service_node)
+                # Get existing relationships between the two nodes
+                rel_index = nc.get_relationship_index(nc.neo4jdb,
+                                                     nc.search_index_name())
+                q = Q('ip_address', '%s' % address)
+                service_rels = rel_index.query(str(q))
+                create = True
+                for rel in service_rels:
+                    try:
+                        if rel['protocol'] == protocol and rel['port'] == port:
+                            create = False
+                            h.update_noclook_auto_manage(nc.neo4jdb, rel)
+                            break
+                    except KeyError:
+                        continue
+                if create:
+                    # Create a relationship between the service and host
+                    new_rel = nc.create_relationship(nc.neo4jdb,
+                                                              service_node,
+                                                              host_node,
+                                                              'Depends_on')
+                    with nc.neo4jdb.transaction:
+                        new_rel['ip_address'] = address
+                        new_rel['protocol'] = protocol
+                        new_rel['port'] = port
+                        for key, value in service.items():
+                            new_rel[key] = value
+                    h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
+                    h.update_relationship_search_index(nc.neo4jdb, new_rel)
+                    activitylog.create_relationship(user, new_rel)
+                if VERBOSE:
+                    print '%s %s %s %s processed...' % (host_node['name'], address, protocol, port)
     return service_nodes
 
 def insert_nmap(json_list):
@@ -166,6 +177,7 @@ def insert_nmap(json_list):
     Inserts the data loaded from the json files created by
     the nerds producer nmap_services.
     """
+    user = nt.get_user()
     node_type = "Host"
     meta_type = 'logical'
     # Insert the host
@@ -175,19 +187,35 @@ def insert_nmap(json_list):
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type,
                                                 meta_type)
         # Set Node attributes
+        property_keys = ['hostnames', 'addresses']
         node = node_handle.get_node()
         h.update_noclook_auto_manage(nc.neo4jdb, node)
-        nc.merge_properties(nc.neo4jdb, node, 'hostnames',
-                            i['host']['hostnames'])
-        nc.merge_properties(nc.neo4jdb, node, 'addresses', i['host']['addrs'])
-        # Add the nodes hostnames and addresses to the search index
-        h.update_node_search_index(nc.neo4jdb, node)
+        host_properties = {
+            'hostnames': i['host']['nmap_services_py']['hostnames'],
+            'addresses': i['host']['nmap_services_py']['addresses']
+        }
+        if i['host']['nmap_services_py'].has_key('os') and not node.get_property('os', None):
+            # Only set os if the property is missing as a user probably knows better than nmap
+            if i['host']['nmap_services_py']['os'].has_key('class'):
+                property_keys.extend(['os', 'os_version'])
+                host_properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
+                host_properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
+            elif i['host']['nmap_services_py']['os'].has_key('match'):
+                property_keys.extend(['os'])
+                host_properties['os'] = i['host']['nmap_services_py']['os']['match']['name']
+        if i['host']['nmap_services_py'].has_key('uptime'):
+            property_keys.extend(['lastboot', 'uptime'])
+            host_properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
+            host_properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
+        h.dict_update_node(user, node, host_properties, property_keys)
         try:
-            insert_services(i['host']['services'], node)
+            insert_services(i['host']['nmap_services_py']['services'], node)
         except KeyError as e:
             pass
         # Set host user depending on the domain.
         set_host_user(node)
+        if VERBOSE:
+            print '%s done.' % name
 
 def main():
     # User friendly usage output
@@ -201,7 +229,7 @@ def main():
         sys.exit(1)
     else:
         config = nt.init_config(args.C)
-        nmap_services_data = config.get('data', 'nmap_services')
+        nmap_services_data = config.get('data', 'nmap_services_py')
         if nmap_services_data:
             insert_nmap(nt.load_json(nmap_services_data))
     return 0

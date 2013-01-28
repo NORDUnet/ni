@@ -12,6 +12,11 @@ class UserProfile(models.Model):
     def __unicode__(self):
         return "%s [%s]" % (self.user.username, self.display_name)
 
+    @models.permalink
+    def get_absolute_url(self):
+        return('niweb.apps.userprofile.views.userprofile_detail', (),
+               {'userprofile_id': self.pk})
+
 
 @receiver(post_save,sender=User)
 def create_user_profile(sender,**kwargs):

@@ -15,12 +15,12 @@ import json
 from django.conf import settings as django_settings
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.noclook import forms
+from niweb.apps.noclook import activitylog
 import niweb.apps.noclook.helpers as h
 from norduni_client_exceptions import UniqueNodeError, NoRelationshipPossible
 import norduni_client as nc
 
 # Helper functions
-# TODO: Split up delete functions and move the actual deletion to helpers.py
 @login_required
 def delete_node(request, slug, handle_id):
     """
@@ -31,12 +31,15 @@ def delete_node(request, slug, handle_id):
         # Remove dependant equipment like Ports
         for rel in node.Has.outgoing:
             child_nh, child_node = h.get_nh_node(rel.end['handle_id'])
+            activitylog.delete_node(request.user, child_nh)
             # Remove Units if any
             for rel2 in child_node.Depends_on.incoming:
                 if rel2.start['node_type'] == 'Unit':
                     unit_nh, unit_node = h.get_nh_node(rel2.start['handle_id'])
+                    activitylog.delete_node(request.user, unit_nh)
                     unit_nh.delete()
             child_nh.delete()
+    activitylog.delete_node(request.user, nh)
     nh.delete()
     return HttpResponseRedirect('/%s' % slug)
     
@@ -49,6 +52,7 @@ def delete_relationship(request, slug, handle_id, rel_id):
     nh, node = h.get_nh_node(handle_id)
     rel = nc.get_relationship_by_id(nc.neo4jdb, rel_id)
     if rel.start.id == node.id or rel.end.id == node.id:
+        activitylog.delete_relationship(request.user, rel)
         if nc.delete_relationship(nc.neo4jdb, rel):
             return HttpResponseRedirect('/%s/%d/edit' % (slug, nh.handle_id))
     raise Http404
@@ -83,7 +87,7 @@ def get_children(request, node_id, slug=None):
     q = '''                   
         START parent=node({id})
         MATCH parent--child
-        WHERE (parent-[:Has]->child or parent<-[:Located_in]-child or (parent<-[:Depends_on]-child and child.node_type = "Unit")) %s
+        WHERE (parent-[:Has]->child or parent<-[:Located_in|Part_of]-child) %s
         RETURN child
         ORDER BY child.node_type, child.name
         ''' % type_filter
@@ -126,11 +130,19 @@ def edit_site(request, handle_id):
             h.form_update_node(request.user, node, form)
             # Site specific updates
             if form.cleaned_data['name'].upper() != node['name']:
+                pre_value = node['name']
                 with nc.neo4jdb.transaction:
                     node['name'] = form.cleaned_data['name'].upper()
 
                     nh.node_name = node['name']
                     nh.save()
+                    activitylog.update_node_property(
+                        request.user,
+                        nh,
+                        'name',
+                        pre_value,
+                        form.cleaned_data['name'].upper()
+                    )
                 # Update search index
                 index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
                 nc.update_index_item(nc.neo4jdb, index, node, 'name')
@@ -140,20 +152,7 @@ def edit_site(request, handle_id):
                     node['country_code'] = inverse_cm[node['country']]
             # Set site owner
             if form.cleaned_data['relationship_site_owner']:
-                owner_id = form.cleaned_data['relationship_site_owner']
-                owner_node = nc.get_node_by_id(nc.neo4jdb, owner_id)
-                rel_exist = nc.get_relationships(node, owner_node, 
-                                                     'Responsible_for')
-                if not rel_exist:
-                    try:
-                        owner_rel = h.iter2list(node.Responsible_for.incoming)
-                        with nc.neo4jdb.transaction:
-                            owner_rel[0].delete()
-                    except IndexError:
-                        # No site owner set
-                        pass
-                    nc.create_relationship(nc.neo4jdb, owner_node,
-                                                    node, 'Responsible_for')
+                h.set_responsible_for(request.user, node, form.cleaned_data['relationship_site_owner'])
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -209,19 +208,28 @@ def edit_cable(request, handle_id):
             h.form_update_node(request.user, node, form)
             # Cable specific update
             if form.cleaned_data['telenor_trunk_id']:
-                with nc.neo4jdb.transaction:
-                    node['name'] = form.cleaned_data['telenor_trunk_id']
-                    nh.node_name = form.cleaned_data['telenor_trunk_id']
-                    nh.save()
+                if node['name'] != form.cleaned_data['telenor_trunk_id']:
+                    pre_value = node['name']
+                    with nc.neo4jdb.transaction:
+                        node['name'] = form.cleaned_data['telenor_trunk_id']
+                        nh.node_name = form.cleaned_data['telenor_trunk_id']
+                        nh.save()
+                        activitylog.update_node_property(
+                            request.user,
+                            nh,
+                            'name',
+                            pre_value,
+                            form.cleaned_data['telenor_trunk_id']
+                        )
             # Update search index for name
             index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
             nc.update_index_item(nc.neo4jdb, index, node, 'name')
             if form.cleaned_data['relationship_end_a']:
                 end_a = form.cleaned_data['relationship_end_a']
-                h.connect_physical(node, end_a)
+                h.connect_physical(request.user, node, end_a)
             if form.cleaned_data['relationship_end_b']:
                 end_b = form.cleaned_data['relationship_end_b']
-                h.connect_physical(node, end_b)
+                h.connect_physical(request.user, node, end_b)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -253,7 +261,7 @@ def edit_optical_node(request, handle_id):
             # Optical Node specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                nh, node = h.place_physical_in_location(nh, node, location_id)
+                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -309,7 +317,7 @@ def edit_rack(request, handle_id):
             # Rack specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                h.place_child_in_parent(node, location_id)
+                h.place_child_in_parent(request.user, node, location_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -343,13 +351,13 @@ def edit_host(request, handle_id):
             # Host specific updates
             if form.cleaned_data['relationship_user']:
                 user_id = form.cleaned_data['relationship_user']
-                node = h.set_user(node, user_id)
+                node = h.set_user(request.user, node, user_id)
             if form.cleaned_data['relationship_owner']:
                 owner_id = form.cleaned_data['relationship_owner']
-                node = h.set_owner(node, owner_id)
+                node = h.set_owner(request.user, node, owner_id)
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                nh, node = h.place_physical_in_location(nh, node, location_id)
+                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -383,7 +391,7 @@ def edit_router(request, handle_id):
             # Router specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                nh, node = h.place_physical_in_location(nh, node, location_id)
+                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -415,7 +423,7 @@ def edit_odf(request, handle_id):
             # ODF specific updates
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                nh, node = h.place_physical_in_location(nh, node, location_id)
+                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -446,7 +454,7 @@ def edit_port(request, handle_id):
             # Port specific updates
             if form.cleaned_data['relationship_parent']:
                 parent_id = form.cleaned_data['relationship_parent']
-                h.place_child_in_parent(node, parent_id)
+                h.place_child_in_parent(request.user, node, parent_id)
             else:
                 # Remove existing location if any
                 for rel in h.iter2list(node.Located_in.outgoing):
@@ -557,16 +565,16 @@ def edit_service(request, handle_id):
             # Service node updates
             if form.cleaned_data['relationship_provider']:
                 provider_id = form.cleaned_data['relationship_provider']
-                h.set_provider(node, provider_id)
+                h.set_provider(request.user, node, provider_id)
             if form.cleaned_data['relationship_customer']:
                 customer_id = form.cleaned_data['relationship_customer']
-                h.set_user(node, customer_id)
+                h.set_user(request.user, node, customer_id)
             if form.cleaned_data['relationship_end_user']:
                 end_user_id = form.cleaned_data['relationship_end_user']
-                h.set_user(node, end_user_id)
+                h.set_user(request.user, node, end_user_id)
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_id = form.cleaned_data['relationship_depends_on']
-                h.set_depends_on(node, depends_on_id)
+                h.set_depends_on(request.user, node, depends_on_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -601,13 +609,13 @@ def edit_optical_link(request, handle_id):
             # Optical Link node updates
             if form.cleaned_data['relationship_provider']:
                 provider_id = form.cleaned_data['relationship_provider']
-                h.set_provider(node, provider_id)
+                h.set_provider(request.user, node, provider_id)
             if form.cleaned_data['relationship_end_a']:
                 depends_on_id = form.cleaned_data['relationship_end_a']
-                h.set_depends_on(node, depends_on_id)
+                h.set_depends_on(request.user, node, depends_on_id)
             if form.cleaned_data['relationship_end_b']:
                 depends_on_id = form.cleaned_data['relationship_end_b']
-                h.set_depends_on(node, depends_on_id)
+                h.set_depends_on(request.user, node, depends_on_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -640,10 +648,10 @@ def edit_optical_path(request, handle_id):
             # Optical Path node updates
             if form.cleaned_data['relationship_provider']:
                 provider_id = form.cleaned_data['relationship_provider']
-                h.set_provider(node, provider_id)
+                h.set_provider(request.user, node, provider_id)
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_id = form.cleaned_data['relationship_depends_on']
-                h.set_depends_on(node, depends_on_id)
+                h.set_depends_on(request.user, node, depends_on_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:

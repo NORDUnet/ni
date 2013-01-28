@@ -57,6 +57,12 @@ urlpatterns = patterns('',
     # Django Generic Comments
     (r'^comments/', include('django.contrib.comments.urls')),
 
+    # Activity Streams
+    ('^activity/', include('actstream.urls')),
+
+    # User Profiles
+    ('^userprofile/', include('niweb.apps.userprofile.urls')),
+
     # NOCLook URLs
     (r'', include('niweb.apps.noclook.urls')),
 )

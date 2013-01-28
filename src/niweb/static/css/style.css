@@ -26,6 +26,14 @@ ul.menu {
  width: 100%;
 }
 
+.top-space {
+    margin-top: 40px;
+}
+
+.no-border {
+    border: 0;
+}
+
 .clear-float {
  width: 100%;
  height: 1px;
@@ -169,7 +177,12 @@ table.tablesorter thead .header {
  padding-right: 15px;
 }
 
+/* List color coding */
 tr.decommissioned {
+    border-left: 3px #B94A48 solid;
+}
+
+tr.expired {
     border-left: 3px #B94A48 solid;
 }
 
@@ -186,6 +199,6 @@ ul.errorlist {
  list-style: none;
 }
 
-.ip-address {
+.ip-address:hover {
     cursor: pointer;
 }
