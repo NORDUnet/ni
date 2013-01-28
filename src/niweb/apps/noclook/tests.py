@@ -55,9 +55,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             modifier = self.user,
         )
         if r1created and p1created:
-            h.place_child_in_parent(port1.get_node(), router1.get_node().getId())
+            h.place_child_in_parent(self.user, port1.get_node(), router1.get_node().getId())
         if r2created and r2created:
-            h.place_child_in_parent(port2.get_node(), router2.get_node().getId())
+            h.place_child_in_parent(self.user, port2.get_node(), router2.get_node().getId())
 
     def get_credentials(self):
         return self.create_apikey(username=self.username, api_key=str(self.api_key.key))

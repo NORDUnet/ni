@@ -41,6 +41,7 @@ from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook import helpers as h
+from apps.noclook import activitylog
 from django.contrib.comments import Comment
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
@@ -153,6 +154,7 @@ def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
                                                 creator=user,
                                                 modifier=user)
         node_handle.save()
+        activitylog.create_node(user, node_handle)
     return node_handle
 
 def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
@@ -167,13 +169,22 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
     node_type = get_node_type(node_type_name)
     try:
         if parent:
-            node_handles = NodeHandle.objects.filter(node_name__in=[node_name]
-                                            ).filter(node_type__in=[node_type])
-            for node_handle in node_handles:
-                node = node_handle.get_node()
-                node_parent = nc.get_root_parent(db, node)
-                if node_parent and parent.id == node_parent[0].id:
-                    return node_handle # NodeHandle for that parent was found
+            q = """
+                START parent=node({id})
+                MATCH parent-->child
+                WHERE child.node_type = {node_type} AND child.name = {node_name}
+                RETURN child
+                """
+            hit = db.query(
+                q,
+                id=parent.getId(),
+                node_type=node_type_name,
+                node_name=node_name
+            ).single
+            if hit:
+                node = hit['child']
+                node_handle = NodeHandle.objects.get(pk=node['handle_id'])
+                return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
         pass
@@ -183,6 +194,7 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
                                             creator=user,
                                             modifier=user)
     node_handle.save()
+    activitylog.create_node(user, node_handle)
     return node_handle # No NodeHandle found return a new handle.
 
 def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
@@ -228,7 +240,7 @@ def add_node_to_indexes(node):
     
 def add_relationship_to_indexes(rel):
     """
-    If the relationship has any property keys matching the SEARCH_INDEX_KEYS the 
+    If the relationship has any property keys matching the SEARCH_INDEX_KEYS the
     relationship will be added to the index with those values.
     """
     # Add the nodes to the search indexe

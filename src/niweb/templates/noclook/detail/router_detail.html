@@ -25,7 +25,6 @@ $(document).ready(
 {% block content %}
 {% load noclook_tags %}
 {{ block.super }}
-{% load noclook_tags %}
 <div class="row">
     <div class="span4">
         <table class="table">
@@ -73,37 +72,45 @@ $(document).ready(
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
-<br><br><br>
-<div class="section">
+<div class="section top-space">
     <h3>Interfaces</h3>
     {% if ports %}
-    <table id="ports" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
-                <th>Port</th><th>Description</th><th>Units</th><th>Depends on port</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for port in ports %}
-            <tr>
-                <td><a href="{% noclook_node_to_url port.port %}">{{ port.port.name }}</a></td>
-                <td>{{ port.port.description }}</td>
-                <td>
-                    {% for unit in port.units %}
-                        <a href="{% noclook_node_to_url unit %}">{{ unit.node_type }} {{ unit.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
-                    {% endfor %}
-                </td>
-                <td>
-                    {% for depends in port.depends_on_port %}
-                        {% if depends.dep %}
-                            <a href="{% noclook_node_to_url depends.dep %}">{{ depends.dep.node_type }} {{ depends.dep.name }}</a>{% if depends.unit %} (<a href="{% noclook_node_to_url depends.unit %}">{{ depends.unit.node_type }} {{ depends.unit.name }}</a>){% endif %}{% if forloop.last %}{% else %},<br>{% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+        <div class="pull-right">
+            <span class="badge badge-important">Expired</span>
+        </div>
+        <table id="ports" class="tablesorter" cellspacing="1">
+            <thead>
+                <tr>
+                    <th>Port</th><th>Description</th><th>Units</th><th>Depends on port</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% load noclook_tags %}
+            {% for port in ports %}
+                {% noclook_has_expired port.port as expired %}
+                {% if expired %}
+                    <tr class="expired">
+                {% else %}
+                    <tr>
+                {% endif %}
+                    <td><a href="{% noclook_node_to_url port.port %}">{{ port.port.name }}</a></td>
+                    <td>{{ port.port.description }}</td>
+                    <td>
+                        {% for unit in port.units %}
+                            <a href="{% noclook_node_to_url unit %}">{{ unit.node_type }} {{ unit.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for depends in port.depends_on_port %}
+                            {% if depends.dep %}
+                                <a href="{% noclook_node_to_url depends.dep %}">{{ depends.dep.node_type }} {{ depends.dep.name }}</a>{% if depends.unit %} (<a href="{% noclook_node_to_url depends.unit %}">{{ depends.unit.node_type }} {{ depends.unit.name }}</a>){% endif %}{% if forloop.last %}{% else %},<br>{% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     {% else %}
         No services provided.
     {% endif %}

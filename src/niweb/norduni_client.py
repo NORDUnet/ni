@@ -366,9 +366,12 @@ def create_logical_relationship(db, logical_node, other_node, rel_type):
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
     """
+    other_meta_type = get_node_meta_type(other_node)
     if rel_type == 'Depends_on':
-        other_meta_type = get_node_meta_type(other_node)
         if other_meta_type == 'logical' or other_meta_type == 'physical':
+            return _create_relationship(db, logical_node, other_node, rel_type)
+    elif rel_type == 'Part_of':
+        if other_meta_type == 'physical':
             return _create_relationship(db, logical_node, other_node, rel_type)
     raise NoRelationshipPossible(logical_node, other_node, rel_type)
     
@@ -609,14 +612,21 @@ def test_db_setup(db_uri=None):
                                                      n.id)
     db.shutdown()
 
+def _warmup(db):
+    q = """
+    START n=node(*)
+    MATCH n-[r?]->()
+    RETURN count(n.property_i_do_not_have?)+count(r.property_i_do_not_have?)
+    """
+    db.query(q)
+
 def _init_db():
     return open_db()
 
 try:
     neo4jdb = _init_db()
     # Preload nodes and relationship from disk
-    get_all_nodes(neo4jdb)
-    get_all_relationships(neo4jdb)
+    _warmup(neo4jdb)
 except Exception as e:
     print '*** WARNING ***'
     print 'Error: %s' % e
