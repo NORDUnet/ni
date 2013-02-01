@@ -74,6 +74,24 @@ def get_nh_node(node_handle_id):
     node = nh.get_node()
     return nh, node
 
+def delete_node(user, node):
+    nh = NodeHandle.objects.get(node['handle_id'])
+    if nc.get_node_meta_type(node) == 'physical':
+        # Remove dependant equipment like Ports
+        for rel in node.Has.outgoing:
+            child_nh, child_node = get_nh_node(rel.end['handle_id'])
+            activitylog.delete_node(user, child_nh)
+            # Remove Units if any
+            for rel2 in child_node.Depends_on.incoming:
+                if rel2.start['node_type'] == 'Unit':
+                    unit_nh, unit_node = get_nh_node(rel2.start['handle_id'])
+                    activitylog.delete_node(user, unit_nh)
+                    unit_nh.delete()
+            child_nh.delete()
+    activitylog.delete_node(user, nh)
+    nh.delete()
+    return True
+
 def form_update_node(user, node, form, property_keys=None):
     """
     Take a node, a form and the property keys that should be used to fill the
