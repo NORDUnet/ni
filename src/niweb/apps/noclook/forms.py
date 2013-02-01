@@ -228,9 +228,8 @@ class NewCableForm(forms.Form):
                                    
                                        
 class EditCableForm(forms.Form):
-    name = forms.CharField()
-    cable_type = forms.ChoiceField(choices=CABLE_TYPES,
-                                   widget=forms.widgets.Select)
+    name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
+    cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
     telenor_tn1_number = forms.CharField(required=False,
                                   help_text='Telenor TN1 number, nnnnn.')
     telenor_trunk_id = forms.CharField(required=False, 
