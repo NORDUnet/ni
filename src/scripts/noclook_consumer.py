@@ -48,6 +48,7 @@ from django.contrib.auth.models import User
 import norduni_client as nc
 import noclook_juniper_consumer
 import noclook_nmap_consumer
+import noclook_nmap_consumer_py
 import noclook_alcatel_consumer
 
 # This script is used for adding the objects collected with the
@@ -340,6 +341,7 @@ def run_consume(config_file):
     config = init_config(config_file)
     juniper_conf_data = config.get('data', 'juniper_conf')
     nmap_services_data = config.get('data', 'nmap_services')
+    nmap_services_py_data = config.get('data', 'nmap_services_py')
     alcatel_isis_data = config.get('data', 'alcatel_isis')
     noclook_data = config.get('data', 'noclook')
     if juniper_conf_data:
@@ -348,6 +350,9 @@ def run_consume(config_file):
     if nmap_services_data:
         data = load_json(nmap_services_data)
         noclook_nmap_consumer.insert_nmap(data)
+    if nmap_services_py_data:
+        data = load_json(nmap_services_py_data)
+        noclook_nmap_consumer_py.insert_nmap(data)
     if alcatel_isis_data:
         data = load_json(alcatel_isis_data)
         noclook_alcatel_consumer.consume_alcatel_isis(data)
