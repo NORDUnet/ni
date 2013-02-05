@@ -51,6 +51,13 @@
     <span class="label label-important">Last seen {{ last_seen|timesince }} ago</span>
 {% endif %}
 <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h1>
+{% if same_name_relations %}
+    <h5 class="site">also as
+        {% for hit in same_name_relations %}
+            <a href="{% noclook_node_to_url hit.relation %}"> {{ hit.relation.node_type }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    </h5>
+{% endif %}
 {% if location %}
     <h5 class="site">Located in
     {% for hit in location %}
@@ -58,10 +65,10 @@
     {% endfor %}
     </h5>
 {% endif %}
-{% if same_name_relations %}
-    <h5 class="site">also as
-        {% for hit in same_name_relations %}
-            <a href="{% noclook_node_to_url hit.relation %}"> {{ hit.relation.node_type }}</a>{% if not forloop.last %},{% endif %}
+{% if part_of %}
+    <h5 class="site">Part of
+        {% for hit in part_of %}
+            <a href="{% noclook_node_to_url hit.parent %}"> {{ hit.parent.name }}</a> <a href="{% noclook_node_to_url hit.loc %}"> {{ hit.loc.name }}</a>
         {% endfor %}
     </h5>
 {% endif %}

@@ -389,6 +389,17 @@ def get_place(node):
         '''
     return nc.neo4jdb.query(q, id=node.getId())
 
+def part_of(node):
+    """
+    Returns the node place and the places parent, if any.
+    """
+    q = '''
+        START node=node({id})
+        MATCH node-[loc_rel:Part_of]->loc<-[?:Has*1..]-parent
+        RETURN loc,loc_rel,parent
+        '''
+    return nc.neo4jdb.query(q, id=node.getId())
+
 def get_connected_cables(cable):
     """
     Get the things the cable is connected to and their parents, if any.

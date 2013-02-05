@@ -517,11 +517,12 @@ def unit_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     depend_inc = h.iter2list(node.Depends_on.incoming)
     depend_out = h.iter2list(h.get_logical_depends_on(node))
+    part_of = h.iter2list(h.part_of(node))
     return render_to_response('noclook/detail/unit_detail.html',
                              {'node': node, 'node_handle': nh,
                               'last_seen': last_seen, 'expired': expired,
                               'depend_inc': depend_inc, 'depend_out': depend_out,
-                              'history': history},
+                              'part_of': part_of, 'history': history},
         context_instance=RequestContext(request))
 
 @login_required
