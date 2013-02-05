@@ -326,7 +326,7 @@ def consume_noclook(json_list):
             add_relationship_to_indexes(rel)
     # Remove the 'old_node_id' property from all nodes
     for n in nc.get_all_nodes(nc.neo4jdb):
-        if n.getProperty('old_node_id', None):
+        if n.get_property('old_node_id', None):
             with nc.neo4jdb.transaction:
                 del n['old_node_id']
     # Remove the temporary old_node_id index.
