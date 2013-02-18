@@ -166,7 +166,7 @@ class UniqueIdGenerator(models.Model):
         base_id = self.base_id
         if self.zfill:
             base_id = str(self.base_id).zfill(self.base_id_length)
-            prefix = suffix = ''
+        prefix = suffix = ''
         if self.prefix: prefix = self.prefix
         if self.suffix: suffix = self.suffix
         self.next_id = '%s%s%s' % (prefix, base_id, suffix)
