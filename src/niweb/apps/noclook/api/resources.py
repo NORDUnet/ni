@@ -531,7 +531,7 @@ class ServiceL2VPNResource(ServiceResource):
                 port_node = get_port(end_point['device'], end_point['port'])
                 if not port_node:
                     port_node = create_port(end_point['device'], 'Router', end_point['port'], request.user)
-                set_depends_on(node, port_node.getId())
+                set_depends_on(request.user, node, port_node.getId())
             return self.hydrate_node(bundle)
 
     def dehydrate(self, bundle):
