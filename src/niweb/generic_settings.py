@@ -8,6 +8,9 @@ from apps.saml2auth import config
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+SOUTH_TESTS_MIGRATE = False
+TEST_RUNNER = 'niweb_test_runner.NiwebTestSuiteRunner'
+
 NIWEB_ROOT = ''
 # URL without the host name,
 # eg. /niweb/ for http://www.example.com/niweb/.
