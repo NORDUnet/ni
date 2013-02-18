@@ -24,8 +24,8 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType
-from niweb.apps.noclook.forms import EditServiceForm #NewNordunetL2vpnServiceForm
-from niweb.apps.noclook.helpers import item2dict, form_update_node #get_port, create_port, set_depends_on
+from niweb.apps.noclook.forms import EditServiceForm, NewNordunetL2vpnServiceForm
+from niweb.apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, set_depends_on
 import norduni_client as nc
 
 def handle_id2resource_uri(handle_id):
@@ -492,65 +492,65 @@ class ServiceResource(NodeHandleResource):
         del bundle.data['absolute_url']
         return bundle
 
-#class ServiceL2VPNResource(ServiceResource):
-#
-#    l2vpn_id = fields.IntegerField(readonly=True)
-#    end_points = fields.ListField(help_text='[{"device": "", "port": ""},]')
-#
-#    class Meta(ServiceResource.Meta):
-#        resource_name = 'l2vpn'
-#        initial_data = {
-#            'node_type': '/api/v1/node_type/service/',
-#            'node_meta_type': 'logical',
-#            'service_type': 'L2VPN',
-#            'operational_state': 'Reserved',
-#        }
-#
-#
-#    def obj_create(self, bundle, request=None, **kwargs):
-#        bundle.data.update(self._meta.initial_data)
-#        form = NewNordunetL2vpnServiceForm(bundle.data)
-#        if form.is_valid():
-#            bundle.data.update({
-#                'node_name': form.cleaned_data['name'],
-#                'creator': '/api/%s/user/%d/' % (self._meta.api_name, request.user.pk),
-#                'modifier': '/api/%s/user/%d/' % (self._meta.api_name, request.user.pk),
-#                'node': {
-#                    'service_type': form.cleaned_data['service_type'],
-#                    'service_class': form.cleaned_data['service_class'],
-#                    'l2vpn_id': form.cleaned_data['l2vpn_id'],
-#                    'operational_state': form.cleaned_data['operational_state'],
-#                    'description': form.cleaned_data['description'],
-#                },
-#            })
-#            bundle = super(ServiceL2VPNResource, self).obj_create(bundle, request,
-#                **kwargs)
-#            # Depend the created service on provided end points
-#            node = bundle.obj.get_node()
-#            for end_point in bundle.data.get('end_points', []):
-#                port_node = get_port(end_point['device'], end_point['port'])
-#                if not port_node:
-#                    port_node = create_port(end_point['device'], 'Router', end_point['port'], request.user)
-#                set_depends_on(node, port_node.getId())
-#            return self.hydrate_node(bundle)
-#
-#    def dehydrate(self, bundle):
-#        bundle = super(ServiceL2VPNResource, self).dehydrate(bundle)
-#        bundle.data['l2vpn_id'] = bundle.data['node'].get('l2vpn_id', '')
-#        del bundle.data['end_points']
-#        return bundle
-#
-#    def get_object_list(self, request, **kwargs):
-#        q = """
-#            START node=node:node_types(node_type = "Service")
-#            WHERE node.service_type! = "L2VPN"
-#            RETURN collect(node.handle_id) as handle_ids
-#            """
-#        hits = nc.neo4jdb.query(q)
-#        return NodeHandle.objects.filter(pk__in=[[id.value for id in hit['handle_ids']] for hit in hits][0])
-#
-#    def obj_get_list(self, request = None, **kwargs):
-#        return self.get_object_list(request, **kwargs)
+class ServiceL2VPNResource(ServiceResource):
+
+    l2vpn_id = fields.IntegerField(readonly=True)
+    end_points = fields.ListField(help_text='[{"device": "", "port": ""},]')
+
+    class Meta(ServiceResource.Meta):
+        resource_name = 'l2vpn'
+        initial_data = {
+            'node_type': '/api/v1/node_type/service/',
+            'node_meta_type': 'logical',
+            'service_type': 'L2VPN',
+            'operational_state': 'Reserved',
+        }
+
+
+    def obj_create(self, bundle, request=None, **kwargs):
+        bundle.data.update(self._meta.initial_data)
+        form = NewNordunetL2vpnServiceForm(bundle.data)
+        if form.is_valid():
+            bundle.data.update({
+                'node_name': form.cleaned_data['name'],
+                'creator': '/api/%s/user/%d/' % (self._meta.api_name, request.user.pk),
+                'modifier': '/api/%s/user/%d/' % (self._meta.api_name, request.user.pk),
+                'node': {
+                    'service_type': form.cleaned_data['service_type'],
+                    'service_class': form.cleaned_data['service_class'],
+                    'l2vpn_id': form.cleaned_data['l2vpn_id'],
+                    'operational_state': form.cleaned_data['operational_state'],
+                    'description': form.cleaned_data['description'],
+                },
+            })
+            bundle = super(ServiceL2VPNResource, self).obj_create(bundle, request,
+                **kwargs)
+            # Depend the created service on provided end points
+            node = bundle.obj.get_node()
+            for end_point in bundle.data.get('end_points', []):
+                port_node = get_port(end_point['device'], end_point['port'])
+                if not port_node:
+                    port_node = create_port(end_point['device'], 'Router', end_point['port'], request.user)
+                set_depends_on(node, port_node.getId())
+            return self.hydrate_node(bundle)
+
+    def dehydrate(self, bundle):
+        bundle = super(ServiceL2VPNResource, self).dehydrate(bundle)
+        bundle.data['l2vpn_id'] = bundle.data['node'].get('l2vpn_id', '')
+        del bundle.data['end_points']
+        return bundle
+
+    def get_object_list(self, request, **kwargs):
+        q = """
+            START node=node:node_types(node_type = "Service")
+            WHERE node.service_type! = "L2VPN"
+            RETURN collect(node.handle_id) as handle_ids
+            """
+        hits = nc.neo4jdb.query(q)
+        return NodeHandle.objects.filter(pk__in=[[id.value for id in hit['handle_ids']] for hit in hits][0])
+
+    def obj_get_list(self, request = None, **kwargs):
+       return self.get_object_list(request, **kwargs)
 
 
 class SiteResource(NodeHandleResource):
