@@ -481,26 +481,8 @@ class NewNordunetServiceForm(NewServiceForm):
 
 class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
 
-    l2vpn_id = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-
-    class Meta(NewNordunetServiceForm.Meta):
-        l2vpn_id_generator_name = 'nordunet_vpn_id'
-
-
-    def clean(self):
-        """
-        Checks that project_end_date was not omitted if service is of type project.
-        """
-        cleaned_data = super(NewNordunetL2vpnServiceForm, self).clean()
-        if not cleaned_data['l2vpn_id']:
-            if not self.Meta.l2vpn_id_generator_name:
-                raise Exception('You have to set l2vpn_id_generator_name in form Meta class.')
-            try:
-                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.l2vpn_id_generator_name)
-                cleaned_data['l2vpn_id'] = id_generator.get_id()
-            except UniqueIdGenerator.DoesNotExist as e:
-                raise e
-        return cleaned_data
+    vrf_target = forms.CharField(required=False, help_text='')
+    route_distinguisher = forms.CharField(required=False, help_text='')
 
 
 class EditServiceForm(forms.Form):
@@ -521,6 +503,8 @@ class EditServiceForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
+    vrf_target = forms.CharField(required=False, help_text='')
+    route_distinguisher = forms.CharField(required=False, help_text='')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)

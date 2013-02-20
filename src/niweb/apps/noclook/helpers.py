@@ -11,6 +11,7 @@ from django.conf import settings as django_settings
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.db import IntegrityError, transaction
+from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime, timedelta
 import csv, codecs, cStringIO
 import xlwt
@@ -75,19 +76,13 @@ def get_nh_node(node_handle_id):
     return nh, node
 
 def delete_node(user, node):
-    nh = NodeHandle.objects.get(node['handle_id'])
+    nh = NodeHandle.objects.get(pk=node['handle_id'])
     if nc.get_node_meta_type(node) == 'physical':
-        # Remove dependant equipment like Ports
+        # Remove dependant equipment like Ports and Units
         for rel in node.Has.outgoing:
-            child_nh, child_node = get_nh_node(rel.end['handle_id'])
-            activitylog.delete_node(user, child_nh)
-            # Remove Units if any
-            for rel2 in child_node.Depends_on.incoming:
-                if rel2.start['node_type'] == 'Unit':
-                    unit_nh, unit_node = get_nh_node(rel2.start['handle_id'])
-                    activitylog.delete_node(user, unit_nh)
-                    unit_nh.delete()
-            child_nh.delete()
+            delete_node(user, rel.end)
+        for rel in node.Part_of.incoming:
+            delete_node(user, rel.start)
     activitylog.delete_node(user, nh)
     nh.delete()
     return True
@@ -247,14 +242,17 @@ def isots_to_dt(item):
         dt = datetime.min
     return dt
 
-def neo4j_data_age(item):
+def neo4j_data_age(item, max_data_age=None):
     """
     Checks the noclook_last_seen property against datetime.datetime.now() and
-    if the differance is greater that django_settings.NEO4J_MAX_DATA_AGE and the
-    noclook_auto_manage is true the data is said to be expired.
+    if the difference is greater than max_data_age (hours)
+    (django_settings.NEO4J_MAX_DATA_AGE will be used if max_data_age is not specified)
+    and the noclook_auto_manage is true the data is said to be expired.
     Returns noclook_last_seen as a datetime and a "expired" boolean.
     """
-    max_age = timedelta(hours=int(django_settings.NEO4J_MAX_DATA_AGE))
+    if not max_data_age:
+        max_data_age = django_settings.NEO4J_MAX_DATA_AGE
+    max_age = timedelta(hours=int(max_data_age))
     now = datetime.now()
     last_seen = isots_to_dt(item)
     expired = False
@@ -618,6 +616,7 @@ def create_port(parent_name, parent_type, port_name, creator):
     """
     type_port = NodeType.objects.get(type="Port")
     type_parent = NodeType.objects.get(type=parent_type)
+    parent_nh = NodeHandle.objects.get(node_name=parent_name, node_type=type_parent)
     nh = NodeHandle.objects.create(
         node_name = port_name,
         node_type = type_port,
@@ -625,7 +624,6 @@ def create_port(parent_name, parent_type, port_name, creator):
         modifier=creator, creator=creator
     )
     activitylog.create_node(creator, nh)
-    parent_nh = NodeHandle.objects.get(node_name=parent_name, node_type=type_parent)
     place_child_in_parent(creator, nh.get_node(), parent_nh.node_id)
     return nh.get_node()
 
@@ -830,6 +828,21 @@ def get_hostname_from_address(ip_address):
         return socket.gethostbyaddr(str(ip_address))[0]
     except (socket.herror, socket.gaierror):
         return 'Request timed out'
+
+def is_free_unique_id(unique_id_collection, unique_id):
+    """
+    Checks if a Unique ID is unused or reserved.
+    :param unique_id_collection: Instance of a UniqueId subclass.
+    :param unique_id: String
+    :return: Boolean
+    """
+    try:
+        obj = unique_id_collection.objects.get(unique_id=unique_id)
+        if obj.reserved:
+            return True
+    except ObjectDoesNotExist:
+        return True
+    return False
 
 def get_collection_unique_id(unique_id_generator, unique_id_collection):
     """
