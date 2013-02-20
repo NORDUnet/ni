@@ -55,7 +55,8 @@
                 {% endif %}
                 {% if node.service_type == "L2VPN" %}
                     <tr>
-                        <th>L2VPN ID:</th><td>{{ node.l2vpn_id }}</td>
+                        <th>VRF Target:</th><td>{{ node.vrf_target }}</td>
+                        <th>Route Distinguisher:</th><td>{{ node.route_distinguisher }}</td>
                     </tr>
                 {% endif %}
                 <tr>
