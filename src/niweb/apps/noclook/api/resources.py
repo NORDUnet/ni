@@ -10,7 +10,7 @@ For use with neo4j-embedded >= 1.7.M3.
 from tastypie.resources import Resource, ModelResource
 from tastypie.bundle import Bundle
 from tastypie import fields, utils
-from tastypie.http import HttpGone, HttpMultipleChoices, HttpApplicationError
+from tastypie.http import HttpGone, HttpMultipleChoices, HttpApplicationError, HttpConflict
 from tastypie.exceptions import ImmediateHttpResponse
 from tastypie.constants import ALL
 from tastypie.exceptions import NotFound
@@ -21,7 +21,7 @@ from django.contrib.auth.models import User
 from django.conf.urls import url
 from django.core.urlresolvers import reverse, resolve
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-from django.http import HttpResponseNotAllowed
+from django.http import HttpResponseNotAllowed, HttpResponse
 from django.db import IntegrityError
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
@@ -66,6 +66,32 @@ def resource_uri2id(resource_uri):
     """
     return resolve(resource_uri).kwargs.get('pk', None)
 
+def raise_not_acceptable_error(message):
+    """
+    Raises Http406 error with message.
+
+    :param message: Error message
+    :return: None
+    """
+    class HttpMethodNotAcceptable(HttpResponse):
+        status_code = 406
+
+
+    raise ImmediateHttpResponse(
+        HttpMethodNotAcceptable(message)
+    )
+
+def raise_conflict_error(message):
+    """
+    Raises Http409 error with message.
+
+    :param message: Error message
+    :return: None
+    """
+    raise ImmediateHttpResponse(
+        HttpConflict(message)
+    )
+
 def raise_app_error(message):
     """
     Raises Http500 error with message.
@@ -76,6 +102,7 @@ def raise_app_error(message):
     raise ImmediateHttpResponse(
         HttpApplicationError(message)
     )
+
 
 class FullUserResource(ModelResource):
     
@@ -542,9 +569,9 @@ class ServiceL2VPNResource(ServiceResource):
             if is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
                 bundle.data['name'] = bundle.data['node_name']
             else:
-                raise_app_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
+                raise_conflict_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
         except KeyError as e:
-            raise_app_error('KeyError: %s.' % e)
+            raise_not_acceptable_error('KeyError: %s.' % e)
         form = NewNordunetL2vpnServiceForm(bundle.data)
         if form.is_valid():
             bundle.data.update({
@@ -570,7 +597,7 @@ class ServiceL2VPNResource(ServiceResource):
                         port_node = create_port(end_point['device'], 'Router', end_point['port'], request.user)
                     port_nodes.append(port_node)
             except ObjectDoesNotExist:
-                raise_app_error('End point %s not found.' % end_point)
+                raise_not_acceptable_error('End point %s not found.' % end_point)
             # Create the new service
             bundle = super(ServiceL2VPNResource, self).obj_create(bundle, request, **kwargs)
             register_unique_id(NordunetUniqueId, bundle.data['node_name'])
@@ -580,7 +607,7 @@ class ServiceL2VPNResource(ServiceResource):
                 set_depends_on(request.user, node, port_node.getId())
             return self.hydrate_node(bundle)
         else:
-            raise_app_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
+            raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
 
     def dehydrate(self, bundle):
         bundle = super(ServiceL2VPNResource, self).dehydrate(bundle)
