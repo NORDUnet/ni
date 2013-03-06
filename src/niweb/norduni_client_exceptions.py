@@ -4,7 +4,6 @@ Created on Thu Oct 13 16:36:31 2011
 
 @author: lundberg
 """
-
 import norduni_client as nc
 
 class NoRelationshipPossible(Exception):

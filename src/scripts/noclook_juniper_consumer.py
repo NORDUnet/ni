@@ -348,18 +348,42 @@ def consume_juniper_conf(json_list):
         bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
     insert_juniper_bgp_peerings(bgp_peerings)
 
-def delete_juniper_conf(data_age):
+def remove_juniper_conf(data_age):
     """
     :param data_age: Data older than this many days will be deleted.
     :return: None
     """
-    pass
+    q = """
+        START router=node:node_types(node_type="Router")
+        MATCH router-[:Has*1..]->physical<-[?:Part_of]-logical
+        WHERE (physical.noclook_auto_manage! = true) OR (logical.noclook_auto_manage! = true)
+        WITH distinct physical, logical
+        RETURN collect(physical) as physical, collect(logical) as logical
+        """
+    user = nt.get_user()
+    data_age = int(data_age) * 24 # hours in a day
+    for hit in nc.neo4jdb.query(q):
+        if VERBOSE:
+            print 'Deleting expired nodes',
+        for logical in hit['logical']:
+            last_seen, expired = h.neo4j_data_age(logical, data_age)
+            if expired:
+                h.delete_node(user, logical)
+                if VERBOSE:
+                    print '.',
+        for physical in hit['physical']:
+            last_seen, expired = h.neo4j_data_age(physical, data_age)
+            if expired:
+                h.delete_node(user, physical)
+                if VERBOSE:
+                    print '.',
 
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', nargs='?',
         help='Path to the configuration file.')
+    parser.add_argument('--verbose', '-V', action='store_true', default=False)
     args = parser.parse_args()
     # Load the configuration file
     if not args.C:
@@ -367,10 +391,13 @@ def main():
         sys.exit(1)
     else:
         config = nt.init_config(args.C)
+    if args.verbose:
+        global VERBOSE
+        VERBOSE = True
     if config.get('data', 'juniper_conf'):
         consume_juniper_conf(nt.load_json(config.get('data', 'juniper_conf')))
     if config.getboolean('delete_data', 'juniper_conf'):
-        delete_juniper_conf(config.get('data_age', 'juniper_conf'))
+        remove_juniper_conf(config.get('data_age', 'juniper_conf'))
     return 0
 
 if __name__ == '__main__':
