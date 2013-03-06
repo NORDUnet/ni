@@ -145,7 +145,7 @@ $(document).ready(
             </tr>
         </table>
     </div>
-    {% if node.description or node.responsible_persons %}
+    {% if node.description or node.responsible_persons or node.security_class %}
         <div class="span7">
             <table class="table">
                 {% if node.description %}
@@ -160,6 +160,15 @@ $(document).ready(
                             {% for item in node.responsible_persons %}
                                 {{ item }}{% if not forloop.last %}, {% endif %}
                             {% endfor %}
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if node.security_class %}
+                    <tr>
+                        <th>Security Class</th>
+                        <td>
+                            <strong>{{ node.security_class }}</strong><br>
+                            {{ node.security_comment }}
                         </td>
                     </tr>
                 {% endif %}
