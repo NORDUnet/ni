@@ -137,6 +137,12 @@ OPTICAL_LINK_INTERFACE_TYPE = [
     ('WDM', 'WDM'),
 ]
 
+SECURITY_CLASSES = [
+    (1,1),
+    (2,2),
+    (3,3),
+    ]
+
 def get_node_type_tuples(node_type):
     """
     Returns a list of tuple of node.id and node['name'] of the node_type.
@@ -308,6 +314,10 @@ class EditHostForm(forms.Form):
                                           widget=forms.widgets.Select)
     relationship_owner = forms.ChoiceField(required=False,
                                           widget=forms.widgets.Select)
+    # Temp?
+    security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
+    security_comment = forms.CharField(required=False)
+
 
     def clean(self):
         cleaned_data = super(EditHostForm, self).clean()
