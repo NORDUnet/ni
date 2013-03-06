@@ -27,20 +27,7 @@ def delete_node(request, slug, handle_id):
     Removes the node and all its relationships.
     """
     nh, node = h.get_nh_node(handle_id)
-    if nc.get_node_meta_type(node) == 'physical':
-        # Remove dependant equipment like Ports
-        for rel in node.Has.outgoing:
-            child_nh, child_node = h.get_nh_node(rel.end['handle_id'])
-            activitylog.delete_node(request.user, child_nh)
-            # Remove Units if any
-            for rel2 in child_node.Depends_on.incoming:
-                if rel2.start['node_type'] == 'Unit':
-                    unit_nh, unit_node = h.get_nh_node(rel2.start['handle_id'])
-                    activitylog.delete_node(request.user, unit_nh)
-                    unit_nh.delete()
-            child_nh.delete()
-    activitylog.delete_node(request.user, nh)
-    nh.delete()
+    h.delete_node(request.user, node)
     return HttpResponseRedirect('/%s' % slug)
     
 @login_required
