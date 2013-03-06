@@ -79,10 +79,73 @@ def host_users(request, host_user_name=None, form=None):
             return nodes_to_csv([host for host in hosts], header=header)
         elif form == 'xls':
             return nodes_to_xls([host for host in hosts], header=header)
-    return render_to_response('noclook/reports/host-users.html',
+    return render_to_response('noclook/reports/host_users.html',
             {'host_user_name': host_user_name, 'host_users': host_users,
             'num_of_hosts': num_of_hosts, 'hosts': hosts},
             context_instance=RequestContext(request))
+
+@login_required
+def host_security_class(request, status=None, form=None):
+    num_of_hosts = 0
+    hosts = []
+    if status == 'all':
+        num_of_hosts_q = '''
+                START node=node:node_types(node_type = "Host")
+                RETURN COUNT(node) as num_of_hosts
+                '''
+        num_of_hosts_hits = nc.neo4jdb.query(num_of_hosts_q)
+        num_of_hosts = [hit['num_of_hosts'] for hit in num_of_hosts_hits][0]
+        hosts_q = '''
+                START node=node:node_types(node_type = "Host")
+                RETURN node, node.name as host_name,
+                node.security_class? as security_class,
+                node.security_comment? as security_comment,
+                node.noclook_last_seen as last_seen
+                '''
+        hosts = nc.neo4jdb.query(hosts_q)
+    elif status == 'classified':
+        num_of_hosts_q = '''
+                START node=node:node_types(node_type = "Host")
+                WHERE has(node.security_class)
+                RETURN COUNT(node) as num_of_hosts
+                '''
+        num_of_hosts_hits = nc.neo4jdb.query(num_of_hosts_q)
+        num_of_hosts = [hit['num_of_hosts'] for hit in num_of_hosts_hits][0]
+        hosts_q = '''
+                START node=node:node_types(node_type = "Host")
+                WHERE has(node.security_class)
+                RETURN node, node.name as host_name,
+                node.security_class? as security_class,
+                node.security_comment? as security_comment,
+                node.noclook_last_seen as last_seen
+                '''
+        hosts = nc.neo4jdb.query(hosts_q)
+    elif status == 'not-classified':
+        num_of_hosts_q = '''
+                    START node=node:node_types(node_type = "Host")
+                    WHERE not(has(node.security_class))
+                    RETURN COUNT(node) as num_of_hosts
+                    '''
+        num_of_hosts_hits = nc.neo4jdb.query(num_of_hosts_q)
+        num_of_hosts = [hit['num_of_hosts'] for hit in num_of_hosts_hits][0]
+        hosts_q = '''
+                    START node=node:node_types(node_type = "Host")
+                    WHERE not(has(node.security_class))
+                    RETURN node, node.name as host_name,
+                    node.security_class? as security_class,
+                    node.security_comment? as security_comment,
+                    node.noclook_last_seen as last_seen
+                    '''
+        hosts = nc.neo4jdb.query(hosts_q)
+    if form:
+        header = ['host_name', 'security_class', 'security_comment', 'last_seen']
+        if form == 'csv':
+            return nodes_to_csv([host for host in hosts], header=header)
+        elif form == 'xls':
+            return nodes_to_xls([host for host in hosts], header=header)
+    return render_to_response('noclook/reports/host_security_class.html',
+        {'status': status, 'num_of_hosts': num_of_hosts, 'hosts': hosts},
+        context_instance=RequestContext(request))
 
 @login_required
 def unique_ids(request, organisation=None):
