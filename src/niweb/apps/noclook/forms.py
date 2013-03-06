@@ -138,9 +138,11 @@ OPTICAL_LINK_INTERFACE_TYPE = [
 ]
 
 SECURITY_CLASSES = [
+    ('',''),
     (1,1),
     (2,2),
     (3,3),
+    (4,4),
     ]
 
 def get_node_type_tuples(node_type):
@@ -316,7 +318,7 @@ class EditHostForm(forms.Form):
                                           widget=forms.widgets.Select)
     # Temp?
     security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
-    security_comment = forms.CharField(required=False)
+    security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
 
 
     def clean(self):
