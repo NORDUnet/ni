@@ -98,6 +98,7 @@ def host_security_class(request, status=None, form=None):
         hosts_q = '''
                 START node=node:node_types(node_type = "Host")
                 RETURN node, node.name as host_name,
+                node.description? as description,
                 node.security_class? as security_class,
                 node.security_comment? as security_comment,
                 node.noclook_last_seen as last_seen
@@ -115,6 +116,7 @@ def host_security_class(request, status=None, form=None):
                 START node=node:node_types(node_type = "Host")
                 WHERE has(node.security_class)
                 RETURN node, node.name as host_name,
+                node.description? as description,
                 node.security_class? as security_class,
                 node.security_comment? as security_comment,
                 node.noclook_last_seen as last_seen
@@ -132,13 +134,14 @@ def host_security_class(request, status=None, form=None):
                     START node=node:node_types(node_type = "Host")
                     WHERE not(has(node.security_class))
                     RETURN node, node.name as host_name,
+                    node.description? as description,
                     node.security_class? as security_class,
                     node.security_comment? as security_comment,
                     node.noclook_last_seen as last_seen
                     '''
         hosts = nc.neo4jdb.query(hosts_q)
     if form:
-        header = ['host_name', 'security_class', 'security_comment', 'last_seen']
+        header = ['host_name', 'description', 'security_class', 'security_comment', 'last_seen']
         if form == 'csv':
             return nodes_to_csv([host for host in hosts], header=header)
         elif form == 'xls':
