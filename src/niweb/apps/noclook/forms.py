@@ -310,6 +310,7 @@ class EditHostForm(forms.Form):
     vendor = forms.CharField(required=False, help_text='Name of the vendor that should be contacted for hardware support?')
     service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the host?')
     end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
+    contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
     relationship_location = forms.IntegerField(required=False,
                                             widget=forms.widgets.HiddenInput)
     relationship_user = forms.ChoiceField(required=False,

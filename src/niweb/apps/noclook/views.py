@@ -917,3 +917,17 @@ def ip_address_lookup(request):
             hostname = h.get_hostname_from_address(ip_address)
             return HttpResponse(json.dumps(hostname), mimetype='application/json')
     raise Http404
+
+@login_required
+def json_table_to_file(request):
+    if request.POST:
+        file_format = request.POST.get('format', None)
+        data = request.POST.get('data', None)
+        header = request.POST.get('header', None)
+        table = json.loads(data)
+        header = json.loads(header)
+        if table and file_format == 'csv':
+            return h.dicts_to_csv(table, header)
+        elif table and file_format == 'xls':
+            return h.dicts_to_xls(table, header)
+    raise Http404

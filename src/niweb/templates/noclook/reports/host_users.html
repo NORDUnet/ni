@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "noclook/reports/base_report.html" %}
 
 {% block title %}{{ block.super }} | Host reports | Host users{% endblock %}
 
@@ -17,6 +17,22 @@
                         widthFixed: true,
                         widgets: ['zebra']
                     });
+
+                $(".table-to-csv").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set table id here
+                    var table = buildJSONTable($("#hosts"));
+                    postJSONTable('csv', elem, table.header, table.data)
+
+                });
+                $(".table-to-xls").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set table id here
+                    var table = buildJSONTable($("#hosts"));
+                    postJSONTable('xls', elem, table.header, table.data)
+                });
             }
         );
     </script>
@@ -46,22 +62,43 @@
         {% endif %}
     </ul>
     {% if hosts %}
-        <h3>Hosts for {{ host_user_name }}: {{ num_of_hosts }}</h3>
-        <p>Get as <a href="result.csv">CSV</a> or <a href="result.xls">Excel</a></p>
-        <table id="hosts" class="tablesorter" cellspacing="1"">
+        <h3>Hosts for {{ host_user_name }}: {{ hosts|length }}</h3>
+        <p class="pull-right"><span class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</span></p>
+        <table id="hosts" class="tablesorter" cellspacing="1">
             <thead>
                 <tr>
-                    <th>Host user</th><th>Host</th><th>Host type</th><th>Last seen</th>
+                    <th>Host user</th><th>Host</th><th>Host type</th><th>IP address(es)</th><th>Contract number</th><th>Description</th><th>Responsible</th><th>Backup</th><th>Syslog</th><th>In operation</th><th>Location</th><th>Last seen</th><th>Uptime</th>
                 </tr>
             </thead>
             <tbody>
                 {% load noclook_tags %}
                 {% for item in hosts %}
                 <tr>
-                    <td>{{ item.host_user }}</td>
-                    <td><a href="{% noclook_node_to_url item.host %}">{{ item.host_name }}</a></td>
-                    <td>{{ item.meta|capfirst }} host</td>
-                    <td>{% noclook_last_seen_to_dt item.last_seen as last_seen%}{{ last_seen|date }}</td>
+                    <td>{{ item.host_user.name }}</td>
+                    <td><a href="{% noclook_node_to_url item.host %}">{{ item.host.name }}</a></td>
+                    <td>{{ item.host_type|capfirst }} host</td>
+                    <td>
+                        {% for address in item.host.addresses %}
+                            {{ address }}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{{ item.host.contract_number|default:"" }}</td>
+                    <td>{{ item.host.description|default:"" }}</td>
+                    <td>
+                        {% for responsible in item.host.responsible_persons %}
+                            {{ responsible }}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{{ item.host.backup|yesno:"Yes,No,Not set" }}</td>
+                    <td>{{ item.host.syslog|yesno:"Yes,No,Not set" }}</td>
+                    <td>{{ item.host.in_operation|yesno:"Yes,No,Not set" }}</td>
+                    <td>
+                        {% for loc in item.location %}
+                            <a href="{% noclook_node_to_url loc.parent %}"> {{ loc.parent.name }}</a> <a href="{% noclook_node_to_url loc.loc %}"> {{ loc.loc.name }}</a>
+                        {% endfor %}
+                    </td>
+                    <td>{% noclook_last_seen_to_dt item.host.noclook_last_seen as last_seen%}{{ last_seen|date }}</td>
+                    <td></td>
                 </tr>
                 {% endfor %}
             </tbody>
