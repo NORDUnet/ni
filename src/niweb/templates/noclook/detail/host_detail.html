@@ -86,14 +86,19 @@ $(document).ready(
                     </td>
                 </tr>
             {% endif %}
+            {% if node.contract_number %}
+                <tr>
+                    <th>Contract number:</th><td>{{ node.contract_number }}</td>
+                </tr>
+            {% endif %}
             {% if node.service_tag %}
                 <tr>
-                    <th>Service tag:</th><td>{{node.service_tag}}</td>
+                    <th>Service tag:</th><td>{{ node.service_tag }}</td>
                 </tr>
             {% endif %}
             {% if node.end_support %}
                 <tr>
-                    <th>Support ends:</th><td>{{node.end_support}}</td>
+                    <th>Support ends:</th><td>{{ node.end_support }}</td>
                 </tr>
             {% endif %}
         </table>

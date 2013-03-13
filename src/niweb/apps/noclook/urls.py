@@ -87,6 +87,8 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^lu/(?P<name>[-\w]+)/$', 'qr_lookup'),
     # Hostname lookup
     (r'^ajax/hostname/$', 'ip_address_lookup'),
+    # Table to CSV or Excel
+    (r'^download/tabletofile/$', 'json_table_to_file'),
     # List views
     (r'^peering-partner/$', 'list_peering_partners'),
     (r'^host/$', 'list_hosts'),
