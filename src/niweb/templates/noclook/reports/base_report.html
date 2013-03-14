@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block js %}
+    {{ block.super }}
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tabletojson.min.js"></script>
+    <script language="javascript" type="text/javascript">
+        // Get CSV or Excel representation of the table
+        function postJSONTable(format, elem, header, table) {
+            $('#form-file-format').val(format);
+            $('#form-json-header').val(header);
+            $('#form-json-data').val(table);
+            $('#json-table-form').submit();
+            elem.css('cursor','pointer');
+        }
+
+        function buildJSONTable(table) {
+            var data = JSON.stringify(table.tableToJSON());
+            // Gather headings
+            var headings = [];
+            table.find("tr > th").each(function(colIndex, col) {
+                if($(col).data("column-name") !== undefined && $(col).data("column-name") != null) {
+                    headings[colIndex] = $(col).data("column-name");
+                } else {
+                    headings[colIndex] = $.trim($(col).text());
+                }
+            });
+            var header = JSON.stringify(headings);
+            return {header: header, data: data}
+        }
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <!-- Hidden table to post json data to download table as a file -->
+    <div class="hidden">
+        <form id="json-table-form" action="/download/tabletofile/" method="post">{% csrf_token %}
+            <input id="form-file-format" name="format" type="text">
+            <input id="form-json-header" name="header" type="text">
+            <input id="form-json-data" name="data" type="text">
+            <button type="submit"></button>
+        </form>
+    </div>
+{% endblock %}

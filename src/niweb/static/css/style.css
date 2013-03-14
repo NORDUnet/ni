@@ -181,6 +181,14 @@ tr.testing {
     border-left: 3px #3A87AD solid;
 }
 
+tr.report-very-old {
+    border-left: 3px #B94A48 solid;
+}
+
+tr.report-old {
+    border-left: 3px #F89406 solid;
+}
+
 /* Django form errorlist */
 ul.errorlist {
  list-style: none;
@@ -189,3 +197,13 @@ ul.errorlist {
 .ip-address {
     cursor: pointer;
 }
+
+/*
+.table-to-csv {
+    cursor: pointer;
+}
+
+.table-to-xls {
+    cursor: pointer;
+}
+*/

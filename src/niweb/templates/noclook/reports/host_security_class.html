@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "noclook/reports/base_report.html" %}
 
 {% block title %}{{ block.super }} | Host reports | Host security class{% endblock %}
 
@@ -17,6 +17,22 @@
                         widthFixed: true,
                         widgets: ['zebra']
                     });
+
+                $(".table-to-csv").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set table id here
+                    var table = buildJSONTable($("#hosts"));
+                    postJSONTable('csv', elem, table.header, table.data)
+
+                });
+                $(".table-to-xls").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set table id here
+                    var table = buildJSONTable($("#hosts"));
+                    postJSONTable('xls', elem, table.header, table.data)
+                });
             }
         );
     </script>
@@ -45,7 +61,7 @@
     </ul>
     {% if hosts %}
         <h3>Hosts: {{ num_of_hosts }}</h3>
-        <p>Get as <a href="result.csv">CSV</a> or <a href="result.xls">Excel</a></p>
+        <p class="pull-right"><span class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</span></p>
         <table id="hosts" class="tablesorter" cellspacing="1">
             <thead>
                 <tr>
