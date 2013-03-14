@@ -1,24 +1,41 @@
-{% extends "base.html" %}
+{% extends "noclook/reports/base_report.html" %}
 
 {% block title %}{{ block.super }} {{ organisation }} reserved ID list{% endblock %}
 
 {% block js %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#reserved").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
+    {{ block.super }}
+    <script type="text/javascript">
+    $(document).ready(
+        function(){
+            $("#reserved").tablesorter(
             {
-                3 : { sorter: "isoDate" }
-            },
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
+                sortList: [[0,0]],
+                headers:
+                {
+                    3 : { sorter: "isoDate" }
+                },
+                widthFixed: true,
+                widgets: ['zebra']
+            });
+
+            $(".table-to-csv").click(function() {
+                var elem = $(this);
+                elem.css('cursor','wait');
+                // Set table id here
+                var table = buildJSONTable($("#reserved"));
+                postJSONTable('csv', elem, table.header, table.data)
+
+            });
+            $(".table-to-xls").click(function() {
+                var elem = $(this);
+                elem.css('cursor','wait');
+                // Set table id here
+                var table = buildJSONTable($("#reserved"));
+                postJSONTable('xls', elem, table.header, table.data)
+            });
+        }
+    );
+    </script>
 {% endblock %}
 
 {% block content %}
@@ -31,6 +48,7 @@ $(document).ready(
         </dl>
     {% else %}
         <h1>{{ organisation }} unique IDs</h1>
+        <p class="pull-right"><span class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</span></p>
         <table id="reserved" class="tablesorter" cellspacing="1">
             <thead>
                 <tr>

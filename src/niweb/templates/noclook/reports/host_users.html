@@ -73,7 +73,13 @@
             <tbody>
                 {% load noclook_tags %}
                 {% for item in hosts %}
-                <tr>
+                    {% if item.age == "old" %}
+                        <tr class="report-old">
+                    {% elif item.age == "very_old" %}
+                        <tr class="report-very-old">
+                    {% else %}
+                        <tr>
+                    {% endif %}
                     <td>{{ item.host_user.name }}</td>
                     <td><a href="{% noclook_node_to_url item.host %}">{{ item.host.name }}</a></td>
                     <td>{{ item.host_type|capfirst }} host</td>

@@ -220,6 +220,27 @@ def neo4j_data_age(item):
         expired = True
     return last_seen, expired
 
+def neo4j_report_age(item, old, very_old):
+    """
+    Checks the noclook_last_seen property and returns the items age based on a arbitrarily chosen
+    time spans.
+
+    :param item: neo4j object
+    :param old: integer after how many days the item is old
+    :param very_old: integer after how many days the item is very old
+    :return: string current|old|very_old
+    """
+    today = datetime.today()
+    two_weeks = today - timedelta(days=old)
+    month = today - timedelta(days=very_old)
+    last_seen, expired = neo4j_data_age(item)
+    if two_weeks >= last_seen > month:
+        return 'old'
+    elif last_seen <= month:
+        return 'very_old'
+    else:
+        return 'current'
+
 def iter2list(pythonic_iterator):
     """
     Converts a neo4j.util.PythonicIterator to a list.
