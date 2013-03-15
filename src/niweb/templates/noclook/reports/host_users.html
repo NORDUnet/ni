@@ -63,7 +63,12 @@
     </ul>
     {% if hosts %}
         <h3>Hosts for {{ host_user_name }}: {{ hosts|length }}</h3>
-        <p class="pull-right"><span class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</span></p>
+        <div class="pull-right">
+            <span class="badge badge-warning">+14 days</span>
+            <span class="badge badge-important">+30 days</span>
+            <span class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</span>
+            <span class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</span>
+        </div>
         <table id="hosts" class="tablesorter" cellspacing="1">
             <thead>
                 <tr>

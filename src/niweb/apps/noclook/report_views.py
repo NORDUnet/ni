@@ -56,7 +56,7 @@ def host_users(request, host_user_name=None, form=None):
                 'host': hit['host'],
                 'host_type': hit['host_type'],
                 'location': get_location(hit['host']),
-                'age': neo4j_report_age(hit['host'], 14, 30)
+                'age': neo4j_report_age(hit['host'], 15, 31)
             }
             hosts.append(item)
     return render_to_response('noclook/reports/host_users.html',
