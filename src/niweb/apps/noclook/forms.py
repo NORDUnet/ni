@@ -521,14 +521,19 @@ class EditServiceForm(forms.Form):
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
             self._errors['project_end_date'].append('Missing project end date.')
-        # Check that decommissioned_date is filled in for operational state Decommissioned
-        if cleaned_data['operational_state'] == 'Decommissioned' and not cleaned_data['decommissioned_date']:
+        if cleaned_data['operational_state']:
+            # Check that decommissioned_date is filled in for operational state Decommissioned
+            if cleaned_data['operational_state'] == 'Decommissioned' and not cleaned_data['decommissioned_date']:
+                self._errors = ErrorDict()
+                self._errors['decommissioned_date'] = ErrorList()
+                self._errors['decommissioned_date'].append('Missing decommissioned date.')
+            # Convert decommissioned_date to string if set
+            if cleaned_data['decommissioned_date']:
+                cleaned_data['decommissioned_date'] = cleaned_data['decommissioned_date'].isoformat()
+        else:
             self._errors = ErrorDict()
-            self._errors['decommissioned_date'] = ErrorList()
-            self._errors['decommissioned_date'].append('Missing decommissioned date.')
-        # Convert decommissioned_date to string if set
-        if cleaned_data['decommissioned_date']:
-            cleaned_data['decommissioned_date'] = cleaned_data['decommissioned_date'].isoformat()
+            self._errors['operational_state'] = ErrorList()
+            self._errors['operational_state'].append('Missing operational state.')
         return cleaned_data
 
 
