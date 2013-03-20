@@ -526,6 +526,9 @@ class EditServiceForm(forms.Form):
             self._errors = ErrorDict()
             self._errors['decommissioned_date'] = ErrorList()
             self._errors['decommissioned_date'].append('Missing decommissioned date.')
+        # Convert decommissioned_date to string if set
+        if cleaned_data['decommissioned_date']:
+            cleaned_data['decommissioned_date'] = cleaned_data['decommissioned_date'].isoformat()
         return cleaned_data
 
 
