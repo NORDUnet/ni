@@ -1,3 +1,4 @@
+from datetime import datetime
 from django import forms
 from django.forms.util import ErrorDict, ErrorList
 from django.forms.widgets import HiddenInput
@@ -524,9 +525,7 @@ class EditServiceForm(forms.Form):
         if cleaned_data.get('operational_state', None):
             # Check that decommissioned_date is filled in for operational state Decommissioned
             if cleaned_data['operational_state'] == 'Decommissioned' and not cleaned_data['decommissioned_date']:
-                self._errors = ErrorDict()
-                self._errors['decommissioned_date'] = ErrorList()
-                self._errors['decommissioned_date'].append('Missing decommissioned date.')
+                cleaned_data['decommissioned_date'] = datetime.today()
             # Convert decommissioned_date to string if set
             if cleaned_data['decommissioned_date']:
                 cleaned_data['decommissioned_date'] = cleaned_data['decommissioned_date'].isoformat()
