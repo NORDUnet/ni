@@ -528,7 +528,7 @@ class EditServiceForm(forms.Form):
                                                                                               None):
                 cleaned_data['decommissioned_date'] = datetime.today()
             # Convert decommissioned_date to string if set
-            if cleaned_data['decommissioned_date']:
+            if cleaned_data.get('decommissioned_date', None):
                 cleaned_data['decommissioned_date'] = cleaned_data['decommissioned_date'].isoformat()
         else:
             self._errors = ErrorDict()

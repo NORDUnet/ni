@@ -511,7 +511,7 @@ class ServiceResource(NodeHandleResource):
         resource_name = 'service'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
-        allowed_methods = ['get', 'put', 'post']
+        allowed_methods = ['get', 'put', 'post', 'patch']
         include_absolute_url = True
         always_return_data = False
         filtering = {
