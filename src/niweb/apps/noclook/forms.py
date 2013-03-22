@@ -525,7 +525,7 @@ class EditServiceForm(forms.Form):
         if cleaned_data.get('operational_state', None):
             # Check that decommissioned_date is filled in for operational state Decommissioned
             if cleaned_data['operational_state'] == 'Decommissioned':
-                if cleaned_data.get('decommissioned_date', None):
+                if not cleaned_data.get('decommissioned_date', None):
                     cleaned_data['decommissioned_date'] = datetime.today()
             else:
                 cleaned_data['decommissioned_date'] = None
