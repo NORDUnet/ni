@@ -524,15 +524,26 @@ class ServiceResource(NodeHandleResource):
             url(r"^(?P<resource_name>%s)/(?P<node_name>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
             ]
 
+    def obj_update(self, bundle, **kwargs):
+        bundle = super(ServiceResource, self).obj_update(bundle, **kwargs)
+        node = bundle.obj.get_node()
+        data = item2dict(node)
+        data.update(bundle.data)
+        form = EditServiceForm(data)
+        if form.is_valid():
+            form_update_node(bundle.request.user, node, form)
+        else:
+            raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
+        return bundle
+
     def hydrate_node(self, bundle):
         bundle = super(ServiceResource, self).hydrate_node(bundle)
         try:
-            node = bundle.obj.get_node()
-            data = item2dict(node)
-            data.update(bundle.data)
-            form = EditServiceForm(data)
+            form = EditServiceForm(bundle.data)
             if form.is_valid():
-                form_update_node(bundle.request.user, node, form)
+                form_update_node(bundle.request.user, bundle.obj.get_node(), form)
+            else:
+                raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
         except TypeError:
             # Node is not yet created, obj_create will take care of that.
             pass
@@ -545,6 +556,7 @@ class ServiceResource(NodeHandleResource):
         bundle.data['object_path'] = bundle.data['absolute_url']
         del bundle.data['absolute_url']
         return bundle
+
 
 class ServiceL2VPNResource(ServiceResource):
 
@@ -561,7 +573,6 @@ class ServiceL2VPNResource(ServiceResource):
             'node_meta_type': 'logical',
             'service_type': 'L2VPN',
         }
-
 
     def obj_create(self, bundle, **kwargs):
         bundle.data.update(self._meta.initial_data)
