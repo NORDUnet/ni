@@ -173,7 +173,7 @@ class NodeHandleResource(ModelResource):
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
         include_absolute_url = True
-        always_return_data = False
+        always_return_data = True
         filtering = {
             "node_name": ALL,
         }
@@ -513,7 +513,7 @@ class ServiceResource(NodeHandleResource):
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post', 'patch']
         include_absolute_url = True
-        always_return_data = False
+        always_return_data = True
         filtering = {
             "node_name": ALL,
         }
@@ -538,15 +538,6 @@ class ServiceResource(NodeHandleResource):
 
     def hydrate_node(self, bundle):
         bundle = super(ServiceResource, self).hydrate_node(bundle)
-        try:
-            form = EditServiceForm(bundle.data)
-            if form.is_valid():
-                form_update_node(bundle.request.user, bundle.obj.get_node(), form)
-            else:
-                raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
-        except TypeError:
-            # Node is not yet created, obj_create will take care of that.
-            pass
         return bundle
 
     def dehydrate(self, bundle):
