@@ -10,6 +10,13 @@ import norduni_client as nc
 
 class ServiceL2VPNResourceTest(ResourceTestCase):
 
+    # TODO: Write tests for this.
+    # vpn creation:
+    # url: https://nidev-consumer.nordu.net/api/v1/l2vpn/
+    # {"route_distinguisher":"2603:0007","end_points":[{"device":"hel","port":"ge-1\/0\/1"},{"device":"sto","port":"ge-1\/0\/1"}],"operational_state":"In service","interface_type":"ethernet-vlan","vpn_type":"l2vpn","description":"VPN created by NCS","vlan":1704,"node_name":"NU-S800005","vrf_target":"target:2603:4242000007"}
+    # vpn decommission:
+    # TBA
+
     def setUp(self):
         super(ServiceL2VPNResourceTest, self).setUp()
         # Set up a user
@@ -55,9 +62,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             modifier = self.user,
         )
         if r1created and p1created:
-            h.place_child_in_parent(port1.get_node(), router1.get_node().getId())
+            h.place_child_in_parent(self.user, port1.get_node(), router1.get_node().getId())
         if r2created and r2created:
-            h.place_child_in_parent(port2.get_node(), router2.get_node().getId())
+            h.place_child_in_parent(self.user, port2.get_node(), router2.get_node().getId())
 
     def get_credentials(self):
         return self.create_apikey(username=self.username, api_key=str(self.api_key.key))

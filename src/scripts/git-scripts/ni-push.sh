@@ -27,5 +27,5 @@ fi
 cd $REPO
 $GIT add -A
 $GIT commit -a -m "$(date)"
-$GIT push origin master
+$GIT push --quiet origin master
 

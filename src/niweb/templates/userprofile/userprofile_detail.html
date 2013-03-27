@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} | Profile for {{ profile.user.username }}{% endblock %}
+
+{% block js %}{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <h1><a href="..">User</a> {{ profile.user.username }}</h1>
+    <div class="section top-space">
+        <div class="row">
+            <div class="span4">
+                <table class="table">
+                    <tr>
+                        <th>Username:</th><td>{{ profile.user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>First name:</th><td>{{ profile.user.first_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last name:</th><td>{{ profile.user.last_name }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="span3">
+                <table class="table">
+                    <tr>
+                        <th>Last login:</th><td>{{ profile.user.last_login|timesince }}</td>
+                    </tr>
+                    <tr>
+                        <th>Created:</th><td>{{ profile.user.date_joined }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Activities</h2>
+        {% if num_act %}
+            Showing the {{ num_act }} latest activites. <a href="all" class="btn btn-mini pull-right">Show all</a>
+        {% endif %}
+        {% if activities %}
+            <table class="table">
+                {% for entry in activities %}
+                    <tr>
+                        <td>
+                            {% if entry.verb == 'create' %}
+                                <span class="label label-success">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                            {% elif entry.verb == 'delete' %}
+                                <span class="label label-important">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                            {% else %}
+                                <span class="label label-info">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                            {% endif %}
+                            {% if entry.data.noclook.action_type == 'node_property' %}
+                                <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> updated <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
+                                <p>{{ entry.data.noclook.property }}: {{ entry.data.noclook.value_before|default:"<em>No value</em>" }} <i class="icon-arrow-right"></i> {{ entry.data.noclook.value_after|default:"<em>No value</em>" }}</p>
+                            {% elif entry.data.noclook.action_type == 'node' %}
+                                {% if entry.verb == 'create' %}
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> created <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
+                                {% else %}
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted {{ entry.data.noclook.object_name }}</strong>
+                                {% endif %}
+                            {% elif entry.data.noclook.action_type == 'relationship' %}
+                                {% if entry.verb == 'create' %}
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> created {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                {% else %}
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                {% endif %}
+                            {% elif entry.data.noclook.action_type == 'comment' %}
+                                {% if entry.verb == 'create' %}
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> <a href="{{ entry.action_object.get_absolute_url }}">commented</a> on <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                 {% else %}
+                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted a comment from <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                {% endif %}
+                            {% else %}
+                                {{ entry.data.noclook }}
+                            {% endif %}
+                        <td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p>No activities recorded.</p>
+        {% endif %}
+
+    </div>
+{% endblock %}
