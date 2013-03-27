@@ -27,11 +27,14 @@ import norduni_client as nc
 # User friendly usage output
 parser = argparse.ArgumentParser()
 parser.add_argument('-t', '--type', nargs='?', help='Node type (case sensitive).')
-parser.add_argument('-d', '--delete', action='store_true', help='Actually delete the nodes.')
+parser.add_argument('-d', '--delete', action='store_true', default=False, help='Actually delete the nodes.')
+parser.add_argument('-f', '--force', action='store_true', default=False,
+                    help='Delete expired nodes even if they are not auto managed.')
 args = parser.parse_args()
 
 node_type = args.type
 delete = args.delete
+force = args.force
 
 if not node_type:
     print 'No node type set. Set node type with -t [node type].'

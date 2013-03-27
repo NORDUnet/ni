@@ -34,6 +34,7 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 import noclook_consumer as nt
+from apps.noclook import activitylog
 from apps.noclook import helpers as h
 import norduni_client as nc
 
@@ -78,6 +79,7 @@ def consume_alcatel_isis(json_list):
                     (between LM's only)
     Metric = 20/21  "direct fiber connection"
     """
+    user = nt.get_user()
     # Insert the optical node
     for i in json_list:
         name = i['host']['alcatel_isis']['name']
@@ -131,8 +133,8 @@ def consume_alcatel_isis(json_list):
                                                           cable_node, node,
                                                           'Connected_to')
                     h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
-                rels = nc.get_relationships(cable_node, neighbour_node, 
-                                                                'Connected_to')
+                    activitylog.create_relationship(user, rel)
+                rels = nc.get_relationships(cable_node, neighbour_node, 'Connected_to')
                 if rels:
                     for rel in rels:
                         h.update_noclook_auto_manage(nc.neo4jdb, rel)
@@ -143,6 +145,7 @@ def consume_alcatel_isis(json_list):
                                                           neighbour_node,
                                                           'Connected_to')
                     h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
+                    activitylog.create_relationship(user, rel)
 
 def main():
     # User friendly usage output

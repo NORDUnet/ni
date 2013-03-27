@@ -1,6 +1,6 @@
 from niweb.apps.noclook.models import NodeType, NodeHandle
-from niweb.apps.noclook.helpers import get_node_url
-from datetime import datetime
+from niweb.apps.noclook.helpers import get_node_url, neo4j_data_age
+from datetime import datetime, timedelta
 from django import template
 register = template.Library()
 
@@ -44,3 +44,22 @@ def noclook_last_seen_to_dt(noclook_last_seen):
     except ValueError:
         dt = None
     return dt
+
+@register.assignment_tag
+def timestamp_to_dt(seconds):
+    """
+    Converts a UNIX timestamp to a timedelta object.
+    """
+    try:
+        td = timedelta(seconds=float(seconds))
+    except AttributeError:
+        td = None
+    return td
+
+@register.assignment_tag
+def noclook_has_expired(item):
+    """
+    Returns True if the item has a noclook_last_seen property and it has expired.
+    """
+    last_seen, expired = neo4j_data_age(item)
+    return expired

@@ -42,12 +42,14 @@ from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook import helpers as h
+from apps.noclook import activitylog
 from django.contrib.comments import Comment
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 import norduni_client as nc
 import noclook_juniper_consumer
 import noclook_nmap_consumer
+import noclook_nmap_consumer_py
 import noclook_alcatel_consumer
 
 # This script is used for adding the objects collected with the
@@ -154,6 +156,7 @@ def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
                                                 creator=user,
                                                 modifier=user)
         node_handle.save()
+        activitylog.create_node(user, node_handle)
     return node_handle
 
 def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
@@ -168,13 +171,22 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
     node_type = get_node_type(node_type_name)
     try:
         if parent:
-            node_handles = NodeHandle.objects.filter(node_name__in=[node_name]
-                                            ).filter(node_type__in=[node_type])
-            for node_handle in node_handles:
-                node = node_handle.get_node()
-                node_parent = nc.get_root_parent(db, node)
-                if node_parent and parent.id == node_parent[0].id:
-                    return node_handle # NodeHandle for that parent was found
+            q = """
+                START parent=node({id})
+                MATCH parent-->child
+                WHERE child.node_type = {node_type} AND child.name = {node_name}
+                RETURN child
+                """
+            hit = db.query(
+                q,
+                id=parent.getId(),
+                node_type=node_type_name,
+                node_name=node_name
+            ).single
+            if hit:
+                node = hit['child']
+                node_handle = NodeHandle.objects.get(pk=node['handle_id'])
+                return node_handle # NodeHandle for that parent was found
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
         pass
@@ -184,6 +196,7 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
                                             creator=user,
                                             modifier=user)
     node_handle.save()
+    activitylog.create_node(user, node_handle)
     return node_handle # No NodeHandle found return a new handle.
 
 def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
@@ -229,7 +242,7 @@ def add_node_to_indexes(node):
     
 def add_relationship_to_indexes(rel):
     """
-    If the relationship has any property keys matching the SEARCH_INDEX_KEYS the 
+    If the relationship has any property keys matching the SEARCH_INDEX_KEYS the
     relationship will be added to the index with those values.
     """
     # Add the nodes to the search indexe
@@ -314,7 +327,7 @@ def consume_noclook(json_list):
             add_relationship_to_indexes(rel)
     # Remove the 'old_node_id' property from all nodes
     for n in nc.get_all_nodes(nc.neo4jdb):
-        if n.getProperty('old_node_id', None):
+        if n.get_property('old_node_id', None):
             with nc.neo4jdb.transaction:
                 del n['old_node_id']
     # Remove the temporary old_node_id index.
@@ -329,6 +342,7 @@ def run_consume(config_file):
     config = init_config(config_file)
     juniper_conf_data = config.get('data', 'juniper_conf')
     nmap_services_data = config.get('data', 'nmap_services')
+    nmap_services_py_data = config.get('data', 'nmap_services_py')
     alcatel_isis_data = config.get('data', 'alcatel_isis')
     noclook_data = config.get('data', 'noclook')
     if juniper_conf_data:
@@ -337,6 +351,9 @@ def run_consume(config_file):
     if nmap_services_data:
         data = load_json(nmap_services_data)
         noclook_nmap_consumer.insert_nmap(data)
+    if nmap_services_py_data:
+        data = load_json(nmap_services_py_data)
+        noclook_nmap_consumer_py.insert_nmap(data)
     if alcatel_isis_data:
         data = load_json(alcatel_isis_data)
         noclook_alcatel_consumer.consume_alcatel_isis(data)

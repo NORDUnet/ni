@@ -28,7 +28,7 @@ v1_api.register(PortResource())
 v1_api.register(RackResource())
 v1_api.register(RouterResource())
 v1_api.register(ServiceResource())
-#v1_api.register(ServiceL2VPNResource())
+v1_api.register(ServiceL2VPNResource())
 v1_api.register(SiteResource())
 v1_api.register(SiteOwnerResource())
 v1_api.register(UnitResource())
@@ -56,6 +56,12 @@ urlpatterns = patterns('',
 
     # Django Generic Comments
     (r'^comments/', include('django.contrib.comments.urls')),
+
+    # Activity Streams
+    ('^activity/', include('actstream.urls')),
+
+    # User Profiles
+    ('^userprofile/', include('niweb.apps.userprofile.urls')),
 
     # NOCLook URLs
     (r'', include('niweb.apps.noclook.urls')),

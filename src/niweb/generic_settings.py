@@ -8,6 +8,9 @@ from apps.saml2auth import config
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+SOUTH_TESTS_MIGRATE = False
+TEST_RUNNER = 'niweb_test_runner.NiwebTestSuiteRunner'
+
 NIWEB_ROOT = ''
 # URL without the host name,
 # eg. /niweb/ for http://www.example.com/niweb/.
@@ -82,6 +85,15 @@ SAML_ATTRIBUTE_MAPPING = {
 
 SAML_CONFIG = config.SAML_CONFIG
 
+ACTSTREAM_SETTINGS = {
+    'MODELS': ('auth.user', 'auth.group', 'sites.site', 'comments.comment', 'noclook.NodeHandle'),
+    'MANAGER': 'actstream.managers.ActionManager',
+    'FETCH_RELATIONS': True,
+    'USE_PREFETCH': True,
+    'USE_JSONFIELD': True,
+    'GFK_FETCH_DEPTH': 1,
+}
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -154,6 +166,7 @@ INSTALLED_APPS = (
     'tastypie',
     'djangosaml2',
     'south',
+    'actstream',
     'niweb_core',
     'apps.userprofile',
     'apps.noclook',

@@ -55,7 +55,10 @@
                 {% endif %}
                 {% if node.service_type == "L2VPN" %}
                     <tr>
-                        <th>L2VPN ID:</th><td>{{ node.l2vpn_id }}</td>
+                        <th>VRF Target:</th><td>{{ node.vrf_target }}</td>
+                    </tr>
+                    <tr>
+                        <th>Route Distinguisher:</th><td>{{ node.route_distinguisher }}</td>
                     </tr>
                 {% endif %}
                 <tr>
@@ -150,7 +153,7 @@
                 <tbody>
                 {% for hit in depend_out %}
                     <tr>
-                        <td><a href="{% noclook_node_to_url hit.dep %}">{{ hit.root.name }} {{ hit.parent.name }} {{ hit.dep.name }}</a></td>
+                        <td><a href="{% noclook_node_to_url hit.dep %}">{{ hit.grand_parent.name }} {% if hit.grand_parent %}{{ hit.parent.name }}.{{ hit.dep.name }}{% else %}{{ hit.parent.name }} {{ hit.dep.name }}{% endif %}</a></td>
                         <td>{{ hit.dep.node_type }}</td>
                         <td>{{ hit.dep.description }}</td>
                     </tr>
