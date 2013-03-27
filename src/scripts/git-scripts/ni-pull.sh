@@ -25,5 +25,5 @@ if [ -z $REPO ] || [ ! -d $REPO ]; then
         exit 1
 fi
 cd $REPO
-$GIT pull origin master
+$GIT pull --quiet origin master
 
