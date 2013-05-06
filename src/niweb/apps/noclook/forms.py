@@ -1,3 +1,4 @@
+from datetime import datetime
 from django import forms
 from django.forms.util import ErrorDict, ErrorList
 from django.forms.widgets import HiddenInput
@@ -237,9 +238,8 @@ class NewCableForm(forms.Form):
                                    
                                        
 class EditCableForm(forms.Form):
-    name = forms.CharField()
-    cable_type = forms.ChoiceField(choices=CABLE_TYPES,
-                                   widget=forms.widgets.Select)
+    name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
+    cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
     telenor_tn1_number = forms.CharField(required=False,
                                   help_text='Telenor TN1 number, nnnnn.')
     telenor_trunk_id = forms.CharField(required=False, 
@@ -482,28 +482,10 @@ class NewNordunetServiceForm(NewServiceForm):
         return cleaned_data
 
 
-#class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
-#
-#    l2vpn_id = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-#
-#    class Meta(NewNordunetServiceForm.Meta):
-#        l2vpn_id_generator_name = 'nordunet_vpn_id'
-#
-#
-#    def clean(self):
-#        """
-#        Checks that project_end_date was not omitted if service is of type project.
-#        """
-#        cleaned_data = super(NewNordunetL2vpnServiceForm, self).clean()
-#        if not cleaned_data['l2vpn_id']:
-#            if not self.Meta.l2vpn_id_generator_name:
-#                raise Exception('You have to set l2vpn_id_generator_name in form Meta class.')
-#            try:
-#                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.l2vpn_id_generator_name)
-#                cleaned_data['l2vpn_id'] = id_generator.get_id()
-#            except UniqueIdGenerator.DoesNotExist as e:
-#                raise e
-#        return cleaned_data
+class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
+
+    vrf_target = forms.CharField(required=False, help_text='')
+    route_distinguisher = forms.CharField(required=False, help_text='')
 
 
 class EditServiceForm(forms.Form):
@@ -524,6 +506,8 @@ class EditServiceForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
+    vrf_target = forms.CharField(required=False, help_text='')
+    route_distinguisher = forms.CharField(required=False, help_text='')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
@@ -540,11 +524,20 @@ class EditServiceForm(forms.Form):
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
             self._errors['project_end_date'].append('Missing project end date.')
-        # Check that decommissioned_date is filled in for operational state Decommissioned
-        if cleaned_data['operational_state'] == 'Decommissioned' and not cleaned_data['decommissioned_date']:
+        if cleaned_data.get('operational_state', None):
+            # Check that decommissioned_date is filled in for operational state Decommissioned
+            if cleaned_data['operational_state'] == 'Decommissioned':
+                if not cleaned_data.get('decommissioned_date', None):
+                    cleaned_data['decommissioned_date'] = datetime.today()
+            else:
+                cleaned_data['decommissioned_date'] = None
+        else:
             self._errors = ErrorDict()
-            self._errors['decommissioned_date'] = ErrorList()
-            self._errors['decommissioned_date'].append('Missing decommissioned date.')
+            self._errors['operational_state'] = ErrorList()
+            self._errors['operational_state'].append('Missing operational state.')
+        # Convert decommissioned_date to string if set
+        if cleaned_data.get('decommissioned_date', None):
+            cleaned_data['decommissioned_date'] = cleaned_data['decommissioned_date'].strftime('%Y-%m-%d')
         return cleaned_data
 
 

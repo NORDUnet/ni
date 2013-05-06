@@ -3,12 +3,20 @@
 {% block title %}{{ block.super }} {{ node.node_type }} {{ node.name }} {% endblock %}
 
 {% block js %}
+    {{ block.super }}
 <script type="text/javascript">
     // Comment show/hide
     function toggle_comment() {
         $('#add_comment').toggle();
         $('#add_comment_btn').toggle();
     }
+</script>
+<script type="text/javascript">
+    $(document).ready(
+        function(){
+            $(".detail-toggle").collapse()
+        }
+    );
 </script>
 {% endblock %}
 
@@ -19,6 +27,13 @@
     <span class="label label-important">Last seen {{ last_seen|timesince }} ago</span>
 {% endif %}
 <h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h1>
+{% if same_name_relations %}
+    <h5 class="site">also as
+        {% for hit in same_name_relations %}
+            <a href="{% noclook_node_to_url hit.relation %}"> {{ hit.relation.node_type }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    </h5>
+{% endif %}
 {% if location %}
     <h5 class="site">Located in
     {% for hit in location %}
@@ -26,10 +41,10 @@
     {% endfor %}
     </h5>
 {% endif %}
-{% if same_name_relations %}
-    <h5 class="site">also as
-        {% for hit in same_name_relations %}
-            <a href="{% noclook_node_to_url hit.relation %}"> {{ hit.relation.node_type }}</a>{% if not forloop.last %},{% endif %}
+{% if part_of %}
+    <h5 class="site">Part of
+        {% for hit in part_of %}
+            <a href="{% noclook_node_to_url hit.parent %}"> {{ hit.parent.name }}</a> <a href="{% noclook_node_to_url hit.loc %}"> {{ hit.loc.name }}</a>
         {% endfor %}
     </h5>
 {% endif %}
@@ -50,32 +65,81 @@
 
 {% block content_footer %}
 {% if node_handle %}
-    <div class="section">
-        <br>
-        <p>
-            <a href="javascript:toggle_comment()" id="add_comment_btn" class="btn btn-info">
-                <i class="icon-comment icon-white"></i> Add a comment
-            </a>
-            <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
-                <i class="icon-eye-open icon-white"></i> Visualize
-            </a>
-        </p>
-        <div id="add_comment">
-            <strong>Add a comment or <a href="javascript:toggle_comment()">hide</a> the comment form.</strong>
-            {% get_comment_form for node_handle as form %}
-            <form action="{% comment_form_target %}" method="POST">
-                {% csrf_token %}
-                <textarea class="input-xlarge" rows="3" id="id_comment" name="comment"></textarea>
-                {{ form.honeypot }}
-                {{ form.content_type }}
-                {{ form.object_pk }}
-                {{ form.timestamp }}
-                {{ form.security_hash }}
-                <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
-                <br><br>
-                <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
-                <br>
-            </form>
+    <div class="section top-space">
+        <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseOne">
+            <i class="icon-comment icon-white"></i> Add a comment
+        </a>
+        <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseTwo">
+            <i class="icon-book icon-white"></i> History
+        </a>
+        <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
+            <i class="icon-eye-open icon-white"></i> Visualize
+        </a>
+        <div class="accordion" id="detail-accordion">
+            <div class="accordion-group no-border">
+                <div id="collapseOne" class="accordion-body collapse">
+                    <div class="accordion-inner no-border well top-space">
+                        <h2>Comment</h2>
+                        {% get_comment_form for node_handle as form %}
+                        <form action="{% comment_form_target %}" method="POST">
+                            {% csrf_token %}
+                            <textarea class="input-xlarge" rows="3" id="id_comment" name="comment"></textarea>
+                            {{ form.honeypot }}
+                            {{ form.content_type }}
+                            {{ form.object_pk }}
+                            {{ form.timestamp }}
+                            {{ form.security_hash }}
+                            <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
+                            <br><br>
+                            <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
+                            <br>
+                        </form>
+                    </div>
+                </div>
+                <div id="collapseTwo" class="accordion-body no-border collapse">
+                    <div class="accordion-inner no-border well top-space">
+                        <h2>History</h2>
+                        {% if history %}
+                            <table class="table">
+                                {% for entry in history %}
+                                    <tr>
+                                        <td>
+                                            {% if entry.verb == 'create' %}
+                                                <span class="label label-success">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                                            {% elif entry.verb == 'delete' %}
+                                                <span class="label label-important">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                                            {% else %}
+                                                <span class="label label-info">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|timesince }} ago</strong><br>
+                                            {% endif %}
+                                            {% if entry.data.noclook.action_type == 'node_property' %}
+                                                <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> updated <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
+                                                <p>{{ entry.data.noclook.property }}: {{ entry.data.noclook.value_before|default:"<em>No value</em>" }} <i class="icon-arrow-right"></i> {{ entry.data.noclook.value_after|default:"<em>No value</em>" }}</p>
+                                            {% elif entry.data.noclook.action_type == 'node' %}
+                                                {% if entry.verb == 'create' %}
+                                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> created <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
+                                                {% else %}
+                                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted {{ entry.data.noclook.object_name }}</strong>
+                                                {% endif %}
+                                            {% elif entry.data.noclook.action_type == 'relationship' %}
+                                                {% if entry.verb == 'create' %}
+                                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> created {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                                {% else %}
+                                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                                                {% endif %}
+                                            {% else %}
+                                                {{ entry.data.noclook }}
+                                            {% endif %}
+                                        <td>
+                                    </tr>
+                                {% endfor %}
+                            </table>
+                        {% else %}
+                            <p>No history recorded.</p>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 {% endif %}

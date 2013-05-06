@@ -35,6 +35,7 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import norduni_client as nc
 import noclook_consumer as nt
+from apps.noclook import activitylog
 from apps.noclook import helpers as h
 
 # This script is used for adding the objects collected with the
@@ -63,6 +64,7 @@ def set_host_user(node):
     """
     Tries to set a Uses or Owns relationship between the Host and a Host User if there are none.
     """
+    user = nt.get_user()
     q = '''
         START node=node({id})
         MATCH node<-[r:Owns|Uses]-()
@@ -76,9 +78,11 @@ def set_host_user(node):
                                                 'Host User', 'relation')
         host_user = node_handle.get_node()
         if nc.get_node_meta_type(node) == 'logical':
-            nc.create_relationship(nc.neo4jdb, host_user, node, 'Uses')
+            rel = nc.create_relationship(nc.neo4jdb, host_user, node, 'Uses')
+            activitylog.create_relationship(user, rel)
         elif nc.get_node_meta_type(node) == 'physical':
-            nc.create_relationship(nc.neo4jdb, host_user, node, 'Owns')
+            rel = nc.create_relationship(nc.neo4jdb, host_user, node, 'Owns')
+            activitylog.create_relationship(user, rel)
         h.update_node_search_index(nc.neo4jdb, host_user)
 
 def insert_services(service_dict, host_node):
@@ -106,6 +110,7 @@ def insert_services(service_dict, host_node):
         }
     }
     """
+    user = nt.get_user()
     node_type = "Host Service"
     meta_type = 'logical'
     service_nodes = []
@@ -153,6 +158,7 @@ def insert_services(service_dict, host_node):
                                 new_rel[key] = value
                         h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
                         h.update_relationship_search_index(nc.neo4jdb, new_rel)
+                        activitylog.create_relationship(user, new_rel)
     return service_nodes
 
 def insert_nmap(json_list):
