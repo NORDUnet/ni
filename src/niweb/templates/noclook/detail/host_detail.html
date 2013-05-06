@@ -103,7 +103,7 @@ $(document).ready(
             {% endif %}
             {% if node.lastboot %}
                 <tr>
-                    <th>Last boot:</th><td>{{node.lastboot}}<br>({% if node.uptime %}{% timestamp_to_dt node.uptime as uptime %}{{ uptime }} ago{% endif %})</td>
+                    <th>Last boot:</th><td>{{node.lastboot}}<br>({% if node.uptime %}{% timestamp_to_td node.uptime as uptime %}{{ uptime.days }} days ago{% endif %})</td>
                 </tr>
             {% endif %}
         </table>
