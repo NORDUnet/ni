@@ -20,7 +20,7 @@ COUNTRY_CODES = [
 ]
 
 COUNTRIES = [
-    ('',''),
+    ('', ''),
     ('Denmark', 'Denmark'),
     ('Germany', 'Germany'),
     ('Finland', 'Finland'),
@@ -45,7 +45,7 @@ COUNTRY_MAP = {
 }
 
 SITE_TYPES = [
-    ('',''),
+    ('', ''),
     ('POP', 'POP'),
     ('Regenerator', 'Regenerator'),
     ('Optical Amplifier', 'Optical Amplifier'),
@@ -53,14 +53,14 @@ SITE_TYPES = [
 ]
 
 CABLE_TYPES = [
-    ('',''),
+    ('', ''),
     ('Dark Fiber', 'Dark Fiber'),
     ('Patch', 'Patch'),
     ('Power Cable', 'Power Cable')
 ]
 
 PORT_TYPES = [
-    ('',''),
+    ('', ''),
     ('LC', 'LC'),
     ('MU', 'MU'),
     ('RJ45', 'RJ45'),
@@ -68,7 +68,7 @@ PORT_TYPES = [
 ]
 
 SERVICE_TYPES = [
-    ('',''),
+    ('', ''),
     ('Alien wavelenght', 'DWDM - Alien wavelenght'),
     ('Ethernet', 'DWDM - Ethernet'),
     ('SDH', 'DWDM - SDH'),
@@ -105,7 +105,7 @@ SERVICE_CLASS_MAP = {
 }
 
 OPERATIONAL_STATES = [
-    ('',''),
+    ('', ''),
     ('In service', 'In service'),
     ('Reserved', 'Reserved'),
     ('Decommissioned', 'Decommissioned'),
@@ -113,37 +113,38 @@ OPERATIONAL_STATES = [
 ]
 
 OPTICAL_LINK_TYPES = [
-    ('',''),
+    ('', ''),
     ('OTS', 'OTS'),
     ('OPS', 'OPS'),
 ]
 
 OPTICAL_PATH_FRAMING = [
-    ('',''),
+    ('', ''),
     ('WDM', 'WDM'),
     ('WDM(Ethernet)', 'WDM(Ethernet)'),
     ('WDM(CBR)', 'WDM(CBR)'),
 ]
 
 OPTICAL_PATH_CAPACITY = [
-    ('',''),
+    ('', ''),
     ('10Gb', '10Gb'),
     ('CBR', 'CBR'),
     ('cbr 10Gb', 'cbr 10Gb'),
 ]
 
 OPTICAL_LINK_INTERFACE_TYPE = [
-    ('',''),
+    ('', ''),
     ('WDM', 'WDM'),
 ]
 
 SECURITY_CLASSES = [
-    ('',''),
-    (1,1),
-    (2,2),
-    (3,3),
-    (4,4),
-    ]
+    ('', ''),
+    (1, 1),
+    (2, 2),
+    (3, 3),
+    (4, 4),
+]
+
 
 def get_node_type_tuples(node_type):
     """
@@ -302,37 +303,25 @@ class EditHostForm(forms.Form):
                                   help_text='Short description of what the machine is used for.')
     backup = forms.NullBooleanField(required=False, help_text='Is the host backed up?')
     syslog = forms.NullBooleanField(required=False, help_text='Do the host log to the syslog machine?')
-    in_operation = forms.NullBooleanField(required=False, help_text='Backup and syslog has to be "yes" for a host to be set in operation.')
-    responsible_persons = JSONField(required=False, widget=JSONInput, help_text='Name of the person responsible for the host.')
-    os = forms.CharField(required=False, help_text='What operating system is running on the host?')
-    os_version = forms.CharField(required=False, help_text='Which version of the operating system is running on the host?')
-    model = forms.CharField(required=False, help_text='What is the hosts hardware model name?')
-    vendor = forms.CharField(required=False, help_text='Name of the vendor that should be contacted for hardware support?')
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    responsible_persons = JSONField(required=False, widget=JSONInput,
+                                    help_text='Name of the person responsible for the host.')
+    os = forms.CharField(required=False,
+                         help_text='What operating system is running on the host?')
+    os_version = forms.CharField(required=False,
+                                 help_text='Which version of the operating system is running on the host?')
+    model = forms.CharField(required=False,
+                            help_text='What is the hosts hardware model name?')
+    vendor = forms.CharField(required=False,
+                             help_text='Name of the vendor that should be contacted for hardware support?')
     service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the host?')
     end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
-    relationship_location = forms.IntegerField(required=False,
-                                            widget=forms.widgets.HiddenInput)
-    relationship_user = forms.ChoiceField(required=False,
-                                          widget=forms.widgets.Select)
-    relationship_owner = forms.ChoiceField(required=False,
-                                          widget=forms.widgets.Select)
-    # Temp?
+    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
-
-
-    def clean(self):
-        cleaned_data = super(EditHostForm, self).clean()
-        backup = cleaned_data.get('backup')
-        syslog = cleaned_data.get('syslog')
-        in_operation = cleaned_data.get('in_operation')
-        if in_operation and not (backup and syslog):
-            msg = u'You can not set a host in operation without backup or syslog.'
-            self._errors["in_operation"] = self.error_class([msg])
-            del cleaned_data['in_operation']
-        # Always return the full collection of cleaned data.
-        return cleaned_data
 
 
 class EditRouterForm(forms.Form):
