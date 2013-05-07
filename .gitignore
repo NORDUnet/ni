@@ -4,6 +4,7 @@
 /db
 /dependencies
 settings.py
+/env
 /.cache
 /.idea
 /src/niweb/sitestatic

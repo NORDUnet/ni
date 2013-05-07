@@ -8,7 +8,7 @@ import os
 ## Need to change this path depending on where the Django project is
 ## located.
 #path = '/var/norduni/src/niweb/'
-path = '/home/lundberg/norduni/src/niweb/'
+path = '/var/opt/norduni/src/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
@@ -33,4 +33,8 @@ print "Reindexing relationships.",
 for rel in nc.neo4jdb.relationships:
     h.update_relationship_search_index(nc.neo4jdb, rel)
     print '.',
+<<<<<<< HEAD
 print "done."
+=======
+print "done."
+>>>>>>> cd605482e8a261bb845802f199d5d80a07f72f26

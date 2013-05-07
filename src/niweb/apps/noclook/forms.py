@@ -162,7 +162,6 @@ RESPONSIBLE_GROUPS = [
     ('WAYF', 'WAYF'),
 ]
 
-
 def get_node_type_tuples(node_type):
     """
     Returns a list of tuple of node.id and node['name'] of the node_type.

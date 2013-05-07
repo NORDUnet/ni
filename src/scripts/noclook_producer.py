@@ -28,7 +28,9 @@ import jpype
 ## Need to change this path depending on where the Django project is
 ## located.
 #path = '/var/norduni/src/niweb/'
-path = '/home/lundberg/norduni/src/niweb/'
+#path = '/home/lundberg/norduni/src/niweb/'
+#path = '/var/norduni/scr/niweb/'
+path = '/var/opt/norduni/src/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
@@ -134,4 +136,8 @@ def main():
     return 0
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     main()
+=======
+    main()
+>>>>>>> cd605482e8a261bb845802f199d5d80a07f72f26
