@@ -155,7 +155,7 @@ $(document).ready(
             </tr>
         </table>
     </div>
-    {% if node.description or node.responsible_persons or node.security_class %}
+    {% if node.description or node.responsible_group or node.security_class %}
         <div class="span7">
             <table class="table">
                 {% if node.description %}
@@ -163,13 +163,11 @@ $(document).ready(
                         <th>Description:</th><td>{{ node.description }}</td>
                     </tr>
                 {% endif %}
-                {% if node.responsible_persons %}
+                {% if node.responsible_group %}
                     <tr>
-                        <th>Responsible</th>
+                        <th>Responsible group</th>
                         <td>
-                            {% for item in node.responsible_persons %}
-                                {{ item }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
+                            {{ node.responsible_group }}
                         </td>
                     </tr>
                 {% endif %}

@@ -146,6 +146,22 @@ SECURITY_CLASSES = [
     (4, 4),
 ]
 
+RESPONSIBLE_GROUPS = [
+    ('', ''),
+    ('ADMIN', 'ADMIN'),
+    ('DEV', 'DEV'),
+    ('EDUIX', 'EDUIX'),
+    ('FUNET', 'FUNET'),
+    ('NDGF', 'NDGF'),
+    ('NOC', 'NOC'),
+    ('NPE', 'NPE'),
+    ('RHNET', 'RHNET'),
+    ('SUNET', 'SUNET'),
+    ('SWAMID', 'SWAMID'),
+    ('UNINETT', 'UNINETT'),
+    ('WAYF', 'WAYF'),
+]
+
 
 def get_node_type_tuples(node_type):
     """
@@ -154,11 +170,12 @@ def get_node_type_tuples(node_type):
     from operator import itemgetter
     index = nc.get_node_index(nc.neo4jdb, 'node_types')
     nodes = h.iter2list(index['node_type'][node_type])
-    node_list = [('','')]
+    node_list = [('', '')]
     for node in nodes:
         node_list.append((node.id, node['name']))
     node_list.sort(key=itemgetter(1))
     return node_list
+
 
 class JSONField(forms.CharField):
 
@@ -169,7 +186,7 @@ class JSONField(forms.CharField):
         value = super(JSONField, self).clean(value)
         try:
             json_data = simplejson.loads(value)
-        except Exception, e:
+        except Exception:
             raise forms.validators.ValidationError(self.error_messages['invalid'])
         return json_data
 
@@ -187,8 +204,7 @@ class ReserveIdForm(forms.Form):
 
 class NewSiteForm(forms.Form):
     name = forms.CharField()
-    country_code = forms.ChoiceField(choices=COUNTRY_CODES,
-                                     widget=forms.widgets.Select)
+    country_code = forms.ChoiceField(choices=COUNTRY_CODES, widget=forms.widgets.Select)
     address = forms.CharField(required=False)
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
@@ -196,29 +212,22 @@ class NewSiteForm(forms.Form):
     
 class EditSiteForm(forms.Form):
     name = forms.CharField()
-    country_code = forms.ChoiceField(choices=COUNTRY_CODES, widget=forms.widgets.Select,
-                                     required=False)
-    country = forms.ChoiceField(choices=COUNTRIES, widget=forms.widgets.Select,
-                                required=False)
-    site_type = forms.ChoiceField(choices=SITE_TYPES,
-                                  widget=forms.widgets.Select, required=False)
+    country_code = forms.ChoiceField(choices=COUNTRY_CODES, widget=forms.widgets.Select, required=False)
+    country = forms.ChoiceField(choices=COUNTRIES, widget=forms.widgets.Select, required=False)
+    site_type = forms.ChoiceField(choices=SITE_TYPES, widget=forms.widgets.Select, required=False)
     address = forms.CharField(required=False)
-    floor = forms.CharField(required=False,
-                            help_text='Floor of building if applicable.')
-    room = forms.CharField(required=False,
-                         help_text='Room identifier in building if applicable.')
+    floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
+    room = forms.CharField(required=False, help_text='Room identifier in building if applicable.')
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
-    area = forms.CharField(required=False,
-                           help_text='State, county or similar.')
+    area = forms.CharField(required=False, help_text='State, county or similar.')
     longitude = forms.FloatField(required=False, help_text='Decimal Degrees')
     latitude = forms.FloatField(required=False, help_text='Decimal Degrees')
     telenor_subscription_id = forms.CharField(required=False)
     owner_id = forms.CharField(required=False)
     owner_site_name = forms.CharField(required=False)
     url = forms.URLField(required=False, help_text='An URL to more information about the site.')
-    relationship_site_owner = forms.IntegerField(required=False,
-                                            widget=forms.widgets.HiddenInput)
+    relationship_site_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                               
                               
 class NewSiteOwnerForm(forms.Form):
@@ -240,26 +249,18 @@ class NewCableForm(forms.Form):
 class EditCableForm(forms.Form):
     name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
     cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
-    telenor_tn1_number = forms.CharField(required=False,
-                                  help_text='Telenor TN1 number, nnnnn.')
-    telenor_trunk_id = forms.CharField(required=False, 
-                                       help_text='Telenor Trunk ID, nnn-nnnn.')
-    global_crossing_circuit_id = forms.CharField(required=False,
-                                                 help_text='Global Crossing \
-                                                 circuit ID, nnnnnnnnnn')
-    relationship_end_a = forms.IntegerField(required=False,
-                                            widget=forms.widgets.HiddenInput)
-    relationship_end_b = forms.IntegerField(required=False,
-                                            widget=forms.widgets.HiddenInput)
+    telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.')
+    telenor_trunk_id = forms.CharField(required=False, help_text='Telenor Trunk ID, nnn-nnnn.')
+    global_crossing_circuit_id = forms.CharField(required=False, help_text='Global Crossing circuit ID, nnnnnnnnnn')
+    relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class EditOpticalNodeForm(forms.Form):        
     name = forms.CharField()
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-        widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     sites = get_node_type_tuples('Site')
-    relationship_location = forms.IntegerField(required=False,
-                                            widget=forms.widgets.HiddenInput)
+    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                                               
 
 class EditPeeringPartnerForm(forms.Form):
@@ -284,8 +285,7 @@ class EditRackForm(forms.Form):
                                help_text='Depth in millimeters (mm).')
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
-    relationship_location = forms.IntegerField(required=False,
-                                            widget=forms.widgets.HiddenInput)
+    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                 
                 
 class EditHostForm(forms.Form):
@@ -304,8 +304,10 @@ class EditHostForm(forms.Form):
     backup = forms.NullBooleanField(required=False, help_text='Is the host backed up?')
     syslog = forms.NullBooleanField(required=False, help_text='Do the host log to the syslog machine?')
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
-    responsible_persons = JSONField(required=False, widget=JSONInput,
-                                    help_text='Name of the person responsible for the host.')
+    #responsible_persons = JSONField(required=False, widget=JSONInput,
+    #                                help_text='Name of the person responsible for the host.')
+    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                          help_text='Name of the group responsible for the host.')
     os = forms.CharField(required=False,
                          help_text='What operating system is running on the host?')
     os_version = forms.CharField(required=False,
@@ -330,10 +332,8 @@ class EditRouterForm(forms.Form):
     #start_unit = forms.IntegerField(required=False,
     #                           help_text='Where the host starts in the rack. \
     #                           Used for calculation of rack space.')
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-        widget=forms.widgets.Select)
-    relationship_location = forms.IntegerField(required=False,
-                                            widget=forms.widgets.HiddenInput)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     
     
 class NewOdfForm(forms.Form):
@@ -341,7 +341,7 @@ class NewOdfForm(forms.Form):
         super(NewOdfForm, self).__init__(*args, **kwargs)
         # Set max number of ports to choose from
         max_num_of_ports = 40
-        choices = [(x,x) for x in range(1, max_num_of_ports+1) if x]
+        choices = [(x, x) for x in range(1, max_num_of_ports+1) if x]
         self.fields['max_number_of_ports'].choices = choices
         
     #units = forms.IntegerField(required=False,
@@ -350,8 +350,7 @@ class NewOdfForm(forms.Form):
     #                           help_text='Where the host starts in the rack. \
     #                           Used for calculation of rack space.')
     name = forms.CharField()
-    max_number_of_ports = forms.ChoiceField(required=False,
-                                              widget=forms.widgets.Select)
+    max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
 
 class EditOdfForm(forms.Form):
@@ -362,24 +361,20 @@ class EditOdfForm(forms.Form):
     #                           Used for calculation of rack space.')
     name = forms.CharField()
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.')
-    relationship_location = forms.IntegerField(required=False,
-                                               widget=forms.widgets.HiddenInput)
+    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewPortForm(forms.Form):
     name = forms.CharField()
-    port_type = forms.ChoiceField(choices=PORT_TYPES,
-                                   widget=forms.widgets.Select)
-    relationship_parent = forms.IntegerField(required=False,
-                                             widget=forms.widgets.HiddenInput)
+    port_type = forms.ChoiceField(choices=PORT_TYPES, widget=forms.widgets.Select)
+    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class EditPortForm(forms.Form):
     name = forms.CharField()
-    port_type = forms.ChoiceField(choices=PORT_TYPES,
-                                   widget=forms.widgets.Select)
-    relationship_parent = forms.IntegerField(required=False,
-                                             widget=forms.widgets.HiddenInput)
+    port_type = forms.ChoiceField(choices=PORT_TYPES, widget=forms.widgets.Select)
+    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
 
 class NewCustomerForm(forms.Form):
     name = forms.CharField()
@@ -419,20 +414,17 @@ class NewServiceForm(forms.Form):
     name = forms.CharField(required=False,
                            help_text='Name will only be available for manually named service types.')
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
-    service_type = forms.ChoiceField(choices=SERVICE_TYPES,
-                                     widget=forms.widgets.Select)
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-                                        widget=forms.widgets.Select)
+    service_type = forms.ChoiceField(choices=SERVICE_TYPES, widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
-        id_generator_name = None # UniqueIdGenerator instance name
-        id_collection = None # Subclass of UniqueId
-        manually_named_services = ['External'] # service_type of manually named services
-
+        id_generator_name = None                # UniqueIdGenerator instance name
+        id_collection = None                    # Subclass of UniqueId
+        manually_named_services = ['External']  # service_type of manually named services
 
     def clean(self):
         """
@@ -468,7 +460,6 @@ class NewNordunetServiceForm(NewServiceForm):
     class Meta(NewServiceForm.Meta):
         id_generator_name = 'nordunet_service_id'
         id_collection = NordunetUniqueId
-
 
     def clean(self):
         """
@@ -514,7 +505,6 @@ class EditServiceForm(forms.Form):
     relationship_depends_on = forms.IntegerField(required=False,
                                                  widget=forms.widgets.HiddenInput)
 
-
     def clean(self):
         cleaned_data = super(EditServiceForm, self).clean()
         # Set service_class depending on service_type.
@@ -547,20 +537,17 @@ class NewOpticalLinkForm(forms.Form):
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
-    link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
-        widget=forms.widgets.Select)
+    link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES, widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-        widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     description = forms.CharField(required=False,
-        widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-        help_text='Short description of the optical link.')
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the optical link.')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
-        id_generator_name = None # UniqueIdGenerator instance name
-        id_collection = None # Subclass of UniqueId
-
+        id_generator_name = None    # UniqueIdGenerator instance name
+        id_collection = None        # Subclass of UniqueId
 
     def clean(self):
         """
@@ -586,7 +573,6 @@ class NewNordunetOpticalLinkForm(NewOpticalLinkForm):
         id_generator_name = 'nordunet_optical_link_id'
         id_collection = NordunetUniqueId
 
-
     def clean(self):
         cleaned_data = super(NewNordunetOpticalLinkForm, self).clean()
         return cleaned_data
@@ -606,10 +592,8 @@ class EditOpticalLinkForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical link.')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_end_a = forms.IntegerField(required=False,
-                                                   widget=forms.widgets.HiddenInput)
-    relationship_end_b = forms.IntegerField(required=False,
-                                                   widget=forms.widgets.HiddenInput)
+    relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewOpticalPathForm(forms.Form):
@@ -630,9 +614,8 @@ class NewOpticalPathForm(forms.Form):
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
-        id_generator_name = None # UniqueIdGenerator instance name
-        id_collection = None # Subclass of UniqueId
-
+        id_generator_name = None    # UniqueIdGenerator instance name
+        id_collection = None        # Subclass of UniqueId
 
     def clean(self):
         """
@@ -657,7 +640,6 @@ class NewNordunetOpticalPathForm(NewOpticalPathForm):
     class Meta(NewOpticalLinkForm.Meta):
         id_generator_name = 'nordunet_optical_path_id'
         id_collection = NordunetUniqueId
-
 
     def clean(self):
         cleaned_data = super(NewNordunetOpticalPathForm, self).clean()
