@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <form action="{% comment_form_target %}" method="POST">
+        {% csrf_token %}
+        <textarea class="xxlarge" id="id_comment" name="comment"></textarea>
+        {{ form.honeypot }}
+        {{ form.content_type }}
+        {{ form.object_pk }}
+        {{ form.timestamp }}
+        {{ form.security_hash }}
+        <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
+        <br><br>
+        <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
+        <br>
+    </form>
+{% endblock %}
