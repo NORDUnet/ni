@@ -12,9 +12,10 @@
                         sortList: [[0,0], [1,0]],
                         headers:
                         {
-                            3 : { sorter: "isoDate" }
+                            3 : { sorter: "ipAddress" },
+                            12 : { sorter: "isoDate" }
                         },
-                        widthFixed: true,
+                        widthFixed: false,
                         widgets: ['zebra']
                     });
 
@@ -72,7 +73,20 @@
         <table id="hosts" class="tablesorter" cellspacing="1">
             <thead>
                 <tr>
-                    <th>Host user</th><th>Host</th><th>Host type</th><th>IP address(es)</th><th>Contract number</th><th>Description</th><th>Responsible</th><th>Backup</th><th>Syslog</th><th>In operation</th><th>Location</th><th>Last seen</th><th>Uptime</th>
+                    <th>Host user</th>
+                    <th>Host</th>
+                    <th>Host type</th>
+                    <th>IP address(es)</th>
+                    <th>Contract number</th>
+                    <th>Description</th>
+                    <th>Responsible</th>
+                    <th>Backup</th>
+                    <th>Syslog</th>
+                    <th>Operational State</th>
+                    <th>Security Class</th>
+                    <th>Location</th>
+                    <th>Last seen</th>
+                    <th>Uptime (days)</th>
                 </tr>
             </thead>
             <tbody>
@@ -96,20 +110,19 @@
                     <td>{{ item.host.contract_number|default:"" }}</td>
                     <td>{{ item.host.description|default:"" }}</td>
                     <td>
-                        {% for responsible in item.host.responsible_persons %}
-                            {{ responsible }}{% if not forloop.last %},{% endif %}
-                        {% endfor %}
+                        {{ item.host.responsible_group }}
                     </td>
                     <td>{{ item.host.backup|yesno:"Yes,No,Not set" }}</td>
                     <td>{{ item.host.syslog|yesno:"Yes,No,Not set" }}</td>
-                    <td>{{ item.host.in_operation|yesno:"Yes,No,Not set" }}</td>
+                    <td>{{ item.host.operational_state|default:"Not set" }}</td>
+                    <td>{{ item.host.security_class }}</td>
                     <td>
                         {% for loc in item.location %}
                             <a href="{% noclook_node_to_url loc.parent %}"> {{ loc.parent.name }}</a> <a href="{% noclook_node_to_url loc.loc %}"> {{ loc.loc.name }}</a>
                         {% endfor %}
                     </td>
-                    <td>{% noclook_last_seen_to_dt item.host.noclook_last_seen as last_seen%}{{ last_seen|date }}</td>
-                    <td></td>
+                    <td>{% noclook_last_seen_to_dt item.host.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
+                    <td>{% timestamp_to_td item.host.uptime as uptime %}{% if uptime %}{{ uptime.days }}{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>

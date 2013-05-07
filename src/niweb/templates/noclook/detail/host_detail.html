@@ -31,9 +31,9 @@ $(document).ready(
             <tr>
                 <th>Type:</th><td>{{ node_handle.node_meta_type|capfirst }} host</td>
             </tr>
-            {% if node.status %}
+            {% if node.operational_state %}
                 <tr>
-                    <th>Status:</th><td>{{ node.status|capfirst }}</td>
+                    <th>Status:</th><td>{{ node.operational_state|capfirst }}</td>
                 </tr>
             {% endif %}
             {% if node.hostnames %}
@@ -103,7 +103,7 @@ $(document).ready(
             {% endif %}
             {% if node.lastboot %}
                 <tr>
-                    <th>Last boot:</th><td>{{node.lastboot}}<br>({% if node.uptime %}{% timestamp_to_dt node.uptime as uptime %}{{ uptime }} ago{% endif %})</td>
+                    <th>Last boot:</th><td>{{node.lastboot}}<br>({% if node.uptime %}{% timestamp_to_td node.uptime as uptime %}{{ uptime.days }} days ago{% endif %})</td>
                 </tr>
             {% endif %}
         </table>
@@ -155,7 +155,7 @@ $(document).ready(
             </tr>
         </table>
     </div>
-    {% if node.description or node.responsible_persons or node.security_class %}
+    {% if node.description or node.responsible_group or node.security_class %}
         <div class="span7">
             <table class="table">
                 {% if node.description %}
@@ -163,13 +163,11 @@ $(document).ready(
                         <th>Description:</th><td>{{ node.description }}</td>
                     </tr>
                 {% endif %}
-                {% if node.responsible_persons %}
+                {% if node.responsible_group %}
                     <tr>
-                        <th>Responsible</th>
+                        <th>Responsible group</th>
                         <td>
-                            {% for item in node.responsible_persons %}
-                                {{ item }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
+                            {{ node.responsible_group }}
                         </td>
                     </tr>
                 {% endif %}

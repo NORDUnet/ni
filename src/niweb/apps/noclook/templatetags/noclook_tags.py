@@ -46,13 +46,13 @@ def noclook_last_seen_to_dt(noclook_last_seen):
     return dt
 
 @register.assignment_tag
-def timestamp_to_dt(seconds):
+def timestamp_to_td(seconds):
     """
     Converts a UNIX timestamp to a timedelta object.
     """
     try:
         td = timedelta(seconds=float(seconds))
-    except AttributeError:
+    except (AttributeError, ValueError):
         td = None
     return td
 

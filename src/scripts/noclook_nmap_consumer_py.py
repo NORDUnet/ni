@@ -45,6 +45,7 @@ VERBOSE = True
 
 HOST_USERS_MAP = {
     'eduroam.se':       'SUNET',
+    'eduid.se':         'SUNET',
     'eid2.se':          'SUNET',
     'funet.fi':         'FUNET',
     'lobber.se':        'SUNET',

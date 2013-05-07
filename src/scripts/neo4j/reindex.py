@@ -33,4 +33,8 @@ print "Reindexing relationships.",
 for rel in nc.neo4jdb.relationships:
     h.update_relationship_search_index(nc.neo4jdb, rel)
     print '.',
+<<<<<<< HEAD
 print "done."
+=======
+print "done."
+>>>>>>> cd605482e8a261bb845802f199d5d80a07f72f26
