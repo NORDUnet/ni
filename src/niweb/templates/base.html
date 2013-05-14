@@ -108,10 +108,9 @@
                                 </ul>
                             </li>
                             {% if user.is_staff %}
-                                <li>
-                                    <a href="/new/">Create new</a>
-                                    <li><a href="/reserve-id/">Reserve IDs</a></li>
-                                </li>
+                                <li><a href="/new/">Create new</a></li>
+                                <li><a href="/reserve-id/">Reserve IDs</a></li>
+                                <li><a href="/userprofile/">Users</a></li>
                             {% endif %}
                             <li class="divider-vertical"></li>
                             {% if user.is_authenticated %}
@@ -154,6 +153,7 @@
                             {% if user.is_staff %}
                                 <li><a href="/new/">Create new</a></li>
                                 <li><a href="/reserve-id/">Reserve IDs</a></li>
+                                <li><a href="/userprofile/">Users</a></li>
                             {% endif %}
                             <li><a href="/logout/">Log out</a></li>
                         {% endif %}
