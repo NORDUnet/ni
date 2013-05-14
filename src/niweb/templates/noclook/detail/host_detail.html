@@ -12,7 +12,7 @@ $(document).ready(
             sortList: [[0,0]],
             headers:
             {
-                1 : { sorter: "ipAddress"  },
+                1 : { sorter: "ipAddress"  }
             },
             widthFixed: true,
             widgets: ['zebra']
@@ -50,7 +50,7 @@ $(document).ready(
                 <tr>
                     <th>Addresses:</th>
                     <td>
-                        {% for item in node.addresses %}
+                        {% for item in node.ip_addresses %}
                             {{ item }}{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>

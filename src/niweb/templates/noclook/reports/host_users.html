@@ -103,7 +103,7 @@
                     <td><a href="{% noclook_node_to_url item.host %}">{{ item.host.name }}</a></td>
                     <td>{{ item.host_type|capfirst }} host</td>
                     <td>
-                        {% for address in item.host.addresses %}
+                        {% for address in item.host.ip_addresses %}
                             {{ address }}{% if not forloop.last %},{% endif %}
                         {% endfor %}
                     </td>

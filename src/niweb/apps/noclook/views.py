@@ -56,7 +56,7 @@ def list_hosts(request):
     q = '''
         START host=node:node_types(node_type = "Host")
         MATCH host<-[?:Owns|Uses]-user
-        RETURN host, host.name as name, host.os? as os, host.os_version? as os_version, host.addresses? as addresses, collect(user) as users
+        RETURN host, host.name as name, host.os? as os, host.os_version? as os_version, host.ip_addresses? as ip_addresses, collect(user) as users
         ORDER BY host.name
         '''
     host_list = nc.neo4jdb.query(q)

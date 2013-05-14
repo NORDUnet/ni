@@ -274,9 +274,10 @@ def isots_to_dt(item):
     try:
         ts = item.get_property('noclook_last_seen', None)  # ex. 2011-11-01T14:37:13.713434
         dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
-    except ValueError:
+    except TypeError:
         return None
     return dt
+
 
 def neo4j_data_age(item, max_data_age=None):
     """
@@ -292,9 +293,10 @@ def neo4j_data_age(item, max_data_age=None):
     now = datetime.now()
     last_seen = isots_to_dt(item)
     expired = False
-    if (now-last_seen) > max_age and item.get_property('noclook_auto_manage', False):
+    if last_seen and (now-last_seen) > max_age and item.get_property('noclook_auto_manage', False):
         expired = True
     return last_seen, expired
+
 
 def neo4j_report_age(item, old, very_old):
     """

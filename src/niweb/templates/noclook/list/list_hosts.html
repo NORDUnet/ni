@@ -36,8 +36,8 @@ $(document).ready(
         <tbody>
             {% load noclook_tags %}
             {% for host in host_list %}
-                {% if host.addresses %}
-                    {% for address in host.addresses %}
+                {% if host.ip_addresses %}
+                    {% for address in host.ip_addresses %}
                         {% noclook_has_expired host.host as expired %}
                         {% if expired %}
                             <tr class="expired">
