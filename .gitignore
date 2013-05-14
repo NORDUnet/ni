@@ -9,5 +9,8 @@ env
 .cache
 .idea
 *.conf
+*.pem
+*.crt
+*.key
 src/niweb/sitestatic
 tools/nerds
