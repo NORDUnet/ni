@@ -82,15 +82,18 @@ def get_nh_node(node_handle_id):
     return nh, node
 
 def delete_node(user, node):
-    nh = NodeHandle.objects.get(pk=node['handle_id'])
-    if nc.get_node_meta_type(node) == 'physical':
-        # Remove dependant equipment like Ports and Units
-        for rel in node.Has.outgoing:
-            delete_node(user, rel.end)
-        for rel in node.Part_of.incoming:
-            delete_node(user, rel.start)
-    activitylog.delete_node(user, nh)
-    nh.delete()
+    try:
+        nh = NodeHandle.objects.get(pk=node['handle_id'])
+        if nc.get_node_meta_type(node) == 'physical':
+            # Remove dependant equipment like Ports and Units
+            for rel in node.Has.outgoing:
+                delete_node(user, rel.end)
+            for rel in node.Part_of.incoming:
+                delete_node(user, rel.start)
+        activitylog.delete_node(user, nh)
+        nh.delete()
+    except (ObjectDoesNotExist, nc.neo4jdb.NotFoundException):
+        pass
     return True
 
 def form_update_node(user, node, form, property_keys=None):
