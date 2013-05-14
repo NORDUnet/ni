@@ -41,7 +41,7 @@ from apps.noclook import helpers as h
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
 
-VERBOSE = True
+VERBOSE = False
 
 HOST_USERS_MAP = {
     'eduroam.se':       'SUNET',
@@ -90,6 +90,25 @@ def set_host_user(node):
         h.update_node_search_index(nc.neo4jdb, host_user)
         if VERBOSE:
             print 'User %s set for host %s...' % (host_user_name, node['name'])
+
+
+def is_host(addresses):
+    """
+    :param addresses: List of IP addresses
+    :return: True if the addresses belongs to a host or does not belong to anything
+    """
+    i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    nodes = []
+    for address in addresses:
+        q1 = Q('ip_address', '%s' % address)
+        q2 = Q('ip_addresses', '%s' % address)
+        nodes.extend(h.iter2list(i1.query(unicode(q1))))
+        nodes.extend(h.iter2list(i1.query(unicode(q2))))
+    for node in nodes:
+        if node['node_type'] != 'Host':
+            return False
+    return True
+
 
 def insert_services(service_dict, host_node):
     """
@@ -193,12 +212,12 @@ def insert_nmap(json_list):
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type,
                                                 meta_type)
         # Set Node attributes
-        property_keys = ['hostnames', 'addresses']
+        property_keys = ['hostnames', 'ip_addresses']
         node = node_handle.get_node()
         h.update_noclook_auto_manage(nc.neo4jdb, node)
         host_properties = {
             'hostnames': i['host']['nmap_services_py']['hostnames'],
-            'addresses': i['host']['nmap_services_py']['addresses']
+            'ip_addresses': i['host']['nmap_services_py']['addresses']
         }
         if 'os' in i['host']['nmap_services_py'] and not node.get_property('os', None):
             # Only set os if the property is missing as a user probably knows better than nmap
