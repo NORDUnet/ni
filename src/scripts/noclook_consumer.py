@@ -341,16 +341,12 @@ def run_consume(config_file):
     """
     config = init_config(config_file)
     juniper_conf_data = config.get('data', 'juniper_conf')
-    nmap_services_data = config.get('data', 'nmap_services')
     nmap_services_py_data = config.get('data', 'nmap_services_py')
     alcatel_isis_data = config.get('data', 'alcatel_isis')
     noclook_data = config.get('data', 'noclook')
     if juniper_conf_data:
         data = load_json(juniper_conf_data)
         noclook_juniper_consumer.consume_juniper_conf(data)
-    if nmap_services_data:
-        data = load_json(nmap_services_data)
-        noclook_nmap_consumer.insert_nmap(data)
     if nmap_services_py_data:
         data = load_json(nmap_services_py_data)
         noclook_nmap_consumer_py.insert_nmap(data)
