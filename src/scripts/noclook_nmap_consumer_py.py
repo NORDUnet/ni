@@ -124,6 +124,9 @@ def insert_services(service_dict, host_node):
     node_type = "Host Service"
     meta_type = 'logical'
     service_nodes = []
+    # Expected service data from nmap
+    property_keys = ['ip_address', 'protocol', 'port' 'conf', 'extrainfo',
+                     'name', 'product', 'reason', 'state', 'version']
     for key in service_dict.keys():
         address = key
         for key in service_dict[address].keys():
@@ -141,31 +144,33 @@ def insert_services(service_dict, host_node):
                 h.update_noclook_auto_manage(nc.neo4jdb, service_node)
                 service_nodes.append(service_node)
                 # Get existing relationships between the two nodes
-                rel_index = nc.get_relationship_index(nc.neo4jdb,
-                                                     nc.search_index_name())
+                rel_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
                 q = Q('ip_address', '%s' % address)
                 service_rels = rel_index.query(str(q))
                 create = True
+                rel_dict = {
+                    'ip_address': address,
+                    'protocol': protocol,
+                    'port': port
+                }
+                for key, value in service.items():
+                    rel_dict[key] = value
+                # Try to find an already existing relationship
                 for rel in service_rels:
                     try:
                         if rel['protocol'] == protocol and rel['port'] == port:
                             create = False
+                            h.dict_update_relationship(user, rel, rel_dict, property_keys)
                             h.update_noclook_auto_manage(nc.neo4jdb, rel)
                             break
                     except KeyError:
                         continue
+                # Relationship did not exist
                 if create:
                     # Create a relationship between the service and host
-                    new_rel = nc.create_relationship(nc.neo4jdb,
-                                                              service_node,
-                                                              host_node,
-                                                              'Depends_on')
-                    with nc.neo4jdb.transaction:
-                        new_rel['ip_address'] = address
-                        new_rel['protocol'] = protocol
-                        new_rel['port'] = port
-                        for key, value in service.items():
-                            new_rel[key] = value
+                    new_rel = nc.create_relationship(nc.neo4jdb, service_node, host_node,
+                                                     'Depends_on')
+                    h.dict_update_relationship(user, new_rel, rel_dict, property_keys)
                     h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
                     h.update_relationship_search_index(nc.neo4jdb, new_rel)
                     activitylog.create_relationship(user, new_rel)
@@ -195,16 +200,16 @@ def insert_nmap(json_list):
             'hostnames': i['host']['nmap_services_py']['hostnames'],
             'addresses': i['host']['nmap_services_py']['addresses']
         }
-        if i['host']['nmap_services_py'].has_key('os') and not node.get_property('os', None):
+        if 'os' in i['host']['nmap_services_py'] and not node.get_property('os', None):
             # Only set os if the property is missing as a user probably knows better than nmap
-            if i['host']['nmap_services_py']['os'].has_key('class'):
+            if 'class' in i['host']['nmap_services_py']['os']:
                 property_keys.extend(['os', 'os_version'])
                 host_properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
                 host_properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
-            elif i['host']['nmap_services_py']['os'].has_key('match'):
+            elif 'match' in i['host']['nmap_services_py']['os']:
                 property_keys.extend(['os'])
                 host_properties['os'] = i['host']['nmap_services_py']['os']['match']['name']
-        if i['host']['nmap_services_py'].has_key('uptime'):
+        if 'uptime' in i['host']['nmap_services_py']:
             property_keys.extend(['lastboot', 'uptime'])
             host_properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
             host_properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']

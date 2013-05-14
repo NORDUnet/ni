@@ -1,6 +1,5 @@
 from django.conf import settings
-from django.conf.urls.defaults import *
-from django.contrib.auth.views import login
+from django.conf.urls import *
 from tastypie.api import Api
 from niweb.apps.noclook.api.resources import *
 

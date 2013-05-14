@@ -191,19 +191,28 @@ $(document).ready(
 <br><br><br>
 <div class="section">
     <h3>Services provided</h3>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
     {% load noclook_tags %}
     {% if service_relationships %}
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Service</th><th>Address</th><th>Port</th><th>Protocol<th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th>
+            <th>Service</th><th>Address</th><th>Port</th><th>Protocol</th><th>State</th><th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th>
         </thead>
         <tbody>
         {% for service in service_relationships %}
-            <tr>
+            {% noclook_has_expired service as expired %}
+            {% if expired %}
+                <tr class="expired">
+            {% else %}
+                <tr>
+            {% endif %}
                 <td><a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a></td>
                 <td>{{ service.ip_address }}</td>
                 <td>{{ service.port }}</td>
                 <td>{{ service.protocol }}</td>
+                <td>{{ service.state }}</td>
                 <td>{{ service.product }}</td>
                 <td>{{ service.version }}</td>
                 <td>{{ service.extrainfo }}</td>

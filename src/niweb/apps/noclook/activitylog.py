@@ -23,12 +23,13 @@ def update_node_property(user, action_object, property_key, value_before, value_
         verb='update',
         action_object=action_object,
         noclook={
-            'action_type': 'node_property', # node, relationship, relationship_property
+            'action_type': 'node_property',
             'property': property_key,
             'value_before': value_before,
             'value_after': value_after
         }
     )
+
 
 def create_node(user, action_object):
     """
@@ -45,6 +46,7 @@ def create_node(user, action_object):
         }
     )
 
+
 def delete_node(user, action_object):
     """
     :param user: Django user instance
@@ -57,8 +59,55 @@ def delete_node(user, action_object):
         noclook={
             'action_type': 'node',
             'object_name': unicode(action_object)
-            }
+        }
     )
+
+
+def update_relationship_property(user, relationship, property_key, value_before, value_after):
+    """
+    Creates an Action with the extra information needed to present the user with a history.
+    :param user: Django user instance
+    :param relationship: Neo4j relationship instance
+    :param property_key: String
+    :param value_before: JSON supported value
+    :param value_after: JSON supported value
+    :return: None
+    """
+    start_nh, start_node = h.get_nh_node(relationship.start['handle_id'])
+    end_nh, end_node = h.get_nh_node(relationship.end['handle_id'])
+    action.send(
+        user,
+        verb='update',
+        action_object=start_nh,
+        target=end_nh,
+        noclook={
+            'action_type': 'relationship_property',
+            'property': property_key,
+            'value_before': value_before,
+            'value_after': value_after
+        }
+    )
+
+
+def create_relationship(user, relationship):
+    """
+    :param user: Django user instance
+    :param relationship: Neo4j relationship instance
+    :return: None
+    """
+    start_nh, start_node = h.get_nh_node(relationship.start['handle_id'])
+    end_nh, end_node = h.get_nh_node(relationship.end['handle_id'])
+    action.send(
+        user,
+        verb='create',
+        action_object=start_nh,
+        target=end_nh,
+        noclook={
+            'action_type': 'relationship',
+            'relationship_type': unicode(relationship.type)
+        }
+    )
+
 
 def delete_relationship(user, relationship):
     """
@@ -77,24 +126,5 @@ def delete_relationship(user, relationship):
             'action_type': 'relationship',
             'relationship_type': unicode(relationship.type),
             'object_name': unicode(relationship)
-        }
-    )
-
-def create_relationship(user, relationship):
-    """
-    :param user: Django user instance
-    :param relationship: Neo4j relationship instance
-    :return: None
-    """
-    start_nh, start_node = h.get_nh_node(relationship.start['handle_id'])
-    end_nh, end_node = h.get_nh_node(relationship.end['handle_id'])
-    action.send(
-        user,
-        verb='create',
-        action_object=start_nh,
-        target=end_nh,
-        noclook={
-            'action_type': 'relationship',
-            'relationship_type': unicode(relationship.type)
         }
     )

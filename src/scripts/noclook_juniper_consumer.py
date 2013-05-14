@@ -95,13 +95,16 @@ def insert_juniper_router(name, model, version):
     Inserts a physical meta type node of the type Router.
     Returns the node created.
     """
+    user = nt.get_user()
     node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, 'Router', 
                                             'physical')
     node = node_handle.get_node()
-    # TODO: Change to the new way after upgrade
-    with nc.neo4jdb.transaction:
-        node['model'] = model
-        node['version'] = version
+    node_dict = {
+        'name': name,
+        'model': model,
+        'version': version
+    }
+    h.dict_update_node(user, node, node_dict, node_dict.keys())
     h.set_noclook_auto_manage(nc.neo4jdb, node, True)
     if VERBOSE:
         print 'Processing %s...' % node_handle
@@ -279,35 +282,34 @@ def insert_external_bgp_peering(peering, service_node):
     if peeringp_rel:
         h.set_noclook_auto_manage(nc.neo4jdb, list(peeringp_rel)[0], True)
     else:
-        # Create a relationship if couldn't find it
+        # Create a relationship if it did not exist
         peeringp_rel = nc.create_relationship(
             nc.neo4jdb,
             peeringp_node,
             service_node,
             'Uses'
         )
-        h.set_noclook_auto_manage(nc.neo4jdb, peeringp_rel, True)
-        with nc.neo4jdb.transaction:
-            peeringp_rel['ip_address'] = peeringp_ip
-        # Add the relationship IP address to search index
-        h.update_relationship_search_index(nc.neo4jdb, peeringp_rel)
         activitylog.create_relationship(user, peeringp_rel)
+        rel_dict = {'ip_address': peeringp_ip}
+        h.dict_update_relationship(user, peeringp_rel, rel_dict, rel_dict.keys())
+        h.set_noclook_auto_manage(nc.neo4jdb, peeringp_rel, True)
     # Match the remote address against a local network
     remote_addr = ipaddr.IPAddress(peeringp_ip)
     unit_node, local_address = match_remote_ip_address(remote_addr)
     if unit_node and local_address:
         # Check that only one relationship per local address exists
+        create = True
         rels = nc.get_relationships(service_node, unit_node, 'Depends_on')
         for rel in rels:
-            if rel['ip_address'] == local_address:
+            if rel.get_property('ip_address', None) == local_address:
                 h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
-                return None
+                create = False
         # No relationship was found, create one
-        with nc.neo4jdb.transaction:
+        if create:
             rel = nc.create_relationship(nc.neo4jdb, service_node, unit_node, 'Depends_on')
             h.set_noclook_auto_manage(nc.neo4jdb, rel, True)
-            rel['ip_address'] = local_address
-            h.update_relationship_search_index(nc.neo4jdb, rel)
+            rel_dict = {'ip_address': local_address}
+            h.dict_update_relationship(user, rel, rel_dict, rel_dict.keys())
             activitylog.create_relationship(user, rel)
     if VERBOSE:
         print '%s %s done.' % (peeringp_node['node_type'], peeringp_node['name'])
@@ -343,8 +345,7 @@ def consume_juniper_conf(json_list):
         model = i['host']['juniper_conf'].get('model', 'Unknown')
         router_node = insert_juniper_router(name, model, version)
         interfaces = i['host']['juniper_conf']['interfaces']
-        insert_juniper_interfaces(router_node,
-                            interfaces)
+        insert_juniper_interfaces(router_node, interfaces)
         bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
     insert_juniper_bgp_peerings(bgp_peerings)
 
@@ -381,8 +382,7 @@ def remove_juniper_conf(data_age):
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
-    parser.add_argument('-C', nargs='?',
-        help='Path to the configuration file.')
+    parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
     parser.add_argument('--verbose', '-V', action='store_true', default=False)
     args = parser.parse_args()
     # Load the configuration file

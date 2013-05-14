@@ -138,7 +138,7 @@ def form_update_node(user, node, form, property_keys=None):
 
 def dict_update_node(user, node, dictionary, property_keys):
     """
-    Take a node, a dict and the property keys that should be used to fill the
+    Takes a node, a dict and the property keys that should be used to fill the
     node.
     Returns True if all non-empty properties where added.
     """
@@ -165,6 +165,32 @@ def dict_update_node(user, node, dictionary, property_keys):
                     del node[key]
                 activitylog.update_node_property(user, nh, key, pre_value, dictionary[key])
     return True
+
+
+def dict_update_relationship(user, rel, dictionary, property_keys):
+    """
+    Takes a relationship, a dict and the property keys that should be used to fill the
+    node.
+    Returns True if all non-empty properties where added.
+    """
+    for key in property_keys:
+        if dictionary[key] or dictionary[key] == 0:
+            pre_value = rel.get_property(key, '')
+            if pre_value != dictionary[key]:
+                with nc.neo4jdb.transaction:
+                    rel[key] = dictionary[key]
+                activitylog.update_relationship_property(user, rel, key, pre_value, dictionary[key])
+                update_relationship_search_index(nc.neo4jdb, rel)
+        elif not dictionary[key] and key in rel.propertyKeys:
+            pre_value = rel.get_property(key, '')
+            if key in django_settings.SEARCH_INDEX_KEYS:
+                index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                nc.del_index_item(nc.neo4jdb, index, rel, key)
+            with nc.neo4jdb.transaction:
+                del rel[key]
+            activitylog.update_relationship_property(user, rel, key, pre_value, dictionary[key])
+    return True
+
 
 def form_to_generic_node_handle(request, form, slug, node_meta_type):
     node_name = form.cleaned_data['name']
@@ -240,13 +266,13 @@ def update_relationship_search_index(db, rel):
 def isots_to_dt(item):
     """
     Returns noclook_last_seen property as a datetime.datetime. If the property
-    does not exist we return datetime.datetime.min (0001-01-01 00:00:00).
+    does not exist we return None.
     """
     try:
-        ts = item['noclook_last_seen'] # ex. 2011-11-01T14:37:13.713434
+        ts = item.get_property('noclook_last_seen', None)  # ex. 2011-11-01T14:37:13.713434
         dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
-    except KeyError:
-        dt = datetime.min
+    except ValueError:
+        return None
     return dt
 
 def neo4j_data_age(item, max_data_age=None):
