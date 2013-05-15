@@ -1,5 +1,10 @@
 Upgrade 1.8.3 with 1.9 bindings
+
 Install python 2.7
 python manage.py syncdb
 python manage.py migrate actstream
 python scripts/updates_and_fixes/unit_part_of_port.py
+
+
+python scripts/updates_and_fixes/fix_host_addresses.py
+python scripts/updates_and_fixes/fix_host_auto_manage.py
