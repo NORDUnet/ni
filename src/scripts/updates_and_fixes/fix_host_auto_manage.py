@@ -29,34 +29,33 @@ q1 = """
     WITH host
     WHERE not(has(host.noclook_last_seen))
     SET host.noclook_last_seen = "2012-01-19T00:00:00.000000"
-    RETURN "." as working
     """
 
 for hit in nc.neo4jdb.query(q1):
-    print hit['working'],
+    pass
 
 q2 = """
     START host = node:node_types(node_type = "Host")
     MATCH host<-[r:Depends_on]-service
     WHERE service.node_type = "Host Service"
     SET r.noclook_auto_manage = true
+    WITH r
     WHERE not(has(r.noclook_last_seen))
     SET r.noclook_last_seen = "2012-01-19T00:00:00.000000"
-    RETURN "." as working
     """
 
 for hit in nc.neo4jdb.query(q2):
-    print hit['working'],
+    pass
 
 q3 = """
     START service = node:node_types(node_type = "Host Service")
     SET service.noclook_auto_manage = true
+    WITH service
     WHERE not(has(service.noclook_last_seen))
     SET service.noclook_last_seen = "2012-01-19T00:00:00.000000"
-    RETURN "." as working
     """
 
 for hit in nc.neo4jdb.query(q3):
-    print hit['working'],
+    pass
 
-print "Done"
+print "Done!"
