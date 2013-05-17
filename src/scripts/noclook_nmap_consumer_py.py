@@ -100,11 +100,12 @@ def is_host(addresses):
     i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     nodes = []
     for address in addresses:
-        q1 = Q('ip_address', '%s' % address)
-        q2 = Q('ip_addresses', '%s' % address)
+        q1 = Q('ip_address', '%s*' % address, wildcard=True)
+        q2 = Q('ip_addresses', '%s*' % address, wildcard=True)
         nodes.extend(h.iter2list(i1.query(unicode(q1))))
         nodes.extend(h.iter2list(i1.query(unicode(q2))))
     for node in nodes:
+        # TODO: Remove eventual slash notation and compare the addresses using ipaddr.IPAddress
         if node['node_type'] != 'Host':
             return False
     return True
