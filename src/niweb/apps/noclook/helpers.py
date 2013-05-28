@@ -147,7 +147,7 @@ def dict_update_node(user, node, dictionary, property_keys):
     """
     nh = NodeHandle.objects.get(pk=node['handle_id'])
     for key in property_keys:
-        if dictionary[key] or dictionary[key] == 0:
+        if dictionary.get(key, None) or dictionary.get(key, None) == 0:
             pre_value = node.get_property(key, '')
             if pre_value != dictionary[key]:
                 with nc.neo4jdb.transaction:
@@ -158,8 +158,8 @@ def dict_update_node(user, node, dictionary, property_keys):
                 nh.save()
                 activitylog.update_node_property(user, nh, key, pre_value, dictionary[key])
                 update_node_search_index(nc.neo4jdb, node)
-        elif not dictionary[key] and key in node.propertyKeys:
-            if key != 'name': # Never delete name
+        elif dictionary.get(key, None) == '' and key in node.propertyKeys:
+            if key != 'name':  # Never delete name
                 pre_value = node.get_property(key, '')
                 if key in django_settings.SEARCH_INDEX_KEYS:
                     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
@@ -177,14 +177,14 @@ def dict_update_relationship(user, rel, dictionary, property_keys):
     Returns True if all non-empty properties where added.
     """
     for key in property_keys:
-        if dictionary[key] or dictionary[key] == 0:
+        if dictionary.get(key, None) or dictionary.get(key, None) == 0:
             pre_value = rel.get_property(key, '')
             if pre_value != dictionary[key]:
                 with nc.neo4jdb.transaction:
                     rel[key] = dictionary[key]
                 activitylog.update_relationship_property(user, rel, key, pre_value, dictionary[key])
                 update_relationship_search_index(nc.neo4jdb, rel)
-        elif not dictionary[key] and key in rel.propertyKeys:
+        elif dictionary.get(key, None) == '' and key in rel.propertyKeys:
             pre_value = rel.get_property(key, '')
             if key in django_settings.SEARCH_INDEX_KEYS:
                 index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())

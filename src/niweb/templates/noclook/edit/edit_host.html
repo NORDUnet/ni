@@ -237,5 +237,34 @@ $(document).ready(
                 </div>
             </div>
         </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
+                    Services
+                </a>
+            </div>
+            <div id="collapseFour" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    {% if service_relationships %}
+                        {% load noclook_tags %}
+                        <h4>Remove service</h4>
+                        {% for rel in service_relationships %}
+                            <div class="row">
+                                <div class="span5">
+                                    <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
+                                    {% noclook_has_expired rel as expired %}
+                                    {% if expired %}
+                                        <span class="help-inline">(Expired)</span>
+                                    {% endif %}
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

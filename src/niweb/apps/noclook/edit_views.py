@@ -321,6 +321,7 @@ def edit_rack(request, handle_id):
                                    'node': node},
                                 context_instance=RequestContext(request))
 
+
 @login_required        
 def edit_host(request, handle_id):
     if not request.user.is_staff:
@@ -330,6 +331,7 @@ def edit_host(request, handle_id):
     location = h.iter2list(h.get_location(node))
     owner_relationships = h.iter2list(node.Owns.incoming)    # Physical hosts
     user_relationships = h.iter2list(node.Uses.incoming)     # Logical hosts
+    service_relationships = h.iter2list(node.Depends_on.incoming)
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
@@ -351,17 +353,20 @@ def edit_host(request, handle_id):
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_host.html',
-                                  {'node_handle': nh, 'node': node, 'form': form,
-                                   'location': location, 'owner_relationships': owner_relationships,
-                                   'user_relationships': user_relationships},
-                                context_instance=RequestContext(request))
+                                      {'node_handle': nh, 'node': node, 'form': form, 'location': location,
+                                       'owner_relationships': owner_relationships,
+                                       'user_relationships': user_relationships,
+                                       'service_relationships': service_relationships},
+                                      context_instance=RequestContext(request))
     else:
         form = forms.EditHostForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_host.html',
-                                  {'node_handle': nh, 'node': node, 'form': form,
-                                   'location': location, 'owner_relationships': owner_relationships,
-                                   'user_relationships': user_relationships},
-                                context_instance=RequestContext(request))
+                                  {'node_handle': nh, 'node': node, 'form': form, 'location': location,
+                                   'owner_relationships': owner_relationships,
+                                   'user_relationships': user_relationships,
+                                   'service_relationships': service_relationships},
+                                  context_instance=RequestContext(request))
+
 
 @login_required        
 def edit_router(request, handle_id):

@@ -63,6 +63,7 @@ HOST_USERS_MAP = {
     'wayf.dk':          'WAYF',
 }
 
+
 def set_host_user(node):
     """
     Tries to set a Uses or Owns relationship between the Host and a Host User if there are none.
@@ -143,9 +144,8 @@ def insert_services(service_dict, host_node):
     user = nt.get_user()
     node_type = "Host Service"
     meta_type = 'logical'
-    service_nodes = []
     # Expected service data from nmap
-    property_keys = ['ip_address', 'protocol', 'port' 'conf', 'extrainfo',
+    property_keys = ['ip_address', 'protocol', 'port', 'conf', 'extrainfo',
                      'name', 'product', 'reason', 'state', 'version']
     for key in service_dict.keys():
         address = key
@@ -162,7 +162,6 @@ def insert_services(service_dict, host_node):
                 )
                 service_node = node_handle.get_node()
                 h.update_noclook_auto_manage(nc.neo4jdb, service_node)
-                service_nodes.append(service_node)
                 # Get existing relationships between the two nodes
                 rel_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
                 q = Q('ip_address', '%s' % address)
@@ -178,12 +177,15 @@ def insert_services(service_dict, host_node):
                 # Try to find an already existing relationship
                 for rel in service_rels:
                     try:
-                        if rel['protocol'] == protocol and rel['port'] == port:
+                        if rel['protocol'] == protocol and str(rel['port']) == port:
                             create = False
                             h.dict_update_relationship(user, rel, rel_dict, property_keys)
                             h.update_noclook_auto_manage(nc.neo4jdb, rel)
+                            if VERBOSE:
+                                print 'Relationship with protocol %s on port %s found.' % (rel['protocol'], rel['port'])
                             break
                     except KeyError:
+                        print "KeyError: Relationship %s" % rel
                         continue
                 # Relationship did not exist
                 if create:
@@ -192,11 +194,12 @@ def insert_services(service_dict, host_node):
                                                      'Depends_on')
                     h.dict_update_relationship(user, new_rel, rel_dict, property_keys)
                     h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
-                    h.update_relationship_search_index(nc.neo4jdb, new_rel)
                     activitylog.create_relationship(user, new_rel)
+                    if VERBOSE:
+                        print 'Relationship with protocol %s on port %s created.' % (new_rel['protocol'], new_rel['port'])
                 if VERBOSE:
                     print '%s %s %s %s processed...' % (host_node['name'], address, protocol, port)
-    return service_nodes
+
 
 def insert_nmap(json_list):
     """
@@ -237,11 +240,14 @@ def insert_nmap(json_list):
         try:
             insert_services(i['host']['nmap_services_py']['services'], node)
         except KeyError as e:
+            if VERBOSE:
+                print e
             pass
         # Set host user depending on the domain.
         set_host_user(node)
         if VERBOSE:
             print '%s done.' % name
+
 
 def main():
     # User friendly usage output
