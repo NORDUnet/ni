@@ -8,3 +8,4 @@ python scripts/updates_and_fixes/unit_part_of_port.py
 
 python scripts/updates_and_fixes/fix_host_addresses.py
 python scripts/updates_and_fixes/fix_host_auto_manage.py
+python script/neo4j/reindex.py

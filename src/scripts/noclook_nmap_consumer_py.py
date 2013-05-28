@@ -24,6 +24,7 @@ import os
 import sys
 import argparse
 from lucenequerybuilder import Q
+from ipaddr import IPAddress
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -98,6 +99,7 @@ def is_host(addresses):
     :param addresses: List of IP addresses
     :return: True if the addresses belongs to a host or does not belong to anything
     """
+    host_addresses = [IPAddress(item) for item in addresses]
     i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     nodes = []
     for address in addresses:
@@ -106,9 +108,19 @@ def is_host(addresses):
         nodes.extend(h.iter2list(i1.query(unicode(q1))))
         nodes.extend(h.iter2list(i1.query(unicode(q2))))
     for node in nodes:
-        # TODO: Remove eventual slash notation and compare the addresses using ipaddr.IPAddress
-        if node['node_type'] != 'Host':
-            return False
+        node_addresses = node.get_property('ip_address', None) or node.get_property('ip_addresses', None)
+        for address in node_addresses:
+            try:
+                node_address = IPAddress(address.split('/')[0])
+            except ValueError:
+                continue
+            if node_address in host_addresses and node['node_type'] != 'Host':
+                # DEBUG
+                print '---- NOT A HOST START ----'
+                print 'node_addresses:\n%s' % node_addresses
+                print 'host_addresses:\n%s' % host_addresses
+                # DEBUG
+                return False
     return True
 
 
@@ -212,6 +224,12 @@ def insert_nmap(json_list):
     # Insert the host
     for i in json_list:
         name = i['host']['name']
+        addresses = i['host']['nmap_services_py']['addresses']
+        # Check if the ipaddresses matches any non-host node as a router interface for example
+        if not is_host(addresses):
+            if VERBOSE:
+                print '%s does not appear to be a host.' % name
+            continue
         # Create the NodeHandle and the Node
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type,
                                                 meta_type)
@@ -221,7 +239,7 @@ def insert_nmap(json_list):
         h.update_noclook_auto_manage(nc.neo4jdb, node)
         host_properties = {
             'hostnames': i['host']['nmap_services_py']['hostnames'],
-            'ip_addresses': i['host']['nmap_services_py']['addresses']
+            'ip_addresses': addresses
         }
         if 'os' in i['host']['nmap_services_py'] and not node.get_property('os', None):
             # Only set os if the property is missing as a user probably knows better than nmap
