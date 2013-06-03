@@ -1,13 +1,5 @@
 Dependencies
-- Django trunk
-- neo4j-1.3 (http://neo4j.org/)
-- markdown (pip install markdown)
-- neo4j-rest-client (git://github.com/johanlundberg/neo4j-rest-client.git)
-- ipaddr 2.1.5 (http://code.google.com/p/ipaddr-py/)
-- JIT 2.0 Beta (http://thejit.org)
-- JQuery 1.4.4 (http://www.jquery.com)
+TBA
 
 Tools
-- django-debug-toolbar
-    - python-setuptools
-- django-extensions
+TBA
