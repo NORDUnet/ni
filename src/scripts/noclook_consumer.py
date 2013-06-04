@@ -32,8 +32,8 @@ import argparse
 ## located.
 #path = '/var/norduni/src/niweb/'
 #path = '/home/jbn/stuff/work/code/norduni/src/niweb/'
-#path = '/home/lundberg/norduni/src/niweb/'
-path = '/var/opt/norduni/src/niweb/'
+path = '/home/lundberg/norduni/src/niweb/'
+#path = '/var/opt/norduni/src/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
@@ -48,15 +48,16 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 import norduni_client as nc
 import noclook_juniper_consumer
-import noclook_nmap_consumer
 import noclook_nmap_consumer_py
 import noclook_alcatel_consumer
+import noclook_checkmk_consumer
 
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
 
 # SEARCH_INDEX_KEYS are only used when restoring backup nodes.
 SEARCH_INDEX_KEYS = django_settings.SEARCH_INDEX_KEYS
+
 
 def init_config(path):
     """
@@ -69,13 +70,15 @@ def init_config(path):
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
 
+
 def normalize_whitespace(text):
     """
     Remove redundant whitespace from a string.
     """
     text = text.replace('"', '').replace("'", '')
     return ' '.join(text.split())
-        
+
+
 def load_json(json_dir):
     """
     Thinks all files in the supplied dir are text files containing json.
@@ -91,6 +94,7 @@ def load_json(json_dir):
         print e
     return json_list
 
+
 def generate_password(n):
     """
     Returns a psudo random string of lenght n.
@@ -99,6 +103,7 @@ def generate_password(n):
     import os, math
     from base64 import b64encode
     return b64encode(os.urandom(int(math.ceil(0.75*n))),'-_')[:n]
+
 
 def get_user(username='noclook'):
     """
@@ -110,6 +115,7 @@ def get_user(username='noclook'):
         passwd = generate_password(30)
         user = User.objects.create_user(username, '', passwd)
     return user
+
 
 def get_node_type(type_name):
     """
@@ -125,6 +131,7 @@ def get_node_type(type_name):
         node_type.save()
     return node_type
 
+
 def get_unique_node(name, node_type, meta_type):
     """
     Gets or creates a NodeHandle with the provided name.
@@ -135,6 +142,7 @@ def get_unique_node(name, node_type, meta_type):
                                             meta_type)
     node = node_handle.get_node()
     return node
+
 
 def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
     """
@@ -158,6 +166,7 @@ def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
         node_handle.save()
         activitylog.create_node(user, node_handle)
     return node_handle
+
 
 def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
     """
@@ -199,6 +208,7 @@ def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
     activitylog.create_node(user, node_handle)
     return node_handle # No NodeHandle found return a new handle.
 
+
 def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
     """
     Tries to get a existing node handle from the SQL database before creating
@@ -222,7 +232,8 @@ def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
                                                 modifier=user)
         node_handle.save()
     return node_handle
-    
+
+
 def add_node_to_indexes(node):
     """
     If the node has any property keys matching the SEARCH_INDEX_KEYS the node
@@ -239,7 +250,8 @@ def add_node_to_indexes(node):
         if key in node_keys:
             nc.add_index_item(nc.neo4jdb, search_index, node, key)
     return node
-    
+
+
 def add_relationship_to_indexes(rel):
     """
     If the relationship has any property keys matching the SEARCH_INDEX_KEYS the
@@ -253,6 +265,7 @@ def add_relationship_to_indexes(rel):
             nc.add_index_item(nc.neo4jdb, search_index, rel, key)
     return rel
 
+
 def set_comment(node_handle, comment):
     """
     Sets the comment string as a comment for the provided node_handle.
@@ -264,6 +277,7 @@ def set_comment(node_handle, comment):
     c = Comment(content_type = content_type, object_pk = object_pk, user = user,
                             site_id = site_id, comment = comment)
     c.save()
+
 
 def consume_noclook(json_list):
     """
@@ -335,6 +349,7 @@ def consume_noclook(json_list):
         index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
         index.delete()
 
+
 def run_consume(config_file):
     """
     Function to start the consumer from another script.
@@ -343,6 +358,7 @@ def run_consume(config_file):
     juniper_conf_data = config.get('data', 'juniper_conf')
     nmap_services_py_data = config.get('data', 'nmap_services_py')
     alcatel_isis_data = config.get('data', 'alcatel_isis')
+    nagios_checkmk_data = config.get('data', 'nagios_checkmk')
     noclook_data = config.get('data', 'noclook')
     if juniper_conf_data:
         data = load_json(juniper_conf_data)
@@ -353,9 +369,13 @@ def run_consume(config_file):
     if alcatel_isis_data:
         data = load_json(alcatel_isis_data)
         noclook_alcatel_consumer.consume_alcatel_isis(data)
+    if nagios_checkmk_data:
+        data = load_json(nagios_checkmk_data)
+        noclook_checkmk_consumer.insert(data)
     if noclook_data:
         data = load_json(noclook_data)
         consume_noclook(data)
+
 
 def test_db():
     handles = NodeHandle.objects.all()
@@ -364,26 +384,23 @@ def test_db():
         print '%d\t%s' % (handle.handle_id, nc.get_node_by_id(
             handle.node_id))
 
+
 def purge_db():
     for nh in NodeHandle.objects.all():
         nh.delete()
 
+
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
-    parser.add_argument('-C', nargs='?',
-        help='Path to the configuration file.')
-    parser.add_argument('-P', action='store_true',
-        help='Purge the database.')
-    parser.add_argument('-I', action='store_true',
-        help='Insert data in to the database.')
-    parser.add_argument('-T', action='store_true',
-        help='Test the database database setup.')
+    parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
+    parser.add_argument('-P', action='store_true', help='Purge the database.')
+    parser.add_argument('-I', action='store_true', help='Insert data in to the database.')
+    parser.add_argument('-T', action='store_true', help='Test the database database setup.')
     args = parser.parse_args()
     # Start time
     start = datetime.datetime.now()
-    timestamp_start = datetime.datetime.strftime(start,
-        '%b %d %H:%M:%S')
+    timestamp_start = datetime.datetime.strftime(start, '%b %d %H:%M:%S')
     print '%s noclook_consumer.py was started.' % timestamp_start
     # Test DB connection
     if args.T:
@@ -402,11 +419,10 @@ def main():
         run_consume(args.C)
     # end time
     end = datetime.datetime.now()
-    timestamp_end = datetime.datetime.strftime(end,
-        '%b %d %H:%M:%S')
+    timestamp_end = datetime.datetime.strftime(end, '%b %d %H:%M:%S')
     print '%s noclook_consumer.py ran successfully.' % timestamp_end
     timedelta = end - start
-    print 'Total time: %s' % (timedelta)
+    print 'Total time: %s' % timedelta
     return 0
 
 if __name__ == '__main__':
