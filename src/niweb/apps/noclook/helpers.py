@@ -109,7 +109,7 @@ def form_update_node(user, node, form, property_keys=None):
                    'relationship_end_b', 'relationship_parent',
                    'relationship_provider', 'relationship_end_user',
                    'relationship_customer', 'relationship_depends_on',
-                   'relationship_user']
+                   'relationship_user', 'relationship_located_in']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         for field in form.base_fields.keys():

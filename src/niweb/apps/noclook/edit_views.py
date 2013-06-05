@@ -296,6 +296,7 @@ def edit_rack(request, handle_id):
     # Get needed data from node
     nh, node = h.get_nh_node(handle_id)
     location = h.iter2list(h.get_place(node))
+    located_in = h.iter2list(node.Located_in.incoming)
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():
@@ -305,21 +306,25 @@ def edit_rack(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 h.place_child_in_parent(request.user, node, location_id)
+            if form.cleaned_data['relationship_located_in']:
+                phys_node = nc.get_node_by_id(nc.neo4jdb, form.cleaned_data['relationship_located_in'])
+                phys_nh = NodeHandle.objects.get(pk=phys_node['handle_id'])
+                h.place_physical_in_location(request.user, phys_nh, phys_node, node.getId())
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_rack.html',
-                                  {'node': node, 'form': form,
-                                   'location': location},
-                                context_instance=RequestContext(request))
+                                      {'node': node, 'form': form, 'location': location,
+                                       'located_in': located_in},
+                                      context_instance=RequestContext(request))
     else:
         form = forms.EditRackForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_rack.html',
-                                  {'form': form, 'location': location,
-                                   'node': node},
-                                context_instance=RequestContext(request))
+                                  {'form': form, 'location': location, 'node': node,
+                                   'located_in': located_in},
+                                  context_instance=RequestContext(request))
 
 
 @login_required        

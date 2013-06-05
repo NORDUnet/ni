@@ -285,6 +285,7 @@ class EditRackForm(forms.Form):
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_located_in = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                 
                 
 class EditHostForm(forms.Form):

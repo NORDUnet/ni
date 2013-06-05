@@ -67,6 +67,23 @@ $(document).ready(
             $("#dialog-user-confirm").dialog("open");
 
         });
+        // Depends on //
+        // Populate first level combo box
+        var categories = [
+            ['host', 'Hosts'],
+            ['odf', 'ODFs'],
+            ['optical-node', 'Optical Nodes'],
+            ['router', 'Routers']
+        ];
+        $('#categoryA').append($('<option>').val("0").text("-- Please Select --"));
+        $.each(categories, function(key, tuple) {
+            $('#categoryA').append($('<option>').val(tuple[0]).text(tuple[1]));
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#level0A").jCombo("/formdata/{id}/", {
+            parent: "#categoryA",
+            end_value_field: "#id_relationship_located_in"
+        });
         // Accordion
         $(".edit-accordion").collapse()
     }
@@ -130,6 +147,40 @@ $(document).ready(
                     <label>Set location</label>
                     {{ form.relationship_location }}
                     <select class="stacked" name="level0" id="level0"></select>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
+                    Located in rack (optional)
+                </a>
+            </div>
+            <div id="collapseThree" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    {% if located_in %}
+                        {% load noclook_tags %}
+                        <h4>Located in rack</h4>
+                        {% for rel in located_in %}
+                            <div class="row">
+                                <div class="span5">
+                                     <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add to rack</h4>
+                    <div class="row">
+                        <div class="span4">
+                            {{ form.relationship_located_in }}
+                            <select class="stacked" name="categoryA" id="categoryA"></select>
+                            <select class="stacked" name="level0A" id="level0A"></select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
