@@ -61,6 +61,26 @@ def get_node_type(request, slug):
     type_list = [(hit['node'].getId(), hit['node']['name']) for hit in hits]
     return HttpResponse(json.dumps(type_list), mimetype='application/json')
 
+
+@login_required
+def get_unlocated_node_type(request, slug):
+    """
+    Compiles a list of alla nodes of that node type that does not have a Located_in
+    relationship and returns a list of node name, node id tuples.
+    """
+    node_type = h.slug_to_node_type(slug)
+    q = '''
+        START node=node:node_types(node_type="%s")
+        MATCH node-[r?:Located_in]-location
+        WHERE r IS NULL
+        RETURN node
+        ORDER BY node.name
+        ''' % node_type
+    hits = nc.neo4jdb.query(q)
+    type_list = [(hit['node'].getId(), hit['node']['name']) for hit in hits]
+    return HttpResponse(json.dumps(type_list), mimetype='application/json')
+
+
 @login_required
 def get_children(request, node_id, slug=None):
     """

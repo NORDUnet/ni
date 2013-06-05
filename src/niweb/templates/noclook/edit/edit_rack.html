@@ -80,7 +80,7 @@ $(document).ready(
             $('#categoryA').append($('<option>').val(tuple[0]).text(tuple[1]));
         });
         // Hook lower level combo boxes up to their parent
-        $("#level0A").jCombo("/formdata/{id}/", {
+        $("#level0A").jCombo("/formdata/unlocated/{id}/", {
             parent: "#categoryA",
             end_value_field: "#id_relationship_located_in"
         });
