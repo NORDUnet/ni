@@ -150,10 +150,24 @@ def list_optical_nodes(request):
         RETURN node, node.type? as type, node.link? as link, node.ots? as ots
         ORDER BY node.name
         '''
-    router_list = nc.neo4jdb.query(q)
+    optical_node_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_optical_nodes.html',
-        {'optical_node_list': router_list,},
+        {'optical_node_list': optical_node_list},
         context_instance=RequestContext(request))
+
+
+@login_required
+def list_racks(request):
+    q = '''
+        START node=node:node_types(node_type = "Rack")
+        MATCH node<-[?:Has]-site
+        RETURN node,site
+        ORDER BY site.name
+        '''
+    rack_list = nc.neo4jdb.query(q)
+    return render_to_response('noclook/list/list_racks.html',
+                              {'rack_list': rack_list},
+                              context_instance=RequestContext(request))
 
 # Detail views
 @login_required
