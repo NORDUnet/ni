@@ -169,6 +169,21 @@ def list_racks(request):
                               {'rack_list': rack_list},
                               context_instance=RequestContext(request))
 
+
+@login_required
+def list_odfs(request):
+    q = '''
+        START node=node:node_types(node_type = "ODF")
+        MATCH node-[?:Located_in]->location<-[?:Has]-site
+        RETURN node,location,site
+        ORDER BY site.name, location.name, node.name
+        '''
+    odf_list = nc.neo4jdb.query(q)
+    return render_to_response('noclook/list/list_odfs.html',
+                              {'odf_list': odf_list},
+                              context_instance=RequestContext(request))
+
+
 # Detail views
 @login_required
 def generic_detail(request, handle_id, slug):
