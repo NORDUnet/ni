@@ -521,13 +521,14 @@ def get_connected_cables(cable):
     connected = []
     q = '''                   
         START node=node({id})
-        MATCH node-[r0:Connected_to]->port<-[?:Has*1..10]-end
-        RETURN node, r0, port, end
+        MATCH node-[r0:Connected_to]->port<-[?:Has*1..10]-end-[?:Located_in]->location<-[?:Has]-site
+        RETURN node, r0, port, end, location, site
         '''
     hits = nc.neo4jdb.query(q, id=cable.getId())
     for hit in hits:
         connected.append({'cable': hit['node'], 'rel': hit['r0'], 
-                          'port': hit['port'], 'end': hit['end']})
+                          'port': hit['port'], 'end': hit['end'],
+                          'location': hit['location'], 'site': hit['site']})
     connected = sorted(connected, key=itemgetter('port')) 
     return connected
 
