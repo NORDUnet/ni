@@ -162,7 +162,7 @@ def list_racks(request):
         START node=node:node_types(node_type = "Rack")
         MATCH node<-[?:Has]-site
         RETURN node,site
-        ORDER BY site.name
+        ORDER BY site.name, node.name
         '''
     rack_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_racks.html',
