@@ -129,9 +129,47 @@ def new_cable(request, **kwargs):
             return render_to_response('noclook/edit/create_cable.html', {'form': form},
                 context_instance=RequestContext(request))
     else:
-        form = forms.NewCableForm()
+        name = kwargs.get('name', None)
+        if name:
+            initital = {'name': name}
+            form = forms.NewCableForm(initial=initital)
+        else:
+            form = forms.NewCableForm()
         return render_to_response('noclook/edit/create_cable.html', {'form': form},
             context_instance=RequestContext(request))
+
+
+@login_required
+def new_nordunet_cable(request, **kwargs):
+    if request.POST:
+        form = forms.NewNordunetCableForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = h.form_to_unique_node_handle(request, form, 'cable', 'physical')
+            except UniqueNodeError:
+                form = forms.NewNordunetCableForm(request.POST)
+                form._errors = ErrorDict()
+                form._errors['name'] = ErrorList()
+                form._errors['name'].append('A Cable with that name already exists.')
+                return render_to_response('noclook/edit/create_cable.html', {'form': form},
+                                          context_instance=RequestContext(request))
+            node = nh.get_node()
+            keys = ['cable_type']
+            h.form_update_node(request.user, node, form, keys)
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/create_cable.html', {'form': form},
+                                      context_instance=RequestContext(request))
+    else:
+        name = kwargs.get('name', None)
+        if name:
+            initital = {'name': name}
+            form = forms.NewNordunetCableForm(initial=initital)
+        else:
+            form = forms.NewNordunetCableForm()
+        return render_to_response('noclook/edit/create_cable.html', {'form': form},
+                                  context_instance=RequestContext(request))
+
 
 @login_required
 def new_rack(request, **kwargs):
@@ -411,6 +449,7 @@ NEW_FUNC = {
     'cable': new_cable,
     'customer': new_customer,
     'end-user': new_end_user,
+    'nordunet-cable': new_nordunet_cable,
     'nordunet-optical-link': new_nordunet_optical_link,
     'nordunet-optical-path': new_nordunet_optical_path,
     'nordunet-service': new_nordunet_service,

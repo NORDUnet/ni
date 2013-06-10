@@ -13,6 +13,7 @@
         <form action="." method="post">{% csrf_token %}
             <h3>Name</h3>
             {{ form.name }}
+            <span class="help-block">{{ form.name.help_text }}</span>
             <br><br>
             <h3>Cable Type</h3>
             {{ form.cable_type }}

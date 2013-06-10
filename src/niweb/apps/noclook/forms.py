@@ -243,7 +243,35 @@ class NewCableForm(forms.Form):
     name = forms.CharField()
     cable_type = forms.ChoiceField(choices=CABLE_TYPES,
                                    widget=forms.widgets.Select)
-                                   
+
+
+class NewNordunetCableForm(NewCableForm):
+    name = forms.CharField(required=False,
+                           help_text="If no name is specified the next NORDUnet cable ID will be used.")
+
+    class Meta:
+        id_generator_name = 'nordunet_cable_id'
+        id_collection = NordunetUniqueId
+
+    def clean(self):
+        """
+        Sets name to next generated ID or register the name in the ID collection.
+        """
+        cleaned_data = super(NewNordunetCableForm, self).clean()
+        # Set name to a generated id if the service is not a manually named service.
+        name = cleaned_data.get("name")
+        if not name:
+            if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
+            try:
+                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+            except UniqueIdGenerator.DoesNotExist as e:
+                raise e
+        else:
+            h.register_unique_id(self.Meta.id_collection, name)
+        return cleaned_data
+
                                        
 class EditCableForm(forms.Form):
     name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
