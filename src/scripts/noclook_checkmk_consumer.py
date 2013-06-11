@@ -86,18 +86,41 @@ VERBOSE = True
 """
 
 
-def check_uptime(base, check):
+def get_host(ip_address):
+    """
+    :param ip_address: string
+    :return: neo4j node or None
+    """
+    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+    q = Q('ip_addresses', '%s' % ip_address)
+    for hit in index.query(unicode(q)):
+        if hit['node_type'] == 'Host':  # Do we want to set nagios checks for other things?
+            return hit
+
+
+def set_nagios_checks(host, checks):
+    """
+    :param host: neo4j node
+    :param check_description: list
+    :return: None
+    """
+    checks = list(set(checks))
+    checks.sort()
+    property_dict = {
+        'nagios_checks': checks
+    }
+    h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
+
+
+def set_uptime(host, check):
     """
     Parses uptime collected with check_uptime (https://github.com/willixix/WL-NagiosPlugins).
 
-    :param base: checkmk_livestatus dictionary
+    :param host: neo4j node
     :param check: check dictionary
     :return: None
     """
-    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    property_keys = ['lastboot', 'uptime']
     try:
-        ip_address = base['host_address']
         last_check = datetime.utcfromtimestamp(check['last_check'])
         uptime = int(check['perf_data'].split('=')[-1]) * 60  # uptime in minutes to uptime in sec
         lastboot = last_check - timedelta(seconds=uptime)
@@ -105,14 +128,10 @@ def check_uptime(base, check):
             'lastboot': lastboot.strftime("%a %b %d %H:%M:%S %Y"),
             'uptime': uptime
         }
-        q = Q('ip_addresses', '%s' % ip_address)
-        for hit in index.query(unicode(q)):
-            if hit['node_type'] == 'Host':
-                h.dict_update_node(nt.get_user(), hit, property_dict, property_keys)
-                h.update_noclook_auto_manage(nc.neo4jdb, hit)
+        h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
     except ValueError as e:
         if VERBOSE:
-            print '%s uptime check did not match the expected format.' % base['host_name']
+            print '%s uptime check did not match the expected format.' % host['name']
             print check
             print e
 
@@ -120,9 +139,18 @@ def check_uptime(base, check):
 def insert(json_list):
     for item in json_list:
         base = item['host']['checkmk_livestatus']
-        for check in base['checks']:
-            if check['check_command'] == 'CHECK_NRPE!check_uptime':  # Host uptime
-                check_uptime(base, check)
+        ip_address = base['host_address']
+        host = get_host(ip_address)
+        if host:
+            check_descriptions = []
+            for check in base['checks']:
+                check_descriptions.append(check.get('description', 'Missing description'))
+                if check['check_command'] == 'CHECK_NRPE!check_uptime':  # Host uptime
+                    set_uptime(host, check)
+            set_nagios_checks(host, check_descriptions)
+            h.update_noclook_auto_manage(nc.neo4jdb, host)
+            if VERBOSE:
+                print '%s done.' % host['name']
 
 
 def main():
