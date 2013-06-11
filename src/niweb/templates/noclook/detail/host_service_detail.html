@@ -56,6 +56,9 @@ $(document).ready(
 -->
 <div class="section">
     <h3>Resources used</h3>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
     {% load noclook_tags %}
     {% if service_relationships %}
     <table id="services" class="tablesorter" cellspacing="1">
@@ -64,7 +67,12 @@ $(document).ready(
         </thead>
         <tbody>
         {% for service in service_relationships %}
-            <tr>
+            {% noclook_has_expired service as expired %}
+            {% if expired %}
+                <tr class="expired">
+            {% else %}
+                <tr>
+            {% endif %}
                 <td><a href="{% noclook_node_to_url service.end %}">{{ service.end.name }}</a></td>
                 <td>{{ service.ip_address }}</td>
                 <td>{{ service.port }}</td>

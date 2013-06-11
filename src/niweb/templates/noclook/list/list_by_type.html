@@ -22,6 +22,9 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <h1>{{node_type}}s</h1>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
     <table id="nodes" class="tablesorter" cellspacing="1">
         <thead>
             <th>Name</th>
@@ -29,7 +32,12 @@ $(document).ready(
         <tbody>
             {% load noclook_tags %}
             {% for nh in node_handle_list %}
-                <tr>
+                {% noclook_has_expired nh.get_node as expired %}
+                {% if expired %}
+                    <tr class="expired">
+                {% else %}
+                    <tr>
+                {% endif %}
                     <td><a href="{{ nh.get_absolute_url }}">{{ nh.node_name }}</a></td>
                 </tr>
             {% endfor %}
