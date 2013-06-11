@@ -13,7 +13,12 @@
         <form action="." method="post">{% csrf_token %}
             <h3>Name</h3>
             {{ form.name }}
-            <br><br>
+            <div class="alert alert-info">
+                <strong>Naming of ports</strong><br>
+                Juniper port: aeX, ge-X/X/X, so-X/X/X and so on.<br>
+                Alcatel-Lucent optical node: rXsrXslX/port#X<br>
+                ODF: 1, 2, 3 and so on.<br>
+            </div>
             <h3>Port Type</h3>
             {{ form.port_type }}
             <br />
