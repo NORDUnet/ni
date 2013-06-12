@@ -102,6 +102,7 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^router/$', 'list_routers'),
     (r'^rack/$', 'list_racks'),
     (r'^odf/$', 'list_odfs'),
+    (r'^cable/$', 'list_cables'),
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
     # Generic view
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),

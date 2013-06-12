@@ -184,6 +184,19 @@ def list_odfs(request):
                               context_instance=RequestContext(request))
 
 
+@login_required
+def list_cables(request):
+    q = '''
+        START cable=node:node_types(node_type = "Cable")
+        RETURN cable
+        ORDER BY cable.name
+        '''
+    cable_list = nc.neo4jdb.query(q)
+    return render_to_response('noclook/list/list_cables.html',
+                              {'cable_list': cable_list},
+                              context_instance=RequestContext(request))
+
+
 # Detail views
 @login_required
 def generic_detail(request, handle_id, slug):
