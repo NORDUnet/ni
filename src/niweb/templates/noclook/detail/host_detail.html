@@ -46,6 +46,11 @@ $(document).ready(
                     <th>Syslog:</th><td>{{ node.syslog|yesno:"Yes,No,Not set" }}</td>
                 </tr>
             {% endif %}
+            {% if node.nagios_checks %}
+                <tr>
+                    <th>Nagios:</th><td>{{ node.nagios_checks|yesno:"Yes,No,Not set" }}</td>
+                </tr>
+            {% endif %}
             {% if node.hostnames %}
                 <tr>
                     <th>Hostnames:</th>

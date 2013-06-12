@@ -101,7 +101,7 @@ def get_host(ip_address):
 def set_nagios_checks(host, checks):
     """
     :param host: neo4j node
-    :param check_description: list
+    :param checks: list of strings
     :return: None
     """
     checks = list(set(checks))
