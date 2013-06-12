@@ -164,16 +164,16 @@ $(document).ready(
             </div>
             <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
-                    {% if has_rels %}
+                    {% if ports %}
                         <label>Current ports</label>
                         {% load noclook_tags %}
-                        {% for rel in has_rels %}
+                        {% for hit in ports %}
                             <div class="row">
                                 <div class="span3">
-                                    <a href="{% noclook_node_to_url rel.end %}">{{ rel.end.name }}</a>
+                                    <a href="{% noclook_node_to_url hit.port %}">{{ hit.port.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ rel.getId }}/delete" class="label label-important user-confirm">Delete</a>
+                                    <a href="relationship/{{ hit.rel.getId }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}

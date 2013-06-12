@@ -259,7 +259,7 @@ def edit_optical_node(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = h.get_nh_node(handle_id)
-    has_rels = h.iter2list(node.Has.outgoing)
+    ports = h.iter2list(h.get_ports(node))
     location = h.iter2list(h.get_location(node))
     if request.POST:
         form = forms.EditOpticalNodeForm(request.POST)
@@ -280,13 +280,13 @@ def edit_optical_node(request, handle_id):
         else:
             return render_to_response('noclook/edit/edit_optical_node.html',
                                       {'node': node, 'form': form, 'location': location,
-                                       'has_rels': has_rels},
+                                       'ports': ports},
                                       context_instance=RequestContext(request))
     else:
         form = forms.EditOpticalNodeForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_optical_node.html',
                                   {'node': node, 'form': form, 'location': location,
-                                   'has_rels': has_rels},
+                                   'ports': ports},
                                   context_instance=RequestContext(request))
 @login_required        
 def edit_peering_partner(request, handle_id):
@@ -436,7 +436,7 @@ def edit_odf(request, handle_id):
     # Get needed data from node
     nh, node = h.get_nh_node(handle_id)
     location = h.iter2list(h.get_location(node))
-    has_rels = h.iter2list(node.Has.outgoing)
+    ports = h.iter2list(h.get_ports(node))
     if request.POST:
         form = forms.EditOdfForm(request.POST)
         if form.is_valid():
@@ -456,13 +456,13 @@ def edit_odf(request, handle_id):
         else:
             return render_to_response('noclook/edit/edit_odf.html',
                                       {'node': node, 'form': form,
-                                       'location': location, 'has_rels': has_rels},
+                                       'location': location, 'ports': ports},
                                       context_instance=RequestContext(request))
     else:
         form = forms.EditOdfForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_odf.html',
                                   {'node': node, 'form': form,
-                                   'location': location, 'has_rels': has_rels},
+                                   'location': location, 'ports': ports},
                                   context_instance=RequestContext(request))
 
 @login_required

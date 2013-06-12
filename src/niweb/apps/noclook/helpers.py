@@ -722,6 +722,22 @@ def get_port(parent_name, port_name):
         port = None
     return port
 
+
+def get_ports(equipment):
+    """
+    :param equipment: neo4j node
+    :return: list of neo4j nodes and their relationship towards equipment
+    """
+    q = '''
+        START parent=node({id})
+        MATCH parent-[r:Has*1..]->port
+        WHERE port.node_type = "Port"
+        RETURN port,last(r) as rel
+        ORDER BY port.name
+        '''
+    return nc.neo4jdb.query(q, id=equipment.getId())
+
+
 def create_port(parent_name, parent_type, port_name, creator):
     """
     Creates a port with the supplied parent.
