@@ -96,6 +96,12 @@
     <div class="well">
         <h3>Name</h3>
         {{ form.name }}
+        <div class="alert alert-info">
+            <strong>Naming of ports</strong><br>
+            Juniper port: aeX, ge-X/X/X, so-X/X/X and so on.<br>
+            Alcatel-Lucent optical node: rXsrXslX/port#X.<br>
+            ODF: 1, 2, or 1+2, 3+4 or use part of Alcatel Lucent naming scheme if applicable, eg. slX/port#X.<br>
+        </div>
         <h3>Type (optional)</h3>
         {{ form.port_type }}
     </div>
