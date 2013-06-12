@@ -137,7 +137,7 @@ $(document).ready(
             <tbody>
             {% for loc in location_relationships %}
                 <tr>
-                    <td><a href="{% noclook_node_to_url loc.end %}">{{ loc.rack.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url loc.rack %}">{{ loc.rack.name }}</a></td>
                     <td><a href="/{{ loc.equipment.node_type|slugify }}/">{{ loc.equipment.node_type }}</a> <a href="{% noclook_node_to_url loc.equipment %}">{{ loc.equipment.name }}</a></td>
                 </tr>
             {% endfor %}
