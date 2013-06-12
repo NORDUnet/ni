@@ -259,6 +259,7 @@ def edit_optical_node(request, handle_id):
         raise Http404
     # Get needed data from node
     nh, node = h.get_nh_node(handle_id)
+    has_rels = h.iter2list(node.Has.outgoing)
     location = h.iter2list(h.get_location(node))
     if request.POST:
         form = forms.EditOpticalNodeForm(request.POST)
@@ -269,21 +270,24 @@ def edit_optical_node(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
+            if form.cleaned_data['relationship_ports']:
+                for port in form.cleaned_data['relationship_ports']:
+                    h.create_port(node['name'], node['node_type'], port, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_optical_node.html',
-                                  {'node': node, 'form': form,
-                                   'location': location},
-                                context_instance=RequestContext(request))
+                                      {'node': node, 'form': form, 'location': location,
+                                       'has_rels': has_rels},
+                                      context_instance=RequestContext(request))
     else:
         form = forms.EditOpticalNodeForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_optical_node.html',
-                                  {'form': form, 'location': location,
-                                   'node': node},
-                                context_instance=RequestContext(request))
+                                  {'node': node, 'form': form, 'location': location,
+                                   'has_rels': has_rels},
+                                  context_instance=RequestContext(request))
 @login_required        
 def edit_peering_partner(request, handle_id):
     if not request.user.is_staff:
@@ -432,6 +436,7 @@ def edit_odf(request, handle_id):
     # Get needed data from node
     nh, node = h.get_nh_node(handle_id)
     location = h.iter2list(h.get_location(node))
+    has_rels = h.iter2list(node.Has.outgoing)
     if request.POST:
         form = forms.EditOdfForm(request.POST)
         if form.is_valid():
@@ -441,21 +446,24 @@ def edit_odf(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
+            if form.cleaned_data['relationship_ports']:
+                for port in form.cleaned_data['relationship_ports']:
+                    h.create_port(node['name'], node['node_type'], port, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_odf.html',
-                                  {'node': node, 'form': form,
-                                   'location': location},
-                                context_instance=RequestContext(request))
+                                      {'node': node, 'form': form,
+                                       'location': location, 'has_rels': has_rels},
+                                      context_instance=RequestContext(request))
     else:
         form = forms.EditOdfForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_odf.html',
-                                  {'form': form, 'location': location,
-                                   'node': node},
-                                context_instance=RequestContext(request))
+                                  {'node': node, 'form': form,
+                                   'location': location, 'has_rels': has_rels},
+                                  context_instance=RequestContext(request))
 
 @login_required
 def edit_port(request, handle_id):

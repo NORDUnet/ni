@@ -287,6 +287,7 @@ class EditOpticalNodeForm(forms.Form):
     name = forms.CharField()
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     sites = get_node_type_tuples('Site')
+    relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                                               
 
@@ -389,6 +390,7 @@ class EditOdfForm(forms.Form):
     #                           Used for calculation of rack space.')
     name = forms.CharField()
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.')
+    relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 

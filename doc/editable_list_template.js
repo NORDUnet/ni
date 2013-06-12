@@ -1,3 +1,5 @@
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jeditable.mini.js"></script>
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.json-2.4.min.js"></script>
 <script>
         // Editable list
         function makeEditable()
@@ -40,7 +42,7 @@
         }
         function addItem(itemName)
         {
-            $("#responsible").append('<div class="row"><div class="span2"><span class="editable">' + itemName + '</span></div><div class="span1"><a href="" class="delete label label-important">Delete</a></div></div>');
+            $("#responsible").append('<div class="row"><div class="span2"><span class="editable">' + itemName + '</span></div><div class="span1"><a class="btn btn-mini delete"><i class="icon-minus"></i></a></div></div>');
             makeEditable();
             makeDelable();
         }
@@ -69,13 +71,10 @@
 </script>
 
 <div id="responsible"></div>
-<div class="row">
-<div class="span2">
-    <input class="span2" type="text" name="addresp" />
-</div>
-<div class="span1">
-    <a id="add" class="label label-success" href="">Add</a>
-</div>
+<br><br>
+<div class="input-append">
+    <input class="input-large" type="text" name="addresp" placeholder="Responsible"/>
+    <a id="add" class="btn" type="button"><i class="icon-plus"></i></a>
 </div>
 <span class="help-block">{{ form.responsible_persons.help_text }}</span>
 

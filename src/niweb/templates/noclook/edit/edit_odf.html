@@ -4,6 +4,8 @@
 {{ block.super }}
 {% load niweb_tags %}
 <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jeditable.mini.js"></script>
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.json-2.4.min.js"></script>
 <script type="text/javascript">
 $(document).ready(
     function(){
@@ -74,7 +76,67 @@ $(document).ready(
 
         });
         // Accordion
-        $(".edit-accordion").collapse()
+        $(".edit-accordion").collapse();
+        // Editable list
+        function makeEditable()
+        {
+            $('.editable').editable(function(value, settings)
+            {
+                /*
+                console.log(this);
+                console.log(value);
+                console.log(settings);
+                */
+                $(this).parent().parent().remove();
+                addItem(value);
+                saveList();
+                return(value);
+            });
+        }
+        function makeDelable()
+        {
+            $('a.delete').click(function(e)
+            {
+                e.preventDefault();
+                $(this).parent().parent().remove();
+                saveList();
+            });
+        }
+        function saveList()
+        {
+            var list = [];
+            $('.editable').each(function(i, item) {
+                list.push($(item).html());
+            });
+            $('#id_relationship_ports').val($.toJSON(list));
+        }
+        function addItem(itemName)
+        {
+            $("#new-ports").append('<div class="row"><div class="span2"><span class="editable">' + itemName + '</span></div><div class="span1"><a class="btn btn-mini delete"><i class="icon-minus"></i></a></div></div>');
+            makeEditable();
+            makeDelable();
+        }
+        makeEditable();
+        makeDelable();
+        // Disable Enter key in the text input so to now submit form when trying to add item
+        $('input[name=addport]').keypress(function (e) {
+            var code = (e.keyCode ? e.keyCode : e.which);
+            if (code === 13) {
+                var item = $('input[name=addport]');
+                addItem(item.val());
+                item.val('');
+                saveList();
+            }
+            return (code != 13);
+        });
+        $('a#add').click(function(e)
+        {
+            e.preventDefault();
+            var item = $('input[name=addport]');
+            addItem(item.val());
+            item.val('');
+            saveList();
+        });
     }
 );
 </script>
@@ -97,10 +159,50 @@ $(document).ready(
         <div class="accordion-group">
             <div class="accordion-heading">
                 <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
-                    Location
+                    Ports
                 </a>
             </div>
             <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    {% if has_rels %}
+                        <label>Current ports</label>
+                        {% load noclook_tags %}
+                        {% for rel in has_rels %}
+                            <div class="row">
+                                <div class="span3">
+                                    <a href="{% noclook_node_to_url rel.end %}">{{ rel.end.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ rel.getId }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <hr>
+                    <label>Add ports</label>
+                    {{ form.relationship_ports }}
+                    <div id="new-ports"></div>
+                    <br><br>
+                    <div class="input-append">
+                        <input class="input-large" type="text" name="addport" placeholder="Port name"/>
+                        <a id="add" class="btn" type="button"><i class="icon-plus"></i></a>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Naming of ports</strong><br>
+                        Juniper port: aeX, ge-X/X/X, so-X/X/X and so on.<br>
+                        Alcatel-Lucent optical node: rXsrXslX/port#X<br>
+                        ODF: 1, 2, or 1+2, 3+4 and so on.<br>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
+                    Location
+                </a>
+            </div>
+            <div id="collapseTwo" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
                     {% if location %}
                         <label>Current location</label>
@@ -116,6 +218,7 @@ $(document).ready(
                             </div>
                         {% endfor %}
                     {% endif %}
+                    <hr>
                     <label>Set location</label>
                     {{ form.relationship_location }}
                     <select class="stacked" name="level0" id="level0"></select>
