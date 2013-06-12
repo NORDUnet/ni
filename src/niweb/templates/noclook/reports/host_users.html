@@ -82,7 +82,6 @@
                     <th>Responsible</th>
                     <th>Backup</th>
                     <th>Syslog</th>
-                    <th>Nagios</th>
                     <th>Operational State</th>
                     <th>Security Class</th>
                     <th>Location</th>
@@ -115,7 +114,6 @@
                     </td>
                     <td>{{ item.host.backup|yesno:"Yes,No,Not set" }}</td>
                     <td>{{ item.host.syslog|yesno:"Yes,No,Not set" }}</td>
-                    <td>{{ item.host.nrpe|yesno:"Yes,No,Not set" }}</td>
                     <td>{{ item.host.operational_state|default:"Not set" }}</td>
                     <td>{{ item.host.security_class }}</td>
                     <td>
