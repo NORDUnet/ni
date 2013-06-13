@@ -272,7 +272,7 @@ def edit_optical_node(request, handle_id):
                 nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
             if form.cleaned_data['relationship_ports']:
                 for port in form.cleaned_data['relationship_ports']:
-                    h.create_port(node['name'], node['node_type'], port, request.user)
+                    h.create_port(node, port, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -448,7 +448,7 @@ def edit_odf(request, handle_id):
                 nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
             if form.cleaned_data['relationship_ports']:
                 for port in form.cleaned_data['relationship_ports']:
-                    h.create_port(node['name'], node['node_type'], port, request.user)
+                    h.create_port(node, port, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -489,7 +489,7 @@ def edit_external_equipment(request, handle_id):
                 nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
             if form.cleaned_data['relationship_ports']:
                 for port in form.cleaned_data['relationship_ports']:
-                    h.create_port(node['name'], node['node_type'], port, request.user)
+                    h.create_port(node, port, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:

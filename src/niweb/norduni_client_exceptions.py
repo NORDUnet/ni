@@ -59,3 +59,17 @@ class UniqueNodeError(Exception):
         return 'A node named %s (%d) with node type %s already exists.' % (self.node['name'],
                                                                            self.node.getId(),
                                                                            self.node['node_type'])
+
+
+class MultipleNodesReturned(Exception):
+    """
+    If a user requests an unique node, by name and type, and multiple nodes are returned
+    this exception should be raised.
+    """
+    def __init__(self, node_name, node_type):
+        self.node_name = node_name
+        self.node_type = node_type
+
+    def __str__(self):
+        return 'Multiple nodes of name %s and type %s was returned.' % (self.node_name,
+                                                                        self.node_type)

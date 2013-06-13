@@ -738,27 +738,25 @@ def get_ports(equipment):
     return nc.neo4jdb.query(q, id=equipment.getId())
 
 
-def create_port(parent_name, parent_type, port_name, creator):
+def create_port(parent_node, port_name, creator):
     """
     Creates a port with the supplied parent.
-    :param parent_name: String
+    :param parent_node: Neo4j node
     :param port_name: String
-    :param parent_type: String
     :param creator: Django user
     :return: Neo4j node
     """
     type_port = NodeType.objects.get(type="Port")
-    type_parent = NodeType.objects.get(type=parent_type)
-    parent_nh = NodeHandle.objects.get(node_name=parent_name, node_type=type_parent)
     nh = NodeHandle.objects.create(
-        node_name = port_name,
-        node_type = type_port,
-        node_meta_type = 'Physical',
+        node_name=port_name,
+        node_type=type_port,
+        node_meta_type='Physical',
         modifier=creator, creator=creator
     )
     activitylog.create_node(creator, nh)
-    place_child_in_parent(creator, nh.get_node(), parent_nh.node_id)
-    return nh.get_node()
+    port_node = nh.get_node()
+    place_child_in_parent(creator, port_node, parent_node.getId())
+    return port_node
 
 def place_physical_in_location(user, nh, node, location_id):
     """

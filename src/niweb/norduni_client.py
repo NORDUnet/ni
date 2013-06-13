@@ -307,6 +307,28 @@ def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
                 if pattern.match(unicode(value)):
                     yield hit
 
+
+def get_unique_node_by_name(db, node_name, node_type):
+    """
+    db: neo4jdb instance
+    node_name: string
+    node_type: string
+
+    Returns the node if the node is unique for name and type.
+    """
+    q = '''
+        START node=node:node_types(node_type = {node_type})
+        WHERE node.name = {node_name}
+        RETURN node
+        '''
+    hits = [hit for hit in db.query(q, node_type=node_type, node_name=node_name)]
+    if len(hits) == 1:
+        return hits[0]['node']
+    raise MultipleNodesReturned(node_name, node_type)
+
+
+
+
 #def get_suitable_nodes(db, node):
 #    """
 #    Takes a reference node and returns all nodes that is suitable for a

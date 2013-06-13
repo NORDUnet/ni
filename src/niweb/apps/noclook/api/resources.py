@@ -29,6 +29,7 @@ from niweb.apps.noclook.forms import EditServiceForm, NewNordunetL2vpnServiceFor
 from niweb.apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, \
     set_depends_on, register_unique_id, is_free_unique_id
 import norduni_client as nc
+from norduni_client_exceptions import MultipleNodesReturned
 import logging
 
 logger = logging.getLogger('api_resources')
@@ -596,7 +597,11 @@ class ServiceL2VPNResource(ServiceResource):
                 for end_point in bundle.data.get('end_points', []):
                     port_node = get_port(end_point['device'], end_point['port'])
                     if not port_node:
-                        port_node = create_port(end_point['device'], 'Router', end_point['port'], bundle.request.user)
+                        try:
+                            parent_node = nc.get_unique_node_by_name(nc.neo4jdb, end_point['device'], 'Router')
+                            port_node = create_port(parent_node, end_point['port'], bundle.request.user)
+                        except MultipleNodesReturned as e:
+                            raise_not_acceptable_error(e)
                     port_nodes.append(port_node)
             except ObjectDoesNotExist:
                 raise_not_acceptable_error('End point %s not found.' % end_point)
