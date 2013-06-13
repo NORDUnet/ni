@@ -465,6 +465,48 @@ def edit_odf(request, handle_id):
                                    'location': location, 'ports': ports},
                                   context_instance=RequestContext(request))
 
+
+@login_required
+def edit_external_equipment(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = h.get_nh_node(handle_id)
+    owner_relationships = h.iter2list(node.Owns.incoming)
+    location = h.iter2list(h.get_location(node))
+    ports = h.iter2list(h.get_ports(node))
+    if request.POST:
+        form = forms.EditExternalEquipmentForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, node, form)
+            # External Equipment specific updates
+            if form.cleaned_data['relationship_owner']:
+                owner_id = form.cleaned_data['relationship_owner']
+                node = h.set_owner(request.user, node, owner_id)
+            if form.cleaned_data['relationship_location']:
+                location_id = form.cleaned_data['relationship_location']
+                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
+            if form.cleaned_data['relationship_ports']:
+                for port in form.cleaned_data['relationship_ports']:
+                    h.create_port(node['name'], node['node_type'], port, request.user)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_external_equipment.html',
+                                      {'node': node, 'form': form, 'owner_relationships': owner_relationships,
+                                       'location': location, 'ports': ports},
+                                      context_instance=RequestContext(request))
+    else:
+        form = forms.EditExternalEquipmentForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_external_equipment.html',
+                                  {'node': node, 'form': form, 'owner_relationships': owner_relationships,
+                                   'location': location, 'ports': ports},
+                                  context_instance=RequestContext(request))
+
+
 @login_required
 def edit_port(request, handle_id):
     if not request.user.is_staff:
@@ -697,6 +739,7 @@ EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
     'end-user': edit_end_user,
+    'external-equipment': edit_external_equipment,
     'service': edit_service,
     'host': edit_host,
     'odf': edit_odf,

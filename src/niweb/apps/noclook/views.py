@@ -519,7 +519,7 @@ def odf_detail(request, handle_id):
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
     # Get ports in ODF
-    connections = h.get_connected_equipment(node)
+    connections = h.iter2list(h.get_connected_equipment(node))
     # Get location
     location = h.iter2list(h.get_location(node))
     return render_to_response('noclook/detail/odf_detail.html',
@@ -528,6 +528,28 @@ def odf_detail(request, handle_id):
                               'connections': connections,
                               'location': location, 'history': history},
                               context_instance=RequestContext(request))
+
+
+@login_required
+def external_equipment_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = action_object_stream(nh)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(node)
+    # Get ports in equipment
+    connections = h.iter2list(h.get_connected_equipment(node))
+    # Get location
+    location = h.iter2list(h.get_location(node))
+    # Get owner
+    owner_relationships = h.iter2list(node.Owns.incoming)
+    return render_to_response('noclook/detail/external_equipment_detail.html',
+                              {'node': node, 'node_handle': nh, 'last_seen': last_seen,
+                              'expired': expired, 'connections': connections,
+                              'owner_relationships': owner_relationships,
+                              'location': location, 'history': history},
+                              context_instance=RequestContext(request))
+
                               
 @login_required
 def port_detail(request, handle_id):

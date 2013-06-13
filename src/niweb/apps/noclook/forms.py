@@ -394,6 +394,33 @@ class EditOdfForm(forms.Form):
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
+class NewExternalEquipmentForm(forms.Form):
+    #units = forms.IntegerField(required=False,
+    #                           help_text='Height in rack units (u).')
+    #start_unit = forms.IntegerField(required=False,
+    #                           help_text='Where the host starts in the rack. \
+    #                           Used for calculation of rack space.')
+    name = forms.CharField()
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of what the machine is used for.')
+
+
+class EditExternalEquipmentForm(forms.Form):
+    #units = forms.IntegerField(required=False,
+    #                           help_text='Height in rack units (u).')
+    #start_unit = forms.IntegerField(required=False,
+    #                           help_text='Where the host starts in the rack. \
+    #                           Used for calculation of rack space.')
+    name = forms.CharField()
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of what the machine is used for.')
+    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
+    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+
 class NewPortForm(forms.Form):
     name = forms.CharField()
     port_type = forms.ChoiceField(choices=PORT_TYPES, widget=forms.widgets.Select)
