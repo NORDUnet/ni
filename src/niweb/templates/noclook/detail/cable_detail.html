@@ -113,7 +113,10 @@
         <tbody>
         {% for con in connections %}
             <tr>
-                <td><a href="{% noclook_node_to_url con.location %}">{{ con.site.name }}</a></td><td>{{ con.location.name }}</td><td>{{ con.end.name }}</td><td><a href="{% noclook_node_to_url con.port %}">{{ con.port.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.site %}">{{ con.site.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.location %}">{{ con.location.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.port %}">{{ con.port.name }}</a></td>
             </tr>
          {% endfor %}
         </tbody>

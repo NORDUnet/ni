@@ -85,12 +85,17 @@ $(document).ready(
         {% load noclook_tags %}
         <table id="connections" class="tablesorter" cellspacing="1">
             <thead>
-                <th>Port</th><th>Cable</th><th>End</th>
+                <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
             </thead>
             <tbody>
             {% for con in connections %}
                 <tr>
-                    <td><a href="{% noclook_node_to_url con.porta %}">{{ con.porta.name }}</a></td><td><a href="{% noclook_node_to_url con.cable %}">{{ con.cable.name }}</a></td><td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a> <a href="{% noclook_node_to_url con.portb %}">{{ con.portb.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url con.porta %}">{{ con.porta.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url con.cable %}">{{ con.cable.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url con.site %}">{{ con.site.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url con.location %}">{{ con.location.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url con.portb %}">{{ con.portb.name }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>
