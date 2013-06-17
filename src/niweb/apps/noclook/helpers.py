@@ -574,7 +574,7 @@ def get_depends_on_port(port):
         START node=node({id})
         MATCH node<-[:Connected_to]-cable-[:Connected_to]->()
         WITH cable
-        MATCH cable-[:Connected_to]->port<-[:Depends_on|Part_of]-port_logical
+        MATCH cable-[:Connected_to*1..]->port<-[:Depends_on|Part_of]-port_logical
         RETURN DISTINCT port_logical
         '''
     return nc.neo4jdb.query(q, id=port.getId())
