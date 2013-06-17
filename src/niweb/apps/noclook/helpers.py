@@ -564,6 +564,22 @@ def get_depends_on_equipment(equipment):
 #return port, port_logicals, collect(direct_logical) as direct_logicals
 #'''
 
+
+def get_depends_on_port(port):
+    """
+    :param port: Neo4j node
+    :return: Cypher query iterator
+    """
+    q = '''
+        START node=node({id})
+        MATCH node<-[:Connected_to]-cable-[:Connected_to]->()
+        WITH cable
+        MATCH cable-[:Connected_to]->port<-[:Depends_on|Part_of]-port_logical
+        RETURN DISTINCT port_logical
+        '''
+    return nc.neo4jdb.query(q, id=port.getId())
+
+
 def get_depends_on_router(router):
     """
     Get all router ports and what depends on them.

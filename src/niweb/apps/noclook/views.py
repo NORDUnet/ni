@@ -561,11 +561,15 @@ def port_detail(request, handle_id):
     # Get cables connected to the port
     connected_to_rels = h.iter2list(node.Connected_to.incoming)
     # Get things dependent on the port
-    depends_on_port = h.iter2list(h.get_depends_on_equipment(node))
+    if connected_to_rels:
+        depends_on_port = h.iter2list(h.get_depends_on_port(node))
+    else:
+        depends_on_port = h.iter2list(h.get_depends_on_equipment(node))
+
     # Get location
     location = h.iter2list(h.get_place(node))
     return render_to_response('noclook/detail/port_detail.html',
-                             {'node': node, 'node_handle': nh, 
+                              {'node': node, 'node_handle': nh,
                               'last_seen': last_seen, 'expired': expired, 
                               'connected_to_rels': connected_to_rels,
                               'depends_on_port': depends_on_port,
