@@ -9,7 +9,7 @@
         function(){
             $("#connections").tablesorter(
                 {
-                    sortList: [[0,0]],
+                    sortList: [[0,0],[1,0],[2,0],[3,0]],
                     headers:
                     {},
                     widthFixed: true,
@@ -104,16 +104,16 @@
     {% endif %}
 </div>
 <div class="section">
-    <h3>Connections</h3>
+    <h3>Connected to</h3>
     {% if connections %}
     <table id="connections" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Connected to</th>
+            <th>Site</th><th>Rack</th><th>Equipment</th><th>Port</th>
         </thead>
         <tbody>
         {% for con in connections %}
             <tr>
-                <td><a href="{% noclook_node_to_url con.location %}">{{ con.site.name }} {{ con.location.name }}</a> <a href="{% noclook_node_to_url con.port %}">{{ con.end.name }} {{ con.port.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.location %}">{{ con.site.name }}</a></td><td>{{ con.location.name }}</td><td>{{ con.end.name }}</td><td><a href="{% noclook_node_to_url con.port %}">{{ con.port.name }}</a></td>
             </tr>
          {% endfor %}
         </tbody>
