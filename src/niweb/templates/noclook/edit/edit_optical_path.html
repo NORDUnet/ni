@@ -61,26 +61,17 @@
                 });
                 // Depends on //
                 // Populate first level combo box
-                $.getJSON('/formdata/optical-link/', function(data) {
-                    $('#level0A').append($('<option>').val("0").text("-- Please Select --"));
-                    $.each(data, function(key, tuple) {
-                        $('#level0A').append($('<option>').val(tuple[0]).text(tuple[1]));
-                    });
+                var categories = [
+                    ['optical-link', 'Optical Links'],
+                    ['optical-multiplex-section', 'Optical Multiplex Sections']
+                ];
+                $('#categoryA').append($('<option>').val("0").text("-- Please Select --"));
+                $.each(categories, function(key, tuple) {
+                    $('#categoryA').append($('<option>').val(tuple[0]).text(tuple[1]));
                 });
-                $("#level1A").jCombo("/formdata/{id}/children/", {
-                    parent: "#level0A",
-                    end_value_field: "#id_relationship_depends_on"
-                });
-                $("#level2A").jCombo("/formdata/{id}/children/", {
-                    parent: "#level1A",
-                    end_value_field: "#id_relationship_depends_on"
-                });
-                $("#level3A").jCombo("/formdata/{id}/children/", {
-                    parent: "#level2A",
-                    end_value_field: "#id_relationship_depends_on"
-                });
-                $("#level4A").jCombo("/formdata/{id}/children/", {
-                    parent: "#level3A",
+                // Hook lower level combo boxes up to their parent
+                $("#level0A").jCombo("/formdata/{id}/", {
+                    parent: "#categoryA",
                     end_value_field: "#id_relationship_depends_on"
                 });
                 // Accordion
@@ -202,7 +193,13 @@
                         <hr>
                     {% endif %}
                     <h4>Add depends on relationship</h4>
-                    {{ form.relationship_depends_on }}
+                    <div class="span4">
+                        {{ form.relationship_depends_on }}
+                        <select class="stacked" name="categoryA" id="categoryA"></select>
+                        <select class="stacked" name="level0A" id="level0A"></select>
+                        <br>
+                        <br>
+                    </div>
                 </div>
             </div>
         </div>
