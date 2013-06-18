@@ -736,7 +736,6 @@ class EditOpticalPathForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(EditOpticalPathForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-        self.fields['relationship_depends_on'].choices = get_node_type_tuples('Optical Multiplex Section')
 
     framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
                                 widget=forms.widgets.Select)
@@ -749,4 +748,4 @@ class EditOpticalPathForm(forms.Form):
                                   help_text='Short description of the optical path.')
     enrs = JSONField(required=False, widget=JSONInput)
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_depends_on = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
