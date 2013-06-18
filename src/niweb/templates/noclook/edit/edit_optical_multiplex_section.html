@@ -164,15 +164,11 @@
     </div>
 
     <div class="well">
-        <h3>Framing</h3>
-        {{ form.framing }}
-        <br><br>
-        <h3>Capacity</h3>
-        {{ form.capacity }}
-        <br><br>
+        <h3>Name</h3>
+        {{ form.name }}
+        <span class="help-block">{{ form.name.help_text }}</span>
         <h3>Operational State</h3>
         {{ form.operational_state }}
-        <br><br>
         <h3>Description (optional)</h3>
         {{ form.description }}
         <span class="help-block">{{ form.description.help_text }}</span>
@@ -181,7 +177,7 @@
         <div class="accordion-group">
             <div class="accordion-heading">
                 <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseDepends">
-                    Path depends on (optional)
+                    Multiplex Section depends on (optional)
                 </a>
             </div>
             <div id="collapseDepends" class="accordion-body in collapse">
@@ -203,30 +199,6 @@
                     {% endif %}
                     <h4>Add depends on relationship</h4>
                     {{ form.relationship_depends_on }}
-                </div>
-            </div>
-        </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseEnrs">
-                    ENRs (optional)
-                </a>
-            </div>
-            <div id="collapseEnrs" class="accordion-body collapse">
-                <div class="accordion-inner">
-                    <h4>Remove ENR</h4>
-                    {{ form.enrs }}
-                    <div id="enrs"></div>
-                    <hr>
-                    <h4>Add ENR</h4>
-                    <div class="row">
-                        <div class="span5">
-                            <input class="span4" type="text" name="addenr" />
-                        </div>
-                        <div class="span1">
-                            <a id="add" class="label label-success" href="">Add</a>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

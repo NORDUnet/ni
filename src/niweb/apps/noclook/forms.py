@@ -653,6 +653,35 @@ class EditOpticalLinkForm(forms.Form):
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
+class NewOpticalMultiplexSectionForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
+    name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the optical link.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+
+
+class EditOpticalMultiplexSectionForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['relationship_depends_on'].choices = get_node_type_tuples('Optical Link')
+
+    name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
+                                          widget=forms.widgets.Select)
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the optical path.')
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_depends_on = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+
+
 class NewOpticalPathForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewOpticalPathForm, self).__init__(*args, **kwargs)
@@ -707,7 +736,7 @@ class EditOpticalPathForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(EditOpticalPathForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-        self.fields['relationship_depends_on'].choices = get_node_type_tuples('Optical Link')
+        self.fields['relationship_depends_on'].choices = get_node_type_tuples('Optical Multiplex Section')
 
     framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
                                 widget=forms.widgets.Select)

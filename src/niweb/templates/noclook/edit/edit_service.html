@@ -181,95 +181,11 @@
     <div class="accordion" id="edit-accordion">
         <div class="accordion-group">
             <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
-                    Provider (optional)
-                </a>
-            </div>
-            <div id="collapseOne" class="accordion-body in collapse">
-                <div class="accordion-inner">
-                    {% if providers %}
-                        {% load noclook_tags %}
-                        <h4>Remove Provider</h4>
-                        {% for provider in providers %}
-                            <div class="row">
-                                <div class="span5">
-                                    <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a>
-                                </div>
-                                <div class="span1">
-                                    <a href="relationship/{{ provider.id }}/delete" class="label label-important user-confirm">Delete</a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                        <hr>
-                    {% endif %}
-                    <h4>Add Provider</h4>
-                    {{ form.relationship_provider }}
-                </div>
-            </div>
-        </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
-                    Customer (optional)
-                </a>
-            </div>
-            <div id="collapseTwo" class="accordion-body collapse">
-                <div class="accordion-inner">
-                    {% if customers %}
-                        {% load noclook_tags %}
-                        <h4>Remove Customer</h4>
-                        {% for customer in customers %}
-                            <div class="row">
-                                <div class="span5">
-                                    <a href="{% noclook_node_to_url customer.customer %}">{{ customer.customer.name }}</a>
-                                </div>
-                                <div class="span1">
-                                    <a href="relationship/{{ customer.rel.id }}/delete" class="label label-important user-confirm">Delete</a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                        <hr>
-                    {% endif %}
-                    <h4>Add Customer</h4>
-                    {{ form.relationship_customer }}
-                </div>
-            </div>
-        </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
-                    End User (optional)
-                </a>
-            </div>
-            <div id="collapseThree" class="accordion-body collapse">
-                <div class="accordion-inner">
-                    {% if end_users %}
-                        {% load noclook_tags %}
-                        <h4>Remove End User</h4>
-                        {% for end_user in end_users %}
-                            <div class="row">
-                                <div class="span5">
-                                    <a href="{% noclook_node_to_url end_user.end_user %}">{{ end_user.end_user.name }}</a>
-                                </div>
-                                <div class="span1">
-                                    <a href="relationship/{{ end_user.rel.id }}/delete" class="label label-important user-confirm">Delete</a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                        <hr>
-                    {% endif %}
-                    <h4>Add End User</h4>
-                    {{ form.relationship_end_user }}
-                </div>
-            </div>
-        </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseDepends">
                     Service depends on (optional)
                 </a>
             </div>
-            <div id="collapseFour" class="accordion-body collapse">
+            <div id="collapseDepends" class="accordion-body in collapse">
                 <div class="accordion-inner">
                     {% if depends_on %}
                         {% load noclook_tags %}
@@ -300,6 +216,90 @@
                         <br>
                         <br>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseProvider">
+                    Provider (optional)
+                </a>
+            </div>
+            <div id="collapseProvider" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    {% if providers %}
+                        {% load noclook_tags %}
+                        <h4>Remove Provider</h4>
+                        {% for provider in providers %}
+                            <div class="row">
+                                <div class="span5">
+                                    <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ provider.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add Provider</h4>
+                    {{ form.relationship_provider }}
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseCustomer">
+                    Customer (optional)
+                </a>
+            </div>
+            <div id="collapseCustomer" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    {% if customers %}
+                        {% load noclook_tags %}
+                        <h4>Remove Customer</h4>
+                        {% for customer in customers %}
+                            <div class="row">
+                                <div class="span5">
+                                    <a href="{% noclook_node_to_url customer.customer %}">{{ customer.customer.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ customer.rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add Customer</h4>
+                    {{ form.relationship_customer }}
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseEnduser">
+                    End User (optional)
+                </a>
+            </div>
+            <div id="collapseEnduser" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    {% if end_users %}
+                        {% load noclook_tags %}
+                        <h4>Remove End User</h4>
+                        {% for end_user in end_users %}
+                            <div class="row">
+                                <div class="span5">
+                                    <a href="{% noclook_node_to_url end_user.end_user %}">{{ end_user.end_user.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ end_user.rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add End User</h4>
+                    {{ form.relationship_end_user }}
                 </div>
             </div>
         </div>

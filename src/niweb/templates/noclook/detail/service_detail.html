@@ -126,13 +126,26 @@
         {% load noclook_tags %}
         {% if depend_inc %}
             <h3>Used by:</h3>
+            <div class="pull-right">
+                <span class="badge badge-info">Testing</span>
+                <span class="badge badge-warning">Reserved</span>
+                <span class="badge badge-important">Decommissioned</span>
+            </div>
             <table id="depend_inc" class="tablesorter" cellspacing="1">
                 <thead>
                 <th>Name</th><th>Type</th><th>Description</th>
                 </thead>
                 <tbody>
                 {% for service in depend_inc %}
-                    <tr>
+                    {% if service.start.operational_state == "Decommissioned" %}
+                        <tr class="decommissioned">
+                    {% elif service.start.operational_state == "Reserved" %}
+                        <tr class="reserved">
+                    {% elif service.start.operational_state == "Testing" %}
+                        <tr class="testing">
+                    {% else %}
+                        <tr>
+                    {% endif %}
                         <td><a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a></td>
                         <td>{{ service.start.node_type }}</td>
                         <td>{{ service.start.description }}</td>
@@ -146,13 +159,26 @@
         {% load noclook_tags %}
         {% if depend_out %}
             <h3>This service depend on</h3>
+            <div class="pull-right">
+                <span class="badge badge-info">Testing</span>
+                <span class="badge badge-warning">Reserved</span>
+                <span class="badge badge-important">Decommissioned</span>
+            </div>
             <table id="depend_out" class="tablesorter" cellspacing="1">
                 <thead>
                 <th>Name</th><th>Type</th><th>Description</th>
                 </thead>
                 <tbody>
                 {% for hit in depend_out %}
-                    <tr>
+                    {% if hit.dep.operational_state == "Decommissioned" %}
+                        <tr class="decommissioned">
+                    {% elif hit.dep.operational_state == "Reserved" %}
+                        <tr class="reserved">
+                    {% elif hit.dep.operational_state == "Testing" %}
+                        <tr class="testing">
+                    {% else %}
+                        <tr>
+                    {% endif %}
                         <td><a href="{% noclook_node_to_url hit.dep %}">{{ hit.grand_parent.name }} {% if hit.grand_parent %}{{ hit.parent.name }}.{{ hit.dep.name }}{% else %}{{ hit.parent.name }} {{ hit.dep.name }}{% endif %}</a></td>
                         <td>{{ hit.dep.node_type }}</td>
                         <td>{{ hit.dep.description }}</td>

@@ -38,12 +38,6 @@
                     <th>Name:</th><td>{{ node.name }}</td>
                 </tr>
                 <tr>
-                    <th>Type:</th><td>{{ node.link_type }}</td>
-                </tr>
-                <tr>
-                    <th>Interface:</th><td>{{ node.interface_type }}</td>
-                </tr>
-                <tr>
                     <th>Operational State:</th><td>{{ node.operational_state }}</td>
                 </tr>
                 <tr>
@@ -121,7 +115,7 @@
     <div class="section">
         {% load noclook_tags %}
         {% if depend_out %}
-            <h3>This optical link depend on</h3>
+            <h3>This optical multiplex section depend on</h3>
             <div class="pull-right">
                 <span class="badge badge-info">Testing</span>
                 <span class="badge badge-warning">Reserved</span>

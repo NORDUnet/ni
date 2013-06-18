@@ -660,13 +660,14 @@ def edit_service(request, handle_id):
                                   'end_users': end_users, 'depends_on': depends_on},
                                   context_instance=RequestContext(request))
 
+
 @login_required
 def edit_optical_link(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
     nh, node = h.get_nh_node(handle_id)
-    providers =  h.iter2list(node.Provides.incoming)
+    providers = h.iter2list(node.Provides.incoming)
     depends_on = h.iter2list(h.get_logical_depends_on(node))
     if request.POST:
         form = forms.EditOpticalLinkForm(request.POST)
@@ -698,6 +699,42 @@ def edit_optical_link(request, handle_id):
             {'form': form, 'node': node,
              'providers': providers, 'depends_on': depends_on},
             context_instance=RequestContext(request))
+
+
+@login_required
+def edit_optical_multiplex_section(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = h.get_nh_node(handle_id)
+    providers = h.iter2list(node.Provides.incoming)
+    depends_on = h.iter2list(h.get_logical_depends_on(node))
+    if request.POST:
+        form = forms.EditOpticalMultiplexSectionForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, node, form)
+            # Optical Multiplex Section node updates
+            if form.cleaned_data['relationship_provider']:
+                provider_id = form.cleaned_data['relationship_provider']
+                h.set_provider(request.user, node, provider_id)
+            if form.cleaned_data['relationship_depends_on']:
+                depends_on_id = form.cleaned_data['relationship_depends_on']
+                h.set_depends_on(request.user, node, depends_on_id)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_optical_multiplex_section.html',
+                                      {'form': form, 'node': node, 'providers': providers,
+                                       'depends_on': depends_on}, context_instance=RequestContext(request))
+    else:
+        form = forms.EditOpticalMultiplexSectionForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_optical_multiplex_section.html',
+                                  {'form': form, 'node': node, 'providers': providers,
+                                   'depends_on': depends_on}, context_instance=RequestContext(request))
+
 
 @login_required
 def edit_optical_path(request, handle_id):
@@ -745,6 +782,7 @@ EDIT_FUNC = {
     'odf': edit_odf,
     'optical-node': edit_optical_node,
     'optical-link': edit_optical_link,
+    'optical-multiplex-section': edit_optical_multiplex_section,
     'optical-path': edit_optical_path,
     'peering-partner': edit_peering_partner,
     'port': edit_port,

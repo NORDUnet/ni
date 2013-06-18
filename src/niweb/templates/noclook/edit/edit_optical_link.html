@@ -147,39 +147,11 @@
     <div class="accordion" id="edit-accordion">
         <div class="accordion-group">
             <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
-                    Provider (optional)
-                </a>
-            </div>
-            <div id="collapseOne" class="accordion-body in collapse">
-                <div class="accordion-inner">
-                    {% if providers %}
-                        {% load noclook_tags %}
-                        <h4>Remove Provider</h4>
-                        {% for provider in providers %}
-                            <div class="row">
-                                <div class="span5">
-                                    <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a>
-                                </div>
-                                <div class="span1">
-                                    <a href="relationship/{{ provider.id }}/delete" class="label label-important user-confirm">Delete</a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                        <hr>
-                    {% endif %}
-                    <h4>Add Provider</h4>
-                    {{ form.relationship_provider }}
-                </div>
-            </div>
-        </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseDepends">
                     Link depends on (optional)
                 </a>
             </div>
-            <div id="collapseTwo" class="accordion-body collapse">
+            <div id="collapseDepends" class="accordion-body in collapse">
                 <div class="accordion-inner">
                     {% if depends_on %}
                         {% load noclook_tags %}
@@ -219,6 +191,34 @@
                             <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseProvider">
+                    Provider (optional)
+                </a>
+            </div>
+            <div id="collapseProvider" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    {% if providers %}
+                        {% load noclook_tags %}
+                        <h4>Remove Provider</h4>
+                        {% for provider in providers %}
+                            <div class="row">
+                                <div class="span5">
+                                    <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ provider.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add Provider</h4>
+                    {{ form.relationship_provider }}
                 </div>
             </div>
         </div>

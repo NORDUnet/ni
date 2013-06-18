@@ -110,8 +110,28 @@ def list_optical_paths(request):
         '''
     optical_path_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_optical_paths.html',
-        {'optical_path_list': optical_path_list},
-        context_instance=RequestContext(request))
+                              {'optical_path_list': optical_path_list},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def list_optical_multiplex_section(request):
+    q = '''
+        START node=node:node_types(node_type = "Optical Multiplex Section")
+        RETURN node
+        '''
+    hits = nc.neo4jdb.query(q)
+    optical_multiplex_section_list = []
+    for hit in hits:
+        optical_multiplex_section = {
+            'node': hit['node'],
+            'optical_links': h.get_logical_depends_on(hit['node'])
+        }
+        optical_multiplex_section_list.append(optical_multiplex_section)
+    return render_to_response('noclook/list/list_optical_multiplex_section.html',
+                              {'optical_multiplex_section_list': optical_multiplex_section_list},
+                              context_instance=RequestContext(request))
+
 
 @login_required
 def list_optical_links(request):
@@ -611,6 +631,25 @@ def service_detail(request, handle_id):
                               'users': users, 'providers': providers,
                               'history': history},
                               context_instance=RequestContext(request))
+
+
+@login_required
+def optical_multiplex_section_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = action_object_stream(nh)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(node)
+    depend_inc = h.iter2list(node.Depends_on.incoming)
+    depend_out = h.iter2list(h.get_logical_depends_on(node))
+    providers = h.iter2list(node.Provides.incoming)
+    return render_to_response('noclook/detail/optical_multiplex_section_detail.html',
+                             {'node': node, 'node_handle': nh,
+                              'last_seen': last_seen, 'expired': expired,
+                              'depend_inc': depend_inc, 'depend_out': depend_out,
+                              'providers': providers, 'history': history},
+                              context_instance=RequestContext(request))
+
 
 @login_required
 def optical_link_detail(request, handle_id):
