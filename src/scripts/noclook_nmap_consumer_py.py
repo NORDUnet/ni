@@ -115,11 +115,6 @@ def is_host(addresses):
             except ValueError:
                 continue
             if node_address in host_addresses and node['node_type'] != 'Host':
-                # DEBUG
-                print '---- NOT A HOST START ----'
-                print 'node_addresses:\n%s' % node_addresses
-                print 'host_addresses:\n%s' % host_addresses
-                # DEBUG
                 return False
     return True
 
