@@ -43,7 +43,7 @@ from apps.noclook import helpers as h
 # This script is used for adding the objects collected with the
 # NERDS producer checkmk_livestatus.
 
-VERBOSE = True
+VERBOSE = False
 
 """
 {
