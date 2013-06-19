@@ -188,7 +188,7 @@ def dict_update_relationship(user, rel, dictionary, property_keys):
         elif dictionary.get(key, None) == '' and key in rel.propertyKeys:
             pre_value = rel.get_property(key, '')
             if key in django_settings.SEARCH_INDEX_KEYS:
-                index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
+                index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
                 nc.del_index_item(nc.neo4jdb, index, rel, key)
             with nc.neo4jdb.transaction:
                 del rel[key]
