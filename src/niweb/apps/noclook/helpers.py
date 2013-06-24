@@ -718,6 +718,26 @@ def get_services_dependent_on_equipment(equipment):
         """
     return nc.neo4jdb.query(q, id=equipment.getId())
 
+
+def get_dependencies_as_types(node):
+    """
+    Return the nodes dependencies sorted as node types.
+    :param node: Neo4j node
+    :return: neo4j.cypher.pycompat.WrappedMap
+    """
+    q = """
+        START node = node({id})
+        MATCH node-[:Depends_on*1..]->dep
+        WITH collect(dep) as deps, filter(n in collect(dep) : n.node_type = "Service") as services
+        WITH deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
+        WITH deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
+        WITH deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
+        RETURN services, paths, oms, links
+        """
+    for hit in nc.neo4jdb.query(q, id=node.getId()):
+        return hit
+
+
 def get_port(parent_name, port_name):
     """
     Parents should be uniquely named and ports should be uniquely named for each parent.
