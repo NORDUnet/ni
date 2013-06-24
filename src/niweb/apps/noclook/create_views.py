@@ -448,7 +448,7 @@ def new_optical_multiplex_section(request, **kwargs):
                 form._errors = ErrorDict()
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('An Optical Multiplex Section with that name already exists.')
-                return render_to_response('noclook/create/create_nordunet_optical_multiplex_section.html',
+                return render_to_response('noclook/create/create_optical_multiplex_section.html',
                                           {'form': form}, context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['name', 'description', 'operational_state']
@@ -458,12 +458,12 @@ def new_optical_multiplex_section(request, **kwargs):
                 h.set_provider(request.user, node, provider_id)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
-            return render_to_response('noclook/create/create_nordunet_optical_multiplex_section.html',
+            return render_to_response('noclook/create/create_optical_multiplex_section.html',
                                       {'form': form}, context_instance=RequestContext(request))
     else:
         provider_id = get_provider_id('NORDUnet')
         form = forms.NewOpticalMultiplexSectionForm(initial={'relationship_provider': provider_id})
-        return render_to_response('noclook/create/create_nordunet_optical_multiplex_section.html',
+        return render_to_response('noclook/create/create_optical_multiplex_section.html',
                                   {'form': form}, context_instance=RequestContext(request))
 
 # Reserve Ids
