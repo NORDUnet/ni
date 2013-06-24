@@ -701,6 +701,29 @@ def get_services_dependent_on_cable(cable):
         '''
     return nc.neo4jdb.query(q, id=cable.getId())
 
+
+def get_dependent_on_cable_as_types(cable):
+    """
+    Get top services that depends on the supplied cable and the services dependencies.
+    :param cable: Neo4j node
+    :return: neo4j.cypher.pycompat.WrappedMap
+    """
+    q = '''
+        START node=node({id})
+        MATCH node-[:Connected_to]->equip
+        WITH equip
+        MATCH equip<-[:Depends_on*1..]-dep
+        WITH distinct dep
+        WITH collect(dep) as deps, filter(n in collect(dep) : n.node_type = "Service") as services
+        WITH deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
+        WITH deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
+        WITH deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
+        RETURN services, paths, oms, links
+        '''
+    for hit in nc.neo4jdb.query(q, id=cable.getId()):
+        return hit
+
+
 def get_services_dependent_on_equipment(equipment):
     """
     Get top services that depends on the supplied cable.
