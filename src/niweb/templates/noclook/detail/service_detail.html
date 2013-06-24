@@ -7,42 +7,70 @@
     <script type="text/javascript">
         $(document).ready(
             function(){
-                $("#depend_inc").tablesorter(
+                $("#dependIn").tablesorter(
                     {
                         sortList: [[0,0]],
                         headers: {},
                         widthFixed: true,
                         widgets: ['zebra']
                     });
-                $("#depend_out").tablesorter(
+                $("#servicesIn").tablesorter(
                     {
                         sortList: [[0,0]],
                         headers: {},
                         widthFixed: true,
                         widgets: ['zebra']
                     });
-                $("#services").tablesorter(
+                $("#pathsIn").tablesorter(
                     {
                         sortList: [[0,0]],
                         headers: {},
                         widthFixed: true,
                         widgets: ['zebra']
                     });
-                $("#paths").tablesorter(
+                $("#omsIn").tablesorter(
                     {
                         sortList: [[0,0]],
                         headers: {},
                         widthFixed: true,
                         widgets: ['zebra']
                     });
-                $("#oms").tablesorter(
+                $("#linksIn").tablesorter(
                     {
                         sortList: [[0,0]],
                         headers: {},
                         widthFixed: true,
                         widgets: ['zebra']
                     });
-                $("#links").tablesorter(
+                $("#dependOut").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers: {},
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
+                $("#servicesOut").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers: {},
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
+                $("#pathsOut").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers: {},
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
+                $("#omsOut").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers: {},
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
+                $("#linksOut").tablesorter(
                     {
                         sortList: [[0,0]],
                         headers: {},
@@ -150,67 +178,202 @@
 <br><br><br>
     <div class="section">
         {% load noclook_tags %}
-        {% if depend_inc %}
-            <h3>This service is used by</h3>
+        <h3>This service is used by</h3>
+        {% if depend_in %}
             <div class="pull-right">
                 <span class="badge badge-info">Testing</span>
                 <span class="badge badge-warning">Reserved</span>
                 <span class="badge badge-important">Decommissioned</span>
             </div>
-            <table id="depend_inc" class="tablesorter" cellspacing="1">
-                <thead>
-                    <tr>
-                        <th>Name</th><th>Type</th><th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for service in depend_inc %}
-                    {% if service.start.operational_state == "Decommissioned" %}
-                        <tr class="decommissioned">
-                    {% elif service.start.operational_state == "Reserved" %}
-                        <tr class="reserved">
-                    {% elif service.start.operational_state == "Testing" %}
-                        <tr class="testing">
-                    {% else %}
-                        <tr>
-                    {% endif %}
-                        <td><a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a></td>
-                        <td>{{ service.start.node_type }}</td>
-                        <td>{{ service.start.description }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        {% endif %}
-    </div>
-    <div class="section">
-        {% load noclook_tags %}
-        <h3>This service depend on</h3>
-        <div class="pull-right">
-            <span class="badge badge-info">Testing</span>
-            <span class="badge badge-warning">Reserved</span>
-            <span class="badge badge-important">Decommissioned</span>
-        </div>
-        {% if depend_out %}
-            <ul class="nav nav-tabs" id="depTabs">
-                <li class="active"><a href="#directTab" data-toggle="tab">Direct</a></li>
-                {% if all_dependencies.services %}
-                    <li><a href="#servicesTab" data-toggle="tab">Services</a></li>
+            <ul class="nav nav-tabs" id="depTabsIn">
+                <li class="active"><a href="#directTabIn" data-toggle="tab">Direct</a></li>
+                {% if all_dependent.services %}
+                    <li><a href="#servicesTabIn" data-toggle="tab">Services</a></li>
                 {% endif %}
-                {% if all_dependencies.paths %}
-                    <li><a href="#pathsTab" data-toggle="tab">Optical Paths</a></li>
+                {% if all_dependent.paths %}
+                    <li><a href="#pathsTabIn" data-toggle="tab">Optical Paths</a></li>
                 {% endif %}
-                {% if all_dependencies.oms %}
-                    <li><a href="#omsTab" data-toggle="tab">Optical Muliplex Sections</a></li>
+                {% if all_dependent.oms %}
+                    <li><a href="#omsTabIn" data-toggle="tab">Optical Muliplex Sections</a></li>
                 {% endif %}
-                {% if all_dependencies.links %}
-                    <li><a href="#linksTab" data-toggle="tab">Optical Links</a></li>
+                {% if all_dependent.links %}
+                    <li><a href="#linksTabIn" data-toggle="tab">Optical Links</a></li>
                 {% endif %}
             </ul>
 
             <div class="tab-content">
-                <div class="tab-pane active" id="directTab">
-                    <table id="depend_out" class="tablesorter" cellspacing="1">
+                <div class="tab-pane active" id="directTabIn">
+                    <table id="dependIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for hit in depend_in %}
+                            {% if hit.start.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif hit.start.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif hit.start.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url hit.start %}">{{ hit.start.name }}</a></td>
+                                <td>{{ hit.start.node_type }}</td>
+                                <td>{{ hit.start.description }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if all_dependent.services %}
+                    <div class="tab-pane" id="servicesTabIn">
+                        <table id="servicesIn" class="tablesorter" cellspacing="1">
+                            <thead>
+                                <tr>
+                                    <th>Name</th><th>Type</th><th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for hit in all_dependent.services %}
+                                {% if hit.operational_state == "Decommissioned" %}
+                                    <tr class="decommissioned">
+                                {% elif hit.operational_state == "Reserved" %}
+                                    <tr class="reserved">
+                                {% elif hit.operational_state == "Testing" %}
+                                    <tr class="testing">
+                                {% else %}
+                                    <tr>
+                                {% endif %}
+                                    <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                                    <td>{{ hit.node_type }}</td>
+                                    <td>{{ hit.description }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+                {% if all_dependent.paths %}
+                    <div class="tab-pane" id="pathsTabIn">
+                        <table id="pathsIn" class="tablesorter" cellspacing="1">
+                            <thead>
+                                <tr>
+                                    <th>Name</th><th>Type</th><th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for hit in all_dependent.paths %}
+                                {% if hit.operational_state == "Decommissioned" %}
+                                    <tr class="decommissioned">
+                                {% elif hit.operational_state == "Reserved" %}
+                                    <tr class="reserved">
+                                {% elif hit.operational_state == "Testing" %}
+                                    <tr class="testing">
+                                {% else %}
+                                    <tr>
+                                {% endif %}
+                                    <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                                    <td>{{ hit.node_type }}</td>
+                                    <td>{{ hit.description }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+                {% if all_dependent.oms %}
+                    <div class="tab-pane" id="omsTabIn">
+                        <table id="omsIn" class="tablesorter" cellspacing="1">
+                            <thead>
+                                <tr>
+                                    <th>Name</th><th>Type</th><th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for hit in all_dependent.oms %}
+                                {% if hit.operational_state == "Decommissioned" %}
+                                    <tr class="decommissioned">
+                                {% elif hit.operational_state == "Reserved" %}
+                                    <tr class="reserved">
+                                {% elif hit.operational_state == "Testing" %}
+                                    <tr class="testing">
+                                {% else %}
+                                    <tr>
+                                {% endif %}
+                                    <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                                    <td>{{ hit.node_type }}</td>
+                                    <td>{{ hit.description }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+                {% if all_dependent.links %}
+                    <div class="tab-pane" id="linksTabIn">
+                        <table id="linksIn" class="tablesorter" cellspacing="1">
+                            <thead>
+                                <tr>
+                                    <th>Name</th><th>Type</th><th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for hit in all_dependent.links %}
+                                {% if hit.operational_state == "Decommissioned" %}
+                                    <tr class="decommissioned">
+                                {% elif hit.operational_state == "Reserved" %}
+                                    <tr class="reserved">
+                                {% elif hit.operational_state == "Testing" %}
+                                    <tr class="testing">
+                                {% else %}
+                                    <tr>
+                                {% endif %}
+                                    <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                                    <td>{{ hit.node_type }}</td>
+                                    <td>{{ hit.description }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <p>Nothing dependent found.</p>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        {% load noclook_tags %}
+        <h3>This service depend on</h3>
+        {% if depend_out %}
+            <div class="pull-right">
+                <span class="badge badge-info">Testing</span>
+                <span class="badge badge-warning">Reserved</span>
+                <span class="badge badge-important">Decommissioned</span>
+            </div>
+            <ul class="nav nav-tabs" id="depTabsOut">
+                <li class="active"><a href="#directTabOut" data-toggle="tab">Direct</a></li>
+                {% if all_dependencies.services %}
+                    <li><a href="#servicesTabOut" data-toggle="tab">Services</a></li>
+                {% endif %}
+                {% if all_dependencies.paths %}
+                    <li><a href="#pathsTabOut" data-toggle="tab">Optical Paths</a></li>
+                {% endif %}
+                {% if all_dependencies.oms %}
+                    <li><a href="#omsTabOut" data-toggle="tab">Optical Muliplex Sections</a></li>
+                {% endif %}
+                {% if all_dependencies.links %}
+                    <li><a href="#linksTabOut" data-toggle="tab">Optical Links</a></li>
+                {% endif %}
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="directTabOut">
+                    <table id="dependOut" class="tablesorter" cellspacing="1">
                         <thead>
                             <tr>
                                 <th>Name</th><th>Type</th><th>Description</th>
@@ -236,8 +399,8 @@
                     </table>
                 </div>
                 {% if all_dependencies.services %}
-                    <div class="tab-pane" id="servicesTab">
-                        <table id="services" class="tablesorter" cellspacing="1">
+                    <div class="tab-pane" id="servicesTabOut">
+                        <table id="servicesOut" class="tablesorter" cellspacing="1">
                             <thead>
                                 <tr>
                                     <th>Name</th><th>Type</th><th>Description</th>
@@ -264,8 +427,8 @@
                     </div>
                 {% endif %}
                 {% if all_dependencies.paths %}
-                    <div class="tab-pane" id="pathsTab">
-                        <table id="paths" class="tablesorter" cellspacing="1">
+                    <div class="tab-pane" id="pathsTabOut">
+                        <table id="pathsOut" class="tablesorter" cellspacing="1">
                             <thead>
                                 <tr>
                                     <th>Name</th><th>Type</th><th>Description</th>
@@ -292,8 +455,8 @@
                     </div>
                 {% endif %}
                 {% if all_dependencies.oms %}
-                    <div class="tab-pane" id="omsTab">
-                        <table id="oms" class="tablesorter" cellspacing="1">
+                    <div class="tab-pane" id="omsTabOut">
+                        <table id="omsOut" class="tablesorter" cellspacing="1">
                             <thead>
                                 <tr>
                                     <th>Name</th><th>Type</th><th>Description</th>
@@ -320,8 +483,8 @@
                     </div>
                 {% endif %}
                 {% if all_dependencies.links %}
-                    <div class="tab-pane" id="linksTab">
-                        <table id="links" class="tablesorter" cellspacing="1">
+                    <div class="tab-pane" id="linksTabOut">
+                        <table id="linksOut" class="tablesorter" cellspacing="1">
                             <thead>
                                 <tr>
                                     <th>Name</th><th>Type</th><th>Description</th>
@@ -351,7 +514,6 @@
         {% else %}
             <p>No dependencies found.</p>
         {% endif %}
-
     </div>
 {% endblock %}
 
