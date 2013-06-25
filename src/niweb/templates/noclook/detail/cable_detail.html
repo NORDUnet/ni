@@ -23,6 +23,27 @@
                     widthFixed: true,
                     widgets: ['zebra']
                 });
+            $("#pathsIn").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#omsIn").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#linksIn").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
             $('#servicecopy').popover();
         }
     );
@@ -76,31 +97,137 @@
 {% endif %}
 <br><br><br>
 <div class="section">
-    <h3>Services dependent on cable</h3>
+    {% load noclook_tags %}
+    <h3>Dependent on this cable</h3>
     {% if services %}
-        <table id="services" class="tablesorter" cellspacing="1">
-            <thead>
-            <tr>
-                <th>Service ID</th><th>Description</th><th>Customer</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for hit in services %}
-                <tr>
-                    <td><a href="{% noclook_node_to_url hit.service %}">{{ hit.service.name }}</a></td>
-                    <td>{{ hit.service.description }}</td>
-                    <td>
-                        {% for customer in hit.customers %}
-                            <a href="{% noclook_node_to_url customer %}">{{ customer.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+        <div class="pull-right">
+            <span class="badge badge-info">Testing</span>
+            <span class="badge badge-warning">Reserved</span>
+            <span class="badge badge-important">Decommissioned</span>
+        </div>
+        <ul class="nav nav-tabs" id="depTabsIn">
+            <li class="active"><a href="#directTabIn" data-toggle="tab">Services</a></li>
+            {% if all_dependent.paths %}
+                <li><a href="#pathsTabIn" data-toggle="tab">Optical Paths</a></li>
+            {% endif %}
+            {% if all_dependent.oms %}
+                <li><a href="#omsTabIn" data-toggle="tab">Optical Muliplex Sections</a></li>
+            {% endif %}
+            {% if all_dependent.links %}
+                <li><a href="#linksTabIn" data-toggle="tab">Optical Links</a></li>
+            {% endif %}
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="directTabIn">
+                <table id="services" class="tablesorter" cellspacing="1">
+                    <thead>
+                    <tr>
+                        <th>Service ID</th><th>Description</th><th>Customer</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for hit in services %}
+                        <tr>
+                            <td><a href="{% noclook_node_to_url hit.service %}">{{ hit.service.name }}</a></td>
+                            <td>{{ hit.service.description }}</td>
+                            <td>
+                                {% for customer in hit.customers %}
+                                    <a href="{% noclook_node_to_url customer %}">{{ customer.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <a id="servicecopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for hit in services %}{{ hit.service.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+            </div>
+            {% if all_dependent.paths %}
+                <div class="tab-pane" id="pathsTabIn">
+                    <table id="pathsIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for hit in all_dependent.paths %}
+                            {% if hit.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif hit.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif hit.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                                <td>{{ hit.node_type }}</td>
+                                <td>{{ hit.description }}</td>
+                            </tr>
                         {% endfor %}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        <a id="servicecopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for hit in services %}{{ hit.service.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if all_dependent.oms %}
+                <div class="tab-pane" id="omsTabIn">
+                    <table id="omsIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for hit in all_dependent.oms %}
+                            {% if hit.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif hit.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif hit.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                                <td>{{ hit.node_type }}</td>
+                                <td>{{ hit.description }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if all_dependent.links %}
+                <div class="tab-pane" id="linksTabIn">
+                    <table id="linksIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for hit in all_dependent.links %}
+                            {% if hit.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif hit.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif hit.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                                <td>{{ hit.node_type }}</td>
+                                <td>{{ hit.description }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            </div>
     {% else %}
-        No services found.
+        <p>Nothing dependent found.</p>
     {% endif %}
 </div>
 <div class="section">

@@ -392,12 +392,13 @@ def cable_detail(request, handle_id):
     last_seen, expired = h.neo4j_data_age(node)
     connections = h.get_connected_cables(node)
     services = h.iter2list(h.get_services_dependent_on_cable(node))
+    all_dependent = h.get_dependent_on_cable_as_types(node)
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': node, 'node_handle': nh, 
                                'last_seen': last_seen, 'expired': expired, 
                                'connections': connections, 'services': services,
-                               'history': history},
-                               context_instance=RequestContext(request))
+                               'all_dependent': all_dependent, 'history': history},
+                              context_instance=RequestContext(request))
 
 @login_required
 def peering_partner_detail(request, handle_id):
