@@ -5,48 +5,46 @@
 {% block js %}
 {{ block.super }}
 <script type="text/javascript">
-    $(document).ready(
-        function(){
-            $("#connections").tablesorter(
-                {
-                    sortList: [[0,0],[1,0],[2,0],[3,0]],
-                    headers:
-                    {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#services").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers:
-                    {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#pathsIn").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#omsIn").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#linksIn").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $('#servicecopy').popover();
-        }
-    );
+    $(document).ready(function(){
+        $("#connections").tablesorter(
+            {
+                sortList: [[0,0],[1,0],[2,0],[3,0]],
+                headers:
+                {},
+                widthFixed: true,
+                widgets: ['zebra']
+            });
+        $("#services").tablesorter(
+            {
+                sortList: [[0,0]],
+                headers:
+                {},
+                widthFixed: true,
+                widgets: ['zebra']
+            });
+        $("#pathsIn").tablesorter(
+            {
+                sortList: [[0,0]],
+                headers: {},
+                widthFixed: true,
+                widgets: ['zebra']
+            });
+        $("#omsIn").tablesorter(
+            {
+                sortList: [[0,0]],
+                headers: {},
+                widthFixed: true,
+                widgets: ['zebra']
+            });
+        $("#linksIn").tablesorter(
+            {
+                sortList: [[0,0]],
+                headers: {},
+                widthFixed: true,
+                widgets: ['zebra']
+            });
+        $('#servicecopy').popover();
+    });
 </script>
 {% endblock %}
 
