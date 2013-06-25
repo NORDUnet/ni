@@ -23,23 +23,25 @@
         load_content(map)
     }
     function load_content(map) {
-        var map = map
         $.getJSON('/gmaps/{{ slug }}.json', function(json) {
-            for (var i = 0;i < json.length; i += 1) {
-                var label = json[i].name;
-                var url = json[i].url;
-                if (json[i].type === "node") {
-                    var lat = json[i].lat;
-                    var lng = json[i].lng;
-                    addMarker(lat, lng, label, url);
-                } else if (json[i].type === "edge") {
-                    var start_lat = json[i].start_lat;
-                    var start_lng = json[i].start_lng;
-                    var end_lat = json[i].end_lat;
-                    var end_lng = json[i].end_lng;
-                    addLine(start_lat, start_lng, end_lat, end_lng, label, url);
-                };
-            };
+            json.nodes.forEach(function(node) {
+                addMarker(
+                        node.lat,
+                        node.lng,
+                        node.name,
+                        node.url
+                );
+            });
+            json.edges.forEach(function(edge) {
+                addLine(
+                        edge.end_points[0].lat,
+                        edge.end_points[0].lng,
+                        edge.end_points[1].lat,
+                        edge.end_points[1].lng,
+                        edge.name,
+                        edge.url
+                );
+            });
 
             function addMarker(lat,lng,label,url){
                 var latlng = new google.maps.LatLng(lat,lng);
@@ -56,7 +58,7 @@
                 google.maps.event.addListener(marker, 'click', function() {
                     infowindow.open(map, marker);
                 });
-            };
+            }
 
             function addLine(start_lat, start_lng, end_lat, end_lng, label, url){
                 var infowindow = new google.maps.InfoWindow({
@@ -88,7 +90,7 @@
                 google.maps.event.addListener(line, 'mouseout', function() {
                     line.setOptions({strokeWeight: 2, strokeOpacity: 0.5})
                 });
-            };
+            }
         });
     }
 </script>
