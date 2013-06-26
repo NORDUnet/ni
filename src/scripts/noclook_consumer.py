@@ -355,11 +355,19 @@ def run_consume(config_file):
     Function to start the consumer from another script.
     """
     config = init_config(config_file)
+    # juniper_conf
     juniper_conf_data = config.get('data', 'juniper_conf')
+    remove_expired_juniper_conf = config.getboolean('delete_data', 'juniper_conf')
+    juniper_conf_data_age = config.get('data_age', 'juniper_conf')
+    # nmap services
     nmap_services_py_data = config.get('data', 'nmap_services_py')
+    # alcatel isis
     alcatel_isis_data = config.get('data', 'alcatel_isis')
+    # nagios checkmk
     nagios_checkmk_data = config.get('data', 'nagios_checkmk')
+    # noclook
     noclook_data = config.get('data', 'noclook')
+    # Consume data
     if juniper_conf_data:
         data = load_json(juniper_conf_data)
         noclook_juniper_consumer.consume_juniper_conf(data)
@@ -375,6 +383,9 @@ def run_consume(config_file):
     if noclook_data:
         data = load_json(noclook_data)
         consume_noclook(data)
+    # Clean up expired data
+    if remove_expired_juniper_conf:
+        noclook_juniper_consumer.remove_juniper_conf(juniper_conf_data_age)
 
 
 def test_db():

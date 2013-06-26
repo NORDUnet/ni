@@ -122,7 +122,7 @@ def insert_interface_unit(interf_node, unit):
         WHERE unit.name = {unit_name}
         RETURN unit
         """
-    hit = nc.neo4jdb.query(q, id=interf_node.getId(), unit_name=unit['unit']).single
+    hit = nc.neo4jdb.query(q, id=interf_node.getId(), unit_name=int(unit['unit'])).single
     if hit:
         node = hit['unit']
     else:
@@ -157,7 +157,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     interface names that are not interesting.
     Returns a list with all created nodes.
     """
-    not_interesting_interfaces = re.compile(r'.*\*|\.|all|fxp.*|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|pp.*|pip.*|irb.*|demux.*|cbp.*|me.*|lo.*')
+    not_interesting_interfaces = re.compile(r'.*\*|\.|all|tap|fxp.*|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|pp.*|pip.*|irb.*|demux.*|cbp.*|me.*|lo.*')
     for i in interfaces:
         name = i['name']
         if name and not not_interesting_interfaces.match(name):
@@ -367,13 +367,19 @@ def remove_juniper_conf(data_age):
         if VERBOSE:
             print 'Deleting expired nodes',
         for logical in hit['logical']:
-            last_seen, expired = h.neo4j_data_age(logical, data_age)
+            try:
+                last_seen, expired = h.neo4j_data_age(logical, data_age)
+            except Exception:  # NotFoundException from Java bindings
+                continue
             if expired:
                 h.delete_node(user, logical)
                 if VERBOSE:
                     print '.',
         for physical in hit['physical']:
-            last_seen, expired = h.neo4j_data_age(physical, data_age)
+            try:
+                last_seen, expired = h.neo4j_data_age(physical, data_age)
+            except Exception:  # NotFoundException from Java bindings
+                continue
             if expired:
                 h.delete_node(user, physical)
                 if VERBOSE:
