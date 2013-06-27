@@ -115,6 +115,7 @@ def insert_interface_unit(interf_node, unit):
     Creates or updates logical interface units.
     """
     user = nt.get_user()
+    unit_number = int(unit['unit'])
     # Unit numbers are unique per interface
     q = """
         START interface=node({id})
@@ -122,11 +123,11 @@ def insert_interface_unit(interf_node, unit):
         WHERE unit.name = {unit_name}
         RETURN unit
         """
-    hit = nc.neo4jdb.query(q, id=interf_node.getId(), unit_name=int(unit['unit'])).single
+    hit = nc.neo4jdb.query(q, id=interf_node.getId(), unit_name=unit_number).single
     if hit:
         node = hit['unit']
     else:
-        node_handle = nt.get_node_handle(nc.neo4jdb, unit['unit'], 'Unit',
+        node_handle = nt.get_node_handle(nc.neo4jdb, unit_number, 'Unit',
                                          'logical', interf_node)
         node = node_handle.get_node()
     h.set_noclook_auto_manage(nc.neo4jdb, node, True)
