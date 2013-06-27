@@ -29,8 +29,11 @@ window.onload = function(){
 <div class="section">
     <canvas id="viewport" width="900" height="600"></canvas>
     <div class="row">
-        <div class="span7" id="clicked_node">If you click a node a link to the detailed view will be shown here.</div>
-        <div class="span2"><a href="/visualize/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}/maximized/" target="_blank" class="btn btn-info pull-right"><i class="icon-resize-full icon-white"></i> Maximize</a></p></div>
+        <div class="span5" id="clicked_node">If you click a node a link to the detailed view will be shown here.</div>
+        <div class="span4">
+            <a href="/visualize/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}/maximized/" target="_blank" class="btn btn-info pull-right"><i class="icon-resize-full icon-white"></i> Maximize</a>
+            <a href="/visualize/{{ node.node_type|slugify }}/{{ node_handle.handle_id }}/maximized/" target="_blank" class="btn btn-info pull-right"><i class="icon-resize-full icon-white"></i> Maximize</a>
+        </div>
     </div>
 <div class="section">
 {% endblock %}

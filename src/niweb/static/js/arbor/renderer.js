@@ -4,6 +4,7 @@
         var ctx = canvas.getContext("2d");
         var gfx = arbor.Graphics(canvas);
         var particleSystem = null;
+        var undoStack = [];
 
         var that = {
             init: function(system) {
@@ -134,14 +135,15 @@
                         ctx.restore();
                     }
                 });
-
+            },
+            undo: function() {
+                console.log("Undo");
             },
             initMouseHandling: function() {
                 // no-nonsense drag and drop (thanks springy.js)
                 selected = null;
                 nearest = null;
                 var dragged = null;
-                var oldmass = 1
                 // set up a handler object that will initially listen for mousedowns then
                 // for moves and mouseups while dragging
                 var handler = {
@@ -198,11 +200,11 @@
                         _mouseP = null;
                         return false;
                     }
-                }
+                };
                 $(canvas).mousedown(handler.clicked);
                 $(canvas).bind('dblclick', handler.dblclicked);
             }
-        }
+        };
 
         // helpers for figuring out where to draw arrows (thanks springy.js)
         var intersect_line_line = function(p1, p2, p3, p4) {
@@ -213,7 +215,7 @@
 
                 if (ua < 0 || ua > 1 || ub < 0 || ub > 1) return false
                 return arbor.Point(p1.x + ua * (p2.x - p1.x), p1.y + ua * (p2.y - p1.y));
-            }
+            };
 
         var intersect_line_box = function(p1, p2, boxTuple) {
                 var p3 = {
@@ -241,8 +243,8 @@
                 };
 
                 return intersect_line_line(p1, p2, tl, tr) || intersect_line_line(p1, p2, tr, br) || intersect_line_line(p1, p2, br, bl) || intersect_line_line(p1, p2, bl, tl) || false
-            }
+            };
 
         return that
     }
-})()
+})();

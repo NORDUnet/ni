@@ -115,7 +115,7 @@ def insert_interface_unit(interf_node, unit):
     Creates or updates logical interface units.
     """
     user = nt.get_user()
-    unit_number = int(unit['unit'])
+    unit_number = str(unit['unit'])
     # Unit numbers are unique per interface
     q = """
         START interface=node({id})

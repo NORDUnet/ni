@@ -1,5 +1,6 @@
 from niweb.apps.noclook.models import NodeType, NodeHandle
 from niweb.apps.noclook.helpers import get_node_url, neo4j_data_age
+import norduni_client as nc
 from datetime import datetime, timedelta
 from django import template
 register = template.Library()
@@ -63,3 +64,22 @@ def noclook_has_expired(item):
     """
     last_seen, expired = neo4j_data_age(item)
     return expired
+
+
+@register.assignment_tag
+def noclook_get_ports(item):
+    """
+    Return port nodes that are either dependencies or connected to item. Also returns the
+    ports top parent.
+    :param item: Neo4j node
+    :return: Cypher ExecutionResult
+    """
+    q = """
+        START node = node({id})
+        MATCH node-[r:Connected_to|Depends_on]-port
+        WHERE port.node_type = "Port"
+        WITH port, r
+        MATCH p=port<-[?:Has*1..]-parent
+        RETURN port, r, LAST(nodes(p)) as parent
+        """
+    return nc.neo4jdb.query(q, id=item.getId())
