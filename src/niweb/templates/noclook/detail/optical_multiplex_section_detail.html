@@ -205,7 +205,7 @@
                                     <tr>
                                 {% endif %}
                                     <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
-                                    <td>{{ hit.node_type }}</td>
+                                    <td>{{ hit.service_class }} - {{ hit.service_type }}</td>
                                     <td>{{ hit.description }}</td>
                                 </tr>
                             {% endfor %}
@@ -274,7 +274,7 @@
                         <table id="linksIn" class="tablesorter" cellspacing="1">
                             <thead>
                                 <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
+                                    <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -291,6 +291,12 @@
                                     <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
                                     <td>{{ hit.node_type }}</td>
                                     <td>{{ hit.description }}</td>
+                                    <td>
+                                        {% noclook_get_ports hit as ports %}
+                                        {% for hit in ports %}
+                                            <a href="{% noclook_node_to_url hit.port %}">{{ hit.parent.name }} {{ hit.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                                        {% endfor %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -375,7 +381,7 @@
                                     <tr>
                                 {% endif %}
                                     <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
-                                    <td>{{ hit.node_type }}</td>
+                                    <td>{{ hit.service_class }} - {{ hit.service_type }}</td>
                                     <td>{{ hit.description }}</td>
                                 </tr>
                             {% endfor %}
@@ -444,7 +450,7 @@
                         <table id="linksOut" class="tablesorter" cellspacing="1">
                             <thead>
                                 <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
+                                    <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -461,6 +467,12 @@
                                     <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
                                     <td>{{ hit.node_type }}</td>
                                     <td>{{ hit.description }}</td>
+                                    <td>
+                                        {% noclook_get_ports hit as ports %}
+                                        {% for hit in ports %}
+                                            <a href="{% noclook_node_to_url hit.port %}">{{ hit.parent.name }} {{ hit.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                                        {% endfor %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>

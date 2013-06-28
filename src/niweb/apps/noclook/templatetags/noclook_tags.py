@@ -81,5 +81,6 @@ def noclook_get_ports(item):
         WITH port, r
         MATCH p=port<-[?:Has*1..]-parent
         RETURN port, r, LAST(nodes(p)) as parent
+        ORDER BY parent.name
         """
     return nc.neo4jdb.query(q, id=item.getId())
