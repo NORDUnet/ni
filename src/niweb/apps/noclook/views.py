@@ -8,7 +8,6 @@ import ipaddr
 import json
 import arborgraph
 from lucenequerybuilder import Q
-from actstream.models import action_object_stream
 
 from niweb.apps.noclook.models import NodeHandle, NodeType
 from niweb.apps.userprofile.models import UserProfile
@@ -230,7 +229,7 @@ def generic_detail(request, handle_id, slug):
 @login_required
 def router_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -281,7 +280,7 @@ def router_detail(request, handle_id):
 @login_required
 def optical_node_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -314,7 +313,7 @@ def optical_node_detail(request, handle_id):
 @login_required
 def host_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -337,7 +336,7 @@ def host_detail(request, handle_id):
 @login_required
 def host_service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -352,7 +351,7 @@ def host_service_detail(request, handle_id):
 @login_required
 def host_provider_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -369,7 +368,7 @@ def host_provider_detail(request, handle_id):
 @login_required
 def host_user_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -386,7 +385,7 @@ def host_user_detail(request, handle_id):
 @login_required
 def cable_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -403,7 +402,7 @@ def cable_detail(request, handle_id):
 @login_required
 def peering_partner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -442,7 +441,7 @@ def peering_partner_detail(request, handle_id):
 @login_required
 def peering_group_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -479,7 +478,7 @@ def peering_group_detail(request, handle_id):
 @login_required
 def site_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -499,7 +498,7 @@ def site_detail(request, handle_id):
 @login_required
 def site_owner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -517,7 +516,7 @@ def site_owner_detail(request, handle_id):
 @login_required
 def rack_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -535,7 +534,7 @@ def rack_detail(request, handle_id):
 @login_required
 def odf_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -554,7 +553,7 @@ def odf_detail(request, handle_id):
 @login_required
 def external_equipment_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -575,7 +574,7 @@ def external_equipment_detail(request, handle_id):
 @login_required
 def port_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -600,7 +599,7 @@ def port_detail(request, handle_id):
 @login_required
 def unit_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -617,7 +616,7 @@ def unit_detail(request, handle_id):
 @login_required
 def service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -638,7 +637,7 @@ def service_detail(request, handle_id):
 @login_required
 def optical_link_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -658,7 +657,7 @@ def optical_link_detail(request, handle_id):
 @login_required
 def optical_multiplex_section_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -678,7 +677,7 @@ def optical_multiplex_section_detail(request, handle_id):
 @login_required
 def optical_path_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -697,7 +696,7 @@ def optical_path_detail(request, handle_id):
 @login_required
 def end_user_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -715,7 +714,7 @@ def end_user_detail(request, handle_id):
 @login_required
 def customer_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)
@@ -733,7 +732,7 @@ def customer_detail(request, handle_id):
 @login_required
 def provider_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = action_object_stream(nh)
+    history = h.get_history(nh)
     # Get node from neo4j-database
     node = nh.get_node()
     last_seen, expired = h.neo4j_data_age(node)

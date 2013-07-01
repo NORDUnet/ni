@@ -13,7 +13,10 @@ from django.http import HttpResponse
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime, timedelta
-import csv, codecs, cStringIO
+from actstream.models import action_object_stream, target_stream
+import csv
+import codecs
+import cStringIO
 import xlwt
 
 try:
@@ -480,6 +483,15 @@ def slug_to_node_type(slug, create=False):
     else:
         node_type = get_object_or_404(NodeType, slug=slug)
     return node_type
+
+
+def get_history(nh):
+    """
+    :param nh: NodeHandle
+    :return: List of ActStream actions
+    """
+    history = list(action_object_stream(nh)) + list(target_stream(nh))
+    return sorted(history, key=lambda action: action.timestamp, reverse=True)
 
 def get_location(node):
     """
