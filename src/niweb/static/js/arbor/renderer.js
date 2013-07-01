@@ -16,7 +16,6 @@
                 }
                 particleSystem.screenSize(canvas.width, canvas.height);
                 that.initMouseHandling();
-                that.undoSavePoint();
             },
             redraw: function() {
                 if (!particleSystem) {
@@ -150,8 +149,12 @@
                 clickPath.pop();
                 var data = undoStack.pop();
                 particleSystem.prune(function(node, from, to) {
-                    if(data.nodes.indexOf(node._id) === -1) {
-                        return true
+                    try {
+                        if(data.nodes.indexOf(node._id) === -1) {
+                            return true
+                        }
+                    } catch(ex) {
+                        console.log("No previous state saved.")
                     }
                 });
             },
