@@ -82,15 +82,6 @@ $(document).ready(
     <div id="dialog-user-confirm" title="Remove relationship?">
         <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
     </div>
-<!--
-    <h3>Dimensions</h3>
-    <label>Rack units</label></td>
-    {{ form.units }}
-    <span class="help-block">{{ form.units.help_text }}</span>
-    <label>Start unit</label>
-    {{ form.start_unit }}
-     <span class="help-block">{{ form.start_unit.help_text }}</span>
--->
     <div class="well">
         <h3>Operational State</h3>
         {{ form.operational_state }}
@@ -113,6 +104,9 @@ $(document).ready(
         {{ form.relationship_location }}
         <select class="stacked" name="level0" id="level0"></select><br />
         <select class="stacked" name="level1" id="level1"></select>
+        <label>Equipment height</label>
+        {{ form.rack_units }}
+        <span class="help-block">{{ form.rack_units.help_text }}</span>
     </div>
 {% endblock %}
 

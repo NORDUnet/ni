@@ -286,6 +286,7 @@ class EditCableForm(forms.Form):
 class EditOpticalNodeForm(forms.Form):        
     name = forms.CharField()
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     sites = get_node_type_tuples('Site')
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
@@ -322,11 +323,7 @@ class EditHostForm(forms.Form):
         super(EditHostForm, self).__init__(*args, **kwargs)
         self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
         self.fields['relationship_owner'].choices = get_node_type_tuples('Host User')
-    #units = forms.IntegerField(required=False,
-    #                           help_text='Height in rack units (u).')
-    #start_unit = forms.IntegerField(required=False,
-    #                           help_text='Where the host starts in the rack. \
-    #                           Used for calculation of rack space.')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
@@ -356,11 +353,7 @@ class EditHostForm(forms.Form):
 
 
 class EditRouterForm(forms.Form):
-    #units = forms.IntegerField(required=False,
-    #                           help_text='Height in rack units (u).')
-    #start_unit = forms.IntegerField(required=False,
-    #                           help_text='Where the host starts in the rack. \
-    #                           Used for calculation of rack space.')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     
@@ -372,34 +365,20 @@ class NewOdfForm(forms.Form):
         max_num_of_ports = 40
         choices = [(x, x) for x in range(1, max_num_of_ports+1) if x]
         self.fields['max_number_of_ports'].choices = choices
-        
-    #units = forms.IntegerField(required=False,
-    #                           help_text='Height in rack units (u).')
-    #start_unit = forms.IntegerField(required=False,
-    #                           help_text='Where the host starts in the rack. \
-    #                           Used for calculation of rack space.')
+
     name = forms.CharField()
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
 
 class EditOdfForm(forms.Form):
-    #units = forms.IntegerField(required=False,
-    #                           help_text='Height in rack units (u).')
-    #start_unit = forms.IntegerField(required=False,
-    #                           help_text='Where the host starts in the rack. \
-    #                           Used for calculation of rack space.')
     name = forms.CharField()
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewExternalEquipmentForm(forms.Form):
-    #units = forms.IntegerField(required=False,
-    #                           help_text='Height in rack units (u).')
-    #start_unit = forms.IntegerField(required=False,
-    #                           help_text='Where the host starts in the rack. \
-    #                           Used for calculation of rack space.')
     name = forms.CharField()
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
@@ -407,15 +386,11 @@ class NewExternalEquipmentForm(forms.Form):
 
 
 class EditExternalEquipmentForm(forms.Form):
-    #units = forms.IntegerField(required=False,
-    #                           help_text='Height in rack units (u).')
-    #start_unit = forms.IntegerField(required=False,
-    #                           help_text='Where the host starts in the rack. \
-    #                           Used for calculation of rack space.')
     name = forms.CharField()
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
