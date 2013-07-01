@@ -17,6 +17,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
+from apps.noclook.helpers import update_node_search_index
 import norduni_client as nc
 
 q = """
@@ -26,7 +27,9 @@ q = """
 
 with nc.neo4jdb.transaction:
     for hit in nc.neo4jdb.query(q):
-        hit['unit']['name'] = str(hit['unit']['name'])
+        node = hit['unit']
+        node['name'] = str(hit['unit']['name'])
+        update_node_search_index(nc.neo4jdb, node)
         print '.',
 
 print "done."
