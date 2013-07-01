@@ -156,7 +156,7 @@ def get_directed_adjacency(rel):
 #        graph_list.append(jit_node_end)
 #    return graph_list
 
-def create_generic_graph(root_node, graph_dict = None):
+def create_generic_graph(root_node, graph_dict=None):
     """
     Creates a data structure from the root node and adjacent nodes.
     This will be done in a special way for known node types else a

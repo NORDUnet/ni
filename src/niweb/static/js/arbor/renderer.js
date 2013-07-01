@@ -4,6 +4,7 @@
         var ctx = canvas.getContext("2d");
         var gfx = arbor.Graphics(canvas);
         var particleSystem = null;
+        var clickPath = [];
         var undoStack = [];
 
         var that = {
@@ -15,6 +16,7 @@
                 }
                 particleSystem.screenSize(canvas.width, canvas.height);
                 that.initMouseHandling();
+                that.undoSavePoint();
             },
             redraw: function() {
                 if (!particleSystem) {
@@ -136,8 +138,22 @@
                     }
                 });
             },
+            undoSavePoint: function() {
+                var data = {nodes:[]};
+                // {id: {"color": "", "label": "", "url": ""}}
+                particleSystem.eachNode(function(node, pt) {
+                    data.nodes.push(node._id);
+                });
+                undoStack.push(data);
+            },
             undo: function() {
-                console.log("Undo");
+                clickPath.pop();
+                var data = undoStack.pop();
+                particleSystem.prune(function(node, from, to) {
+                    if(data.nodes.indexOf(node._id) === -1) {
+                        return true
+                    }
+                });
             },
             initMouseHandling: function() {
                 // no-nonsense drag and drop (thanks springy.js)
@@ -151,10 +167,16 @@
                         var pos = $(canvas).offset();
                         _mouseP = arbor.Point(e.pageX - pos.left, e.pageY - pos.top);
                         selected = particleSystem.nearest(_mouseP);
+                        clickPath.push(selected.node.name);
                         if (selected.node !== null) {
+                            that.undoSavePoint();
                             $.getJSON('/visualize/' + selected.node.name + '.json', function(json) {
                                 particleSystem.graft(json);
                             });
+                            for(var i = 0; i < clickPath.length; i += 1) {
+                                var node = particleSystem.getNode(clickPath[i]);
+                                particleSystem.tweenNode(node, 2, {color:"black"});
+                            }
                         }
                     },
                     clicked: function(e) {
