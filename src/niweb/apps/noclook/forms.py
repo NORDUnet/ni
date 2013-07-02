@@ -314,6 +314,7 @@ class EditRackForm(forms.Form):
                                help_text='Depth in millimeters (mm).')
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_located_in = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                 
