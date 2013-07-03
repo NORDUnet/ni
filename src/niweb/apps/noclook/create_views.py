@@ -64,6 +64,7 @@ def new_site(request, **kwargs):
             node = nh.get_node()
             keys = ['country_code', 'address', 'postarea', 'postcode']
             h.form_update_node(request.user, node, form, keys)
+            # TODO: Move the renaming to form.clean
             with nc.neo4jdb.transaction:
                 node['name'] = '%s-%s' % (form.cleaned_data['country_code'], form.cleaned_data['name'].upper())
                 node['country'] = forms.COUNTRY_MAP[form.cleaned_data['country_code']]
