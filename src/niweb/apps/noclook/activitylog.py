@@ -82,6 +82,7 @@ def update_relationship_property(user, relationship, property_key, value_before,
         target=end_nh,
         noclook={
             'action_type': 'relationship_property',
+            'relationship_type': unicode(relationship.type),
             'property': property_key,
             'value_before': value_before,
             'value_after': value_after
