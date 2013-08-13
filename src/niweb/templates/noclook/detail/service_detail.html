@@ -109,6 +109,18 @@
                 {% endif %}
                 {% if node.service_type == "L2VPN" %}
                     <tr>
+                        <th>Interface Type:</th>
+                        <td>{{ node.interface_type }}</td>
+                    </tr>
+                    <tr>
+                        <th>VPN Type:</th>
+                        <td>{{ node.vpn_type }}</td>
+                    </tr>
+                    <tr>
+                        <th>VLAN:</th>
+                        <td>{{ node.vlan }}</td>
+                    </tr>
+                    <tr>
                         <th>VRF Target:</th><td>{{ node.vrf_target }}</td>
                     </tr>
                     <tr>

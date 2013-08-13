@@ -584,6 +584,9 @@ class ServiceL2VPNResource(ServiceResource):
                 'node': {
                     'service_type': form.cleaned_data['service_type'],
                     'service_class': form.cleaned_data['service_class'],
+                    'interface_type': form.cleaned_data['interface_type'],
+                    'vpn_type': form.cleaned_data['vpn_type'],
+                    'vlan': form.cleaned_data['vlan'],
                     'vrf_target': form.cleaned_data['vrf_target'],
                     'route_distinguisher': form.cleaned_data['route_distinguisher'],
                     'operational_state': form.cleaned_data['operational_state'],
@@ -599,6 +602,8 @@ class ServiceL2VPNResource(ServiceResource):
                     if not port_node:
                         try:
                             parent_node = nc.get_unique_node_by_name(nc.neo4jdb, end_point['device'], 'Router')
+                            if not parent_node:
+                                raise_not_acceptable_error("End point Router %s not found." % end_point['device'])
                             port_node = create_port(parent_node, end_point['port'], bundle.request.user)
                         except MultipleNodesReturned as e:
                             raise_not_acceptable_error(e)

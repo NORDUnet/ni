@@ -508,6 +508,9 @@ class NewNordunetServiceForm(NewServiceForm):
 
 class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
 
+    interface_type = forms.CharField(required=False, help_text='')
+    vpn_type = forms.CharField(required=False, help_text='')
+    vlan = forms.CharField(required=False, help_text='')
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
 
@@ -530,6 +533,9 @@ class EditServiceForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
+    interface_type = forms.CharField(required=False, help_text='')
+    vpn_type = forms.CharField(required=False, help_text='')
+    vlan = forms.CharField(required=False, help_text='')
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)

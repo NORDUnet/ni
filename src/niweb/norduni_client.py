@@ -314,7 +314,7 @@ def get_unique_node_by_name(db, node_name, node_type):
     node_name: string
     node_type: string
 
-    Returns the node if the node is unique for name and type.
+    Returns the node if the node is unique for name and type or None.
     """
     q = '''
         START node=node:node_types(node_type = {node_type})
@@ -322,9 +322,11 @@ def get_unique_node_by_name(db, node_name, node_type):
         RETURN node
         '''
     hits = [hit for hit in db.query(q, node_type=node_type, node_name=node_name)]
-    if len(hits) == 1:
-        return hits[0]['node']
-    raise MultipleNodesReturned(node_name, node_type)
+    if hits:
+        if len(hits) == 1:
+            return hits[0]['node']
+        raise MultipleNodesReturned(node_name, node_type)
+    return None
 
 
 
