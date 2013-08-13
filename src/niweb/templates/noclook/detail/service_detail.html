@@ -109,6 +109,10 @@
                 {% endif %}
                 {% if node.service_type == "L2VPN" %}
                     <tr>
+                        <th>NCS Service Name:</th>
+                        <td>{{ node.ncs_service_name }}</td>
+                    </tr>
+                    <tr>
                         <th>Interface Type:</th>
                         <td>{{ node.interface_type }}</td>
                     </tr>
@@ -121,10 +125,12 @@
                         <td>{{ node.vlan }}</td>
                     </tr>
                     <tr>
-                        <th>VRF Target:</th><td>{{ node.vrf_target }}</td>
+                        <th>VRF Target:</th>
+                        <td>{{ node.vrf_target }}</td>
                     </tr>
                     <tr>
-                        <th>Route Distinguisher:</th><td>{{ node.route_distinguisher }}</td>
+                        <th>Route Distinguisher:</th>
+                        <td>{{ node.route_distinguisher }}</td>
                     </tr>
                 {% endif %}
                 <tr>

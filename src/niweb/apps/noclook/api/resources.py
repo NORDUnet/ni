@@ -585,6 +585,7 @@ class ServiceL2VPNResource(ServiceResource):
                     'service_type': form.cleaned_data['service_type'],
                     'service_class': form.cleaned_data['service_class'],
                     'interface_type': form.cleaned_data['interface_type'],
+                    'ncs_service_name': form.cleaned_data['ncs_service_name'],
                     'vpn_type': form.cleaned_data['vpn_type'],
                     'vlan': form.cleaned_data['vlan'],
                     'vrf_target': form.cleaned_data['vrf_target'],
