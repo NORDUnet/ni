@@ -664,7 +664,7 @@ def get_units(port):
     """
     q = '''
         START node=node({id})
-        MATCH node<-[:Depends_on]-unit
+        MATCH node<-[:Part_of]-unit
         WHERE unit.node_type = "Unit"
         RETURN unit
         '''
@@ -792,6 +792,65 @@ def get_dependent_as_types(node):
         return hit
 
 
+def get_unit(port, unit_name):
+    """
+    Parents should be uniquely named and ports should be uniquely named for each parent.
+    :param port: Neo4j node
+    :param unit_name: String
+    :return unit: Neo4j node
+    """
+    q = '''
+        START port=node({port})
+        MATCH port<-[Part_of]-unit
+        WHERE unit.name = {unit}
+        RETURN unit
+        '''
+    hits = nc.neo4jdb.query(q, port=port.getId(), unit=str(unit_name))
+    try:
+        unit = [hit['unit'] for hit in hits][0]
+    except IndexError:
+        unit = None
+    return unit
+
+
+def create_unit(parent_node, unit_name, creator):
+    """
+    Creates a port with the supplied parent.
+    :param parent_node: Neo4j node
+    :param unit_name: String
+    :param creator: Django user
+    :return: Neo4j node
+    """
+    type_unit = NodeType.objects.get(type="Unit")
+    nh = NodeHandle.objects.create(
+        node_name=unit_name,
+        node_type=type_unit,
+        node_meta_type='Logical',
+        modifier=creator, creator=creator
+    )
+    activitylog.create_node(creator, nh)
+    unit_node = nh.get_node()
+    rel = nc.create_relationship(nc.neo4jdb, unit_node, parent_node, 'Part_of')
+    set_noclook_auto_manage(nc.neo4jdb, rel, True)
+    activitylog.create_relationship(creator, rel)
+    return unit_node
+
+
+def get_ports(equipment):
+    """
+    :param equipment: neo4j node
+    :return: list of neo4j nodes and their relationship towards equipment
+    """
+    q = '''
+        START parent=node({id})
+        MATCH parent-[r:Has*1..]->port
+        WHERE port.node_type = "Port"
+        RETURN port,last(r) as rel
+        ORDER BY port.name
+        '''
+    return nc.neo4jdb.query(q, id=equipment.getId())
+
+
 def get_port(parent_name, port_name):
     """
     Parents should be uniquely named and ports should be uniquely named for each parent.
@@ -811,21 +870,6 @@ def get_port(parent_name, port_name):
     except IndexError:
         port = None
     return port
-
-
-def get_ports(equipment):
-    """
-    :param equipment: neo4j node
-    :return: list of neo4j nodes and their relationship towards equipment
-    """
-    q = '''
-        START parent=node({id})
-        MATCH parent-[r:Has*1..]->port
-        WHERE port.node_type = "Port"
-        RETURN port,last(r) as rel
-        ORDER BY port.name
-        '''
-    return nc.neo4jdb.query(q, id=equipment.getId())
 
 
 def create_port(parent_node, port_name, creator):

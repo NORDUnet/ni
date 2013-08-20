@@ -596,27 +596,13 @@ class ServiceL2VPNResource(ServiceResource):
             })
             del bundle.data['name']
             # Ensure that we have all the data needed to create the L2VPN service
-            port_nodes = []
-            try:
-                for end_point in bundle.data.get('end_points', []):
-                    port_node = get_port(end_point['device'], end_point['port'])
-                    if not port_node:
-                        try:
-                            parent_node = nc.get_unique_node_by_name(nc.neo4jdb, end_point['device'], 'Router')
-                            if not parent_node:
-                                raise_not_acceptable_error("End point Router %s not found." % end_point['device'])
-                            port_node = create_port(parent_node, end_point['port'], bundle.request.user)
-                        except MultipleNodesReturned as e:
-                            raise_not_acceptable_error(e)
-                    port_nodes.append(port_node)
-            except ObjectDoesNotExist:
-                raise_not_acceptable_error('End point %s not found.' % end_point)
+            end_point_nodes = self.get_end_point_nodes(bundle)
             # Create the new service
             bundle = super(ServiceL2VPNResource, self).obj_create(bundle, **kwargs)
             register_unique_id(NordunetUniqueId, bundle.data['node_name'])
             # Depend the created service on provided end points
             node = bundle.obj.get_node()
-            for port_node in port_nodes:
+            for port_node in end_point_nodes:
                 set_depends_on(bundle.request.user, node, port_node.getId())
             return self.hydrate_node(bundle)
         else:
@@ -638,8 +624,26 @@ class ServiceL2VPNResource(ServiceResource):
         hits = nc.neo4jdb.query(q)
         return NodeHandle.objects.filter(pk__in=[[id.value for id in hit['handle_ids']] for hit in hits][0])
 
-    def obj_get_list(self, request = None, **kwargs):
-       return self.get_object_list(request, **kwargs)
+    def obj_get_list(self, request=None, **kwargs):
+        return self.get_object_list(request, **kwargs)
+
+    def get_end_point_nodes(self, bundle):
+        port_nodes = []
+        try:
+            for end_point in bundle.data.get('end_points', []):
+                port_node = get_port(end_point['device'], end_point['port'])
+                if not port_node:
+                    try:
+                        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, end_point['device'], 'Router')
+                        if not parent_node:
+                            raise_not_acceptable_error("End point Router %s not found." % end_point['device'])
+                        port_node = create_port(parent_node, end_point['port'], bundle.request.user)
+                    except MultipleNodesReturned as e:
+                        raise_not_acceptable_error(e)
+                port_nodes.append(port_node)
+        except ObjectDoesNotExist:
+            raise_not_acceptable_error('End point %s not found.' % end_point)
+        return port_nodes
 
 
 class SiteResource(NodeHandleResource):

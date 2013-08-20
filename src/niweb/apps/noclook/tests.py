@@ -7,6 +7,9 @@ from tastypie.models import ApiKey
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, UniqueId
 from apps.noclook import helpers as h
 import norduni_client as nc
+import logging
+import sys
+
 
 class ServiceL2VPNResourceTest(ResourceTestCase):
 
@@ -14,6 +17,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
     # vpn creation:
     # url: https://nidev-consumer.nordu.net/api/v1/l2vpn/
     # {"route_distinguisher":"2603:0007","end_points":[{"device":"hel","port":"ge-1\/0\/1"},{"device":"sto","port":"ge-1\/0\/1"}],"operational_state":"In service","interface_type":"ethernet-vlan","vpn_type":"l2vpn","description":"VPN created by NCS","vlan":1704,"node_name":"NU-S800005","vrf_target":"target:2603:4242000007"}
+    # vpn update:
+    # url: https://nidev-consumer.nordu.net/api/v1/l2vpn/NU-S800005
+    # {"route_distinguisher": "2603:0007", "operational_state": "In service", "interface_type": "ethernet-vlan", "vpn_type": "l2vpn", "description": "VPN created by NCS", "vlan": 1704, "vrf_target": "target:2603:4242000007"}
     # vpn decommission:
     # TBA
 
@@ -25,10 +31,6 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         self.user,created = User.objects.get_or_create(username=self.username,
                                                        password=self.password)
         self.api_key = ApiKey.objects.create(user=self.user, key='testkey')
-        # Set up id generators
-        #vpn_id_generator = UniqueIdGenerator.objects.get_or_create(
-        #    name='nordunet_vpn_id'
-        #)
 
         # Set up initial data
         router_node_type = NodeType.objects.create(type='Router', slug="router")
@@ -78,6 +80,30 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         resp = self.api_client.get('/api/v1/router/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
+
+    # def test_create_l2vpn_with_port_end_point(self):
+    #     data = {
+    #         "route_distinguisher": "2603:0007",
+    #         "end_points": [
+    #             {
+    #                 "device": "Test Router 1",
+    #                 "port": "Test Port 1"
+    #             },
+    #             {
+    #                 "device": "Test Router 2",
+    #                 "port": "Test Port 2"
+    #             }
+    #         ],
+    #         "operational_state": "In service",
+    #         "interface_type": "ethernet-vlan",
+    #         "vpn_type": "l2vpn",
+    #         "description": "VPN created by NOCLook test",
+    #         "vlan": 1704,
+    #         "node_name": "Service ID 1",
+    #         "vrf_target": "target:2603:4242000007"
+    #     }
+    #     resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+    #     self.assertHttpCreated(resp)
 
 
 class UniqueIdGeneration(TestCase):
