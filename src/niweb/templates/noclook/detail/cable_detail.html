@@ -125,7 +125,15 @@
                     </thead>
                     <tbody>
                     {% for hit in services %}
-                        <tr>
+                        {% if hit.service.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif hit.service.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif hit.service.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                        {% endif %}
                             <td><a href="{% noclook_node_to_url hit.service %}">{{ hit.service.name }}</a></td>
                             <td>{{ hit.service.description }}</td>
                             <td>
