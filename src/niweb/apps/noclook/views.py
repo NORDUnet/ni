@@ -454,7 +454,11 @@ def peering_group_detail(request, handle_id):
         interface['unit'] = unit_rel.end
         interface['if_address'] = unit_rel['ip_address']
         # TODO: If service depends on more than one PIC this won't show the correct information.
-        pic = unit_rel.end.Part_of.outgoing.single.end
+        try:
+            pic = unit_rel.end.Part_of.outgoing.single.end
+        except AttributeError:
+            # Service does not depend on any interface
+            pic = None
         interface['pic'] = pic
         router = nc.get_root_parent(nc.neo4jdb, pic)[0]
         interface['router'] = router
