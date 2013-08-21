@@ -456,11 +456,12 @@ def peering_group_detail(request, handle_id):
         # TODO: If service depends on more than one PIC this won't show the correct information.
         try:
             pic = unit_rel.end.Part_of.outgoing.single.end
+            router = nc.get_root_parent(nc.neo4jdb, pic)[0]
         except AttributeError:
             # Service does not depend on any interface
             pic = None
+            router = None
         interface['pic'] = pic
-        router = nc.get_root_parent(nc.neo4jdb, pic)[0]
         interface['router'] = router
         interface['relations'] = []
         # Get relations who uses the service
