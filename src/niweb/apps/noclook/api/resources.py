@@ -27,7 +27,7 @@ from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
 from niweb.apps.noclook.forms import EditServiceForm, NewNordunetL2vpnServiceForm
 from niweb.apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, \
-    set_depends_on, register_unique_id, is_free_unique_id
+    get_unit, create_unit, set_depends_on, register_unique_id, is_free_unique_id
 import norduni_client as nc
 from norduni_client_exceptions import MultipleNodesReturned
 import logging
@@ -602,8 +602,8 @@ class ServiceL2VPNResource(ServiceResource):
             register_unique_id(NordunetUniqueId, bundle.data['node_name'])
             # Depend the created service on provided end points
             node = bundle.obj.get_node()
-            for port_node in end_point_nodes:
-                set_depends_on(bundle.request.user, node, port_node.getId())
+            for end_point in end_point_nodes:
+                set_depends_on(bundle.request.user, node, end_point.getId())
             return self.hydrate_node(bundle)
         else:
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
@@ -628,7 +628,7 @@ class ServiceL2VPNResource(ServiceResource):
         return self.get_object_list(request, **kwargs)
 
     def get_end_point_nodes(self, bundle):
-        port_nodes = []
+        end_point_nodes = []
         try:
             for end_point in bundle.data.get('end_points', []):
                 port_node = get_port(end_point['device'], end_point['port'])
@@ -640,10 +640,16 @@ class ServiceL2VPNResource(ServiceResource):
                         port_node = create_port(parent_node, end_point['port'], bundle.request.user)
                     except MultipleNodesReturned as e:
                         raise_not_acceptable_error(e)
-                port_nodes.append(port_node)
+                if end_point.get('unit', None):
+                    unit_node = get_unit(port_node, end_point['unit'])
+                    if not unit_node:
+                        unit_node = create_unit(port_node, end_point['unit'], bundle.request.user)
+                    end_point_nodes.append(unit_node)
+                else:
+                    end_point_nodes.append(port_node)
         except ObjectDoesNotExist:
             raise_not_acceptable_error('End point %s not found.' % end_point)
-        return port_nodes
+        return end_point_nodes
 
 
 class SiteResource(NodeHandleResource):

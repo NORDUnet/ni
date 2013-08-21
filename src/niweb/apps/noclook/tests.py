@@ -1,5 +1,6 @@
 import datetime
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.db import connection, transaction, IntegrityError
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
@@ -7,7 +8,6 @@ from tastypie.models import ApiKey
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, UniqueId
 from apps.noclook import helpers as h
 import norduni_client as nc
-import logging
 import sys
 
 
@@ -28,45 +28,74 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         # Set up a user
         self.username = 'TestUser'
         self.password = 'password'
-        self.user,created = User.objects.get_or_create(username=self.username,
-                                                       password=self.password)
-        self.api_key = ApiKey.objects.create(user=self.user, key='testkey')
+        self.user, created = User.objects.get_or_create(username=self.username, password=self.password)
+        self.api_key, created = ApiKey.objects.get_or_create(user=self.user, key='testkey')
+
+        # Set up an ID generator
+        self.id_generator, created = UniqueIdGenerator.objects.get_or_create(
+            name='nordunet_service_id',
+            base_id_length=6,
+            zfill=True,
+            prefix='NU-S',
+            creator=self.user
+        )
 
         # Set up initial data
-        router_node_type = NodeType.objects.create(type='Router', slug="router")
-        port_node_type = NodeType.objects.create(type='Port', slug="port")
-        router1, r1created = NodeHandle.objects.get_or_create(
-            node_name = 'Test Router 1',
-            node_type = router_node_type,
-            node_meta_type = 'physical',
-            creator = self.user,
-            modifier = self.user,
+        router_node_type, created = NodeType.objects.get_or_create(type='Router', slug="router")
+        port_node_type, created = NodeType.objects.get_or_create(type='Port', slug="port")
+        unit_node_type, created = NodeType.objects.get_or_create(type='Unit', slug="unit")
+        # Have to create a service type as services can't be created without it.
+        service_node_type, created = NodeType.objects.get_or_create(type='Service', slug="service")
+        self.router1, r1created = NodeHandle.objects.get_or_create(
+            node_name='Test Router 1',
+            node_type=router_node_type,
+            node_meta_type='physical',
+            creator=self.user,
+            modifier=self.user,
         )
-        router2, r2created = NodeHandle.objects.get_or_create(
-            node_name = 'Test Router 2',
-            node_type = router_node_type,
-            node_meta_type = 'physical',
-            creator = self.user,
-            modifier = self.user,
+        self.router2, r2created = NodeHandle.objects.get_or_create(
+            node_name='Test Router 2',
+            node_type=router_node_type,
+            node_meta_type='physical',
+            creator=self.user,
+            modifier=self.user,
         )
-        port1, p1created = NodeHandle.objects.get_or_create(
-            node_name = 'Test Port 1',
-            node_type = port_node_type,
-            node_meta_type = 'physical',
-            creator = self.user,
-            modifier = self.user,
+        self.port1, p1created = NodeHandle.objects.get_or_create(
+            node_name='Test Port 1',
+            node_type=port_node_type,
+            node_meta_type='physical',
+            creator=self.user,
+            modifier=self.user,
         )
-        port2, p2created = NodeHandle.objects.get_or_create(
-            node_name = 'Test Port 2',
-            node_type = port_node_type,
-            node_meta_type = 'physical',
-            creator = self.user,
-            modifier = self.user,
+        self.port2, p2created = NodeHandle.objects.get_or_create(
+            node_name='Test Port 2',
+            node_type=port_node_type,
+            node_meta_type='physical',
+            creator=self.user,
+            modifier=self.user,
+        )
+        self.unit1, u1created = NodeHandle.objects.get_or_create(
+            node_name='Test Unit 1',
+            node_type=unit_node_type,
+            node_meta_type='logical',
+            creator=self.user,
+            modifier=self.user,
+        )
+        self.unit2, u2created = NodeHandle.objects.get_or_create(
+            node_name='Test Unit 2',
+            node_type=unit_node_type,
+            node_meta_type='logical',
+            creator=self.user,
+            modifier=self.user,
         )
         if r1created and p1created:
-            h.place_child_in_parent(self.user, port1.get_node(), router1.get_node().getId())
-        if r2created and r2created:
-            h.place_child_in_parent(self.user, port2.get_node(), router2.get_node().getId())
+            h.place_child_in_parent(self.user, self.port1.get_node(), self.router1.get_node().getId())
+        if r2created and p2created:
+            h.place_child_in_parent(self.user, self.port2.get_node(), self.router2.get_node().getId())
+        if p1created and u1created:
+            nc.create_relationship(nc.neo4jdb, self.unit1.get_node(), self.port1.get_node(), 'Part_of')
+        if p2created and u2created:
+            nc.create_relationship(nc.neo4jdb, self.unit2.get_node(), self.port2.get_node(), 'Part_of')
 
     def get_credentials(self):
         return self.create_apikey(username=self.username, api_key=str(self.api_key.key))
@@ -77,33 +106,99 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
 
     def test_port_list(self):
-        resp = self.api_client.get('/api/v1/router/', format='json', authentication=self.get_credentials())
+        resp = self.api_client.get('/api/v1/port/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
 
-    # def test_create_l2vpn_with_port_end_point(self):
-    #     data = {
-    #         "route_distinguisher": "2603:0007",
-    #         "end_points": [
-    #             {
-    #                 "device": "Test Router 1",
-    #                 "port": "Test Port 1"
-    #             },
-    #             {
-    #                 "device": "Test Router 2",
-    #                 "port": "Test Port 2"
-    #             }
-    #         ],
-    #         "operational_state": "In service",
-    #         "interface_type": "ethernet-vlan",
-    #         "vpn_type": "l2vpn",
-    #         "description": "VPN created by NOCLook test",
-    #         "vlan": 1704,
-    #         "node_name": "Service ID 1",
-    #         "vrf_target": "target:2603:4242000007"
-    #     }
-    #     resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
-    #     self.assertHttpCreated(resp)
+    def test_unit_list(self):
+        resp = self.api_client.get('/api/v1/unit/', format='json', authentication=self.get_credentials())
+        self.assertValidJSONResponse(resp)
+        self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 1)
+
+    @override_settings(DEBUG=True)
+    def test_create_l2vpn_existing_port_end_point(self):
+        data = {
+            "route_distinguisher": "2603:0007",
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "ethernet-vlan",
+            "vpn_type": "l2vpn",
+            "description": "VPN created by NOCLook test",
+            "vlan": 1704,
+            "node_name": "Service ID 1",
+            "vrf_target": "target:2603:4242000007"
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+        #sys.stderr.writelines('stderr: ' + str(resp))
+        self.assertHttpCreated(resp)
+        self.assertEqual(len([hit for hit in self.port1.get_node().Depends_on]), 1)
+        self.assertEqual(len([hit for hit in self.port2.get_node().Depends_on]), 1)
+
+    def test_create_l2vpn_new_port_end_point(self):
+        data = {
+            "route_distinguisher": "2603:0007",
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "New Port 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "New Port 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "ethernet-vlan",
+            "vpn_type": "l2vpn",
+            "description": "VPN created by NOCLook test",
+            "vlan": 1704,
+            "node_name": "Service ID 2",
+            "vrf_target": "target:2603:4242000007"
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+        sys.stderr.writelines('stderr: ' + str(resp))
+        self.assertHttpCreated(resp)
+        new_port_1 = h.get_port('Test Router 1', 'New Port 1')
+        new_port_2 = h.get_port('Test Router 2', 'New Port 2')
+        self.assertEqual(len([hit for hit in new_port_1.Depends_on]), 1)
+        self.assertEqual(len([hit for hit in new_port_2.Depends_on]), 1)
+
+    @override_settings(DEBUG=True)
+    def test_create_l2vpn_existing_unit_end_point(self):
+        data = {
+            "route_distinguisher": "2603:0007",
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1",
+                    "unit": "Test Unit 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "ethernet-vlan",
+            "vpn_type": "l2vpn",
+            "description": "VPN created by NOCLook test",
+            "vlan": 1704,
+            "node_name": "Service ID 3",
+            "vrf_target": "target:2603:4242000007"
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+        #sys.stderr.writelines('stderr: ' + str([hit for hit in self.unit1.get_node().rels]))
+        self.assertHttpCreated(resp)
+        self.assertEqual(len([hit for hit in self.unit1.get_node().Depends_on]), 1)
 
 
 class UniqueIdGeneration(TestCase):
