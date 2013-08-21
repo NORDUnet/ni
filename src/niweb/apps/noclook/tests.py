@@ -138,7 +138,8 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "vlan": 1704,
-            "node_name": "Service ID 1",
+            "native_vlan": 'Native VLAN',
+            "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
@@ -166,7 +167,8 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "vlan": 1704,
-            "node_name": "Service ID 2",
+            "native_vlan": 'Native VLAN',
+            "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
@@ -198,13 +200,169 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "vlan": 1704,
-            "node_name": "Service ID 3",
+            "native_vlan": 'Native VLAN',
+            "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         #sys.stderr.writelines('stderr: ' + str([hit for hit in self.unit1.get_node().rels]))
         self.assertHttpCreated(resp)
         self.assertEqual(len([hit for hit in self.unit1.get_node().Depends_on]), 1)
+        self.purge_neo4jdb()
+
+    def test_create_l2vpn_new_unit_end_point(self):
+        data = {
+            "route_distinguisher": "2603:0007",
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1",
+                    "unit": "New Unit 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2",
+                    "unit": "New Unit 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "ethernet-vlan",
+            "vpn_type": "l2vpn",
+            "description": "VPN created by NOCLook test",
+            "vlan": 1704,
+            "native_vlan": 'Native VLAN',
+            "node_name": "ServiceID",
+            "vrf_target": "target:2603:4242000007"
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+        self.assertHttpCreated(resp)
+        new_unit_1 = h.get_unit(self.port1.get_node(), 'New Unit 1')
+        new_unit_2 = h.get_unit(self.port2.get_node(), 'New Unit 2')
+        self.assertEqual(len([hit for hit in new_unit_1.Depends_on]), 1)
+        self.assertEqual(len([hit for hit in new_unit_2.Depends_on]), 1)
+        self.purge_neo4jdb()
+
+    def test_update_l2vpn(self):
+        data = {
+            "route_distinguisher": "2603:0007",
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1",
+                    "unit": "Test Unit 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2",
+                    "unit": "Test Unit 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "ethernet-vlan",
+            "vpn_type": "l2vpn",
+            "description": "VPN created by NOCLook test",
+            "vlan": 1704,
+            "native_vlan": 'Native VLAN',
+            "node_name": "ServiceID",
+            "vrf_target": "target:2603:4242000007"
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+        self.assertHttpCreated(resp)
+        data = {
+            "route_distinguisher": "new-2603:0007",
+            "operational_state": "Decommissioned",
+            "interface_type": "new-ethernet-vlan",
+            "vpn_type": "new-l2vpn",
+            "description": "VPN updated by NOCLook test",
+            "vlan": 4071,
+            "native_vlan": 'new-Native VLAN',
+            "vrf_target": "new-target:2603:4242000007"
+        }
+        resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())
+        self.assertHttpAccepted(resp)
+        self.purge_neo4jdb()
+
+    def test_failed_update_l2vpn(self):
+        data = {
+            "route_distinguisher": "2603:0007",
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1",
+                    "unit": "Test Unit 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2",
+                    "unit": "Test Unit 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "ethernet-vlan",
+            "vpn_type": "l2vpn",
+            "description": "VPN created by NOCLook test",
+            "vlan": 1704,
+            "native_vlan": 'Native VLAN',
+            "node_name": "ServiceID",
+            "vrf_target": "target:2603:4242000007"
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+        self.assertHttpCreated(resp)
+        data = {
+            "operational_state": "Not in service",
+        }
+        resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())
+        self.assertEqual(resp.status_code, 406)  # NotAcceptable
+        self.purge_neo4jdb()
+
+    def test_update_l2vpn_new_end_point(self):
+        data = {
+            "route_distinguisher": "2603:0007",
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1",
+                    "unit": "Test Unit 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2",
+                    "unit": "Test Unit 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "ethernet-vlan",
+            "vpn_type": "l2vpn",
+            "description": "VPN created by NOCLook test",
+            "vlan": 1704,
+            "native_vlan": 'Native VLAN',
+            "node_name": "ServiceID",
+            "vrf_target": "target:2603:4242000007"
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())        
+        self.assertHttpCreated(resp)
+        self.assertEqual(len([hit for hit in self.unit1.get_node().Depends_on]), 1)
+        self.assertEqual(len([hit for hit in self.unit2.get_node().Depends_on]), 1)
+        data = {
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1",
+                    "unit": "New Unit 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2",
+                    "unit": "New Unit 2"
+                }
+            ],
+        }
+        resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())        
+        self.assertHttpAccepted(resp)
+        new_unit_1 = h.get_unit(self.port1.get_node(), 'New Unit 1')
+        new_unit_2 = h.get_unit(self.port2.get_node(), 'New Unit 2')
+        self.assertEqual(len([hit for hit in new_unit_1.Depends_on]), 1)
+        self.assertEqual(len([hit for hit in new_unit_2.Depends_on]), 1)
         self.purge_neo4jdb()
 
 
@@ -215,7 +373,7 @@ class UniqueIdGeneration(TestCase):
         # Set up a user
         self.username = 'TestUser'
         self.password = 'password'
-        self.user,created = User.objects.get_or_create(username=self.username,
+        self.user, created = User.objects.get_or_create(username=self.username,
             password=self.password)
         # Set up an ID generator
         self.id_generator, created = UniqueIdGenerator.objects.get_or_create(

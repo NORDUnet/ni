@@ -124,6 +124,12 @@
                         <th>VLAN:</th>
                         <td>{{ node.vlan }}</td>
                     </tr>
+                    {% if node.native_vlan %}
+                        <tr>
+                            <th>Native VLAN:</th>
+                            <td>{{ node.native_vlan }}</td>
+                        </tr>
+                    {% endif %}
                     <tr>
                         <th>VRF Target:</th>
                         <td>{{ node.vrf_target }}</td>

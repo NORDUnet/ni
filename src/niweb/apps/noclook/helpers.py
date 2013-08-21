@@ -99,6 +99,13 @@ def delete_node(user, node):
         pass
     return True
 
+
+def delete_relationship(user, relationship):
+    activitylog.delete_relationship(user, relationship)
+    nc.delete_relationship(nc.neo4jdb, relationship)
+    return True
+
+
 def form_update_node(user, node, form, property_keys=None):
     """
     Take a node, a form and the property keys that should be used to fill the

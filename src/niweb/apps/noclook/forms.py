@@ -512,6 +512,7 @@ class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
     ncs_service_name = forms.CharField(required=False, help_text='')
     vpn_type = forms.CharField(required=False, help_text='')
     vlan = forms.CharField(required=False, help_text='')
+    native_vlan = forms.CharField(required=False, help_text='')
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
 
@@ -538,6 +539,7 @@ class EditServiceForm(forms.Form):
     ncs_service_name = forms.CharField(required=False, help_text='')
     vpn_type = forms.CharField(required=False, help_text='')
     vlan = forms.CharField(required=False, help_text='')
+    native_vlan = forms.CharField(required=False, help_text='')
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)

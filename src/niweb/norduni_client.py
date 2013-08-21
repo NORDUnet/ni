@@ -21,7 +21,7 @@
 #       MA 02110-1301, USA.
 
 from norduni_client_exceptions import *
-from neo4j import GraphDatabase, Uniqueness, Evaluation, OUTGOING, INCOMING, ANY
+from neo4j import GraphDatabase
 from lucenequerybuilder import Q
 import json
 import re

@@ -27,7 +27,7 @@ from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
 from niweb.apps.noclook.forms import EditServiceForm, NewNordunetL2vpnServiceForm
 from niweb.apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, \
-    get_unit, create_unit, set_depends_on, register_unique_id, is_free_unique_id
+    get_unit, create_unit, set_depends_on, register_unique_id, is_free_unique_id, delete_relationship
 import norduni_client as nc
 from norduni_client_exceptions import MultipleNodesReturned
 import logging
@@ -76,7 +76,6 @@ def raise_not_acceptable_error(message):
     """
     class HttpMethodNotAcceptable(HttpResponse):
         status_code = 406
-
 
     raise ImmediateHttpResponse(
         HttpMethodNotAcceptable(message)
@@ -588,6 +587,7 @@ class ServiceL2VPNResource(ServiceResource):
                     'ncs_service_name': form.cleaned_data['ncs_service_name'],
                     'vpn_type': form.cleaned_data['vpn_type'],
                     'vlan': form.cleaned_data['vlan'],
+                    'native_vlan': form.cleaned_data['native_vlan'],
                     'vrf_target': form.cleaned_data['vrf_target'],
                     'route_distinguisher': form.cleaned_data['route_distinguisher'],
                     'operational_state': form.cleaned_data['operational_state'],
@@ -607,6 +607,17 @@ class ServiceL2VPNResource(ServiceResource):
             return self.hydrate_node(bundle)
         else:
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
+
+    def obj_update(self, bundle, **kwargs):
+        bundle = super(ServiceL2VPNResource, self).obj_update(bundle, **kwargs)
+        end_point_nodes = self.get_end_point_nodes(bundle)
+        node = bundle.obj.get_node()
+        if end_point_nodes:
+            for rel in node.Depends_on.outgoing:
+                delete_relationship(bundle.request.user, rel)
+            for end_point in end_point_nodes:
+                set_depends_on(bundle.request.user, node, end_point.getId())
+        return bundle
 
     def dehydrate(self, bundle):
         bundle = super(ServiceL2VPNResource, self).dehydrate(bundle)

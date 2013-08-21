@@ -401,6 +401,7 @@ def cable_detail(request, handle_id):
 
 @login_required
 def peering_partner_detail(request, handle_id):
+    # TODO: Needs to be rewritten using cypher
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     history = h.get_history(nh)
     # Get node from neo4j-database
@@ -440,6 +441,7 @@ def peering_partner_detail(request, handle_id):
 
 @login_required
 def peering_group_detail(request, handle_id):
+    # TODO: Needs to be rewritten using cypher
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     history = h.get_history(nh)
     # Get node from neo4j-database
