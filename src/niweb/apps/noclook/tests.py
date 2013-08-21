@@ -28,11 +28,11 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         # Set up a user
         self.username = 'TestUser'
         self.password = 'password'
-        self.user, created = User.objects.get_or_create(username=self.username, password=self.password)
-        self.api_key, created = ApiKey.objects.get_or_create(user=self.user, key='testkey')
+        self.user = User.objects.create(username=self.username, password=self.password)
+        self.api_key = ApiKey.objects.create(user=self.user, key='testkey')
 
         # Set up an ID generator
-        self.id_generator, created = UniqueIdGenerator.objects.get_or_create(
+        self.id_generator = UniqueIdGenerator.objects.create(
             name='nordunet_service_id',
             base_id_length=6,
             zfill=True,
@@ -41,61 +41,62 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         )
 
         # Set up initial data
-        router_node_type, created = NodeType.objects.get_or_create(type='Router', slug="router")
-        port_node_type, created = NodeType.objects.get_or_create(type='Port', slug="port")
-        unit_node_type, created = NodeType.objects.get_or_create(type='Unit', slug="unit")
+        router_node_type = NodeType.objects.create(type='Router', slug="router")
+        port_node_type = NodeType.objects.create(type='Port', slug="port")
+        unit_node_type = NodeType.objects.create(type='Unit', slug="unit")
         # Have to create a service type as services can't be created without it.
-        service_node_type, created = NodeType.objects.get_or_create(type='Service', slug="service")
-        self.router1, r1created = NodeHandle.objects.get_or_create(
+        service_node_type = NodeType.objects.create(type='Service', slug="service")
+        self.router1 = NodeHandle.objects.create(
             node_name='Test Router 1',
             node_type=router_node_type,
             node_meta_type='physical',
             creator=self.user,
             modifier=self.user,
         )
-        self.router2, r2created = NodeHandle.objects.get_or_create(
+        self.router2 = NodeHandle.objects.create(
             node_name='Test Router 2',
             node_type=router_node_type,
             node_meta_type='physical',
             creator=self.user,
             modifier=self.user,
         )
-        self.port1, p1created = NodeHandle.objects.get_or_create(
+        self.port1 = NodeHandle.objects.create(
             node_name='Test Port 1',
             node_type=port_node_type,
             node_meta_type='physical',
             creator=self.user,
             modifier=self.user,
         )
-        self.port2, p2created = NodeHandle.objects.get_or_create(
+        self.port2 = NodeHandle.objects.create(
             node_name='Test Port 2',
             node_type=port_node_type,
             node_meta_type='physical',
             creator=self.user,
             modifier=self.user,
         )
-        self.unit1, u1created = NodeHandle.objects.get_or_create(
+        self.unit1 = NodeHandle.objects.create(
             node_name='Test Unit 1',
             node_type=unit_node_type,
             node_meta_type='logical',
             creator=self.user,
             modifier=self.user,
         )
-        self.unit2, u2created = NodeHandle.objects.get_or_create(
+        self.unit2 = NodeHandle.objects.create(
             node_name='Test Unit 2',
             node_type=unit_node_type,
             node_meta_type='logical',
             creator=self.user,
             modifier=self.user,
         )
-        if r1created and p1created:
-            h.place_child_in_parent(self.user, self.port1.get_node(), self.router1.get_node().getId())
-        if r2created and p2created:
-            h.place_child_in_parent(self.user, self.port2.get_node(), self.router2.get_node().getId())
-        if p1created and u1created:
-            nc.create_relationship(nc.neo4jdb, self.unit1.get_node(), self.port1.get_node(), 'Part_of')
-        if p2created and u2created:
-            nc.create_relationship(nc.neo4jdb, self.unit2.get_node(), self.port2.get_node(), 'Part_of')
+        h.place_child_in_parent(self.user, self.port1.get_node(), self.router1.get_node().getId())
+        h.place_child_in_parent(self.user, self.port2.get_node(), self.router2.get_node().getId())
+        nc.create_relationship(nc.neo4jdb, self.unit1.get_node(), self.port1.get_node(), 'Part_of')
+        nc.create_relationship(nc.neo4jdb, self.unit2.get_node(), self.port2.get_node(), 'Part_of')
+
+    def purge_neo4jdb(self):
+        for node in nc.get_all_nodes(nc.neo4jdb):
+            if node.getId() != 0:
+                nc.delete_node(nc.neo4jdb, node)
 
     def get_credentials(self):
         return self.create_apikey(username=self.username, api_key=str(self.api_key.key))
@@ -104,18 +105,21 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         resp = self.api_client.get('/api/v1/router/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
+        self.purge_neo4jdb()
 
     def test_port_list(self):
         resp = self.api_client.get('/api/v1/port/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
+        self.purge_neo4jdb()
 
     def test_unit_list(self):
         resp = self.api_client.get('/api/v1/unit/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 1)
+        self.purge_neo4jdb()
 
-    @override_settings(DEBUG=True)
+    #@override_settings(DEBUG=True)
     def test_create_l2vpn_existing_port_end_point(self):
         data = {
             "route_distinguisher": "2603:0007",
@@ -142,6 +146,7 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         self.assertHttpCreated(resp)
         self.assertEqual(len([hit for hit in self.port1.get_node().Depends_on]), 1)
         self.assertEqual(len([hit for hit in self.port2.get_node().Depends_on]), 1)
+        self.purge_neo4jdb()
 
     def test_create_l2vpn_new_port_end_point(self):
         data = {
@@ -165,14 +170,15 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             "vrf_target": "target:2603:4242000007"
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
-        sys.stderr.writelines('stderr: ' + str(resp))
+        #sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpCreated(resp)
         new_port_1 = h.get_port('Test Router 1', 'New Port 1')
         new_port_2 = h.get_port('Test Router 2', 'New Port 2')
         self.assertEqual(len([hit for hit in new_port_1.Depends_on]), 1)
         self.assertEqual(len([hit for hit in new_port_2.Depends_on]), 1)
+        self.purge_neo4jdb()
 
-    @override_settings(DEBUG=True)
+    #@override_settings(DEBUG=True)
     def test_create_l2vpn_existing_unit_end_point(self):
         data = {
             "route_distinguisher": "2603:0007",
@@ -199,6 +205,7 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         #sys.stderr.writelines('stderr: ' + str([hit for hit in self.unit1.get_node().rels]))
         self.assertHttpCreated(resp)
         self.assertEqual(len([hit for hit in self.unit1.get_node().Depends_on]), 1)
+        self.purge_neo4jdb()
 
 
 class UniqueIdGeneration(TestCase):
