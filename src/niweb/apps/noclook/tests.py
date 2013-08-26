@@ -279,7 +279,7 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             "vrf_target": "new-target:2603:4242000007"
         }
         resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())
-        self.assertHttpAccepted(resp)
+        self.assertHttpOK(resp)
         self.purge_neo4jdb()
 
     def test_failed_update_l2vpn(self):
@@ -358,7 +358,7 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             ],
         }
         resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())        
-        self.assertHttpAccepted(resp)
+        self.assertHttpOK(resp)
         new_unit_1 = h.get_unit(self.port1.get_node(), 'New Unit 1')
         new_unit_2 = h.get_unit(self.port2.get_node(), 'New Unit 2')
         self.assertEqual(len([hit for hit in new_unit_1.Depends_on]), 1)
