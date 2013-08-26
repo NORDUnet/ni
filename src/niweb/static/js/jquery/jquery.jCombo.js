@@ -19,7 +19,7 @@
                 initial_text: "-- Please Select --",
                 end_value_field: ""
         };
-        $(this).click(function() {
+        $(this).on('change', function() {
             if(obj.val()!="0") {
                 $(user_options.end_value_field).val(obj.val());
             }
