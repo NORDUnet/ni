@@ -215,9 +215,7 @@ class NodeHandleResource(ModelResource):
         return bundle
         
     def dehydrate_node_type(self, bundle):
-        return bundle.data['node_type'].replace(
-                                        '/%d/' % bundle.obj.node_type_id,
-                                        '/%s/' % slugify(bundle.obj.node_type))
+        return bundle.data['node_type'].replace('/%d/' % bundle.obj.node_type_id, '/%s/' % slugify(bundle.obj.node_type))
 
     def dehydrate(self, bundle):
         bundle.data['relationships'] = []
@@ -227,6 +225,39 @@ class NodeHandleResource(ModelResource):
             tmp_obj.id = rel.id
             bundle.data['relationships'].append(rr.get_resource_uri(tmp_obj))
         return bundle
+
+    def resource_uri_kwargs(self, bundle_or_obj=None):
+        """
+        Changing kwargs for uri so that the url resolve works.
+        Traversing bundle_or_obj in case we're using related objects.
+        Removing "pk" in case we're using our own field.
+        """
+        kwargs = super(NodeHandleResource, self).resource_uri_kwargs(bundle_or_obj)
+        if bundle_or_obj is not None and getattr(self._meta, 'pk_field', 'pk') != 'pk':
+            value = bundle_or_obj
+            if isinstance(bundle_or_obj, Bundle):
+                value = bundle_or_obj.obj
+            for attribute in self._meta.pk_field.split("__"):
+                value = getattr(value, attribute)
+            kwargs[self._meta.pk_field] = value
+            kwargs.pop('pk', None)
+        return kwargs
+
+    def base_urls(self):
+        """
+        Overriding base_urls to make sure that the old pk regex is not
+        included anymore. api_get_multiple needs to be removed (in our
+        case because we're not using continuous numbers) and
+        api_dispatch_detail needs to be changed.
+        """
+        urls = super(NodeHandleResource, self).base_urls()
+        if getattr(self._meta, 'pk_field', 'pk') != 'pk':
+            urls = [x for x in urls if (x.name != "api_get_multiple" and x.name != "api_dispatch_detail")]
+            urls += [
+                url(r"^(?P<resource_name>%s)/(?P<%s>%s)%s$" % (self._meta.resource_name, self._meta.pk_field, self._meta.pk_field_regex, trailing_slash()),self.wrap_view('dispatch_detail'),
+                    name="api_dispatch_detail")
+            ]
+        return urls
 
 
 class RelationshipObject(object):
@@ -509,6 +540,8 @@ class ServiceResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='service')
         resource_name = 'service'
+        pk_field = 'node_name'
+        pk_field_regex = '[-\w]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post', 'patch']
@@ -517,12 +550,6 @@ class ServiceResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-
-    def prepend_urls(self):
-        return [
-            url(r"^(?P<resource_name>%s)/(?P<pk>[\d]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
-            url(r"^(?P<resource_name>%s)/(?P<node_name>[\w\d_.-]+)/$" % self._meta.resource_name, self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
-            ]
 
     def obj_update(self, bundle, **kwargs):
         bundle = super(ServiceResource, self).obj_update(bundle, **kwargs)
