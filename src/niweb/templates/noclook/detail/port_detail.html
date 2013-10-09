@@ -38,6 +38,15 @@
                 <th>Port Type:</th><td>{{ node.port_type }}</td>
             </tr>
         </table>
+        {% if node.description %}
+            <div>
+                <table class="table">
+                    <tr>
+                        <th>Description:</th><td>{{ node.description }}</td>
+                    </tr>
+                </table>
+            </div>
+        {% endif %}
     </div>
     <div class="span3">
         <table class="table">
