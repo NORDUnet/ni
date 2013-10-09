@@ -23,7 +23,8 @@ def host_reports(request):
 
 @login_required
 def host_users(request, host_user_name=None, form=None):
-    host_users = dict([[name,id] for id,name in get_node_type_tuples('Host User') if name])
+    host_users = get_node_type_tuples('Host User')
+    host_users = dict([[name,id] for id,name in host_users if name])
     hosts = []
     host_user_id = host_users.get(host_user_name, None)
     if host_user_id:
@@ -57,12 +58,11 @@ def host_users(request, host_user_name=None, form=None):
                 'host_type': hit['host_type'],
                 'location': get_location(hit['host']),
                 'age': neo4j_report_age(hit['host'], 15, 31)
-                # Get nrpe service
             }
             hosts.append(item)
     return render_to_response('noclook/reports/host_users.html',
-            {'host_user_name': host_user_name, 'host_users': host_users,
-            'hosts': hosts}, context_instance=RequestContext(request))
+                              {'host_user_name': host_user_name, 'host_users': host_users, 'hosts': hosts},
+                              context_instance=RequestContext(request))
 
 @login_required
 def host_security_class(request, status=None, form=None):
