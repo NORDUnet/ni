@@ -105,7 +105,8 @@ def list_services(request, service_class=None):
 def list_optical_paths(request):
     q = '''
         START node=node:node_types(node_type = "Optical Path")
-        RETURN node, node.framing? as framing, node.capacity? as capacity, node.enrs? as enrs, node.operational_state? as operational_state
+        RETURN node, node.framing? as framing, node.capacity? as capacity, node.enrs? as enrs,
+        node.description? as description, node.operational_state? as operational_state
         '''
     optical_path_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_optical_paths.html',
