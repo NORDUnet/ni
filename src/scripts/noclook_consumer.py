@@ -51,6 +51,7 @@ import noclook_juniper_consumer
 import noclook_nmap_consumer_py
 import noclook_alcatel_consumer
 import noclook_checkmk_consumer
+import noclook_cfengine_consumer
 
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
@@ -365,6 +366,8 @@ def run_consume(config_file):
     alcatel_isis_data = config.get('data', 'alcatel_isis')
     # nagios checkmk
     nagios_checkmk_data = config.get('data', 'nagios_checkmk')
+    # cfengine report
+    cfengine_data = config.get('data', 'cfengine_report')
     # noclook
     noclook_data = config.get('data', 'noclook')
     # Consume data
@@ -380,6 +383,9 @@ def run_consume(config_file):
     if nagios_checkmk_data:
         data = load_json(nagios_checkmk_data)
         noclook_checkmk_consumer.insert(data)
+    if cfengine_data:
+        data = load_json(cfengine_data)
+        noclook_cfengine_consumer.insert(data)
     if noclook_data:
         data = load_json(noclook_data)
         consume_noclook(data)
@@ -392,8 +398,7 @@ def test_db():
     handles = NodeHandle.objects.all()
     print 'Handle\tNode'
     for handle in handles:
-        print '%d\t%s' % (handle.handle_id, nc.get_node_by_id(
-            handle.node_id))
+        print '%d\t%s' % (handle.handle_id, nc.get_node_by_id(handle.node_id))
 
 
 def purge_db():
