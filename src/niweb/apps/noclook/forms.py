@@ -2,7 +2,7 @@ from datetime import datetime
 from django import forms
 from django.forms.util import ErrorDict, ErrorList
 from django.forms.widgets import HiddenInput
-from django.utils import simplejson
+import json
 from niweb.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
 import niweb.apps.noclook.helpers as h
 import norduni_client as nc
@@ -184,7 +184,7 @@ class JSONField(forms.CharField):
     def clean(self, value):
         value = super(JSONField, self).clean(value)
         try:
-            json_data = simplejson.loads(value)
+            json_data = json.loads(value)
         except Exception:
             raise forms.validators.ValidationError(self.error_messages['invalid'])
         return json_data
@@ -193,7 +193,7 @@ class JSONField(forms.CharField):
 class JSONInput(HiddenInput):
 
     def render(self, name, value, attrs=None):
-        return super(JSONInput, self).render(name, simplejson.dumps(value), attrs)
+        return super(JSONInput, self).render(name, json.dumps(value), attrs)
 
 
 class ReserveIdForm(forms.Form):
@@ -406,6 +406,9 @@ class NewPortForm(forms.Form):
 class EditPortForm(forms.Form):
     name = forms.CharField()
     port_type = forms.ChoiceField(choices=PORT_TYPES, widget=forms.widgets.Select)
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Notes regarding port usage.')
     relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
