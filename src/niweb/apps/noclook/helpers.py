@@ -1090,6 +1090,32 @@ def set_responsible_for(user, node, responsible_for_node_id):
         activitylog.create_relationship(user, rel)
     return node
 
+
+def get_host_backup(host):
+    """
+    :param host: neo4j node
+    :return: String
+
+    Return a string that expresses the current backup solution used for the host or 'No'.
+    """
+    backup = host.get_property('backup', 'No')
+    if backup == 'No':
+        q = """
+            START host=node({id})
+            MATCH host<-[r:Depends_on]-dep
+            WHERE dep.name = 'vnetd'
+            RETURN r
+            """
+        for hit in nc.neo4jdb.query(q, id=host.getId()):
+            last_seen, expired = neo4j_data_age(hit['r'])
+            if expired:
+                return 'No'
+            backup = 'netbackup'
+    return backup
+
+
+
+
 def get_hostname_from_address(ip_address):
     """
     Return the DNS name for an IP address or an empty string if

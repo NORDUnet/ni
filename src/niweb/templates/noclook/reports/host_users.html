@@ -113,7 +113,7 @@
                     <td>
                         {{ item.host.responsible_group }}
                     </td>
-                    <td>{{ item.host.backup|yesno:"Yes,No,Not set" }}</td>
+                    <td>{{ item.backup }}</td>
                     <td>{{ item.host.syslog|yesno:"Yes,No,Not set" }}</td>
                     <td>{{ item.host.nagios_checks|yesno:"Yes,No,Not set" }}</td>
                     <td>{{ item.host.operational_state|default:"Not set" }}</td>
