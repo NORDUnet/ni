@@ -328,8 +328,6 @@ class EditHostForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
-    backup = forms.NullBooleanField(required=False, help_text='Is the host backed up?')
-    syslog = forms.NullBooleanField(required=False, help_text='Do the host log to the syslog machine?')
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     #responsible_persons = JSONField(required=False, widget=JSONInput,
     #                                help_text='Name of the person responsible for the host.')
