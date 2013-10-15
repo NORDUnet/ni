@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from django import template
 register = template.Library()
 
+
 @register.inclusion_tag('type_menu.html')
 def type_menu():
     """
@@ -15,12 +16,14 @@ def type_menu():
     types = NodeType.objects.exclude(type='Port').exclude(type='Unit')
     return {'types': types}
 
+
 @register.simple_tag
 def noclook_node_to_url(node):
     """
     Takes a node id as a string and returns the absolute url for a node.
     """
     return get_node_url(node)
+
 
 @register.assignment_tag
 def noclook_node_to_node_handle(node):
@@ -34,6 +37,7 @@ def noclook_node_to_node_handle(node):
         return None
     return node_handle
 
+
 @register.assignment_tag
 def noclook_last_seen_to_dt(noclook_last_seen):
     """
@@ -46,6 +50,7 @@ def noclook_last_seen_to_dt(noclook_last_seen):
         dt = None
     return dt
 
+
 @register.assignment_tag
 def timestamp_to_td(seconds):
     """
@@ -56,6 +61,7 @@ def timestamp_to_td(seconds):
     except (AttributeError, ValueError):
         td = None
     return td
+
 
 @register.assignment_tag
 def noclook_has_expired(item):
