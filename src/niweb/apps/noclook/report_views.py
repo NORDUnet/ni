@@ -9,10 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import Http404
-from datetime import datetime, timedelta
 
 from niweb.apps.noclook.forms import get_node_type_tuples
-from niweb.apps.noclook.helpers import get_location, neo4j_report_age, get_host_backup
 from niweb.apps.noclook.models import NordunetUniqueId
 import norduni_client as nc
 
