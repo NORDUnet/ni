@@ -14,10 +14,12 @@ from niweb.apps.noclook.forms import get_node_type_tuples
 from niweb.apps.noclook.models import NordunetUniqueId
 import norduni_client as nc
 
+
 @login_required
 def host_reports(request):
-    return render_to_response('noclook/reports/host_reports.html',{},
+    return render_to_response('noclook/reports/host_reports.html', {},
                               context_instance=RequestContext(request))
+
 
 @login_required
 def host_users(request, host_user_name=None, form=None):
@@ -53,6 +55,7 @@ def host_users(request, host_user_name=None, form=None):
                               {'host_user_name': host_user_name, 'host_users': host_users, 'hosts': hosts},
                               context_instance=RequestContext(request))
 
+
 @login_required
 def host_security_class(request, status=None, form=None):
     num_of_hosts = 0
@@ -83,6 +86,7 @@ def host_security_class(request, status=None, form=None):
     return render_to_response('noclook/reports/host_security_class.html',
         {'status': status, 'num_of_hosts': num_of_hosts, 'hosts': hosts},
         context_instance=RequestContext(request))
+
 
 @login_required
 def unique_ids(request, organisation=None):
