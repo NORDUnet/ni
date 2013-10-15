@@ -1114,8 +1114,6 @@ def get_host_backup(host):
     return backup
 
 
-
-
 def get_hostname_from_address(ip_address):
     """
     Return the DNS name for an IP address or an empty string if

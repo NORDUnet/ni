@@ -50,17 +50,7 @@ def host_users(request, host_user_name=None, form=None):
                 ORDER BY node.name, host.name
                 '''
     if host_user_name:
-        hosts = []
-        for hit in nc.neo4jdb.query(hosts_q, id=host_user_id):
-            item = {
-                'host_user': hit['host_user'],
-                'host': hit['host'],
-                'host_type': hit['host_type'],
-                'location': get_location(hit['host']),
-                'age': neo4j_report_age(hit['host'], 15, 31),
-                'backup': get_host_backup(hit['host'])
-            }
-            hosts.append(item)
+        hosts = nc.neo4jdb.query(hosts_q, id=host_user_id)
     return render_to_response('noclook/reports/host_users.html',
                               {'host_user_name': host_user_name, 'host_users': host_users, 'hosts': hosts},
                               context_instance=RequestContext(request))
