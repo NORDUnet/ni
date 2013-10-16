@@ -136,6 +136,27 @@ def set_uptime(host, check):
             print e
 
 
+def set_backup(host, check):
+    """
+    Parses output from check_backup, looks for known backup processes and if the check returned ok.
+
+    :param host: neo4j node
+    :param check: check dictionary
+    :return: None
+    """
+    try:
+        if 'PROCS OK' in check['plugin_output'] and 'dsmcad' in check['plugin_output']:
+            property_dict = {
+                'backup': 'tsm'
+            }
+            h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
+    except ValueError as e:
+        if VERBOSE:
+            print '%s backup check did not match the expected format.' % host['name']
+            print check
+            print e
+
+
 def insert(json_list):
     for item in json_list:
         base = item['host']['checkmk_livestatus']
@@ -147,6 +168,8 @@ def insert(json_list):
                 check_descriptions.append(check.get('description', 'Missing description'))
                 if check['check_command'] == 'CHECK_NRPE!check_uptime':  # Host uptime
                     set_uptime(host, check)
+                if check['check_command'] == 'CHECK_NRPE!check_backup':  # TSM backup process
+                    set_backup(host, check)
             set_nagios_checks(host, check_descriptions)
             h.update_noclook_auto_manage(nc.neo4jdb, host)
             if VERBOSE:
