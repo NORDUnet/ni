@@ -27,45 +27,26 @@ import argparse
 import jpype
 ## Need to change this path depending on where the Django project is
 ## located.
-#path = '/var/norduni/src/niweb/'
-#path = '/home/lundberg/norduni/src/niweb/'
+path = '/home/lundberg/norduni/src/niweb/'
 #path = '/var/norduni/scr/niweb/'
-path = '/var/opt/norduni/src/niweb/'
+#path = '/var/opt/norduni/src/niweb/'
 ##
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import norduni_client as nc
-from apps.noclook import helpers as h
 
-'''
-A NERDS producer for the NOCLook application. It should be used to take
-backups of the data inserted manually in to the databases.
-'''
+# A NERDS producer for the NOCLook application. It should be used to take
+# backups of the data inserted manually in to the databases.
 
-# TODO: Remove when a fixed neo4j-embedded is released.
-def convert_property_type(value):
-    '''
-    For neo4j-embedded < 1.7.M3.
-    Checks is the property is of the jpype.java.lang.Boolean or 
-    jpype._jarray._JavaArrayClass.
-    '''
-    if isinstance(value, jpype.java.lang.Boolean):
-        return bool(value)
-    elif isinstance(value, jpype._jarray._JavaArrayClass):
-        return list(value)
-    else:
-        return value
+#
+
 
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
-#    parser.add_argument('-C', nargs='?',
-#        help='Configuration file.')
-    parser.add_argument('-O', nargs='?',
-        help='Path to output directory.')
-    parser.add_argument('-N', action='store_true',
-        help='Don\'t write output to disk (JSON format).')
+    parser.add_argument('-O', nargs='?', help='Path to output directory.')
+    parser.add_argument('-N', action='store_true', help='Don\'t write output to disk (JSON format).')
     args = parser.parse_args()
     
     # Node and relationships collections
@@ -81,21 +62,24 @@ def main():
             # Put the nodes json into the nerds format
             properties = {}
             for key in node.getPropertyKeys():
-                properties[key] = convert_property_type(node[key])
-            out.append({'host':
-                        {'name': 'node_%d' % node.id,
-                        'version': 1,
-                        'noclook_producer': {'id': node.id,
-                                             'meta_type': meta_type,
-                                             'properties': properties}
-                        }})
+                properties[key] = node.get_property(key)
+            out.append(
+                {'host': {
+                    'name': 'node_%d' % node.id,
+                    'version': 1,
+                    'noclook_producer': {
+                        'id': node.id,
+                        'meta_type': meta_type,
+                        'properties': properties
+                    }
+                }})
                     
     for rel in rels:
         # Disregard the relationships connecting to node 0 or the meta nodes
         if rel.start.id and rel.start['node_type'] != 'meta':
             properties = {}
             for key in rel.getPropertyKeys():
-                properties[key] = convert_property_type(rel[key])
+                properties[key] = rel.get_property(key)
             out.append({'host':
                         {'name': 'relationship_%d' % rel.id,
                         'version': 1,
@@ -136,8 +120,5 @@ def main():
     return 0
 
 if __name__ == '__main__':
-<<<<<<< HEAD
     main()
-=======
-    main()
->>>>>>> cd605482e8a261bb845802f199d5d80a07f72f26
+
