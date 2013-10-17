@@ -63,7 +63,9 @@ $(document).ready(
     {% if service_relationships %}
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Host</th><th>Address</th><th>Port</th><th>Protocol<th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th>
+            <tr>
+                <th>Host</th><th>Address</th><th>Port</th><th>Protocol</th><th>State</th><th>Public</th><th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th><th>Last seen</th>
+            </tr>
         </thead>
         <tbody>
         {% for service in service_relationships %}
@@ -77,10 +79,13 @@ $(document).ready(
                 <td>{{ service.ip_address }}</td>
                 <td>{{ service.port }}</td>
                 <td>{{ service.protocol }}</td>
+                <td>{{ service.state }}</td>
+                <td>{% if service.public == "" %}Not set{% endif %}{{ service.public|yesno:"Yes,No" }}</td>
                 <td>{{ service.product }}</td>
                 <td>{{ service.version }}</td>
                 <td>{{ service.extrainfo }}</td>
-                <td>{{ service.confidence }}</td>
+                <td>{{ service.conf }}</td>
+                <td>{% noclook_last_seen_to_dt service.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
             </tr>
         {% endfor %}
         </tbody>

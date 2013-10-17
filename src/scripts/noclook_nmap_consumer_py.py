@@ -23,6 +23,7 @@
 import os
 import sys
 import argparse
+from datetime import datetime
 from lucenequerybuilder import Q
 from ipaddr import IPAddress
 
@@ -119,7 +120,23 @@ def is_host(addresses):
     return True
 
 
-def insert_services(service_dict, host_node):
+def set_not_public(host):
+    """
+    Set the hosts relationships to host services public property to false.
+
+    :param host: neo4j node
+    :return: None
+    """
+    q = '''
+        START host=node({id})
+        MATCH host_service-[r:Depends_on]->host
+        WHERE has(r.public)
+        SET r.public = false
+        '''
+    nc.neo4jdb.query(q, id=host.getId())
+
+
+def insert_services(service_dict, host_node, external_check=False):
     """
     Takes a dictionary of services and a node id for a host. Gets or creates a
     service and makes a Depends_on relationship between the service and host.
@@ -154,6 +171,13 @@ def insert_services(service_dict, host_node):
     # Expected service data from nmap
     property_keys = ['ip_address', 'protocol', 'port', 'conf', 'extrainfo',
                      'name', 'product', 'reason', 'state', 'version']
+    if external_check:
+        property_keys.extend(['public', 'noclook_last_external_check'])
+        external_dict = {
+            'public': True,
+            'noclook_last_external_check': datetime.now().isoformat()
+        }
+        set_not_public(host_node)
     for key in service_dict.keys():
         address = key
         for key in service_dict[address].keys():
@@ -161,9 +185,12 @@ def insert_services(service_dict, host_node):
             for key in service_dict[address][protocol].keys():
                 port = key
                 service = service_dict[address][protocol][port]
+                service_name = service['name']
+                if not service_name:  # Blank
+                    service_name = 'Unknown'
                 node_handle = nt.get_unique_node_handle(
                     nc.neo4jdb,
-                    service['name'],
+                    service_name,
                     node_type,
                     meta_type
                 )
@@ -181,10 +208,12 @@ def insert_services(service_dict, host_node):
                 }
                 for key, value in service.items():
                     rel_dict[key] = value
+                if external_check:
+                    rel_dict.update(external_dict)
                 # Try to find an already existing relationship
                 for rel in service_rels:
                     try:
-                        if rel['protocol'] == protocol and str(rel['port']) == port:
+                        if rel.start['name'] == service['name'] and rel['protocol'] == protocol and str(rel['port']) == port:
                             create = False
                             h.dict_update_relationship(user, rel, rel_dict, property_keys)
                             h.update_noclook_auto_manage(nc.neo4jdb, rel)
@@ -208,7 +237,7 @@ def insert_services(service_dict, host_node):
                     print '%s %s %s %s processed...' % (host_node['name'], address, protocol, port)
 
 
-def insert_nmap(json_list):
+def insert_nmap(json_list, external_check=False):
     """
     Inserts the data loaded from the json files created by
     the nerds producer nmap_services.
@@ -251,7 +280,7 @@ def insert_nmap(json_list):
             host_properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
         h.dict_update_node(user, node, host_properties, property_keys)
         try:
-            insert_services(i['host']['nmap_services_py']['services'], node)
+            insert_services(i['host']['nmap_services_py']['services'], node, external_check)
         except KeyError as e:
             if VERBOSE:
                 print e
@@ -265,8 +294,8 @@ def insert_nmap(json_list):
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
-    parser.add_argument('-C', nargs='?',
-        help='Path to the configuration file.')
+    parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
+    parser.add_argument('--verbose', '-V', action='store_true', default=False)
     args = parser.parse_args()
     # Load the configuration file
     if not args.C:
@@ -276,7 +305,7 @@ def main():
         config = nt.init_config(args.C)
         nmap_services_data = config.get('data', 'nmap_services_py')
         if nmap_services_data:
-            insert_nmap(nt.load_json(nmap_services_data))
+            insert_nmap(nt.load_json(nmap_services_data), args.X)
     return 0
 
 if __name__ == '__main__':

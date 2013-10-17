@@ -213,7 +213,9 @@ $(document).ready(
     {% if service_relationships %}
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Service</th><th>Address</th><th>Port</th><th>Protocol</th><th>State</th><th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th><th>Last seen</th>
+            <tr>
+                <th>Service</th><th>Address</th><th>Port</th><th>Protocol</th><th>State</th><th>Public</th><th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th><th>Last seen</th>
+            </tr>
         </thead>
         <tbody>
         {% for service in service_relationships %}
@@ -228,6 +230,7 @@ $(document).ready(
                 <td>{{ service.port }}</td>
                 <td>{{ service.protocol }}</td>
                 <td>{{ service.state }}</td>
+                <td>{% if service.public == "" %}Not set{% endif %}{{ service.public|yesno:"Yes,No" }}</td>
                 <td>{{ service.product }}</td>
                 <td>{{ service.version }}</td>
                 <td>{{ service.extrainfo }}</td>
