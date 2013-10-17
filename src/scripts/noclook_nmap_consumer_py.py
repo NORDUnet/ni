@@ -187,7 +187,7 @@ def insert_services(service_dict, host_node, external_check=False):
                 service = service_dict[address][protocol][port]
                 service_name = service['name']
                 if not service_name:  # Blank
-                    service_name = 'Unknown'
+                    service_name = 'unknown'
                 node_handle = nt.get_unique_node_handle(
                     nc.neo4jdb,
                     service_name,
