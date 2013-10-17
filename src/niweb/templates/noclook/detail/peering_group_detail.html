@@ -78,7 +78,9 @@ $(document).ready(
         </div>
         <table id="resources" class="tablesorter" cellspacing="1">
             <thead>
-                <th>Router</th><th>PIC</th><th>Unit</th><th>Interface Address</th><th>VLAN</th><th>User Address<th>User</th>
+                <tr>
+                    <th>Router</th><th>PIC</th><th>Unit</th><th>Interface Address</th><th>VLAN</th><th>User Address<th>User</th>
+                </tr>
             </thead>
             <tbody>
                 {% for resource in service_resources %}
