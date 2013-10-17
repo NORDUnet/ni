@@ -80,7 +80,7 @@ $(document).ready(
                 <td>{{ service.port }}</td>
                 <td>{{ service.protocol }}</td>
                 <td>{{ service.state }}</td>
-                <td>{% if service.public == "" %}Not set{% endif %}{{ service.public|yesno:"Yes,No" }}</td>
+                <td>{% if not service.noclook_last_external_check %}Not set{% else %}{{ service.public|yesno:"Yes,No" }}{% endif %}</td>
                 <td>{{ service.product }}</td>
                 <td>{{ service.version }}</td>
                 <td>{{ service.extrainfo }}</td>
