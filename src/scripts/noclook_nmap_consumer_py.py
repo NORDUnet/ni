@@ -295,6 +295,7 @@ def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
+    parser.add_argument('-X', action='store_true', default=False, help='Mark host services as public if found.')
     parser.add_argument('--verbose', '-V', action='store_true', default=False)
     args = parser.parse_args()
     # Load the configuration file
@@ -302,6 +303,9 @@ def main():
         print 'Please provide a configuration file with -C.'
         sys.exit(1)
     else:
+        if args.verbose:
+            global VERBOSE
+            VERBOSE = True
         config = nt.init_config(args.C)
         nmap_services_data = config.get('data', 'nmap_services_py')
         if nmap_services_data:
