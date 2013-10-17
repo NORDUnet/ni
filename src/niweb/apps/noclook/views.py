@@ -457,7 +457,8 @@ def peering_group_detail(request, handle_id):
         if_address = ipaddr.IPNetwork(unit_rel['ip_address'])
         interface = {
             'unit': unit_rel.end,
-            'if_address': unit_rel['ip_address']
+            'if_address': unit_rel['ip_address'],
+            'unit_rel': unit_rel
         }
         # TODO: If service depends on more than one PIC this won't show the correct information.
         try:

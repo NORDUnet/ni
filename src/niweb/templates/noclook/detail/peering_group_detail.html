@@ -73,6 +73,9 @@ $(document).ready(
     <h3>Resources used</h3>
     {% load noclook_tags %}
     {% if service_resources %}
+        <div class="pull-right">
+            <span class="badge badge-important">Expired</span>
+        </div>
         <table id="resources" class="tablesorter" cellspacing="1">
             <thead>
                 <th>Router</th><th>PIC</th><th>Unit</th><th>Interface Address</th><th>VLAN</th><th>User Address<th>User</th>
@@ -81,7 +84,12 @@ $(document).ready(
                 {% for resource in service_resources %}
                     {% if resource.relations %}
                         {% for relation in resource.relations %}
-                            <tr>
+                            {% noclook_has_expired resource.unit_rel as expired %}
+                            {% if expired %}
+                                <tr class="expired">
+                            {% else %}
+                                <tr>
+                            {% endif %}
                                 <td><a href="{% noclook_node_to_url resource.router %}">{{ resource.router.name }}</a></td>
                                 <td><a href="{% noclook_node_to_url resource.pic %}">{{ resource.pic.name }}</a></td>
                                 <td>{{ resource.unit.name }}</td>
@@ -92,7 +100,12 @@ $(document).ready(
                             </tr>
                         {% endfor %}
                     {% else %}
-                        <tr>
+                        {% noclook_has_expired resource.unit_rel as expired %}
+                        {% if expired %}
+                            <tr class="expired">
+                        {% else %}
+                            <tr>
+                        {% endif %}
                             <td><a href="{% noclook_node_to_url resource.router %}">{{ resource.router.name }}</a></td>
                             <td><a href="{% noclook_node_to_url resource.pic %}">{{ resource.pic.name }}</a></td>
                             <td>{{ resource.unit.name }}</td>
