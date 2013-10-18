@@ -131,7 +131,7 @@ def insert_interface_unit(interf_node, unit):
                                          'logical', interf_node)
         node = node_handle.get_node()
     h.set_noclook_auto_manage(nc.neo4jdb, node, True)
-    unit['ip_addresses'] = unit.get('address', '')
+    unit['ip_addresses'] = unit.get('address', '').lower()
     property_keys = ['description', 'ip_addresses', 'vlanid']
     h.dict_update_node(user, node, unit, property_keys)
     rels = nc.get_relationships(node, interf_node, 'Part_of')
@@ -274,7 +274,7 @@ def insert_external_bgp_peering(peering, service_node):
     # Get or create the peering partner, unique per AS
     peeringp_node = get_peering_partner(peering)
     # Get all relationships with this ip address, should never be more than one
-    peeringp_ip = peering.get('remote_address', '0.0.0.0')
+    peeringp_ip = peering.get('remote_address', '0.0.0.0').lower()
     rel_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
     q = Q('ip_address', '%s' % peeringp_ip)
     peeringp_rel = rel_index.query(str(q))
