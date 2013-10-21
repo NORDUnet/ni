@@ -86,7 +86,7 @@ $(document).ready(
                 {% for resource in service_resources %}
                     {% if resource.relations %}
                         {% for relation in resource.relations %}
-                            {% noclook_has_expired resource.unit_rel as expired %}
+                            {% noclook_has_expired relation.r_rel as expired %}
                             {% if expired %}
                                 <tr class="expired">
                             {% else %}
@@ -102,12 +102,7 @@ $(document).ready(
                             </tr>
                         {% endfor %}
                     {% else %}
-                        {% noclook_has_expired resource.unit_rel as expired %}
-                        {% if expired %}
-                            <tr class="expired">
-                        {% else %}
-                            <tr>
-                        {% endif %}
+                        <tr>
                             <td><a href="{% noclook_node_to_url resource.router %}">{{ resource.router.name }}</a></td>
                             <td><a href="{% noclook_node_to_url resource.pic %}">{{ resource.pic.name }}</a></td>
                             <td>{{ resource.unit.name }}</td>

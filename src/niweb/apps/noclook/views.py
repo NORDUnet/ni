@@ -419,7 +419,8 @@ def peering_partner_detail(request, handle_id):
         peering_point = {
             'pp_ip': s_rel['ip_address'],
             'service': s_rel.end['name'],
-            'service_url': h.get_node_url(s_rel.end)
+            'service_url': h.get_node_url(s_rel.end),
+            's_rel': s_rel
         }
         unit_rels = s_rel.end.Depends_on.outgoing
         org_address = ipaddr.IPAddress(s_rel['ip_address'])
@@ -457,8 +458,7 @@ def peering_group_detail(request, handle_id):
         if_address = ipaddr.IPNetwork(unit_rel['ip_address'])
         interface = {
             'unit': unit_rel.end,
-            'if_address': unit_rel['ip_address'],
-            'unit_rel': unit_rel
+            'if_address': unit_rel['ip_address']
         }
         # TODO: If service depends on more than one PIC this won't show the correct information.
         try:
@@ -476,8 +476,11 @@ def peering_group_detail(request, handle_id):
         for r_rel in rel_rels:
             org_address = ipaddr.IPAddress(r_rel['ip_address'])
             if org_address in if_address:
-                relation = {'rel_address': r_rel['ip_address'],
-                            'relation': r_rel.start}
+                relation = {
+                    'rel_address': r_rel['ip_address'],
+                    'relation': r_rel.start,
+                    'r_rel': r_rel
+                }
                 interface['relations'].append(relation)
         service_resources.append(interface)
     return render_to_response('noclook/detail/peering_group_detail.html',
