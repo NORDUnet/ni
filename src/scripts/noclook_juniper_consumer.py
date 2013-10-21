@@ -131,7 +131,7 @@ def insert_interface_unit(interf_node, unit):
                                          'logical', interf_node)
         node = node_handle.get_node()
     h.set_noclook_auto_manage(nc.neo4jdb, node, True)
-    unit['ip_addresses'] = unit.get('address', '').lower()
+    unit['ip_addresses'] = [address.lower() for address in unit.get('address', '')]
     property_keys = ['description', 'ip_addresses', 'vlanid']
     h.dict_update_node(user, node, unit, property_keys)
     rels = nc.get_relationships(node, interf_node, 'Part_of')
