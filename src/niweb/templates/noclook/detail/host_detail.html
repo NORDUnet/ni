@@ -36,11 +36,10 @@ $(document).ready(
                     <th>Status:</th><td>{{ node.operational_state|capfirst }}</td>
                 </tr>
             {% endif %}
-            {% if node.backup %}
-                <tr>
-                    <th>Backup:</th><td>{{ node.backup|yesno:"Yes,No,Not set" }}</td>
-                </tr>
-            {% endif %}
+            {% noclook_get_host_backup node as backup %}
+            <tr>
+                <th>Backup:</th><td>{{ backup }}</td>
+            </tr>
             {% if node.syslog %}
                 <tr>
                     <th>Syslog:</th><td>{{ node.syslog|yesno:"Yes,No,Not set" }}</td>
