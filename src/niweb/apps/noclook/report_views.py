@@ -38,14 +38,14 @@ def host_users(request, host_user_name=None):
                 START host=node:node_types(node_type = "Host")
                 MATCH meta-[:Contains]->host<-[r?:Uses|Owns]-()
                 WHERE r is null
-                RETURN host, meta.name as host_type, Count(*) as num_hosts
+                RETURN host, meta.name as host_type
                 ORDER BY host.name
                 '''
     else:
         hosts_q = '''
                 START host_user=node:node_types(node_type = "Host User")
                 MATCH host_user-[r:Uses|Owns]->host<-[:Contains]-meta
-                RETURN host_user, host, meta.name as host_type, Count(*) as num_hosts
+                RETURN host_user, host, meta.name as host_type
                 ORDER BY host_user.name, host.name
                 '''
     if host_user_name:
