@@ -355,22 +355,29 @@ def remove_juniper_conf(data_age):
     :param data_age: Data older than this many days will be deleted.
     :return: None
     """
-    q = """
+    routerq = """
         START router=node:node_types(node_type="Router")
         MATCH router-[:Has*1..]->physical<-[?:Part_of]-logical
         WHERE (physical.noclook_auto_manage! = true) OR (logical.noclook_auto_manage! = true)
-        WITH distinct physical, logical
-        RETURN collect(physical) as physical, collect(logical) as logical
+        RETURN collect(distinct physical) as physical, collect(distinct logical) as logical
         """
+
+    peerq = """
+        START pg=node:node_types(node_type="Peering Group")
+        MATCH pg<-[uses:Uses]-pp
+        WHERE (pg.noclook_auto_manage! = true) OR (uses.noclook_auto_manage! = true)
+        RETURN collect(distinct pg) as peer_groups, collect(uses) as uses_rels
+        """
+
     user = nt.get_user()
-    data_age = int(data_age) * 24 # hours in a day
-    for hit in nc.neo4jdb.query(q):
-        if VERBOSE:
-            print 'Deleting expired nodes',
+    data_age = int(data_age) * 24  # hours in a day
+    if VERBOSE:
+        print 'Deleting expired nodes',
+    for hit in nc.neo4jdb.query(routerq):
         for logical in hit['logical']:
             try:
                 last_seen, expired = h.neo4j_data_age(logical, data_age)
-            except Exception:  # NotFoundException from Java bindings
+            except nc.neo4jdb.NotFoundException:
                 continue
             if expired:
                 h.delete_node(user, logical)
@@ -379,12 +386,32 @@ def remove_juniper_conf(data_age):
         for physical in hit['physical']:
             try:
                 last_seen, expired = h.neo4j_data_age(physical, data_age)
-            except Exception:  # NotFoundException from Java bindings
+            except nc.neo4jdb.NotFoundException:
                 continue
             if expired:
                 h.delete_node(user, physical)
                 if VERBOSE:
                     print '.',
+    for hit in nc.neo4jdb.query(peerq):
+        for uses in hit['uses_rels']:
+            try:
+                last_seen, expired = h.neo4j_data_age(uses, data_age)
+            except nc.neo4jdb.NotFoundException:
+                continue
+            if expired:
+                h.delete_relationship(user, uses)
+                if VERBOSE:
+                    print '.',
+        for pg in hit['peer_groups']:
+            try:
+                last_seen, expired = h.neo4j_data_age(pg, data_age)
+            except nc.neo4jdb.NotFoundException:
+                continue
+            if expired:
+                h.delete_node(user, pg)
+                if VERBOSE:
+                    print '.',
+
 
 def main():
     # User friendly usage output
