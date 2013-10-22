@@ -21,15 +21,15 @@
         var options, a, b, c;
         jQuery(function(){
             options = {
-                serviceUrl:'/search/autocomplete',
-                minChars:2,
-                //onSelect:function(suggestion) {
-                //    console.log(this)
-                //}
-        };
-        a = $("#main").autocomplete(options);
-        b = $("#index").autocomplete(options);
-        c = $("#mobile").autocomplete(options);
+                serviceUrl: '/search/autocomplete',
+                minChars: 2,
+                onSelect: function(suggestion) {
+                    $(this).closest("form").submit();
+                }
+            };
+            a = $("#main").autocomplete(options);
+            b = $("#index").autocomplete(options);
+            c = $("#mobile").autocomplete(options);
         });
         $(".dropdown-toggle").dropdown();
         $(".debug-toggle").collapse();
