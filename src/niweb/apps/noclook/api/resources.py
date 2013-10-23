@@ -184,21 +184,30 @@ class NodeHandleResource(ModelResource):
 
     def prepend_urls(self):
         return [
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships/(?P<rel_type>\w[\w]*)%s$" % (self._meta.resource_name, utils.trailing_slash()),
+                self.wrap_view('get_relationships'), name="api_get_relationships"),
             url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('get_relationships'), name="api_get_relationships"),
         ]
     
     def get_relationships(self, request, **kwargs):
+        rel_type = kwargs.get('rel_type', None)
+        if rel_type:
+            del kwargs['rel_type']
         try:
-            obj = self.cached_obj_get(request=request,
-                                      **self.remove_api_resource_names(kwargs))
+            bundle = self.build_bundle(data={'pk': kwargs['pk']}, request=request)
+            obj = self.cached_obj_get(bundle=bundle, **self.remove_api_resource_names(kwargs))
+            kwargs = {
+                'parent_obj': obj.pk
+            }
         except ObjectDoesNotExist:
             return HttpGone()
         except MultipleObjectsReturned:
             return HttpMultipleChoices("More than one resource is found at this URI.")
-        
+        if rel_type:
+            kwargs['rel_type'] = rel_type
         child_resource = RelationshipResource()
-        return child_resource.get_list(request, parent_obj=obj.pk)
+        return child_resource.get_list(request, **kwargs)
         
     def dehydrate_node(self, bundle):
         return item2dict(bundle.obj.get_node())
@@ -321,9 +330,11 @@ class RelationshipResource(Resource):
     def get_object_list(self, request, **kwargs):
         results = []
         if kwargs.get('parent_obj', None):
+            rel_type = kwargs.get('rel_type', 'relationships')
             nh = NodeHandle.objects.get(pk=kwargs['parent_obj'])
             parent = nh.get_node()
-            for rel in parent.relationships:
+            rels = getattr(parent, rel_type)
+            for rel in rels:
                 results.append(self._new_obj(rel))
             return results
         else:
