@@ -19,10 +19,9 @@ from tastypie.authentication import ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from django.contrib.auth.models import User
 from django.conf.urls import url
-from django.core.urlresolvers import reverse, resolve
+from django.core.urlresolvers import reverse, resolve, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed, HttpResponse
-from django.db import IntegrityError
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
 from niweb.apps.noclook.forms import EditServiceForm, NewNordunetL2vpnServiceForm
@@ -284,28 +283,27 @@ class RelationshipResource(Resource):
     type = fields.CharField(attribute='type')
     start = fields.CharField(attribute='start')
     end = fields.CharField(attribute='end')
-    properties = fields.DictField(attribute='properties', default={},
-                                  blank=True)
+    properties = fields.DictField(attribute='properties', default={}, blank=True)
     
     class Meta:
         resource_name = 'relationship'
         object_class = RelationshipObject
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
-        allowed_methods = ['get', 'put', 'post', 'delete']
+        allowed_methods = ['get', 'put', 'post']
 
     def _new_obj(self, rel):
         new_obj = RelationshipObject()
         new_obj.id = rel.getId()
         new_obj.type = rel.type.name()
         new_obj.properties.update(item2dict(rel))
-        new_obj.start = handle_id2resource_uri(
-                                    rel.start.getProperty('handle_id', None))
-        new_obj.end = handle_id2resource_uri(
-                                    rel.end.getProperty('handle_id', None))
+        new_obj.start = handle_id2resource_uri(rel.start.get_property('handle_id', None))
+        new_obj.end = handle_id2resource_uri(rel.end.get_property('handle_id', None))
         return new_obj
 
-    def get_resource_uri(self, bundle_or_obj):
+    def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_detail'):
+        if not bundle_or_obj:
+            return super(RelationshipResource, self).get_resource_uri()
         kwargs = {
             'resource_name': self._meta.resource_name,
         }
@@ -315,7 +313,10 @@ class RelationshipResource(Resource):
             kwargs['pk'] = bundle_or_obj.id
         if self._meta.api_name is not None:
             kwargs['api_name'] = self._meta.api_name
-        return self._build_reverse_url('api_dispatch_detail', kwargs=kwargs)
+        try:
+            return self._build_reverse_url('api_dispatch_detail', kwargs=kwargs)
+        except NoReverseMatch:
+            return ''
     
     def get_object_list(self, request, **kwargs):
         results = []
@@ -328,10 +329,10 @@ class RelationshipResource(Resource):
         else:
             raise ImmediateHttpResponse(HttpResponseNotAllowed(['POST']))
     
-    def obj_get_list(self, request = None, **kwargs):
+    def obj_get_list(self, request=None, **kwargs):
         return self.get_object_list(request, **kwargs)
         
-    def obj_get(self, request = None, **kwargs):
+    def obj_get(self, request=None, **kwargs):
         pk = int(kwargs['pk'])
         try:
             return self._new_obj(nc.neo4jdb.relationships[pk])
@@ -345,8 +346,7 @@ class RelationshipResource(Resource):
         end_pk = resource_uri2id(bundle.data['end'])        
         end_nh = NodeHandle.objects.get(pk=end_pk)
         end_node = end_nh.get_node()
-        rel = nc.create_relationship(nc.neo4jdb, start_node, end_node,
-                                              bundle.data['type'])
+        rel = nc.create_relationship(nc.neo4jdb, start_node, end_node, bundle.data['type'])
         nc.update_item_properties(nc.neo4jdb, rel, bundle.data['properties'])
         bundle.obj = self._new_obj(rel)
         return bundle
@@ -362,10 +362,10 @@ class RelationshipResource(Resource):
         rel = nc.get_relationship_by_id(nc.neo4jdb, kwargs['pk'])
         nc.delete_relationship(nc.neo4jdb, rel)
     
-    def obj_delete_list(self):
+    def obj_delete_list(self, bundle, **kwargs):
         pass
 
-    def rollback(self):
+    def rollback(self, bundle, **kwargs):
         pass
 
 
