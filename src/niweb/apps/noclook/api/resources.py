@@ -50,11 +50,10 @@ def handle_id2resource_uri(handle_id):
     # str() is a neo4j-embedded hack handle_id can be a java.lang.Integer.
     nh = NodeHandle.objects.get(pk=str(handle_id))
     view = 'api_dispatch_detail'
-    kwargs = {
-            'resource_name': slugify(nh.node_type),
-            'pk': nh.handle_id
-        }
     nhr = NodeHandleResource()
+    kwargs = nhr.resource_uri_kwargs()
+    kwargs['resource_name'] = slugify(nh.node_type)
+    kwargs['pk'] = nh.handle_id
     if nhr._meta.urlconf_namespace:
         view = "%s:%s" % (nhr._meta.urlconf_namespace, view)
     if nhr._meta.api_name is not None:
@@ -167,6 +166,7 @@ class NodeHandleResource(ModelResource):
     node = fields.DictField(default={}, blank=True)
         
     class Meta:
+        api_name = 'v1'
         queryset = NodeHandle.objects.all()
         resource_name = 'node_handle'
         authentication = ApiKeyAuthentication()
