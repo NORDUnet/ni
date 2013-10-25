@@ -56,7 +56,7 @@ VERBOSE = True
 CFENGINE_MAP = {
     'system_administration_methods_syslog_conf': {
         'kept': {'syslog': True},
-        'not kept': {'syslog': False},
+        'notkept': {'syslog': False},
         'repaired': {'syslog': True},
     }
 }
@@ -76,7 +76,7 @@ def insert(json_list):
         {
             "last_verified_(gmt_+00:00)": "06-10-2013 16:55",
             "promisehandle": "system_administration_methods_scsi_timeout",
-            "promisestatus": "kept"
+            "promisestatus": "notkept"
         },
     ]
     """
@@ -113,7 +113,7 @@ def main():
     else:
         config = nt.init_config(args.C)
         cfengine_data = config.get('data', 'cfengine_report')
-        if nmap_services_data:
+        if cfengine_data:
             insert(nt.load_json(cfengine_data))
     return 0
 
