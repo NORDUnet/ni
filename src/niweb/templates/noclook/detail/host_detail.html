@@ -179,9 +179,17 @@ $(document).ready(
                 {% endif %}
                 {% if node.responsible_group %}
                     <tr>
-                        <th>Responsible group</th>
+                        <th>Responsible group:</th>
                         <td>
                             {{ node.responsible_group }}
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if node.support_group %}
+                    <tr>
+                        <th>Support group:</th>
+                        <td>
+                            {{ node.support_group }}
                         </td>
                     </tr>
                 {% endif %}

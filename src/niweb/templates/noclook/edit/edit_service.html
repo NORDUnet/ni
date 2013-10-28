@@ -60,10 +60,11 @@
                 // Depends on //
                 // Populate first level combo box
                 var categories = [
+                    ['host', 'Hosts'],
                     ['optical-node', 'Optical Nodes'],
                     ['optical-path', 'Optical Paths'],
                     ['router', 'Routers'],
-                    ['service', 'Services'],
+                    ['service', 'Services']
                 ];
                 $('#categoryA').append($('<option>').val("0").text("-- Please Select --"));
                 $.each(categories, function(key, tuple) {
@@ -162,6 +163,16 @@
                 {{ form.project_end_date }}
                 <span class="help-block">{{ form.project_end_date.help_text }}</span>
             </div>
+        </div>
+        <div>
+            <h3>Responsible</h3>
+            {{ form.responsible_group }}
+            <span class="help-block">{{ form.responsible_group.help_text }}</span>
+        </div>
+        <div>
+            <h3>Support</h3>
+            {{ form.support_group }}
+            <span class="help-block">{{ form.support_group.help_text }}</span>
         </div>
         <div class="row">
             <div class="span3">
