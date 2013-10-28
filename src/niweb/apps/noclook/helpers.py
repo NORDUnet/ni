@@ -1108,9 +1108,8 @@ def get_host_backup(host):
             """
         for hit in nc.neo4jdb.query(q, id=host.getId()):
             last_seen, expired = neo4j_data_age(hit['r'])
-            if expired:
-                return 'No'
-            backup = 'netbackup'
+            if not expired:
+                backup = 'netbackup'
     return backup
 
 

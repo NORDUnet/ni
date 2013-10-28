@@ -112,8 +112,7 @@
                     <td>{{ hit.host.contract_number|default:"" }}</td>
                     <td>{{ hit.host.description|default:"" }}</td>
                     <td>{{ hit.host.responsible_group }}</td>
-                    {% noclook_get_host_backup hit.host as backup %}
-                    <td>{{ backup }}</td>
+                    <td>{{ hit.host.backup }}</td>
                     <td>{{ hit.host.syslog|yesno:"Yes,No,Not set" }}</td>
                     <td>{{ hit.host.nagios_checks|yesno:"Yes,No,Not set" }}</td>
                     <td>{{ hit.host.operational_state|default:"Not set" }}</td>

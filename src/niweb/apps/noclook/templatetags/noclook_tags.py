@@ -1,5 +1,5 @@
 from niweb.apps.noclook.models import NodeType, NodeHandle
-from niweb.apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age, get_host_backup, get_location
+from niweb.apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age, get_location
 import norduni_client as nc
 from datetime import datetime, timedelta
 from django import template
@@ -104,12 +104,3 @@ def noclook_report_age(item, old, very_old):
     :return: String, current, old, very_old
     """
     return neo4j_report_age(item, old, very_old)
-
-
-@register.assignment_tag
-def noclook_get_host_backup(host):
-    """
-    :param host: Neo4j host node
-    :return: String, No, netbackup, other backup solution
-    """
-    return get_host_backup(host)

@@ -258,7 +258,7 @@ def insert_nmap(json_list, external_check=False):
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type,
                                                 meta_type)
         # Set Node attributes
-        property_keys = ['hostnames', 'ip_addresses']
+        property_keys = ['hostnames', 'ip_addresses', 'backup']
         node = node_handle.get_node()
         h.update_noclook_auto_manage(nc.neo4jdb, node)
         host_properties = {
@@ -278,13 +278,16 @@ def insert_nmap(json_list, external_check=False):
             property_keys.extend(['lastboot', 'uptime'])
             host_properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
             host_properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
-        h.dict_update_node(user, node, host_properties, property_keys)
         try:
             insert_services(i['host']['nmap_services_py']['services'], node, external_check)
         except KeyError as e:
             if VERBOSE:
                 print e
             pass
+        # Check if the host has backup
+        host_properties['backup'] = h.get_host_backup(node)
+        # Update host node
+        h.dict_update_node(user, node, host_properties, property_keys)
         # Set host user depending on the domain.
         set_host_user(node)
         if VERBOSE:
