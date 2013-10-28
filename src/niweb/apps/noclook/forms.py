@@ -100,7 +100,7 @@ SERVICE_TYPES = [
     ('VPLS', 'MPLS - VPLS'),
     ('CanIt', 'SAAS - CanIt'),
     ('Connect', 'SAAS - Connect'),
-    ('Survey', 'SAAS - Survay'),
+    ('Survey', 'SAAS - Survey'),
     ('Box', 'SAAS - Box'),
 ]
 
