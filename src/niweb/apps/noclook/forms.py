@@ -554,8 +554,7 @@ class EditServiceForm(forms.Form):
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_depends_on = forms.IntegerField(required=False,
-                                                 widget=forms.widgets.HiddenInput)
+    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
     def clean(self):
         cleaned_data = super(EditServiceForm, self).clean()
