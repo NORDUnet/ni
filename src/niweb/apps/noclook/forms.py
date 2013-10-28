@@ -453,6 +453,10 @@ class NewServiceForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
+    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                          help_text='Name of the group responsible for the service.')
+    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                      help_text='Name of the support group.')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
@@ -536,6 +540,10 @@ class EditServiceForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
+    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                          help_text='Name of the group responsible for the service.')
+    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                      help_text='Name of the support group.')
     interface_type = forms.CharField(required=False, help_text='')
     ncs_service_name = forms.CharField(required=False, help_text='')
     vpn_type = forms.CharField(required=False, help_text='')
