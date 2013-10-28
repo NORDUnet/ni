@@ -26,6 +26,7 @@ def host_users(request, host_user_name=None):
     host_users = get_node_type_tuples('Host User')
     host_users = dict([[name,id] for id,name in host_users if name])
     host_user_id = host_users.get(host_user_name, None)
+    hosts = []
     if host_user_id:
         hosts_q = '''
             START host_user=node({id})
@@ -48,9 +49,9 @@ def host_users(request, host_user_name=None):
                 RETURN host_user, host, meta.name as host_type
                 ORDER BY host_user.name, host.name
                 '''
-    if host_user_name:
+    if host_user_id:
         hosts = [hit for hit in nc.neo4jdb.query(hosts_q, id=host_user_id)]
-    else:
+    elif host_user_name:
         hosts = [hit for hit in nc.neo4jdb.query(hosts_q)]
     return render_to_response('noclook/reports/host_users.html',
                               {'host_user_name': host_user_name, 'host_users': host_users, 'hosts': hosts},
