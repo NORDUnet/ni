@@ -57,7 +57,14 @@ def handle_id2resource_uri(handle_id):
         view = "%s:%s" % (nhr._meta.urlconf_namespace, view)
     if nhr._meta.api_name is not None:
         kwargs['api_name'] = nhr._meta.api_name
-    return reverse(view, args=None, kwargs=kwargs)
+    try:
+        return reverse(view, args=None, kwargs=kwargs)
+    # If the object uses node_name as unique id.
+    except NoReverseMatch:
+        kwargs.pop('pk', None)
+        kwargs['node_name'] = nh.node_name
+        return reverse(view, args=None, kwargs=kwargs)
+
     
 def resource_uri2id(resource_uri):
     """
@@ -193,9 +200,14 @@ class NodeHandleResource(ModelResource):
     def get_relationships(self, request, **kwargs):
         rel_type = kwargs.get('rel_type', None)
         if rel_type:
-            del kwargs['rel_type']
+            kwargs.pop('rel_type', None)
         try:
-            bundle = self.build_bundle(data={'pk': kwargs['pk']}, request=request)
+            data = {'pk': kwargs['pk']}
+            if getattr(self._meta, 'pk_field', 'pk') != 'pk':
+                kwargs[self._meta.pk_field] = kwargs['pk']
+                data = {self._meta.pk_field: kwargs['pk']}
+                kwargs.pop('pk', None)
+            bundle = self.build_bundle(data, request=request)
             obj = self.cached_obj_get(bundle=bundle, **self.remove_api_resource_names(kwargs))
             kwargs = {
                 'parent_obj': obj.pk
