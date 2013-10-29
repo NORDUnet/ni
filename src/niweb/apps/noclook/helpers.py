@@ -428,15 +428,39 @@ def nodes_to_xls(node_list, header=None):
     wb.save(response)
     return response
 
-def dicts_to_xls(dict_list, header=None):
+
+def dicts_to_xls(dict_list, header, sheet_name):
     """
-    Takes a list of nodes and returns an Excel file of all node keys and their values.
+    Takes a list of dicts and returns an Excel Workbook object of all dicts key value pair in header.
+
+    :param dict_list: List of dicts
+    :param header: List of unique strings
+    :param sheet_name: String
+    :return: xlwt.Workbook
+    """
+    wb = xlwt.Workbook(encoding='utf-8')
+    ws = wb.add_sheet(sheet_name)
+    # Write header
+    for i in range(0, len(header)):
+        ws.write(0, i, header[i])
+    # Write body
+    for i in range(0, len(dict_list)):
+        for j in range(0, len(header)):
+            try:
+                ws.write(i+1, j, normalize_whitespace(dict_list[i][header[j]]))
+            except KeyError:
+                ws.write(i+1, j, unicode(''))
+    return wb
+
+
+def dicts_to_xls_response(dict_list, header=None):
+    """
+    Takes a list of dicts and returns a response object with and Excel file.
     """
     # Create the HttpResponse object with the appropriate Excel header.
     response = HttpResponse(mimetype='application/excel')
     response['Content-Disposition'] = 'attachment; filename=result.xls;'
-    wb = xlwt.Workbook(encoding='utf-8')
-    ws = wb.add_sheet('NOCLook result')
+
     if not header:
         key_set = set()
         for item in dict_list:
@@ -444,16 +468,7 @@ def dicts_to_xls(dict_list, header=None):
         key_set = sorted(key_set)
     else:
         key_set = header
-    # Write header
-    for i in range(0, len(key_set)):
-        ws.write(0, i, key_set[i])
-    # Write body
-    for i in range(0, len(dict_list)):
-        for j in range(0, len(key_set)):
-            try:
-                ws.write(i+1, j, normalize_whitespace(dict_list[i][key_set[j]]))
-            except KeyError:
-                ws.write(i+1, j, unicode(''))
+    wb = dicts_to_xls(dict_list, key_set, 'NOCLook result')
     wb.save(response)
     return response
 

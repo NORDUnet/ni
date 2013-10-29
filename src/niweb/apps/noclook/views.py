@@ -1046,5 +1046,5 @@ def json_table_to_file(request):
         if table and file_format == 'csv':
             return h.dicts_to_csv(table, header)
         elif table and file_format == 'xls':
-            return h.dicts_to_xls(table, header)
+            return h.dicts_to_xls_response(table, header)
     raise Http404
