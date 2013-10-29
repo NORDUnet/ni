@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.mail import EmailMessage
 from datetime import datetime, timedelta
 from actstream.models import action_object_stream, target_stream
 import csv
@@ -487,6 +488,22 @@ def nodes_to_geoff(node_list):
     """
     # TODO:
     pass
+
+
+def create_email(subject, body, to, attachement=None, filename=None, mimetype=None):
+    """
+    :param subject: String
+    :param body: String
+    :param to: List
+    :param attachement: File
+    :param filename: String
+    :param mimetype: String
+    :return: EmailMessage
+    """
+    email = EmailMessage(subject, body, None, to)
+    if attachement and filename and mimetype:
+        email.attach(filename, attachement, mimetype)
+    return email
 
 def slug_to_node_type(slug, create=False):
     """
