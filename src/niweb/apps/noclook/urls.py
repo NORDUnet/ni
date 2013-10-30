@@ -31,12 +31,11 @@ urlpatterns += patterns('niweb.apps.noclook.report_views',
     (r'^reports/hosts/$', 'host_reports'),
     (r'^reports/hosts/host-users/$', 'host_users'),
     (r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/$', 'host_users'),
-    #(r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/(result.)?(?P<form>(csv|json|xls)?)$', 'host_users'),
     (r'^reports/hosts/host-security-class/$', 'host_security_class'),
     (r'^reports/hosts/host-security-class/(?P<status>[-\w]+)/$', 'host_security_class'),
-    #(r'^reports/hosts/host-security-class/(?P<status>[-\w]+)/(result.)?(?P<form>(csv|json|xls)?)$', 'host_security_class'),
     (r'^reports/unique-ids/(?P<organisation>[-\w]+)/$', 'unique_ids'),
     (r'^reports/unique-ids/$', 'unique_ids'),
+    (r'^reports/send/(?P<report>[-\w]+)/(?P<contract_number>[-\w]+)/$', 'send_report'),
 )
 
 urlpatterns += patterns('niweb.apps.noclook.views',
