@@ -368,6 +368,8 @@ class EditHostForm(forms.Form):
     #                                help_text='Name of the person responsible for the host.')
     responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the host.')
+    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                      help_text='Name of the support group.')
     os = forms.CharField(required=False,
                          help_text='What operating system is running on the host?')
     os_version = forms.CharField(required=False,
