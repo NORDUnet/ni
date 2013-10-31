@@ -818,6 +818,8 @@ def search(request, value='', form=None):
             nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
             item = {'node': node, 'nh': nh}
             result.append(item)
+        if len(result) == 1:
+            return HttpResponseRedirect(result[0]['nh'].get_absolute_url())
     return render_to_response('noclook/search_result.html', {'value': value, 'result': result, 'posted': posted},
                               context_instance=RequestContext(request))
 
