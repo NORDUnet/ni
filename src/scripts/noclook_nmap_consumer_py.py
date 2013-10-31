@@ -213,7 +213,7 @@ def insert_services(service_dict, host_node, external_check=False):
                 # Try to find an already existing relationship
                 for rel in service_rels:
                     try:
-                        if rel.start['name'] == service['name'] and rel['protocol'] == protocol and str(rel['port']) == port:
+                        if rel.start['name'] == service_name and rel['protocol'] == protocol and str(rel['port']) == port:
                             create = False
                             h.dict_update_relationship(user, rel, rel_dict, property_keys)
                             h.update_noclook_auto_manage(nc.neo4jdb, rel)
