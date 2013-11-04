@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 __author__ = 'lundberg'
 
@@ -6,8 +7,8 @@ import argparse
 from collections import defaultdict
 from apiclient import NIApiClient
 
-USER = 'lundberg'
-APIKEY = '204db7bcfafb2deb7506b89eb3b9b715b09905c8'
+USER = ''
+APIKEY = ''
 BASE_URL = 'http://localhost'
 VERBOSE = False
 
