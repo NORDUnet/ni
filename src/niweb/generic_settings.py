@@ -41,6 +41,12 @@ ADMINS = (
 )
 MANAGERS = ADMINS
 
+# To be able to use the report mailing functionality you need to set a to address and a key.
+REPORTS_TO = []
+#REPORTS_CC = []    #  Optional
+#REPORTS_BCC = []   #  Optional
+REPORT_KEY = 'secret_key'
+
 # Please fill in a mail server.
 DEFAULT_FROM_EMAIL = 'postmaster@example.com'
 EMAIL_HOST = 'smtp.example.com'
@@ -81,7 +87,7 @@ SAML_ATTRIBUTE_MAPPING = {
     'givenName': ('first_name', ),
     'sn': ('last_name', ),
     'displayName': ('display_name', ),
-    }
+}
 
 SAML_CONFIG = config.SAML_CONFIG
 
@@ -118,7 +124,7 @@ SECRET_KEY = ''
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.load_template_source',
+    #'django.template.loaders.eggs.load_template_source',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -133,7 +139,7 @@ MIDDLEWARE_CLASSES = (
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'djangosaml2.backends.Saml2Backend',
-    )
+)
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
@@ -185,7 +191,7 @@ LOGGING = {
             'level': 'ERROR',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': 'django_error.log',
-            'maxBytes': 1024*1024*5, # 5 MB
+            'maxBytes': 1024*1024*5,  # 5 MB
             'backupCount': 5,
             'formatter': 'verbose',
             }

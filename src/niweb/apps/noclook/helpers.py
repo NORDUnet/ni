@@ -490,7 +490,7 @@ def nodes_to_geoff(node_list):
     pass
 
 
-def create_email(subject, body, to, attachement=None, filename=None, mimetype=None):
+def create_email(subject, body, to, cc=None, bcc=None, attachement=None, filename=None, mimetype=None):
     """
     :param subject: String
     :param body: String
@@ -500,7 +500,14 @@ def create_email(subject, body, to, attachement=None, filename=None, mimetype=No
     :param mimetype: String
     :return: EmailMessage
     """
-    email = EmailMessage(subject, body, None, to)
+    email = EmailMessage(
+        subject=subject,
+        body=body,
+        from_email=None,  # Use DEFAULT_FROM_EMAIL in settings.py.
+        to=to,
+        cc=cc,
+        bcc=bcc
+    )
     if attachement and filename and mimetype:
         email.attach(filename, attachement, mimetype)
     return email
