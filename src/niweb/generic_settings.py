@@ -45,6 +45,7 @@ MANAGERS = ADMINS
 REPORTS_TO = []
 #REPORTS_CC = []    #  Optional
 #REPORTS_BCC = []   #  Optional
+#EXTRA_REPORT_TO = {'ID': ['address', ]}
 REPORT_KEY = 'secret_key'
 
 # Please fill in a mail server.
