@@ -26,9 +26,9 @@
             <table class="table">
                 <tr>
                     {% if node.url %}
-                        <th>More information:</th><td><a href="{{ node.url }}">Information link</td>
+                        <th>More information:</th><td><a href="{{ node.url }}">Information link</a></td>
                     {% else %}
-                        <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}">To Portal</td>
+                        <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}">To Portal</a></td>
                     {% endif %}
                 </tr>
             </table>
@@ -56,15 +56,30 @@
     {% if uses_relationships %}
     <div class="section">
         <h3>Services</h3>
+        <div class="pull-right">
+            <span class="badge badge-info">Testing</span>
+            <span class="badge badge-warning">Reserved</span>
+            <span class="badge badge-important">Decommissioned</span>
+        </div>
         <table id="services" class="tablesorter" cellspacing="1">
             <thead>
-            <th>ID</th><th>Description</th>
+                <tr>
+                    <th>ID</th><th>Description</th>
+                </tr>
             </thead>
             <tbody>
             {% for uses in uses_relationships %}
-                <tr>
+                {% if uses.end.operational_state == "Decommissioned" %}
+                    <tr class="decommissioned">
+                {% elif uses.end.operational_state == "Reserved" %}
+                    <tr class="reserved">
+                {% elif uses.end.operational_state == "Testing" %}
+                    <tr class="testing">
+                {% else %}
+                    <tr>
+                {% endif %}
                     <td><a href="{% noclook_node_to_url uses.end %}">{{ uses.end.name }}</a></td>
-                    <td>{{ uses.end.description }}</a></td>
+                    <td>{{ uses.end.description }}</td>
                 </tr>
             {% endfor %}
             </tbody>

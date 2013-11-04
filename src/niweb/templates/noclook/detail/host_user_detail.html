@@ -59,13 +59,23 @@ $(document).ready(
     {% load noclook_tags %}
     {% if host_relationships %}
     <h3>Hosts used</h3>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
     <table id="hosts" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Host</th>
+            <tr>
+                <th>Host</th>
+            </tr>
         </thead>
         <tbody>
         {% for host in host_relationships %}
-            <tr>
+            {% noclook_has_expired host.end as expired %}
+            {% if expired %}
+                <tr class="expired">
+            {% else %}
+                <tr>
+            {% endif %}
                 <td><a href="{% noclook_node_to_url host.end %}">{{ host.end.name }}</a></td>
             </tr>
         {% endfor %}

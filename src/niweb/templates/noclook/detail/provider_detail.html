@@ -56,16 +56,31 @@
     {% if provides_relationships %}
     <div class="section">
         <h3>Services</h3>
+        <div class="pull-right">
+            <span class="badge badge-info">Testing</span>
+            <span class="badge badge-warning">Reserved</span>
+            <span class="badge badge-important">Decommissioned</span>
+        </div>
         <table id="services" class="tablesorter" cellspacing="1">
             <thead>
-            <th>ID</th><th>Type</th><th>Description</th>
+                <tr>
+                    <th>ID</th><th>Type</th><th>Description</th>
+                </tr>
             </thead>
             <tbody>
             {% for provide in provides_relationships %}
-                <tr>
+                {% if provide.end.operational_state == "Decommissioned" %}
+                    <tr class="decommissioned">
+                {% elif provide.end.operational_state == "Reserved" %}
+                    <tr class="reserved">
+                {% elif provide.end.operational_state == "Testing" %}
+                    <tr class="testing">
+                {% else %}
+                    <tr>
+                {% endif %}
                     <td><a href="{% noclook_node_to_url provide.end %}">{{ provide.end.name }}</a></td>
-                    <td>{{ provide.end.node_type }}</a></td>
-                    <td>{{ provide.end.description }}</a></td>
+                    <td>{{ provide.end.node_type }}</td>
+                    <td>{{ provide.end.description }}</td>
                 </tr>
             {% endfor %}
             </tbody>

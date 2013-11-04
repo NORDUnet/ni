@@ -22,16 +22,24 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <h1>Peering Partners</h1>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
     <table id="peering_partners" class="tablesorter" cellspacing="1">
         <thead>
             <tr>
-                </tr><th>Peering Partner</th><th>AS Number</th><th>Peering Groups</th>
+                <th>Peering Partner</th><th>AS Number</th><th>Peering Groups</th>
             </tr>
         </thead>
         <tbody>
             {% load noclook_tags %}
             {% for partner in partner_list %}
-                    <tr>
+                    {% noclook_has_expired partner.node as expired %}
+                    {% if expired %}
+                        <tr class="expired">
+                    {% else %}
+                        <tr>
+                    {% endif %}
                         <td><a href="{% noclook_node_to_url partner.node %}">{{ partner.node.name }}</a></td>
                         <td>{{ partner.node.as_number }}</td>
                         <td>

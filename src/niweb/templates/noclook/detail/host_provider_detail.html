@@ -56,19 +56,30 @@ $(document).ready(
 <br><br><br>
 -->
 <div class="section">
+    <h3>Hosts provided</h3>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
     {% if host_relationships %}
-    <table id="hosts" class="tablesorter" cellspacing="1">
-        <thead>
-            <th>Host</th>
-        </thead>
-        <tbody>
-        {% for host in host_relationships %}
-            <tr>
-                <td><a href="{% noclook_node_to_url host.end %}">{{ host.end.name }}</a></td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+        <table id="hosts" class="tablesorter" cellspacing="1">
+            <thead>
+                <tr>
+                    <th>Host</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for host in host_relationships %}
+                {% noclook_has_expired host.end as expired %}
+                {% if expired %}
+                    <tr class="expired">
+                {% else %}
+                    <tr>
+                {% endif %}
+                    <td><a href="{% noclook_node_to_url host.end %}">{{ host.end.name }}</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     {% else %}
         No hosts provided.
     {% endif %}
