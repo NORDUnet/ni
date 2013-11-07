@@ -61,10 +61,12 @@
                 // Populate first level combo box
                 var categories = [
                     ['host', 'Hosts'],
+                    ['firewall', 'Firewalls'],
                     ['optical-node', 'Optical Nodes'],
                     ['optical-path', 'Optical Paths'],
                     ['router', 'Routers'],
-                    ['service', 'Services']
+                    ['service', 'Services'],
+                    ['switch', 'Switches']
                 ];
                 $('#categoryA').append($('<option>').val("0").text("-- Please Select --"));
                 $.each(categories, function(key, tuple) {

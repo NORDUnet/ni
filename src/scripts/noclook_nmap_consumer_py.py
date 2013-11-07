@@ -115,7 +115,8 @@ def is_host(addresses):
                 node_address = IPAddress(address.split('/')[0])
             except ValueError:
                 continue
-            if node_address in host_addresses and node['node_type'] != 'Host':
+            if node_address in host_addresses and node['node_type'] not in ['Host', 'Firewall', 'Switch']:
+                h.update_noclook_auto_manage(nc.neo4jdb, node)
                 return False
     return True
 

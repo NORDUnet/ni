@@ -397,6 +397,110 @@ def edit_host(request, handle_id):
                                   context_instance=RequestContext(request))
 
 
+@login_required
+def convert_host(request, handle_id, slug):
+    """
+    Convert a Host to Firewall or Switch.
+    """
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    if slug in ['firewall', 'switch'] and nh.node_type.type == 'Host':
+        node_type = h.slug_to_node_type(slug, create=True)
+        node = nh.get_node()
+        nh, node = h.logical_to_physical(request.user, nh, node)
+        nh.node_type = node_type
+        nh.save()
+        node_properties = {
+            'node_type': node_type.type,
+            'backup': ''
+        }
+        h.dict_update_node(request.user, node, node_properties, node_properties.keys())
+    return HttpResponseRedirect(nh.get_absolute_url())
+
+
+@login_required
+def edit_firewall(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = h.get_nh_node(handle_id)
+    location = h.iter2list(h.get_location(node))
+    owner_relationships = h.iter2list(node.Owns.incoming)
+    service_relationships = h.iter2list(node.Depends_on.incoming)
+    if request.POST:
+        form = forms.EditFirewallForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, node, form)
+            # Firewall specific updates
+            if form.cleaned_data['relationship_owner']:
+                owner_id = form.cleaned_data['relationship_owner']
+                node = h.set_owner(request.user, node, owner_id)
+            if form.cleaned_data['relationship_location']:
+                location_id = form.cleaned_data['relationship_location']
+                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_firewall.html',
+                                      {'node_handle': nh, 'node': node, 'form': form, 'location': location,
+                                       'owner_relationships': owner_relationships,
+                                       'service_relationships': service_relationships},
+                                      context_instance=RequestContext(request))
+    else:
+        form = forms.EditFirewallForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_firewall.html',
+                                  {'node_handle': nh, 'node': node, 'form': form, 'location': location,
+                                   'owner_relationships': owner_relationships,
+                                   'service_relationships': service_relationships},
+                                  context_instance=RequestContext(request))
+
+
+@login_required
+def edit_switch(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, node = h.get_nh_node(handle_id)
+    location = h.iter2list(h.get_location(node))
+    owner_relationships = h.iter2list(node.Owns.incoming)
+    service_relationships = h.iter2list(node.Depends_on.incoming)
+    ports = h.iter2list(h.get_ports(node))
+    if request.POST:
+        form = forms.EditSwitchForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, node, form)
+            # Switch specific updates
+            if form.cleaned_data['relationship_owner']:
+                owner_id = form.cleaned_data['relationship_owner']
+                node = h.set_owner(request.user, node, owner_id)
+            if form.cleaned_data['relationship_location']:
+                location_id = form.cleaned_data['relationship_location']
+                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
+            if form.cleaned_data['relationship_ports']:
+                for port in form.cleaned_data['relationship_ports']:
+                    h.create_port(node, port, request.user)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+        else:
+            return render_to_response('noclook/edit/edit_switch.html',
+                                      {'node_handle': nh, 'node': node, 'form': form, 'location': location,
+                                       'owner_relationships': owner_relationships, 'ports': ports,
+                                       'service_relationships': service_relationships},
+                                      context_instance=RequestContext(request))
+    else:
+        form = forms.EditSwitchForm(h.item2dict(node))
+        return render_to_response('noclook/edit/edit_switch.html',
+                                  {'node_handle': nh, 'node': node, 'form': form, 'location': location,
+                                   'owner_relationships': owner_relationships, 'ports': ports,
+                                   'service_relationships': service_relationships},
+                                  context_instance=RequestContext(request))
+
+
 @login_required        
 def edit_router(request, handle_id):
     if not request.user.is_staff:
@@ -777,6 +881,7 @@ EDIT_FUNC = {
     'customer': edit_customer,
     'end-user': edit_end_user,
     'external-equipment': edit_external_equipment,
+    'firewall': edit_firewall,
     'service': edit_service,
     'host': edit_host,
     'odf': edit_odf,
@@ -791,4 +896,5 @@ EDIT_FUNC = {
     'router': edit_router,
     'site': edit_site,
     'site-owner': edit_site_owner,
+    'switch': edit_switch,
 }

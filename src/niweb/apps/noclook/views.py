@@ -340,6 +340,44 @@ def host_detail(request, handle_id):
 
 
 @login_required
+def firewall_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(node)
+    location = h.iter2list(h.get_location(node))
+    # Handle relationships
+    service_relationships = h.iter2list(node.Depends_on.incoming)
+    owner_relationships = h.iter2list(node.Owns.incoming)
+    return render_to_response('noclook/detail/firewall_detail.html',
+                              {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
+                               'service_relationships': service_relationships,
+                               'owner_relationships': owner_relationships, 'location': location, 'history': history},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def switch_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(node)
+    location = h.iter2list(h.get_location(node))
+    # Get ports in switch
+    connections = h.iter2list(h.get_connected_equipment(node))
+    # Handle relationships
+    service_relationships = h.iter2list(node.Depends_on.incoming)
+    owner_relationships = h.iter2list(node.Owns.incoming)
+    return render_to_response('noclook/detail/switch_detail.html',
+                              {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
+                               'service_relationships': service_relationships, 'connections': connections,
+                               'owner_relationships': owner_relationships, 'location': location, 'history': history},
+                              context_instance=RequestContext(request))
+
+
+@login_required
 def host_service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     history = h.get_history(nh)

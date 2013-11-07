@@ -1,0 +1,218 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }}{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#services").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {
+                1 : { sorter: "ipAddress"  }
+            },
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            {% if node.operational_state %}
+                <tr>
+                    <th>Status:</th><td>{{ node.operational_state|capfirst }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nagios_checks %}
+                <tr>
+                    <th>Nagios:</th><td>{{ node.nagios_checks|yesno:"Yes,No,Not set" }}</td>
+                </tr>
+            {% endif %}
+            {% if node.hostnames %}
+                <tr>
+                    <th>Hostnames:</th>
+                    <td>
+                        {% for item in node.hostnames %}
+                            {{ item }}{% if not forloop.last %},<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endif %}
+            {% if node.ip_addresses %}
+                <tr>
+                    <th>Addresses:</th>
+                    <td>
+                        {% for item in node.ip_addresses %}
+                            {{ item }}{% if not forloop.last %},<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endif %}
+            {% if owner_relationships %}
+                <tr>
+                    <th>Owner:</th>
+                    <td>
+                        {% for item in owner_relationships %}
+                            <a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endif %}
+            {% if node.service_tag %}
+                <tr>
+                    <th>Service tag:</th><td>{{ node.service_tag }}</td>
+                </tr>
+            {% endif %}
+            {% if node.end_support %}
+                <tr>
+                    <th>Support ends:</th><td>{{ node.end_support }}</td>
+                </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.vendor or node.model or node.max_number_of_ports %}
+                {% if node.vendor %}
+                    <tr>
+                        <th>Vendor:</th><td>{{node.vendor}}</td>
+                    </tr>
+                {% endif %}
+                {% if node.model %}
+                    <tr>
+                        <th>Model:</th><td>{{node.model}}</td>
+                    </tr>
+                {% endif %}
+                {% if node.max_number_of_ports %}
+                    <tr>
+                        <th>Max ports:</th><td>{{ node.max_number_of_ports }}</td>
+                    </tr>
+                {% endif %}
+            {% endif %}
+            {% if node.os %}
+                <tr>
+                    <th>OS:</th><td>{{node.os}} {% if node.os_version %}{{node.os_version}}{% endif %}</td>
+                </tr>
+            {% endif %}
+            {% if node.noclook_auto_manage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
+            </tr>
+        </table>
+    </div>
+    {% if node.description or node.responsible_group %}
+        <div class="span7">
+            <table class="table">
+                {% if node.description %}
+                    <tr>
+                        <th>Description:</th><td>{{ node.description }}</td>
+                    </tr>
+                {% endif %}
+                {% if node.responsible_group %}
+                    <tr>
+                        <th>Responsible group:</th>
+                        <td>
+                            {{ node.responsible_group }}
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if node.support_group %}
+                    <tr>
+                        <th>Support group:</th>
+                        <td>
+                            {{ node.support_group }}
+                        </td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+    {% endif %}
+</div>
+
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<br><br><br>
+<div class="section">
+    <h3>Ports</h3>
+    {% if connections %}
+    {% load noclook_tags %}
+    <table id="connections" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+        </thead>
+        <tbody>
+        {% for con in connections %}
+            <tr>
+                <td><a href="{% noclook_node_to_url con.porta %}">{{ con.porta.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.cable %}">{{ con.cable.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.site %}">{{ con.site.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.location %}">{{ con.location.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.portb %}">{{ con.portb.name }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No ports used.
+    {% endif %}
+</div>
+<div class="section">
+    <h3>Host Services provided</h3>
+    {% load noclook_tags %}
+    {% if service_relationships %}
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
+    <table id="services" class="tablesorter" cellspacing="1">
+        <thead>
+            <tr>
+                <th>Service</th><th>Address</th><th>Port</th><th>Protocol</th><th>State</th><th>Public</th><th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th><th>Last seen</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for service in service_relationships %}
+            {% noclook_has_expired service as expired %}
+            {% if expired %}
+                <tr class="expired">
+            {% else %}
+                <tr>
+            {% endif %}
+                <td><a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a></td>
+                <td>{{ service.ip_address }}</td>
+                <td>{{ service.port }}</td>
+                <td>{{ service.protocol }}</td>
+                <td>{{ service.state }}</td>
+                <td>{% if not service.noclook_last_external_check %}Not set{% else %}{{ service.public|yesno:"Yes,No" }}{% endif %}</td>
+                <td>{{ service.product }}</td>
+                <td>{{ service.version }}</td>
+                <td>{{ service.extrainfo }}</td>
+                <td>{{ service.conf }}</td>
+                <td>{% noclook_last_seen_to_dt service.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No host services provided.
+    {% endif %}
+</div>
+{% endblock %}

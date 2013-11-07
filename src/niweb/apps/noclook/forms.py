@@ -388,6 +388,64 @@ class EditHostForm(forms.Form):
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
 
 
+class EditSwitchForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditSwitchForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Host User')
+
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of what the machine is used for.')
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                          help_text='Name of the group responsible for the host.')
+    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                      help_text='Name of the support group.')
+    os = forms.CharField(required=False,
+                         help_text='What operating system is running on the switch?')
+    os_version = forms.CharField(required=False,
+                                 help_text='Which version of the operating system is running on the switch?')
+    model = forms.CharField(required=False,
+                            help_text='What is the switchs hardware model name?')
+    vendor = forms.CharField(required=False,
+                             help_text='Name of the vendor that should be contacted for hardware support?')
+    service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the switch?')
+    end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
+    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
+
+
+class EditFirewallForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditFirewallForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Host User')
+
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of what the machine is used for.')
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                          help_text='Name of the group responsible for the host.')
+    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+                                      help_text='Name of the support group.')
+    os = forms.CharField(required=False,
+                         help_text='What operating system is running on the firewall?')
+    os_version = forms.CharField(required=False,
+                                 help_text='Which version of the operating system is running on the firewall?')
+    model = forms.CharField(required=False,
+                            help_text='What is the firewalls hardware model name?')
+    vendor = forms.CharField(required=False,
+                             help_text='Name of the vendor that should be contacted for hardware support?')
+    service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the firewall?')
+    end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
+    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+
+
 class EditRouterForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)

@@ -19,6 +19,8 @@ urlpatterns += patterns('niweb.apps.noclook.create_views',
 
 urlpatterns += patterns('niweb.apps.noclook.edit_views',
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', 'edit_node'),
+    # Convert host
+    (r'^host/(?P<handle_id>\d+)/edit/convert-to/(?P<slug>[-\w]+)/$', 'convert_host'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/delete$', 'delete_node'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/delete$', 'delete_relationship'),
     (r'^formdata/(?P<slug>[-\w]+)/$', 'get_node_type'),
@@ -65,6 +67,8 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^unit/(?P<handle_id>\d+)/$', 'unit_detail'),
     (r'^external-equipment/(?P<handle_id>\d+)/$', 'external_equipment_detail'),
     (r'^optical-multiplex-section/(?P<handle_id>\d+)/$', 'optical_multiplex_section_detail'),
+    (r'^firewall/(?P<handle_id>\d+)/$', 'firewall_detail'),
+    (r'^switch/(?P<handle_id>\d+)/$', 'switch_detail'),
     # Visualize views
     (r'^visualize/(?P<node_id>\d+)\.json$', 'visualize_json'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', 'visualize_maximize'),

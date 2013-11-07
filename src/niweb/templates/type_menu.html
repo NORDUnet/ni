@@ -1,5 +1,9 @@
 {% for type in types|dictsort:"type" %}
-    <li class="menu_item"><a href="{{ type.get_absolute_url }}">{{ type }}s</a></li>
+    {% if type.slug == 'switch' %}
+        <li class="menu_item"><a href="{{ type.get_absolute_url }}">{{ type }}es</a></li>
+    {% else %}
+        <li class="menu_item"><a href="{{ type.get_absolute_url }}">{{ type }}s</a></li>
+    {% endif %}
     {% if type.slug == 'service' %}
         <ul class="nav nav-list">
             <li class="menu_item"><a href="{{ type.get_absolute_url }}DWDM/">DWDM</a></li>
