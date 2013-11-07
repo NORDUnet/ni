@@ -258,5 +258,21 @@ $(document).ready(
                 </div>
             </div>
         </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFive">
+                    Convert host
+                </a>
+            </div>
+            <div id="collapseFive" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <div class="alert alert-danger">
+                        Warning. This action is not reversible.
+                    </div>
+                    <a class="btn btn-danger" href="edit/convert-to/switch/"><i class="icon-exclamation-sign icon-white"></i> Convert to switch</a>
+                    <a class="btn btn-danger" href="edit/convert-to/firewall/"><i class="icon-exclamation-sign icon-white"></i> Convert to firewall</a>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

@@ -938,6 +938,24 @@ def create_port(parent_node, port_name, creator):
     place_child_in_parent(creator, port_node, parent_node.getId())
     return port_node
 
+
+def logical_to_physical(user, nh, node):
+    with nc.neo4jdb.transaction:
+        # Make the node physical
+        nc.delete_relationship(nc.neo4jdb, iter2list(node.Contains.incoming)[0])
+        physical = nc.get_meta_node(nc.neo4jdb, 'physical')
+        nc._create_relationship(nc.neo4jdb, physical, node, 'Contains')
+        nh.node_meta_type = 'physical'
+        nh.save()
+        # Convert Uses relationships to Owns.
+        user_relationships = node.Uses.incoming
+        for rel in user_relationships:
+            set_owner(user, node, rel.start.id)
+            activitylog.delete_relationship(user, rel)
+            nc.delete_relationship(nc.neo4jdb, rel)
+    return nh, node
+
+
 def place_physical_in_location(user, nh, node, location_id):
     """
     Places a physical node in a rack or on a site. Also converts it to a
@@ -946,20 +964,7 @@ def place_physical_in_location(user, nh, node, location_id):
     # Check if the node is logical
     meta_type = nc.get_node_meta_type(node)
     if meta_type == 'logical':
-        with nc.neo4jdb.transaction:
-            # Make the node physical
-            nc.delete_relationship(nc.neo4jdb,
-                iter2list(node.Contains.incoming)[0])
-            physical = nc.get_meta_node(nc.neo4jdb, 'physical')
-            nc._create_relationship(nc.neo4jdb, physical, node, 'Contains')
-            nh.node_meta_type = 'physical'
-            nh.save()
-            # Convert Uses relationships to Owns.
-            user_relationships = node.Uses.incoming
-            for rel in user_relationships:
-                set_owner(user, node, rel.start.id)
-                activitylog.delete_relationship(user, rel)
-                nc.delete_relationship(nc.neo4jdb, rel)
+        nh, node = logical_to_physical(user, nh, node)
     location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
     rel_exist = nc.get_relationships(node, location_node, 'Located_in')
     # If the location is the same as before just update relationship
@@ -1124,8 +1129,7 @@ def set_responsible_for(user, node, responsible_for_node_id):
         #with nc.neo4jdb.transaction:
         pass
     else:
-        rel = nc.create_relationship(nc.neo4jdb, responsible_for_node, node,
-            'Responsible_for')
+        rel = nc.create_relationship(nc.neo4jdb, responsible_for_node, node, 'Responsible_for')
         activitylog.create_relationship(user, rel)
     return node
 
