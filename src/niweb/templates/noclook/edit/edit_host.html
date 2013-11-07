@@ -237,16 +237,36 @@ $(document).ready(
             </div>
             <div id="collapseFour" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
+                    <label class="checkbox">
+                        {{ form.services_locked }}
+                        Services locked
+                    </label>
+
+                    <label class="checkbox">
+                        {{ form.services_checked }}
+                        All services below have been checked
+                    </label>
+
                     {% if service_relationships %}
                         {% load noclook_tags %}
                         <h4>Remove service</h4>
                         {% for rel in service_relationships %}
                             <div class="row">
-                                <div class="span5">
+                                <div class="span2">
                                     <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
+                                </div>
+                                <div class="span2">
+                                    {{ rel.ip_address }} {{ rel.protocol }} {{ rel.port }}
+                                </div>
+                                <div class="span1">
                                     {% noclook_has_expired rel as expired %}
                                     {% if expired %}
                                         <span class="help-inline">(Expired)</span>
+                                    {% endif %}
+                                </div>
+                                <div class="span1">
+                                    {% if rel.rogue_port %}
+                                        <span class="help-inline">(Rogue)</span>
                                     {% endif %}
                                 </div>
                                 <div class="span1">

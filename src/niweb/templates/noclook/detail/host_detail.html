@@ -214,6 +214,11 @@ $(document).ready(
 <br><br><br>
 <div class="section">
     <h3>Services provided</h3>
+    {% if node.services_locked %}
+        <div class="alert alert-info">
+            <i class="icon-lock"></i> Services locked
+        </div>
+    {% endif %}
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
     </div>
@@ -233,7 +238,12 @@ $(document).ready(
             {% else %}
                 <tr>
             {% endif %}
-                <td><a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a></td>
+                <td>
+                    {% if service.rogue_port %}
+                        <i class="icon-exclamation-sign"></i>
+                    {% endif %}
+                    <a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a>
+                </td>
                 <td>{{ service.ip_address }}</td>
                 <td>{{ service.port }}</td>
                 <td>{{ service.protocol }}</td>

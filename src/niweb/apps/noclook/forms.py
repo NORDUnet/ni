@@ -7,6 +7,8 @@ from niweb.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
 import niweb.apps.noclook.helpers as h
 import norduni_client as nc
 
+TRUEFALSE = [(True, True), (False, False)]
+
 # We should move this kind of data to the SQL database.
 COUNTRY_CODES = [
     ('DE', 'DE'),    
@@ -386,6 +388,8 @@ class EditHostForm(forms.Form):
     relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
+    services_locked = forms.ChoiceField(choices=TRUEFALSE, widget=forms.CheckboxInput(), required=False)
+    services_checked = forms.ChoiceField(choices=TRUEFALSE, widget=forms.CheckboxInput(), required=False)
 
 
 class EditSwitchForm(forms.Form):

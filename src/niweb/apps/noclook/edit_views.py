@@ -376,6 +376,8 @@ def edit_host(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
+            if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
+                h.remove_rogue_service_marker(request.user, node)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:

@@ -26,6 +26,7 @@ import argparse
 from datetime import datetime
 from lucenequerybuilder import Q
 from ipaddr import IPAddress
+import logging
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -39,6 +40,14 @@ import norduni_client as nc
 import noclook_consumer as nt
 from apps.noclook import activitylog
 from apps.noclook import helpers as h
+
+logger = logging.getLogger('noclook_nmap_consumer_py')
+logger.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
@@ -92,7 +101,7 @@ def set_host_user(node):
             activitylog.create_relationship(user, rel)
         h.update_node_search_index(nc.neo4jdb, host_user)
         if VERBOSE:
-            print 'User %s set for host %s...' % (host_user_name, node['name'])
+            logger.info('User %s set for host %s...' % (host_user_name, node['name']))
 
 
 def is_host(addresses):
@@ -169,6 +178,7 @@ def insert_services(service_dict, host_node, external_check=False):
     user = nt.get_user()
     node_type = "Host Service"
     meta_type = 'logical'
+    services_locked = host_node.get_property('services_locked', False)
     # Expected service data from nmap
     property_keys = ['ip_address', 'protocol', 'port', 'conf', 'extrainfo',
                      'name', 'product', 'reason', 'state', 'version']
@@ -219,23 +229,27 @@ def insert_services(service_dict, host_node, external_check=False):
                             h.dict_update_relationship(user, rel, rel_dict, property_keys)
                             h.update_noclook_auto_manage(nc.neo4jdb, rel)
                             if VERBOSE:
-                                print 'Relationship with protocol %s on port %s found.' % (rel['protocol'], rel['port'])
+                                logger.info('Relationship with protocol %s on port %s found.' % (rel['protocol'], rel['port']))
                             break
                     except KeyError:
-                        print "KeyError: Relationship %s" % rel
+                        logger.error("KeyError: Relationship %s" % rel)
                         continue
                 # Relationship did not exist
                 if create:
+                    if services_locked:
+                        logger.warn('New open port found for host %s.' % host_node['name'])
+                        property_keys.append('rogue_port')
+                        rel_dict['rogue_port'] = True
                     # Create a relationship between the service and host
-                    new_rel = nc.create_relationship(nc.neo4jdb, service_node, host_node,
-                                                     'Depends_on')
+                    new_rel = nc.create_relationship(nc.neo4jdb, service_node, host_node, 'Depends_on')
                     h.dict_update_relationship(user, new_rel, rel_dict, property_keys)
                     h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
                     activitylog.create_relationship(user, new_rel)
                     if VERBOSE:
-                        print 'Relationship with protocol %s on port %s created.' % (new_rel['protocol'], new_rel['port'])
+                        logger.info('Relationship with protocol %s on port %s created.' % (new_rel['protocol'],
+                                                                                           new_rel['port']))
                 if VERBOSE:
-                    print '%s %s %s %s processed...' % (host_node['name'], address, protocol, port)
+                    logger.info('%s %s %s %s processed...' % (host_node['name'], address, protocol, port))
 
 
 def insert_nmap(json_list, external_check=False):
@@ -253,7 +267,7 @@ def insert_nmap(json_list, external_check=False):
         # Check if the ipaddresses matches any non-host node as a router interface for example
         if not is_host(addresses):
             if VERBOSE:
-                print '%s does not appear to be a host.' % name
+                logger.info('%s does not appear to be a host.' % name)
             continue
         # Create the NodeHandle and the Node
         node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type,
@@ -283,7 +297,7 @@ def insert_nmap(json_list, external_check=False):
             insert_services(i['host']['nmap_services_py']['services'], node, external_check)
         except KeyError as e:
             if VERBOSE:
-                print e
+                logger.error(e)
             pass
         # Check if the host has backup
         host_properties['backup'] = h.get_host_backup(node)
@@ -292,7 +306,7 @@ def insert_nmap(json_list, external_check=False):
         # Set host user depending on the domain.
         set_host_user(node)
         if VERBOSE:
-            print '%s done.' % name
+            logger.info('%s done.' % name)
 
 
 def main():
@@ -304,7 +318,7 @@ def main():
     args = parser.parse_args()
     # Load the configuration file
     if not args.C:
-        print 'Please provide a configuration file with -C.'
+        logger.error('Please provide a configuration file with -C.')
         sys.exit(1)
     else:
         if args.verbose:

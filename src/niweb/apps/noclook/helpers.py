@@ -111,24 +111,20 @@ def form_update_node(user, node, form, property_keys=None):
     """
     Take a node, a form and the property keys that should be used to fill the
     node if the property keys are omitted the form.base_fields will be used.
-    Returns True if all non-empty properties where added else False and
-    rollbacks the node changes.
+    Returns True if all non-empty properties where added.
     """
     if not property_keys:
         property_keys = []
-    meta_fields = ['relationship_location', 'relationship_end_a',
-                   'relationship_end_b', 'relationship_parent',
-                   'relationship_provider', 'relationship_end_user',
-                   'relationship_customer', 'relationship_depends_on',
-                   'relationship_user', 'relationship_owner',
-                   'relationship_located_in', 'relationship_ports']
+    meta_fields = ['relationship_location', 'relationship_end_a', 'relationship_end_b', 'relationship_parent',
+                   'relationship_provider', 'relationship_end_user', 'relationship_customer', 'relationship_depends_on',
+                   'relationship_user', 'relationship_owner', 'relationship_located_in', 'relationship_ports',
+                   'services_checked']
     nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
     if not property_keys:
         for field in form.base_fields.keys():
             if field not in meta_fields:
                 property_keys.append(field)
     for key in property_keys:
-        #try:
         if form.cleaned_data[key] or form.cleaned_data[key] == 0:
             pre_value = node.get_property(key, '')
             if pre_value != form.cleaned_data[key]:
@@ -141,7 +137,7 @@ def form_update_node(user, node, form, property_keys=None):
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
                 update_node_search_index(nc.neo4jdb, node)
         elif not form.cleaned_data[key] and key in node.propertyKeys:
-            if key != 'name': # Never delete name
+            if key != 'name' or key != 'node_type':  # Never delete name or node type
                 pre_value = node.get_property(key, '')
                 if key in django_settings.SEARCH_INDEX_KEYS:
                     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
@@ -1167,6 +1163,28 @@ def get_hostname_from_address(ip_address):
     except (socket.herror, socket.gaierror):
         return 'Request timed out'
 
+
+def remove_rogue_service_marker(user, node):
+    """
+    :param user: Django user
+    :param node: Neo4j node
+    :return: True
+
+    Removed the property rogue_port from all Depends_on relationships.
+    """
+    q = """
+        START host=node({id})
+        MATCH host<-[r:Depends_on]-host_service
+        WHERE has(r.rogue_port)
+        RETURN r
+        """
+    rel_properties = {'rogue_port': False}
+    for hit in nc.neo4jdb.query(q, id=node.getId()):
+        dict_update_relationship(user, hit['r'], rel_properties, rel_properties.keys())
+    return True
+
+
+# Unique ID functions
 def is_free_unique_id(unique_id_collection, unique_id):
     """
     Checks if a Unique ID is unused or reserved.
