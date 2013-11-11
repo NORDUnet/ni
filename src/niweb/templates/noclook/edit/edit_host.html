@@ -253,20 +253,18 @@ $(document).ready(
                         {% for rel in service_relationships %}
                             <div class="row">
                                 <div class="span2">
+                                    {% if rel.rogue_port %}
+                                        <i class="icon-exclamation-sign"></i> 
+                                    {% endif %}
                                     <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
                                 </div>
-                                <div class="span2">
+                                <div class="span3">
                                     {{ rel.ip_address }} {{ rel.protocol }} {{ rel.port }}
                                 </div>
                                 <div class="span1">
                                     {% noclook_has_expired rel as expired %}
                                     {% if expired %}
                                         <span class="help-inline">(Expired)</span>
-                                    {% endif %}
-                                </div>
-                                <div class="span1">
-                                    {% if rel.rogue_port %}
-                                        <span class="help-inline">(Rogue)</span>
                                     {% endif %}
                                 </div>
                                 <div class="span1">

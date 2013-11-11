@@ -25,6 +25,12 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
+{% noclook_has_rogue_ports node as has_rogue_ports %}
+{% if has_rogue_ports %}
+    <div class="alert alert-error">
+        <i class="icon-exclamation-sign"></i> Unauthorized open ports found.
+    </div>
+{% endif %}
 <div class="row">
     <div class="span4">
         <table class="table">
@@ -239,13 +245,11 @@ $(document).ready(
                 <tr>
             {% endif %}
                 <td>
-                    {% if service.rogue_port %}
-                        <i class="icon-exclamation-sign"></i>
-                    {% endif %}
+                    {% if service.rogue_port %}<i class="icon-exclamation-sign"></i> {% endif %}
                     <a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a>
                 </td>
                 <td>{{ service.ip_address }}</td>
-                <td>{{ service.port }}</td>
+                <td>{{ service.port }} </td>
                 <td>{{ service.protocol }}</td>
                 <td>{{ service.state }}</td>
                 <td>{% if not service.noclook_last_external_check %}Not set{% else %}{{ service.public|yesno:"Yes,No" }}{% endif %}</td>
