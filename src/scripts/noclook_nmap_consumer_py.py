@@ -196,58 +196,59 @@ def insert_services(service_dict, host_node, external_check=False):
             for key in service_dict[address][protocol].keys():
                 port = key
                 service = service_dict[address][protocol][port]
-                service_name = service['name']
-                if not service_name:  # Blank
-                    service_name = 'unknown'
-                node_handle = nt.get_unique_node_handle(
-                    nc.neo4jdb,
-                    service_name,
-                    node_type,
-                    meta_type
-                )
-                service_node = node_handle.get_node()
-                h.update_noclook_auto_manage(nc.neo4jdb, service_node)
-                # Get existing relationships between the two nodes
-                rel_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
-                q = Q('ip_address', '%s' % address)
-                service_rels = rel_index.query(str(q))
-                create = True
-                rel_dict = {
-                    'ip_address': address,
-                    'protocol': protocol,
-                    'port': port
-                }
-                for key, value in service.items():
-                    rel_dict[key] = value
-                if external_check:
-                    rel_dict.update(external_dict)
-                # Try to find an already existing relationship
-                for rel in service_rels:
-                    try:
-                        if rel.start['name'] == service_name and rel['protocol'] == protocol and str(rel['port']) == port:
-                            create = False
-                            h.dict_update_relationship(user, rel, rel_dict, property_keys)
-                            h.update_noclook_auto_manage(nc.neo4jdb, rel)
-                            if VERBOSE:
-                                logger.info('Relationship with protocol %s on port %s found.' % (rel['protocol'], rel['port']))
-                            break
-                    except KeyError:
-                        logger.error("KeyError: Relationship %s" % rel)
-                        continue
-                # Relationship did not exist
-                if create:
-                    if services_locked:
-                        logger.warn('New open port found for host %s.' % host_node['name'])
-                        property_keys.append('rogue_port')
-                        rel_dict['rogue_port'] = True
-                    # Create a relationship between the service and host
-                    new_rel = nc.create_relationship(nc.neo4jdb, service_node, host_node, 'Depends_on')
-                    h.dict_update_relationship(user, new_rel, rel_dict, property_keys)
-                    h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
-                    activitylog.create_relationship(user, new_rel)
-                    if VERBOSE:
-                        logger.info('Relationship with protocol %s on port %s created.' % (new_rel['protocol'],
-                                                                                           new_rel['port']))
+                if service['state'] != 'closed':
+                    service_name = service['name']
+                    if not service_name:  # Blank
+                        service_name = 'unknown'
+                    node_handle = nt.get_unique_node_handle(
+                        nc.neo4jdb,
+                        service_name,
+                        node_type,
+                        meta_type
+                    )
+                    service_node = node_handle.get_node()
+                    h.update_noclook_auto_manage(nc.neo4jdb, service_node)
+                    # Get existing relationships between the two nodes
+                    rel_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
+                    q = Q('ip_address', '%s' % address)
+                    service_rels = rel_index.query(str(q))
+                    create = True
+                    rel_dict = {
+                        'ip_address': address,
+                        'protocol': protocol,
+                        'port': port
+                    }
+                    for key, value in service.items():
+                        rel_dict[key] = value
+                    if external_check:
+                        rel_dict.update(external_dict)
+                    # Try to find an already existing relationship
+                    for rel in service_rels:
+                        try:
+                            if rel.start['name'] == service_name and rel['protocol'] == protocol and str(rel['port']) == port:
+                                create = False
+                                h.dict_update_relationship(user, rel, rel_dict, property_keys)
+                                h.update_noclook_auto_manage(nc.neo4jdb, rel)
+                                if VERBOSE:
+                                    logger.info('Relationship with protocol %s on port %s found.' % (rel['protocol'], rel['port']))
+                                break
+                        except KeyError:
+                            logger.error("KeyError: Relationship %s" % rel)
+                            continue
+                    # Relationship did not exist
+                    if create:
+                        if services_locked:
+                            logger.warn('New open port found for host %s.' % host_node['name'])
+                            property_keys.append('rogue_port')
+                            rel_dict['rogue_port'] = True
+                        # Create a relationship between the service and host
+                        new_rel = nc.create_relationship(nc.neo4jdb, service_node, host_node, 'Depends_on')
+                        h.dict_update_relationship(user, new_rel, rel_dict, property_keys)
+                        h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
+                        activitylog.create_relationship(user, new_rel)
+                        if VERBOSE:
+                            logger.info('Relationship with protocol %s on port %s created.' % (new_rel['protocol'],
+                                                                                               new_rel['port']))
                 if VERBOSE:
                     logger.info('%s %s %s %s processed...' % (host_node['name'], address, protocol, port))
 
