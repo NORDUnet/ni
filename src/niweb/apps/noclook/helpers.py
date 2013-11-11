@@ -1178,7 +1178,7 @@ def remove_rogue_service_marker(user, node):
         WHERE has(r.rogue_port)
         RETURN r
         """
-    rel_properties = {'rogue_port': False}
+    rel_properties = {'rogue_port': ''}
     for hit in nc.neo4jdb.query(q, id=node.getId()):
         dict_update_relationship(user, hit['r'], rel_properties, rel_properties.keys())
     return True
