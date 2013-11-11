@@ -104,3 +104,20 @@ def noclook_report_age(item, old, very_old):
     :return: String, current, old, very_old
     """
     return neo4j_report_age(item, old, very_old)
+
+
+@register.assignment_tag
+def noclook_has_rogue_ports(node):
+    """
+    :param node: Neo4j node
+    :return: Boolean
+    """
+    q = """
+        START host=node({id})
+        MATCH host<-[r:Depends_on]-host_service
+        RETURN count(r.rogue_port?) as c
+        """
+    hits = int(str([hit['c'] for hit in nc.neo4jdb.query(q, id=node.getId())][0]))  # java.lang.Long
+    if hits != 0:
+        return True
+    return False
