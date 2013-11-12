@@ -405,6 +405,7 @@ def convert_host(request, handle_id, slug):
     Convert a Host to Firewall or Switch.
     """
     nh = get_object_or_404(NodeHandle, pk=handle_id)
+    index = nc.get_node_index(nc.neo4jdb, 'node_types')
     if slug in ['firewall', 'switch'] and nh.node_type.type == 'Host':
         node_type = h.slug_to_node_type(slug, create=True)
         node = nh.get_node()
@@ -415,7 +416,9 @@ def convert_host(request, handle_id, slug):
             'node_type': node_type.type,
             'backup': ''
         }
+        nc.del_index_item(nc.neo4jdb, index, node, 'node_type')
         h.dict_update_node(request.user, node, node_properties, node_properties.keys())
+        nc.add_index_item(nc.neo4jdb, index, node, 'node_type')
     return HttpResponseRedirect(nh.get_absolute_url())
 
 
