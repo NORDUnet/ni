@@ -69,7 +69,12 @@
             {% endif %}
             {% if node.global_crossing_circuit_id %}
                 <tr>
-                    <th>Circuit ID:</th><td>{{ node.global_crossing_circuit_id }}</td>
+                    <th>Global Crossing Circuit ID:</th><td>{{ node.global_crossing_circuit_id }}</td>
+                </tr>
+            {% endif %}
+            {% if node.global_connect_circuit_id %}
+                <tr>
+                    <th>Global Connect Circuit ID:</th><td>{{ node.global_connect_circuit_id }}</td>
                 </tr>
             {% endif %}
         </table>

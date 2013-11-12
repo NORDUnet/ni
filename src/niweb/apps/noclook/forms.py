@@ -316,6 +316,7 @@ class EditCableForm(forms.Form):
     telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.')
     telenor_trunk_id = forms.CharField(required=False, help_text='Telenor Trunk ID, nnn-nnnn.')
     global_crossing_circuit_id = forms.CharField(required=False, help_text='Global Crossing circuit ID, nnnnnnnnnn')
+    global_connect_circuit_id = forms.CharField(required=False, help_text='Global Connect circuit ID')
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 

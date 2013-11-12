@@ -219,6 +219,20 @@ $(document).ready(
                 </div>
             </div>
         </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
+                    Global Connect Information (optional)
+                </a>
+            </div>
+            <div id="collapseFour" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <h4>Circuit ID</h4>
+                    {{ form.global_connect_circuit_id }}
+                    <span class="help-inline">{{ form.global_connect_circuit_id.help_text }}</span>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
