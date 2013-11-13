@@ -98,14 +98,34 @@ def host_security_class(request, status=None, form=None):
 
 @login_required
 def host_services(request, status=None):
-    num_of_hosts = 0
     hosts = []
-    where_statement = ''
-    if status == 'locked':
-        where_statement = 'WHERE has(node.security_class) or has(node.security_comment)'
-    elif status == 'not-locked':
-        where_statement = 'WHERE not(has(node.security_class)) and not(has(node.security_comment))'
-
+    num_hosts = 0
+    if status:
+        if status == 'unauthorized-ports':
+            q = """
+                START node=node:node_types(node_type="Host")
+                MATCH node<-[r:Depends_on]-()
+                WHERE has(r.rogue_port)
+                RETURN node, collect(r) as ports
+                """
+            hosts = nc.neo4jdb.query(q)
+        else:
+            where_statement = ''
+            if status == 'locked':
+                where_statement = 'and has(node.services_locked)'
+            elif status == 'not-locked':
+                where_statement = 'and not(has(node.services_locked))'
+            q = """
+                START node=node:node_types(node_type="Host")
+                WHERE not(node.operational_state! = "Decommissioned") %s
+                RETURN collect(node) as nodes, count(*) as num_hosts
+                """ % where_statement
+            for hit in nc.neo4jdb.query(q):
+                hosts = hit['nodes']
+                num_hosts = hit['num_hosts']
+    return render_to_response('noclook/reports/host_services.html',
+                              {'status': status, 'hosts': hosts, 'num_hosts': num_hosts},
+                              context_instance=RequestContext(request))
 
 
 def send_report(request, report, **kwargs):
