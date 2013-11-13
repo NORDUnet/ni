@@ -71,49 +71,51 @@
             <li class=""><a href="/reports/hosts/host-services/not-locked/">Not locked</a></li>
         {% endif %}
     </ul>
-    {% if hosts and status != "unauthorized-ports"%}
-        <h3>Hosts: {{ num_hosts }}</h3>
-        <p class="pull-right"><span class="table-to-csv btn btn-link" data-table="#hosts"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link" data-table="#hosts"><i class="icon-download"></i> Excel</span></p>
-        <table id="hosts" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
-                    <th>Host</th><th>Description</th><th>Last seen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% load noclook_tags %}
-                {% for item in hosts %}
+    {% if hosts %}
+        {% if status == "unauthorized-ports"%}
+            <p class="pull-right"><span class="table-to-csv btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> Excel</span></p>
+            <table id="unauthorized-ports" class="tablesorter" cellspacing="1">
+                <thead>
                     <tr>
-                        <td><a href="{% noclook_node_to_url item %}">{{ item.name }}</a></td>
-                        <td>{{ item.description|default:"" }}</td>
-                        <td>{% noclook_last_seen_to_dt item.noclook_last_seen as last_seen %}{{ last_seen|date:"D d M Y" }}</td>
+                        <th>Host</th><th>Host service</th><th>Protocol</th><th>Port</th><th>Last seen</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% elif status == "unauthorized-ports" %}
-        <p class="pull-right"><span class="table-to-csv btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> Excel</span></p>
-        <table id="unauthorized-ports" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
-                    <th>Host</th><th>Host service</th><th>Protocol</th><th>Port</th><th>Last seen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% load noclook_tags %}
-                {% for item in hosts %}
-                    {% for port in item.ports %}
+                </thead>
+                <tbody>
+                    {% load noclook_tags %}
+                    {% for item in hosts %}
+                        {% for port in item.ports %}
+                            <tr>
+                                <td><a href="{% noclook_node_to_url item.node %}">{{ item.node.name }}</a></td>
+                                <td><a href="{% noclook_node_to_url port.start %}">{{ port.name }}</a></td>
+                                <td>{{ port.protocol }}</td>
+                                <td>{{ port.port }}</td>
+                                {% noclook_last_seen_to_dt port.noclook_last_seen as last_seen %}
+                                <td>{{ last_seen|date:"D d M Y" }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <h3>Hosts: {{ num_hosts }}</h3>
+            <p class="pull-right"><span class="table-to-csv btn btn-link" data-table="#hosts"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link" data-table="#hosts"><i class="icon-download"></i> Excel</span></p>
+            <table id="hosts" class="tablesorter" cellspacing="1">
+                <thead>
+                    <tr>
+                        <th>Host</th><th>Description</th><th>Last seen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% load noclook_tags %}
+                    {% for item in hosts %}
                         <tr>
-                            <td><a href="{% noclook_node_to_url item.node %}">{{ item.node.name }}</a></td>
-                            <td><a href="{% noclook_node_to_url port.start %}">{{ port.name }}</a></td>
-                            <td>{{ port.protocol }}</td>
-                            <td>{{ port.port }}</td>
-                            {% noclook_last_seen_to_dt port.noclook_last_seen as last_seen %}
-                            <td>{{ last_seen|date:"D d M Y" }}</td>
+                            <td><a href="{% noclook_node_to_url item %}">{{ item.name }}</a></td>
+                            <td>{{ item.description|default:"" }}</td>
+                            <td>{% noclook_last_seen_to_dt item.noclook_last_seen as last_seen %}{{ last_seen|date:"D d M Y" }}</td>
                         </tr>
                     {% endfor %}
-                {% endfor %}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        {% endif %}
     {% endif %}
 {% endblock %}
