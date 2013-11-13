@@ -70,18 +70,18 @@ def host_security_class(request, status=None, form=None):
     hosts = []
     where_statement = ''
     if status == 'classified':
-        where_statement = 'WHERE has(node.security_class) or has(node.security_comment)'
+        where_statement = 'and (has(node.security_class) or has(node.security_comment))'
     elif status == 'not-classified':
-        where_statement = 'WHERE not(has(node.security_class)) and not(has(node.security_comment))'
+        where_statement = 'and (not(has(node.security_class)) and not(has(node.security_comment)))'
     if status:
         num_of_hosts_q = '''
             START node=node:node_types(node_type = "Host")
-            %s
+            WHERE not(node.operational_state! = "Decommissioned") %s
             RETURN COUNT(node) as num_of_hosts
             ''' % where_statement
         hosts_q = '''
             START node=node:node_types(node_type = "Host")
-            %s
+            WHERE not(node.operational_state! = "Decommissioned") %s
             RETURN node, node.name as host_name,
             node.description? as description,
             node.security_class? as security_class,
@@ -94,6 +94,18 @@ def host_security_class(request, status=None, form=None):
     return render_to_response('noclook/reports/host_security_class.html',
                               {'status': status, 'num_of_hosts': num_of_hosts, 'hosts': hosts},
                               context_instance=RequestContext(request))
+
+
+@login_required
+def host_services(request, status=None):
+    num_of_hosts = 0
+    hosts = []
+    where_statement = ''
+    if status == 'locked':
+        where_statement = 'WHERE has(node.security_class) or has(node.security_comment)'
+    elif status == 'not-locked':
+        where_statement = 'WHERE not(has(node.security_class)) and not(has(node.security_comment))'
+
 
 
 def send_report(request, report, **kwargs):
