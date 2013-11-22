@@ -74,6 +74,17 @@ $(document).ready(
                     <th>Country:</th><td>{{ node.country }}</td>
                 </tr>
             {% endif %}
+            {% if node.latitude and node.longitude %}
+                <tr>
+                    <th>Latitude:</th><td>{{ node.latitude }}</td>
+                </tr>
+                <tr>
+                    <th>Longitude:</th><td>{{ node.longitude }}</td>
+                </tr>
+                <tr>
+                    <th>Google Maps:</th><td><a href="https://maps.google.com/?q={{ node.latitude }},{{ node.longitude }}" target="_blank">Link</a></td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">
