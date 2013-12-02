@@ -151,7 +151,7 @@ def mail_host_contract_report(contract_number):
     cc = getattr(django_settings, 'REPORTS_CC', None)
     bcc = getattr(django_settings, 'REPORTS_BCC', None)
     extra_report = getattr(django_settings, 'EXTRA_REPORT_TO', {})
-    to.extend(extra_report.get(contract_number, []))
+    extended_to = to + extra_report.get(contract_number, [])  # Avoid changing REPORTS_TO :)
     body = '''
     This is an auto generated report from NOCLook for contract number %s.
 
@@ -224,7 +224,7 @@ def mail_host_contract_report(contract_number):
     with tempfile.TemporaryFile() as temp:
         wb.save(temp)
         temp.seek(0)
-        msg = h.create_email(subject, body, to, cc, bcc, temp.read(), filename, 'application/excel')
+        msg = h.create_email(subject, body, extended_to, cc, bcc, temp.read(), filename, 'application/excel')
         msg.send()
     return HttpResponse('Report for %s sent.' % contract_number)
 
