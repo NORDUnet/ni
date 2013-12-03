@@ -137,7 +137,7 @@ def form_update_node(user, node, form, property_keys=None):
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
                 update_node_search_index(nc.neo4jdb, node)
         elif not form.cleaned_data[key] and key in node.propertyKeys:
-            if key != 'name' or key != 'node_type':  # Never delete name or node type
+            if key != 'name' and key != 'node_type':  # Never delete name or node type
                 pre_value = node.get_property(key, '')
                 if key in django_settings.SEARCH_INDEX_KEYS:
                     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
@@ -167,7 +167,7 @@ def dict_update_node(user, node, dictionary, property_keys):
                 activitylog.update_node_property(user, nh, key, pre_value, dictionary[key])
                 update_node_search_index(nc.neo4jdb, node)
         elif dictionary.get(key, None) == '' and key in node.propertyKeys:
-            if key != 'name':  # Never delete name
+            if key != 'name' and key != 'node_type':  # Never delete name or node type
                 pre_value = node.get_property(key, '')
                 if key in django_settings.SEARCH_INDEX_KEYS:
                     index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
