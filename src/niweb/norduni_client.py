@@ -21,7 +21,6 @@
 #       MA 02110-1301, USA.
 
 from norduni_client_exceptions import *
-from neo4j import GraphDatabase
 from lucenequerybuilder import Q
 import json
 import re
@@ -46,6 +45,8 @@ except ImportError:
     print 'Initial: norduni_client.neo4jdb == None.'
     print 'Use norduni_client.open_db(path_to_directory) to open a database.'
     pass
+# Import neo4j after django settings to use set environment variables
+import neo4j
 
 # Helper functions
 def normalize_whitespace(s):
@@ -77,7 +78,7 @@ def open_db(uri=NEO4J_URI):
     to use this.
     """
     if uri:
-        return GraphDatabase(uri)
+        return neo4j.GraphDatabase(uri)
         
 def upgrade_db(uri=NEO4J_URI):
     """
@@ -85,7 +86,7 @@ def upgrade_db(uri=NEO4J_URI):
     the database.
     """
     if uri:
-        db = GraphDatabase(uri, allow_store_upgrade="true")
+        db = neo4j.GraphDatabase(uri, allow_store_upgrade="true")
         db.shutdown()
         print 'Database upgraded!'
     else:
