@@ -64,7 +64,7 @@ DATABASES = {
 # Neo4j settings
 NEO4J_RESOURCE_URI = '/path/to/neo4jdb/'
 environ['JAVA_HOME'] = '/usr/lib/jvm/java-6-openjdk/'
-environ['NEO4J_PYTHON_JVMARGS'] = '-Xms128M -Xmx512M'
+environ['NEO4J_PYTHON_JVMARGS'] = '-Xms128M -Xmx512M -XX:+UseConcMarkSweepGC'
 NEO4J_MAX_DATA_AGE = '24' # hours
 # Properties that should be indexed in the search node or relationship index.
 SEARCH_INDEX_KEYS = ['name', 'description', 'ip_address', 'ip_addresses',
