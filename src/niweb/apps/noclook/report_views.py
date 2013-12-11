@@ -10,6 +10,8 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import Http404, HttpResponse
 from django.template.defaultfilters import yesno, date
+from django.views.decorators.cache import cache_page
+
 import tempfile
 from datetime import datetime, timedelta
 from django.conf import settings as django_settings
@@ -27,6 +29,7 @@ def host_reports(request):
                               context_instance=RequestContext(request))
 
 
+@cache_page(60 * 5)
 @login_required
 def host_users(request, host_user_name=None):
     host_users = get_node_type_tuples('Host User')
@@ -64,6 +67,7 @@ def host_users(request, host_user_name=None):
                               context_instance=RequestContext(request))
 
 
+@cache_page(60 * 5)
 @login_required
 def host_security_class(request, status=None, form=None):
     num_of_hosts = 0
@@ -96,6 +100,7 @@ def host_security_class(request, status=None, form=None):
                               context_instance=RequestContext(request))
 
 
+@cache_page(60 * 5)
 @login_required
 def host_services(request, status=None):
     hosts = []
