@@ -25,7 +25,7 @@ import sys
 import argparse
 from datetime import datetime, timedelta
 from lucenequerybuilder import Q
-from ipaddr import IPAddress
+import re
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -37,7 +37,6 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import norduni_client as nc
 import noclook_consumer as nt
-from apps.noclook import activitylog
 from apps.noclook import helpers as h
 
 # This script is used for adding the objects collected with the
@@ -51,20 +50,20 @@ VERBOSE = False
         "checkmk_livestatus": {
             "checks": [
                 {
-                    "check_command": "check_ping!100.0,1%!500.0,2%",
-                    "description": "PING",
-                    "display_name": "PING",
-                    "last_check": 1369703654,
-                    "perf_data": "rta=0.494ms;100.000;500.000;0; pl=0%;1;2;; rtmax=0.574ms;;;; rtmin=0.452ms;;;;",
-                    "plugin_output": "OK - 127.0.0.1: rta 0.494ms, lost 0%"
+                    "check_command": "check_netapp_vol!cifs_id5!90!95",
+                    "description": "NetApp vol4 storage volume",
+                    "display_name": "NetApp vol4 storage volume",
+                    "last_check": 1389748268,
+                    "perf_data": "",
+                    "plugin_output": "OK - cifs_id5 usage: 573.54 / 1003.52 GB (57.15%) 92586/31876689 files (0.29%)"
                 },
                 {
-                    "check_command": "check_ssh",
-                    "description": "SSH",
-                    "display_name": "SSH",
-                    "last_check": 1369703666,
+                    "check_command": "CHECK_NRPE!check_backup",
+                    "description": "check backup",
+                    "display_name": "check backup",
+                    "last_check": 1389748307,
                     "perf_data": "",
-                    "plugin_output": "SSH OK - OpenSSH_5.9 NetBSD_Secure_Shell-20110907-hpn13v11-lpk (protocol 2.0)"
+                    "plugin_output": "PROCS OK: 1 process with UID = 0 (root), args 'dsmcad'"
                 },
                 {
                     u'check_command': u'CHECK_NRPE!check_uptime',
@@ -157,7 +156,68 @@ def set_backup(host, check):
             print e
 
 
-def insert(json_list):
+def setup_netapp_storage_collection():
+    """
+    This is used to create a persistent list for collecting netapp storage usage per service defined.
+
+    :return: dict
+    """
+    # TODO: Maybe move this to the configuration file?
+    return [
+        # 'volumes': [re.compile('pattern')], 'service_id': '', 'total_storage': 0.0
+        {
+            'volumes': [re.compile('vol1'), re.compile('vol2'), re.compile('vol3'), re.compile('cifs_sun[\d]+')],
+            'service_id': 'NU-S000293',
+            'total_storage': 0.0
+        },
+        {
+            'volumes': [re.compile('cifs_fun[\d]+')],
+            'service_id': 'NU-S000198',
+            'total_storage': 0.0
+        },
+        {
+            'volumes': [re.compile('cifs_uni[\d]+')],
+            'service_id': 'NU-S000197',
+            'total_storage': 0.0
+        },
+    ]
+
+
+def collect_netapp_storage_usage(host, check, storage_collection):
+    """
+    :param host: neo4j node
+    :param check: check dictionary
+    :param storage_collection: persistent list for collecting data
+    :return: list storage_collection
+    """
+    plugin_output = check['plugin_output']
+    for service in storage_collection:
+        for pattern in service['volumes']:
+            if pattern.search(plugin_output):
+                try:
+                    service['total_storage'] += float(plugin_output.split('usage:')[1].split()[0])
+                except ValueError as e:
+                    if VERBOSE:
+                        print '%s NetApp storage check did not match the expected format.' % host['name']
+                        print check
+                        print e
+    return storage_collection
+
+
+def set_netapp_storage_usage(storage_collection):
+    """
+    :param storage_collection: list
+    :return: None
+    """
+    # TODO:
+    print storage_collection
+
+
+def parse(json_list):
+
+    # Setup persistent storage for collections done over multiple hosts
+    netapp_collection = setup_netapp_storage_collection()
+
     for item in json_list:
         base = item['host']['checkmk_livestatus']
         ip_address = base['host_address']
@@ -166,14 +226,19 @@ def insert(json_list):
             check_descriptions = []
             for check in base['checks']:
                 check_descriptions.append(check.get('description', 'Missing description'))
-                if check['check_command'] == 'CHECK_NRPE!check_uptime':  # Host uptime
+                if check['check_command'] == 'CHECK_NRPE!check_uptime':     # Host uptime
                     set_uptime(host, check)
-                if check['check_command'] == 'CHECK_NRPE!check_backup':  # TSM backup process
+                if check['check_command'] == 'CHECK_NRPE!check_backup':     # TSM backup process
                     set_backup(host, check)
+                if check['check_command'].startswith('check_netapp_vol'):   # NetApp storage usage
+                    netapp_collection = collect_netapp_storage_usage(host, check, netapp_collection)
             set_nagios_checks(host, check_descriptions)
             h.update_noclook_auto_manage(nc.neo4jdb, host)
             if VERBOSE:
                 print '%s done.' % host['name']
+
+    # Set data collected from multiple hosts
+    set_netapp_storage_usage(netapp_collection)
 
 
 def main():
@@ -194,7 +259,7 @@ def main():
         config = nt.init_config(args.C)
         nagios_checkmk_data = config.get('data', 'nagios_checkmk')
         if nagios_checkmk_data:
-            insert(nt.load_json(nagios_checkmk_data))
+            parse(nt.load_json(nagios_checkmk_data))
     return 0
 
 if __name__ == '__main__':
