@@ -171,6 +171,11 @@
         </div>
         <div class="span3">
             <table class="table">
+                {% if node.netapp_storage_sum %}
+                    <tr>
+                        <th>NetApp storage use:</th><td>{{ node.netapp_storage_sum }}G</td>
+                    </tr>
+                {% endif %}
                 {% if node.noclook_auto_manage %}
                     <tr>
                         <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>

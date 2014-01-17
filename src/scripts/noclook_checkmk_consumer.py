@@ -209,11 +209,13 @@ def set_netapp_storage_usage(storage_collection):
     :param storage_collection: list
     :return: None
     """
-    # TODO:
-    print storage_collection
+    for item in storage_collection:
+        service_node = nc.get_unique_node_by_name(nc.neo4jdb, item['service_id'], 'Service')
+        property_dict = {'netapp_storage_sum': item['total_storage']}
+        h.dict_update_node(nt.get_user(), service_node, property_dict, property_dict.keys())
 
 
-def parse(json_list):
+def insert(json_list):
 
     # Setup persistent storage for collections done over multiple hosts
     netapp_collection = setup_netapp_storage_collection()
@@ -259,7 +261,7 @@ def main():
         config = nt.init_config(args.C)
         nagios_checkmk_data = config.get('data', 'nagios_checkmk')
         if nagios_checkmk_data:
-            parse(nt.load_json(nagios_checkmk_data))
+            insert(nt.load_json(nagios_checkmk_data))
     return 0
 
 if __name__ == '__main__':
