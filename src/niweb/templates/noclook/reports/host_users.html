@@ -85,7 +85,6 @@
                     <th>Nagios</th>
                     <th>Operational State</th>
                     <th>Security Class</th>
-                    <th>Location</th>
                     <th>Last seen</th>
                     <th>Uptime (days)</th>
                 </tr>
@@ -117,12 +116,6 @@
                     <td>{{ hit.host.nagios_checks|yesno:"Yes,No,Not set" }}</td>
                     <td>{{ hit.host.operational_state|default:"Not set" }}</td>
                     <td>{{ hit.host.security_class }}</td>
-                    <td>
-                        {% noclook_get_location hit.host as location %}
-                        {% for loc in location %}
-                            <a href="{% noclook_node_to_url loc.parent %}"> {{ loc.parent.name }}</a> <a href="{% noclook_node_to_url loc.loc %}"> {{ loc.loc.name }}</a>
-                        {% endfor %}
-                    </td>
                     <td>{% noclook_last_seen_to_dt hit.host.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
                     <td>{% timestamp_to_td hit.host.uptime as uptime %}{% if uptime %}{{ uptime.days }}{% endif %}</td>
                 </tr>

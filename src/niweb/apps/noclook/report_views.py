@@ -11,10 +11,10 @@ from django.template import RequestContext
 from django.http import Http404, HttpResponse
 from django.template.defaultfilters import yesno, date
 from django.views.decorators.cache import cache_page
+from django.conf import settings as django_settings
 
 import tempfile
 from datetime import datetime, timedelta
-from django.conf import settings as django_settings
 
 from niweb.apps.noclook.forms import get_node_type_tuples
 from niweb.apps.noclook.models import NordunetUniqueId
@@ -32,9 +32,8 @@ def host_reports(request):
 @cache_page(60 * 5)
 @login_required
 def host_users(request, host_user_name=None):
-    host_users = get_node_type_tuples('Host User')
-    host_users = dict([[name,id] for id,name in host_users if name])
-    host_user_id = host_users.get(host_user_name, None)
+    users = dict([(name, uid) for uid, name in get_node_type_tuples('Host User') if name])
+    host_user_id = users.get(host_user_name, None)
     hosts = []
     if host_user_id:
         hosts_q = '''
@@ -63,7 +62,7 @@ def host_users(request, host_user_name=None):
     elif host_user_name:
         hosts = [hit for hit in nc.neo4jdb.query(hosts_q)]
     return render_to_response('noclook/reports/host_users.html',
-                              {'host_user_name': host_user_name, 'host_users': host_users, 'hosts': hosts},
+                              {'host_user_name': host_user_name, 'host_users': users, 'hosts': hosts},
                               context_instance=RequestContext(request))
 
 
