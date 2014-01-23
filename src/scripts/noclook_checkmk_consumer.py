@@ -35,6 +35,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+from django.conf import settings as django_settings
 import norduni_client as nc
 import noclook_consumer as nt
 from apps.noclook import helpers as h
@@ -156,33 +157,6 @@ def set_backup(host, check):
             print e
 
 
-def setup_netapp_storage_collection():
-    """
-    This is used to create a persistent list for collecting netapp storage usage per service defined.
-
-    :return: dict
-    """
-    # TODO: Maybe move this to the configuration file?
-    return [
-        # 'volumes': [re.compile('pattern')], 'service_id': '', 'total_storage': 0.0
-        {
-            'volumes': [re.compile('vol1'), re.compile('vol2'), re.compile('vol3'), re.compile('cifs_sun[\d]+')],
-            'service_id': 'NU-S000293',
-            'total_storage': 0.0
-        },
-        {
-            'volumes': [re.compile('cifs_fun[\d]+')],
-            'service_id': 'NU-S000198',
-            'total_storage': 0.0
-        },
-        {
-            'volumes': [re.compile('cifs_uni[\d]+')],
-            'service_id': 'NU-S000197',
-            'total_storage': 0.0
-        },
-    ]
-
-
 def collect_netapp_storage_usage(host, check, storage_collection):
     """
     :param host: neo4j node
@@ -209,17 +183,19 @@ def set_netapp_storage_usage(storage_collection):
     :param storage_collection: list
     :return: None
     """
-    for item in storage_collection:
-        service_node = nc.get_unique_node_by_name(nc.neo4jdb, item['service_id'], 'Service')
-        property_dict = {'netapp_storage_sum': item['total_storage']}
+    for service in storage_collection:
+        service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
+        property_dict = {'netapp_storage_sum': service['total_storage']}
         h.dict_update_node(nt.get_user(), service_node, property_dict, property_dict.keys())
+        service['total_storage'] = 0.0
 
 
 def insert(json_list):
 
     # Setup persistent storage for collections done over multiple hosts
-    netapp_collection = setup_netapp_storage_collection()
+    netapp_collection = getattr(django_settings, 'NETAPP_REPORT_SETTINGS', [])
 
+    # Parse collected Nagios data
     for item in json_list:
         base = item['host']['checkmk_livestatus']
         ip_address = base['host_address']
