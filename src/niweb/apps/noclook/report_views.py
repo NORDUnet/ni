@@ -12,9 +12,12 @@ from django.http import Http404, HttpResponse
 from django.template.defaultfilters import yesno, date
 from django.views.decorators.cache import cache_page
 from django.conf import settings as django_settings
+from django.contrib.auth.models import User
 
 import tempfile
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+import json
 
 from niweb.apps.noclook.forms import get_node_type_tuples
 from niweb.apps.noclook.models import NordunetUniqueId
@@ -138,6 +141,12 @@ def send_report(request, report, **kwargs):
             contract_number = kwargs.get('contract_number', None)
             if contract_number:
                 return mail_host_contract_report(contract_number)
+        elif report == 'netapp-storage':
+            period = kwargs.get('period', None)
+            if period == 'monthly':
+                return monthly_netapp_usage()
+            elif period == 'quarterly':
+                return quarterly_netapp_usage()
     return HttpResponse(content=u'Not authorized.', status=401)
 
 
@@ -149,7 +158,7 @@ def mail_host_contract_report(contract_number):
     Sends mail to addresses specified in settings.REPORTS_TO with report attached.
     """
     utcnow = datetime.utcnow()
-    last_month = utcnow - timedelta(days=utcnow.day)
+    last_month = utcnow - relativedelta(months=1)
     subject = 'NOCLook host report for %s' % contract_number
     to = getattr(django_settings, 'REPORTS_TO', [])
     cc = getattr(django_settings, 'REPORTS_CC', None)
@@ -231,6 +240,83 @@ def mail_host_contract_report(contract_number):
         msg = h.create_email(subject, body, extended_to, cc, bcc, temp.read(), filename, 'application/excel')
         msg.send()
     return HttpResponse('Report for %s sent.' % contract_number)
+
+
+def monthly_netapp_usage():
+    """
+    :return: Http200
+
+    This should be run the 1st of every month.
+    """
+    user = User.objects.get(username='noclook')
+    utcnow = datetime.utcnow()
+    last_month = utcnow - relativedelta(months=1)
+    services = getattr(django_settings, 'NETAPP_REPORT_SETTINGS', [])
+    for service in services:
+        service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
+        monthly_dict = json.loads(service_node.get_property('netapp_storage_monthly', '{}'))
+        monthly_dict.setdefault(str(last_month.year), {})[str(last_month.month)] = \
+            service_node.get_property('netapp_storage_sum', 0.0)
+        property_dict = {'netapp_storage_monthly': json.dumps(monthly_dict)}
+        h.dict_update_node(user, service_node, property_dict, property_dict.keys())
+    return HttpResponse('Monthly NetApp usage saved.')
+
+
+def quarterly_netapp_usage():
+    to = getattr(django_settings, 'REPORTS_TO', [])
+    cc = getattr(django_settings, 'REPORTS_CC', None)
+    bcc = getattr(django_settings, 'REPORTS_BCC', None)
+    extra_report = getattr(django_settings, 'EXTRA_REPORT_TO', {})
+    free_gb = 1000
+    price_per_gb = 0.40
+    quarter_month_map = {
+        1: ['01', '02', '03'],
+        2: ['04', '05', '06'],
+        3: ['07', '08', '09'],
+        4: ['10', '11', '12']
+    }
+    utcnow = datetime.utcnow()
+    last_month = utcnow - relativedelta(months=1)
+    year = str(last_month.year)
+    last_quarter = (last_month.month-1)//3 + 1
+    services = getattr(django_settings, 'NETAPP_REPORT_SETTINGS', [])
+    for service in services:
+        report_data = []
+        service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
+        try:
+            customers = [hit['customer'].get_property('name', '') for hit in h.get_customer(service_node)]
+        except Exception:
+            customers = []
+        data_dict = json.loads(service_node.get_property('netapp_storage_monthly', '{}')).get(year, None)
+        if data_dict:
+            for month in quarter_month_map[last_quarter]:
+                key = '%s-%s' % (year, month)
+                report_data.append({key: data_dict.get(month, 0.0)})
+            # Create and send the mail
+            subject = 'NOCLook NetApp storage report for %s' % service['service_id']
+            heading = 'Adobe connect storage volume billing for Q%d, %s, for %s.' % (last_quarter, year, customers)
+            body = '''
+            This is an auto generated report from NOCLook for service ID %s.
+
+            %s
+
+            This report was generated on %s UTC.
+            ''' % (service['service_id'], heading, utcnow.strftime('%Y-%m-%d %H:%M'))
+            extended_to = to + extra_report.get(service['service_id'], [])  # Avoid changing REPORTS_TO :)
+            filename = 'NetApp storage report for %s Q%d %s.xls' % (service['service_id'], last_quarter, year)
+            wb = h.dicts_to_xls({}, [], '%s Q%d %s' % (service['service_id'], last_quarter, year))
+            # Calculate and write pricing info
+            ws = wb.get_sheet(0)
+            ws.write(2, 1, heading)
+            ws.write(4, 1, 'Month')
+            ws.write(4, 2, 'Storage (GB)')
+            # TODO: Create excel file
+            with tempfile.TemporaryFile() as temp:
+                wb.save(temp)
+                temp.seek(0)
+                msg = h.create_email(subject, body, extended_to, cc, bcc, temp.read(), filename, 'application/excel')
+                msg.send()
+    return HttpResponse('Quarterly NetApp storage reports sent!')
 
 
 @login_required

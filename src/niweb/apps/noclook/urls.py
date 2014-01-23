@@ -39,6 +39,7 @@ urlpatterns += patterns('niweb.apps.noclook.report_views',
     (r'^reports/hosts/host-services/(?P<status>[-\w]+)/$', 'host_services'),
     (r'^reports/unique-ids/(?P<organisation>[-\w]+)/$', 'unique_ids'),
     (r'^reports/unique-ids/$', 'unique_ids'),
+    (r'^reports/send/(?P<report>[-\w]+)/(?P<period>monthly|quarterly)/$', 'send_report'),
     (r'^reports/send/(?P<report>[-\w]+)/(?P<contract_number>[-\w]+)/$', 'send_report'),
 )
 
