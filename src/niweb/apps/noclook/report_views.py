@@ -284,9 +284,9 @@ def quarterly_netapp_usage():
         report_data = []
         service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
         try:
-            customers = [hit['customer'].get_property('name', '') for hit in h.get_customer(service_node)]
+            customers = ', '.join([hit['customer'].get_property('name', '') for hit in h.get_customer(service_node)])
         except Exception:
-            customers = []
+            customers = 'Missing customer name'
         data_dict = json.loads(service_node.get_property('netapp_storage_monthly', '{}')).get(year, None)
         if data_dict:
             for month in quarter_month_map[last_quarter]:
@@ -294,13 +294,13 @@ def quarterly_netapp_usage():
                 report_data.append({key: data_dict.get(month, 0.0)})
             # Create and send the mail
             subject = 'NOCLook NetApp storage report for %s' % service['service_id']
-            heading = 'Adobe connect storage volume billing for Q%d, %s, for %s.' % (last_quarter, year, customers)
+            heading = 'Adobe connect storage volume billing Q%d, %s, for %s.' % (last_quarter, year, customers)
             body = '''
-            This is an auto generated report from NOCLook for service ID %s.
+        This is an auto generated report from NOCLook for service ID %s.
 
-            %s
+        %s
 
-            This report was generated on %s UTC.
+        This report was generated on %s UTC.
             ''' % (service['service_id'], heading, utcnow.strftime('%Y-%m-%d %H:%M'))
             extended_to = to + extra_report.get(service['service_id'], [])  # Avoid changing REPORTS_TO :)
             filename = 'NetApp storage report for %s Q%d %s.xls' % (service['service_id'], last_quarter, year)
@@ -310,7 +310,23 @@ def quarterly_netapp_usage():
             ws.write(2, 1, heading)
             ws.write(4, 1, 'Month')
             ws.write(4, 2, 'Storage (GB)')
-            # TODO: Create excel file
+            ws.write(4, 3, 'Service inc.')
+            ws.write(4, 4, 'Billable storage')
+            total = 0
+            for i in range(0, len(report_data)):
+                row = 5 + i
+                monthly = report_data[i].values()[0]
+                billable = max(monthly-free_gb, 0)
+                total += billable
+                ws.write(row, 1, report_data[i].keys()[0])
+                ws.write(row, 2, monthly)
+                ws.write(row, 3, -free_gb)
+                ws.write(row, 4, billable)
+            ws.write(8, 4, total)
+            ws.write(9, 1, 'Price per GB')
+            ws.write(10, 1, '%0.2f€' % price_per_gb)
+            ws.write(12, 1, 'Storage cost')
+            ws.write(13, 1, '%0.2f€' % (total * price_per_gb))
             with tempfile.TemporaryFile() as temp:
                 wb.save(temp)
                 temp.seek(0)
