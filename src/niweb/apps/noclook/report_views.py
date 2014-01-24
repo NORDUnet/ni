@@ -288,6 +288,7 @@ def quarterly_netapp_usage():
             customers = ', '.join([hit['customer'].get_property('name', '') for hit in h.get_customer(service_node)])
         except Exception:
             customers = 'Missing customer name'
+        contract_number = service_node.get_property('contract_number', 'Missing contract number')
         data_dict = json.loads(service_node.get_property('netapp_storage_monthly', '{}')).get(year, None)
         if data_dict:
             for month in quarter_month_map[last_quarter]:
@@ -308,7 +309,8 @@ def quarterly_netapp_usage():
             wb = h.dicts_to_xls({}, [], '%s Q%d %s' % (service['service_id'], last_quarter, year))
             # Calculate and write pricing info
             ws = wb.get_sheet(0)
-            ws.write(2, 1, heading)
+            ws.write(1, 1, heading)
+            ws.write(2, 1, 'Contract number: %s' % contract_number)
             ws.write(4, 1, 'Month')
             ws.write(4, 2, 'Storage (GB)')
             ws.write(4, 3, 'Service inc.')
