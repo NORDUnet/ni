@@ -15,9 +15,10 @@ from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import json
+from decimal import Decimal, ROUND_DOWN
 
 from niweb.apps.noclook.forms import get_node_type_tuples
 from niweb.apps.noclook.models import NordunetUniqueId
@@ -267,8 +268,8 @@ def quarterly_netapp_usage():
     cc = getattr(django_settings, 'REPORTS_CC', None)
     bcc = getattr(django_settings, 'REPORTS_BCC', None)
     extra_report = getattr(django_settings, 'EXTRA_REPORT_TO', {})
-    free_gb = 1000
-    price_per_gb = 0.40
+    free_gb = Decimal('1000.00')
+    price_per_gb = Decimal('0.40')
     quarter_month_map = {
         1: ['01', '02', '03'],
         2: ['04', '05', '06'],
@@ -312,21 +313,23 @@ def quarterly_netapp_usage():
             ws.write(4, 2, 'Storage (GB)')
             ws.write(4, 3, 'Service inc.')
             ws.write(4, 4, 'Billable storage')
-            total = 0
+            ws.write(4, 5, u'Price per GB (€)')
+            ws.write(4, 6, u'Monthly cost (€)')
+            total_cost = Decimal(0)
             for i in range(0, len(report_data)):
                 row = 5 + i
-                monthly = report_data[i].values()[0]
-                billable = max(monthly-free_gb, 0)
-                total += billable
+                storage_month = Decimal(report_data[i].values()[0])
+                billable = Decimal(max(storage_month-free_gb, 0))
+                cost_month = billable * price_per_gb
+                total_cost += cost_month
                 ws.write(row, 1, report_data[i].keys()[0])
-                ws.write(row, 2, monthly)
-                ws.write(row, 3, -free_gb)
-                ws.write(row, 4, billable)
-            ws.write(8, 4, total)
-            ws.write(9, 1, 'Price per GB')
-            ws.write(10, 1, '%0.2f€' % price_per_gb)
-            ws.write(12, 1, 'Storage cost')
-            ws.write(13, 1, '%0.2f€' % (total * price_per_gb))
+                ws.write(row, 2, storage_month.quantize(Decimal('.01'), rounding=ROUND_DOWN))
+                ws.write(row, 3, -free_gb.quantize(Decimal('.01'), rounding=ROUND_DOWN))
+                ws.write(row, 4, billable.quantize(Decimal('.01'), rounding=ROUND_DOWN))
+                ws.write(row, 5, price_per_gb.quantize(Decimal('.01'), rounding=ROUND_DOWN))
+                ws.write(row, 6, cost_month.quantize(Decimal('.01'), rounding=ROUND_DOWN))
+            ws.write(9, 1, 'Quarterly storage cost')
+            ws.write(9, 6, total_cost.quantize(Decimal('.01'), rounding=ROUND_DOWN))
             with tempfile.TemporaryFile() as temp:
                 wb.save(temp)
                 temp.seek(0)
