@@ -651,6 +651,7 @@ class EditServiceForm(forms.Form):
     native_vlan = forms.CharField(required=False, help_text='')
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
+    contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this service?')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)

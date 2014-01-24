@@ -167,13 +167,18 @@
                         {% endfor %}
                     </td>
                 </tr>
+                {% if node.contract_number %}
+                    <tr>
+                        <th>Contract number:</th><td>{{ node.contract_number }}</td>
+                    </tr>
+                {% endif %}
             </table>
         </div>
         <div class="span3">
             <table class="table">
                 {% if node.netapp_storage_sum %}
                     <tr>
-                        <th>NetApp storage use:</th><td>{{ node.netapp_storage_sum }}G</td>
+                        <th>NetApp storage use:</th><td>{{ node.netapp_storage_sum }}GB</td>
                     </tr>
                 {% endif %}
                 {% if node.noclook_auto_manage %}
