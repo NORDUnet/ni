@@ -485,14 +485,15 @@ def update_item_properties(db, item, new_properties):
     # We might want to do a better check of the data...
     with db.transaction:
         for key, value in new_properties.items():
-            fixed_key = key.replace(' ','_').lower() # No spaces or caps
+            fixed_key = key.replace(' ', '_').lower()  # No spaces or caps
             if value or value is 0:
                 try:
                     # Handle string representations of lists and booleans
                     item[fixed_key] = json.loads(value)
                 except ValueError:
                     item[fixed_key] = normalize_whitespace(value)
-                except TypeError:
+                except (TypeError, Exception):
+                    # if value is a JSON dict Neo4j will throw Exception: No matching overloads found...
                     item[fixed_key] = value
             elif fixed_key in item.propertyKeys:
                 del item[fixed_key]
