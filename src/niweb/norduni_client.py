@@ -490,7 +490,8 @@ def update_item_properties(db, item, new_properties):
                 try:
                     # Handle string representations of lists and booleans
                     item[fixed_key] = json.loads(value)
-                except ValueError:
+                except (ValueError, Exception):
+                    # if value is a dict Neo4j will throw Exception: No matching overloads found...
                     item[fixed_key] = normalize_whitespace(value)
                 except (TypeError, Exception):
                     # if value is a JSON dict Neo4j will throw Exception: No matching overloads found...
