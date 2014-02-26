@@ -15,6 +15,8 @@ v1_api.register(UserResource())
 v1_api.register(FullUserResource())
 # Inheritated from NodeHandleResource
 v1_api.register(CableResource())
+v1_api.register(CustomerResource())
+v1_api.register(EndUserResource())
 v1_api.register(HostResource())
 v1_api.register(HostProviderResource())
 v1_api.register(HostServiceResource())

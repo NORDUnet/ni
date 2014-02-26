@@ -403,8 +403,32 @@ class CableResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
-        
+
+
+class CustomerResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='customer')
+        resource_name = 'customer'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class EndUserResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='end-user')
+        resource_name = 'end-user'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
 class HostResource(NodeHandleResource):
     
     class Meta:
