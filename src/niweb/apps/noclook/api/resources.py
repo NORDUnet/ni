@@ -409,6 +409,8 @@ class CustomerResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='customer')
         resource_name = 'customer'
+        pk_field = 'node_name'
+        pk_field_regex = '[-\w]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
@@ -421,6 +423,8 @@ class EndUserResource(NodeHandleResource):
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='end-user')
         resource_name = 'end-user'
+        pk_field = 'node_name'
+        pk_field_regex = '[-\w]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
@@ -517,7 +521,7 @@ class PeeringGroupResource(NodeHandleResource):
         allowed_methods = ['get', 'put', 'post']
         filtering = {
             "node_name": ALL,
-            }
+        }
 
 
 class PeeringPartnerResource(NodeHandleResource):
