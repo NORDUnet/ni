@@ -4,7 +4,7 @@ Created on Thu Apr 12 15:56:38 2012
 
 @author: lundberg
 
-For use with neo4j-embedded >= 1.7.M3.
+For use with neo4j-embedded >1.7 <1.9.
 """
 
 from tastypie.resources import Resource, ModelResource
@@ -25,8 +25,9 @@ from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
 from niweb.apps.noclook.forms import EditServiceForm, NewNordunetL2vpnServiceForm
-from niweb.apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, \
-    get_unit, create_unit, set_depends_on, register_unique_id, is_free_unique_id, delete_relationship
+#from niweb.apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, \
+#    get_unit, create_unit, set_depends_on, register_unique_id, is_free_unique_id, delete_relationship, dict_update_node
+import niweb.apps.noclook.helpers as h
 import norduni_client as nc
 from norduni_client_exceptions import MultipleNodesReturned
 import logging
@@ -222,7 +223,7 @@ class NodeHandleResource(ModelResource):
         return child_resource.get_list(request, **kwargs)
         
     def dehydrate_node(self, bundle):
-        return item2dict(bundle.obj.get_node())
+        return h.item2dict(bundle.obj.get_node())
         
     def hydrate_node(self, bundle):
         try:
@@ -317,7 +318,7 @@ class RelationshipResource(Resource):
         new_obj = RelationshipObject()
         new_obj.id = rel.getId()
         new_obj.type = rel.type.name()
-        new_obj.properties.update(item2dict(rel))
+        new_obj.properties.update(h.item2dict(rel))
         new_obj.start = handle_id2resource_uri(rel.start.get_property('handle_id', None))
         new_obj.end = handle_id2resource_uri(rel.end.get_property('handle_id', None))
         return new_obj
@@ -605,11 +606,11 @@ class ServiceResource(NodeHandleResource):
     def obj_update(self, bundle, **kwargs):
         bundle = super(ServiceResource, self).obj_update(bundle, **kwargs)
         node = bundle.obj.get_node()
-        data = item2dict(node)
+        data = h.item2dict(node)
         data.update(bundle.data)
         form = EditServiceForm(data)
         if form.is_valid():
-            form_update_node(bundle.request.user, node, form)
+            h.form_update_node(bundle.request.user, node, form)
         else:
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
         return bundle
@@ -633,20 +634,35 @@ class ServiceL2VPNResource(ServiceResource):
     operational_state = fields.CharField(help_text='Choices: In service, Reserved, Decommissioned, Testing')
     vrf_target = fields.CharField()
     route_distinguisher = fields.CharField()
+    vpn_type = fields.CharField(help_text='Choices: l2vpn, interface-switch')
+    interface_type = fields.CharField()
     end_points = fields.ListField(help_text='[{"device": "", "port": ""},]')
 
     class Meta(ServiceResource.Meta):
         resource_name = 'l2vpn'
+
+
+    def _initial_form_data(self, bundle):
         initial_data = {
             'node_type': '/api/v1/node_type/service/',
             'node_meta_type': 'logical',
-            'service_type': 'L2VPN',
         }
+        try:
+            vpn_type = bundle.data['vpn_type'].lower()
+            if vpn_type == 'l2vpn':
+                initial_data['service_type'] = 'L2VPN'
+            elif vpn_type == 'interface-switch':
+                initial_data['service_type'] = 'Interface Switch'
+            else:
+                raise_not_acceptable_error('KeyError: vpn_type %s not recognized.' % vpn_type)
+        except KeyError as e:
+            raise_not_acceptable_error('KeyError: %s.' % e)
+        return initial_data
 
     def obj_create(self, bundle, **kwargs):
-        bundle.data.update(self._meta.initial_data)
+        bundle.data.update(self._initial_form_data(bundle))
         try:
-            if is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
+            if h.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
                 bundle.data['name'] = bundle.data['node_name']
             else:
                 raise_conflict_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
@@ -677,11 +693,11 @@ class ServiceL2VPNResource(ServiceResource):
             end_point_nodes = self.get_end_point_nodes(bundle)
             # Create the new service
             bundle = super(ServiceL2VPNResource, self).obj_create(bundle, **kwargs)
-            register_unique_id(NordunetUniqueId, bundle.data['node_name'])
+            h.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
             # Depend the created service on provided end points
             node = bundle.obj.get_node()
             for end_point in end_point_nodes:
-                set_depends_on(bundle.request.user, node, end_point.getId())
+                h.set_depends_on(bundle.request.user, node, end_point.getId())
             return self.hydrate_node(bundle)
         else:
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
@@ -692,22 +708,23 @@ class ServiceL2VPNResource(ServiceResource):
         node = bundle.obj.get_node()
         if end_point_nodes:
             for rel in node.Depends_on.outgoing:
-                delete_relationship(bundle.request.user, rel)
+                h.delete_relationship(bundle.request.user, rel)
             for end_point in end_point_nodes:
-                set_depends_on(bundle.request.user, node, end_point.getId())
+                h.set_depends_on(bundle.request.user, node, end_point.getId())
         return bundle
 
     def dehydrate(self, bundle):
         bundle = super(ServiceL2VPNResource, self).dehydrate(bundle)
         bundle.data['vrf_target'] = bundle.data['node'].get('vrf_target', '')
         bundle.data['route_distinguisher'] = bundle.data['node'].get('route_distinguisher', '')
+        bundle.data['vpn_type'] = bundle.data['node'].get('vpn_type', '')
         del bundle.data['end_points']
         return bundle
 
     def get_object_list(self, request, **kwargs):
         q = """
             START node=node:node_types(node_type = "Service")
-            WHERE node.service_type! = "L2VPN"
+            WHERE node.service_type! = "L2VPN" OR node.service_type! = "Interface Switch"
             RETURN collect(node.handle_id) as handle_ids
             """
         hits = nc.neo4jdb.query(q)
@@ -716,28 +733,50 @@ class ServiceL2VPNResource(ServiceResource):
     def obj_get_list(self, request=None, **kwargs):
         return self.get_object_list(request, **kwargs)
 
+    def get_port(self, bundle, device_name, port_name):
+        port_node = h.get_port(device_name, port_name)
+        if not port_node:
+            try:
+                parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, 'Router')
+                if not parent_node:
+                    raise_not_acceptable_error("End point Router %s not found." % device_name)
+                port_node = h.create_port(parent_node, port_name, bundle.request.user)
+            except MultipleNodesReturned as e:
+                raise_not_acceptable_error(e)
+        return port_node
+
+    def get_unit(self, bundle, port_node, unit_name):
+        unit_node = h.get_unit(port_node, unit_name)
+        if not unit_node:
+            unit_node = h.create_unit(port_node, unit_name, bundle.request.user)
+        return unit_node
+
+    def get_vlan(self, bundle):
+        vlan = bundle.data.get('vlan', None)
+        if vlan:
+            vlan = str(bundle.data.get('vlan')).split('-')[0]  # Use lowest vlan if a range, "5-10" -> "5"
+        return vlan
+
     def get_end_point_nodes(self, bundle):
         end_point_nodes = []
-        try:
-            for end_point in bundle.data.get('end_points', []):
-                port_node = get_port(end_point['device'], end_point['port'])
-                if not port_node:
-                    try:
-                        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, end_point['device'], 'Router')
-                        if not parent_node:
-                            raise_not_acceptable_error("End point Router %s not found." % end_point['device'])
-                        port_node = create_port(parent_node, end_point['port'], bundle.request.user)
-                    except MultipleNodesReturned as e:
-                        raise_not_acceptable_error(e)
+        for end_point in bundle.data.get('end_points', []):
+            try:
+                port_node = self.get_port(bundle, end_point['device'], end_point['port'])
                 if end_point.get('unit', None):
-                    unit_node = get_unit(port_node, end_point['unit'])
-                    if not unit_node:
-                        unit_node = create_unit(port_node, end_point['unit'], bundle.request.user)
-                    end_point_nodes.append(unit_node)
+                    unit_node = self.get_unit(bundle, port_node, end_point.get('unit'))
+                elif end_point.get('vlan', None) or self.get_vlan(bundle):
+                    vlan = end_point.get('vlan', None)
+                    if not vlan:
+                        vlan = self.get_vlan(bundle)
+                    unit_node = self.get_unit(bundle, port_node, vlan)
+                    unit_properties = {'vlan': vlan}
+                    h.dict_update_node(bundle.request.user, unit_node, unit_properties, unit_properties.keys())
                 else:
-                    end_point_nodes.append(port_node)
-        except ObjectDoesNotExist:
-            raise_not_acceptable_error('End point %s not found.' % end_point)
+                    # Use Unit 0 if nothing else is specified
+                    unit_node = self.get_unit(bundle, port_node, '0')
+                end_point_nodes.append(unit_node)
+            except ObjectDoesNotExist:
+                raise_not_acceptable_error('End point %s not found.' % end_point)
         return end_point_nodes
 
 

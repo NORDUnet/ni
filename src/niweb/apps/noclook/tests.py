@@ -134,19 +134,19 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "ethernet-vlan",
+            "interface_type": "trunk",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
-            "vlan": 1704,
-            "native_vlan": 'Native VLAN',
             "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         #sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpCreated(resp)
-        self.assertEqual(len([hit for hit in self.port1.get_node().Depends_on]), 1)
-        self.assertEqual(len([hit for hit in self.port2.get_node().Depends_on]), 1)
+        default_unit_1 = h.get_unit(self.port1.get_node(), '0')
+        default_unit_2 = h.get_unit(self.port2.get_node(), '0')
+        self.assertEqual(len([hit for hit in default_unit_1.Depends_on]), 1)
+        self.assertEqual(len([hit for hit in default_unit_2.Depends_on]), 1)
         self.purge_neo4jdb()
 
     def test_create_l2vpn_new_port_end_point(self):
@@ -163,11 +163,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "ethernet-vlan",
+            "interface_type": "trunk",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
-            "vlan": 1704,
-            "native_vlan": 'Native VLAN',
             "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
@@ -175,9 +173,11 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         #sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpCreated(resp)
         new_port_1 = h.get_port('Test Router 1', 'New Port 1')
+        default_unit_1 = h.get_unit(new_port_1, '0')
         new_port_2 = h.get_port('Test Router 2', 'New Port 2')
-        self.assertEqual(len([hit for hit in new_port_1.Depends_on]), 1)
-        self.assertEqual(len([hit for hit in new_port_2.Depends_on]), 1)
+        default_unit_2 = h.get_unit(new_port_2, '0')
+        self.assertEqual(len([hit for hit in default_unit_1.Depends_on]), 1)
+        self.assertEqual(len([hit for hit in default_unit_2.Depends_on]), 1)
         self.purge_neo4jdb()
 
     #@override_settings(DEBUG=True)
@@ -205,7 +205,7 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             "vrf_target": "target:2603:4242000007"
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
-        #sys.stderr.writelines('stderr: ' + str([hit for hit in self.unit1.get_node().rels]))
+        #sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpCreated(resp)
         self.assertEqual(len([hit for hit in self.unit1.get_node().Depends_on]), 1)
         self.purge_neo4jdb()
@@ -363,6 +363,63 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         new_unit_2 = h.get_unit(self.port2.get_node(), 'New Unit 2')
         self.assertEqual(len([hit for hit in new_unit_1.Depends_on]), 1)
         self.assertEqual(len([hit for hit in new_unit_2.Depends_on]), 1)
+        self.purge_neo4jdb()
+
+    def test_create_interface_switch_new_unit_end_point(self):
+        data = {
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1",
+                    "unit": "New Unit 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2",
+                    "unit": "New Unit 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "ethernet-vlan",
+            "vpn_type": "interface-switch",
+            "description": "Interface Switch created by NOCLook test",
+            "vlan": 1704,
+            "native_vlan": 'Native VLAN',
+            "node_name": "ServiceID"
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+        self.assertHttpCreated(resp)
+        new_unit_1 = h.get_unit(self.port1.get_node(), 'New Unit 1')
+        new_unit_2 = h.get_unit(self.port2.get_node(), 'New Unit 2')
+        self.assertEqual(len([hit for hit in new_unit_1.Depends_on]), 1)
+        self.assertEqual(len([hit for hit in new_unit_2.Depends_on]), 1)
+        self.purge_neo4jdb()
+
+    def test_create_interface_switch_trunk_existing_port_end_point(self):
+        data = {
+            "end_points": [
+                {
+                    "device": "Test Router 1",
+                    "port": "Test Port 1"
+                },
+                {
+                    "device": "Test Router 2",
+                    "port": "Test Port 2"
+                }
+            ],
+            "operational_state": "In service",
+            "interface_type": "trunk",
+            "vpn_type": "interface-switch",
+            "description": "VPN created by NOCLook test",
+            "node_name": "ServiceID",
+        }
+        resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
+        #sys.stderr.writelines('stderr: ' + str(resp))
+        self.assertHttpCreated(resp)
+        default_unit_1 = h.get_unit(self.port1.get_node(), '0')
+        default_unit_2 = h.get_unit(self.port2.get_node(), '0')
+        self.assertEqual(len([hit for hit in default_unit_1.Depends_on]), 1)
+        self.assertEqual(len([hit for hit in default_unit_2.Depends_on]), 1)
         self.purge_neo4jdb()
 
 

@@ -865,7 +865,7 @@ def create_unit(parent_node, unit_name, creator):
     """
     type_unit = NodeType.objects.get(type="Unit")
     nh = NodeHandle.objects.create(
-        node_name=unit_name,
+        node_name=str(unit_name),
         node_type=type_unit,
         node_meta_type='Logical',
         modifier=creator, creator=creator

@@ -104,6 +104,7 @@ SERVICE_TYPES = [
     ('Connect', 'SAAS - Connect'),
     ('Survey', 'SAAS - Survey'),
     ('Box', 'SAAS - Box'),
+    ('Interface Switch', 'Ethernet - Interface Switch'),
 ]
 
 SERVICE_CLASS_MAP = {
@@ -119,6 +120,7 @@ SERVICE_CLASS_MAP = {
     'Ethernet': 'DWDM',
     'External': 'External',
     'Hosting': 'Hosting',
+    'Interface Switch': 'Ethernet',
     'Internal': 'Internal',
     'Internet Exchange': 'IP',
     'L2VPN': 'MPLS',
