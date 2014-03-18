@@ -274,14 +274,18 @@ def update_relationship_search_index(db, rel):
         if key in rel_keys:
             nc.update_index_item(db, index, rel, key)
 
+
 def isots_to_dt(item):
     """
     Returns noclook_last_seen property as a datetime.datetime. If the property
     does not exist we return None.
     """
     try:
-        ts = item.get_property('noclook_last_seen', None)  # ex. 2011-11-01T14:37:13.713434
-        dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
+        ts = item.get_property('noclook_last_seen', None)
+        try:
+            dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')  # ex. 2011-11-01T14:37:13.713434
+        except ValueError:
+            dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S')     # ex. 2011-11-01T14:37:13
     except TypeError:
         return None
     return dt
