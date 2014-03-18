@@ -92,7 +92,7 @@ def load_json(json_dir):
                     f = open(join(json_dir, a_file), 'r')
                     json_list.append(json.load(f))
                 except ValueError as e:
-                    print 'Encountered a problem with %s.' % file
+                    print 'Encountered a problem with %s.' % a_file
                     print e
     except IOError as e:
         print 'Encountered a problem with %s.' % json_dir
