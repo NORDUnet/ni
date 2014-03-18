@@ -87,11 +87,15 @@ def load_json(json_dir):
     json_list = []
     try:
         for subdir, dirs, files in os.walk(json_dir):
-            for file in files:
-                f=open(join(json_dir, file), 'r')
-                json_list.append(json.load(f))
+            for a_file in files:
+                try:
+                    f = open(join(json_dir, a_file), 'r')
+                    json_list.append(json.load(f))
+                except ValueError as e:
+                    print 'Encountered a problem with %s.' % file
+                    print e
     except IOError as e:
-        print 'Encountered a problem with %s.' % json_dir 
+        print 'Encountered a problem with %s.' % json_dir
         print e
     return json_list
 
