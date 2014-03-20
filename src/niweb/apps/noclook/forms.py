@@ -64,6 +64,7 @@ CABLE_TYPES = [
 
 PORT_TYPES = [
     ('', ''),
+    ('E2000', 'E2000'),
     ('LC', 'LC'),
     ('MU', 'MU'),
     ('RJ45', 'RJ45'),
