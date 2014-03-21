@@ -654,7 +654,7 @@ class ServiceL2VPNResource(ServiceResource):
             else:
                 raise_not_acceptable_error('KeyError: vpn_type %s not recognized.' % vpn_type)
         except KeyError as e:
-            raise_not_acceptable_error('KeyError: %s.' % e)
+            raise_not_acceptable_error('%s is missing or incorrect.' % e)
         return initial_data
 
     def obj_create(self, bundle, **kwargs):
@@ -665,7 +665,7 @@ class ServiceL2VPNResource(ServiceResource):
             else:
                 raise_conflict_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
         except KeyError as e:
-            raise_not_acceptable_error('KeyError: %s.' % e)
+            raise_not_acceptable_error('%s is missing.' % e)
         form = NewNordunetL2vpnServiceForm(bundle.data)
         if form.is_valid():
             bundle.data.update({
