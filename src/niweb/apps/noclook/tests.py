@@ -16,10 +16,10 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
     # TODO: Write tests for this.
     # vpn creation:
     # url: https://nidev-consumer.nordu.net/api/v1/l2vpn/
-    # {"route_distinguisher":"2603:0007","end_points":[{"device":"hel","port":"ge-1\/0\/1"},{"device":"sto","port":"ge-1\/0\/1"}],"operational_state":"In service","interface_type":"ethernet-vlan","vpn_type":"l2vpn","description":"VPN created by NCS","vlan":1704,"node_name":"NU-S800005","vrf_target":"target:2603:4242000007"}
+    # {"ncs_service_name": "vpn-vlan-rewrite", "route_distinguisher": "2603:0093", "end_points": [{"device": "sto", "port": "ge-1\/0\/1", "unit": "1705", "vlan": "1705"}, {"device": "hel", "port": "ge-1\/0\/1", "unit": "1710", "vlan": "1710"}], "operational_state": "In service", "vpn_type": "l2vpn", "description": "NCS VPN:VPN created through NCS", "vlan": "1705 <->1710", "node_name": "NU-S800092", "vrf_target": "target:2603:4242000093"}
     # vpn update:
     # url: https://nidev-consumer.nordu.net/api/v1/l2vpn/NU-S800005
-    # {"route_distinguisher": "2603:0007", "operational_state": "In service", "interface_type": "ethernet-vlan", "vpn_type": "l2vpn", "description": "VPN created by NCS", "vlan": 1704, "vrf_target": "target:2603:4242000007"}
+    # {"route_distinguisher": "2603:0007", "operational_state": "In service", "vpn_type": "l2vpn", "description": "VPN created by NCS", "vlan": 1704, "vrf_target": "target:2603:4242000007"}
     # vpn decommission:
     # TBA
 
@@ -134,7 +134,6 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "trunk",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "node_name": "ServiceID",
@@ -163,7 +162,6 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "trunk",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "node_name": "ServiceID",
@@ -196,11 +194,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "ethernet-vlan",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "vlan": 1704,
-            "native_vlan": 'Native VLAN',
             "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
@@ -226,11 +222,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "ethernet-vlan",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "vlan": 1704,
-            "native_vlan": 'Native VLAN',
             "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
@@ -258,11 +252,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "ethernet-vlan",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "vlan": 1704,
-            "native_vlan": 'Native VLAN',
             "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
@@ -271,11 +263,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         data = {
             "route_distinguisher": "new-2603:0007",
             "operational_state": "Decommissioned",
-            "interface_type": "new-ethernet-vlan",
             "vpn_type": "new-l2vpn",
             "description": "VPN updated by NOCLook test",
             "vlan": 4071,
-            "native_vlan": 'new-Native VLAN',
             "vrf_target": "new-target:2603:4242000007"
         }
         resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())
@@ -298,11 +288,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "ethernet-vlan",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "vlan": 1704,
-            "native_vlan": 'Native VLAN',
             "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
@@ -331,11 +319,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "ethernet-vlan",
             "vpn_type": "l2vpn",
             "description": "VPN created by NOCLook test",
             "vlan": 1704,
-            "native_vlan": 'Native VLAN',
             "node_name": "ServiceID",
             "vrf_target": "target:2603:4242000007"
         }
@@ -380,11 +366,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "ethernet-vlan",
             "vpn_type": "interface-switch",
             "description": "Interface Switch created by NOCLook test",
             "vlan": 1704,
-            "native_vlan": 'Native VLAN',
             "node_name": "ServiceID"
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
@@ -408,7 +392,6 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
             "operational_state": "In service",
-            "interface_type": "trunk",
             "vpn_type": "interface-switch",
             "description": "VPN created by NOCLook test",
             "node_name": "ServiceID",

@@ -616,11 +616,9 @@ class NewNordunetServiceForm(NewServiceForm):
 
 class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
 
-    interface_type = forms.CharField(required=False, help_text='')
     ncs_service_name = forms.CharField(required=False, help_text='')
     vpn_type = forms.CharField(required=False, help_text='')
     vlan = forms.CharField(required=False, help_text='')
-    native_vlan = forms.CharField(required=False, help_text='')
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
 
@@ -647,11 +645,9 @@ class EditServiceForm(forms.Form):
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
-    interface_type = forms.CharField(required=False, help_text='')
     ncs_service_name = forms.CharField(required=False, help_text='')
     vpn_type = forms.CharField(required=False, help_text='')
     vlan = forms.CharField(required=False, help_text='')
-    native_vlan = forms.CharField(required=False, help_text='')
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this service?')

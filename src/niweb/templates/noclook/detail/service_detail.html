@@ -107,14 +107,10 @@
                         <th>Project end date:</th><td>{{ node.project_end_date }}</td>
                     </tr>
                 {% endif %}
-                {% if node.service_type == "L2VPN" %}
+                {% if node.service_type == "L2VPN" or node.service_type == "Interface Switch" %}
                     <tr>
                         <th>NCS Service Name:</th>
                         <td>{{ node.ncs_service_name }}</td>
-                    </tr>
-                    <tr>
-                        <th>Interface Type:</th>
-                        <td>{{ node.interface_type }}</td>
                     </tr>
                     <tr>
                         <th>VPN Type:</th>
@@ -124,12 +120,6 @@
                         <th>VLAN:</th>
                         <td>{{ node.vlan }}</td>
                     </tr>
-                    {% if node.native_vlan %}
-                        <tr>
-                            <th>Native VLAN:</th>
-                            <td>{{ node.native_vlan }}</td>
-                        </tr>
-                    {% endif %}
                     <tr>
                         <th>VRF Target:</th>
                         <td>{{ node.vrf_target }}</td>
