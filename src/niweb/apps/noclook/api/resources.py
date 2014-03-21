@@ -635,12 +635,10 @@ class ServiceL2VPNResource(ServiceResource):
     vrf_target = fields.CharField()
     route_distinguisher = fields.CharField()
     vpn_type = fields.CharField(help_text='Choices: l2vpn, interface-switch')
-    interface_type = fields.CharField()
     end_points = fields.ListField(help_text='[{"device": "", "port": ""},]')
 
     class Meta(ServiceResource.Meta):
         resource_name = 'l2vpn'
-
 
     def _initial_form_data(self, bundle):
         initial_data = {
@@ -677,11 +675,9 @@ class ServiceL2VPNResource(ServiceResource):
                 'node': {
                     'service_type': form.cleaned_data['service_type'],
                     'service_class': form.cleaned_data['service_class'],
-                    'interface_type': form.cleaned_data['interface_type'],
                     'ncs_service_name': form.cleaned_data['ncs_service_name'],
                     'vpn_type': form.cleaned_data['vpn_type'],
                     'vlan': form.cleaned_data['vlan'],
-                    'native_vlan': form.cleaned_data['native_vlan'],
                     'vrf_target': form.cleaned_data['vrf_target'],
                     'route_distinguisher': form.cleaned_data['route_distinguisher'],
                     'operational_state': form.cleaned_data['operational_state'],
@@ -754,7 +750,7 @@ class ServiceL2VPNResource(ServiceResource):
     def get_vlan(self, bundle):
         vlan = bundle.data.get('vlan', None)
         if vlan:
-            if '<->' in vlan:  # VLAN rewrite, VLAN needs to be specified on each end point.
+            if '<->' in str(vlan):  # VLAN rewrite, VLAN needs to be specified on each end point.
                 return None
             vlan = str(bundle.data.get('vlan')).split('-')[0]  # Use lowest vlan if a range, "5-10" -> "5"
         return vlan
