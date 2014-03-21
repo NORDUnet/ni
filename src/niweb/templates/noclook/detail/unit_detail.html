@@ -40,6 +40,11 @@
                 <tr>
                     <th>IP Addresses:</th><td class="break-word">{% for address in node.ip_addresses %}{{ address }}<br>{% endfor %}</td>
                 </tr>
+                {% if node.vlan %}
+                    <tr>
+                        <th>VLAN:</th><td>{{ node.vlan }}</td>
+                    </tr>
+                {% endif %}
             </table>
         </div>
         <div class="span3">
