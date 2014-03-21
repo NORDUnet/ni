@@ -220,7 +220,7 @@ $(document).ready(
 <br><br><br>
 <div class="section">
     <h3>Services provided</h3>
-    {% if node.services_locked %}
+    {% if node.services_locked == 'True'%}
         <div class="alert alert-info">
             <i class="icon-lock"></i> Services locked
         </div>
