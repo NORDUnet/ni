@@ -754,6 +754,8 @@ class ServiceL2VPNResource(ServiceResource):
     def get_vlan(self, bundle):
         vlan = bundle.data.get('vlan', None)
         if vlan:
+            if '<->' in vlan:  # VLAN rewrite, VLAN needs to be specified on each end point.
+                return None
             vlan = str(bundle.data.get('vlan')).split('-')[0]  # Use lowest vlan if a range, "5-10" -> "5"
         return vlan
 
