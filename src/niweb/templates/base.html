@@ -242,13 +242,13 @@
                                                 <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
                                             </tr>
                                             <tr>
-                                                <td><b>creator:</b> </td><td>{{ node_handle.creator }}</td>
+                                                <td><b>creator:</b> </td><td><a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
                                             </tr>
                                             <tr>
                                                 <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
                                             </tr>
                                             <tr>
-                                                <td><b>modified:</b> </td><td>{{ node_handle.modified }} by {{ node_handle.modifier|title}}</td>
+                                                <td><b>modified:</b> </td><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
                                             </tr>
                                         </table>
                                     </div>

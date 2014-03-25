@@ -56,10 +56,10 @@
                 </tr>
             {% endif %}
             <tr>
-                <th>Modified:</th><td>{{ node_handle.modified }} by {{ node_handle.modifier }}</td>
+                <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
             </tr>
             <tr>
-                <th>Created:</th><td>{{ node_handle.created }} by {{ node_handle.creator }}</td>
+                <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
             </tr>
         </table>
     </div>
