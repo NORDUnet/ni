@@ -477,6 +477,7 @@ def relationships_equal(rel1, rel2):
                     return True
     return False
 
+
 def update_item_properties(db, item, new_properties):
     """
     Take a node or a relationship and a dictionary of properties. Updates the
@@ -491,14 +492,16 @@ def update_item_properties(db, item, new_properties):
                     # Handle string representations of lists and booleans
                     item[fixed_key] = json.loads(value)
                 except (ValueError, Exception):
-                    # if value is a dict Neo4j will throw Exception: No matching overloads found...
-                    item[fixed_key] = normalize_whitespace(value)
-                except (TypeError, Exception):
-                    # if value is a JSON dict Neo4j will throw Exception: No matching overloads found...
-                    item[fixed_key] = value
+                    try:
+                        # if value is a dict Neo4j will throw Exception: No matching overloads found...
+                        item[fixed_key] = normalize_whitespace(value)
+                    except (TypeError, AttributeError):
+                        # if value is not a string we will end up here
+                        item[fixed_key] = value
             elif fixed_key in item.propertyKeys:
                 del item[fixed_key]
     return item
+
 
 def merge_properties(db, node, prop_name, new_props):
     """
