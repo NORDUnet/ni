@@ -293,7 +293,7 @@ def quarterly_netapp_usage():
         if data_dict:
             for month in quarter_month_map[last_quarter]:
                 key = '%s-%s' % (year, month)
-                report_data.append({key: data_dict.get(month, 0.0)})
+                report_data.append({key: data_dict.get(month.lstrip('0'), 0.0)})
             # Create and send the mail
             subject = 'NOCLook NetApp storage report for %s' % service['service_id']
             heading = 'Adobe connect storage volume billing Q%d, %s, for %s.' % (last_quarter, year, customers)
