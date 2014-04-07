@@ -48,6 +48,10 @@ REPORTS_TO = []
 #EXTRA_REPORT_TO = {'ID': ['address', ]}
 REPORT_KEY = 'secret_key'
 
+NETAPP_REPORT_SETTINGS = [
+    # {'volumes': [re.compile('pattern')], 'service_id': '', 'contract_reference': '', 'total_storage': 0.0}
+]
+
 # Please fill in a mail server.
 DEFAULT_FROM_EMAIL = 'postmaster@example.com'
 EMAIL_HOST = 'smtp.example.com'
@@ -99,17 +103,6 @@ ACTSTREAM_SETTINGS = {
     'USE_PREFETCH': True,
     'USE_JSONFIELD': True,
     'GFK_FETCH_DEPTH': 1,
-}
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': '/var/tmp/django_cache',
-        'TIMEOUT': 300,
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000
-        }
-    }
 }
 
 # Local time zone for this installation. Choices can be found here:
