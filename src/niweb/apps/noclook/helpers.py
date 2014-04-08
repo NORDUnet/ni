@@ -808,13 +808,15 @@ def get_dependencies_as_types(node):
     """
     q = """
         START node = node({id})
-        MATCH node-[:Depends_on*1..]->dep
-        WITH collect(dep) as deps, filter(n in collect(dep) : n.node_type = "Service") as services
-        WITH deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
-        WITH deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
-        WITH deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
-        RETURN services, paths, oms, links
+        MATCH node-[:Depends_on*1..]->dep<-[?:Connected_to]-cable
+        WITH collect(cable) as cables, collect(dep) as deps, filter(n in collect(dep) : n.node_type = "Service") as services
+        WITH cables, deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
+        WITH cables, deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
+        WITH cables, deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
+        //WITH cables, deps, services, paths, oms, links, filter(n in deps : n.node_type = "Port") as ports
+        RETURN distinct services, paths, oms, links, cables
         """
+
     for hit in nc.neo4jdb.query(q, id=node.getId()):
         return hit
 
