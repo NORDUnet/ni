@@ -125,7 +125,7 @@
                 <table id="services" class="tablesorter" cellspacing="1">
                     <thead>
                     <tr>
-                        <th>Service ID</th><th>Description</th><th>Customer</th>
+                        <th>Service ID</th><th>Description</th><th>User</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -142,8 +142,8 @@
                             <td><a href="{% noclook_node_to_url hit.service %}">{{ hit.service.name }}</a></td>
                             <td>{{ hit.service.description }}</td>
                             <td>
-                                {% for customer in hit.customers %}
-                                    <a href="{% noclook_node_to_url customer %}">{{ customer.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                                {% for user in hit.users %}
+                                    <a href="{% noclook_node_to_url user %}">{{ user.node_type }} {{ user.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
                                 {% endfor %}
                             </td>
                         </tr>
