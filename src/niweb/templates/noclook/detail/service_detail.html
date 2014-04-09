@@ -77,6 +77,13 @@
                         widthFixed: true,
                         widgets: ['zebra']
                     });
+                $("#cablesOut").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers: {},
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
             }
         );
     </script>
@@ -410,10 +417,13 @@
                     <li><a href="#pathsTabOut" data-toggle="tab">Optical Paths</a></li>
                 {% endif %}
                 {% if all_dependencies.oms %}
-                    <li><a href="#omsTabOut" data-toggle="tab">Optical Muliplex Sections</a></li>
+                    <li><a href="#omsTabOut" data-toggle="tab">OMS</a></li>
                 {% endif %}
                 {% if all_dependencies.links %}
                     <li><a href="#linksTabOut" data-toggle="tab">Optical Links</a></li>
+                {% endif %}
+                {% if all_dependencies.cables %}
+                    <li><a href="#cablesTabOut" data-toggle="tab">Cables</a></li>
                 {% endif %}
             </ul>
 
@@ -555,6 +565,39 @@
                                         {% for hit in ports %}
                                             <a href="{% noclook_node_to_url hit.port %}">{{ hit.parent.name }} {{ hit.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
                                         {% endfor %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+                {% if all_dependencies.cables %}
+                    <div class="tab-pane" id="cablesTabOut">
+                        <table id="cablesOut" class="tablesorter" cellspacing="1">
+                            <thead>
+                                <tr>
+                                    <th>Name</th><th>Type</th><th>Ports</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for hit in all_dependencies.cables %}
+                                {% if hit.operational_state == "Decommissioned" %}
+                                    <tr class="decommissioned">
+                                {% elif hit.operational_state == "Reserved" %}
+                                    <tr class="reserved">
+                                {% elif hit.operational_state == "Testing" %}
+                                    <tr class="testing">
+                                {% else %}
+                                    <tr>
+                                {% endif %}
+                                    <td><a href="{% noclook_node_to_url hit %}">{{ hit.name }}</a></td>
+                                    <td>{{ hit.cable_type }}</td>
+                                    <td>
+                                    {% noclook_get_ports hit as ports %}
+                                    {% for hit in ports %}
+                                        <a href="{% noclook_node_to_url hit.port %}">{{ hit.parent.name }} {{ hit.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                                    {% endfor %}
                                     </td>
                                 </tr>
                             {% endfor %}
