@@ -62,8 +62,12 @@
                 // Depends on //
                 // Populate first level combo box
                 var categories = [
+                    ['odf', 'ODFs'],
                     ['optical-link', 'Optical Links'],
-                    ['optical-multiplex-section', 'Optical Multiplex Sections']
+                    ['optical-multiplex-section', 'Optical Multiplex Sections'],
+                    ['optical-node', 'Optical Nodes'],
+                    ['optical-path', 'Optical Paths'],
+                    ['router', 'Routers']
                 ];
                 $('#categoryA').append($('<option>').val("0").text("-- Please Select --"));
                 $.each(categories, function(key, tuple) {
@@ -72,6 +76,22 @@
                 // Hook lower level combo boxes up to their parent
                 $("#level0A").jCombo("/formdata/{id}/", {
                     parent: "#categoryA",
+                    end_value_field: "#id_relationship_depends_on"
+                });
+                $("#level1A").jCombo("/formdata/{id}/children/", {
+                    parent: "#level0A",
+                    end_value_field: "#id_relationship_depends_on"
+                });
+                $("#level2A").jCombo("/formdata/{id}/children/", {
+                    parent: "#level1A",
+                    end_value_field: "#id_relationship_depends_on"
+                });
+                $("#level3A").jCombo("/formdata/{id}/children/", {
+                    parent: "#level2A",
+                    end_value_field: "#id_relationship_depends_on"
+                });
+                $("#level4A").jCombo("/formdata/{id}/children/", {
+                    parent: "#level3A",
                     end_value_field: "#id_relationship_depends_on"
                 });
                 // Accordion
@@ -197,8 +217,11 @@
                         {{ form.relationship_depends_on }}
                         <select class="stacked" name="categoryA" id="categoryA"></select>
                         <select class="stacked" name="level0A" id="level0A"></select>
-                        <br>
-                        <br>
+                        <select class="stacked" name="level1A" id="level1A"></select>
+                        <select class="stacked" name="level2A" id="level2A"></select>
+                        <select class="stacked" name="level3A" id="level3A"></select>
+                        <select class="stacked" name="level4A" id="level4A"></select>
+                        <span class="help-block">Choose a thing to depend service on</span>
                     </div>
                 </div>
             </div>
