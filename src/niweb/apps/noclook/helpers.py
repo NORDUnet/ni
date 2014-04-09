@@ -746,16 +746,27 @@ def get_services_dependent_on_cable(cable):
     :param cable: Neo4j node
     :return: Cypher ExecutionResult
     """
+    #q = '''
+    #    START node=node({id})
+    #    MATCH node-[:Connected_to*1..]-equip
+    #    WITH equip
+    #    MATCH equip<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
+    #    WHERE (service.node_type = 'Service') AND (r is null)
+    #    WITH distinct service
+    #    MATCH service<-[:Uses]-user
+    #    WHERE user.node_type = 'Customer'
+    #    RETURN service, collect(user) as customers
+    #    '''
     q = '''
         START node=node({id})
-        MATCH node-[:Connected_to]->equip
+        MATCH node-[:Connected_to*1..]-equip
         WITH equip
-        MATCH equip<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
-        WHERE (service.node_type = 'Service') AND (r is null)
+        MATCH equip<-[:Depends_on*1..]-service
+        WHERE (service.node_type = 'Service')
         WITH distinct service
-        MATCH service<-[:Uses]-user
-        WHERE user.node_type = 'Customer'
-        RETURN service, collect(user) as customers
+        MATCH service<-[?:Uses]-user
+        WITH DISTINCT service, user
+        RETURN service, collect(user) as users
         '''
     return nc.neo4jdb.query(q, id=cable.getId())
 
@@ -768,7 +779,7 @@ def get_dependent_on_cable_as_types(cable):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Connected_to]->equip
+        MATCH node-[:Connected_to*1..]-equip
         WITH equip
         MATCH equip<-[:Depends_on*1..]-dep
         WITH distinct dep
@@ -808,13 +819,16 @@ def get_dependencies_as_types(node):
     """
     q = """
         START node = node({id})
-        MATCH node-[:Depends_on*1..]->dep<-[?:Connected_to]-cable
-        WITH collect(cable) as cables, collect(dep) as deps, filter(n in collect(dep) : n.node_type = "Service") as services
-        WITH cables, deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
-        WITH cables, deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
-        WITH cables, deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
-        //WITH cables, deps, services, paths, oms, links, filter(n in deps : n.node_type = "Port") as ports
-        RETURN distinct services, paths, oms, links, cables
+        MATCH node-[:Depends_on*1..]->dep
+        WITH node, collect(dep) as deps
+        WITH node, deps, filter(n in deps : n.node_type = "Service") as services
+        WITH node, deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
+        WITH node, deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
+        WITH node, deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
+        WITH node, services, paths, oms, links
+        MATCH node-[:Depends_on*1..]->()-[?:Connected_to*1..]-cable
+        WITH distinct cable, services, paths, oms, links
+        RETURN filter(n in collect(cable) : n.node_type = "Cable") as cables, services, paths, oms, links
         """
 
     for hit in nc.neo4jdb.query(q, id=node.getId()):
