@@ -545,7 +545,7 @@ def get_location(node):
     """
     q = '''
         START node=node({id})
-        MATCH node-[loc_rel:Located_in]->loc<-[?:Has*1..]-parent
+        MATCH node-[loc_rel:Located_in]->loc<-[?:Has*1..10]-parent
         RETURN loc,loc_rel,parent
         '''
     return nc.neo4jdb.query(q, id=node.getId())
@@ -556,7 +556,7 @@ def get_place(node):
     """
     q = '''
         START node=node({id})
-        MATCH node<-[loc_rel:Has]-loc<-[?:Has*1..]-parent
+        MATCH node<-[loc_rel:Has]-loc<-[?:Has*1..10]-parent
         RETURN loc,loc_rel,parent
         '''
     return nc.neo4jdb.query(q, id=node.getId())
@@ -567,7 +567,7 @@ def part_of(node):
     """
     q = '''
         START node=node({id})
-        MATCH node-[loc_rel:Part_of]->loc<-[?:Has*1..]-parent
+        MATCH node-[loc_rel:Part_of]->loc<-[?:Has*1..10]-parent
         RETURN loc,loc_rel,parent
         '''
     return nc.neo4jdb.query(q, id=node.getId())
@@ -597,7 +597,7 @@ def get_connected_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Has*1..]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..]-end-[?:Located_in]-location<-[?:Has]-site
+        MATCH node-[:Has*1..10]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..10]-end-[?:Located_in]-location<-[?:Has]-site
         RETURN node,porta,r0,cable,r1,portb,end,location,site
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
@@ -608,7 +608,7 @@ def get_depends_on_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[?:Has*1..]->port<-[:Depends_on|Part_of]-port_logical, node<-[?:Depends_on|Part_of]-direct_logical
+        MATCH node-[?:Has*1..10]->port<-[:Depends_on|Part_of]-port_logical, node<-[?:Depends_on|Part_of]-direct_logical
         RETURN port, port_logical, direct_logical
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
@@ -616,7 +616,7 @@ def get_depends_on_equipment(equipment):
 # Alternative get_depends_on_equipment query
 #q = '''
 #START node=node({id})
-#MATCH node-[?:Has*1..]->port<-[:Depends_on]-port_logical
+#MATCH node-[?:Has*1..10]->port<-[:Depends_on]-port_logical
 #WITH node, port, collect(port_logical) as port_logicals
 #MATCH node<-[?:Depends_on]-direct_logical
 #return port, port_logicals, collect(direct_logical) as direct_logicals
@@ -632,7 +632,7 @@ def get_depends_on_port(port):
         START node=node({id})
         MATCH node<-[:Connected_to]-cable-[:Connected_to]->()
         WITH cable
-        MATCH cable-[:Connected_to*1..]->port<-[:Depends_on|Part_of]-port_logical
+        MATCH cable-[:Connected_to*1..10]->port<-[:Depends_on|Part_of]-port_logical
         RETURN DISTINCT port_logical
         '''
     return nc.neo4jdb.query(q, id=port.getId())
@@ -674,7 +674,7 @@ def get_logical_depends_on(logical):
         START node=node({id})
         MATCH node-[dep_rel:Depends_on|Part_of]->dep
         WITH dep,dep_rel
-        MATCH dep<-[?:Has*1..]-parent, dep-[?:Part_of]->parent<-[?:Has*1..]-grand_parent
+        MATCH dep<-[?:Has*1..10]-parent, dep-[?:Part_of]->parent<-[?:Has*1..10]-grand_parent
         RETURN dep,dep_rel,parent,grand_parent
         '''
     return nc.neo4jdb.query(q, id=logical.getId())
@@ -748,9 +748,9 @@ def get_services_dependent_on_cable(cable):
     """
     #q = '''
     #    START node=node({id})
-    #    MATCH node-[:Connected_to*1..]-equip
+    #    MATCH node-[:Connected_to*1..10]-equip
     #    WITH equip
-    #    MATCH equip<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
+    #    MATCH equip<-[:Depends_on*1..10]-service<-[r?:Depends_on]-()
     #    WHERE (service.node_type = 'Service') AND (r is null)
     #    WITH distinct service
     #    MATCH service<-[:Uses]-user
@@ -759,9 +759,9 @@ def get_services_dependent_on_cable(cable):
     #    '''
     q = '''
         START node=node({id})
-        MATCH node-[:Connected_to*1..]-equip
+        MATCH node-[:Connected_to*1..20]-equip
         WITH equip
-        MATCH equip<-[:Depends_on*1..]-service
+        MATCH equip<-[:Depends_on*1..10]-service
         WHERE (service.node_type = 'Service')
         WITH distinct service
         MATCH service<-[?:Uses]-user
@@ -779,9 +779,9 @@ def get_dependent_on_cable_as_types(cable):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Connected_to*1..]-equip
+        MATCH node-[:Connected_to*1..10]-equip
         WITH equip
-        MATCH equip<-[:Depends_on*1..]-dep
+        MATCH equip<-[:Depends_on*1..10]-dep
         WITH distinct dep
         WITH collect(dep) as deps, filter(n in collect(dep) : n.node_type = "Service") as services
         WITH deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
@@ -801,7 +801,7 @@ def get_services_dependent_on_equipment(equipment):
     """
     q = """
         START node=node({id})
-        MATCH node-[:Has|Depends_on]-()<-[:Depends_on*1..]-service<-[r?:Depends_on]-()
+        MATCH node-[:Has|Depends_on]-()<-[:Depends_on*1..10]-service<-[r?:Depends_on]-()
         WHERE (service.node_type = 'Service') AND (r is null)
         WITH distinct service
         MATCH service<-[:Uses]-user
@@ -819,14 +819,14 @@ def get_dependencies_as_types(node):
     """
     q = """
         START node = node({id})
-        MATCH node-[:Depends_on*1..]->dep
+        MATCH node-[:Depends_on*1..10]->dep
         WITH node, collect(dep) as deps
         WITH node, deps, filter(n in deps : n.node_type = "Service") as services
         WITH node, deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
         WITH node, deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
         WITH node, deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
         WITH node, services, paths, oms, links
-        MATCH node-[:Depends_on*1..]->()-[?:Connected_to*1..]-cable
+        MATCH node-[:Depends_on*1..10]->()-[?:Connected_to*1..20]-cable
         WITH distinct cable, services, paths, oms, links
         RETURN filter(n in collect(cable) : n.node_type = "Cable") as cables, services, paths, oms, links
         """
@@ -843,7 +843,7 @@ def get_dependent_as_types(node):
     """
     q = """
         START node = node({id})
-        MATCH node<-[:Depends_on*1..]-dep
+        MATCH node<-[:Depends_on*1..10]-dep
         WITH collect(dep) as deps, filter(n in collect(dep) : n.node_type = "Service") as services
         WITH deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
         WITH deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
