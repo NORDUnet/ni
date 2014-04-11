@@ -4,7 +4,7 @@ from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from django.views.decorators.cache import cache_page
+from re import escape as re_escape
 import ipaddr
 import json
 import arborgraph
@@ -844,6 +844,7 @@ def search(request, value='', form=None):
     # See if the value is indexed
     result = []
     if value:
+        value = re_escape(value)
         i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
         q = Q('all', '*%s*' % value, wildcard=True)
         nodes = h.iter2list(i1.query(unicode(q)))
@@ -877,6 +878,7 @@ def search_autocomplete(request):
     response = HttpResponse(mimetype='application/json')
     query = request.GET.get('query', None)
     if query:
+        query = re_escape(query)
         i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
         q = Q('name', '*%s*' % query, wildcard=True)
         suggestions = []
