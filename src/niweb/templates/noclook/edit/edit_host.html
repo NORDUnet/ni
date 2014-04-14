@@ -40,7 +40,7 @@ $(document).ready(
                 $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
             });
         });
-        $('#level0').click(function() {
+        $('#level0').on('change', function() {
             $("#id_relationship_location").val($(this).val());
         });
         // Hook lower level combo boxes up to their parent
