@@ -332,10 +332,11 @@ def host_detail(request, handle_id):
     user_relationships = h.iter2list(node.Uses.incoming)
     provider_relationships = h.iter2list(node.Provides.incoming)
     owner_relationships = h.iter2list(node.Owns.incoming)
+    depend_out = h.iter2list(h.get_logical_depends_on(node))
     return render_to_response('noclook/detail/host_detail.html',
                               {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
                                'service_relationships': service_relationships, 'user_relationships': user_relationships,
-                               'provider_relationships': provider_relationships,
+                               'provider_relationships': provider_relationships, 'depend_out': depend_out,
                                'owner_relationships': owner_relationships, 'location': location, 'history': history},
                               context_instance=RequestContext(request))
 

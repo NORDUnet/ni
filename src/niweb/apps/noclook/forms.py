@@ -390,6 +390,7 @@ class EditHostForm(forms.Form):
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
     services_locked = forms.ChoiceField(choices=TRUEFALSE, widget=forms.CheckboxInput(), required=False)

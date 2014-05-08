@@ -373,7 +373,11 @@ def edit_host(request, handle_id):
             if form.cleaned_data['relationship_owner']:
                 owner_id = form.cleaned_data['relationship_owner']
                 node = h.set_owner(request.user, node, owner_id)
-            if form.cleaned_data['relationship_location']:
+            # You can not set location and depends on at the same time
+            if form.cleaned_data['relationship_depends_on']:
+                depends_on_id = form.cleaned_data['relationship_depends_on']
+                h.set_depends_on(request.user, node, depends_on_id)
+            elif form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
                 nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:

@@ -969,6 +969,33 @@ def logical_to_physical(user, nh, node):
             set_owner(user, node, rel.start.id)
             activitylog.delete_relationship(user, rel)
             nc.delete_relationship(nc.neo4jdb, rel)
+        # Remove Depends_on relationships
+        depends_relationships = node.Depends_on.outgoing
+        for rel in depends_relationships:
+            activitylog.delete_relationship(user, rel)
+            nc.delete_relationship(nc.neo4jdb, rel)
+    return nh, node
+
+
+def physical_to_logical(user, nh, node):
+    with nc.neo4jdb.transaction:
+        # Make the node logical
+        nc.delete_relationship(nc.neo4jdb, iter2list(node.Contains.incoming)[0])
+        logical = nc.get_meta_node(nc.neo4jdb, 'logical')
+        nc._create_relationship(nc.neo4jdb, logical, node, 'Contains')
+        nh.node_meta_type = 'logical'
+        nh.save()
+         # Convert Owns relationships to Uses.
+        owner_relationships = node.Owns.incoming
+        for rel in owner_relationships:
+            set_user(user, node, rel.start.id)
+            activitylog.delete_relationship(user, rel)
+            nc.delete_relationship(nc.neo4jdb, rel)
+        # Remove Located_in relationships
+        located_relationships = node.Located_in.outgoing
+        for rel in located_relationships:
+            activitylog.delete_relationship(user, rel)
+            nc.delete_relationship(nc.neo4jdb, rel)
     return nh, node
 
 
@@ -977,7 +1004,7 @@ def place_physical_in_location(user, nh, node, location_id):
     Places a physical node in a rack or on a site. Also converts it to a
     physical node if it still is a logical one.
     """
-    # Check if the node is logical
+    # Check that the node is physical, else convert it
     meta_type = nc.get_node_meta_type(node)
     if meta_type == 'logical':
         nh, node = logical_to_physical(user, nh, node)
@@ -1114,6 +1141,11 @@ def set_depends_on(user, node, depends_on_node_id):
     owner node.
     Returns the node.
     """
+    # Check that the node is logical, else convert it
+    meta_type = nc.get_node_meta_type(node)
+    if meta_type == 'physical':
+        nh = get_object_or_404(NodeHandle, pk=node.get_property('handle_id'))
+        nh, node = physical_to_logical(user, nh, node)
     depends_on_node = nc.get_node_by_id(nc.neo4jdb,  depends_on_node_id)
     rel_exist = nc.get_relationships(node, depends_on_node, 'Depends_on')
     # If the location is the same as before just update relationship
