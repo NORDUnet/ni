@@ -161,14 +161,18 @@ OPTICAL_LINK_TYPES = [
 
 OPTICAL_PATH_FRAMING = [
     ('', ''),
+    ('OTN(CBR)', 'OTN(CBR)'),
+    ('OTN(Ethernet)', 'OTN(Ethernet)'),
     ('WDM', 'WDM'),
     ('WDM(Ethernet)', 'WDM(Ethernet)'),
     ('WDM(CBR)', 'WDM(CBR)'),
+    ('WDM(OTN)', 'WDM(OTN)'),
 ]
 
 OPTICAL_PATH_CAPACITY = [
     ('', ''),
     ('10Gb', '10Gb'),
+    ('100Gb', '100Gb'),
     ('CBR', 'CBR'),
     ('cbr 10Gb', 'cbr 10Gb'),
 ]
