@@ -302,7 +302,7 @@ class NewNordunetCableForm(NewCableForm):
         Sets name to next generated ID or register the name in the ID collection.
         """
         cleaned_data = super(NewNordunetCableForm, self).clean()
-        # Set name to a generated id if the service is not a manually named service.
+        # Set name to a generated id if the cable is not a manually named cable.
         name = cleaned_data.get("name")
         if not name:
             if not self.Meta.id_generator_name or not self.Meta.id_collection:
@@ -469,7 +469,7 @@ class NewOdfForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewOdfForm, self).__init__(*args, **kwargs)
         # Set max number of ports to choose from
-        max_num_of_ports = 40
+        max_num_of_ports = 48
         choices = [(x, x) for x in range(1, max_num_of_ports+1) if x]
         self.fields['max_number_of_ports'].choices = choices
 

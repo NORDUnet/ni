@@ -24,12 +24,12 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
 from niweb.apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
-from niweb.apps.noclook.forms import EditServiceForm, NewNordunetL2vpnServiceForm
+from niweb.apps.noclook import forms
 #from niweb.apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, \
 #    get_unit, create_unit, set_depends_on, register_unique_id, is_free_unique_id, delete_relationship, dict_update_node
 import niweb.apps.noclook.helpers as h
 import norduni_client as nc
-from norduni_client_exceptions import MultipleNodesReturned
+from norduni_client_exceptions import MultipleNodesReturned, UniqueNodeError
 import logging
 
 logger = logging.getLogger('api_resources')
@@ -394,16 +394,131 @@ class RelationshipResource(Resource):
 
 
 class CableResource(NodeHandleResource):
+
+    node_name = fields.CharField(attribute='node_name')
+    cable_type = fields.CharField(attribute='cable_type', help_text='Choices {choices}'.format(
+        choices=[choice[0] for choice in forms.CABLE_TYPES]), blank=True, null=True)
+    end_points = fields.ListField(help_text='[{"device": "", "device_type": "", "port": ""},]', blank=True, null=True)
     
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='cable')
         resource_name = 'cable'
+        pk_field = 'node_name'
+        pk_field_regex = '[-\w]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
-        allowed_methods = ['get', 'put', 'post']
+        include_absolute_url = True
+        always_return_data = True
+        allowed_methods = ['get', 'put', 'post', 'patch']
         filtering = {
             "node_name": ALL,
         }
+
+    def _initial_form_data(self, bundle):
+        initial_data = {
+            'node_type': '/api/v1/node_type/cable/',
+            'node_meta_type': 'physical',
+        }
+        return initial_data
+
+    def obj_create(self, bundle, **kwargs):
+        logger.debug(str(bundle.data))
+        try:
+            node_type = h.slug_to_node_type(self.Meta.resource_name, create=True)
+            NodeHandle.objects.get(node_name=bundle.data['node_name'], node_type=node_type)
+            raise_conflict_error('Cable ID (%s) is already in use.' % bundle.data['node_name'])
+        except NodeHandle.DoesNotExist:
+            bundle.data.update(self._initial_form_data(bundle))
+            bundle.data['name'] = bundle.data['node_name']
+            form = forms.NewCableForm(bundle.data)
+            if form.is_valid():
+                bundle.data.update({
+                    'node_name': form.cleaned_data['name'],
+                    'creator': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
+                    'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
+                    'node': {
+                        'cable_type': form.cleaned_data['cable_type'],
+                    },
+                })
+                del bundle.data['name']
+                # Create the new cable
+                bundle = super(NodeHandleResource, self).obj_create(bundle, **kwargs)
+                # Depend the created service on provided end points
+                end_point_nodes = self.get_end_point_nodes(bundle)
+                node = bundle.obj.get_node()
+                for end_point in end_point_nodes:
+                    h.connect_physical(bundle.request.user, node, end_point.getId())
+                return self.hydrate_node(bundle)
+            else:
+                raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
+
+    def obj_update(self, bundle, **kwargs):
+        bundle = super(CableResource, self).obj_update(bundle, **kwargs)
+        end_point_nodes = self.get_end_point_nodes(bundle)
+        node = bundle.obj.get_node()
+        if end_point_nodes:
+            for rel in node.Connected_to.outgoing:
+                h.delete_relationship(bundle.request.user, rel)
+            for end_point in end_point_nodes:
+                h.connect_physical(bundle.request.user, node, end_point.getId())
+        return bundle
+
+    def dehydrate(self, bundle):
+        bundle = super(CableResource, self).dehydrate(bundle)
+        bundle.data['cable_type'] = bundle.data['node'].get('cable_type', None)
+        bundle.data['object_path'] = bundle.data['absolute_url']
+        del bundle.data['absolute_url']
+        return bundle
+
+    def get_end_point_nodes(self, bundle):
+        end_point_nodes = []
+        for end_point in bundle.data.get('end_points', []):
+            try:
+                port_node = self.get_port(bundle, end_point['device'], end_point['device_type'], end_point['port'])
+                end_point_nodes.append(port_node)
+            except ObjectDoesNotExist:
+                raise_not_acceptable_error('End point %s not found.' % end_point)
+        return end_point_nodes
+
+    def get_port(self, bundle, device_name, device_type, port_name):
+        port_node = h.get_port(device_name, port_name)
+        if not port_node:
+            try:
+                node_type = h.slug_to_node_type(slugify(device_type), create=True)
+                parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.type)
+                if not parent_node:
+                    raise_not_acceptable_error("End point {0} {1] not found.".format(device_type, device_name))
+                port_node = h.create_port(parent_node, port_name, bundle.request.user)
+            except MultipleNodesReturned as e:
+                raise_not_acceptable_error(e)
+        return port_node
+
+
+class NordunetCableResource(CableResource):
+
+    node_name = fields.CharField(attribute='node_name', blank=True)
+
+    class Meta(CableResource.Meta):
+        resource_name = 'nordunet-cable'
+
+    def obj_create(self, bundle, **kwargs):
+        logger.debug(str(bundle.data))
+        try:
+            if bundle.data['node_name']:
+                if h.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
+                    bundle.data['name'] = bundle.data['node_name']
+                    h.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
+                else:
+                    raise_conflict_error('Cable ID (%s) is already in use.' % bundle.data['node_name'])
+
+            form = forms.NewCableForm(bundle.data)
+            if form.is_valid():
+                bundle.data.update({
+                    'node_name': form.cleaned_data['name'],
+                })
+                return super(NordunetCableResource, self).obj_create(bundle, **kwargs)
+        except KeyError as e:
+            raise_not_acceptable_error('%s is missing.' % e)
 
 
 class CustomerResource(NodeHandleResource):
@@ -621,7 +736,7 @@ class ServiceResource(NodeHandleResource):
         node = bundle.obj.get_node()
         data = h.item2dict(node)
         data.update(bundle.data)
-        form = EditServiceForm(data)
+        form = forms.EditServiceForm(data)
         if form.is_valid():
             h.form_update_node(bundle.request.user, node, form)
         else:
@@ -679,7 +794,7 @@ class ServiceL2VPNResource(ServiceResource):
                 raise_conflict_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
         except KeyError as e:
             raise_not_acceptable_error('%s is missing.' % e)
-        form = NewNordunetL2vpnServiceForm(bundle.data)
+        form = forms.NewNordunetL2vpnServiceForm(bundle.data)
         if form.is_valid():
             bundle.data.update({
                 'node_name': form.cleaned_data['name'],
