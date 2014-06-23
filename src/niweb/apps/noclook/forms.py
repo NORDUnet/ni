@@ -304,7 +304,7 @@ class NewNordunetCableForm(NewCableForm):
         cleaned_data = super(NewNordunetCableForm, self).clean()
         # Set name to a generated id if the cable is not a manually named cable.
         name = cleaned_data.get("name")
-        if not name:
+        if not name and self.is_valid():
             if not self.Meta.id_generator_name or not self.Meta.id_collection:
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
@@ -582,18 +582,19 @@ class NewServiceForm(forms.Form):
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
         service_type = cleaned_data.get("service_type")
-        if not name and service_type not in self.Meta.manually_named_services:
-            if not self.Meta.id_generator_name or not self.Meta.id_collection:
-                raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
-            try:
-                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
-            except UniqueIdGenerator.DoesNotExist as e:
-                raise e
-        elif not name:
-            self._errors = ErrorDict()
-            self._errors['name'] = ErrorList()
-            self._errors['name'].append('Missing name for %s service.' % service_type)
+        if self.is_valid():
+            if not name and service_type not in self.Meta.manually_named_services:
+                if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                    raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
+                try:
+                    id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                    cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                except UniqueIdGenerator.DoesNotExist as e:
+                    raise e
+            elif not name:
+                self._errors = ErrorDict()
+                self._errors['name'] = ErrorList()
+                self._errors['name'].append('Missing name for %s service.' % service_type)
         # Set service_class depending on service_type.
         cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
         return cleaned_data
@@ -712,7 +713,7 @@ class NewOpticalLinkForm(forms.Form):
         cleaned_data = super(NewOpticalLinkForm, self).clean()
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
-        if not name:
+        if not name and self.is_valid():
             if not self.Meta.id_generator_name or not self.Meta.id_collection:
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
@@ -809,7 +810,7 @@ class NewOpticalPathForm(forms.Form):
         cleaned_data = super(NewOpticalPathForm, self).clean()
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
-        if not name:
+        if not name and self.is_valid():
             if not self.Meta.id_generator_name or not self.Meta.id_collection:
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
