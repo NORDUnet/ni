@@ -422,7 +422,6 @@ class CableResource(NodeHandleResource):
         return initial_data
 
     def obj_create(self, bundle, **kwargs):
-        logger.debug(str(bundle.data))
         try:
             node_type = h.slug_to_node_type(self.Meta.resource_name, create=True)
             NodeHandle.objects.get(node_name=bundle.data['node_name'], node_type=node_type)
@@ -502,7 +501,6 @@ class NordunetCableResource(CableResource):
         resource_name = 'nordunet-cable'
 
     def obj_create(self, bundle, **kwargs):
-        logger.debug(str(bundle.data))
         try:
             if bundle.data['node_name']:
                 if h.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
@@ -799,18 +797,18 @@ class ServiceL2VPNResource(ServiceResource):
             bundle.data.update({
                 'node_name': form.cleaned_data['name'],
                 'creator': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
-                'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
-                'node': {
-                    'service_type': form.cleaned_data['service_type'],
-                    'service_class': form.cleaned_data['service_class'],
-                    'ncs_service_name': form.cleaned_data['ncs_service_name'],
-                    'vpn_type': form.cleaned_data['vpn_type'],
-                    'vlan': form.cleaned_data['vlan'],
-                    'vrf_target': form.cleaned_data['vrf_target'],
-                    'route_distinguisher': form.cleaned_data['route_distinguisher'],
-                    'operational_state': form.cleaned_data['operational_state'],
-                    'description': form.cleaned_data['description'],
-                },
+                'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk)
+            })
+            bundle.data['node'].update({
+                'service_type': form.cleaned_data['service_type'],
+                'service_class': form.cleaned_data['service_class'],
+                'ncs_service_name': form.cleaned_data['ncs_service_name'],
+                'vpn_type': form.cleaned_data['vpn_type'],
+                'vlan': form.cleaned_data['vlan'],
+                'vrf_target': form.cleaned_data['vrf_target'],
+                'route_distinguisher': form.cleaned_data['route_distinguisher'],
+                'operational_state': form.cleaned_data['operational_state'],
+                'description': form.cleaned_data['description'],
             })
             del bundle.data['name']
             # Ensure that we have all the data needed to create the L2VPN service
