@@ -799,7 +799,8 @@ class ServiceL2VPNResource(ServiceResource):
                 'creator': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
                 'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk)
             })
-            bundle.data['node'].update({
+            node = bundle.data.get('node', {})
+            node.update({
                 'service_type': form.cleaned_data['service_type'],
                 'service_class': form.cleaned_data['service_class'],
                 'ncs_service_name': form.cleaned_data['ncs_service_name'],
@@ -810,6 +811,7 @@ class ServiceL2VPNResource(ServiceResource):
                 'operational_state': form.cleaned_data['operational_state'],
                 'description': form.cleaned_data['description'],
             })
+            bundle.data['node'] = node
             del bundle.data['name']
             # Ensure that we have all the data needed to create the L2VPN service
             end_point_nodes = self.get_end_point_nodes(bundle)
