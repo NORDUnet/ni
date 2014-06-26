@@ -435,10 +435,10 @@ class CableResource(NodeHandleResource):
                     'node_name': form.cleaned_data['name'],
                     'creator': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
                     'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
-                    'node': {
-                        'cable_type': form.cleaned_data['cable_type'],
-                    },
                 })
+                node_data = bundle.data.get('node', {})
+                node_data.update({'cable_type': form.cleaned_data['cable_type']})
+                bundle.data['node'] = node_data
                 del bundle.data['name']
                 # Create the new cable
                 bundle = super(NodeHandleResource, self).obj_create(bundle, **kwargs)
@@ -798,8 +798,8 @@ class ServiceL2VPNResource(ServiceResource):
                 'creator': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
                 'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk)
             })
-            node = bundle.data.get('node', {})
-            node.update({
+            node_data = bundle.data.get('node', {})
+            node_data.update({
                 'service_type': form.cleaned_data['service_type'],
                 'service_class': form.cleaned_data['service_class'],
                 'ncs_service_name': form.cleaned_data['ncs_service_name'],
@@ -810,7 +810,7 @@ class ServiceL2VPNResource(ServiceResource):
                 'operational_state': form.cleaned_data['operational_state'],
                 'description': form.cleaned_data['description'],
             })
-            bundle.data['node'] = node
+            bundle.data['node'] = node_data
             del bundle.data['name']
             # Ensure that we have all the data needed to create the L2VPN service
             end_point_nodes = self.get_end_point_nodes(bundle)
