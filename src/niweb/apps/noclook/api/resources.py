@@ -495,21 +495,20 @@ class CableResource(NodeHandleResource):
 
 class NordunetCableResource(CableResource):
 
-    node_name = fields.CharField(attribute='node_name', blank=True)
+    node_name = fields.CharField(attribute='node_name', blank=True, null=True, default=None)
 
     class Meta(CableResource.Meta):
         resource_name = 'nordunet-cable'
 
     def obj_create(self, bundle, **kwargs):
         try:
-            if bundle.data['node_name']:
+            if bundle.data.get('node_name', None):
                 if h.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
                     bundle.data['name'] = bundle.data['node_name']
-                    h.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
                 else:
                     raise_conflict_error('Cable ID (%s) is already in use.' % bundle.data['node_name'])
 
-            form = forms.NewCableForm(bundle.data)
+            form = forms.NewNordunetCableForm(bundle.data)
             if form.is_valid():
                 bundle.data.update({
                     'node_name': form.cleaned_data['name'],
