@@ -597,7 +597,7 @@ def get_connected_equipment(equipment):
     """
     q = '''
         START node=node({id})
-        MATCH node-[:Has*1..10]->porta<-[r0?:Connected_to]-cable-[r1:Connected_to]->portb<-[?:Has*1..10]-end-[?:Located_in]-location<-[?:Has]-site
+        MATCH node-[:Has*1..10]->porta<-[r0?:Connected_to]-cable-[r1?:Connected_to]->portb<-[?:Has*1..10]-end-[?:Located_in]-location<-[?:Has]-site
         RETURN node,porta,r0,cable,r1,portb,end,location,site
         '''
     return nc.neo4jdb.query(q, id=equipment.getId())
