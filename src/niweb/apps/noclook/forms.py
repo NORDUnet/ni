@@ -11,7 +11,8 @@ TRUEFALSE = [(True, True), (False, False)]
 
 # We should move this kind of data to the SQL database.
 COUNTRY_CODES = [
-    ('DE', 'DE'),    
+    ('BE', 'BE'),
+    ('DE', 'DE'),
     ('DK', 'DK'),
     ('FI', 'FI'),
     ('IS', 'IS'),
@@ -24,6 +25,7 @@ COUNTRY_CODES = [
 
 COUNTRIES = [
     ('', ''),
+    ('Belgium', 'Belgium'),
     ('Denmark', 'Denmark'),
     ('Germany', 'Germany'),
     ('Finland', 'Finland'),
@@ -36,6 +38,7 @@ COUNTRIES = [
 ]
 
 COUNTRY_MAP = {
+    'BE': 'Belgium',
     'DE': 'Germany',
     'DK': 'Denmark',
     'FI': 'Finland',
