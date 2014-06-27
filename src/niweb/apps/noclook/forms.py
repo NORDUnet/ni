@@ -2,6 +2,7 @@ from datetime import datetime
 from django import forms
 from django.forms.util import ErrorDict, ErrorList
 from django.forms.widgets import HiddenInput
+from django.db import IntegrityError
 import json
 from niweb.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
 import niweb.apps.noclook.helpers as h
@@ -307,16 +308,22 @@ class NewNordunetCableForm(NewCableForm):
         cleaned_data = super(NewNordunetCableForm, self).clean()
         # Set name to a generated id if the cable is not a manually named cable.
         name = cleaned_data.get("name")
-        if not name and self.is_valid():
-            if not self.Meta.id_generator_name or not self.Meta.id_collection:
-                raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
-            try:
-                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
-            except UniqueIdGenerator.DoesNotExist as e:
-                raise e
-        else:
-            h.register_unique_id(self.Meta.id_collection, name)
+        if self.is_valid():
+            if not name:
+                if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                    raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
+                try:
+                    id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                    cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                except UniqueIdGenerator.DoesNotExist as e:
+                    raise e
+            else:
+                try:
+                    h.register_unique_id(self.Meta.id_collection, name)
+                except IntegrityError as e:
+                    self._errors = ErrorDict()
+                    self._errors['name'] = ErrorList()
+                    self._errors['name'].append(e.message)
         return cleaned_data
 
                                        
