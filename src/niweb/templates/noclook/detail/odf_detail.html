@@ -30,18 +30,11 @@ $(document).ready(
                     <th>Max ports:</th><td>{{ node.max_number_of_ports }}</td>
                 </tr>
             {% endif %}
-<!--
-            {% if node.depth %}
+            {% if node.rack_units %}
                 <tr>
-                    <th>Depth:</th><td>{{ node.depth }} mm</td>
+                    <th>Height (u):</th><td>{{ node.rack_units }}</td>
                 </tr>
             {% endif %}
-            {% if node.width %}
-                <tr>
-                    <th>Width:</th><td>{{ node.width }} mm</td>
-                </tr>
-            {% endif %}
--->
         </table>
     </div>
     <div class="span3">
