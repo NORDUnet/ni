@@ -6,15 +6,11 @@ from django.dispatch import receiver
 from django.contrib.comments import Comment
 from actstream import action
 
-import norduni_client as nc
+import norduniclient as nc
 
 
-NODE_META_TYPE_CHOICES = (
-    ('logical', 'Logical'),
-    ('physical', 'Physical'),
-    ('relation', 'Relation'),
-    ('location', 'Location'),
-)
+NODE_META_TYPE_CHOICES = zip(nc.META_TYPES, nc.META_TYPES)
+
 
 class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
