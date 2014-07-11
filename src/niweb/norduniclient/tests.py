@@ -4,6 +4,10 @@ Created on Wed Oct 12 14:26:53 2011
 
 @author: lundberg
 """
+
+"""
+Old tests
+
 import shutil
 import norduni_client as nc
 
@@ -104,3 +108,4 @@ for meta_node in nc.get_all_meta_nodes(db):
 print '\nAll tests done, removing the test database.'
 db.shutdown()
 shutil.rmtree(TESTDB_URI)
+"""
