@@ -21,13 +21,15 @@
 #       MA 02110-1301, USA.
 
 from norduni_client_exceptions import *
-from lucenequerybuilder import Q
 import json
 import re
 
 # This started as an extension to the Neo4j REST client made by Versae, continued
 # as an extension for the official Neo4j python bindings when they were released
 # (Neo4j 1.5, http://docs.neo4j.org/chunked/milestone/python-embedded.html).
+#
+# After the python-embedded drivers where discontinued with Neo4j 2.0 we are now
+# using neo4jdb-python transaction endpoint drivers.
 #
 # The goal is to make it easier to add and retrieve data to a Neo4j database
 # according to the NORDUnet Network Inventory data model.
@@ -43,10 +45,13 @@ except ImportError:
     NEO4J_URI = None
     print 'Starting up without a Django environment.'
     print 'Initial: norduni_client.neo4jdb == None.'
-    print 'Use norduni_client.open_db(path_to_directory) to open a database.'
-    pass
+    print 'Use norduni_client.init_db(uri) to open a database connection.'
+
 # Import neo4j after django settings to use set environment variables
-import neo4j
+from neo4j import contextmanager, IntegrityError, ProgrammingError
+
+META_LABELS = ['Physical', 'Logical', 'Relation', 'Location']
+
 
 # Helper functions
 def normalize_whitespace(s):
@@ -54,627 +59,397 @@ def normalize_whitespace(s):
     Removes leading and ending whitespace from a string.
     """
     return ' '.join(s.split())
-    
+
+
 def lowerstr(s):
     """
     Makes everything to a string and tries to make it lower case. Also
     normalizes whitespace.
     """
     return normalize_whitespace(unicode(s).lower())
-    
-def is_meta_node(node):
-    """
-    Returns True if the provided node is of node_type == meta.
-    """
-    if node['node_type'] == 'meta':
-        return True
-    return False    
+
 
 # Core functions
-def open_db(uri=NEO4J_URI):
-    """
-    Open or create a Neo4j database in the supplied path. As the module
-    opens the database located at NEO4J_URI when imported you shouldn't have
-    to use this.
-    """
+def init_db(uri=NEO4J_URI):
     if uri:
-        return neo4j.GraphDatabase(uri)
-        
-def upgrade_db(uri=NEO4J_URI):
-    """
-    Opens the Neo4j database with the option to allow upgrade then closes
-    the database.
-    """
-    if uri:
-        db = neo4j.GraphDatabase(uri, allow_store_upgrade="true")
-        db.shutdown()
-        print 'Database upgraded!'
-    else:
-        print 'You did not provide an URI to the database location.'
+        manager = get_db_manager(uri)
+        try:
+            with manager.transaction as w:
+                w.execute('CREATE CONSTRAINT ON (n:Node) ASSERT n.handle_id IS UNIQUE')
+        except IntegrityError:
+            pass
+        try:
+            with manager.transaction as w:
+                w.execute('CREATE INDEX ON :Node(name)')
+        except IntegrityError:
+            pass
+        return manager
 
-def create_node(db, n='', t=''):
-    """
-    Creates a node with the mandatory attributes name and type.
-    """
-    with db.transaction:
-        node = db.node(name=n, node_type=t)
-        # Add the nodes name and type to indexes
-        i1 = get_node_index(db, search_index_name())
-        add_index_item(db, i1, node, 'name')
-        i2 = get_node_index(db, 'node_types')
-        add_index_item(db, i2, node, 'node_type')
-    return node
-    
-def get_root_node(db):
-    """
-    Returns the root node, also known as node[0].
-    """
-    return db.reference_node
 
-def get_node_by_id(db, node_id):
+def get_db_manager(uri):
     """
-    Returns the node with the supplied id or None if it doesn't exist.
-    """
-    return db.nodes.get(int(node_id))
-    
-def get_all_nodes(db):
-    """
-    Returns all nodes in the database in a list. 
-    """
-    return [node for node in db.nodes]
-    
-def get_relationship_by_id(db, rel_id):
-    """
-    Returns the relationship with the supplied id.
-    """
-    return db.relationships.get(int(rel_id))
-        
-def get_all_relationships(db):
-    """
-    Returns all relationships in the database in a list.
-    """
-    return [rel for rel in db.relationships]
+    Open or create a Neo4j database in the supplied path.
 
-def delete_node(db, node):
+    As the module opens the database located at NEO4J_URI when imported you
+    shouldn't have to use this.
     """
-    Deletes the node and all its relationships. Removes the node from all node
-    indexes.
-    Returns True on success.
+    return contextmanager.Neo4jDBConnectionManager(uri)
+
+
+def create_node(manager, name, meta_type_label, type_label, handle_id):
     """
-    with db.transaction:
-        # Delete the nodes all relationships
-        for rel in node.relationships:
-            delete_relationship(db, rel)
-        # Delete the node from all indexes
-        for index in get_node_indexes(db):
-            del_index_item(db, index, node)
-        # Delete the node
-        node.delete()
+    Creates a node with the mandatory attributes name and handle_id also sets type label.
+
+    :param manager: Neo4jDBConnectionManager
+    :param name: string
+    :param type_label: string
+    :param handle_id: Unique id
+    :return: None
+    """
+    if meta_type_label not in META_LABELS:
+        raise MetaLabelNamingError
+    q = """
+        CREATE (n:Node:%s:%s { name: { name }, handle_id: { handle_id }})
+        RETURN n
+        """ % (meta_type_label, type_label)
+    with manager.transaction as w:
+        return w.execute(q, name=name, handle_id=handle_id).fetchall()[0][0]
+    
+
+def get_node(manager, handle_id):
+    """
+     :param manager: Neo4jDBConnectionManager
+    :param handle_id: Unique id
+    :return: dict
+    """
+    q = 'MATCH (n:Node { handle_id: {handle_id} }) RETURN n'
+    try:
+        with manager.read as r:
+            return r.execute(q, handle_id=handle_id).fetchall()[0][0]
+    except IndexError:
+        return None
+
+
+def delete_node(manager, handle_id):
+    """
+    Deletes the node and all its relationships.
+
+    :param manager: Neo4jDBConnectionManager
+    :param handle_id: Unique id
+    :return: bool
+    """
+    q = 'MATCH (n:Node { handle_id: {handle_id} })-[r]-() DELETE n,r'
+    with manager.transaction as t:
+        t.execute(q, handle_id=handle_id)
     return True
 
-def delete_relationship(db, rel):
-    """
-    Deletes the relationship and removes the relationship from all relationship
-    indexes.
-    Returns True on success.
-    """
-    with db.transaction:
-        # Delete the relationship from all indexes
-        for index in get_relationship_indexes(db):
-            del_index_item(db, index, rel)
-        # Delete relationship
-        rel.delete()
-    return True    
 
-# NORDUni functions
-def create_meta_node(db, meta_node_name):
+def get_relationship(manager, relationship_id):
     """
-    Creates a meta node and its' relationship to the root node.
+     :param manager: Neo4jDBConnectionManager
+    :param relationship_id: Internal Neo4j id
+    :return: dict
     """
-    accepted_names = ['physical', 'logical', 'relation', 'location']
-    if meta_node_name in accepted_names:
-        with db.transaction:
-            meta_node = db.node(name=meta_node_name, node_type='meta')
-            root = get_root_node(db)
-            root.Consists_of(meta_node)
-        return meta_node
-    raise MetaNodeNamingError(accepted_names)
-    
-def get_meta_node(db, meta_node_name):
-    """
-    Will return the meta node requested or create it and return it.
-    """
-    root = get_root_node(db)
-    if not len(root.relationships):
-        # Set root name and node_type as it is the first run
-        with neo4jdb.transaction:
-            neo4jdb.reference_node['name'] = 'root'
-            neo4jdb.reference_node['node_type'] = 'meta'
-        return create_meta_node(db, meta_node_name)
-    for rel in root.Consists_of.outgoing:
-        if rel.end['name'] == meta_node_name.lower():
-            return rel.end
-    # No meta node found, create one
-    meta_node = create_meta_node(db, meta_node_name)
-    return meta_node
+    q = 'START r=relationship({relationship_id}) RETURN r'
+    try:
+        with manager.read as r:
+            return r.execute(q, relationship_id=relationship_id).fetchall()[0][0]
+    except IndexError:
+        return None
 
-def get_all_meta_nodes(db):
+
+def delete_relationship(manager, relationship_id):
     """
-    Will return all meta nodes.
+    Deletes the relationship.
+
+    :param manager:  Neo4jDBConnectionManager
+    :param relationship_id: Internal Neo4j relationship id
+    :return: bool
     """
-    root = get_root_node(db)
-    q = '''
-        START root=node({id})
-        MATCH root-[:Consists_of*0..1]->meta_node
-        RETURN meta_node
-        '''
-    hits = db.query(q, id=root.getId())
-    return [hit['meta_node'] for hit in hits]
-    
-def get_node_meta_type(node):
+    q = 'START r=relationship({relationship_id}) DELETE r'
+    with manager.transaction as t:
+        t.execute(q, relationship_id=relationship_id)
+    return True
+
+
+def get_node_meta_type(manager, handle_id):
     """
     Returns the meta type of the supplied node as a string.
-    """
-    try:
-        meta_type = node.Contains.incoming.single.start['name']
-    except AttributeError:
-        raise NoMetaNodeFound(node)
-    return meta_type
 
-def get_root_parent(db, node):
-    """
-    Takes a node and returns the nodes top most parent (not meta node or root node).
-    Returns an empty list if no parent was found.
-    """
-    types = {'physical': 'Has', 'logical': 'Depends_on', 'location': 'Has',
-             'relation': 'None'} # Relations cant have parent nodes.
-    relationship_type = types[nc.get_node_meta_type(node)]
-    q = '''
-        START node=node({id})
-        MATCH ()-[:Contains]->parent-[:%s*1..]->node
-        RETURN parent
-        ''' % relationship_type
-    hits = db.query(q, id=node.getId())
-    return [hit['parent'] for hit in hits]
-    
-def get_node_by_value(db, node_value, node_property=None):
-    """
-    Traverses all nodes and compares the property/properties of the node
-    with the supplied string. Returns a list of matching nodes.
-    """
-    if node_property:
-        #q = '''
-        #    START node=node(*)
-        #    WHERE node.%s! =~ /(?i).*%s.*/
-        #    RETURN distinct node
-        #    ''' % (node_property, node_value)
-        # TODO: Use above when https://github.com/neo4j/community/issues/369 is resolved.
-        q = '''
-            START node=node(*)
-            WHERE has(node.%s)
-            RETURN distinct node
-            ''' % node_property                                     # Temp
-        hits = db.query(q)
-        pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)  # Temp
-        for hit in hits:
-            if pattern.match(unicode(hit['node'][node_property])):  # Temp
-                yield hit['node']
-    else:
-        pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)
-        for node in nc.get_all_nodes(db):
-            for value in node.getPropertyValues():
-                if pattern.match(unicode(value)):
-                    yield node
-                    break
-
-
-def get_child_by_value(db, parent_node, node_value, node_property=None):
-    """
-    Traversers all children of parent node in comparing property/properties of the node
-    with the supplied string. Returns a list of matching nodes.
-    """
-    # TODO: Do I need this?
-    pass
-
-def get_indexed_node_by_value(db, node_value, node_type, node_property=None):
-    """
-    Searches through the node_types index for nodes matching node_type and
-    the value or property/value pair. Returns a list of matching nodes.
-    """
-    if node_property:
-        #q = '''
-        #    START node=node:node_types(node_type = "%s")
-        #    WHERE node.%s! =~ /(?i).*%s.*/
-        #    RETURN node
-        #    ''' % (node_type, node_property, node_value)
-        # TODO: Use above when https://github.com/neo4j/community/issues/369 is resolved.
-        q = '''
-            START node=node:node_types(node_type = {node_type})
-            WHERE has(node.%s)
-            RETURN node
-            ''' % node_property                        # Temp
-        hits = db.query(q, node_type=node_type)
-        pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)  # Temp
-        for hit in hits:
-            if pattern.match(unicode(hit['node'][node_property])):  # Temp
-                yield hit['node']
-    else:
-        node_types_index = get_node_index(db, 'node_types')
-        q = Q('node_type', '%s' % node_type)
-        hits = node_types_index.query('%s' % q)
-        pattern = re.compile('.*%s.*' % node_value, re.IGNORECASE)
-        for hit in hits:
-            for value in hit.getPropertyValues():
-                if pattern.match(unicode(value)):
-                    yield hit
-
-
-def get_unique_node_by_name(db, node_name, node_type):
-    """
-    db: neo4jdb instance
-    node_name: string
-    node_type: string
-
-    Returns the node if the node is unique for name and type or None.
+    :param manager: Neo4jDBConnectionManager
+    :param handle_id: Unique id
+    :return: string
     """
     q = '''
-        START node=node:node_types(node_type = {node_type})
-        WHERE node.name = {node_name}
-        RETURN node
+        MATCH (n:Node { handle_id: {handle_id} })
+        RETURN labels(n)
         '''
-    hits = [hit for hit in db.query(q, node_type=node_type, node_name=node_name)]
+
+    with manager.read as r:
+        labels, = r.execute(q, handle_id=handle_id).fetchone()
+        for label in labels:
+            if label in META_LABELS:
+                return label
+    raise NoMetaLabelFound(handle_id)
+
+
+# TODO: Try out elasticsearch
+def get_node_by_value(manager, value, prop=None, node_type="Node"):
+    """
+    Traverses all nodes or nodes of specified label and compares the property/properties of the node
+    with the supplied string.
+
+    :param manager: Neo4jDBConnectionManager
+    :param value: string
+    :param prop: string
+    :param node_type:
+    :return: dicts
+    """
+    if prop:
+        q = '''
+            MATCH (n:{label})
+            USING SCAN n:{label}
+            WHERE n.{prop} =~ "(?i).*{value}.*"
+            RETURN distinct n
+            '''.format(label=node_type, prop=prop, value=value)
+        try:
+            with manager.read as r:
+                for node, in r.execute(q):
+                    yield node
+        except ProgrammingError:  # Can't do regex on int. bool or lists
+            q = '''
+                MATCH (n:{label})
+                USING SCAN n:{label}
+                WHERE HAS(n.{prop})
+                RETURN n
+                '''.format(label=node_type, prop=prop)
+            pattern = re.compile('.*{0}.*'.format(value), re.IGNORECASE)
+            with manager.read as r:
+                for node, in r.execute(q):
+                    if pattern.match(unicode(node.get(prop, None))):
+                        yield node
+    else:
+        q = '''
+            MATCH (n:{label})
+            RETURN n
+            '''.format(label=node_type)
+        pattern = re.compile('.*{0}.*'.format(value), re.IGNORECASE)
+        with manager.read as r:
+            for node, in r.execute(q):
+                for v in node.values():
+                    if pattern.match(unicode(v)):
+                        yield node
+                        break
+
+
+def get_unique_node_by_name(manager, node_name, node_type):
+    """
+    Returns the node if the node is unique for name and type or None.
+
+    :param manager:  Neo4jDBConnectionManager
+    :param node_name: string
+    :param node_type: string
+    :return: dict
+    """
+    q = '''
+        MATCH (n:Node { name: {name} })
+        WHERE {label} IN labels(n)
+        RETURN n
+        '''
+    with manager.read as r:
+        hits = r.execute(q, name=node_name, label=node_type).fetchall()
     if hits:
         if len(hits) == 1:
-            return hits[0]['node']
+            return hits[0][0]
         raise MultipleNodesReturned(node_name, node_type)
     return None
 
 
+def _create_relationship(manager, handle_id, other_handle_id, rel_type):
+
+    q = """
+        MATCH (a:Node {handle_id: {start}}),(b:Node {handle_id: {end}})
+        CREATE a-[r:%s]->b
+        RETURN ID(r)
+        """ % rel_type
+
+    with manager.transaction as w:
+        return w.execute(q, start=handle_id, end=other_handle_id).fetchall()[0][0]
 
 
-#def get_suitable_nodes(db, node):
-#    """
-#    Takes a reference node and returns all nodes that is suitable for a
-#    relationship with that node.
-#
-#    Returns a dictionary with the suitable nodes in lists separated by
-#    meta_type.
-#    """
-#    meta_type = get_node_meta_type(node).lower()
-#    # Spec which meta types can have a relationship with each other
-#    if meta_type == 'location':
-#        suitable_types = ['physical', 'relation', 'location']
-#    elif meta_type == 'logical':
-#        suitable_types = ['physical', 'relation', 'logical']
-#    elif meta_type == 'relation':
-#        suitable_types = ['physical', 'location', 'logical']
-#    elif meta_type == 'physical':
-#        suitable_types = ['physical', 'relation', 'location', 'logical']
-#    # Get all suitable nodes from graph db
-#    def suitable_evaluator(path):
-#    # Filter on the nodes meta type
-#        if get_node_meta_type(path.end) in suitable_types:
-#            return Evaluation.INCLUDE_AND_CONTINUE
-#        return Evaluation.EXCLUDE_AND_CONTINUE
-#    traverser = db.traversal().evaluator(suitable_evaluator).traverse(node)
-#    # Create and fill the dictionary with nodes
-#    node_dict = {'physical': [], 'logical': [], 'relation': [], 'location': []}
-#    for item in traverser.nodes:
-#        node_dict[get_node_meta_type(item)].append(item)
-#    # Remove the reference node, can't have relationship with yourself
-#    node_dict[meta_type].remove(node)
-#    return node_dict
-
-def _create_relationship(db, node, other_node, rel_type):
-    """
-    Makes a relationship between the two node of the rel_type relationship type.
-    To be sure that relationship types are not misspelled or not following
-    the database model you should use create_suitable_relationship().
-    """
-    with db.transaction:
-        return node.relationship.create(rel_type, other_node)
-
-
-def create_location_relationship(db, location_node, other_node, rel_type):
+def create_location_relationship(manager, location_node, other_node, rel_type):
     """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
     """
-    if get_node_meta_type(other_node) == 'location' and rel_type == 'Has':
-        return _create_relationship(db, location_node, other_node, rel_type)
-    raise NoRelationshipPossible(location_node, other_node, rel_type)
-    
-def create_logical_relationship(db, logical_node, other_node, rel_type):
+    if get_node_meta_type(manager, other_node) == 'Location' and rel_type == 'Has':
+        return _create_relationship(manager, location_node, other_node, rel_type)
+    raise NoRelationshipPossible(manager, location_node, other_node, rel_type)
+
+
+def create_logical_relationship(manager, logical_node, other_node, rel_type):
     """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
     """
-    other_meta_type = get_node_meta_type(other_node)
+    other_meta_type = get_node_meta_type(manager, other_node)
     if rel_type == 'Depends_on':
-        if other_meta_type == 'logical' or other_meta_type == 'physical':
-            return _create_relationship(db, logical_node, other_node, rel_type)
+        if other_meta_type == 'Logical' or other_meta_type == 'Physical':
+            return _create_relationship(manager, logical_node, other_node, rel_type)
     elif rel_type == 'Part_of':
-        if other_meta_type == 'physical':
-            return _create_relationship(db, logical_node, other_node, rel_type)
-    raise NoRelationshipPossible(logical_node, other_node, rel_type)
-    
-def create_relation_relationship(db, relation_node, other_node, rel_type):
-    """
-    Makes relationship between the two nodes and returns the relationship.
-    If a relationship is not possible NoRelationshipPossible exception is
-    raised.
-    """
-    other_meta_type = get_node_meta_type(other_node)
-    if other_meta_type == 'logical':
-        if rel_type in ['Uses', 'Provides']:
-            return _create_relationship(db, relation_node, other_node, rel_type)
-    elif other_meta_type == 'location' and rel_type == 'Responsible_for':
-        return _create_relationship(db, relation_node, other_node, rel_type)
-    elif other_meta_type == 'physical':
-        if rel_type in ['Owns', 'Provides']:
-            return _create_relationship(db, relation_node, other_node, rel_type)
-    raise NoRelationshipPossible(relation_node, other_node, rel_type)
-    
-def create_physical_relationship(db, physical_node, other_node, rel_type):
-    """
-    Makes relationship between the two nodes and returns the relationship.
-    If a relationship is not possible NoRelationshipPossible exception is
-    raised.
-    """
-    other_meta_type = get_node_meta_type(other_node)
-    if other_meta_type == 'physical':
-        if rel_type == 'Has' or rel_type == 'Connected_to':
-            return _create_relationship(db, physical_node, other_node, rel_type)
-    elif other_meta_type == 'location' and rel_type == 'Located_in':
-        return _create_relationship(db, physical_node, other_node, rel_type)
-    raise NoRelationshipPossible(physical_node, other_node, rel_type)
+        if other_meta_type == 'Physical':
+            return _create_relationship(manager, logical_node, other_node, rel_type)
+    raise NoRelationshipPossible(manager, logical_node, other_node, rel_type)
 
-def create_relationship(db, node, other_node, rel_type):
+
+def create_relation_relationship(manager, relation_node, other_node, rel_type):
+    """
+    Makes relationship between the two nodes and returns the relationship.
+    If a relationship is not possible NoRelationshipPossible exception is
+    raised.
+    """
+    other_meta_type = get_node_meta_type(manager, other_node)
+    if other_meta_type == 'Logical':
+        if rel_type in ['Uses', 'Provides']:
+            return _create_relationship(manager, relation_node, other_node, rel_type)
+    elif other_meta_type == 'Location' and rel_type == 'Responsible_for':
+        return _create_relationship(manager, relation_node, other_node, rel_type)
+    elif other_meta_type == 'Physical':
+        if rel_type in ['Owns', 'Provides']:
+            return _create_relationship(manager, relation_node, other_node, rel_type)
+    raise NoRelationshipPossible(manager, relation_node, other_node, rel_type)
+
+
+def create_physical_relationship(manager, physical_node, other_node, rel_type):
+    """
+    Makes relationship between the two nodes and returns the relationship.
+    If a relationship is not possible NoRelationshipPossible exception is
+    raised.
+    """
+    other_meta_type = get_node_meta_type(manager, other_node)
+    if other_meta_type == 'Physical':
+        if rel_type == 'Has' or rel_type == 'Connected_to':
+            return _create_relationship(manager, physical_node, other_node, rel_type)
+    elif other_meta_type == 'Location' and rel_type == 'Located_in':
+        return _create_relationship(manager, physical_node, other_node, rel_type)
+    raise NoRelationshipPossible(manager, physical_node, other_node, rel_type)
+
+
+def create_relationship(manager, node, other_node, rel_type):
     """
     Makes a relationship from node to other_node depending on which
     meta_type the nodes are. Returns the relationship or raises
     NoRelationshipPossible exception.
     """
-    meta_type = get_node_meta_type(node)    
-    if meta_type == 'location':
-        return create_location_relationship(db, node, other_node, rel_type)
-    elif meta_type == 'logical':
-        return create_logical_relationship(db, node, other_node, rel_type)
-    elif meta_type == 'relation':
-        return create_relation_relationship(db, node, other_node, rel_type)
-    elif meta_type == 'physical':
-        return create_physical_relationship(db, node, other_node, rel_type)
-    raise NoRelationshipPossible(node, other_node, rel_type)
+    meta_type = get_node_meta_type(manager, node)
+    if meta_type == 'Location':
+        return create_location_relationship(manager, node, other_node, rel_type)
+    elif meta_type == 'Logical':
+        return create_logical_relationship(manager, node, other_node, rel_type)
+    elif meta_type == 'Relation':
+        return create_relation_relationship(manager, node, other_node, rel_type)
+    elif meta_type == 'Physical':
+        return create_physical_relationship(manager, node, other_node, rel_type)
+    raise NoRelationshipPossible(manager, node, other_node, rel_type)
 
-def get_relationships(n1, n2, rel_type=None):
+
+def get_relationships(manager, handle_id1, handle_id2, rel_type=None):
     """
     Takes a start and an end node with an optional relationship
     type.
     Returns the relationships between the nodes or an empty list.
     """
-    rel_list = []
-    for rel in n1.relationships:
-        if (rel.start.id == n1.id and rel.end.id == n2.id) or \
-           (rel.start.id == n2.id and rel.end.id == n1.id):
-            if rel_type:
-                if rel.type.name() == rel_type:
-                    rel_list.append(rel)
-            else:
-                rel_list.append(rel)
-    return rel_list
-    
-def relationships_equal(rel1, rel2):
-    """
-    Takes two relationships and returns True if they have the same start and
-    end node, are of the same type and have the same properties.
-    """
-    if rel1.type == rel2.type:
-        if rel1.start == rel2.start and rel1.end == rel2.end:
-            if rel1.propertyKeys.equals(rel2.propertyKeys):
-                if rel1.propertyValues.equals(rel2.propertyValues):
-                    return True
-    return False
+    if rel_type:
+        q = """
+        MATCH (a:Node {{handle_id: {{handle_id1}}}})-[r:{rel_type}]-(b:Node {{handle_id: {{handle_id2}}}})
+        RETURN collect(ID(r))
+        """.format(rel_type=rel_type)
+    else:
+        q = """
+            MATCH (a:Node {handle_id: {handle_id1}})-[r]-(b:Node {handle_id: {handle_id2}})
+            RETURN collect(ID(r))
+            """
+    with manager.read as r:
+        return r.execute(q, handle_id1=handle_id1, handle_id2=handle_id2).fetchall()[0][0]
 
 
-def update_item_properties(db, item, new_properties):
-    """
-    Take a node or a relationship and a dictionary of properties. Updates the
-    item and returns it.
-    """
-    # We might want to do a better check of the data...
-    with db.transaction:
-        for key, value in new_properties.items():
-            fixed_key = key.replace(' ', '_').lower()  # No spaces or caps
-            if value or value is 0:
+def update_node_properties(manager, handle_id, new_properties):
+    old_properties = get_node(manager, handle_id)
+    d = {
+        'props': _update_item_properties(old_properties, new_properties)
+    }
+    q = """
+        MATCH (n:Node {handle_id: {props}.handle_id})
+        SET n = {props}
+        RETURN n
+        """
+    with manager.transaction as w:
+        return w.execute(q, **d).fetchall()[0][0]
+
+
+def update_relationship_properties(manager, relationship_id, new_properties):
+    old_properties = get_relationship(manager, relationship_id)
+    d = {
+        'props': _update_item_properties(old_properties, new_properties)
+    }
+    q = """
+        START r=relationship({relationship_id})
+        SET r = {props}
+        RETURN r
+        """
+    with manager.transaction as w:
+        return w.execute(q, relationship_id=relationship_id, **d).fetchall()[0][0]
+
+
+def _update_item_properties(item_properties, new_properties):
+    for key, value in new_properties.items():
+        fixed_key = key.replace(' ', '_').lower()  # No spaces or caps
+        if value or value is 0:
+            try:
+                # Handle string representations of lists and booleans
+                item_properties[fixed_key] = json.loads(value)
+            except (ValueError, TypeError):
                 try:
-                    # Handle string representations of lists and booleans
-                    item[fixed_key] = json.loads(value)
-                except (ValueError, Exception):
-                    try:
-                        # if value is a dict Neo4j will throw Exception: No matching overloads found...
-                        item[fixed_key] = normalize_whitespace(value)
-                    except (TypeError, AttributeError):
-                        # if value is not a string we will end up here
-                        item[fixed_key] = value
-            elif fixed_key in item.propertyKeys:
-                del item[fixed_key]
-    return item
+                    item_properties[fixed_key] = normalize_whitespace(value)
+                except (TypeError, AttributeError):
+                    # if value is not a string we will end up here
+                    item_properties[fixed_key] = value
+        elif fixed_key in item_properties.keys():
+            del item_properties[fixed_key]
+    return item_properties
 
 
-def merge_properties(db, node, prop_name, new_props):
+def merge_properties(item_properties, prop_name, new_value):
     """
     Tries to figure out which type of property value that should be merged and
     invoke the right function.
     Returns True if the merge was successful otherwise False.
     """
-    existing_properties = node.getProperty(prop_name, None)
-    if not existing_properties: # A node without existing properties
-        with db.transaction:
-            node[prop_name] = new_props
-        return True
+    existing_value = item_properties.get(prop_name, None)
+    if not existing_value:  # A node without existing values for the property
+        item_properties[prop_name] = new_value
     else:
-        if type(new_props) is int:
-            return False # Not implemented yet
-        elif type(new_props) is str:
-            return False # Not implemented yet
-        elif type(new_props) is list:
-            merged_props = merge_properties_list(prop_name, new_props,
-                                                        existing_properties)
-        elif type(new_props) is dict:
-            return False # Not implemented yet
+        if type(new_value) is int:
+            item_properties[prop_name] = existing_value + new_value
+        elif type(new_value) is str:
+            return False  # Not implemented yet
+        elif type(new_value) is list:
+            item_properties[prop_name] = merge_list(existing_value, new_value)
         else:
             return False
-    if merged_props:
-        with db.transaction:
-            node[prop_name] = merged_props
-            return True
-    else:
-        return False
+    return item_properties
 
-def merge_properties_list(prop_name, new_prop_list, existing_prop_list):
+
+def merge_list(existing_value, new_value):
     """
     Takes the name of a property, a list of new property values and the existing
     node values.
     Returns the merged properties.
     """
-    # Jpype returns lists as jpype._jarray.java.lang.String[].
-    existing_prop_list = list(existing_prop_list)
-    for item in new_prop_list:
-        if item not in existing_prop_list:
-            existing_prop_list.append(item)
-    return existing_prop_list
+    new_set = set(existing_value + new_value)
+    return list(new_set)
 
-# Indexes
-def get_node_indexes(db):
-    """
-    Returns a list of all node indexes in the database.
-    """
-    return [get_node_index(db, name) for name in db.index().nodeIndexNames()]
 
-def get_relationship_indexes(db):
-    """
-    Returns a list of all relationship indexes in the database.
-    """
-    return [get_relationship_index(db, name) for name in db.index().relationshipIndexNames()]
-
-def search_index_name():
-    """
-    Set the name of the index that is used for autocomplete and search in the
-    gui.
-    """
-    return 'search'
-  
-def get_node_index(db, index_name):
-    """
-    Returns the index with the supplied name. Creates a new index if it does
-    not exist.
-    """
-    try:
-        index = db.nodes.indexes.get(index_name)
-    except ValueError:
-        with db.transaction:
-            index = db.nodes.indexes.create(index_name, type="fulltext")
-    return index
-    
-def get_relationship_index(db, index_name):
-    """
-    Returns the index with the supplied name. Creates a new index if it does
-    not exist.
-    """
-    try:
-        index = db.relationships.indexes.get(index_name)
-    except ValueError:
-        with db.transaction:
-            index = db.relationships.indexes.create(index_name, type="fulltext")
-    return index
-
-def add_index_item(db, index, item, key):
-    """
-    Adds the provided node to the index if the property/key exists and is not
-    None. Also adds the node to the index key "all".
-    """
-    value = item.getProperty(key, None)
-    if value or value == 0:
-        with db.transaction:
-            index[key][value] = item
-            index['all'][value] = item
-        return True
-    return False
-
-def del_index_item(db, index, item, key=None):
-    """
-    Removes the node from the index[key]. If key is None all occurrences of the
-    node in the index will be removed.
-    """
-    with db.transaction:
-        if key:
-            value = item.getProperty(key)
-            del index[key][item]
-            del index['all'][value][item]
-        else:
-            del index[item]
-    return True
-
-def update_index_item(db, index, item, key):
-    """
-    Updates the value of the items indexed property.
-    """
-    del_index_item(db, index, item, key)
-    add_index_item(db, index, item, key)
-    return True
-
-# Test and setup
-def test_db_setup(db_uri=None):
-    if db_uri:
-        db = open_db(db_uri)
-    else:
-        db = open_db()
-    print 'Testing read and write for Neo4j REST database at %s.' % db.getStoreDir()
-    print 'The next two lines should match.'
-    print 'Name: root. Node Type: meta. Node ID: 0.'
-    with db.transaction:
-        n = get_root_node(db)
-        n['name'] = 'root'
-        n['node_type'] = 'meta'
-    print 'Name: %s. Node Type: %s. Node ID: %d.' % (n['name'], n['node_type'], 
-                                                     n.id)
-    db.shutdown()
-
-def _warmup(db):
-    q = """
-    START n=node(*)
-    MATCH n-[r?]->()
-    RETURN count(n.property_i_do_not_have?)+count(r.property_i_do_not_have?)
-    """
-    db.query(q)
-
-def _init_db():
-    return open_db()
-
-try:
-    neo4jdb = _init_db()
-    # Preload nodes and relationship from disk
-    _warmup(neo4jdb)
-except Exception as e:
-    print '*** WARNING ***'
-    print 'Error: %s' % e
-    print 'Could not load the Neo4j database. Is it already loaded?'
-    print 'Use open_db(URI) to open another database.'
-
-def _close_db():
-    try:
-        if neo4jdb:
-            neo4jdb.shutdown()
-    except NameError:
-        print 'Could not shutdown Neo4j database. Is it open in another process?'
-
-import atexit
-atexit.register(_close_db)
-
-def main():
-    test_db_setup()
-
-if __name__ == '__main__':
-    main()         
+neo4jdb = init_db()
