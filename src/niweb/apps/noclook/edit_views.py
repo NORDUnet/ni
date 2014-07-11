@@ -208,6 +208,7 @@ def edit_cable(request, handle_id):
     # Get needed data from node
     nh, node = h.get_nh_node(handle_id)
     connections = h.get_connected_cables(node)
+    providers = h.iter2list(node.Provides.incoming)
     if request.POST:
         form = forms.EditCableForm(request.POST)
         if form.is_valid():
@@ -231,6 +232,11 @@ def edit_cable(request, handle_id):
             # Update search index for name
             index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
             nc.update_index_item(nc.neo4jdb, index, node, 'name')
+            # Provider
+            if form.cleaned_data['relationship_provider']:
+                provider_id = form.cleaned_data['relationship_provider']
+                h.set_provider(request.user, node, provider_id)
+            # End points
             if form.cleaned_data['relationship_end_a']:
                 end_a = form.cleaned_data['relationship_end_a']
                 h.connect_physical(request.user, node, end_a)
@@ -243,15 +249,15 @@ def edit_cable(request, handle_id):
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_cable.html',
-                                  {'node': node, 'form': form,
-                                   'connections': connections},
-                                context_instance=RequestContext(request))
+                                      {'node': node, 'form': form, 'connections': connections,
+                                       'providers': providers},
+                                      context_instance=RequestContext(request))
     else:
         form = forms.EditCableForm(h.item2dict(node))
         return render_to_response('noclook/edit/edit_cable.html',
-                                  {'form': form, 'node': node,
-                                   'connections': connections},
-                                context_instance=RequestContext(request))
+                                  {'form': form, 'node': node, 'connections': connections,
+                                   'providers': providers},
+                                  context_instance=RequestContext(request))
                                 
 @login_required
 def edit_optical_node(request, handle_id):

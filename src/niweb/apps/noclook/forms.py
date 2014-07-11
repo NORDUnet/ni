@@ -331,6 +331,10 @@ class NewNordunetCableForm(NewCableForm):
 
                                        
 class EditCableForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditCableForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
     name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
     cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
     telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.')
@@ -339,6 +343,7 @@ class EditCableForm(forms.Form):
     global_connect_circuit_id = forms.CharField(required=False, help_text='Global Connect circuit ID')
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
 
 class EditOpticalNodeForm(forms.Form):        

@@ -435,10 +435,11 @@ def cable_detail(request, handle_id):
     connections = h.get_connected_cables(node)
     services = h.iter2list(h.get_services_dependent_on_cable(node))
     all_dependent = h.get_dependent_on_cable_as_types(node)
+    providers = h.iter2list(node.Provides.incoming)
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': node, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'connections': connections, 'services': services, 'all_dependent': all_dependent,
-                               'history': history},
+                               'providers': providers, 'history': history},
                               context_instance=RequestContext(request))
 
 

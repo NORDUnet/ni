@@ -77,6 +77,16 @@
                     <th>Global Connect Circuit ID:</th><td>{{ node.global_connect_circuit_id }}</td>
                 </tr>
             {% endif %}
+            {% if providers %}
+            <tr>
+                <th>Provider:</th>
+                <td>
+                    {% for provider in providers %}
+                        <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a><br>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">

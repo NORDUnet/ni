@@ -83,7 +83,7 @@ $(document).ready(
                         end_value_field: "#id_relationship_end_b"
                     });
         // Modal delete connection confirm
-        $("#dialog-connection-confirm").dialog({
+        $("#dialog-user-confirm").dialog({
           modal: true,
                 bgiframe: true,
                 width: 500,
@@ -91,12 +91,12 @@ $(document).ready(
           autoOpen: false
           });
 
-        $("a.connection-confirm").click(function(e) {
+        $("a.user-confirm").click(function(e) {
             e.preventDefault();
             var theHREF = $(this).attr("href");
 
 
-            $("#dialog-connection-confirm").dialog('option', 'buttons', {
+            $("#dialog-user-confirm").dialog('option', 'buttons', {
                     "Confirm" : function() {
                         window.location.href = theHREF;
                         },
@@ -105,7 +105,7 @@ $(document).ready(
                         }
                     });
 
-            $("#dialog-connection-confirm").dialog("open");
+            $("#dialog-user-confirm").dialog("open");
 
         });
         // Accordion
@@ -127,8 +127,8 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-    <div id="dialog-connection-confirm" title="Remove connection?">
-        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The connection will be permanently deleted and cannot be recovered. Are you sure?</p>
+    <div id="dialog-user-confirm" title="Remove relationship?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
     </div>
     <div class="well">
         <h3>Name</h3>
@@ -156,7 +156,7 @@ $(document).ready(
                                     Connected to <a href="{% noclook_node_to_url con.port %}">{{ con.end.name }} {{ con.port.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ con.rel.id }}/delete" class="label label-important connection-confirm">Delete</a>
+                                    <a href="relationship/{{ con.rel.id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -185,6 +185,34 @@ $(document).ready(
                             <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseProvider">
+                    Provider (optional)
+                </a>
+            </div>
+            <div id="collapseProvider" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    {% if providers %}
+                        {% load noclook_tags %}
+                        <h4>Remove Provider</h4>
+                        {% for provider in providers %}
+                            <div class="row">
+                                <div class="span5">
+                                    <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ provider.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add Provider</h4>
+                    {{ form.relationship_provider }}
                 </div>
             </div>
         </div>
