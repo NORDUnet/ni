@@ -20,7 +20,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
-import norduni_client as nc
+import norduniclient as nc
 
 q1 = """
     START host = node:node_types(node_type = "Host")

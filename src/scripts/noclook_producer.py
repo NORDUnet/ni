@@ -34,7 +34,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-import norduni_client as nc
+import norduniclient as nc
 
 # A NERDS producer for the NOCLook application. It should be used to take
 # backups of the data inserted manually in to the databases.

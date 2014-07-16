@@ -17,7 +17,7 @@ sys.path.append(os.path.abspath(path2))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 from apps.noclook.models import NodeHandle
-import norduni_client as nc
+import norduniclient as nc
 import noclook_consumer as nt
 
 def normalize_whitespace(text):

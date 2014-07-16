@@ -33,8 +33,8 @@ try:
 except (ImportError, ImproperlyConfigured):
     NEO4J_URI = None
     print 'Starting up without a Django environment.'
-    print 'Initial: norduni_client.neo4jdb == None.'
-    print 'Use norduni_client.init_db(uri) to open a database connection.'
+    print 'Initial: norduniclient.neo4jdb == None.'
+    print 'Use norduniclient.init_db(uri) to open a database connection.'
 
 
 META_TYPES = ['Physical', 'Logical', 'Relation', 'Location']

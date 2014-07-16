@@ -7,7 +7,7 @@ Created on 2012-10-18 2:01 PM
 
 from django.test.simple import DjangoTestSuiteRunner
 from shutil import rmtree
-import norduni_client as nc
+import norduniclient as nc
 import sys
 
 

@@ -36,7 +36,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from django.conf import settings as django_settings
-import norduni_client as nc
+import norduniclient as nc
 import noclook_consumer as nt
 from apps.noclook import helpers as h
 

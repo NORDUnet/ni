@@ -19,7 +19,7 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 from apps.noclook import helpers as h
-import norduni_client as nc
+import norduniclient as nc
 
 print "Deleting property from nodes.",
 for node in nc.neo4jdb.nodes:

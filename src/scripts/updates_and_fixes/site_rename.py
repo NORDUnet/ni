@@ -18,7 +18,7 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 from apps.noclook.models import NodeHandle
-import norduni_client as nc
+import norduniclient as nc
 
 node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
 hits = node_types_index['node_type']['Site']

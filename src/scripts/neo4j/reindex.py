@@ -15,7 +15,7 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 from apps.noclook import helpers as h
-import norduni_client as nc
+import norduniclient as nc
 
 with nc.neo4jdb.transaction:
     node_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())

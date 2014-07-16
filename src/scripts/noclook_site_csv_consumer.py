@@ -33,7 +33,7 @@ path = '/var/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 import noclook_consumer as nt
-import norduni_client as nc
+import norduniclient as nc
 from apps.noclook import helpers as h
 
 '''

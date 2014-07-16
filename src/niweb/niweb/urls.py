@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.conf.urls import *
 from tastypie.api import Api
-from niweb.apps.noclook.api.resources import *
+from apps.noclook.api.resources import *
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -64,8 +64,8 @@ urlpatterns = patterns('',
     ('^activity/', include('actstream.urls')),
 
     # User Profiles
-    ('^userprofile/', include('niweb.apps.userprofile.urls')),
+    ('^userprofile/', include('apps.userprofile.urls')),
 
     # NOCLook URLs
-    (r'', include('niweb.apps.noclook.urls')),
+    (r'', include('apps.noclook.urls')),
 )

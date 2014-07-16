@@ -18,7 +18,7 @@ sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 from apps.noclook.helpers import update_node_search_index
-import norduni_client as nc
+import norduniclient as nc
 
 q = """
     START unit = node:node_types("node_type:Unit")

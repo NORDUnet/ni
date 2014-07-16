@@ -46,7 +46,7 @@ from apps.noclook import activitylog
 from django.contrib.comments import Comment
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
-import norduni_client as nc
+import norduniclient as nc
 import noclook_juniper_consumer
 import noclook_nmap_consumer_py
 import noclook_alcatel_consumer

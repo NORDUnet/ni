@@ -21,7 +21,7 @@ path = '/var/opt/norduni/src/niweb/'
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
-import norduni_client as nc
+import norduniclient as nc
 
 # User friendly usage output
 parser = argparse.ArgumentParser()

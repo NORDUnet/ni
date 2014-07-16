@@ -33,7 +33,7 @@ path = '/home/lundberg/norduni/src/niweb/'
 ##
 sys.path.append(os.path.abspath(path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-import norduni_client as nc
+import norduniclient as nc
 from norduni_client_exceptions import MultipleNodesReturned
 import noclook_consumer as nt
 from apps.noclook import helpers as h

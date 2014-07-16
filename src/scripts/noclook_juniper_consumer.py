@@ -38,7 +38,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import noclook_consumer as nt
 from apps.noclook import helpers as h
 from apps.noclook import activitylog
-import norduni_client as nc
+import norduniclient as nc
 
 # This script is used for adding the objects collected with the
 # NERDS producers juniper_config to the NOCLook database viewer.
