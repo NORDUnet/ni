@@ -38,11 +38,10 @@ class NodeType(models.Model):
         return True
     delete.alters_data = True
 
+
 class NodeHandle(models.Model):
     # Handle <-> Node data
     handle_id = models.AutoField(primary_key=True)
-    node_id = models.BigIntegerField(null=True, blank=True, unique=True,
-        editable=False)
     # Data shared with the node
     node_name = models.CharField(max_length=200)
     node_type = models.ForeignKey(NodeType)
@@ -61,40 +60,23 @@ class NodeHandle(models.Model):
         """
         Returns the NodeHandles node.
         """
-        return nc.get_node_by_id(nc.neo4jdb, self.node_id)
+        return nc.get_node_by_id(nc.neo4jdb, self.handle_id)
 
     @models.permalink
     def get_absolute_url(self):
-        """
-        Should we instead import neo4jclient here and traverse the node
-        to to root? That way we can do urls like se-tug/fpc/pic/port or
-        dk-ore-lm-01/rack/sub_rack/.
-        """
-        #return '%s/%d/' % (self.node_type, self.handle_id)
-        return('apps.noclook.views.generic_detail', (), {
-            'slug': self.node_type.get_slug(),
-            'handle_id': self.handle_id})
+        return('apps.noclook.views.generic_detail', (),
+               {'slug': self.node_type.get_slug(), 'handle_id': self.handle_id})
 
-    def save(self, create_node=False, *args, **kwargs):
+    def save(self, *args, **kwargs):
         """
         Create a new node and associate it to the handle.
         """
-        if self.node_id and not create_node: # Don't create a node
-            super(NodeHandle, self).save(*args, **kwargs)
-            return self
-        node = nc.create_node(nc.neo4jdb, self.node_name, str(self.node_type))
-        self.node_id = node.id
+        super(NodeHandle, self).save(*args, **kwargs)
         try:
-            super(NodeHandle, self).save(*args, **kwargs)
-        except utils.IntegrityError as e:
-            print e
-            print 'Node ID: %d' % node.id
-            raise Exception(e)
-        meta_node = nc.get_meta_node(nc.neo4jdb, str(self.node_meta_type))
-        node = nc.get_node_by_id(nc.neo4jdb, self.node_id)
-        with nc.neo4jdb.transaction:
-            node['handle_id'] = int(self.handle_id)
-            meta_node.Contains(node)
+            nc.create_node(nc.neo4jdb, self.node_name, self.node_meta_type, self.node_type.type, self.handle_id)
+        except nc.exceptions.IntegrityError:
+            #  A node already associated with this handle_id
+            pass
         return self
     
     save.alters_data = True
@@ -103,12 +85,7 @@ class NodeHandle(models.Model):
         """
         Delete that node handle and the handles node.
         """
-        try:
-            node = self.get_node()
-            nc.delete_node(nc.neo4jdb, node)
-        except (KeyError, TypeError):
-            # Node already deleted or None was passed as node id
-            pass
+        nc.delete_node(nc.neo4jdb, self.handle_id)
         Comment.objects.filter(object_pk=self.pk).delete()
         super(NodeHandle, self).delete()
         return True
