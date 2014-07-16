@@ -25,7 +25,7 @@ class NodeType(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return('apps.noclook.views.list_by_type', (), {
+        return('apps.noclook.views.list.list_by_type', (), {
             'slug': self.slug})
             
     def delete(self, **kwargs):
@@ -64,7 +64,7 @@ class NodeHandle(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return('apps.noclook.views.generic_detail', (),
+        return('apps.noclook.views.detail.generic_detail', (),
                {'slug': self.node_type.get_slug(), 'handle_id': self.handle_id})
 
     def save(self, *args, **kwargs):
