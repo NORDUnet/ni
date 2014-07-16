@@ -178,7 +178,6 @@ INSTALLED_APPS = (
     'djangosaml2',
     'south',
     'actstream',
-    'niweb_core',
     'apps.userprofile',
     'apps.noclook',
 )
