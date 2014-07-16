@@ -12,5 +12,6 @@ env
 *.pem
 *.crt
 *.key
+*.sqlite3
 src/niweb/sitestatic
 tools/nerds
