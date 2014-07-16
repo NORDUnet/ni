@@ -71,7 +71,7 @@ def create_node(manager, name, meta_type_label, type_label, handle_id):
     :return: None
     """
     if meta_type_label not in META_TYPES:
-        raise MetaLabelNamingError
+        raise MetaLabelNamingError(meta_type_label)
     q = """
         CREATE (n:Node:%s:%s { name: { name }, handle_id: { handle_id }})
         RETURN n
@@ -349,8 +349,12 @@ def update_node_properties(manager, handle_id, new_properties):
         SET n = {props}
         RETURN n
         """
-    with manager.transaction as w:
-        return w.execute(q, **d).fetchall()[0][0]
+    try:
+        with manager.transaction as w:
+            return w.execute(q, **d).fetchall()[0][0]
+    except ProgrammingError:
+        raise(BadProperties(d['props']))
+
 
 
 def update_relationship_properties(manager, relationship_id, new_properties):

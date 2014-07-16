@@ -25,7 +25,10 @@ def update_item_properties(item_properties, new_properties):
         if value or value is 0:
             try:
                 # Handle string representations of lists and booleans
-                item_properties[fixed_key] = json.loads(value)
+                json_value = json.loads(value)
+                if type(json_value) is dict:
+                    raise ValueError  # Neo4j does not support dictionaries
+                item_properties[fixed_key] = json_value
             except (ValueError, TypeError):
                 try:
                     item_properties[fixed_key] = normalize_whitespace(value)

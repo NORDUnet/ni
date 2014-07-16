@@ -23,6 +23,9 @@ class NodeType(models.Model):
     def get_slug(self):
         return self.slug
 
+    def get_label(self):
+        return self.type.replace(' ', '_')
+
     @models.permalink
     def get_absolute_url(self):
         return('apps.noclook.views.list.list_by_type', (), {
@@ -73,9 +76,9 @@ class NodeHandle(models.Model):
         """
         super(NodeHandle, self).save(*args, **kwargs)
         try:
-            nc.create_node(nc.neo4jdb, self.node_name, self.node_meta_type, self.node_type.type, self.handle_id)
+            nc.create_node(nc.neo4jdb, self.node_name, self.node_meta_type, self.node_type.get_label(), self.handle_id)
         except nc.exceptions.IntegrityError:
-            #  A node already associated with this handle_id
+            #  A node associated with this handle_id already exists
             pass
         return self
     

@@ -32,8 +32,8 @@ class MetaLabelNamingError(Exception):
     Exception that explains that meta labels must have special names defined
     in create_node().
     """
-    def __init__(self):
-        self.error = 'A meta node can not have that name.'
+    def __init__(self, name):
+        self.error = 'A meta label can not be named {name}.'.format(name=name)
         
     def __str__(self):
         return self.error
@@ -79,3 +79,14 @@ class MultipleNodesReturned(Exception):
     def __str__(self):
         return 'Multiple nodes of name %s and type %s was returned.' % (self.node_name,
                                                                         self.node_type)
+
+class BadProperties(Exception):
+    """
+    If a user tries to set node or relationship properties that are not Numeric values,
+    String values or Boolean values.
+    """
+    def __init__(self, properties):
+        self.properties = properties
+
+    def __str__(self):
+        return 'Tried to set {properties} as properties.'.format(properties=self.properties)
