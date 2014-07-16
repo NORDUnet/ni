@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Edit {{ node.node_type|lower }} {{ node.name }}  {% endblock %}
+
+{% block js %}
+{{ block.super }}
+{% endblock %}
+
+{% block content %}
+    <div id="dialog-object-confirm" title="Delete {{ node.node_type }} {{ node.name }}?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The {{ node.node_type|lower }} will be permanently deleted and cannot be recovered. Are you sure?</p>
+    </div>
+    <form action="" method="post">{% csrf_token %}
+        <h1>Edit {{ node.node_type|lower }} <a href="">{{ node.name }}</a></h1>
+        {% if form.errors %}
+            <div class="alert alert-error">
+                <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
+                Please resubmit the form after making the following changes:
+                {{ form.errors }}
+            </div>
+        {% endif %}
+{% endblock %}
+
+{% block content_footer %}
+        <br><br>
+        <div class="row">
+            <div class="span3">
+                <div class="btn-toolbar">
+                    <div class="btn-group">
+                        <input type="submit" name="saveanddone" class="btn btn-primary" value="Save">
+                        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                        <ul class="dropdown-menu">
+                            <li><a href="#" onclick="$(this).closest('form').submit()">Save and continue editing</a></li>
+                        </ul>
+                    </div>
+                    <div class="btn-group">
+                        <a href="" class="btn pull-right">Cancel</a>
+                    </div>
+                </div>
+            </div>
+            <div class="span1">
+                <div class="btn-toolbar">
+                    <div class="btn-group">
+                        <a href="delete" class="btn btn-danger" id="object-confirm">Delete</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
