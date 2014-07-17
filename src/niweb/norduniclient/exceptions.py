@@ -89,4 +89,17 @@ class BadProperties(Exception):
         self.properties = properties
 
     def __str__(self):
-        return 'Tried to set {properties} as properties.'.format(properties=self.properties)
+        return '''Tried to set {properties} as properties.
+Only numeric values, string values or boolean values are allowed'''.format(properties=self.properties)
+
+
+class NodeNotFound(Exception):
+    """
+    The provided handle_id did not match any node in the graph database.
+    """
+    def __init__(self, manager, handle_id):
+        self.message = '{handle_id} did not match a node in database at {db}.'.format(handle_id=handle_id,
+                                                                                      db=manager.dsn)
+
+    def __str__(self):
+        return self.message
