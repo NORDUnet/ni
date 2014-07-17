@@ -147,21 +147,27 @@ def insert_graph_data(json_list):
                 sys.exit(1)
 
     # Loop through all files starting with relationship
-    for i in json_list:
-        if i['host']['name'].startswith('relationship'):
-            item = i['host']['noclook_producer']
-            properties = item.get('properties')
+    x = 0
+    with nc.neo4jdb.write as w:
+        for i in json_list:
+            if i['host']['name'].startswith('relationship'):
+                item = i['host']['noclook_producer']
+                properties = item.get('properties')
 
-            props = {'props': properties}
-            q = """
-                MATCH (start:Node {old_node_id: {start_id}), (end:Node {old_node_id: {end_id})
-                CREATE UNIQUE (start)-[r:%s { props } ]->(end)
-                RETURN start.name, type(r), end.name
-                """ % item.get('type')
-            with nc.neo4jdb.write as w:
-                start, rel_type, end = w.execute(
-                    q, start_id=item.get('start'), end_id=item.get('end'), **props).fetchall()
-                print '{start} -[{rel_type}]-> {end}'.format(start=start, rel_type=rel_type, end=end)
+                props = {'props': properties}
+                q = """
+                    MATCH (start:Node { old_node_id:{start_id} }),(end:Node {old_node_id: {end_id} })
+                    CREATE UNIQUE (start)-[r:%s { props } ]->(end)
+                    RETURN start.name, type(r), end.name
+                    """ % item.get('type')
+
+                w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props)
+                print '{start} -[{rel_type}]-> {end}'.format(start=item.get('start'), rel_type=item.get('type'),
+                                                             end=item.get('end'))
+                x += 1
+                if x >= 1000:
+                    w.connection.commit()
+                    x = 0
 
     # Remove the 'old_node_id' property from all nodes
     q = """
@@ -170,6 +176,7 @@ def insert_graph_data(json_list):
         """
     with nc.neo4jdb.write as w:
         w.execute(q)
+        w.connection.commit()
         w.execute('DROP CONSTRAINT ON (n:Node) ASSERT n.old_node_id IS UNIQUE')
 
 
