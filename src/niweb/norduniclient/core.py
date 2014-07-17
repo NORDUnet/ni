@@ -19,11 +19,11 @@
 # https://portal.nordu.net/display/NI/
 
 from __future__ import absolute_import
-
-from .exceptions import *
-from .helpers import *
 import re
 from neo4j import contextmanager, IntegrityError, ProgrammingError
+
+from . import exceptions
+from . import helpers
 
 # Load Django settings
 try:
@@ -71,7 +71,7 @@ def create_node(manager, name, meta_type_label, type_label, handle_id):
     :return: None
     """
     if meta_type_label not in META_TYPES:
-        raise MetaLabelNamingError(meta_type_label)
+        raise exceptions.MetaLabelNamingError(meta_type_label)
     q = """
         CREATE (n:Node:%s:%s { name: { name }, handle_id: { handle_id }})
         RETURN n
@@ -91,7 +91,31 @@ def get_node(manager, handle_id):
         with manager.read as r:
             return r.execute(q, handle_id=handle_id).fetchall()[0][0]
     except IndexError:
-        return None
+        raise exceptions.NodeNotFound(manager, handle_id)
+
+
+def get_node_bundle(manager, handle_id):
+    """
+    :param manager: Neo4jDBConnectionManager
+    :param handle_id: Unique id
+    :return: dict
+    """
+    q = 'MATCH (n:Node { handle_id: {handle_id} }) RETURN labels(n),n'
+    try:
+        with manager.read as r:
+            labels, data = r.execute(q, handle_id=handle_id).fetchall()[0]
+    except (IndexError, ValueError):
+        return exceptions.NodeNotFound(manager, handle_id)
+    d = {
+        'data': data
+    }
+    labels.remove('Node')  # All nodes have this label for indexing
+    for label in labels:
+        if label in META_TYPES:
+            d['meta_type'] = label
+            labels.remove(label)
+    d['labels'] = labels
+    return d
 
 
 def delete_node(manager, handle_id):
@@ -154,7 +178,7 @@ def get_node_meta_type(manager, handle_id):
         for label in labels:
             if label in META_TYPES:
                 return label
-    raise NoMetaLabelFound(handle_id)
+    raise exceptions.NoMetaLabelFound(handle_id)
 
 
 # TODO: Try out elasticsearch
@@ -225,7 +249,7 @@ def get_unique_node_by_name(manager, node_name, node_type):
     if hits:
         if len(hits) == 1:
             return hits[0][0]
-        raise MultipleNodesReturned(node_name, node_type)
+        raise exceptions.MultipleNodesReturned(node_name, node_type)
     return None
 
 
@@ -249,7 +273,7 @@ def create_location_relationship(manager, location_node, other_node, rel_type):
     """
     if get_node_meta_type(manager, other_node) == 'Location' and rel_type == 'Has':
         return _create_relationship(manager, location_node, other_node, rel_type)
-    raise NoRelationshipPossible(manager, location_node, other_node, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, location_node, other_node, rel_type)
 
 
 def create_logical_relationship(manager, logical_node, other_node, rel_type):
@@ -265,7 +289,7 @@ def create_logical_relationship(manager, logical_node, other_node, rel_type):
     elif rel_type == 'Part_of':
         if other_meta_type == 'Physical':
             return _create_relationship(manager, logical_node, other_node, rel_type)
-    raise NoRelationshipPossible(manager, logical_node, other_node, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, logical_node, other_node, rel_type)
 
 
 def create_relation_relationship(manager, relation_node, other_node, rel_type):
@@ -283,7 +307,7 @@ def create_relation_relationship(manager, relation_node, other_node, rel_type):
     elif other_meta_type == 'Physical':
         if rel_type in ['Owns', 'Provides']:
             return _create_relationship(manager, relation_node, other_node, rel_type)
-    raise NoRelationshipPossible(manager, relation_node, other_node, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, relation_node, other_node, rel_type)
 
 
 def create_physical_relationship(manager, physical_node, other_node, rel_type):
@@ -298,7 +322,7 @@ def create_physical_relationship(manager, physical_node, other_node, rel_type):
             return _create_relationship(manager, physical_node, other_node, rel_type)
     elif other_meta_type == 'Location' and rel_type == 'Located_in':
         return _create_relationship(manager, physical_node, other_node, rel_type)
-    raise NoRelationshipPossible(manager, physical_node, other_node, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, physical_node, other_node, rel_type)
 
 
 def create_relationship(manager, node, other_node, rel_type):
@@ -316,7 +340,7 @@ def create_relationship(manager, node, other_node, rel_type):
         return create_relation_relationship(manager, node, other_node, rel_type)
     elif meta_type == 'Physical':
         return create_physical_relationship(manager, node, other_node, rel_type)
-    raise NoRelationshipPossible(manager, node, other_node, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, node, other_node, rel_type)
 
 
 def get_relationships(manager, handle_id1, handle_id2, rel_type=None):
@@ -342,7 +366,7 @@ def get_relationships(manager, handle_id1, handle_id2, rel_type=None):
 def update_node_properties(manager, handle_id, new_properties):
     old_properties = get_node(manager, handle_id)
     d = {
-        'props': update_item_properties(old_properties, new_properties)
+        'props': helpers.update_item_properties(old_properties, new_properties)
     }
     q = """
         MATCH (n:Node {handle_id: {props}.handle_id})
@@ -353,14 +377,13 @@ def update_node_properties(manager, handle_id, new_properties):
         with manager.transaction as w:
             return w.execute(q, **d).fetchall()[0][0]
     except ProgrammingError:
-        raise(BadProperties(d['props']))
-
+        raise exceptions.BadProperties(d['props'])
 
 
 def update_relationship_properties(manager, relationship_id, new_properties):
     old_properties = get_relationship(manager, relationship_id)
     d = {
-        'props': update_item_properties(old_properties, new_properties)
+        'props': helpers.update_item_properties(old_properties, new_properties)
     }
     q = """
         START r=relationship({relationship_id})

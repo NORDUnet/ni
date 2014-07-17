@@ -4,8 +4,8 @@ Created on Thu Oct 13 16:36:31 2011
 
 @author: lundberg
 """
-from neo4j import IntegrityError
-import norduniclient as nc
+
+import core
 
 
 class NoRelationshipPossible(Exception):
@@ -20,9 +20,9 @@ class NoRelationshipPossible(Exception):
     
     def __str__(self):
         node1_str = '{meta_type} Node ({handle_id})'.format(
-            meta_type=nc.get_node_meta_type(self.manager, self.handle_id1), handle_id=self.handle_id1)
+            meta_type=core.get_node_meta_type(self.manager, self.handle_id1), handle_id=self.handle_id1)
         node2_str = '{meta_type} Node ({handle_id})'.format(
-            meta_type=nc.get_node_meta_type(self.manager, self.handle_id2), handle_id=self.handle_id2)
+            meta_type=core.get_node_meta_type(self.manager, self.handle_id2), handle_id=self.handle_id2)
         return '%s %s %s is not possible.' % (node1_str, self.relationship_type,
                                               node2_str)                       
 
@@ -79,6 +79,7 @@ class MultipleNodesReturned(Exception):
     def __str__(self):
         return 'Multiple nodes of name %s and type %s was returned.' % (self.node_name,
                                                                         self.node_type)
+
 
 class BadProperties(Exception):
     """
