@@ -191,8 +191,11 @@ def set_netapp_storage_usage(storage_collection):
 
 
 def set_dell_service_tag(host, check):
-    service_tag_regex = re.compile('ServiceTag=(?P<tag>[\w]+)')
-    tag = service_tag_regex.search(check['plugin_output']).group('tag')
+    service_tag_regex = re.compile('servicetag=(?P<tag>[\w]+)', re.IGNORECASE)
+    try:
+        tag = service_tag_regex.search(check['plugin_output']).group('tag')
+    except AttributeError:
+        tag = None
     if tag:
         property_dict = {'service_tag': tag}
         h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
