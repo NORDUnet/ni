@@ -190,6 +190,14 @@ def set_netapp_storage_usage(storage_collection):
         service['total_storage'] = 0.0
 
 
+def set_dell_service_tag(host, check):
+    service_tag_regex = re.compile('ServiceTag=(?P<tag>[\w]+)')
+    tag = service_tag_regex.search(check['plugin_output']).group('tag')
+    if tag:
+        property_dict = {'service_tag': tag}
+        h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
+
+
 def insert(json_list):
 
     # Setup persistent storage for collections done over multiple hosts
@@ -204,12 +212,14 @@ def insert(json_list):
             check_descriptions = []
             for check in base['checks']:
                 check_descriptions.append(check.get('description', 'Missing description'))
-                if check['check_command'] == 'CHECK_NRPE!check_uptime':     # Host uptime
+                if check['check_command'] == 'CHECK_NRPE!check_uptime':         # Host uptime
                     set_uptime(host, check)
-                if check['check_command'] == 'CHECK_NRPE!check_backup':     # TSM backup process
+                if check['check_command'] == 'CHECK_NRPE!check_backup':         # TSM backup process
                     set_backup(host, check)
-                if check['check_command'].startswith('check_netapp_vol'):   # NetApp storage usage
+                if check['check_command'].startswith('check_netapp_vol'):       # NetApp storage usage
                     netapp_collection = collect_netapp_storage_usage(host, check, netapp_collection)
+                if check['check_command'] == 'CHECK_NRPE!check_openmanage':     # Dell OpenManage info
+                    set_dell_service_tag(host, check)
             set_nagios_checks(host, check_descriptions)
             h.update_noclook_auto_manage(nc.neo4jdb, host)
             if VERBOSE:
