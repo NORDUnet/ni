@@ -13,6 +13,7 @@ from django.template.defaultfilters import yesno, date
 from django.views.decorators.cache import cache_page
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 import tempfile
 from datetime import datetime
@@ -342,10 +343,20 @@ def quarterly_netapp_usage():
 @login_required
 def unique_ids(request, organisation=None):
     if not organisation:
-        return render_to_response('noclook/reports/unique_ids.html', {},
-            context_instance=RequestContext(request))
+        return render_to_response('noclook/reports/unique_ids.html', {}, context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
-        id_list = NordunetUniqueId.objects.all().order_by('unique_id')
+        id_list = NordunetUniqueId.objects.all().order_by('created').reverse()
+        paginator = Paginator(id_list, 250, allow_empty_first_page=True)  # Show 50 activities per page
+        page = request.GET.get('page')
+        try:
+            id_list = paginator.page(page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver first page.
+            id_list = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), deliver last page of results.
+            id_list = paginator.page(paginator.num_pages)
+
     else:
         raise Http404
     return render_to_response('noclook/reports/unique_ids.html',

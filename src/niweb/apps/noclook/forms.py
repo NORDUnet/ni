@@ -2,6 +2,7 @@ from datetime import datetime
 from django import forms
 from django.forms.util import ErrorDict, ErrorList
 from django.forms.widgets import HiddenInput
+from django.db import IntegrityError
 import json
 from niweb.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
 import niweb.apps.noclook.helpers as h
@@ -11,9 +12,11 @@ TRUEFALSE = [(True, True), (False, False)]
 
 # We should move this kind of data to the SQL database.
 COUNTRY_CODES = [
-    ('DE', 'DE'),    
+    ('BE', 'BE'),
+    ('DE', 'DE'),
     ('DK', 'DK'),
     ('FI', 'FI'),
+    ('FR', 'FR'),
     ('IS', 'IS'),
     ('NL', 'NL'),
     ('NO', 'NO'),
@@ -24,9 +27,11 @@ COUNTRY_CODES = [
 
 COUNTRIES = [
     ('', ''),
+    ('Belgium', 'Belgium'),
     ('Denmark', 'Denmark'),
     ('Germany', 'Germany'),
     ('Finland', 'Finland'),
+    ('France', 'France'),
     ('Iceland', 'Iceland'),
     ('Netherlands', 'Netherlands'),
     ('Norway', 'Norway'),
@@ -36,9 +41,11 @@ COUNTRIES = [
 ]
 
 COUNTRY_MAP = {
+    'BE': 'Belgium',
     'DE': 'Germany',
     'DK': 'Denmark',
     'FI': 'Finland',
+    'FR': 'France',
     'IS': 'Iceland',
     'NL': 'Netherlands',
     'NO': 'Norway',
@@ -161,14 +168,18 @@ OPTICAL_LINK_TYPES = [
 
 OPTICAL_PATH_FRAMING = [
     ('', ''),
+    ('OTN(CBR)', 'OTN(CBR)'),
+    ('OTN(Ethernet)', 'OTN(Ethernet)'),
     ('WDM', 'WDM'),
     ('WDM(Ethernet)', 'WDM(Ethernet)'),
     ('WDM(CBR)', 'WDM(CBR)'),
+    ('WDM(OTN)', 'WDM(OTN)'),
 ]
 
 OPTICAL_PATH_CAPACITY = [
     ('', ''),
     ('10Gb', '10Gb'),
+    ('100Gb', '100Gb'),
     ('CBR', 'CBR'),
     ('cbr 10Gb', 'cbr 10Gb'),
 ]
@@ -298,22 +309,32 @@ class NewNordunetCableForm(NewCableForm):
         Sets name to next generated ID or register the name in the ID collection.
         """
         cleaned_data = super(NewNordunetCableForm, self).clean()
-        # Set name to a generated id if the service is not a manually named service.
+        # Set name to a generated id if the cable is not a manually named cable.
         name = cleaned_data.get("name")
-        if not name:
-            if not self.Meta.id_generator_name or not self.Meta.id_collection:
-                raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
-            try:
-                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
-            except UniqueIdGenerator.DoesNotExist as e:
-                raise e
-        else:
-            h.register_unique_id(self.Meta.id_collection, name)
+        if self.is_valid():
+            if not name:
+                if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                    raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
+                try:
+                    id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                    cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                except UniqueIdGenerator.DoesNotExist as e:
+                    raise e
+            else:
+                try:
+                    h.register_unique_id(self.Meta.id_collection, name)
+                except IntegrityError as e:
+                    self._errors = ErrorDict()
+                    self._errors['name'] = ErrorList()
+                    self._errors['name'].append(e.message)
         return cleaned_data
 
                                        
 class EditCableForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditCableForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
     name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
     cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
     telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.')
@@ -322,6 +343,7 @@ class EditCableForm(forms.Form):
     global_connect_circuit_id = forms.CharField(required=False, help_text='Global Connect circuit ID')
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
 
 class EditOpticalNodeForm(forms.Form):        
@@ -390,6 +412,7 @@ class EditHostForm(forms.Form):
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
     services_locked = forms.ChoiceField(choices=TRUEFALSE, widget=forms.CheckboxInput(), required=False)
@@ -464,7 +487,7 @@ class NewOdfForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewOdfForm, self).__init__(*args, **kwargs)
         # Set max number of ports to choose from
-        max_num_of_ports = 40
+        max_num_of_ports = 48
         choices = [(x, x) for x in range(1, max_num_of_ports+1) if x]
         self.fields['max_number_of_ports'].choices = choices
 
@@ -577,18 +600,19 @@ class NewServiceForm(forms.Form):
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
         service_type = cleaned_data.get("service_type")
-        if not name and service_type not in self.Meta.manually_named_services:
-            if not self.Meta.id_generator_name or not self.Meta.id_collection:
-                raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
-            try:
-                id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
-            except UniqueIdGenerator.DoesNotExist as e:
-                raise e
-        elif not name:
-            self._errors = ErrorDict()
-            self._errors['name'] = ErrorList()
-            self._errors['name'].append('Missing name for %s service.' % service_type)
+        if self.is_valid():
+            if not name and service_type not in self.Meta.manually_named_services:
+                if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                    raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
+                try:
+                    id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                    cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                except UniqueIdGenerator.DoesNotExist as e:
+                    raise e
+            elif not name:
+                self._errors = ErrorDict()
+                self._errors['name'] = ErrorList()
+                self._errors['name'].append('Missing name for %s service.' % service_type)
         # Set service_class depending on service_type.
         cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
         return cleaned_data
@@ -707,7 +731,7 @@ class NewOpticalLinkForm(forms.Form):
         cleaned_data = super(NewOpticalLinkForm, self).clean()
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
-        if not name:
+        if not name and self.is_valid():
             if not self.Meta.id_generator_name or not self.Meta.id_collection:
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
@@ -804,7 +828,7 @@ class NewOpticalPathForm(forms.Form):
         cleaned_data = super(NewOpticalPathForm, self).clean()
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
-        if not name:
+        if not name and self.is_valid():
             if not self.Meta.id_generator_name or not self.Meta.id_collection:
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:

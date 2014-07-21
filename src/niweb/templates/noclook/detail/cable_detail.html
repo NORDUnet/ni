@@ -77,6 +77,16 @@
                     <th>Global Connect Circuit ID:</th><td>{{ node.global_connect_circuit_id }}</td>
                 </tr>
             {% endif %}
+            {% if providers %}
+            <tr>
+                <th>Provider:</th>
+                <td>
+                    {% for provider in providers %}
+                        <a href="{% noclook_node_to_url provider.start %}">{{ provider.start.name }}</a><br>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">
@@ -102,7 +112,7 @@
 <div class="section">
     {% load noclook_tags %}
     <h3>Dependent on this cable</h3>
-    {% if services %}
+    {% if services or all_dependent %}
         <div class="pull-right">
             <span class="badge badge-info">Testing</span>
             <span class="badge badge-warning">Reserved</span>
@@ -122,6 +132,7 @@
         </ul>
         <div class="tab-content">
             <div class="tab-pane active" id="directTabIn">
+            {% if services %}
                 <table id="services" class="tablesorter" cellspacing="1">
                     <thead>
                     <tr>
@@ -151,6 +162,9 @@
                     </tbody>
                 </table>
                 <a id="servicecopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for hit in services %}{{ hit.service.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+            {% else %}
+                <p>No services dependent on this cable.</p>
+            {% endif %}
             </div>
             {% if all_dependent.paths %}
                 <div class="tab-pane" id="pathsTabIn">
