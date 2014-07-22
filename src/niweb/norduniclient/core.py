@@ -24,6 +24,7 @@ from neo4j import contextmanager, IntegrityError, ProgrammingError
 
 from . import exceptions
 from . import helpers
+from . import models
 
 # Load Django settings
 try:
@@ -392,3 +393,18 @@ def update_relationship_properties(manager, relationship_id, new_properties):
         """
     with manager.transaction as w:
         return w.execute(q, relationship_id=relationship_id, **d).fetchall()[0][0]
+
+
+def get_model(manager, handle_id):
+    bundle = get_node_bundle(manager, handle_id)
+    for label in bundle.get('labels'):
+        try:
+            classname = '{base}Model'.format(base=label).replace('_', '')
+            return getattr(models, classname)(manager).load(bundle)
+        except AttributeError:
+            pass
+    try:
+        classname = '{base}Model'.format(base=bundle.get('meta_type'))
+        return getattr(models, classname)(manager).load(bundle)
+    except AttributeError:
+        return models.BaseModel(manager).load(bundle)
