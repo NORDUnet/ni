@@ -67,7 +67,7 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
-{% noclook_has_rogue_ports node as has_rogue_ports %}
+{% noclook_has_rogue_ports node.handle_id as has_rogue_ports %}
 {% if has_rogue_ports %}
     <div class="alert alert-error">
         <i class="icon-exclamation-sign"></i> Unauthorized open ports found.
@@ -79,133 +79,133 @@ $(document).ready(
             <tr>
                 <th>Type:</th><td>{{ node_handle.node_meta_type|capfirst }} host</td>
             </tr>
-            {% if node.operational_state %}
+            {% if node.data.operational_state %}
                 <tr>
-                    <th>Status:</th><td>{{ node.operational_state|capfirst }}</td>
+                    <th>Status:</th><td>{{ node.data.operational_state|capfirst }}</td>
                 </tr>
             {% endif %}
-            {% if node.backup %}
+            {% if node.data.backup %}
                 <tr>
-                    <th>Backup:</th><td>{{ node.backup }}</td>
+                    <th>Backup:</th><td>{{ node.data.backup }}</td>
                 </tr>
             {% endif %}
-            {% if node.syslog %}
+            {% if node.data.syslog %}
                 <tr>
-                    <th>Syslog:</th><td>{{ node.syslog|yesno:"Yes,No,Not set" }}</td>
+                    <th>Syslog:</th><td>{{ node.data.syslog|yesno:"Yes,No,Not set" }}</td>
                 </tr>
             {% endif %}
-            {% if node.nagios_checks %}
+            {% if node.data.nagios_checks %}
                 <tr>
-                    <th>Nagios:</th><td>{{ node.nagios_checks|yesno:"Yes,No,Not set" }}</td>
+                    <th>Nagios:</th><td>{{ node.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
                 </tr>
             {% endif %}
-            {% if node.hostnames %}
+            {% if node.data.hostnames %}
                 <tr>
                     <th>Hostnames:</th>
                     <td>
-                        {% for item in node.hostnames %}
+                        {% for item in node.data.hostnames %}
                             {{ item }}{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
                 </tr>
             {% endif %}
-            {% if node.ip_addresses %}
+            {% if node.data.ip_addresses %}
                 <tr>
                     <th>Addresses:</th>
                     <td>
-                        {% for item in node.ip_addresses %}
+                        {% for item in node.data.ip_addresses %}
                             {{ item }}{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
                 </tr>
             {% endif %}
-            {% if user_relationships %}
+            {% if relations.Uses %}
                 <tr>
                     <th>Users:</th>
                     <td>
-                        {% for item in user_relationships %}
-                            <a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                        {% for item in relations.Uses %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
                 </tr>
             {% endif %}
-            {% if provider_relationships %}
+            {% if relations.Provides %}
                 <tr>
                     <th>Providers:</th>
                     <td>
-                        {% for item in provider_relationships %}
-                            <a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                        {% for item in relations.Provides %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
                 </tr>
             {% endif %}
-            {% if owner_relationships %}
+            {% if relations.Owns %}
                 <tr>
                     <th>Owner:</th>
                     <td>
-                        {% for item in owner_relationships %}
-                            <a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                        {% for item in relations.Owns %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
                 </tr>
             {% endif %}
-            {% if node.contract_number %}
+            {% if node.data.contract_number %}
                 <tr>
-                    <th>Contract number:</th><td>{{ node.contract_number }}</td>
+                    <th>Contract number:</th><td>{{ node.data.contract_number }}</td>
                 </tr>
             {% endif %}
             {% if node.service_tag %}
                 <tr>
-                    <th>Service tag:</th><td>{{ node.service_tag }}</td>
+                    <th>Service tag:</th><td>{{ node.data.service_tag }}</td>
                 </tr>
             {% endif %}
             {% if node.end_support %}
                 <tr>
-                    <th>Support ends:</th><td>{{ node.end_support }}</td>
+                    <th>Support ends:</th><td>{{ node.data.end_support }}</td>
                 </tr>
             {% endif %}
-            {% if node.lastboot %}
+            {% if node.data.lastboot %}
                 <tr>
-                    <th>Last boot:</th><td>{{node.lastboot}}<br>({% if node.uptime %}{% timestamp_to_td node.uptime as uptime %}{{ uptime.days }} days ago{% endif %})</td>
+                    <th>Last boot:</th><td>{{node.data.lastboot}}<br>({% if node.data.uptime %}{% timestamp_to_td node.data.uptime as uptime %}{{ uptime.days }} days ago{% endif %})</td>
                 </tr>
             {% endif %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.vendor or node.model or node.cpu or node.ram or node.hdd or node.service_tag %}
-                {% if node.vendor %}
+            {% if node.data.vendor or node.data.model or node.data.cpu or node.data.ram or node.data.hdd or node.data.service_tag %}
+                {% if node.data.vendor %}
                     <tr>
-                        <th>Vendor:</th><td>{{node.vendor}}</td>
+                        <th>Vendor:</th><td>{{node.data.vendor}}</td>
                     </tr>
                 {% endif %}
-                {% if node.model %}
+                {% if node.data.model %}
                     <tr>
-                        <th>Model:</th><td>{{node.model}}</td>
+                        <th>Model:</th><td>{{node.data.model}}</td>
                     </tr>
                 {% endif %}
-                {% if node.cpu %}
+                {% if node.data.cpu %}
                     <tr>
-                        <th>CPU:</th><td>{{node.cpu}}</td>
+                        <th>CPU:</th><td>{{node.data.cpu}}</td>
                     </tr>
                 {% endif %}
-                {% if node.ram %}
+                {% if node.data.ram %}
                     <tr>
-                        <th>RAM:</th><td>{{node.ram}}</td>
+                        <th>RAM:</th><td>{{node.data.ram}}</td>
                     </tr>
                 {% endif %}
-                {% if node.hdd %}
+                {% if node.data.hdd %}
                     <tr>
-                        <th>HDD:</th><td>{{node.hdd}}</td>
+                        <th>HDD:</th><td>{{node.data.hdd}}</td>
                     </tr>
                 {% endif %}
             {% endif %}
-            {% if node.os %}
+            {% if node.data.os %}
                 <tr>
-                    <th>OS:</th><td>{{node.os}} {% if node.os_version %}{{node.os_version}}{% endif %}</td>
+                    <th>OS:</th><td>{{node.data.os}} {% if node.data.os_version %}{{node.data.os_version}}{% endif %}</td>
                 </tr>
             {% endif %}
-            {% if node.noclook_auto_manage %}
+            {% if node.data.noclook_auto_manage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
@@ -218,36 +218,36 @@ $(document).ready(
             </tr>
         </table>
     </div>
-    {% if node.description or node.responsible_group or node.security_class %}
+    {% if node.data.description or node.data.responsible_group or node.data.security_class %}
         <div class="span7">
             <table class="table">
-                {% if node.description %}
+                {% if node.data.description %}
                     <tr>
-                        <th>Description:</th><td>{{ node.description }}</td>
+                        <th>Description:</th><td>{{ node.data.description }}</td>
                     </tr>
                 {% endif %}
-                {% if node.responsible_group %}
+                {% if node.data.responsible_group %}
                     <tr>
                         <th>Responsible group:</th>
                         <td>
-                            {{ node.responsible_group }}
+                            {{ node.data.responsible_group }}
                         </td>
                     </tr>
                 {% endif %}
-                {% if node.support_group %}
+                {% if node.data.support_group %}
                     <tr>
                         <th>Support group:</th>
                         <td>
-                            {{ node.support_group }}
+                            {{ node.data.support_group }}
                         </td>
                     </tr>
                 {% endif %}
-                {% if node.security_class %}
+                {% if node.data.security_class %}
                     <tr>
                         <th>Security Class</th>
                         <td>
-                            <strong>{{ node.security_class }}</strong><br>
-                            {{ node.security_comment }}
+                            <strong>{{ node.data.security_class }}</strong><br>
+                            {{ node.data.security_comment }}
                         </td>
                     </tr>
                 {% endif %}
@@ -470,7 +470,7 @@ $(document).ready(
 {% endif %}
 <div class="section">
     <h3>Services provided</h3>
-    {% if node.services_locked == 'True'%}
+    {% if node.data.services_locked == 'True'%}
         <div class="alert alert-info">
             <i class="icon-lock"></i> Services locked
         </div>
@@ -479,7 +479,7 @@ $(document).ready(
         <span class="badge badge-important">Expired</span>
     </div>
     {% load noclook_tags %}
-    {% if service_relationships %}
+    {% if host_services %}
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
             <tr>
@@ -487,27 +487,27 @@ $(document).ready(
             </tr>
         </thead>
         <tbody>
-        {% for service in service_relationships %}
-            {% noclook_has_expired service as expired %}
+        {% for item in host_services.Depends_on %}
+            {% noclook_has_expired item.relationship as expired %}
             {% if expired %}
                 <tr class="expired">
             {% else %}
                 <tr>
             {% endif %}
                 <td>
-                    {% if service.rogue_port %}<i class="icon-exclamation-sign"></i> {% endif %}
-                    <a href="{% noclook_node_to_url service.start %}">{{ service.start.name }}</a>
+                    {% if item.relationship.rogue_port %}<i class="icon-exclamation-sign"></i> {% endif %}
+                    <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
                 </td>
-                <td>{{ service.ip_address }}</td>
-                <td>{{ service.port }} </td>
-                <td>{{ service.protocol }}</td>
-                <td>{{ service.state }}</td>
-                <td>{% if not service.noclook_last_external_check %}{% else %}{{ service.public|yesno:"Yes,No" }}{% endif %}</td>
-                <td>{{ service.product }}</td>
-                <td>{{ service.version }}</td>
-                <td>{{ service.extrainfo }}</td>
-                <td>{{ service.conf }}</td>
-                <td>{% noclook_last_seen_to_dt service.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
+                <td>{{ item.relationship.ip_address }}</td>
+                <td>{{ item.relationship.port }} </td>
+                <td>{{ item.relationship.protocol }}</td>
+                <td>{{ item.relationship.state }}</td>
+                <td>{% if not item.relationship.noclook_last_external_check %}{% else %}{{ item.relationship.public|yesno:"Yes,No" }}{% endif %}</td>
+                <td>{{ item.relationship.product }}</td>
+                <td>{{ item.relationship.version }}</td>
+                <td>{{ item.relationship.extrainfo }}</td>
+                <td>{{ item.relationship.conf }}</td>
+                <td>{% noclook_last_seen_to_dt item.relationship.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
             </tr>
         {% endfor %}
         </tbody>

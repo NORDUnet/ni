@@ -26,7 +26,7 @@
 {% if node.noclook_auto_manage and expired %}
     <span class="label label-important">Last seen {{ last_seen|timesince }} ago</span>
 {% endif %}
-<h1><a href="/{{ node.node_type|slugify }}/">{{ node.node_type }}</a> {{ node.name }}</h1>
+<h1><a href="/{{ node_handle.node_type|slugify }}/">{{ node_handle.node_type }}</a> {{ node.data.name }}</h1>
 {% if same_name_relations %}
     <h5 class="site">also as
         {% for hit in same_name_relations %}
@@ -36,8 +36,8 @@
 {% endif %}
 {% if location %}
     <h5 class="site">Located in
-    {% for hit in location %}
-        <a href="{% noclook_node_to_url hit.parent %}"> {{ hit.parent.name }}</a> <a href="{% noclook_node_to_url hit.loc %}"> {{ hit.loc.name }}</a>
+    {% for loc in location.Located_in %}
+        <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
     {% endfor %}
     </h5>
 {% endif %}

@@ -18,11 +18,11 @@ def type_menu():
 
 
 @register.simple_tag
-def noclook_node_to_url(node):
+def noclook_node_to_url(handle_id):
     """
     Takes a node id as a string and returns the absolute url for a node.
     """
-    return get_node_url(node)
+    return get_node_url(handle_id)
 
 
 @register.assignment_tag
@@ -107,17 +107,17 @@ def noclook_report_age(item, old, very_old):
 
 
 @register.assignment_tag
-def noclook_has_rogue_ports(node):
+def noclook_has_rogue_ports(handle_id):
     """
-    :param node: Neo4j node
+    :param node:
     :return: Boolean
     """
     q = """
-        START host=node({id})
-        MATCH host<-[r:Depends_on]-host_service
-        RETURN count(r.rogue_port?) as c
+        MATCH (host {handle_id: {handle_id}})<-[r:Depends_on]-()
+        RETURN count(r.rogue_port)
         """
-    hits = int(str([hit['c'] for hit in nc.neo4jdb.query(q, id=node.getId())][0]))  # java.lang.Long
-    if hits != 0:
+    with nc.neo4jdb.read as r:
+        count, = r.execute(q, handle_id=handle_id).fetchall()[0]
+    if count:
         return True
     return False

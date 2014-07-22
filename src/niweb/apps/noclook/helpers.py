@@ -65,13 +65,13 @@ def normalize_whitespace(s):
     """
     return u' '.join(s.split())
 
-def get_node_url(node):
+def get_node_url(handle_id):
     """
     Takes a node and returns it's NodeHandles URL or '' if node
     is None.
     """
     try:
-        nh = NodeHandle.objects.get(pk=node['handle_id'])
+        nh = NodeHandle.objects.get(pk=handle_id)
         return nh.get_absolute_url()
     except TypeError:
         # Node is most likely a None value
@@ -281,7 +281,7 @@ def isots_to_dt(item):
     does not exist we return None.
     """
     try:
-        ts = item.get_property('noclook_last_seen', None)
+        ts = item.get('noclook_last_seen', None)
         try:
             dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')  # ex. 2011-11-01T14:37:13.713434
         except ValueError:
@@ -305,7 +305,7 @@ def neo4j_data_age(item, max_data_age=None):
     now = datetime.now()
     last_seen = isots_to_dt(item)
     expired = False
-    if last_seen and (now-last_seen) > max_age and item.get_property('noclook_auto_manage', False):
+    if last_seen and (now-last_seen) > max_age and item.get('noclook_auto_manage', False):
         expired = True
     return last_seen, expired
 

@@ -108,20 +108,17 @@ def host_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     history = h.get_history(nh)
     # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    location = h.iter2list(h.get_location(node))
+    host = nc.get_model(nc.neo4jdb, nh.handle_id)
+    last_seen, expired = h.neo4j_data_age(host.data)
+    location = host.get_full_location()
     # Handle relationships
-    service_relationships = h.iter2list(node.Depends_on.incoming)
-    user_relationships = h.iter2list(node.Uses.incoming)
-    provider_relationships = h.iter2list(node.Provides.incoming)
-    owner_relationships = h.iter2list(node.Owns.incoming)
-    depend_out = h.iter2list(h.get_logical_depends_on(node))
+    host_services = host.get_host_services()
+    relations = host.get_relations()
+    depends_on = host.get_outgoing_logical()
     return render_to_response('noclook/detail/host_detail.html',
-                              {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
-                               'service_relationships': service_relationships, 'user_relationships': user_relationships,
-                               'provider_relationships': provider_relationships, 'depend_out': depend_out,
-                               'owner_relationships': owner_relationships, 'location': location, 'history': history},
+                              {'node_handle': nh, 'node': host, 'last_seen': last_seen, 'expired': expired,
+                               'relations': relations, 'host_services': host_services, 'depends_on': depends_on,
+                               'location': location, 'history': history},
                               context_instance=RequestContext(request))
 
 

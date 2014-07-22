@@ -35,39 +35,39 @@ $(document).ready(
         </thead>
         <tbody>
             {% load noclook_tags %}
-            {% for host in host_list %}
+            {% for host, users in host_list %}
                 {% if host.ip_addresses %}
                     {% for address in host.ip_addresses %}
-                        {% noclook_has_expired host.host as expired %}
+                        {% noclook_has_expired host as expired %}
                         {% if expired %}
                             <tr class="expired">
                         {% else %}
                             <tr>
                         {% endif %}
-                            <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td>
+                            <td><a class="handle" href="{% noclook_node_to_url host.handle_id %}">{{ host.name }}</a></td>
                             <td>{{ address }}</td>
                             <td>{{ host.os|default:"" }}</td>
                             <td>{{ host.os_version|default:"" }}</td>
                             <td>
-                                {% for user in host.users %}
+                                {% for user in users %}
                                     <a href="{% noclook_node_to_url user %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
                                 {% endfor %}
                             </td>
                         </tr>
                     {% endfor %}
                 {% else %}
-                    {% noclook_has_expired host.host as expired %}
+                    {% noclook_has_expired host as expired %}
                     {% if expired %}
                         <tr class="expired">
                             {% else %}
                         <tr>
                     {% endif %}
-                        <td><a class="handle" href="{% noclook_node_to_url host.host %}">{{ host.name }}</a></td>
+                        <td><a class="handle" href="{% noclook_node_to_url host %}">{{ host.name }}</a></td>
                         <td>No address</td>
                         <td>{{ host.os|default:"" }}</td>
                         <td>{{ host.os_version|default:"" }}</td>
                         <td>
-                            {% for user in host.users %}
+                            {% for user in users %}
                                 <a href="{% noclook_node_to_url user %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
                             {% endfor %}
                         </td>
