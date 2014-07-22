@@ -49,14 +49,13 @@
     </h5>
 {% endif %}
 {% load comments %}
-{% load markup %}
 {% get_comment_list for node_handle as comment_list %}
 {% if comment_list %}
     {% for comment in comment_list|dictsortreversed:"submit_date" %}
         <div class="alert alert-block">
             <a href="/comments/delete/{{ comment.id }}" class="close">&times;</a>
             <h4 class="alert-heading">{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</h4>
-            {{ comment.comment|markdown:"safe" }}
+            {{ comment.comment }}
         </div>
     {% endfor %}
 {% endif %}

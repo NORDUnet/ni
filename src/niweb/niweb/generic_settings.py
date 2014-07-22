@@ -172,7 +172,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.flatpages',
     'django.contrib.comments',
-    'django.contrib.markup',
     'django.contrib.staticfiles',
     'tastypie',
     'djangosaml2',

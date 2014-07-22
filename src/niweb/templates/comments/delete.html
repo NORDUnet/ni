@@ -2,10 +2,9 @@
 
 {% block content %}
 <h1>Really remove this comment?</h1>
-    {% load markup %}
     <div class="alert">
         <h4 class="alert-heading">{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</h4>
-        {{ comment.comment|markdown:"safe" }}
+        {{ comment.comment }}
     </div>
   <form action="." method="post">{% csrf_token %}
     <div><input type="hidden" name="next" value="{{ comment.get_absolute_url }}" id="next" /></div>
