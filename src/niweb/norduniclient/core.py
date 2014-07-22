@@ -105,7 +105,7 @@ def get_node_bundle(manager, handle_id):
         with manager.read as r:
             labels, data = r.execute(q, handle_id=handle_id).fetchall()[0]
     except (IndexError, ValueError):
-        return exceptions.NodeNotFound(manager, handle_id)
+        raise exceptions.NodeNotFound(manager, handle_id)
     d = {
         'data': data
     }
