@@ -22,6 +22,21 @@ class BaseModel(object):
         )
 
     def _query_to_defaultdict(self, query):
+    def _incoming(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[r]-(node)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_query_to_dict(q)
+    incoming = property(_incoming)
+
+    def _outgoing(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r]->(node)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_query_to_dict(q)
+    outgoing = property(_outgoing)
         with self.manager.read as r:
             hits = r.execute(query, handle_id=self.handle_id).fetchall()
         d = defaultdict(list)
