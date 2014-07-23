@@ -73,23 +73,14 @@ def noclook_has_expired(item):
 
 
 @register.assignment_tag
-def noclook_get_ports(item):
+def noclook_get_ports(handle_id):
     """
     Return port nodes that are either dependencies or connected to item. Also returns the
     ports top parent.
-    :param item: Neo4j node
-    :return: Cypher ExecutionResult
+    :param handle_id: unique id
+    :return: list
     """
-    q = """
-        START node = node({id})
-        MATCH node-[r:Connected_to|Depends_on]-port
-        WHERE port.node_type = "Port"
-        WITH port, r
-        MATCH p=port<-[?:Has*1..]-parent
-        RETURN port, r, LAST(nodes(p)) as parent
-        ORDER BY parent.name
-        """
-    return nc.neo4jdb.query(q, id=item.getId())
+    return nc.get_model(nc.neo4jdb, handle_id).get_ports()
 
 
 @register.assignment_tag

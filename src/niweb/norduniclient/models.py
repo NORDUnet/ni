@@ -21,7 +21,10 @@ class BaseModel(object):
             meta_type=self.meta_type, handle_id=self.handle_id, labels=self.labels, db=self.manager.dsn
         )
 
-    def _query_to_defaultdict(self, query):
+    def _get_handle_id(self):
+        return self.data.get('handle_id')
+    handle_id = property(_get_handle_id)
+
     def _incoming(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r]-(node)
@@ -37,6 +40,8 @@ class BaseModel(object):
             """
         return self._basic_query_to_dict(q)
     outgoing = property(_outgoing)
+
+    def _basic_query_to_dict(self, query):
         with self.manager.read as r:
             hits = r.execute(query, handle_id=self.handle_id).fetchall()
         d = defaultdict(list)
@@ -50,9 +55,25 @@ class BaseModel(object):
         d.default_factory = None
         return d
 
-    def _get_handle_id(self):
-        return self.data.get('handle_id')
-    handle_id = property(_get_handle_id)
+    def query_to_dict(self, query, **kwargs):
+        d = {}
+        with self.manager.read as r:
+            cursor = r.execute(query, **kwargs)
+            result = cursor.fetchall()[0]
+            for desc, data in zip(cursor.description, result):
+                d[desc[0]] = data
+        return d
+
+    def query_to_list(self, query, **kwargs):
+        l = []
+        with self.manager.read as r:
+            cursor = r.execute(query, **kwargs)
+            for row in cursor.fetchall():
+                d = {}
+                for desc, data in zip(cursor.description, row):
+                    d[desc[0]] = data
+                l.append(d)
+        return l
 
     def load(self, node_bundle):
         self.meta_type = node_bundle.get('meta_type')
@@ -65,28 +86,52 @@ class BaseModel(object):
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
             RETURN type(r), id(r), r, node.handle_id
             """
-        return self._query_to_defaultdict(q)
+        return self._basic_query_to_dict(q)
 
     def get_incoming_logical(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Depends_on|Part_of]-(node)
             RETURN type(r), id(r), r, node.handle_id
             """
-        return self._query_to_defaultdict(q)
+        return self._basic_query_to_dict(q)
 
     def get_outgoing_logical(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})-[r:Depends_on|Part_of]->(node)
             RETURN type(r), id(r), r, node.handle_id
             """
-        return self._query_to_defaultdict(q)
+        return self._basic_query_to_dict(q)
 
     def get_locations(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Located_in]-(node)
             RETURN type(r), id(r), r, node.handle_id
             """
-        return self._query_to_defaultdict(q)
+        return self._basic_query_to_dict(q)
+
+    def get_dependents_as_types(self):
+        q = """
+            MATCH (node {handle_id: {handle_id}})<-[:Depends_on]-(d)
+            WITH node, collect(d) as direct
+            MATCH (node)<-[:Depends_on*1..20]-(dep)
+            WITH direct, collect(dep) as deps
+            WITH direct, deps, filter(n in deps WHERE "Service" in labels(n)) as services
+            WITH direct, deps, services, filter(n in deps WHERE "Optical_Path" in labels(n)) as paths
+            WITH direct, deps, services, paths, filter(n in deps WHERE "Optical_Multiplex_Section" in labels(n)) as oms
+            WITH direct, deps, services, paths, oms, filter(n in deps WHERE "Optical_Link" in labels(n)) as links
+            RETURN direct, services, paths, oms, links
+            """
+        return self.query_to_dict(q, handle_id=self.handle_id)
+
+    def get_ports(self):
+        q = """
+            MATCH (node {handle_id: {handle_id}})-[r:Connected_to|Depends_on]-(port:Port)
+            WITH port, r
+            OPTIONAL MATCH p=port<-[:Has*1..]-parent
+            RETURN port, r as relationship, LAST(nodes(p)) as parent
+            ORDER BY parent.name
+            """
+        return self.query_to_list(q, handle_id=self.handle_id)
 
 
 class LocationModel(BaseModel):
@@ -96,7 +141,7 @@ class LocationModel(BaseModel):
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Has]-(node)
             RETURN type(r), id(r), r, node.handle_id
             """
-        return self._query_to_defaultdict(q)
+        return self._basic_query_to_dict(q)
 
 
 class EquipmentModel(BaseModel):
@@ -155,7 +200,7 @@ class HostModel(EquipmentModel):
             MATCH (host {handle_id: {handle_id}})<-[r:Depends_on]-(service:Host_Service)
             RETURN type(r), id(r), r, service.handle_id
             """
-        return self._query_to_defaultdict(q)
+        return self._basic_query_to_dict(q)
 
 
 class OpticalNodeModel(EquipmentModel):
