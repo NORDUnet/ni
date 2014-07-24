@@ -200,6 +200,13 @@ class HostModel(EquipmentModel):
             RETURN type(r), id(r), r, service.handle_id
             """
         return self._basic_query_to_dict(q)
+    def set_user(self, user_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})
+            MERGE (n)<-[r:Uses]-(user:Host_User {handle_id: {user_handle_id}})
+            RETURN type(r), id(r), r, user.handle_id
+            """
+        return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
 
 
 class OpticalNodeModel(EquipmentModel):
