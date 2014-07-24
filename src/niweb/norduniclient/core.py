@@ -61,6 +61,29 @@ def _get_db_manager(uri):
     return contextmanager.Neo4jDBConnectionManager(uri)
 
 
+def query_to_dict(manager, query, **kwargs):
+    d = {}
+    with manager.read as r:
+        cursor = r.execute(query, **kwargs)
+        result = cursor.fetchall()
+        if result:
+            for desc, data in zip(cursor.description, result[0]):
+                d[desc[0]] = data
+    return d
+
+
+def query_to_list(manager, query, **kwargs):
+    l = []
+    with manager.read as r:
+        cursor = r.execute(query, **kwargs)
+        for row in cursor.fetchall():
+            d = {}
+            for desc, data in zip(cursor.description, row):
+                d[desc[0]] = data
+            l.append(d)
+    return l
+
+
 def create_node(manager, name, meta_type_label, type_label, handle_id):
     """
     Creates a node with the mandatory attributes name and handle_id also sets type label.
