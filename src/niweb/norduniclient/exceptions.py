@@ -104,3 +104,15 @@ class NodeNotFound(Exception):
 
     def __str__(self):
         return self.message
+
+
+class RelationshipNotFound(Exception):
+    """
+    The provided handle_id did not match any node in the graph database.
+    """
+    def __init__(self, manager, relationship_id):
+        self.message = '{relationship_id} did not match a relationship in database at {db}.'.format(
+            relationship_id=relationship_id, db=manager.dsn)
+
+    def __str__(self):
+        return self.message

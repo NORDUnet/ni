@@ -20,7 +20,7 @@
 
 from __future__ import absolute_import
 import re
-from neo4j import contextmanager, IntegrityError, ProgrammingError
+from neo4j import contextmanager, IntegrityError, ProgrammingError, InternalError
 
 from . import exceptions
 from . import helpers
@@ -166,8 +166,8 @@ def get_relationship(manager, relationship_id):
     try:
         with manager.read as r:
             return r.execute(q, relationship_id=relationship_id).fetchall()[0][0]
-    except IndexError:
-        return None
+    except InternalError:
+        raise exceptions.RelationshipNotFound(manager, relationship_id)
 
 
 def delete_relationship(manager, relationship_id):
@@ -179,8 +179,11 @@ def delete_relationship(manager, relationship_id):
     :return: bool
     """
     q = 'START r=relationship({relationship_id}) DELETE r'
-    with manager.transaction as t:
-        t.execute(q, relationship_id=relationship_id)
+    try:
+        with manager.transaction as t:
+            t.execute(q, relationship_id=relationship_id)
+    except InternalError:
+        raise exceptions.RelationshipNotFound(manager, relationship_id)
     return True
 
 
@@ -414,8 +417,11 @@ def update_relationship_properties(manager, relationship_id, new_properties):
         SET r = {props}
         RETURN r
         """
-    with manager.transaction as w:
-        return w.execute(q, relationship_id=relationship_id, **d).fetchall()[0][0]
+    try:
+        with manager.transaction as w:
+            return w.execute(q, relationship_id=relationship_id, **d).fetchall()[0][0]
+    except ProgrammingError:
+        raise exceptions.BadProperties(d['props'])
 
 
 def get_model(manager, handle_id):
