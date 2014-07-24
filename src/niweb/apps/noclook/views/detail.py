@@ -110,15 +110,16 @@ def host_detail(request, handle_id):
     # Get node from neo4j-database
     host = nc.get_model(nc.neo4jdb, nh.handle_id)
     last_seen, expired = h.neo4j_data_age(host.data)
-    location = host.get_full_location()
+    location_path = host.get_location_path()
     # Handle relationships
     host_services = host.get_host_services()
     relations = host.get_relations()
-    depends_on = host.get_outgoing_logical()
+    dependent = host.get_dependent_as_types()
+    dependencies = host.get_dependencies_as_types()
     return render_to_response('noclook/detail/host_detail.html',
                               {'node_handle': nh, 'node': host, 'last_seen': last_seen, 'expired': expired,
-                               'relations': relations, 'host_services': host_services, 'depends_on': depends_on,
-                               'location': location, 'history': history},
+                               'relations': relations, 'host_services': host_services, 'dependent': dependent,
+                               'dependencies': dependencies, 'location_path': location_path, 'history': history},
                               context_instance=RequestContext(request))
 
 

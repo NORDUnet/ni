@@ -59,9 +59,10 @@ class BaseModel(object):
         d = {}
         with self.manager.read as r:
             cursor = r.execute(query, **kwargs)
-            result = cursor.fetchall()[0]
-            for desc, data in zip(cursor.description, result):
-                d[desc[0]] = data
+            result = cursor.fetchall()
+            if result:
+                for desc, data in zip(cursor.description, result[0]):
+                    d[desc[0]] = data
         return d
 
     def query_to_list(self, query, **kwargs):
@@ -81,6 +82,8 @@ class BaseModel(object):
         self.data = node_bundle.get('data')
         return self
 
+
+class CommonQueries(BaseModel):
     def get_relations(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
@@ -102,24 +105,41 @@ class BaseModel(object):
             """
         return self._basic_query_to_dict(q)
 
-    def get_locations(self):
+    def get_location(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Located_in]-(node)
             RETURN type(r), id(r), r, node.handle_id
             """
         return self._basic_query_to_dict(q)
 
-    def get_dependents_as_types(self):
+    def get_dependent_as_types(self):
         q = """
             MATCH (node {handle_id: {handle_id}})<-[:Depends_on]-(d)
             WITH node, collect(d) as direct
             MATCH (node)<-[:Depends_on*1..20]-(dep)
             WITH direct, collect(dep) as deps
-            WITH direct, deps, filter(n in deps WHERE "Service" in labels(n)) as services
-            WITH direct, deps, services, filter(n in deps WHERE "Optical_Path" in labels(n)) as paths
-            WITH direct, deps, services, paths, filter(n in deps WHERE "Optical_Multiplex_Section" in labels(n)) as oms
-            WITH direct, deps, services, paths, oms, filter(n in deps WHERE "Optical_Link" in labels(n)) as links
+            WITH direct, deps, filter(n in deps WHERE n:Service) as services
+            WITH direct, deps, services, filter(n in deps WHERE n:Optical_Path) as paths
+            WITH direct, deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
+            WITH direct, deps, services, paths, oms, filter(n in deps WHERE n:Optical_Link) as links
             RETURN direct, services, paths, oms, links
+            """
+        return self.query_to_dict(q, handle_id=self.handle_id)
+
+    def get_dependencies_as_types(self):
+        q = """
+            MATCH (node {handle_id: {handle_id}})-[:Depends_on]->(d)
+            WITH node, collect(d) as direct
+            MATCH node-[:Depends_on*1..20]->dep
+            WITH node, direct, collect(dep) as deps
+            WITH node, direct, deps, filter(n in deps WHERE n:Service) as services
+            WITH node, direct, deps, services, filter(n in deps WHERE n:Optical_Path) as paths
+            WITH node, direct, deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
+            WITH node, direct, deps, services, paths, oms, filter(n in deps WHERE n:Optical_Link) as links
+            WITH node, direct, services, paths, oms, links
+            OPTIONAL MATCH node-[:Depends_on*1..20]->()-[:Connected_to*1..50]-cable
+            WITH distinct direct, cable, services, paths, oms, links
+            RETURN direct, services, paths, oms, links, filter(n in collect(cable) WHERE n:Cable) as cables
             """
         return self.query_to_dict(q, handle_id=self.handle_id)
 
@@ -134,9 +154,9 @@ class BaseModel(object):
         return self.query_to_list(q, handle_id=self.handle_id)
 
 
-class LocationModel(BaseModel):
+class LocationModel(CommonQueries):
 
-    def get_locations(self):
+    def get_location(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Has]-(node)
             RETURN type(r), id(r), r, node.handle_id
@@ -144,56 +164,35 @@ class LocationModel(BaseModel):
         return self._basic_query_to_dict(q)
 
 
-class EquipmentModel(BaseModel):
+class EquipmentModel(CommonQueries):
 
-    def get_full_location(self):
+    def get_location_path(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})-[:Located_in]->(r)
             MATCH p=()-[:Has*]->(r)
             WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength
             WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths
-            RETURN longestPaths
+            UNWIND(longestPaths) as Located_in
+            RETURN Located_in
             """
-        d = defaultdict(list)
-        with self.manager.read as r:
-            try:
-                d['Located_in'] = r.execute(q, handle_id=self.handle_id).fetchall()[0][0][0]
-            except IndexError:
-                pass
-        d.default_factory = None
-        return d
-
-    def get_incoming_logical(self):
-        q = """
-            MATCH (equipment {handle_id: {handle_id}})
-            OPTIONAL MATCH (equipment)<-[r1:Depends_on|Part_of]-(l1)
-            WITH equipment, r1, l1
-            OPTIONAL MATCH (equipment)-[:Has*]->(port)<-[r2:Depends_on|Part_of]-(l2)
-            RETURN type(r1), id(r1), r1, l1.handle_id, port.handle_id, type(r2), id(r2), r2, l2.handle_id
-            """
-        logical = defaultdict(list)
-        with self.manager.read as r:
-            for hit in r.execute(q, handle_id=self.handle_id):
-                type_r1, id_r1, r1, l1, port, type_r2, id_r2, r2, l2 = hit
-                if port:
-                    logical[type_r2].append({
-                        'port': core.get_model(self.manager, port),
-                        'relationship_id': id_r2,
-                        'relationship': r2,
-                        'node': core.get_model(self.manager, l2)
-                    })
-                else:
-                    logical[type_r1].append({
-                        'port': None,
-                        'relationship_id': id_r1,
-                        'relationship': r1,
-                        'node': core.get_model(self.manager, l1)
-                    })
-        logical.default_factory = None
-        return logical
+        return self.query_to_dict(q, handle_id=self.handle_id)
 
 
 class HostModel(EquipmentModel):
+
+    def get_dependent_as_types(self):  # Does not accept Host_Service as a direct dependent
+        q = """
+            MATCH (node {handle_id: {handle_id}})<-[:Depends_on]-(d)
+            WITH node, filter(n in collect(d) WHERE NOT(n:Host_Service)) as direct
+            MATCH (node)<-[:Depends_on*1..20]-(dep)
+            WITH direct, collect(dep) as deps
+            WITH direct, deps, filter(n in deps WHERE n:Service) as services
+            WITH direct, deps, services, filter(n in deps WHERE n:Optical_Path) as paths
+            WITH direct, deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
+            WITH direct, deps, services, paths, oms, filter(n in deps WHERE n:Optical_Link) as links
+            RETURN direct, services, paths, oms, links
+            """
+        return self.query_to_dict(q, handle_id=self.handle_id)
 
     def get_host_services(self):
         q = """

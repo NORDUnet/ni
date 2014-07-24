@@ -73,6 +73,25 @@ def noclook_has_expired(item):
 
 
 @register.assignment_tag
+def noclook_get_model(handle_id):
+    """
+    :param handle_id: unique id
+    :return: Node model
+    """
+    return nc.get_model(nc.neo4jdb, handle_id)
+
+
+@register.simple_tag
+def noclook_get_type(handle_id):
+    model = nc.get_model(nc.neo4jdb, handle_id)
+    for t in model.labels:
+        try:
+            return NodeType.objects.get(type=t.replace('_', ' ')).type
+        except NodeType.DoesNotExist:
+            pass
+
+
+@register.assignment_tag
 def noclook_get_ports(handle_id):
     """
     Return port nodes that are either dependencies or connected to item. Also returns the
