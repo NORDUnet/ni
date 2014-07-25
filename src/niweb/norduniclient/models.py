@@ -5,7 +5,29 @@ from collections import defaultdict
 import core
 
 
-class BaseModel(object):
+class BaseRelationshipModel(object):
+
+    def __init__(self, manager):
+        self.manager = manager
+        self.id = None
+        self.type = None
+        self.data = None
+        self.start = None
+        self.end = None
+
+    def load(self, relationship_bundle):
+        self.id = relationship_bundle.get('id')
+        self.type = relationship_bundle.get('type')
+        self.data = relationship_bundle.get('data')
+        self.start = core.get_node_model(self.manager, relationship_bundle.get('start'))
+        self.end = core.get_node_model(self.manager, relationship_bundle.get('end'))
+        return self
+
+    def delete(self):
+        core.delete_relationship(self.manager, self.id)
+
+
+class BaseNodeModel(object):
 
     def __init__(self, manager):
         self.manager = manager
@@ -44,21 +66,34 @@ class BaseModel(object):
     def _basic_read_query_to_dict(self, query, **kwargs):
         with self.manager.read as r:
             result = r.execute(query, handle_id=self.handle_id, **kwargs).fetchall()
-            return self._query_to_dict(result)
+            return self._read_query_to_dict(result)
 
-    def _basic_write_query_to_dict(self, query, **kwargs):
-        with self.manager.transaction as t:
-            result = t.execute(query, handle_id=self.handle_id, **kwargs).fetchall()
-            return self._query_to_dict(result)
-
-    def _query_to_dict(self, result):
+    def _read_query_to_dict(self, result):
         d = defaultdict(list)
         for row in result:
             rel_type, rel_id, rel, handle_id = row
             d[rel_type].append({
                 'relationship_id': rel_id,
                 'relationship': rel,
-                'node': core.get_model(self.manager, handle_id)
+                'node': core.get_node_model(self.manager, handle_id)
+            })
+        d.default_factory = None
+        return d
+
+    def _basic_write_query_to_dict(self, query, **kwargs):
+        with self.manager.transaction as t:
+            result = t.execute(query, handle_id=self.handle_id, **kwargs).fetchall()
+            return self._write_query_to_dict(result)
+
+    def _write_query_to_dict(self, result):
+        d = defaultdict(list)
+        for row in result:
+            created, rel_type, rel_id, rel, handle_id = row
+            d[rel_type].append({
+                'created': created,
+                'relationship_id': rel_id,
+                'relationship': rel,
+                'node': core.get_node_model(self.manager, handle_id)
             })
         d.default_factory = None
         return d
@@ -69,8 +104,25 @@ class BaseModel(object):
         self.data = node_bundle.get('data')
         return self
 
+    def change_meta_type(self, meta_type):
+        if meta_type == self.meta_type:
+            return self
+        if meta_type not in core.META_TYPES:
+            raise core.exceptions.MetaLabelNamingError(meta_type)
+        q = """
+            MATCH (n:Node {{handle_id: {{handle_id}}}})
+            REMOVE n:{old_meta_type}
+            SET n:{meta_type}
+            """.format(old_meta_type=self.meta_type, meta_type=meta_type)
+        with self.manager.transaction as t:
+            t.execute(q, handle_id=self.handle_id).fetchall()
+        return core.get_node_model(self.manager, self.handle_id)
 
-class CommonQueries(BaseModel):
+    def delete(self):
+        core.delete_node(self.manager, self.handle_id)
+
+
+class CommonQueries(BaseNodeModel):
     def get_relations(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
@@ -88,13 +140,6 @@ class CommonQueries(BaseModel):
     def get_outgoing_logical(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})-[r:Depends_on|Part_of]->(node)
-            RETURN type(r), id(r), r, node.handle_id
-            """
-        return self._basic_read_query_to_dict(q)
-
-    def get_location(self):
-        q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[r:Located_in]-(node)
             RETURN type(r), id(r), r, node.handle_id
             """
         return self._basic_read_query_to_dict(q)
@@ -142,7 +187,36 @@ class CommonQueries(BaseModel):
 
 
 class LogicalModel(CommonQueries):
-    pass
+
+    def set_user(self, user_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})
+            MERGE (n)<-[r:Uses]-(user:Host_User {handle_id: {user_handle_id}})
+            RETURN created, type(r), id(r), r, user.handle_id
+            """
+        return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
+
+    # TODO: Create a method that complains if any relationships that breaks the model exists
+
+
+class PhysicalModel(CommonQueries):
+
+    def get_location(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Located_in]->(node)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
+    def set_owner(self, user_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})
+            MERGE (n)<-[r:Owns]-(user:Host_User {handle_id: {user_handle_id}})
+            RETURN created, type(r), id(r), r, user.handle_id
+            """
+        return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
+
+    # TODO: Create a method that complains if any relationships that breaks the model exists
 
 
 class LocationModel(CommonQueries):
@@ -155,7 +229,7 @@ class LocationModel(CommonQueries):
         return self._basic_read_query_to_dict(q)
 
 
-class EquipmentModel(CommonQueries):
+class EquipmentModel(PhysicalModel):
 
     def get_location_path(self):
         q = """
@@ -169,7 +243,7 @@ class EquipmentModel(CommonQueries):
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
 
 
-class HostModel(EquipmentModel):
+class HostModel(CommonQueries):
 
     def get_dependent_as_types(self):  # Does not return Host_Service as a direct dependent
         q = """
@@ -192,13 +266,13 @@ class HostModel(EquipmentModel):
             """
         return self._basic_read_query_to_dict(q)
 
-    def set_user(self, user_handle_id):
-        q = """
-            MATCH (n:Node {handle_id: {handle_id}})
-            MERGE (n)<-[r:Uses]-(user:Host_User {handle_id: {user_handle_id}})
-            RETURN type(r), id(r), r, user.handle_id
-            """
-        return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
+
+class PhysicalHostModel(HostModel, EquipmentModel):
+    pass
+
+
+class LogicalHostModel(HostModel, LogicalModel):
+    pass
 
 
 class OpticalNodeModel(EquipmentModel):

@@ -6,6 +6,7 @@ Created on 2012-11-23 10:18 AM
 """
 
 from actstream import action
+from models import NodeHandle
 import helpers as h
 
 def update_node_property(user, action_object, property_key, value_before, value_after):
@@ -67,14 +68,14 @@ def update_relationship_property(user, relationship, property_key, value_before,
     """
     Creates an Action with the extra information needed to present the user with a history.
     :param user: Django user instance
-    :param relationship: Neo4j relationship instance
+    :param relationship: norduniclient relationship model
     :param property_key: String
     :param value_before: JSON supported value
     :param value_after: JSON supported value
     :return: None
     """
-    start_nh, start_node = h.get_nh_node(relationship.start['handle_id'])
-    end_nh, end_node = h.get_nh_node(relationship.end['handle_id'])
+    start_nh = NodeHandle.get(pk=relationship.start.handle_id)
+    end_nh = NodeHandle.get(pk=relationship.end.handle_id)
     action.send(
         user,
         verb='update',
@@ -82,7 +83,7 @@ def update_relationship_property(user, relationship, property_key, value_before,
         target=end_nh,
         noclook={
             'action_type': 'relationship_property',
-            'relationship_type': unicode(relationship.type),
+            'relationship_type': relationship.type,
             'property': property_key,
             'value_before': value_before,
             'value_after': value_after
@@ -93,11 +94,11 @@ def update_relationship_property(user, relationship, property_key, value_before,
 def create_relationship(user, relationship):
     """
     :param user: Django user instance
-    :param relationship: Neo4j relationship instance
+    :param relationship: norduniclient relationship model
     :return: None
     """
-    start_nh, start_node = h.get_nh_node(relationship.start['handle_id'])
-    end_nh, end_node = h.get_nh_node(relationship.end['handle_id'])
+    start_nh = NodeHandle.get(pk=relationship.start.handle_id)
+    end_nh = NodeHandle.get(pk=relationship.end.handle_id)
     action.send(
         user,
         verb='create',
@@ -105,7 +106,7 @@ def create_relationship(user, relationship):
         target=end_nh,
         noclook={
             'action_type': 'relationship',
-            'relationship_type': unicode(relationship.type)
+            'relationship_type': relationship.type
         }
     )
 
@@ -113,11 +114,11 @@ def create_relationship(user, relationship):
 def delete_relationship(user, relationship):
     """
     :param user: Django user instance
-    :param relationship: Neo4j relationship instance
+    :param relationship: norduniclient relationship model
     :return: None
     """
-    start_nh, start_node = h.get_nh_node(relationship.start['handle_id'])
-    end_nh, end_node = h.get_nh_node(relationship.end['handle_id'])
+    start_nh = NodeHandle.get(pk=relationship.start.handle_id)
+    end_nh = NodeHandle.get(pk=relationship.end.handle_id)
     action.send(
         user,
         verb='delete',
@@ -125,7 +126,7 @@ def delete_relationship(user, relationship):
         target=end_nh,
         noclook={
             'action_type': 'relationship',
-            'relationship_type': unicode(relationship.type),
-            'object_name': unicode(relationship)
+            'relationship_type': relationship.type,
+            'object_name': unicode(relationship.data)
         }
     )

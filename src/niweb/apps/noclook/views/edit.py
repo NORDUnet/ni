@@ -356,23 +356,21 @@ def edit_host(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, node = h.get_nh_node(handle_id)
-    location = h.iter2list(h.get_location(node))
-    owner_relationships = h.iter2list(node.Owns.incoming)    # Physical hosts
-    user_relationships = h.iter2list(node.Uses.incoming)     # Logical hosts
-    service_relationships = h.iter2list(node.Depends_on.incoming)
+    nh, host = h.get_nh_node(handle_id)
+    location = host.get_location()
+    relations = host.get_relations()
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, node, form)
+            h.form_update_node(request.user, host, form)
             # Host specific updates
             if form.cleaned_data['relationship_user']:
                 user_id = form.cleaned_data['relationship_user']
-                node = h.set_user(request.user, node, user_id)
+                h.set_user(request.user, host, user_id)
             if form.cleaned_data['relationship_owner']:
                 owner_id = form.cleaned_data['relationship_owner']
-                node = h.set_owner(request.user, node, owner_id)
+                h.set_owner(request.user, host, owner_id)
             # You can not set location and depends on at the same time
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_id = form.cleaned_data['relationship_depends_on']
@@ -388,18 +386,14 @@ def edit_host(request, handle_id):
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
         else:
             return render_to_response('noclook/edit/edit_host.html',
-                                      {'node_handle': nh, 'node': node, 'form': form, 'location': location,
-                                       'owner_relationships': owner_relationships,
-                                       'user_relationships': user_relationships,
-                                       'service_relationships': service_relationships},
+                                      {'node_handle': nh, 'node': host, 'form': form, 'location': location,
+                                       'relations': relations},
                                       context_instance=RequestContext(request))
     else:
-        form = forms.EditHostForm(h.item2dict(node))
+        form = forms.EditHostForm(host.data)
         return render_to_response('noclook/edit/edit_host.html',
-                                  {'node_handle': nh, 'node': node, 'form': form, 'location': location,
-                                   'owner_relationships': owner_relationships,
-                                   'user_relationships': user_relationships,
-                                   'service_relationships': service_relationships},
+                                  {'node_handle': nh, 'node': host, 'form': form, 'location': location,
+                                   'relations': relations},
                                   context_instance=RequestContext(request))
 
 
