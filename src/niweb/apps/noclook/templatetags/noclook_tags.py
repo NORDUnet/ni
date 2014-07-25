@@ -78,12 +78,12 @@ def noclook_get_model(handle_id):
     :param handle_id: unique id
     :return: Node model
     """
-    return nc.get_model(nc.neo4jdb, handle_id)
+    return nc.get_node_model(nc.neo4jdb, handle_id)
 
 
 @register.simple_tag
 def noclook_get_type(handle_id):
-    model = nc.get_model(nc.neo4jdb, handle_id)
+    model = nc.get_node_model(nc.neo4jdb, handle_id)
     for t in model.labels:
         try:
             return NodeType.objects.get(type=t.replace('_', ' ')).type
@@ -99,7 +99,7 @@ def noclook_get_ports(handle_id):
     :param handle_id: unique id
     :return: list
     """
-    return nc.get_model(nc.neo4jdb, handle_id).get_ports()
+    return nc.get_node_model(nc.neo4jdb, handle_id).get_ports()
 
 
 @register.assignment_tag

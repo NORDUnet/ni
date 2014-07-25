@@ -170,6 +170,19 @@ def get_relationship(manager, relationship_id):
         raise exceptions.RelationshipNotFound(manager, relationship_id)
 
 
+def get_relationship_bundle(manager, relationship_id):
+    q = """
+        START r=relationship({relationship_id})
+        RETURN  type(r), id(r), r, startNode(r).handle_id,endNode(r).handle_id
+        """
+    try:
+        with manager.read as r:
+            t, i, data, start, end = r.execute(q, relationship_id=relationship_id).fetchall()[0]
+    except InternalError:
+        raise exceptions.RelationshipNotFound(manager, relationship_id)
+    return {'type': t, 'id': i, 'data': data, 'start': start, 'end': end}
+
+
 def delete_relationship(manager, relationship_id):
     """
     Deletes the relationship.
@@ -424,8 +437,14 @@ def update_relationship_properties(manager, relationship_id, new_properties):
         raise exceptions.BadProperties(d['props'])
 
 
-def get_model(manager, handle_id):
+def get_node_model(manager, handle_id):
     bundle = get_node_bundle(manager, handle_id)
+    for label in bundle.get('labels'):
+        try:
+            classname = '{meta_type}{base}Model'.format(meta_type=bundle.get('meta_type'), base=label).replace('_', '')
+            return getattr(models, classname)(manager).load(bundle)
+        except AttributeError:
+            pass
     for label in bundle.get('labels'):
         try:
             classname = '{base}Model'.format(base=label).replace('_', '')
@@ -436,4 +455,9 @@ def get_model(manager, handle_id):
         classname = '{base}Model'.format(base=bundle.get('meta_type'))
         return getattr(models, classname)(manager).load(bundle)
     except AttributeError:
-        return models.BaseModel(manager).load(bundle)
+        return models.BaseNodeModel(manager).load(bundle)
+
+
+def get_relationship_model(manager, relationship_id):
+    bundle = get_relationship_bundle(manager, relationship_id)
+    return models.BaseRelationshipModel(manager).load(bundle)

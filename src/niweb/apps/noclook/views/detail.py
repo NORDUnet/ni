@@ -108,7 +108,7 @@ def host_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     history = h.get_history(nh)
     # Get node from neo4j-database
-    host = nc.get_model(nc.neo4jdb, nh.handle_id)
+    host = nc.get_node_model(nc.neo4jdb, nh.handle_id)
     last_seen, expired = h.neo4j_data_age(host.data)
     location_path = host.get_location_path()
     # Handle relationships
