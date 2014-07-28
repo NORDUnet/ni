@@ -74,8 +74,8 @@ def update_relationship_property(user, relationship, property_key, value_before,
     :param value_after: JSON supported value
     :return: None
     """
-    start_nh = NodeHandle.get(pk=relationship.start.handle_id)
-    end_nh = NodeHandle.get(pk=relationship.end.handle_id)
+    start_nh = NodeHandle.objects.get(pk=relationship.start.handle_id)
+    end_nh = NodeHandle.objects.get(pk=relationship.end.handle_id)
     action.send(
         user,
         verb='update',
@@ -97,8 +97,8 @@ def create_relationship(user, relationship):
     :param relationship: norduniclient relationship model
     :return: None
     """
-    start_nh = NodeHandle.get(pk=relationship.start.handle_id)
-    end_nh = NodeHandle.get(pk=relationship.end.handle_id)
+    start_nh = NodeHandle.objects.get(pk=relationship.start.handle_id)
+    end_nh = NodeHandle.objects.get(pk=relationship.end.handle_id)
     action.send(
         user,
         verb='create',
@@ -117,8 +117,8 @@ def delete_relationship(user, relationship):
     :param relationship: norduniclient relationship model
     :return: None
     """
-    start_nh = NodeHandle.get(pk=relationship.start.handle_id)
-    end_nh = NodeHandle.get(pk=relationship.end.handle_id)
+    start_nh = NodeHandle.objects.get(pk=relationship.start.handle_id)
+    end_nh = NodeHandle.objects.get(pk=relationship.end.handle_id)
     action.send(
         user,
         verb='delete',
