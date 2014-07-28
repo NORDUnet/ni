@@ -216,14 +216,17 @@ RESPONSIBLE_GROUPS = [
 
 def get_node_type_tuples(node_type):
     """
-    Returns a list of tuple of node.id and node['name'] of the node_type.
+    Returns a list of tuple of node.handle_id and node['name'] of label node_type.
     """
+    choices = [('', '')]
     q = """
         MATCH (n:{node_type})
         RETURN n.handle_id, n.name
-        """.format(node_type=node_type)
+        ORDER BY n.name
+        """.format(node_type=node_type.replace(' ', '_'))
     with nc.neo4jdb.read as r:
-        return r.execute(q).fetchall()
+        choices.extend(r.execute(q).fetchall())
+    return choices
 
 
 class JSONField(forms.CharField):
