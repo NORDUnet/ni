@@ -20,7 +20,7 @@
 
 from __future__ import absolute_import
 import re
-from neo4j import contextmanager, IntegrityError, ProgrammingError, InternalError
+from neo4j import contextmanager
 
 from . import exceptions
 from . import helpers
@@ -178,7 +178,7 @@ def get_relationship_bundle(manager, relationship_id):
     try:
         with manager.read as r:
             t, i, data, start, end = r.execute(q, relationship_id=relationship_id).fetchall()[0]
-    except InternalError:
+    except exceptions.InternalError:
         raise exceptions.RelationshipNotFound(manager, relationship_id)
     return {'type': t, 'id': i, 'data': data, 'start': start, 'end': end}
 
@@ -195,7 +195,7 @@ def delete_relationship(manager, relationship_id):
     try:
         with manager.transaction as t:
             t.execute(q, relationship_id=relationship_id)
-    except InternalError:
+    except exceptions.InternalError:
         raise exceptions.RelationshipNotFound(manager, relationship_id)
     return True
 
@@ -244,7 +244,7 @@ def get_node_by_value(manager, value, prop=None, node_type="Node"):
             with manager.read as r:
                 for node, in r.execute(q):
                     yield node
-        except ProgrammingError:  # Can't do regex on int. bool or lists
+        except exceptions.ProgrammingError:  # Can't do regex on int. bool or lists
             q = '''
                 MATCH (n:{label})
                 USING SCAN n:{label}
@@ -416,7 +416,7 @@ def update_node_properties(manager, handle_id, new_properties):
     try:
         with manager.transaction as w:
             return w.execute(q, **d).fetchall()[0][0]
-    except ProgrammingError:
+    except exceptions.ProgrammingError:
         raise exceptions.BadProperties(d['props'])
 
 
@@ -433,7 +433,7 @@ def update_relationship_properties(manager, relationship_id, new_properties):
     try:
         with manager.transaction as w:
             return w.execute(q, relationship_id=relationship_id, **d).fetchall()[0][0]
-    except ProgrammingError:
+    except exceptions.ProgrammingError:
         raise exceptions.BadProperties(d['props'])
 
 
