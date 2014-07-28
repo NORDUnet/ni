@@ -34,9 +34,9 @@
         {% endfor %}
     </h5>
 {% endif %}
-{% if location_path %}
+{% if location_path.location_path %}
     <h5 class="site">Located in
-    {% for loc in location_path.Located_in %}
+    {% for loc in location_path.location_path %}
         <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
     {% endfor %}
     </h5>
