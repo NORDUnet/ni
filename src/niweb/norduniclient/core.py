@@ -159,18 +159,23 @@ def delete_node(manager, handle_id):
 def get_relationship(manager, relationship_id):
     """
      :param manager: Neo4jDBConnectionManager
-    :param relationship_id: Internal Neo4j id
+    :param relationship_id: Internal Neo4j id (integer)
     :return: dict
     """
     q = 'START r=relationship({relationship_id}) RETURN r'
     try:
         with manager.read as r:
             return r.execute(q, relationship_id=relationship_id).fetchall()[0][0]
-    except InternalError:
+    except exceptions.InternalError:
         raise exceptions.RelationshipNotFound(manager, relationship_id)
 
 
 def get_relationship_bundle(manager, relationship_id):
+    """
+    :param manager: Neo4jDBConnectionManager
+    :param relationship_id: Internal Neo4j id (integer)
+    :return: dictionary
+    """
     q = """
         START r=relationship({relationship_id})
         RETURN  type(r), id(r), r, startNode(r).handle_id,endNode(r).handle_id
@@ -459,5 +464,9 @@ def get_node_model(manager, handle_id):
 
 
 def get_relationship_model(manager, relationship_id):
+    try:
+        relationship_id = int(relationship_id)
+    except ValueError:
+        raise exceptions.RelationshipNotFound(manager, relationship_id)
     bundle = get_relationship_bundle(manager, relationship_id)
     return models.BaseRelationshipModel(manager).load(bundle)
