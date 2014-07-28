@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 __author__ = 'lundberg'
 
+from functools import total_ordering
 from collections import defaultdict
 import core
 
 
+@total_ordering
 class BaseRelationshipModel(object):
 
     def __init__(self, manager):
@@ -14,6 +16,24 @@ class BaseRelationshipModel(object):
         self.data = None
         self.start = None
         self.end = None
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
+
+    def __unicode__(self):
+        return u'({start})-[{id}:{type}{data}]->({end}) in database {db}.'.format(
+            start=self.start.handle_id, type=self.type, id=self.id, data=self.data, end=self.end.handle_id,
+            db=self.manager.dsn
+        )
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __lt__(self, other):
+        return self.id < other.id
+
+    def __repr__(self):
+        return u'<{c} id:{id} in {db}>'.format(c=self.__class__.__name__, id=self.id, db=self.manager.dsn)
 
     def load(self, relationship_bundle):
         self.id = relationship_bundle.get('id')
@@ -27,6 +47,7 @@ class BaseRelationshipModel(object):
         core.delete_relationship(self.manager, self.id)
 
 
+@total_ordering
 class BaseNodeModel(object):
 
     def __init__(self, manager):
@@ -39,9 +60,20 @@ class BaseNodeModel(object):
         return unicode(self).encode('utf-8')
 
     def __unicode__(self):
-        return u'{meta_type} node ({handle_id}) with labels {labels} in database {db}.'.format(
-            meta_type=self.meta_type, handle_id=self.handle_id, labels=self.labels, db=self.manager.dsn
+        labels = ':'.join(self.labels)
+        return u'(node:{meta_type}:{labels} {data}) in database {db}.'.format(
+            meta_type=self.meta_type, labels=labels, data=self.data, db=self.manager.dsn
         )
+
+    def __eq__(self, other):
+        return self.handle_id == other.handle_id
+
+    def __lt__(self, other):
+        return self.handle_id < other.handle_id
+
+    def __repr__(self):
+        return u'<{c} handle_id:{handle_id} in {db}>'.format(c=self.__class__.__name__, handle_id=self.handle_id,
+                                                             db=self.manager.dsn)
 
     def _get_handle_id(self):
         return self.data.get('handle_id')
@@ -66,31 +98,18 @@ class BaseNodeModel(object):
     def _basic_read_query_to_dict(self, query, **kwargs):
         with self.manager.read as r:
             result = r.execute(query, handle_id=self.handle_id, **kwargs).fetchall()
-            return self._read_query_to_dict(result)
-
-    def _read_query_to_dict(self, result):
-        d = defaultdict(list)
-        for row in result:
-            rel_type, rel_id, rel, handle_id = row
-            d[rel_type].append({
-                'relationship_id': rel_id,
-                'relationship': rel,
-                'node': core.get_node_model(self.manager, handle_id)
-            })
-        d.default_factory = None
-        return d
+            return self._query_to_dict(result)
 
     def _basic_write_query_to_dict(self, query, **kwargs):
         with self.manager.transaction as t:
             result = t.execute(query, handle_id=self.handle_id, **kwargs).fetchall()
-            return self._write_query_to_dict(result)
+            return self._query_to_dict(result)
 
-    def _write_query_to_dict(self, result):
+    def _query_to_dict(self, result):
         d = defaultdict(list)
         for row in result:
-            created, rel_type, rel_id, rel, handle_id = row
+            rel_type, rel_id, rel, handle_id = row
             d[rel_type].append({
-                'created': created,
                 'relationship_id': rel_id,
                 'relationship': rel,
                 'node': core.get_node_model(self.manager, handle_id)
@@ -123,6 +142,18 @@ class BaseNodeModel(object):
 
 
 class CommonQueries(BaseNodeModel):
+
+    @staticmethod
+    def get_location_path():
+        return {'location_path': []}
+
+    def get_location(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Located_in]->(node)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
     def get_relations(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
@@ -130,16 +161,16 @@ class CommonQueries(BaseNodeModel):
             """
         return self._basic_read_query_to_dict(q)
 
-    def get_incoming_logical(self):
+    def get_dependencies(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[r:Depends_on|Part_of]-(node)
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Depends_on]->(node)
             RETURN type(r), id(r), r, node.handle_id
             """
         return self._basic_read_query_to_dict(q)
 
-    def get_outgoing_logical(self):
+    def get_dependents(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})-[r:Depends_on|Part_of]->(node)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Depends_on]-(node)
             RETURN type(r), id(r), r, node.handle_id
             """
         return self._basic_read_query_to_dict(q)
@@ -188,33 +219,49 @@ class CommonQueries(BaseNodeModel):
 
 class LogicalModel(CommonQueries):
 
+    def get_part_of(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Part_of]->(node)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
     def set_user(self, user_handle_id):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})
-            MERGE (n)<-[r:Uses]-(user:Host_User {handle_id: {user_handle_id}})
-            RETURN created, type(r), id(r), r, user.handle_id
+            MATCH (n:Node {handle_id: {handle_id}}), (user:Node {handle_id: {user_handle_id}})
+            MERGE (n)<-[r:Uses]-(user)
+            RETURN type(r), id(r), r, user.handle_id
             """
         return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
+
+    def set_dependency(self, dependency_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (dependency:Node {handle_id: {dependency_handle_id}})
+            MERGE (n)-[r:Depends_on]->(dependency)
+            RETURN type(r), id(r), r, dependency.handle_id
+            """
+        return self._basic_write_query_to_dict(q, dependency_handle_id=dependency_handle_id)
 
     # TODO: Create a method that complains if any relationships that breaks the model exists
 
 
 class PhysicalModel(CommonQueries):
 
-    def get_location(self):
-        q = """
-            MATCH (n:Node {handle_id: {handle_id}})-[r:Located_in]->(node)
-            RETURN type(r), id(r), r, node.handle_id
-            """
-        return self._basic_read_query_to_dict(q)
-
     def set_owner(self, user_handle_id):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})
-            MERGE (n)<-[r:Owns]-(user:Host_User {handle_id: {user_handle_id}})
-            RETURN created, type(r), id(r), r, user.handle_id
+            MATCH (n:Node {handle_id: {handle_id}}), (owner:Node {handle_id: {user_handle_id}})
+            MERGE (n)<-[r:Owns]-(owner)
+            RETURN type(r), id(r), r, owner.handle_id
             """
         return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
+
+    def set_location(self, location_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (location:Node {handle_id: {location_handle_id}})
+            MERGE (n)-[r:Located_in]->(location)
+            RETURN type(r), id(r), r, location.handle_id
+            """
+        return self._basic_write_query_to_dict(q, location_handle_id=location_handle_id)
 
     # TODO: Create a method that complains if any relationships that breaks the model exists
 
@@ -238,7 +285,7 @@ class EquipmentModel(PhysicalModel):
             WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength
             WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths
             UNWIND(longestPaths) as Located_in
-            RETURN Located_in
+            RETURN location_path
             """
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
 

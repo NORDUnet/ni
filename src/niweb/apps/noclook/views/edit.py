@@ -29,7 +29,8 @@ def delete_node(request, slug, handle_id):
     nh, node = h.get_nh_node(handle_id)
     h.delete_node(request.user, node)
     return HttpResponseRedirect('/%s' % slug)
-    
+
+
 @login_required
 def delete_relationship(request, slug, handle_id, rel_id):
     """
@@ -37,13 +38,14 @@ def delete_relationship(request, slug, handle_id, rel_id):
     supplied id.
     """
     nh, node = h.get_nh_node(handle_id)
-    rel = nc.get_relationship_by_id(nc.neo4jdb, rel_id)
-    if rel.start.id == node.id or rel.end.id == node.id:
-        activitylog.delete_relationship(request.user, rel)
-        if nc.delete_relationship(nc.neo4jdb, rel):
-            return HttpResponseRedirect('/%s/%d/edit' % (slug, nh.handle_id))
+    relationship = nc.get_relationship_model(nc.neo4jdb, rel_id)
+    if node == relationship.start or node == relationship.end:
+        activitylog.delete_relationship(request.user, relationship)
+        relationship.delete()
+        return HttpResponseRedirect('/%s/%d/edit' % (slug, nh.handle_id))
     raise Http404
-    
+
+
 # Form data returns
 @login_required
 def get_node_type(request, slug):
@@ -53,12 +55,12 @@ def get_node_type(request, slug):
     """
     node_type = h.slug_to_node_type(slug)
     q = '''                   
-        START node=node:node_types(node_type="%s")
-        RETURN node
+        MATCH (node:{node_type})
+        RETURN node.handle_id, node.name
         ORDER BY node.name
-        ''' % node_type
-    hits = nc.neo4jdb.query(q)
-    type_list = [(hit['node'].getId(), hit['node']['name']) for hit in hits]
+        '''.format(node_type=node_type.type.replace(' ', '_'))
+    with nc.neo4jdb.read as r:
+        type_list = r.execute(q).fetchall()
     return HttpResponse(json.dumps(type_list), mimetype='application/json')
 
 
@@ -70,42 +72,39 @@ def get_unlocated_node_type(request, slug):
     """
     node_type = h.slug_to_node_type(slug)
     q = '''
-        START node=node:node_types(node_type="%s")
-        MATCH node-[r?:Located_in]-location
+        MATCH (node:{node_type})
+        OPTIONAL MATCH node-[r:Located_in]->()
         WHERE r IS NULL
-        RETURN node
+        RETURN node.handle_id, node.name
         ORDER BY node.name
-        ''' % node_type
-    hits = nc.neo4jdb.query(q)
-    type_list = [(hit['node'].getId(), hit['node']['name']) for hit in hits]
+        '''.format(node_type=node_type.type.replace(' ', '_'))
+    with nc.neo4jdb.read as r:
+        type_list = r.execute(q).fetchall()
     return HttpResponse(json.dumps(type_list), mimetype='application/json')
 
 
 @login_required
-def get_children(request, node_id, slug=None):
+def get_children(request, handle_id, slug=None):
     """
     Compiles a list of the nodes children and returns a list of
     node name, node id tuples. If node_type is set the function will only return
     nodes of that type.
     """
+    nh = get_object_or_404(NodeHandle, handle_id=handle_id)
     type_filter = ''
     if slug:
-        type_filter = 'and child.node_type = "%s"' % h.slug_to_node_type(slug)
+        type_filter = 'and child:{node_type}'.format(node_type=h.slug_to_node_type(slug).type.replace(' ', '_'))
     q = '''                   
-        START parent=node({id})
+        MATCH (parent:Node {{handle_id:{{handle_id}}}})
         MATCH parent--child
-        WHERE (parent-[:Has]->child or parent<-[:Located_in|Part_of]-child) %s
-        RETURN child
-        ORDER BY child.node_type, child.name
-        ''' % type_filter
-    hits = nc.neo4jdb.query(q, id=int(node_id))
+        WHERE (parent-[:Has]->child or parent<-[:Located_in|Part_of]-child) {type_filter}
+        RETURN collect(child.handle_id) as ids
+        '''.format(type_filter=type_filter)
+    id_list = nc.query_to_dict(nc.neo4jdb, q, handle_id=nh.handle_id)
     child_list = []
-    try:
-        for hit in hits:
-            name = '%s %s' % (hit['child']['node_type'], hit['child']['name'])
-            child_list.append((hit['child'].id, name))
-    except AttributeError:
-        pass
+    for child_handle_id, child in NodeHandle.objects.in_bulk(id_list.get('ids')).items():
+        name = '%s %s' % (child.node_type.type, child.node_name)
+        child_list.append((child_handle_id, name))
     return HttpResponse(json.dumps(child_list), mimetype='application/json')
 
 # Edit functions
@@ -359,6 +358,8 @@ def edit_host(request, handle_id):
     nh, host = h.get_nh_node(handle_id)
     location = host.get_location()
     relations = host.get_relations()
+    depends_on = host.get_dependencies()
+    host_services = host.get_host_services()
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
@@ -374,12 +375,12 @@ def edit_host(request, handle_id):
             # You can not set location and depends on at the same time
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_id = form.cleaned_data['relationship_depends_on']
-                h.set_depends_on(request.user, node, depends_on_id)
+                h.set_depends_on(request.user, host, depends_on_id)
             elif form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
+                nh, node = h.set_location(request.user, host, location_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                h.remove_rogue_service_marker(request.user, node)
+                h.remove_rogue_service_marker(request.user, host)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -387,13 +388,15 @@ def edit_host(request, handle_id):
         else:
             return render_to_response('noclook/edit/edit_host.html',
                                       {'node_handle': nh, 'node': host, 'form': form, 'location': location,
-                                       'relations': relations},
+                                       'relations': relations, 'depends_on': depends_on,
+                                       'host_services': host_services},
                                       context_instance=RequestContext(request))
     else:
         form = forms.EditHostForm(host.data)
         return render_to_response('noclook/edit/edit_host.html',
                                   {'node_handle': nh, 'node': host, 'form': form, 'location': location,
-                                   'relations': relations},
+                                   'relations': relations, 'depends_on': depends_on,
+                                   'host_services': host_services},
                                   context_instance=RequestContext(request))
 
 

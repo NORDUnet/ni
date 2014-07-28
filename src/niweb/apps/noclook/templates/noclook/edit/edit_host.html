@@ -2,7 +2,6 @@
 
 {% block js %}
 {{ block.super }}
-{% load niweb_tags %}
 <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
 <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jeditable.mini.js"></script>
 <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.json-2.4.min.js"></script>
@@ -153,7 +152,7 @@ $(document).ready(
                     <label>Operating system version</label>
                     {{ form.os_version }}
                     <span class="help-block">{{ form.os_version.help_text }}</span>
-                    {% if node_handle.node_meta_type == 'physical' %}
+                    {% if node.meta_type == 'Physical' %}
                         <label>Vendor</label>
                         {{ form.vendor }}
                         <span class="help-block">{{ form.vendor.help_text }}</span>
@@ -186,19 +185,19 @@ $(document).ready(
             </div>
             <div id="collapseTwo" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
-                    {% if node_handle.node_meta_type == 'logical' %}
+                    {% if node.meta_type == 'Logical' %}
                         <div class="alert alert-danger">Setting location will remove any dependencies for this host.</div>
                     {% endif %}
                     {% if location %}
                         <label>Current location</label>
                         {% load noclook_tags %}
-                        {% for hit in location %}
+                        {% for item in location.Located_in %}
                             <div class="row">
                                 <div class="span3">
-                                    <a href="{% noclook_node_to_url hit.loc %}">{{ hit.parent.name }} {{ hit.loc.name }}</a>
+                                    <a href="{% noclook_node_to_url item.node.handle_id %}">{% for parent in item.node.get_location.Has %}{{ parent.node.data.name }} {% endfor %}{{ item.node.data.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ hit.loc_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                    <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -223,19 +222,19 @@ $(document).ready(
             <div id="collapseThree" class="accordion-body collapse" style="height: 0px; ">
 
                 <div class="accordion-inner">
-                    {% if node_handle.node_meta_type == 'physical' %}
+                    {% if node.meta_type == 'Physical' %}
                         <div class="alert alert-danger">Setting dependencies will remove any location for this host.</div>
                     {% endif %}
                     {% if depends_on %}
                         {% load noclook_tags %}
                         <h4>Remove depends on relationship</h4>
-                        {% for hit in depends_on %}
+                        {% for item in depends_on.Depends_on %}
                             <div class="row">
                                 <div class="span5">
-                                    Depends on <a href="{% noclook_node_to_url hit.dep %}">{{ hit.grand_parent.name }} {% if hit.grand_parent %}{{ hit.parent.name }}.{{ hit.dep.name }}{% else %}{{ hit.parent.name }} {{ hit.dep.name }}{% endif %}</a>
+                                    Depends on <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ hit.dep_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                    <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -260,22 +259,22 @@ $(document).ready(
         <div class="accordion-group">
             <div class="accordion-heading">
                 <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
-                    {% if node_handle.node_meta_type == 'logical' %}Host users (optional){% else %}Host owners (optional){% endif %}
+                    {% if node.meta_type == 'Logical' %}Host users (optional){% else %}Host owners (optional){% endif %}
                 </a>
             </div>
             <div id="collapseFour" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
-                    {% if node_handle.node_meta_type == 'logical' %}
-                        {% if user_relationships %}
+                    {% if node.meta_type == 'Logical' %}
+                        {% if relations.Uses %}
                             {% load noclook_tags %}
                             <h4>Remove user</h4>
-                            {% for rel in user_relationships %}
+                            {% for item in relations.Uses %}
                                 <div class="row">
                                     <div class="span5">
-                                        <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
+                                        <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
                                     </div>
                                     <div class="span1">
-                                        <a href="relationship/{{ rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                        <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important user-confirm">Delete</a>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -284,16 +283,16 @@ $(document).ready(
                         <h4>Add user</h4>
                         {{ form.relationship_user }}
                     {% else %}
-                        {% if owner_relationships %}
+                        {% if relations.Owns %}
                             {% load noclook_tags %}
                             <h4>Remove owner</h4>
-                            {% for rel in owner_relationships %}
-                                <div class="row">
+                            {% for item in relations.Owns %}
+                                 <div class="row">
                                     <div class="span5">
-                                        <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
+                                        <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
                                     </div>
                                     <div class="span1">
-                                        <a href="relationship/{{ rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                        <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important user-confirm">Delete</a>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -323,28 +322,28 @@ $(document).ready(
                         All services below have been checked
                     </label>
 
-                    {% if service_relationships %}
+                    {% if host_services %}
                         {% load noclook_tags %}
                         <h4>Remove service</h4>
-                        {% for rel in service_relationships %}
+                        {% for item in host_services.Depends_on %}
                             <div class="row">
                                 <div class="span2">
-                                    {% if rel.rogue_port %}
+                                    {% if item.relationship.rogue_port %}
                                         <i class="icon-exclamation-sign"></i>
                                     {% endif %}
-                                    <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
+                                    <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
                                 </div>
                                 <div class="span3">
-                                    {{ rel.ip_address }} {{ rel.protocol }} {{ rel.port }}
+                                    {{ item.relationship.ip_address }} {{ item.relationship.protocol }} {{ item.relationship.port }}
                                 </div>
                                 <div class="span1">
-                                    {% noclook_has_expired rel as expired %}
+                                    {% noclook_has_expired item.relationship as expired %}
                                     {% if expired %}
                                         <span class="help-inline">(Expired)</span>
                                     {% endif %}
                                 </div>
                                 <div class="span1">
-                                    <a href="relationship/{{ rel.id }}/delete" class="label label-important user-confirm">Delete</a>
+                                    <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important user-confirm">Delete</a>
                                 </div>
                             </div>
                         {% endfor %}

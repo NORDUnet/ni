@@ -954,13 +954,14 @@ def create_port(parent_node, port_name, creator):
     return port_node
 
 
-def logical_to_physical(user, nh, logical_node):
+def logical_to_physical(user, handle_id):
     """
     :param user: Django user
     :param nh:  NodeHandle instance
     :param logical_node:  norduniclient model
     :return: NodeHandle, norduniclient model
     """
+    nh, logical_node = get_nh_node(handle_id)
     # Make the node physical
     meta_type = 'Physical'
     physical_node = logical_node.change_meta_type(meta_type)
@@ -982,13 +983,13 @@ def logical_to_physical(user, nh, logical_node):
     return nh, physical_node
 
 
-def physical_to_logical(user, nh, physical_node):
+def physical_to_logical(user, handle_id):
     """
     :param user: Django user
-    :param nh:  NodeHandle instance
-    :param physical_node:  norduniclient model
+    :param handle_id:  unique id
     :return: NodeHandle, norduniclient model
     """
+    nh, physical_node = get_nh_node(handle_id)
     # Remove Located_in relationships
     location = physical_node.get_location()
     for item in location.get('Located_in'):
@@ -1010,32 +1011,26 @@ def physical_to_logical(user, nh, physical_node):
     return nh, logical_node
 
 
-def place_physical_in_location(user, nh, node, location_id):
+def set_location(user, node, location_id):
     """
     Places a physical node in a rack or on a site. Also converts it to a
     physical node if it still is a logical one.
     """
     # Check that the node is physical, else convert it
-    meta_type = nc.get_node_meta_type(node)
-    if meta_type == 'logical':
-        nh, node = logical_to_physical(user, nh, node)
-    location_node = nc.get_node_by_id(nc.neo4jdb,  location_id)
-    rel_exist = nc.get_relationships(node, location_node, 'Located_in')
-    # If the location is the same as before just update relationship
-    # properties
-    if rel_exist:
-        # TODO: Change properties here
-        #location_rel = rel_exist[0]
-        #with nc.neo4jdb.transaction:
-        pass
+    if node.meta_type == 'Logical':
+        nh, node = logical_to_physical(user, node.handle_id)
+    created = False
+    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, location_id, 'Located_in')
+    if not existing:
+        created = True
+        result = node.set_location(location_id)
+        relationship_id = result.get('Located_in')[0].get('relationship_id')
+        relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+        activitylog.create_relationship(user, relationship)
     else:
-        # Remove the old location(s) and create a new
-        for rel in iter2list(node.Located_in.outgoing):
-            nc.delete_relationship(nc.neo4jdb, rel)
-        rel = nc.create_relationship(nc.neo4jdb, node,
-            location_node, 'Located_in')
-        activitylog.create_relationship(user, rel)
-    return nh, node
+        relationship = nc.get_relationship_model(nc.neo4jdb, existing[0])
+    return relationship, created
+
 
 def place_child_in_parent(user, node, parent_id):
     """
@@ -1080,17 +1075,17 @@ def connect_physical(user, node, other_node_id):
     return node
 
 
-def set_owner(user, node, owner_node_id):
+def set_owner(user, node, owner_id):
     """
     Creates or updates an Owns relationship between the node and the
     owner node.
     Returns the node.
     """
     created = False
-    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, owner_node_id, 'Owns')
+    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, owner_id, 'Owns')
     if not existing:
         created = True
-        result = node.set_owner(owner_node_id)
+        result = node.set_owner(owner_id)
         relationship_id = result.get('Owns')[0].get('relationship_id')
         relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
         activitylog.create_relationship(user, relationship)
@@ -1099,15 +1094,15 @@ def set_owner(user, node, owner_node_id):
     return relationship, created
 
 
-def set_user(user, node, user_node_id):
+def set_user(user, node, user_id):
     """
     Creates or returns existing Uses relationship between the node and the user node.
     """
     created = False
-    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, user_node_id, 'Uses')
+    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, user_id, 'Uses')
     if not existing:
         created = True
-        result = node.set_user(user_node_id)
+        result = node.set_user(user_id)
         relationship_id = result.get('Uses')[0].get('relationship_id')
         relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
         activitylog.create_relationship(user, relationship)
@@ -1139,11 +1134,9 @@ def set_depends_on(user, node, dependency_id):
     owner node.
     Returns the node.
     """
-    # Check that the node is logical, else convert it
-    meta_type = nc.get_node_meta_type(nc.neo4jdb, node.handle_id)
-    if meta_type == 'Physical':
-        nh = get_object_or_404(NodeHandle, node.handle_id)
-        nh, node = physical_to_logical(user, nh, node)
+    # Check that the node is physical, else convert it
+    if node.meta_type == 'Physical':
+        nh, node = physical_to_logical(user, node.handle_id)
     created = False
     existing = nc.get_relationships(nc.neo4jdb, node.handle_id, dependency_id, 'Depends_on')
     if not existing:
