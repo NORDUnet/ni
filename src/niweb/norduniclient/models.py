@@ -96,24 +96,31 @@ class BaseNodeModel(object):
     outgoing = property(_outgoing)
 
     def _basic_read_query_to_dict(self, query, **kwargs):
+        d = defaultdict(list)
         with self.manager.read as r:
             result = r.execute(query, handle_id=self.handle_id, **kwargs).fetchall()
-            return self._query_to_dict(result)
+            for row in result:
+                rel_type, rel_id, rel, handle_id = row
+                d[rel_type].append({
+                    'relationship_id': rel_id,
+                    'relationship': rel,
+                    'node': core.get_node_model(self.manager, handle_id)
+                })
+        d.default_factory = None
+        return d
 
     def _basic_write_query_to_dict(self, query, **kwargs):
+        d = defaultdict(list)
         with self.manager.transaction as t:
             result = t.execute(query, handle_id=self.handle_id, **kwargs).fetchall()
-            return self._query_to_dict(result)
-
-    def _query_to_dict(self, result):
-        d = defaultdict(list)
-        for row in result:
-            rel_type, rel_id, rel, handle_id = row
-            d[rel_type].append({
-                'relationship_id': rel_id,
-                'relationship': rel,
-                'node': core.get_node_model(self.manager, handle_id)
-            })
+            for row in result:
+                created, rel_type, rel_id, rel, handle_id = row
+                d[rel_type].append({
+                    'created': created,
+                    'relationship_id': rel_id,
+                    'relationship': rel,
+                    'node': core.get_node_model(self.manager, handle_id)
+                })
         d.default_factory = None
         return d
 
@@ -143,8 +150,7 @@ class BaseNodeModel(object):
 
 class CommonQueries(BaseNodeModel):
 
-    @staticmethod
-    def get_location_path():
+    def get_location_path(self):
         return {'location_path': []}
 
     def get_location(self):
@@ -229,16 +235,18 @@ class LogicalModel(CommonQueries):
     def set_user(self, user_handle_id):
         q = """
             MATCH (n:Node {handle_id: {handle_id}}), (user:Node {handle_id: {user_handle_id}})
+            WITH n, user, NOT EXISTS((n)<-[:Uses]-(user)) as created
             MERGE (n)<-[r:Uses]-(user)
-            RETURN type(r), id(r), r, user.handle_id
+            RETURN created, type(r), id(r), r, user.handle_id
             """
         return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
 
     def set_dependency(self, dependency_handle_id):
         q = """
             MATCH (n:Node {handle_id: {handle_id}}), (dependency:Node {handle_id: {dependency_handle_id}})
+            WITH n, dependency, NOT EXISTS((n)-[:Depends_on]->(dependency)) as created
             MERGE (n)-[r:Depends_on]->(dependency)
-            RETURN type(r), id(r), r, dependency.handle_id
+            RETURN created, type(r), id(r), r, dependency.handle_id
             """
         return self._basic_write_query_to_dict(q, dependency_handle_id=dependency_handle_id)
 
@@ -247,19 +255,21 @@ class LogicalModel(CommonQueries):
 
 class PhysicalModel(CommonQueries):
 
-    def set_owner(self, user_handle_id):
+    def set_owner(self, owner_handle_id):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}}), (owner:Node {handle_id: {user_handle_id}})
+            MATCH (n:Node {handle_id: {handle_id}}), (owner:Node {handle_id: {owner_handle_id}})
+            WITH n, owner, NOT EXISTS((n)<-[:Owns]-(owner)) as created
             MERGE (n)<-[r:Owns]-(owner)
-            RETURN type(r), id(r), r, owner.handle_id
+            RETURN created, type(r), id(r), r, owner.handle_id
             """
-        return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
+        return self._basic_write_query_to_dict(q, owner_handle_id=owner_handle_id)
 
     def set_location(self, location_handle_id):
         q = """
             MATCH (n:Node {handle_id: {handle_id}}), (location:Node {handle_id: {location_handle_id}})
+            WITH n, location, NOT EXISTS((n)-[:Located_in]->(location)) as created
             MERGE (n)-[r:Located_in]->(location)
-            RETURN type(r), id(r), r, location.handle_id
+            RETURN created, type(r), id(r), r, location.handle_id
             """
         return self._basic_write_query_to_dict(q, location_handle_id=location_handle_id)
 
@@ -281,10 +291,10 @@ class EquipmentModel(PhysicalModel):
     def get_location_path(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})-[:Located_in]->(r)
-            MATCH p=()-[:Has*]->(r)
+            MATCH p=()-[:Has*0..20]->(r)
             WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength
             WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths
-            UNWIND(longestPaths) as Located_in
+            UNWIND(longestPaths) as location_path
             RETURN location_path
             """
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)

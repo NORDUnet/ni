@@ -364,7 +364,7 @@ def edit_host(request, handle_id):
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, host, form)
+            h.form_update_node(request.user, host.handle_id, form)
             # Host specific updates
             if form.cleaned_data['relationship_user']:
                 user_id = form.cleaned_data['relationship_user']
@@ -378,26 +378,19 @@ def edit_host(request, handle_id):
                 h.set_depends_on(request.user, host, depends_on_id)
             elif form.cleaned_data['relationship_location']:
                 location_id = form.cleaned_data['relationship_location']
-                nh, node = h.set_location(request.user, host, location_id)
+                h.set_location(request.user, host, location_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                h.remove_rogue_service_marker(request.user, host)
+                h.remove_rogue_service_marker(request.user, host.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_host.html',
-                                      {'node_handle': nh, 'node': host, 'form': form, 'location': location,
-                                       'relations': relations, 'depends_on': depends_on,
-                                       'host_services': host_services},
-                                      context_instance=RequestContext(request))
     else:
         form = forms.EditHostForm(host.data)
-        return render_to_response('noclook/edit/edit_host.html',
-                                  {'node_handle': nh, 'node': host, 'form': form, 'location': location,
-                                   'relations': relations, 'depends_on': depends_on,
-                                   'host_services': host_services},
-                                  context_instance=RequestContext(request))
+    return render_to_response('noclook/edit/edit_host.html',
+                              {'node_handle': nh, 'node': host, 'form': form, 'location': location,
+                               'relations': relations, 'depends_on': depends_on,
+                               'host_services': host_services}, context_instance=RequestContext(request))
 
 
 @login_required

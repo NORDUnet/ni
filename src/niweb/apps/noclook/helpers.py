@@ -83,7 +83,7 @@ def get_nh_node(handle_id):
     Takes a node handle id and returns the node handle and the node model.
     """
     node_handle = get_object_or_404(NodeHandle, pk=handle_id)
-    node_model = nc.get_node_model(nc.neo4jdb, handle_id)
+    node_model = nc.get_node_model(nc.neo4jdb, node_handle.handle_id)
     return node_handle, node_model
 
 
@@ -109,7 +109,7 @@ def delete_relationship(user, relationship):
     return True
 
 
-def form_update_node(user, node, form, property_keys=None):
+def form_update_node(user, handle_id, form, property_keys=None):
     """
     Take a node, a form and the property keys that should be used to fill the
     node if the property keys are omitted the form.base_fields will be used.
@@ -121,7 +121,7 @@ def form_update_node(user, node, form, property_keys=None):
                    'relationship_provider', 'relationship_end_user', 'relationship_customer', 'relationship_depends_on',
                    'relationship_user', 'relationship_owner', 'relationship_located_in', 'relationship_ports',
                    'services_checked']
-    nh = get_object_or_404(NodeHandle, pk=node.handle_id)
+    nh, node = get_nh_node(handle_id)
     if not property_keys:
         for field in form.base_fields.keys():
             if field not in meta_fields:
@@ -146,59 +146,41 @@ def form_update_node(user, node, form, property_keys=None):
     return True
 
 
-def dict_update_node(user, node, dictionary, property_keys):
-    """
-    Takes a node, a dict and the property keys that should be used to fill the
-    node.
-    Returns True if all non-empty properties where added.
-    """
-    nh = NodeHandle.objects.get(pk=node['handle_id'])
-    for key in property_keys:
-        if dictionary.get(key, None) or dictionary.get(key, None) == 0:
-            pre_value = node.get_property(key, '')
-            if pre_value != dictionary[key]:
-                with nc.neo4jdb.transaction:
-                    node[key] = dictionary[key]
+def dict_update_node(user, handle_id, properties, keys):
+    nh, node = get_nh_node(handle_id)
+    for key in keys:
+        if properties.get(key, None) or properties.get(key, None) == 0:
+            pre_value = node.get(key, '')
+            if pre_value != properties[key]:
+                node.data[key] = properties[key]
                 if key == 'name':
-                    nh.node_name = dictionary[key]
+                    nh.node_name = properties[key]
                 nh.modifier = user
                 nh.save()
-                activitylog.update_node_property(user, nh, key, pre_value, dictionary[key])
-                update_node_search_index(nc.neo4jdb, node)
-        elif dictionary.get(key, None) == '' and key in node.propertyKeys:
-            if key != 'name' and key != 'node_type':  # Never delete name or node type
-                pre_value = node.get_property(key, '')
-                if key in django_settings.SEARCH_INDEX_KEYS:
-                    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-                    nc.del_index_item(nc.neo4jdb, index, node, key)
-                with nc.neo4jdb.transaction:
-                    del node[key]
-                activitylog.update_node_property(user, nh, key, pre_value, dictionary[key])
+                nc.update_node_properties(nc.neo4jdb, handle_id, node.data)
+                activitylog.update_node_property(user, nh, key, pre_value, properties[key])
+        elif properties.get(key, None) == '' and key in node.propertyKeys:
+            if key != 'name':  # Never delete name
+                pre_value = node.get(key, '')
+                del node.data[key]
+                nc.update_node_properties(nc.neo4jdb, handle_id, node.data)
+                activitylog.update_node_property(user, nh, key, pre_value, properties[key])
     return True
 
 
-def dict_update_relationship(user, rel, dictionary, property_keys):
-    """
-    Takes a relationship, a dict and the property keys that should be used to fill the
-    node.
-    Returns True if all non-empty properties where added.
-    """
-    for key in property_keys:
-        if dictionary.get(key, None) or dictionary.get(key, None) == 0:
-            pre_value = rel.get_property(key, '')
-            if pre_value != dictionary[key]:
-                with nc.neo4jdb.transaction:
-                    rel[key] = dictionary[key]
-                activitylog.update_relationship_property(user, rel, key, pre_value, dictionary[key])
-                update_relationship_search_index(nc.neo4jdb, rel)
-        elif dictionary.get(key, None) == '' and key in rel.propertyKeys:
-            pre_value = rel.get_property(key, '')
-            if key in django_settings.SEARCH_INDEX_KEYS:
-                index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
-                nc.del_index_item(nc.neo4jdb, index, rel, key)
-            with nc.neo4jdb.transaction:
-                del rel[key]
-            activitylog.update_relationship_property(user, rel, key, pre_value, dictionary[key])
+def dict_update_relationship(user, relationship_id, properties, keys):
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    for key in keys:
+        pre_value = relationship.data.get(key, '')
+        if properties.get(key, None) or properties.get(key, None) == 0:
+            if pre_value != properties[key]:
+                relationship[key] = properties[key]
+                nc.update_relationship_properties(nc.neo4jdb, relationship_id, relationship.data)
+                activitylog.update_relationship_property(user, relationship, key, pre_value, properties[key])
+        elif properties.get(key, None) == '' and key in properties.propertyKeys:
+            del relationship.data[key]
+            nc.update_relationship_properties(nc.neo4jdb, relationship_id, relationship.data)
+            activitylog.update_relationship_property(user, relationship, key, pre_value, properties[key])
     return True
 
 
@@ -957,8 +939,7 @@ def create_port(parent_node, port_name, creator):
 def logical_to_physical(user, handle_id):
     """
     :param user: Django user
-    :param nh:  NodeHandle instance
-    :param logical_node:  norduniclient model
+    :param handle_id:  unique id
     :return: NodeHandle, norduniclient model
     """
     nh, logical_node = get_nh_node(handle_id)
@@ -969,14 +950,14 @@ def logical_to_physical(user, handle_id):
     nh.save()
     # Convert Uses relationships to Owns.
     relations = physical_node.get_relations()
-    for item in relations.get('Uses'):
+    for item in relations.get('Uses', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
         set_owner(user, physical_node, relationship.start.handle_id)
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
     # Remove Depends_on relationships
-    logical = physical_node.get_outgoing_logical()
-    for item in logical.get('Depends_on'):
+    logical = physical_node.get_dependencies()
+    for item in logical.get('Depends_on', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
@@ -991,11 +972,7 @@ def physical_to_logical(user, handle_id):
     """
     nh, physical_node = get_nh_node(handle_id)
     # Remove Located_in relationships
-    location = physical_node.get_location()
-    for item in location.get('Located_in'):
-        relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
-        activitylog.delete_relationship(user, relationship)
-        relationship.delete()
+    remove_locations(user, physical_node)
     # Make the node logical
     meta_type = 'Logical'
     logical_node = physical_node.change_meta_type(meta_type)
@@ -1003,7 +980,7 @@ def physical_to_logical(user, handle_id):
     nh.save()
     # Convert Owns relationships to Uses.
     relations = logical_node.get_relations()
-    for item in relations.get('Owns'):
+    for item in relations.get('Owns', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
         set_user(user, logical_node, relationship.start.handle_id)
         activitylog.delete_relationship(user, relationship)
@@ -1019,16 +996,96 @@ def set_location(user, node, location_id):
     # Check that the node is physical, else convert it
     if node.meta_type == 'Logical':
         nh, node = logical_to_physical(user, node.handle_id)
-    created = False
-    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, location_id, 'Located_in')
-    if not existing:
-        created = True
-        result = node.set_location(location_id)
-        relationship_id = result.get('Located_in')[0].get('relationship_id')
-        relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    result = node.set_location(location_id)
+    relationship_id = result.get('Located_in')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    created = result.get('Located_in')[0].get('created')
+    if created:
         activitylog.create_relationship(user, relationship)
-    else:
-        relationship = nc.get_relationship_model(nc.neo4jdb, existing[0])
+    return relationship, created
+
+
+def remove_locations(user, node):
+    # Remove Located_in relationships
+    location = node.get_location()
+    for item in location.get('Located_in', []):
+        relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
+        activitylog.delete_relationship(user, relationship)
+        relationship.delete()
+
+
+def set_owner(user, node, owner_id):
+    """
+    Creates or updates an Owns relationship between the node and the
+    owner node.
+    Returns the node.
+    """
+    result = node.set_owner(owner_id)
+    relationship_id = result.get('Owns')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    created = result.get('Owns')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+
+def set_user(user, node, user_id):
+    """
+    Creates or returns existing Uses relationship between the node and the user node.
+    """
+    result = node.set_user(user_id)
+    relationship_id = result.get('Uses')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    activitylog.create_relationship(user, relationship)
+    created = result.get('Uses')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+
+def set_provider(user, node, provider_node_id):
+    """
+    Creates or returns existing Owns relationship between the node and the owner node.
+    """
+    result = node.set_provider(provider_node_id)
+    relationship_id = result.get('Provides')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    created = result.get('Provides')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+
+def set_depends_on(user, node, dependency_id):
+    """
+    Creates or updates an Depends_on relationship between the node and the
+    owner node.
+    Returns the node.
+    """
+    # Check that the node is physical, else convert it
+    if node.meta_type == 'Physical':
+        nh, node = physical_to_logical(user, node.handle_id)
+    result = node.set_dependency(dependency_id)
+    relationship_id = result.get('Depends_on')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    created = result.get('Depends_on')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+
+def set_responsible_for(user, node, responsible_for_node_id):
+    """
+    Creates or updates an Responsible_for relationship between the node and the
+    site owner node.
+    Returns the node.
+    """
+    result = node.set_responsible_for(responsible_for_node_id)
+    relationship_id = result.get('Responsible_for')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    created = result.get('Responsible_for')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
     return relationship, created
 
 
@@ -1205,23 +1262,23 @@ def get_hostname_from_address(ip_address):
         return 'Request timed out'
 
 
-def remove_rogue_service_marker(user, node):
+def remove_rogue_service_marker(user, handle_id):
     """
     :param user: Django user
-    :param node: Neo4j node
+    :param handle_id:  unique id
     :return: True
 
     Removed the property rogue_port from all Depends_on relationships.
     """
     q = """
-        START host=node({id})
-        MATCH host<-[r:Depends_on]-host_service
-        WHERE has(r.rogue_port)
-        RETURN r
+        MATCH (host:Node {handle_id:{handle_id}})<-[r:Depends_on]-(host_service:Host_Service)
+        WHERE HAS(r.rogue_port)
+        RETURN collect(id(r)) as ids
         """
-    rel_properties = {'rogue_port': ''}
-    for hit in nc.neo4jdb.query(q, id=node.getId()):
-        dict_update_relationship(user, hit['r'], rel_properties, rel_properties.keys())
+    result = nc.query_to_dict(nc.neo4jdb, q, handle_id=handle_id)
+    properties = {'rogue_port': ''}
+    for relationship_id in result['ids']:
+        dict_update_relationship(user, relationship_id, properties, properties.keys())
     return True
 
 
