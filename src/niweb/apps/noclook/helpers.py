@@ -159,7 +159,7 @@ def dict_update_node(user, handle_id, properties, keys):
                 nh.save()
                 nc.update_node_properties(nc.neo4jdb, handle_id, node.data)
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
-        elif properties.get(key, None) == '' and key in node.propertyKeys:
+        elif properties.get(key, None) == '' and key in node.data.keys():
             if key != 'name':  # Never delete name
                 pre_value = node.get(key, '')
                 del node.data[key]
@@ -187,53 +187,62 @@ def dict_update_relationship(user, relationship_id, properties, keys):
 def form_to_generic_node_handle(request, form, slug, node_meta_type):
     node_name = form.cleaned_data['name']
     node_type = slug_to_node_type(slug, create=True)
-    node_handle = NodeHandle(node_name=node_name,
-        node_type=node_type,
-        node_meta_type=node_meta_type,
-        modifier=request.user, creator=request.user)
+    node_handle = NodeHandle(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
+                             modifier=request.user, creator=request.user)
     node_handle.save()
     activitylog.create_node(request.user, node_handle)
-    set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
+    node = set_noclook_auto_manage(node_handle.get_node(), False)
+    nc.update_node_properties(nc.neo4jdb, node.handle_id, node.data)
     return node_handle
+
 
 def form_to_unique_node_handle(request, form, slug, node_meta_type):
     node_name = form.cleaned_data['name']
     node_type = slug_to_node_type(slug, create=True)
     try:
         node_handle = NodeHandle.objects.get(node_name=node_name, node_type=node_type)
-        raise UniqueNodeError(node_handle.get_node())
+        raise UniqueNodeError(node_name, node_handle.handle_id, node_type)
     except NodeHandle.DoesNotExist:
-        node_handle = NodeHandle.objects.create(node_name=node_name,
-            node_type=node_type,
-            node_meta_type=node_meta_type,
-            modifier=request.user,
-            creator=request.user)
+        node_handle = NodeHandle.objects.create(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
+                                                modifier=request.user, creator=request.user)
         activitylog.create_node(request.user, node_handle)
-        set_noclook_auto_manage(nc.neo4jdb, node_handle.get_node(), False)
+        set_noclook_auto_manage(node_handle.get_node(), False)
     return node_handle
 
-def set_noclook_auto_manage(db, item, auto_manage):
+
+def set_noclook_auto_manage(item, auto_manage):
     """
-    Sets the node or relationship noclook_auto_manage flag to True or False. 
+       Sets the node or relationship noclook_auto_manage flag to True or False.
     Also sets the noclook_last_seen flag to now.
+
+    :param item: norduclient model
+    :param auto_manage: boolean
+    :return: None
     """
-    with db.transaction:
-        item['noclook_auto_manage'] = auto_manage
-        item['noclook_last_seen'] = datetime.now().isoformat()
-    return True
-    
-def update_noclook_auto_manage(db, item):
+    item.data['noclook_auto_manage'] = auto_manage
+    item.data['noclook_last_seen'] = datetime.now().isoformat()
+    if isinstance(item, nc.models.BaseNodeModel):
+        nc.update_node_properties(nc.neo4jdb, item.handle_id, item.data)
+    elif isinstance(item, nc.models.BaseRelationshipModel):
+        nc.update_relationship_properties(nc.neo4jdb, item.handle_id, item.data)
+
+
+def update_noclook_auto_manage(item):
     """
     Updates the noclook_auto_manage and noclook_last_seen properties. If 
     noclook_auto_manage is not set, it is set to True.
+
+    :param item: norduclient model
+    :return: None
     """
-    with db.transaction:
-        try:
-            item['noclook_auto_manage']
-        except KeyError:
-            item['noclook_auto_manage'] = True
-        item['noclook_last_seen'] = datetime.now().isoformat()
-    return True
+    auto_manage = item.data.get('noclook_auto_manage', None)
+    if auto_manage is None:
+        item.data['noclook_auto_manage'] = True
+    item.data['noclook_last_seen'] = datetime.now().isoformat()
+    if isinstance(item, nc.models.BaseNodeModel):
+        nc.update_node_properties(nc.neo4jdb, item.handle_id, item.data)
+    elif isinstance(item, nc.models.BaseRelationshipModel):
+        nc.update_relationship_properties(nc.neo4jdb, item.handle_id, item.data)
 
 
 def isots_to_dt(item):
