@@ -15,12 +15,8 @@ niweb_path = os.path.join(base_path, 'niweb')
 sys.path.append(os.path.abspath(niweb_path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
-from django.conf import settings as django_settings
 from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook import helpers as h
-from apps.noclook import activitylog
 import norduniclient as nc
 
 
@@ -169,10 +165,11 @@ def insert_graph_data(json_list):
                     w.connection.commit()
                     x = 0
 
-    # Remove the 'old_node_id' property from all nodes
+    # Remove the 'old_node_id'  and 'node_type' property from all nodes
     q = """
         MATCH (n:Node)
         REMOVE n.old_node_id
+        REMOVE n.node_type
         """
     with nc.neo4jdb.write as w:
         w.execute(q)
