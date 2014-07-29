@@ -8,3 +8,5 @@ If you want to do this on a live machine make sure you got a recent backup of th
 Restore the SQL data from a previous dump if necessary.
 
 Run "python manage.py migrate apps.noclook".
+
+Import the neo4j database backup with src/scripts/updates_and_fixes/upgrade_1.9_to_2.X.py.
