@@ -63,7 +63,7 @@ class NodeHandle(models.Model):
         """
         Returns the NodeHandles node.
         """
-        return nc.get_node(nc.neo4jdb, self.handle_id)
+        return nc.get_node_model(nc.neo4jdb, self.handle_id)
 
     @models.permalink
     def get_absolute_url(self):
