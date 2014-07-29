@@ -235,26 +235,6 @@ def update_noclook_auto_manage(db, item):
         item['noclook_last_seen'] = datetime.now().isoformat()
     return True
 
-def update_node_search_index(db, node):
-    """
-    Adds or updates the node values in the search index.
-    """
-    node_keys = node.getPropertyKeys()
-    index = nc.get_node_index(db, nc.search_index_name())
-    for key in django_settings.SEARCH_INDEX_KEYS:
-        if key in node_keys:
-            nc.update_index_item(db, index, node, key)
-
-def update_relationship_search_index(db, rel):
-    """
-    Adds or updates the relationship values in the search index.
-    """
-    rel_keys = rel.getPropertyKeys()
-    index = nc.get_relationship_index(db, nc.search_index_name())
-    for key in django_settings.SEARCH_INDEX_KEYS:
-        if key in rel_keys:
-            nc.update_index_item(db, index, rel, key)
-
 
 def isots_to_dt(item):
     """
@@ -312,20 +292,6 @@ def neo4j_report_age(item, old, very_old):
     else:
         return 'current'
 
-def iter2list(pythonic_iterator):
-    """
-    Converts a neo4j.util.PythonicIterator to a list.
-    """
-    return [item for item in pythonic_iterator]
-
-def item2dict(item):
-    """
-    Returns the item properties as a dictionary.
-    """
-    d = {}
-    for key, value in item.items():
-        d[key] = value
-    return d
 
 def nodes_to_csv(node_list, header=None):
     """
@@ -493,11 +459,12 @@ def create_email(subject, body, to, cc=None, bcc=None, attachement=None, filenam
         email.attach(filename, attachement, mimetype)
     return email
 
+
 def slug_to_node_type(slug, create=False):
     """
     Returns or creates and returns the NodeType object from the supplied slug.
     """
-    acronym_types = ['odf'] # TODO: Move to sql db
+    acronym_types = ['odf']  # TODO: Move to sql db
     if create:
         node_type, created = NodeType.objects.get_or_create(slug=slug)
         if created:
@@ -520,16 +487,6 @@ def get_history(nh):
     history = list(action_object_stream(nh)) + list(target_stream(nh))
     return sorted(history, key=lambda action: action.timestamp, reverse=True)
 
-def get_location(node):
-    """
-    Returns the nodes location and the locations parent, if any.
-    """
-    q = '''
-        START node=node({id})
-        MATCH node-[loc_rel:Located_in]->loc<-[?:Has*1..10]-parent
-        RETURN loc,loc_rel,parent
-        '''
-    return nc.neo4jdb.query(q, id=node.getId())
 
 def get_place(node):
     """
@@ -790,49 +747,6 @@ def get_services_dependent_on_equipment(equipment):
         RETURN service, collect(user) as customers
         """
     return nc.neo4jdb.query(q, id=equipment.getId())
-
-
-def get_dependencies_as_types(node):
-    """
-    Return the nodes dependencies sorted as node types.
-    :param node: Neo4j node
-    :return: neo4j.cypher.pycompat.WrappedMap
-    """
-    q = """
-        START node = node({id})
-        MATCH node-[:Depends_on*1..10]->dep
-        WITH node, collect(dep) as deps
-        WITH node, deps, filter(n in deps : n.node_type = "Service") as services
-        WITH node, deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
-        WITH node, deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
-        WITH node, deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
-        WITH node, services, paths, oms, links
-        MATCH node-[:Depends_on*1..10]->()-[?:Connected_to*1..20]-cable
-        WITH distinct cable, services, paths, oms, links
-        RETURN filter(n in collect(cable) : n.node_type = "Cable") as cables, services, paths, oms, links
-        """
-
-    for hit in nc.neo4jdb.query(q, id=node.getId()):
-        return hit
-
-
-def get_dependent_as_types(node):
-    """
-    Return the nodes dependencies sorted as node types.
-    :param node: Neo4j node
-    :return: neo4j.cypher.pycompat.WrappedMap
-    """
-    q = """
-        START node = node({id})
-        MATCH node<-[:Depends_on*1..10]-dep
-        WITH collect(dep) as deps, filter(n in collect(dep) : n.node_type = "Service") as services
-        WITH deps, services, filter(n in deps : n.node_type = "Optical Path") as paths
-        WITH deps, services, paths, filter(n in deps : n.node_type = "Optical Multiplex Section") as oms
-        WITH deps, services, paths, oms, filter(n in deps : n.node_type = "Optical Link") as links
-        RETURN services, paths, oms, links
-        """
-    for hit in nc.neo4jdb.query(q, id=node.getId()):
-        return hit
 
 
 def get_unit(port, unit_name):
@@ -1132,102 +1046,6 @@ def connect_physical(user, node, other_node_id):
     return node
 
 
-def set_owner(user, node, owner_id):
-    """
-    Creates or updates an Owns relationship between the node and the
-    owner node.
-    Returns the node.
-    """
-    created = False
-    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, owner_id, 'Owns')
-    if not existing:
-        created = True
-        result = node.set_owner(owner_id)
-        relationship_id = result.get('Owns')[0].get('relationship_id')
-        relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
-        activitylog.create_relationship(user, relationship)
-    else:
-        relationship = nc.get_relationship_model(nc.neo4jdb, existing[0])
-    return relationship, created
-
-
-def set_user(user, node, user_id):
-    """
-    Creates or returns existing Uses relationship between the node and the user node.
-    """
-    created = False
-    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, user_id, 'Uses')
-    if not existing:
-        created = True
-        result = node.set_user(user_id)
-        relationship_id = result.get('Uses')[0].get('relationship_id')
-        relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
-        activitylog.create_relationship(user, relationship)
-    else:
-        relationship = nc.get_relationship_model(nc.neo4jdb, existing[0])
-    return relationship, created
-
-
-def set_provider(user, node, provider_node_id):
-    """
-    Creates or returns existing Owns relationship between the node and the owner node.
-    """
-    created = False
-    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, provider_node_id, 'Provides')
-    if not existing:
-        created = True
-        result = node.set_provider(provider_node_id)
-        relationship_id = result.get('Provides')[0].get('relationship_id')
-        relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
-        activitylog.create_relationship(user, relationship)
-    else:
-        relationship = nc.get_relationship_model(nc.neo4jdb, existing[0])
-    return relationship, created
-
-
-def set_depends_on(user, node, dependency_id):
-    """
-    Creates or updates an Depends_on relationship between the node and the
-    owner node.
-    Returns the node.
-    """
-    # Check that the node is physical, else convert it
-    if node.meta_type == 'Physical':
-        nh, node = physical_to_logical(user, node.handle_id)
-    created = False
-    existing = nc.get_relationships(nc.neo4jdb, node.handle_id, dependency_id, 'Depends_on')
-    if not existing:
-        created = True
-        result = node.set_dependency(dependency_id)  # TODO Implement set_dependency on logical model
-        relationship_id = result.get('Depends_on')[0].get('relationship_id')
-        relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
-        activitylog.create_relationship(user, relationship)
-    else:
-        relationship = nc.get_relationship_model(nc.neo4jdb, existing[0])
-    return relationship, created
-
-
-def set_responsible_for(user, node, responsible_for_node_id):
-    """
-    Creates or updates an Responsible_for relationship between the node and the
-    site owner node.
-    Returns the node.
-    """
-    responsible_for_node = nc.get_node_by_id(nc.neo4jdb, responsible_for_node_id)
-    rel_exist = nc.get_relationships(responsible_for_node, node, 'Responsible_for')
-    # If the location is the same as before just update relationship
-    # properties
-    if rel_exist:
-        # TODO: Change properties here
-        #location_rel = rel_exist[0]
-        #with nc.neo4jdb.transaction:
-        pass
-    else:
-        rel = nc.create_relationship(nc.neo4jdb, responsible_for_node, node, 'Responsible_for')
-        activitylog.create_relationship(user, rel)
-    return node
-
-
 def get_host_backup(host):
     """
     :param host: neo4j node
@@ -1235,7 +1053,7 @@ def get_host_backup(host):
 
     Return a string that expresses the current backup solution used for the host or 'No'.
     """
-    backup = host.get_property('backup', 'No')
+    backup = host.get('backup', 'No')
     if backup == 'No':
         q = """
             START host=node({id})

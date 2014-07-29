@@ -1,5 +1,5 @@
 from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age, get_location
+from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age
 import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
@@ -103,8 +103,8 @@ def noclook_get_ports(handle_id):
 
 
 @register.assignment_tag
-def noclook_get_location(node):
-    return get_location(node)
+def noclook_get_location(handle_id):
+    return nc.get_node_model(nc.neo4jdb, handle_id).get_location()
 
 
 @register.assignment_tag
