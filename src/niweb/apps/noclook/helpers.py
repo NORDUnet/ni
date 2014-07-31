@@ -109,14 +109,12 @@ def delete_relationship(user, relationship):
     return True
 
 
-def form_update_node(user, handle_id, form, property_keys=None):
+def form_update_node(user, handle_id, form, property_keys=list()):
     """
     Take a node, a form and the property keys that should be used to fill the
     node if the property keys are omitted the form.base_fields will be used.
     Returns True if all non-empty properties where added.
     """
-    if not property_keys:
-        property_keys = []
     meta_fields = ['relationship_location', 'relationship_end_a', 'relationship_end_b', 'relationship_parent',
                    'relationship_provider', 'relationship_end_user', 'relationship_customer', 'relationship_depends_on',
                    'relationship_user', 'relationship_owner', 'relationship_located_in', 'relationship_ports',
@@ -131,18 +129,17 @@ def form_update_node(user, handle_id, form, property_keys=None):
             pre_value = node.data.get(key, '')
             if pre_value != form.cleaned_data[key]:
                 node.data[key] = form.cleaned_data[key]
-                nc.update_node_properties(nc.neo4jdb, node.handle_id, node.data)
                 if key == 'name':
                     nh.node_name = form.cleaned_data[key]
-                nh.modifier = user
-                nh.save()
+                    nh.modifier = user
+                    nh.save()
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
         elif not form.cleaned_data[key] and key in node.data.keys():
             if key != 'name':  # Never delete name
                 pre_value = node.data.get(key, '')
                 del node.data[key]
-                nc.update_node_properties(nc.neo4jdb, node.handle_id, node.data)
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
+    nc.update_node_properties(nc.neo4jdb, node.handle_id, node.data)
     return True
 
 
@@ -150,21 +147,20 @@ def dict_update_node(user, handle_id, properties, keys):
     nh, node = get_nh_node(handle_id)
     for key in keys:
         if properties.get(key, None) or properties.get(key, None) == 0:
-            pre_value = node.get(key, '')
+            pre_value = node.data.get(key, '')
             if pre_value != properties[key]:
                 node.data[key] = properties[key]
                 if key == 'name':
                     nh.node_name = properties[key]
-                nh.modifier = user
-                nh.save()
-                nc.update_node_properties(nc.neo4jdb, handle_id, node.data)
+                    nh.modifier = user
+                    nh.save()
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
         elif properties.get(key, None) == '' and key in node.data.keys():
             if key != 'name':  # Never delete name
                 pre_value = node.get(key, '')
                 del node.data[key]
-                nc.update_node_properties(nc.neo4jdb, handle_id, node.data)
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
+    nc.update_node_properties(nc.neo4jdb, handle_id, node.data)
     return True
 
 
@@ -174,13 +170,12 @@ def dict_update_relationship(user, relationship_id, properties, keys):
         pre_value = relationship.data.get(key, '')
         if properties.get(key, None) or properties.get(key, None) == 0:
             if pre_value != properties[key]:
-                relationship[key] = properties[key]
-                nc.update_relationship_properties(nc.neo4jdb, relationship_id, relationship.data)
+                relationship.data[key] = properties[key]
                 activitylog.update_relationship_property(user, relationship, key, pre_value, properties[key])
-        elif properties.get(key, None) == '' and key in properties.propertyKeys:
+        elif properties.get(key, None) == '' and key in relationship.data.keys():
             del relationship.data[key]
-            nc.update_relationship_properties(nc.neo4jdb, relationship_id, relationship.data)
             activitylog.update_relationship_property(user, relationship, key, pre_value, properties[key])
+    nc.update_relationship_properties(nc.neo4jdb, relationship_id, relationship.data)
     return True
 
 
@@ -242,7 +237,7 @@ def update_noclook_auto_manage(item):
     if isinstance(item, nc.models.BaseNodeModel):
         nc.update_node_properties(nc.neo4jdb, item.handle_id, item.data)
     elif isinstance(item, nc.models.BaseRelationshipModel):
-        nc.update_relationship_properties(nc.neo4jdb, item.handle_id, item.data)
+        nc.update_relationship_properties(nc.neo4jdb, item.id, item.data)
 
 
 def isots_to_dt(item):
@@ -1057,21 +1052,19 @@ def connect_physical(user, node, other_node_id):
 
 def get_host_backup(host):
     """
-    :param host: neo4j node
+    :param host: norduniclient model
     :return: String
 
     Return a string that expresses the current backup solution used for the host or 'No'.
     """
-    backup = host.get('backup', 'No')
+    backup = host.data.get('backup', 'No')
     if backup == 'No':
         q = """
-            START host=node({id})
-            MATCH host<-[r:Depends_on]-dep
-            WHERE dep.name = 'vnetd'
+            MATCH (:Node {handle_id: {handle_id}})<-[r:Depends_on]-(:Node {name: "vnetd"})
             RETURN r
             """
-        for hit in nc.neo4jdb.query(q, id=host.getId()):
-            last_seen, expired = neo4j_data_age(hit['r'])
+        for hit in nc.query_to_list(nc.neo4jdb, q, handle_id=host.handle_id):
+            last_seen, expired = neo4j_data_age(hit)
             if not expired:
                 backup = 'netbackup'
     return backup

@@ -30,12 +30,12 @@ import logging
 
 ## Need to change this path depending on where the Django project is
 ## located.
-#path = '/var/norduni/src/niweb/'
-path = '/home/lundberg/norduni/src/niweb/'
-##
-##
-sys.path.append(os.path.abspath(path))
+base_path = '../niweb/'
+sys.path.append(os.path.abspath(base_path))
+niweb_path = os.path.join(base_path, 'niweb')
+sys.path.append(os.path.abspath(niweb_path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+
 import norduniclient as nc
 import noclook_consumer as nt
 from apps.noclook import activitylog
@@ -75,33 +75,23 @@ HOST_USERS_MAP = {
 }
 
 
-def set_host_user(node):
+def set_host_user(host):
     """
     Tries to set a Uses or Owns relationship between the Host and a Host User if there are none.
     """
     user = nt.get_user()
-    q = '''
-        START node=node({id})
-        MATCH node<-[r:Owns|Uses]-()
-        return COUNT(r) as rels
-        '''
-    hits = nc.neo4jdb.query(q, id=node.getId())
-    users = int(str(h.iter2list(hits['rels'])[0])) # Hack...hits['rels'] is of type java.lang.Long...
-    domain = '.'.join(node['name'].split('.')[-2:])
+    domain = '.'.join(host.data['name'].split('.')[-2:])
+    relations = host.get_relations()
     host_user_name = HOST_USERS_MAP.get(domain, None)
-    if host_user_name and not users:
-        node_handle = nt.get_unique_node_handle(nc.neo4jdb, host_user_name,
-                                                'Host User', 'relation')
-        host_user = node_handle.get_node()
-        if nc.get_node_meta_type(node) == 'logical':
-            rel = nc.create_relationship(nc.neo4jdb, host_user, node, 'Uses')
-            activitylog.create_relationship(user, rel)
-        elif nc.get_node_meta_type(node) == 'physical':
-            rel = nc.create_relationship(nc.neo4jdb, host_user, node, 'Owns')
-            activitylog.create_relationship(user, rel)
-        h.update_node_search_index(nc.neo4jdb, host_user)
+    if host_user_name and not (relations.get('Uses', None) or relations.get('Owns', None)):
+        relation_node_handle = nt.get_unique_node_handle(host_user_name, 'Host User', 'Relation')
+        if host.meta_type == 'Logical':
+            h.set_user(user, host, relation_node_handle.handle_id)
+        elif host.meta_type == 'Physical':
+            h.set_owner(user, host, relation_node_handle.handle_id)
         if VERBOSE:
-            logger.info('User %s set for host %s...' % (host_user_name, node['name']))
+            logger.info('Host User {user_name} set for host {host_name}.'.format(user_name=host_user_name,
+                                                                                 host_name=host.data['name']))
 
 
 def is_host(addresses):
@@ -109,24 +99,23 @@ def is_host(addresses):
     :param addresses: List of IP addresses
     :return: True if the addresses belongs to a host or does not belong to anything
     """
-    host_addresses = [IPAddress(item) for item in addresses]
-    i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    nodes = []
+    nmap_types = {'Host', 'Firewall', 'Switch'}  # Type of equipment we want to collect with nmap
+    ip_addresses = [IPAddress(item) for item in addresses]
     for address in addresses:
         q1 = Q('ip_address', '%s*' % address, wildcard=True)
         q2 = Q('ip_addresses', '%s*' % address, wildcard=True)
-        nodes.extend(h.iter2list(i1.query(unicode(q1))))
-        nodes.extend(h.iter2list(i1.query(unicode(q2))))
-    for node in nodes:
-        node_addresses = node.get_property('ip_address', None) or node.get_property('ip_addresses', None)
-        for address in node_addresses:
-            try:
-                node_address = IPAddress(address.split('/')[0])
-            except ValueError:
-                continue
-            if node_address in host_addresses and node['node_type'] not in ['Host', 'Firewall', 'Switch']:
-                h.update_noclook_auto_manage(nc.neo4jdb, node)
-                return False
+        lucene_query = unicode(q1 | q2)
+        for handle_id in nc.legacy_node_index_search(nc.neo4jdb, lucene_query)['result']:
+            node = nc.get_node_model(nc.neo4jdb, handle_id)
+            node_addresses = node.data.get('ip_addresses', None) or node.data.get('ip_address', None)
+            for addr in node_addresses:
+                try:
+                    node_address = IPAddress(addr.split('/')[0])
+                except ValueError:
+                    continue
+                if node_address in ip_addresses and not [l for l in node.labels if l in nmap_types]:
+                    h.update_noclook_auto_manage(node)
+                    return False
     return True
 
 
@@ -138,12 +127,12 @@ def set_not_public(host):
     :return: None
     """
     q = '''
-        START host=node({id})
-        MATCH host_service-[r:Depends_on]->host
+        MATCH (host {handle_id:{handle_id}})<-[r:Depends_on]-(host_service)
         WHERE has(r.public)
         SET r.public = false
         '''
-    nc.neo4jdb.query(q, id=host.getId())
+    with nc.neo4jdb.transaction as t:
+        t.execute(q, handle_id=host.handle_id)
 
 
 def insert_services(service_dict, host_node, external_check=False):
@@ -177,8 +166,8 @@ def insert_services(service_dict, host_node, external_check=False):
     """
     user = nt.get_user()
     node_type = "Host Service"
-    meta_type = 'logical'
-    services_locked = host_node.get_property('services_locked', False)
+    meta_type = 'Logical'
+    services_locked = host_node.data.get('services_locked', False)
     # Expected service data from nmap
     property_keys = ['ip_address', 'protocol', 'port', 'conf', 'extrainfo',
                      'name', 'product', 'reason', 'state', 'version']
@@ -189,68 +178,55 @@ def insert_services(service_dict, host_node, external_check=False):
             'noclook_last_external_check': datetime.now().isoformat()
         }
         set_not_public(host_node)
-    for key in service_dict.keys():
-        address = key
-        for key in service_dict[address].keys():
-            protocol = key
-            for key in service_dict[address][protocol].keys():
-                port = key
+    for address in service_dict.keys():
+        for protocol in service_dict[address].keys():
+            for port in service_dict[address][protocol].keys():
                 service = service_dict[address][protocol][port]
                 if service['state'] != 'closed':
                     service_name = service['name']
                     if not service_name:  # Blank
                         service_name = 'unknown'
-                    node_handle = nt.get_unique_node_handle(
-                        nc.neo4jdb,
-                        service_name,
-                        node_type,
-                        meta_type
-                    )
-                    service_node = node_handle.get_node()
-                    h.update_noclook_auto_manage(nc.neo4jdb, service_node)
-                    # Get existing relationships between the two nodes
-                    rel_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
-                    q = Q('ip_address', '%s' % address)
-                    service_rels = rel_index.query(str(q))
-                    create = True
-                    rel_dict = {
+                    service_node_handle = nt.get_unique_node_handle(service_name, node_type, meta_type)
+                    service_node = service_node_handle.get_node()
+                    h.update_noclook_auto_manage(service_node)
+                    relationship_properties = {
                         'ip_address': address,
                         'protocol': protocol,
-                        'port': port
+                        'port': int(port)
                     }
-                    for key, value in service.items():
-                        rel_dict[key] = value
+                    result = host_node.get_host_service(service_node.handle_id, **relationship_properties)
+                    if not result.get('Depends_on'):
+                        result = host_node.set_host_service(service_node.handle_id, **relationship_properties)
+                    relationship_id = result.get('Depends_on')[0].get('relationship_id')
+                    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+                    created = result.get('Depends_on')[0].get('created')
+                    # Set or update relationship properties
+                    relationship_properties.update(service)
                     if external_check:
-                        rel_dict.update(external_dict)
-                    # Try to find an already existing relationship
-                    for rel in service_rels:
-                        try:
-                            if rel.start['name'] == service_name and rel['protocol'] == protocol and str(rel['port']) == port:
-                                create = False
-                                h.dict_update_relationship(user, rel, rel_dict, property_keys)
-                                h.update_noclook_auto_manage(nc.neo4jdb, rel)
-                                if VERBOSE:
-                                    logger.info('Relationship with protocol %s on port %s found.' % (rel['protocol'], rel['port']))
-                                break
-                        except KeyError:
-                            logger.error("KeyError: Relationship %s" % rel)
-                            continue
-                    # Relationship did not exist
-                    if create:
+                        relationship_properties.update(external_dict)
+                    if created:
+                        activitylog.create_relationship(user, relationship)
                         if services_locked:
-                            logger.warn('New open port found for host %s.' % host_node['name'])
+                            logger.warn('New open port found for host {name}.'.format(name=host_node.data['name']))
                             property_keys.append('rogue_port')
-                            rel_dict['rogue_port'] = True
-                        # Create a relationship between the service and host
-                        new_rel = nc.create_relationship(nc.neo4jdb, service_node, host_node, 'Depends_on')
-                        h.dict_update_relationship(user, new_rel, rel_dict, property_keys)
-                        h.update_noclook_auto_manage(nc.neo4jdb, new_rel)
-                        activitylog.create_relationship(user, new_rel)
+                            relationship_properties['rogue_port'] = True
                         if VERBOSE:
-                            logger.info('Relationship with protocol %s on port %s created.' % (new_rel['protocol'],
-                                                                                               new_rel['port']))
-                if VERBOSE:
-                    logger.info('%s %s %s %s processed...' % (host_node['name'], address, protocol, port))
+                            logger.info('Host Service {host_service_name} using port {port}/{protocol} created.'.format(
+                                host_service_name=service_node.data['name'],
+                                port=relationship.data['port'],
+                                protocol=relationship.data['protocol']
+                            ))
+                    if not created and VERBOSE:
+                        logger.info('Host Service {host_service_name} using port {port}/{protocol} found.'.format(
+                            host_service_name=service_node.data['name'],
+                            port=relationship.data['port'],
+                            protocol=relationship.data['protocol']
+                        ))
+                    h.update_noclook_auto_manage(relationship)
+                    h.dict_update_relationship(user, relationship.id, relationship_properties, property_keys)
+                    if VERBOSE:
+                        logger.info('{name} {ip_address} {port}/{protocol} processed...'.format(
+                            name=host_node.data['name'], ip_address=address, protocol=protocol, port=port))
 
 
 def insert_nmap(json_list, external_check=False):
@@ -260,7 +236,7 @@ def insert_nmap(json_list, external_check=False):
     """
     user = nt.get_user()
     node_type = "Host"
-    meta_type = 'logical'
+    meta_type = 'Logical'
     # Insert the host
     for i in json_list:
         name = i['host']['name']
@@ -271,39 +247,34 @@ def insert_nmap(json_list, external_check=False):
                 logger.info('%s does not appear to be a host.' % name)
             continue
         # Create the NodeHandle and the Node
-        node_handle = nt.get_unique_node_handle(nc.neo4jdb, name, node_type,
-                                                meta_type)
+        node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
         # Set Node attributes
-        property_keys = ['hostnames', 'ip_addresses', 'backup']
         node = node_handle.get_node()
-        h.update_noclook_auto_manage(nc.neo4jdb, node)
-        host_properties = {
+        h.update_noclook_auto_manage(node)
+        properties = {
             'hostnames': i['host']['nmap_services_py']['hostnames'],
             'ip_addresses': addresses
         }
-        if 'os' in i['host']['nmap_services_py'] and not node.get_property('os', None):
+        if 'os' in i['host']['nmap_services_py'] and not node.data.get('os', None):
             # Only set os if the property is missing as a user probably knows better than nmap
             if 'class' in i['host']['nmap_services_py']['os']:
-                property_keys.extend(['os', 'os_version'])
-                host_properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
-                host_properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
+                properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
+                properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
             elif 'match' in i['host']['nmap_services_py']['os']:
-                property_keys.extend(['os'])
-                host_properties['os'] = i['host']['nmap_services_py']['os']['match']['name']
+                properties['os'] = i['host']['nmap_services_py']['os']['match']['name']
         if 'uptime' in i['host']['nmap_services_py']:
-            property_keys.extend(['lastboot', 'uptime'])
-            host_properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
-            host_properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
-        try:
-            insert_services(i['host']['nmap_services_py']['services'], node, external_check)
-        except KeyError as e:
-            if VERBOSE:
-                logger.error(e)
-            pass
+            properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
+            properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
+        #try:
+        insert_services(i['host']['nmap_services_py']['services'], node, external_check)
+        #except KeyError as e:
+        #    if VERBOSE:
+        #        logger.error(e)
+        #    sys.exit(1)
         # Check if the host has backup
-        host_properties['backup'] = h.get_host_backup(node)
+        properties['backup'] = h.get_host_backup(node)
         # Update host node
-        h.dict_update_node(user, node, host_properties, property_keys)
+        h.dict_update_node(user, node.handle_id, properties, properties.keys())
         # Set host user depending on the domain.
         set_host_user(node)
         if VERBOSE:

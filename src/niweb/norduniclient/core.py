@@ -150,7 +150,11 @@ def delete_node(manager, handle_id):
     :param handle_id: Unique id
     :return: bool
     """
-    q = 'MATCH (n:Node { handle_id: {handle_id} })-[r]-() DELETE n,r'
+    q = """
+        MATCH (n:Node {handle_id: {handle_id}})
+        OPTIONAL MATCH (n)-[r]-()
+        DELETE n,r
+        """
     with manager.transaction as t:
         t.execute(q, handle_id=handle_id)
     return True
@@ -273,6 +277,18 @@ def get_node_by_value(manager, value, prop=None, node_type="Node"):
                     if pattern.match(unicode(v)):
                         yield node
                         break
+
+
+def legacy_node_index_search(manager, lucene_query):
+    """
+    :param lucene_query: string
+    :return: dict
+    """
+    q = """
+        START n=node:node_auto_index({lucene_query})
+        RETURN collect(n.handle_id) as result
+        """
+    return query_to_dict(manager, q, lucene_query=lucene_query)
 
 
 def get_unique_node_by_name(manager, node_name, node_type):

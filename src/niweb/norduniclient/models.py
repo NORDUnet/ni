@@ -323,6 +323,24 @@ class HostModel(CommonQueries):
             """
         return self._basic_read_query_to_dict(q)
 
+    def get_host_service(self, service_handle_id, ip_address, port, protocol):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Depends_on]-(host_service:Node {handle_id: {service_handle_id}})
+            WHERE r.ip_address={ip_address} AND r.port={port} AND r.protocol={protocol}
+            RETURN type(r), id(r), r, host_service.handle_id
+            """
+        return self._basic_read_query_to_dict(q, service_handle_id=service_handle_id, ip_address=ip_address, port=port,
+                                              protocol=protocol)
+
+    def set_host_service(self, service_handle_id, ip_address, port, protocol):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (host_service:Node {handle_id: {service_handle_id}})
+            CREATE (n)<-[r:Depends_on {ip_address:{ip_address}, port:{port}, protocol:{protocol}}]-(host_service)
+            RETURN true as created, type(r), id(r), r, host_service.handle_id
+            """
+        return self._basic_write_query_to_dict(q, service_handle_id=service_handle_id, ip_address=ip_address,
+                                               port=port, protocol=protocol)
+
 
 class PhysicalHostModel(HostModel, EquipmentModel):
     pass

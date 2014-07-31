@@ -56,10 +56,6 @@ import noclook_cfengine_consumer
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
 
-# SEARCH_INDEX_KEYS are only used when restoring backup nodes.
-SEARCH_INDEX_KEYS = django_settings.SEARCH_INDEX_KEYS
-
-
 def init_config(path):
     """
     Initializes the configuration file located in the path provided.
@@ -143,13 +139,12 @@ def get_unique_node(name, node_type, meta_type):
     Returns the NodeHandles node.
     """
     name = normalize_whitespace(name)
-    node_handle = get_unique_node_handle(nc.neo4jdb, name, node_type,
-                                            meta_type)
+    node_handle = get_unique_node_handle(name, node_type, meta_type)
     node = node_handle.get_node()
     return node
 
 
-def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
+def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     """
     Takes the arguments needed to create a NodeHandle, if there already
     is a NodeHandle with the same name and type it will be considered
@@ -159,8 +154,7 @@ def get_unique_node_handle(db, node_name, node_type_name, node_meta_type):
     user = get_user()
     node_type = get_node_type(node_type_name)
     try:
-        node_handle = NodeHandle.objects.get(node_name=node_name,
-                                            node_type=node_type)
+        node_handle = NodeHandle.objects.get(node_name=node_name, node_type=node_type)
     except NodeHandle.DoesNotExist:
         # The NodeHandle was not found, create one
         node_handle = NodeHandle.objects.create(node_name=node_name,
@@ -239,38 +233,6 @@ def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
     return node_handle
 
 
-def add_node_to_indexes(node):
-    """
-    If the node has any property keys matching the SEARCH_INDEX_KEYS the node
-    will be added to the index with those values. The node will also be added
-    to the node_types index.
-    """
-    # Add the node_type to the node_types index.
-    type_index = nc.get_node_index(nc.neo4jdb, 'node_types')
-    nc.add_index_item(nc.neo4jdb, type_index, node, 'node_type')
-    # Add the nodes to the search index
-    search_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    node_keys = node.getPropertyKeys()
-    for key in django_settings.SEARCH_INDEX_KEYS:
-        if key in node_keys:
-            nc.add_index_item(nc.neo4jdb, search_index, node, key)
-    return node
-
-
-def add_relationship_to_indexes(rel):
-    """
-    If the relationship has any property keys matching the SEARCH_INDEX_KEYS the
-    relationship will be added to the index with those values.
-    """
-    # Add the nodes to the search indexe
-    search_index = nc.get_relationship_index(nc.neo4jdb, nc.search_index_name())
-    rel_keys = rel.getPropertyKeys()
-    for key in django_settings.SEARCH_INDEX_KEYS:
-        if key in rel_keys:
-            nc.add_index_item(nc.neo4jdb, search_index, rel, key)
-    return rel
-
-
 def set_comment(node_handle, comment):
     """
     Sets the comment string as a comment for the provided node_handle.
@@ -279,8 +241,7 @@ def set_comment(node_handle, comment):
     object_pk = node_handle.pk
     user = get_user()
     site_id = django_settings.SITE_ID
-    c = Comment(content_type = content_type, object_pk = object_pk, user = user,
-                            site_id = site_id, comment = comment)
+    c = Comment(content_type=content_type, object_pk=object_pk, user=user, site_id=site_id, comment=comment)
     c.save()
 
 
@@ -300,19 +261,18 @@ def consume_noclook(json_list):
             node_type = properties.get('node_type')
             meta_type = item.get('meta_type')
             # Get a node handle
-            nh = restore_node(nc.neo4jdb, handle_id, node_name, node_type, 
-                                 meta_type) 
+            nh = restore_node(nc.neo4jdb, handle_id, node_name, node_type, meta_type)
             node = nh.get_node()
             with nc.neo4jdb.transaction:
                 node['old_node_id'] = item.get('id')
                 node['handle_id'] = int(nh.handle_id)
             # Add all properties except the old NodeHandle id
-            nc.update_item_properties(nc.neo4jdb, node, properties)
+            #nc.update_item_properties(nc.neo4jdb, node, properties)
             # Add the old node id to an index for fast relationship adding
-            index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
-            nc.add_index_item(nc.neo4jdb, index, node, 'old_node_id')
+            #index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
+            #nc.add_index_item(nc.neo4jdb, index, node, 'old_node_id')
             # Add the node to other indexes needed for NOCLook
-            add_node_to_indexes(node)
+            #add_node_to_indexes(node)
             try:
                 try:
                     print 'Added node %d: %s %s %s. Handle ID: %d' % (node.id,
@@ -329,21 +289,20 @@ def consume_noclook(json_list):
             item = i['host']['noclook_producer']
             properties = item.get('properties')
             #start_node = nc.get_node_by_value(nc.neo4jdb, item.get('start'), 'old_node_id')
-            start_node = h.iter2list(index['old_node_id'][item['start']])
-            end_node = h.iter2list(index['old_node_id'][item['end']])
+            #start_node = h.iter2list(index['old_node_id'][item['start']])
+            #end_node = h.iter2list(index['old_node_id'][item['end']])
             #end_node = nc.get_node_by_value(nc.neo4jdb, item.get('end'), 'old_node_id')
-            with nc.neo4jdb.transaction:
-                rel = start_node[0].relationships.create(item.get('type'), 
-                                                                    end_node[0])
-            try:
-                print start_node[0]['name'], item.get('type'), end_node[0]['name']
-            except KeyError as e:
-                print e
-                print i
-                sys.exit(1)
-            nc.update_item_properties(nc.neo4jdb, rel, properties)
+            #with nc.neo4jdb.transaction:
+                #rel = start_node[0].relationships.create(item.get('type'),  end_node[0])
+            #try:
+                #print start_node[0]['name'], item.get('type'), end_node[0]['name']
+            #except KeyError as e:
+            #    print e
+            #    print i
+            #    sys.exit(1)
+            #nc.update_item_properties(nc.neo4jdb, rel, properties)
             # Add the relationship to indexes needed for NOCLook
-            add_relationship_to_indexes(rel)
+            #add_relationship_to_indexes(rel)
     # Remove the 'old_node_id' property from all nodes
     for n in nc.get_all_nodes(nc.neo4jdb):
         if n.get_property('old_node_id', None):
@@ -398,13 +357,6 @@ def run_consume(config_file):
         noclook_juniper_consumer.remove_juniper_conf(juniper_conf_data_age)
 
 
-def test_db():
-    handles = NodeHandle.objects.all()
-    print 'Handle\tNode'
-    for handle in handles:
-        print '%d\t%s' % (handle.handle_id, nc.get_node_by_id(handle.node_id))
-
-
 def purge_db():
     for nh in NodeHandle.objects.all():
         nh.delete()
@@ -416,15 +368,11 @@ def main():
     parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
     parser.add_argument('-P', action='store_true', help='Purge the database.')
     parser.add_argument('-I', action='store_true', help='Insert data in to the database.')
-    parser.add_argument('-T', action='store_true', help='Test the database database setup.')
     args = parser.parse_args()
     # Start time
     start = datetime.datetime.now()
     timestamp_start = datetime.datetime.strftime(start, '%b %d %H:%M:%S')
     print '%s noclook_consumer.py was started.' % timestamp_start
-    # Test DB connection
-    if args.T:
-        test_db()
     # Load the configuration file
     if not args.C:
         print 'Please provide a configuration file with -C.'
