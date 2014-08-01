@@ -424,10 +424,9 @@ def get_relationships(manager, handle_id1, handle_id2, rel_type=None):
         return r.execute(q, handle_id1=handle_id1, handle_id2=handle_id2).fetchall()[0][0]
 
 
-def update_node_properties(manager, handle_id, new_properties):
-    old_properties = get_node(manager, handle_id)
+def set_node_properties(manager, handle_id, new_properties):
     d = {
-        'props': helpers.update_item_properties(old_properties, new_properties)
+        'props': new_properties
     }
     q = """
         MATCH (n:Node {handle_id: {props}.handle_id})
@@ -441,10 +440,9 @@ def update_node_properties(manager, handle_id, new_properties):
         raise exceptions.BadProperties(d['props'])
 
 
-def update_relationship_properties(manager, relationship_id, new_properties):
-    old_properties = get_relationship(manager, relationship_id)
+def set_relationship_properties(manager, relationship_id, new_properties):
     d = {
-        'props': helpers.update_item_properties(old_properties, new_properties)
+        'props': new_properties
     }
     q = """
         START r=relationship({relationship_id})

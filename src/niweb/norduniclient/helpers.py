@@ -21,22 +21,10 @@ def lowerstr(s):
 
 def update_item_properties(item_properties, new_properties):
     for key, value in new_properties.items():
-        fixed_key = key.replace(' ', '_').lower()  # No spaces or caps
         if value or value is 0:
-            try:
-                # Handle string representations of lists and booleans
-                json_value = json.loads(value)
-                if type(json_value) is dict:
-                    raise ValueError  # Neo4j does not support dictionaries
-                item_properties[fixed_key] = json_value
-            except (ValueError, TypeError):
-                try:
-                    item_properties[fixed_key] = normalize_whitespace(value)
-                except (TypeError, AttributeError):
-                    # if value is not a string we will end up here
-                    item_properties[fixed_key] = value
-        elif fixed_key in item_properties.keys():
-            del item_properties[fixed_key]
+            item_properties[key] = value
+        elif key in item_properties.keys():
+            del item_properties[key]
     return item_properties
 
 

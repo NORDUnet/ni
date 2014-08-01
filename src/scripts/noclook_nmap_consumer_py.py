@@ -192,7 +192,7 @@ def insert_services(service_dict, host_node, external_check=False):
                     relationship_properties = {
                         'ip_address': address,
                         'protocol': protocol,
-                        'port': int(port)
+                        'port': port
                     }
                     result = host_node.get_host_service(service_node.handle_id, **relationship_properties)
                     if not result.get('Depends_on'):

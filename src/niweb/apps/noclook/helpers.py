@@ -139,7 +139,7 @@ def form_update_node(user, handle_id, form, property_keys=list()):
                 pre_value = node.data.get(key, '')
                 del node.data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
-    nc.update_node_properties(nc.neo4jdb, node.handle_id, node.data)
+    nc.set_node_properties(nc.neo4jdb, node.handle_id, node.data)
     return True
 
 
@@ -160,7 +160,7 @@ def dict_update_node(user, handle_id, properties, keys):
                 pre_value = node.get(key, '')
                 del node.data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
-    nc.update_node_properties(nc.neo4jdb, handle_id, node.data)
+    nc.set_node_properties(nc.neo4jdb, handle_id, node.data)
     return True
 
 
@@ -175,7 +175,7 @@ def dict_update_relationship(user, relationship_id, properties, keys):
         elif properties.get(key, None) == '' and key in relationship.data.keys():
             del relationship.data[key]
             activitylog.update_relationship_property(user, relationship, key, pre_value, properties[key])
-    nc.update_relationship_properties(nc.neo4jdb, relationship_id, relationship.data)
+    nc.set_relationship_properties(nc.neo4jdb, relationship_id, relationship.data)
     return True
 
 
@@ -186,8 +186,7 @@ def form_to_generic_node_handle(request, form, slug, node_meta_type):
                              modifier=request.user, creator=request.user)
     node_handle.save()
     activitylog.create_node(request.user, node_handle)
-    node = set_noclook_auto_manage(node_handle.get_node(), False)
-    nc.update_node_properties(nc.neo4jdb, node.handle_id, node.data)
+    set_noclook_auto_manage(node_handle.get_node(), False)
     return node_handle
 
 
