@@ -298,18 +298,18 @@ def get_unique_node_by_name(manager, node_name, node_type):
     :param manager:  Neo4jDBConnectionManager
     :param node_name: string
     :param node_type: string
-    :return: dict
+    :return: norduniclient node model or None
     """
     q = '''
         MATCH (n:Node { name: {name} })
         WHERE {label} IN labels(n)
-        RETURN n
+        RETURN n.handle_id
         '''
     with manager.read as r:
         hits = r.execute(q, name=node_name, label=node_type).fetchall()
     if hits:
         if len(hits) == 1:
-            return hits[0][0]
+            return get_node_model(manager, hits[0][0])
         raise exceptions.MultipleNodesReturned(node_name, node_type)
     return None
 
