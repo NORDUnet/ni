@@ -42,12 +42,7 @@ from apps.noclook import activitylog
 from apps.noclook import helpers as h
 
 logger = logging.getLogger('noclook_nmap_consumer_py')
-logger.setLevel(logging.INFO)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+
 
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
@@ -303,4 +298,10 @@ def main():
     return 0
 
 if __name__ == '__main__':
+    logger.setLevel(logging.INFO)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
     main()

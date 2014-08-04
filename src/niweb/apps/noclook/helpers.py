@@ -645,41 +645,6 @@ def get_same_name_relations(relation):
     return nc.neo4jdb.query(q, name=relation.getProperty('name', ''),
                             type=relation.getProperty('node_type', ''))
 
-def get_units(port):
-    """
-    Get all Unit nodes that depend on the port.
-    """
-    q = '''
-        START node=node({id})
-        MATCH node<-[:Part_of]-unit
-        WHERE unit.node_type = "Unit"
-        RETURN unit
-        '''
-    return nc.neo4jdb.query(q, id=port.getId())
-
-def get_customer(service):
-    """
-    Get all nodes with Uses relationship and node_type Customer.
-    """
-    q = '''
-        START node=node({id})
-        MATCH node<-[rel:Uses]-customer
-        WHERE customer.node_type = "Customer"
-        RETURN customer, rel
-        '''
-    return nc.neo4jdb.query(q, id=service.getId())
-
-def get_end_user(service):
-    """
-    Get all nodes with Uses relationship and node_type End User.
-    """
-    q = '''
-        START node=node({id})
-        MATCH node<-[rel:Uses]-end_user
-        WHERE end_user.node_type = "End User"
-        RETURN end_user, rel
-        '''
-    return nc.neo4jdb.query(q, id=service.getId())
 
 def get_services_dependent_on_cable(cable):
     """
@@ -907,8 +872,10 @@ def physical_to_logical(user, handle_id):
 
 def set_location(user, node, location_id):
     """
-    Places a physical node in a rack or on a site. Also converts it to a
-    physical node if it still is a logical one.
+    :param user: Django user
+    :param node: norduniclient model
+    :param location_id: unique id
+    :return: norduniclient model, boolean
     """
     # Check that the node is physical, else convert it
     if node.meta_type == 'Logical':
@@ -933,9 +900,10 @@ def remove_locations(user, node):
 
 def set_owner(user, node, owner_id):
     """
-    Creates or updates an Owns relationship between the node and the
-    owner node.
-    Returns the node.
+    :param user: Django user
+    :param node: norduniclient model
+    :param owner_id: unique id
+    :return: norduniclient model, boolean
     """
     result = node.set_owner(owner_id)
     relationship_id = result.get('Owns')[0].get('relationship_id')
@@ -948,7 +916,10 @@ def set_owner(user, node, owner_id):
 
 def set_user(user, node, user_id):
     """
-    Creates or returns existing Uses relationship between the node and the user node.
+    :param user: Django user
+    :param node: norduniclient model
+    :param user_id: unique id
+    :return: norduniclient model, boolean
     """
     result = node.set_user(user_id)
     relationship_id = result.get('Uses')[0].get('relationship_id')
@@ -960,11 +931,14 @@ def set_user(user, node, user_id):
     return relationship, created
 
 
-def set_provider(user, node, provider_node_id):
+def set_provider(user, node, provider_id):
     """
-    Creates or returns existing Owns relationship between the node and the owner node.
+    :param user: Django user
+    :param node: norduniclient model
+    :param provider_id: unique id
+    :return: norduniclient model, boolean
     """
-    result = node.set_provider(provider_node_id)
+    result = node.set_provider(provider_id)
     relationship_id = result.get('Provides')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
     created = result.get('Provides')[0].get('created')
@@ -975,9 +949,10 @@ def set_provider(user, node, provider_node_id):
 
 def set_depends_on(user, node, dependency_id):
     """
-    Creates or updates an Depends_on relationship between the node and the
-    owner node.
-    Returns the node.
+    :param user: Django user
+    :param node: norduniclient model
+    :param dependency_id: unique id
+    :return: norduniclient model, boolean
     """
     # Check that the node is physical, else convert it
     if node.meta_type == 'Physical':
@@ -991,16 +966,49 @@ def set_depends_on(user, node, dependency_id):
     return relationship, created
 
 
-def set_responsible_for(user, node, responsible_for_node_id):
+def set_responsible_for(user, node, responsible_for_id):
     """
-    Creates or updates an Responsible_for relationship between the node and the
-    site owner node.
-    Returns the node.
+    :param user: Django user
+    :param node: norduniclient model
+    :param responsible_for_id: unique id
+    :return: norduniclient model, boolean
     """
-    result = node.set_responsible_for(responsible_for_node_id)
+    result = node.set_responsible_for(responsible_for_id)
     relationship_id = result.get('Responsible_for')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
     created = result.get('Responsible_for')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+
+def set_part_of(user, node, part_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param part_id: unique id
+    :return: norduniclient model, boolean
+    """
+    result = node.set_part_of(part_id)
+    relationship_id = result.get('Part_of')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    created = result.get('Part_of')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+
+def set_has(user, node, has_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param has_id: unique id
+    :return: norduniclient model, boolean
+    """
+    result = node.set_has(has_id)
+    relationship_id = result.get('Has')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    created = result.get('Has')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
     return relationship, created

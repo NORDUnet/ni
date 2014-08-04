@@ -27,6 +27,7 @@ import json
 import datetime
 import ConfigParser
 import argparse
+import logging
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -49,21 +50,23 @@ from django.contrib.auth.models import User
 import norduniclient as nc
 import noclook_juniper_consumer
 import noclook_nmap_consumer_py
-import noclook_alcatel_consumer
 import noclook_checkmk_consumer
 import noclook_cfengine_consumer
+
+logger = logging.getLogger('noclook_consumer')
 
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
 
-def init_config(path):
+
+def init_config(p):
     """
     Initializes the configuration file located in the path provided.
     """
     try:
-       config = ConfigParser.SafeConfigParser()
-       config.read(path)
-       return config
+        config = ConfigParser.SafeConfigParser()
+        config.read(p)
+        return config
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
 
@@ -101,9 +104,10 @@ def generate_password(n):
     Returns a psudo random string of lenght n.
     http://code.activestate.com/recipes/576722-pseudo-random-string/
     """
-    import os, math
+    import os
+    import math
     from base64 import b64encode
-    return b64encode(os.urandom(int(math.ceil(0.75*n))),'-_')[:n]
+    return b64encode(os.urandom(int(math.ceil(0.75*n))), '-_')[:n]
 
 
 def get_user(username='noclook'):
@@ -153,59 +157,29 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     """
     user = get_user()
     node_type = get_node_type(node_type_name)
-    try:
-        node_handle = NodeHandle.objects.get(node_name=node_name, node_type=node_type)
-    except NodeHandle.DoesNotExist:
-        # The NodeHandle was not found, create one
-        node_handle = NodeHandle.objects.create(node_name=node_name,
-                                                node_type=node_type,
-                                                node_meta_type=node_meta_type,
-                                                creator=user,
-                                                modifier=user)
-        node_handle.save()
+    defaults = {
+        'node_meta_type': node_meta_type,
+        'creator': user,
+        'modifier': user
+    }
+    node_handle, created = NodeHandle.objects.get_or_create(node_name=node_name, node_type=node_type, defaults=defaults)
+    if created:
         activitylog.create_node(user, node_handle)
     return node_handle
 
 
-def get_node_handle(db, node_name, node_type_name, node_meta_type, parent=None):
+def create_node_handle(node_name, node_type_name, node_meta_type):
     """
-    Takes the arguments needed to create a NodeHandle. If a parent is
-    supplied the NodeHandle will be unique for that parent.
+    Takes the arguments needed to create a NodeHandle.
     Returns a NodeHandle object.
-
-    *** This function does not handle multiple parents. ***
     """
     user = get_user()
     node_type = get_node_type(node_type_name)
-    try:
-        if parent:
-            q = """
-                START parent=node({id})
-                MATCH parent-->child
-                WHERE child.node_type = {node_type} AND child.name = {node_name}
-                RETURN child
-                """
-            hit = db.query(
-                q,
-                id=parent.getId(),
-                node_type=node_type_name,
-                node_name=node_name
-            ).single
-            if hit:
-                node = hit['child']
-                node_handle = NodeHandle.objects.get(pk=node['handle_id'])
-                return node_handle # NodeHandle for that parent was found
-    except ObjectDoesNotExist:
-        # A NodeHandle was not found, create one
-        pass
-    node_handle = NodeHandle.objects.create(node_name=node_name,
-                                            node_type=node_type,
-                                            node_meta_type=node_meta_type,
-                                            creator=user,
-                                            modifier=user)
+    node_handle = NodeHandle.objects.create(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
+                                            creator=user, modifier=user)
     node_handle.save()
     activitylog.create_node(user, node_handle)
-    return node_handle # No NodeHandle found return a new handle.
+    return node_handle
 
 
 def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
@@ -220,7 +194,7 @@ def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
     node_type = get_node_type(node_type_name)
     try:
         node_handle = NodeHandle.objects.get(handle_id=handle_id)
-        node_handle.save(create_node=True)
+        node_handle.save()
     except ObjectDoesNotExist:
         # A NodeHandle was not found, create one
         node_handle = NodeHandle.objects.create(handle_id=handle_id, 
@@ -340,9 +314,6 @@ def run_consume(config_file):
     if nmap_services_py_data:
         data = load_json(nmap_services_py_data)
         noclook_nmap_consumer_py.insert_nmap(data)
-    if alcatel_isis_data:
-        data = load_json(alcatel_isis_data)
-        noclook_alcatel_consumer.consume_alcatel_isis(data)
     if nagios_checkmk_data:
         data = load_json(nagios_checkmk_data)
         noclook_checkmk_consumer.insert(data)
@@ -394,4 +365,10 @@ def main():
     return 0
 
 if __name__ == '__main__':
+    logger.setLevel(logging.INFO)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
     main()

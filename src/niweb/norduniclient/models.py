@@ -273,6 +273,24 @@ class PhysicalModel(CommonQueries):
             """
         return self._basic_write_query_to_dict(q, location_handle_id=location_handle_id)
 
+    def set_has(self, has_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (part:Node {handle_id: {has_handle_id}})
+            WITH n, part, NOT EXISTS((n)-[:Has]->(part)) as created
+            MERGE (n)-[r:Has]->(part)
+            RETURN created, type(r), id(r), r, part.handle_id
+            """
+        return self._basic_write_query_to_dict(q, part_handle_id=has_handle_id)
+
+    def set_part_of(self, part_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (part:Node {handle_id: {part_handle_id}})
+            WITH n, part, NOT EXISTS((n)<-[:Part_of]-(part)) as created
+            MERGE (n)<-[r:Part_of]-(part)
+            RETURN created, type(r), id(r), r, part.handle_id
+            """
+        return self._basic_write_query_to_dict(q, part_handle_id=part_handle_id)
+
     # TODO: Create a method that complains if any relationships that breaks the model exists
 
 
@@ -298,6 +316,14 @@ class EquipmentModel(PhysicalModel):
             RETURN location_path
             """
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
+
+    def get_port(self, port_name):
+        q = """
+            MATCH (n:Node {handle_id={handle_id}})-[r:Has]->(port:Port)
+            WHERE port.name = {port_name}
+            RETURN type(r), id(r), r, port.handle_id
+            """
+        return self._basic_read_query_to_dict(q, port_name=port_name)
 
 
 class HostModel(CommonQueries):
@@ -348,6 +374,24 @@ class PhysicalHostModel(HostModel, EquipmentModel):
 
 class LogicalHostModel(HostModel, LogicalModel):
     pass
+
+
+class PortModel(EquipmentModel):
+
+    def get_units(self):
+        q = """
+            MATCH (n:Node {handle_id={handle_id}})<-[:Part_of]-(unit:Unit)
+            RETURN type(r), id(r), r, unit.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
+    def get_unit(self, unit_name):
+        q = """
+            MATCH (n:Node {handle_id={handle_id}})<-[r:Part_of]-(unit:Unit)
+            WHERE unit.name = {unit_name}
+            RETURN type(r), id(r), r, unit.handle_id
+            """
+        return self._basic_read_query_to_dict(q, unit_name=unit_name)
 
 
 class OpticalNodeModel(EquipmentModel):
