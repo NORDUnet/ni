@@ -1,0 +1,76 @@
+
+{% load noclook_tags %}
+<h3>Node properties</h3>
+<table class="table">
+    {% for key,value in node.data.items %}
+        <tr>
+            <td><strong>{{key}}</strong></td><td>{{value}}</td>
+        </tr>
+    {% endfor %}
+</table>
+<h3>Relationships</h3>
+<table class="table">
+    {% for type, items in node.outgoing.items %}
+        {% for item in items %}
+            <a href="{{ node_handle.get_absolute_url }}">{{node_handle.name}}</a>
+            <tr>
+                <td><a href="{{ node_handle.get_absolute_url }}">{{node_handle.node_name}}</a></td><td>{{ type }}</td><td><a href="{% noclook_node_to_url item.node.data.handle_id %}">{{ item.node.data.name}}</a></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <table>
+                        {% for key, value in item.relationship.items %}
+                            <tr>
+                                <td><strong>{{ key }}</strong></td><td>{{ value }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+                <td></td>
+            </tr>
+        {% endfor %}
+    {% endfor %}
+    {% for type, items in node.incoming.items %}
+        {% for item in items %}
+            <a href="{{ node_handle.get_absolute_url }}">{{node_handle.name}}</a>
+            <tr>
+                <td><a href="{% noclook_node_to_url item.node.data.handle_id %}">{{ item.node.data.name}}</a></td><td>{{ type }}</td><td><a href="{{ node_handle.get_absolute_url }}">{{node_handle.node_name}}</a></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <table>
+                        {% for key, value in item.relationship.items %}
+                            <tr>
+                                <td><strong>{{ key }}</strong></td><td>{{ value }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </td>
+                <td></td>
+            </tr>
+        {% endfor %}
+    {% endfor %}
+</table>
+<h3>Meta information</h3>
+<table class="table">
+    <tr>
+        <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
+    </tr>
+    <tr>
+        <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
+    </tr>
+    <tr>
+        <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
+    </tr>
+    <tr>
+        <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
+    </tr>
+    <tr>
+        <td><b>created:</b> </td><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+    </tr>
+    <tr>
+        <td><b>modified:</b> </td><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+    </tr>
+</table>
