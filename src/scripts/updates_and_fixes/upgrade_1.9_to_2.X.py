@@ -133,7 +133,7 @@ def insert_graph_data(json_list):
             # We need the old node id to create relationships, this will be removed later.
             properties['old_node_id'] = item.get('id')
             # Add all properties
-            node = nc.update_node_properties(nc.neo4jdb, nh.handle_id, properties)
+            node = nc.set_node_properties(nc.neo4jdb, nh.handle_id, properties)
             try:
                 print u'Added node {meta_type} {node_type} {name} with handle ID: {handle_id}'.format(
                       name=node['name'], node_type=node_type, meta_type=meta_type, handle_id=node['handle_id'])
