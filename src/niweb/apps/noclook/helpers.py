@@ -87,25 +87,21 @@ def get_nh_node(handle_id):
     return node_handle, node_model
 
 
-def delete_node(user, node):
+def delete_node(user, handle_id):
     try:
-        nh = NodeHandle.objects.get(pk=node['handle_id'])
-        if nc.get_node_meta_type(node) == 'physical':
-            # Remove dependant equipment like Ports and Units
-            for rel in node.Has.outgoing:
-                delete_node(user, rel.end)
-            for rel in node.Part_of.incoming:
-                delete_node(user, rel.start)
+        nh = NodeHandle.objects.get(pk=handle_id)
+        nh.get_node().delete()
         activitylog.delete_node(user, nh)
         nh.delete()
-    except (ObjectDoesNotExist, nc.neo4jdb.NotFoundException):
+    except ObjectDoesNotExist:
         pass
     return True
 
 
-def delete_relationship(user, relationship):
+def delete_relationship(user, relationship_id):
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
     activitylog.delete_relationship(user, relationship)
-    nc.delete_relationship(nc.neo4jdb, relationship)
+    relationship.delete()
     return True
 
 
@@ -218,7 +214,7 @@ def set_noclook_auto_manage(item, auto_manage):
     if isinstance(item, nc.models.BaseNodeModel):
         nc.set_node_properties(nc.neo4jdb, item.handle_id, item.data)
     elif isinstance(item, nc.models.BaseRelationshipModel):
-        nc.set_relationship_properties(nc.neo4jdb, item.handle_id, item.data)
+        nc.set_relationship_properties(nc.neo4jdb, item.id, item.data)
 
 
 def update_noclook_auto_manage(item):
@@ -239,13 +235,13 @@ def update_noclook_auto_manage(item):
         nc.set_relationship_properties(nc.neo4jdb, item.id, item.data)
 
 
-def isots_to_dt(item):
+def isots_to_dt(data):
     """
     Returns noclook_last_seen property as a datetime.datetime. If the property
     does not exist we return None.
     """
     try:
-        ts = item.get('noclook_last_seen', None)
+        ts = data.get('noclook_last_seen', None)
         try:
             dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')  # ex. 2011-11-01T14:37:13.713434
         except ValueError:
@@ -255,7 +251,7 @@ def isots_to_dt(item):
     return dt
 
 
-def neo4j_data_age(item, max_data_age=None):
+def neo4j_data_age(data, max_data_age=None):
     """
     Checks the noclook_last_seen property against datetime.datetime.now() and
     if the difference is greater than max_data_age (hours)
@@ -267,9 +263,9 @@ def neo4j_data_age(item, max_data_age=None):
         max_data_age = django_settings.NEO4J_MAX_DATA_AGE
     max_age = timedelta(hours=int(max_data_age))
     now = datetime.now()
-    last_seen = isots_to_dt(item)
+    last_seen = isots_to_dt(data)
     expired = False
-    if last_seen and (now-last_seen) > max_age and item.get('noclook_auto_manage', False):
+    if last_seen and (now-last_seen) > max_age and data.get('noclook_auto_manage', False):
         expired = True
     return last_seen, expired
 

@@ -88,7 +88,7 @@ class NodeHandle(models.Model):
         """
         Delete that node handle and the handles node.
         """
-        nc.delete_node(nc.neo4jdb, self.handle_id)
+        self.get_node().delete()
         Comment.objects.filter(object_pk=self.pk).delete()
         super(NodeHandle, self).delete()
         return True
