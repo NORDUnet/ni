@@ -273,6 +273,13 @@ class PhysicalModel(CommonQueries):
             """
         return self._basic_write_query_to_dict(q, location_handle_id=location_handle_id)
 
+    def get_has(self):
+        q = """
+            MATCH (n:Node {handle_id={handle_id}})-[r:Has]->(part:Physical)
+            RETURN type(r), id(r), r, part.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
     def set_has(self, has_handle_id):
         q = """
             MATCH (n:Node {handle_id: {handle_id}}), (part:Node {handle_id: {has_handle_id}})
@@ -281,6 +288,13 @@ class PhysicalModel(CommonQueries):
             RETURN created, type(r), id(r), r, part.handle_id
             """
         return self._basic_write_query_to_dict(q, part_handle_id=has_handle_id)
+
+    def get_part_of(self):
+        q = """
+            MATCH (n:Node {handle_id={handle_id}})<-[r:Part_of]-(part:Logical)
+            RETURN type(r), id(r), r, part.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
 
     def set_part_of(self, part_handle_id):
         q = """
@@ -341,7 +355,7 @@ class EquipmentModel(PhysicalModel):
 
     def get_port(self, port_name):
         q = """
-            MATCH (n:Node {handle_id={handle_id}})-[r:Has]->(port:Port)
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Has]->(port:Port)
             WHERE port.name = {port_name}
             RETURN type(r), id(r), r, port.handle_id
             """
@@ -402,14 +416,14 @@ class PortModel(EquipmentModel):
 
     def get_units(self):
         q = """
-            MATCH (n:Node {handle_id={handle_id}})<-[:Part_of]-(unit:Unit)
+            MATCH (n:Node {handle_id: {handle_id}})<-[:Part_of]-(unit:Unit)
             RETURN type(r), id(r), r, unit.handle_id
             """
         return self._basic_read_query_to_dict(q)
 
     def get_unit(self, unit_name):
         q = """
-            MATCH (n:Node {handle_id={handle_id}})<-[r:Part_of]-(unit:Unit)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Part_of]-(unit:Unit)
             WHERE unit.name = {unit_name}
             RETURN type(r), id(r), r, unit.handle_id
             """
@@ -422,3 +436,48 @@ class OpticalNodeModel(EquipmentModel):
 
 class RouterModel(EquipmentModel):
     pass
+
+
+class PeeringPartnerModel(RelationModel):
+
+    def get_peering_groups(self):
+        q = """
+            MATCH (host {handle_id: {handle_id}})-[r:Uses]->(group:Peering_Group)
+            RETURN type(r), id(r), r, group.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
+    def get_peering_group(self, group_handle_id, ip_address):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Uses]->(group:Node {handle_id: {group_handle_id}})
+            WHERE r.ip_address={ip_address}
+            RETURN type(r), id(r), r, group.handle_id
+            """
+        return self._basic_read_query_to_dict(q, group_handle_id=group_handle_id, ip_address=ip_address)
+
+    def set_peering_group(self, group_handle_id, ip_address):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (group:Node {handle_id: {group_handle_id}})
+            CREATE (n)-[r:Uses {ip_address:{ip_address}}]->(group)
+            RETURN true as created, type(r), id(r), r, group.handle_id
+            """
+        return self._basic_write_query_to_dict(q, group_handle_id=group_handle_id, ip_address=ip_address)
+
+
+class PeeringGroupModel(LogicalModel):
+
+    def get_group_dependency(self, dependency_handle_id, ip_address):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Depends_on]->(dependency:Node {handle_id: {dependency_handle_id}})
+            WHERE r.ip_address={ip_address}
+            RETURN type(r), id(r), r, dependency.handle_id
+            """
+        return self._basic_read_query_to_dict(q, dependency_handle_id=dependency_handle_id, ip_address=ip_address)
+
+    def set_group_dependency(self, dependency_handle_id, ip_address):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (dependency:Node {handle_id: {dependency_handle_id}})
+            CREATE (n)-[r:Depends_on {ip_address:{ip_address}}]->(dependency)
+            RETURN true as created, type(r), id(r), r, dependency.handle_id
+            """
+        return self._basic_write_query_to_dict(q, dependency_handle_id=dependency_handle_id, ip_address=ip_address)
