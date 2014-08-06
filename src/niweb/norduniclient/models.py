@@ -362,6 +362,31 @@ class EquipmentModel(PhysicalModel):
         return self._basic_read_query_to_dict(q, port_name=port_name)
 
 
+class SubEquipmentModel(PhysicalModel):
+
+    def get_location_path(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[:Has]-(parent)
+            OPTIONAL MATCH p=()-[:Has*0..20]->(r)<-[:Located_in]-()-[:Has*0..20]->(parent)
+            WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength
+            WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths
+            UNWIND(longestPaths) as location_path
+            RETURN location_path
+            """
+        return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
+
+    def get_placement_path(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[:Has]-(parent)
+            OPTIONAL MATCH p=()-[:Has*0..20]->(parent)
+            WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength
+            WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths
+            UNWIND(longestPaths) as placement_path
+            RETURN placement_path
+            """
+        return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
+
+
 class HostModel(CommonQueries):
 
     def get_dependent_as_types(self):  # Does not return Host_Service as a direct dependent
@@ -412,7 +437,7 @@ class LogicalHostModel(HostModel, LogicalModel):
     pass
 
 
-class PortModel(EquipmentModel):
+class PortModel(SubEquipmentModel):
 
     def get_units(self):
         q = """

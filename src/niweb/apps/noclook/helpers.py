@@ -65,6 +65,7 @@ def normalize_whitespace(s):
     """
     return u' '.join(s.split())
 
+
 def get_node_url(handle_id):
     """
     Takes a node and returns it's NodeHandles URL or '' if node
@@ -73,7 +74,7 @@ def get_node_url(handle_id):
     try:
         nh = NodeHandle.objects.get(pk=handle_id)
         return nh.get_absolute_url()
-    except TypeError:
+    except (TypeError, ValueError):
         # Node is most likely a None value
         return ''
 

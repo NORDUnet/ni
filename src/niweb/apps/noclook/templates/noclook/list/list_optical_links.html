@@ -36,21 +36,26 @@
         <tbody>
         {% load noclook_tags %}
         {% for optical_link in optical_link_list %}
-            {% if optical_link.node.operational_state == "Decommissioned" %}
+            {% if optical_link.data.operational_state == "Decommissioned" %}
                 <tr class="decommissioned">
-                    {% elif optical_link.node.operational_state == "Reserved" %}
+                    {% elif optical_link.data.operational_state == "Reserved" %}
                 <tr class="reserved">
-                    {% elif optical_link.node.operational_state == "Testing" %}
+                    {% elif optical_link.data.operational_state == "Testing" %}
                 <tr class="testing">
                     {% else %}
                 <tr>
             {% endif %}
-                    <td><a href="{% noclook_node_to_url optical_link.node %}">{{ optical_link.node.name }}</a></td>
-                    <td>{{ optical_link.node.link_type }}</td>
-                    <td>{{ optical_link.node.description }}</td>
+                    <td><a href="{% noclook_node_to_url optical_link.handle_id %}">{{ optical_link.data.name }}</a></td>
+                    <td>{{ optical_link.data.link_type }}</td>
+                    <td>{{ optical_link.data.description }}</td>
                     <td>
-                        {% for end_point in optical_link.end_points %}
-                            <a href="{% noclook_node_to_url end_point.dep %}">{{ end_point.parent.name }} {{ end_point.dep.name }}</a><br>
+                        {% for end_point in optical_link.get_dependencies.Depends_on %}
+                            <a href="{% noclook_node_to_url end_point.node.handle_id %}">
+                                {% for loc in end_point.node.get_placement_path.placement_path %}
+                                    {{ loc.name }}
+                                {% endfor %}
+                                {{ end_point.node.data.name }}
+                            </a><br>
                         {%  endfor %}
                     </td>
                 </tr>

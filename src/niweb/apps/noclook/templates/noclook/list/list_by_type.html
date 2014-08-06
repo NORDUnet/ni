@@ -32,7 +32,7 @@ $(document).ready(
         <tbody>
             {% load noclook_tags %}
             {% for nh in node_handle_list %}
-                {% noclook_has_expired nh.get_node as expired %}
+                {% noclook_has_expired nh.get_node.data as expired %}
                 {% if expired %}
                     <tr class="expired">
                 {% else %}
