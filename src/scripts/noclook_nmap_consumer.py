@@ -41,13 +41,11 @@ import noclook_consumer as nt
 from apps.noclook import activitylog
 from apps.noclook import helpers as h
 
-logger = logging.getLogger('noclook_nmap_consumer_py')
+logger = logging.getLogger('noclook_consumer.nmap')
 
 
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
-
-VERBOSE = False
 
 HOST_USERS_MAP = {
     'eduroam.se':       'SUNET',
@@ -84,9 +82,8 @@ def set_host_user(host):
             h.set_user(user, host, relation_node_handle.handle_id)
         elif host.meta_type == 'Physical':
             h.set_owner(user, host, relation_node_handle.handle_id)
-        if VERBOSE:
-            logger.info('Host User {user_name} set for host {host_name}.'.format(user_name=host_user_name,
-                                                                                 host_name=host.data['name']))
+        logger.info('Host User {user_name} set for host {host_name}.'.format(user_name=host_user_name,
+                                                                             host_name=host.data['name']))
 
 
 def is_host(addresses):
@@ -205,13 +202,11 @@ def insert_services(service_dict, host_node, external_check=False):
                             logger.warn('New open port found for host {name}.'.format(name=host_node.data['name']))
                             property_keys.append('rogue_port')
                             relationship_properties['rogue_port'] = True
-                        if VERBOSE:
-                            logger.info('Host Service {host_service_name} using port {port}/{protocol} created.'.format(
-                                host_service_name=service_node.data['name'],
-                                port=relationship.data['port'],
-                                protocol=relationship.data['protocol']
-                            ))
-                    if not created and VERBOSE:
+                        logger.info('Host Service {host_service_name} using port {port}/{protocol} created.'.format(
+                            host_service_name=service_node.data['name'], port=relationship.data['port'],
+                            protocol=relationship.data['protocol']
+                        ))
+                    if not created:
                         logger.info('Host Service {host_service_name} using port {port}/{protocol} found.'.format(
                             host_service_name=service_node.data['name'],
                             port=relationship.data['port'],
@@ -219,9 +214,8 @@ def insert_services(service_dict, host_node, external_check=False):
                         ))
                     h.update_noclook_auto_manage(relationship)
                     h.dict_update_relationship(user, relationship.id, relationship_properties, property_keys)
-                    if VERBOSE:
-                        logger.info('{name} {ip_address} {port}/{protocol} processed...'.format(
-                            name=host_node.data['name'], ip_address=address, protocol=protocol, port=port))
+                    logger.info('{name} {ip_address} {port}/{protocol} processed...'.format(
+                        name=host_node.data['name'], ip_address=address, protocol=protocol, port=port))
 
 
 def insert_nmap(json_list, external_check=False):
@@ -238,8 +232,7 @@ def insert_nmap(json_list, external_check=False):
         addresses = i['host']['nmap_services_py']['addresses']
         # Check if the ipaddresses matches any non-host node as a router interface for example
         if not is_host(addresses):
-            if VERBOSE:
-                logger.info('%s does not appear to be a host.' % name)
+            logger.info('%s does not appear to be a host.' % name)
             continue
         # Create the NodeHandle and the Node
         node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
@@ -272,8 +265,7 @@ def insert_nmap(json_list, external_check=False):
         h.dict_update_node(user, node.handle_id, properties, properties.keys())
         # Set host user depending on the domain.
         set_host_user(node)
-        if VERBOSE:
-            logger.info('%s done.' % name)
+        logger.info('%s done.' % name)
 
 
 def main():
@@ -289,8 +281,7 @@ def main():
         sys.exit(1)
     else:
         if args.verbose:
-            global VERBOSE
-            VERBOSE = True
+            logger.setLevel(logging.INFO)
         config = nt.init_config(args.C)
         nmap_services_data = config.get('data', 'nmap_services_py')
         if nmap_services_data:
@@ -298,7 +289,7 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
