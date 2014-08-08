@@ -110,7 +110,7 @@ def restore_node(handle_id, node_name, node_type_name, node_meta_type):
     node_handle, created = NodeHandle.objects.get_or_create(handle_id=handle_id, defaults=defaults)
     if not created:
         node_handle.node_meta_type = node_meta_type
-    node_handle.save()  # Create a node
+    node_handle.save()  # Create a node if it does not already exist
     return node_handle
 
 
