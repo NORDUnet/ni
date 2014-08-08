@@ -34,12 +34,12 @@ def list_cables(request):
 
 @login_required
 def list_hosts(request):
-    q = '''
+    q = """
         MATCH (host:Host)
         OPTIONAL MATCH (host)<-[:Owns|Uses]-(user)
         RETURN host, collect(user) as users
         ORDER BY host.name
-        '''
+        """
     with nc.neo4jdb.read as r:
         host_list = r.execute(q).fetchall()
     return render_to_response('noclook/list/list_hosts.html', {'host_list': host_list},
@@ -62,10 +62,10 @@ def list_odfs(request):
 
 @login_required
 def list_optical_links(request):
-    q = '''
+    q = """
         MATCH (link:Optical_Link)
         RETURN collect(link.handle_id) as ids
-        '''
+        """
     result = nc.query_to_dict(nc.neo4jdb, q)
     optical_link_list = []
     for handle_id in result['ids']:
@@ -77,10 +77,10 @@ def list_optical_links(request):
 
 @login_required
 def list_optical_multiplex_section(request):
-    q = '''
+    q = """
         MATCH (oms:Optical_Multiplex_Section)
         RETURN collect(oms.handle_id) as ids
-        '''
+        """
     result = nc.query_to_dict(nc.neo4jdb, q)
     optical_multiplex_section_list = []
     for handle_id in result['ids']:
@@ -89,21 +89,61 @@ def list_optical_multiplex_section(request):
                               {'optical_multiplex_section_list': optical_multiplex_section_list},
                               context_instance=RequestContext(request))
 
-# TODO fix list views below
+@login_required
+def list_optical_nodes(request):
+    q = """
+        MATCH (node:Optical_Node)
+        RETURN node, node.type as type, node.link as link, node.ots as ots
+        ORDER BY node.name
+        """
+    optical_node_list = nc.query_to_list(nc.neo4jdb, q)
+    return render_to_response('noclook/list/list_optical_nodes.html',
+                              {'optical_node_list': optical_node_list},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def list_optical_paths(request):
+    q = """
+        MATCH (path:Optical_Path)
+        RETURN path, path.framing as framing, path.capacity as capacity, path.enrs as enrs,
+            path.description as description, path.operational_state as operational_state
+        ORDER BY path.name
+        """
+    optical_path_list = nc.query_to_list(nc.neo4jdb, q)
+    return render_to_response('noclook/list/list_optical_paths.html',
+                              {'optical_path_list': optical_path_list},
+                              context_instance=RequestContext(request))
+
 
 @login_required
 def list_peering_partners(request):
-    q = '''
-        START node=node:node_types(node_type = "Peering Partner")
-        MATCH node-[?:Uses]->peering_group
-        WITH distinct node,peering_group
-        RETURN node, collect(peering_group) as peering_groups
-        ORDER BY node.name
-        '''
-    partner_list = nc.neo4jdb.query(q)
+    q = """
+        MATCH (peer:Peering_Partner)
+        OPTIONAL MATCH peer-[:Uses]->peering_group
+        WITH distinct peer, peering_group
+        RETURN peer, collect(peering_group) as peering_groups
+        ORDER BY peer.name
+        """
+    partner_list = nc.query_to_list(nc.neo4jdb, q)
     return render_to_response('noclook/list/list_peering_partners.html', {'partner_list': partner_list},
                               context_instance=RequestContext(request))
 
+
+@login_required
+def list_racks(request):
+    q = """
+        MATCH (rack:Rack)
+        OPTIONAL MATCH rack<-[:Has]-site
+        RETURN rack, site
+        ORDER BY site.name, rack.name
+        """
+    rack_list = nc.query_to_list(nc.neo4jdb, q)
+    return render_to_response('noclook/list/list_racks.html',
+                              {'rack_list': rack_list},
+                              context_instance=RequestContext(request))
+
+# TODO fix list views below
 
 @login_required
 def list_sites(request):
@@ -131,14 +171,14 @@ def list_services(request, service_class=None):
         where_statement = 'WHERE node.service_class = "%s"' % service_class
     else:
         where_statement = ''
-    q = '''
+    q = """
         START node=node:node_types(node_type = "Service")
         MATCH node<-[?:Uses]-user
         %s
         RETURN node, node.service_class? as service_class, node.service_type? as service_type,
         node.description? as description, node.operational_state? as operational_state, collect(user) as users
         ORDER BY node.name
-        ''' % where_statement
+        """ % where_statement
     service_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_services.html',
                               {'service_list': service_list, 'service_class': service_class},
@@ -146,56 +186,19 @@ def list_services(request, service_class=None):
 
 
 @login_required
-def list_optical_paths(request):
-    q = '''
-        START node=node:node_types(node_type = "Optical Path")
-        RETURN node, node.framing? as framing, node.capacity? as capacity, node.enrs? as enrs,
-        node.description? as description, node.operational_state? as operational_state
-        '''
-    optical_path_list = nc.neo4jdb.query(q)
-    return render_to_response('noclook/list/list_optical_paths.html',
-                              {'optical_path_list': optical_path_list},
-                              context_instance=RequestContext(request))
-
-
-@login_required
 def list_routers(request):
-    q = '''
+    q = """
         START node=node:node_types(node_type = "Router")
         RETURN node, node.model? as model, node.version? as version
         ORDER BY node.name
-        '''
+        """
     router_list = nc.neo4jdb.query(q)
     return render_to_response('noclook/list/list_routers.html',
                               {'router_list': router_list},
                               context_instance=RequestContext(request))
 
 
-@login_required
-def list_optical_nodes(request):
-    q = '''
-        START node=node:node_types(node_type = "Optical Node")
-        RETURN node, node.type? as type, node.link? as link, node.ots? as ots
-        ORDER BY node.name
-        '''
-    optical_node_list = nc.neo4jdb.query(q)
-    return render_to_response('noclook/list/list_optical_nodes.html',
-                              {'optical_node_list': optical_node_list},
-                              context_instance=RequestContext(request))
 
-
-@login_required
-def list_racks(request):
-    q = '''
-        START node=node:node_types(node_type = "Rack")
-        MATCH node<-[?:Has]-site
-        RETURN node,site
-        ORDER BY site.name, node.name
-        '''
-    rack_list = nc.neo4jdb.query(q)
-    return render_to_response('noclook/list/list_racks.html',
-                              {'rack_list': rack_list},
-                              context_instance=RequestContext(request))
 
 
 

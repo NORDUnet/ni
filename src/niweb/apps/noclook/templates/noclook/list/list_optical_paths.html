@@ -30,7 +30,7 @@
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
             <tr>
-                <th>Optical Link</th><th>Framing</th><th>Capacity</th><th>Description</th><th>ENRs</th>
+                <th>Optical Path</th><th>Framing</th><th>Capacity</th><th>Description</th><th>ENRs</th>
             </tr>
         </thead>
         <tbody>
@@ -45,10 +45,10 @@
                     {% else %}
                 <tr>
             {% endif %}
-                    <td><a href="{% noclook_node_to_url optical_path.node %}">{{ optical_path.node.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url optical_path.path.handle_id %}">{{ optical_path.path.name }}</a></td>
                     <td>{{ optical_path.framing }}</td>
                     <td>{{ optical_path.capacity }}</td>
-                    <td>{{ optical_path.description }}</td>
+                    <td>{{ optical_path.description|default_if_none:"" }}</td>
                     <td>{% for enr in optical_path.enrs %}{{ enr }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                 </tr>
         {% endfor %}

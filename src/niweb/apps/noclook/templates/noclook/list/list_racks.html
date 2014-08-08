@@ -30,8 +30,8 @@ $(document).ready(
             {% load noclook_tags %}
             {% for item in rack_list %}
                 <tr>
-                    <td><a class="handle" href="{% noclook_node_to_url item.site %}">{{ item.site.name }}</a></td>
-                    <td><a class="handle" href="{% noclook_node_to_url item.node %}">{{ item.node.name }}</a></td>
+                    <td><a class="handle" href="{% noclook_node_to_url item.site.handle_id %}">{{ item.site.name }}</a></td>
+                    <td><a class="handle" href="{% noclook_node_to_url item.rack.handle_id %}">{{ item.rack.name }}</a></td>
                 </tr>
             {% endfor %}
         </tbody>
