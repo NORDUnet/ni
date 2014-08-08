@@ -31,29 +31,33 @@ import logging
 
 ## Need to change this path depending on where the Django project is
 ## located.
-#path = '/var/norduni/src/niweb/'
-#path = '/home/jbn/stuff/work/code/norduni/src/niweb/'
-path = '/home/lundberg/norduni/src/niweb/'
-#path = '/var/opt/norduni/src/niweb/'
-##
-##
-sys.path.append(os.path.abspath(path))
+base_path = '../niweb/'
+sys.path.append(os.path.abspath(base_path))
+niweb_path = os.path.join(base_path, 'niweb')
+sys.path.append(os.path.abspath(niweb_path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from django.conf import settings as django_settings
-from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook import helpers as h
+import apps.noclook.helpers as h  # Shortcircuit circular dependency
 from apps.noclook import activitylog
 from django.contrib.comments import Comment
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 import norduniclient as nc
-import noclook_juniper_consumer
-import noclook_nmap_consumer_py
-import noclook_checkmk_consumer
-import noclook_cfengine_consumer
 
 logger = logging.getLogger('noclook_consumer')
+logger.propagate = False
+logger.setLevel(logging.WARNING)
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+
+import noclook_juniper_consumer
+import noclook_nmap_consumer
+import noclook_checkmk_consumer
+import noclook_cfengine_consumer
 
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
@@ -68,7 +72,7 @@ def init_config(p):
         config.read(p)
         return config
     except IOError as (errno, strerror):
-        print "I/O error({0}): {1}".format(errno, strerror)
+        logger.error("I/O error({0}): {1}".format(errno, strerror))
 
 
 def normalize_whitespace(text):
@@ -91,11 +95,11 @@ def load_json(json_dir):
                     f = open(join(json_dir, a_file), 'r')
                     json_list.append(json.load(f))
                 except ValueError as e:
-                    print 'Encountered a problem with %s.' % a_file
-                    print e
+                    logger.error('Encountered a problem with {f}.'.format(f=a_file))
+                    logger.error(e)
     except IOError as e:
-        print 'Encountered a problem with %s.' % json_dir
-        print e
+        logger.error('Encountered a problem with {d}.'.format(d=json_dir))
+        logger.error(e)
     return json_list
 
 
@@ -182,28 +186,27 @@ def create_node_handle(node_name, node_type_name, node_meta_type):
     return node_handle
 
 
-def restore_node(db, handle_id, node_name, node_type_name, node_meta_type):
+def restore_node(handle_id, node_name, node_type_name, node_meta_type):
     """
     Tries to get a existing node handle from the SQL database before creating
     a new handle with an old handle id.
-    
+
     When we are setting the handle_id explicitly we need to run django-admin.py
     sqlsequencereset noclook and paste that SQL statements in to the dbhell.
     """
     user = get_user()
     node_type = get_node_type(node_type_name)
-    try:
-        node_handle = NodeHandle.objects.get(handle_id=handle_id)
-        node_handle.save()
-    except ObjectDoesNotExist:
-        # A NodeHandle was not found, create one
-        node_handle = NodeHandle.objects.create(handle_id=handle_id, 
-                                                node_name=node_name,
-                                                node_type=node_type,
-                                                node_meta_type=node_meta_type,
-                                                creator=user,
-                                                modifier=user)
-        node_handle.save()
+    defaults = {
+        'node_name': node_name,
+        'node_type': node_type,
+        'node_meta_type': node_meta_type,
+        'creator': user,
+        'modifier': user
+    }
+    node_handle, created = NodeHandle.objects.get_or_create(handle_id=handle_id, defaults=defaults)
+    if not created:
+        node_handle.node_meta_type = node_meta_type
+    node_handle.save()  # Create a node if it does not already exist
     return node_handle
 
 
@@ -223,69 +226,42 @@ def consume_noclook(json_list):
     """
     Inserts the backup made with NOCLook producer.
     """
-    # Remove all old node ids.
-    NodeHandle.objects.all().update(node_id=None)
     # Loop through all files starting with node
     for i in json_list:
         if i['host']['name'].startswith('node'):
             item = i['host']['noclook_producer']
             properties = item.get('properties')
             node_name = properties.get('name')
-            handle_id = properties.get('handle_id')
-            node_type = properties.get('node_type')
+            handle_id = item.get('handle_id')
+            node_type = item.get('node_type')
             meta_type = item.get('meta_type')
             # Get a node handle
-            nh = restore_node(nc.neo4jdb, handle_id, node_name, node_type, meta_type)
-            node = nh.get_node()
-            with nc.neo4jdb.transaction:
-                node['old_node_id'] = item.get('id')
-                node['handle_id'] = int(nh.handle_id)
-            # Add all properties except the old NodeHandle id
-            #nc.update_item_properties(nc.neo4jdb, node, properties)
-            # Add the old node id to an index for fast relationship adding
-            #index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
-            #nc.add_index_item(nc.neo4jdb, index, node, 'old_node_id')
-            # Add the node to other indexes needed for NOCLook
-            #add_node_to_indexes(node)
-            try:
-                try:
-                    print 'Added node %d: %s %s %s. Handle ID: %d' % (node.id,
-                        node['name'], node['node_type'], meta_type, nh.handle_id)
-                except UnicodeError:
-                    pass
-            except KeyError as e:
-                print e
-                print 'Handle ID: %d, node ID: %d' % (nh.handle_id, node.id)
-                sys.exit(1)
+            nh = restore_node(handle_id, node_name, node_type, meta_type)
+            nc.set_node_properties(nc.neo4jdb, nh.handle_id, properties)
+            logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
+            json_list.remove(i)
+
     # Loop through all files starting with relationship
-    for i in json_list:
-        if i['host']['name'].startswith('relationship'):
-            item = i['host']['noclook_producer']
-            properties = item.get('properties')
-            #start_node = nc.get_node_by_value(nc.neo4jdb, item.get('start'), 'old_node_id')
-            #start_node = h.iter2list(index['old_node_id'][item['start']])
-            #end_node = h.iter2list(index['old_node_id'][item['end']])
-            #end_node = nc.get_node_by_value(nc.neo4jdb, item.get('end'), 'old_node_id')
-            #with nc.neo4jdb.transaction:
-                #rel = start_node[0].relationships.create(item.get('type'),  end_node[0])
-            #try:
-                #print start_node[0]['name'], item.get('type'), end_node[0]['name']
-            #except KeyError as e:
-            #    print e
-            #    print i
-            #    sys.exit(1)
-            #nc.update_item_properties(nc.neo4jdb, rel, properties)
-            # Add the relationship to indexes needed for NOCLook
-            #add_relationship_to_indexes(rel)
-    # Remove the 'old_node_id' property from all nodes
-    for n in nc.get_all_nodes(nc.neo4jdb):
-        if n.get_property('old_node_id', None):
-            with nc.neo4jdb.transaction:
-                del n['old_node_id']
-    # Remove the temporary old_node_id index.
-    with nc.neo4jdb.transaction:
-        index = nc.get_node_index(nc.neo4jdb, 'old_node_ids')
-        index.delete()
+    x = 0
+    with nc.neo4jdb.write as w:
+        for i in json_list:
+            if i['host']['name'].startswith('relationship'):
+                item = i['host']['noclook_producer']
+                properties = item.get('properties')
+
+                props = {'props': properties}
+                q = """
+                    MATCH (start:Node { handle_id:{start_id} }),(end:Node {handle_id: {end_id} })
+                    CREATE UNIQUE (start)-[r:%s { props } ]->(end)
+                    """ % item.get('type')
+
+                w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props)
+                logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
+                                                                   end=item.get('end')))
+                x += 1
+                if x >= 1000:
+                    w.connection.commit()
+                x = 0
 
 
 def run_consume(config_file):
@@ -299,8 +275,6 @@ def run_consume(config_file):
     juniper_conf_data_age = config.get('data_age', 'juniper_conf')
     # nmap services
     nmap_services_py_data = config.get('data', 'nmap_services_py')
-    # alcatel isis
-    alcatel_isis_data = config.get('data', 'alcatel_isis')
     # nagios checkmk
     nagios_checkmk_data = config.get('data', 'nagios_checkmk')
     # cfengine report
@@ -313,7 +287,7 @@ def run_consume(config_file):
         noclook_juniper_consumer.consume_juniper_conf(data)
     if nmap_services_py_data:
         data = load_json(nmap_services_py_data)
-        noclook_nmap_consumer_py.insert_nmap(data)
+        noclook_nmap_consumer.insert_nmap(data)
     if nagios_checkmk_data:
         data = load_json(nagios_checkmk_data)
         noclook_checkmk_consumer.insert(data)
@@ -339,6 +313,7 @@ def main():
     parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
     parser.add_argument('-P', action='store_true', help='Purge the database.')
     parser.add_argument('-I', action='store_true', help='Insert data in to the database.')
+    parser.add_argument('-V', action='store_true', default=False)
     args = parser.parse_args()
     # Start time
     start = datetime.datetime.now()
@@ -352,6 +327,8 @@ def main():
     if args.P:
         print 'Purging database...'
         purge_db()
+    if args.V:
+        logger.setLevel(logging.INFO)
     # Insert data from known data sources if option -I was used
     if args.I:
         print 'Inserting data...'
@@ -365,10 +342,4 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    logger.setLevel(logging.INFO)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
     main()

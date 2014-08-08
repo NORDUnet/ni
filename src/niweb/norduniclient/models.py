@@ -275,7 +275,7 @@ class PhysicalModel(CommonQueries):
 
     def get_has(self):
         q = """
-            MATCH (n:Node {handle_id={handle_id}})-[r:Has]->(part:Physical)
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Has]->(part:Physical)
             RETURN type(r), id(r), r, part.handle_id
             """
         return self._basic_read_query_to_dict(q)
@@ -291,7 +291,7 @@ class PhysicalModel(CommonQueries):
 
     def get_part_of(self):
         q = """
-            MATCH (n:Node {handle_id={handle_id}})<-[r:Part_of]-(part:Logical)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Part_of]-(part:Logical)
             RETURN type(r), id(r), r, part.handle_id
             """
         return self._basic_read_query_to_dict(q)
@@ -307,11 +307,11 @@ class PhysicalModel(CommonQueries):
 
     def delete(self):
         has = self.get_has()
-        if has['Has']:
+        if has.get('Has', []):
             for item in has['Has']:
                 item['node'].delete()
         part_of = self.get_part_of()
-        if part_of['Part_of']:
+        if part_of.get('Part_of', []):
             for item in part_of['Part_of']:
                 item['node'].delete()
         super(PhysicalModel, self).delete()

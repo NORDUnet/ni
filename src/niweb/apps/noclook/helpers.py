@@ -27,7 +27,7 @@ except ImportError:
     from apps.noclook.models import NodeHandle, NordunetUniqueId, UniqueIdGenerator, NodeType
     from apps.noclook import activitylog
 import norduniclient as nc
-from norduniclient.exceptions import UniqueNodeError
+from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 
 class UnicodeWriter:
     """
@@ -94,7 +94,7 @@ def delete_node(user, handle_id):
         nh.get_node().delete()
         activitylog.delete_node(user, nh)
         nh.delete()
-    except ObjectDoesNotExist:
+    except (ObjectDoesNotExist, NodeNotFound):
         pass
     return True
 

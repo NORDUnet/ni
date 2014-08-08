@@ -40,12 +40,10 @@ import norduniclient as nc
 import noclook_consumer as nt
 from apps.noclook import helpers as h
 
-logger = logging.getLogger('noclook_checkmk_consumer')
+logger = logging.getLogger('noclook_consumer.checkmk')
 
 # This script is used for adding the objects collected with the
 # NERDS producer checkmk_livestatus.
-
-VERBOSE = False
 
 """
 {
@@ -133,10 +131,9 @@ def set_uptime(host, check):
         }
         h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
-        if VERBOSE:
-            logger.error('{name} uptime check did not match the expected format.'.format(name=host.data['name']))
-            logger.error(check)
-            logger.error(e)
+        logger.error('{name} uptime check did not match the expected format.'.format(name=host.data['name']))
+        logger.error(check)
+        logger.error(e)
 
 
 def set_backup(host, check):
@@ -154,10 +151,9 @@ def set_backup(host, check):
             }
             h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
-        if VERBOSE:
-            logger.error('{name} backup check did not match the expected format.'.format(name=host.data['name']))
-            logger.error(check)
-            logger.error(e)
+        logger.error('{name} backup check did not match the expected format.'.format(name=host.data['name']))
+        logger.error(check)
+        logger.error(e)
 
 
 def collect_netapp_storage_usage(host, check, storage_collection):
@@ -216,9 +212,7 @@ def insert(json_list):
                     netapp_collection = collect_netapp_storage_usage(host, check, netapp_collection)
             set_nagios_checks(host, check_descriptions)
             h.update_noclook_auto_manage(host)
-            if VERBOSE:
-                logger.info('{name} done.'.format(name=host.data['name']))
-
+            logger.info('{name} done.'.format(name=host.data['name']))
     # Set data collected from multiple hosts
     set_netapp_storage_usage(netapp_collection)
 
@@ -231,8 +225,7 @@ def main():
                         help='Verbose output')
     args = parser.parse_args()
     if args.verbose:
-        global VERBOSE
-        VERBOSE = True
+        logger.setLevel(logging.INFO)
     # Load the configuration file
     if not args.C:
         print 'Please provide a configuration file with -C.'
@@ -245,7 +238,7 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')

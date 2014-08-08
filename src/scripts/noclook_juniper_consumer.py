@@ -41,7 +41,7 @@ from apps.noclook import helpers as h
 from apps.noclook import activitylog
 import norduniclient as nc
 
-logger = logging.getLogger('noclook_juniper_consumer')
+logger = logging.getLogger('noclook_consumer.juniper')
 
 # This script is used for adding the objects collected with the
 # NERDS producers juniper_config to the NOCLook database viewer.
@@ -91,9 +91,8 @@ logger = logging.getLogger('noclook_juniper_consumer')
 #    }
 #]}
 
-VERBOSE = False
-
-IP_ADDRESS_MATCH_CACHE = {}
+PEER_AS_CACHE = {}
+REMOTE_IP_MATCH_CACHE = {}
 
 
 def insert_juniper_router(name, model, version):
@@ -111,8 +110,7 @@ def insert_juniper_router(name, model, version):
     }
     h.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
     h.set_noclook_auto_manage(node, True)
-    if VERBOSE:
-        logging.info('Processing {name}...'.format(name=node.data['name']))
+    logging.info('Processing {name}...'.format(name=node.data['name']))
     return node
 
 
@@ -124,15 +122,14 @@ def insert_interface_unit(iface_node, unit):
     unit_name = unicode(unit['unit'])
     # Unit names are unique per interface
     result = iface_node.get_unit(unit_name)
-    if result.get('Part_of'):
+    if result.get('Part_of', None):
         unit_node = result.get('Part_of')[0].get('node')
     else:
         node_handle = nt.create_node_handle(unit_name, 'Unit', 'Logical')
         unit_node = node_handle.get_node()
         h.set_part_of(user, iface_node, unit_node.handle_id)
-        if VERBOSE:
-            logger.info('Unit {interface}.{unit} created.'.format(interface=iface_node.data['name'],
-                                                                  unit=unit_node.data['name']))
+        logger.info('Unit {interface}.{unit} created.'.format(interface=iface_node.data['name'],
+                                                              unit=unit_node.data['name']))
     h.set_noclook_auto_manage(unit_node, True)
     unit['ip_addresses'] = [address.lower() for address in unit.get('address', '')]
     property_keys = ['description', 'ip_addresses', 'vlanid']
@@ -155,7 +152,7 @@ def insert_juniper_interfaces(router_node, interfaces):
         port_name = interface['name']
         if port_name and not not_interesting_interfaces.match(port_name):
             result = router_node.get_port(port_name)
-            if result.get('Has'):
+            if result.get('Has', None):
                 port_node = result.get('Has')[0].get('node')
             else:
                 node_handle = nt.create_node_handle(port_name, 'Port', 'Physical')
@@ -167,10 +164,9 @@ def insert_juniper_interfaces(router_node, interfaces):
             # Update interface units
             for unit in interface['units']:
                 insert_interface_unit(port_node, unit)
-            if VERBOSE:
-                logger.info('{router} {interface} done.'.format(router=router_node.data['name'], interface=port_name))
-        elif VERBOSE:
-                logger.info('Interface {name} ignored.'.format(name=port_name))
+            logger.info('{router} {interface} done.'.format(router=router_node.data['name'], interface=port_name))
+        else:
+            logger.info('Interface {name} ignored.'.format(name=port_name))
 
 
 def get_peering_partner(peering):
@@ -179,6 +175,11 @@ def get_peering_partner(peering):
     is unique for AS number.
     Returns the created node.
     """
+    try:
+        return PEER_AS_CACHE[peering['as_number']]
+    except KeyError:
+        logger.info('Peering Partner {name} not in cache.'.format(name=peering.get('description')))
+        pass
     user = nt.get_user()
     peer_node = None
     peer_properties = {
@@ -200,15 +201,14 @@ def get_peering_partner(peering):
         h.set_noclook_auto_manage(peer_node, True)
         if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
             h.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
-        if VERBOSE:
-            logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
+        logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
     if not peer_node:
         node_handle = nt.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
         peer_node = node_handle.get_node()
         h.set_noclook_auto_manage(peer_node, True)
         h.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
-        if VERBOSE:
-            logger.info('Peering Partner {name} created.'.format(name=peer_properties['name']))
+        logger.info('Peering Partner {name} created.'.format(name=peer_properties['name']))
+    PEER_AS_CACHE[peering['as_number']] = peer_node
     return peer_node
 
 
@@ -217,56 +217,51 @@ def match_remote_ip_address(remote_address):
     Matches a remote address to a local interface.
     Returns a Unit node if match found or else None.
     """
+    q = """
+        START n=node:node_auto_index({lucene_query})
+        RETURN n.handle_id as handle_id, n.ip_addresses as ip_addresses
+        """
     # Check cache
-    for local_network in IP_ADDRESS_MATCH_CACHE.keys():
+    for local_network in REMOTE_IP_MATCH_CACHE.keys():
         if remote_address in local_network:
-            #DEBUG
-            print 'cache hit'
-            cache_hit = IP_ADDRESS_MATCH_CACHE[local_network]
-            return cache_hit['indexed_node'], cache_hit['address']
+            cache_hit = REMOTE_IP_MATCH_CACHE[local_network]
+            return cache_hit['local_network_node'], cache_hit['address']
     # No cache hit
     for prefix in [3, 2, 1]:
         if remote_address.version == 4:
             mask = '.'.join(str(remote_address).split('.')[0:prefix])
         elif remote_address.version == 6:
             mask = ':'.join(str(remote_address).split(':')[0:prefix])
-        q = Q('ip_addresses', '%s*' % mask, wildcard=True)
-        # DEBUG
-        print unicode(q)
-        hits = nc.legacy_node_index_search(nc.neo4jdb, unicode(q))
-        for handle_id in hits['result']:
-            local_network_node = nc.get_node_model(nc.neo4jdb, handle_id)
-            for address in local_network_node.data['ip_addresses']:
+        lucene_q = unicode(Q('ip_addresses', '%s*' % mask, wildcard=True))
+        for hit in nc.query_to_list(nc.neo4jdb, q, lucene_query=lucene_q):
+            for address in hit['ip_addresses']:
                 try:
                     local_network = ipaddr.IPNetwork(address)
                 except ValueError:
                     continue  # ISO address
                 if remote_address in local_network:
                     # add local_network, address and node to cache
-                    IP_ADDRESS_MATCH_CACHE[local_network] = {'address': address, 'indexed_node': local_network_node}
-                    # DEBUG
-                    print local_network, {'address': address, 'indexed_node': local_network_node}
-                    if VERBOSE:
-                        logger.info('Remote IP matched: {name} {ip_address} done.'.format(
-                            name=local_network_node.data['name'], ip_address=address))
+                    local_network_node = nc.get_node_model(nc.neo4jdb, hit['handle_id'])
+                    REMOTE_IP_MATCH_CACHE[local_network] = {
+                        'address': address, 'local_network_node': local_network_node
+                    }
+                    logger.info('Remote IP matched: {name} {ip_address} done.'.format(
+                        name=local_network_node.data['name'], ip_address=address))
                     return local_network_node, address
-    #if VERBOSE:
     logger.info('No local IP address matched for {remote_address}.'.format(remote_address=remote_address))
     return None, None
 
 
 def insert_internal_bgp_peering(peering, service_node):
     """
-    Computes and creates/updates the relationship and nodes
-    needed to express the internal peering.
+    Creates/updates the relationship and nodes needed to express the internal peerings.
     """
     pass
 
 
 def insert_external_bgp_peering(peering, peering_group):
     """
-    Computes and creates/updates the relationship and nodes
-    needed to express the external peering.
+    Creates/updates the relationship and nodes needed to express the external peerings.
     """
     user = nt.get_user()
     # Get or create the peering partner, unique per AS
@@ -274,7 +269,12 @@ def insert_external_bgp_peering(peering, peering_group):
     # Get all relationships with this ip address, should never be more than one
     remote_address = peering.get('remote_address', None).lower()
     if remote_address:
-        result = peer_node.get_peering_group(peering_group.handle_id, remote_address)
+        # DEBUG
+        try:
+            result = peer_node.get_peering_group(peering_group.handle_id, remote_address)
+        except AttributeError:
+            print peer_node
+            sys.exit(1)
         if not result.get('Uses'):
             result = peer_node.set_peering_group(peering_group.handle_id, remote_address)
         relationship_id = result.get('Uses')[0]['relationship_id']
@@ -284,9 +284,6 @@ def insert_external_bgp_peering(peering, peering_group):
         if result.get('Uses')[0].get('created', False):
             activitylog.create_relationship(user, relationship)
         # Match the remote address against a local network
-        #DEBUG
-        print remote_address
-        print ipaddr.IPAddress(remote_address)
         dependency_node, local_address = match_remote_ip_address(ipaddr.IPAddress(remote_address))
         if dependency_node and local_address:
             result = peering_group.get_group_dependency(dependency_node.handle_id, local_address)
@@ -297,7 +294,6 @@ def insert_external_bgp_peering(peering, peering_group):
             h.set_noclook_auto_manage(relationship, True)
             if result.get('Depends_on')[0].get('created', False):
                 activitylog.create_relationship(user, relationship)
-    if VERBOSE:
         logger.info('Peering Partner {name} done.'.format(name=peer_node.data['name']))
 
 
@@ -331,8 +327,7 @@ def consume_juniper_conf(json_list):
         model = i['host']['juniper_conf'].get('model', 'Unknown')
         router_node = insert_juniper_router(name, model, version)
         interfaces = i['host']['juniper_conf']['interfaces']
-        # DEBUG
-        #insert_juniper_interfaces(router_node, interfaces)
+        insert_juniper_interfaces(router_node, interfaces)
         bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
     insert_juniper_bgp_peerings(bgp_peerings)
 
@@ -351,16 +346,14 @@ def remove_router_conf(user, data_age):
             last_seen, expired = h.neo4j_data_age(logical.data, data_age)
             if expired:
                 h.delete_node(user, logical.handle_id)
-                if VERBOSE:
-                    print '.',
+                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
     for handle_id in router_result.get('physical', []):
         physical = nc.get_node_model(nc.neo4jdb, handle_id)
         if physical:
             last_seen, expired = h.neo4j_data_age(physical.data, data_age)
             if expired:
-                h.delete_node(user, physical)
-                if VERBOSE:
-                    print '.',
+                h.delete_node(user, physical.handle_id)
+                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
 
 
 def remove_peer_conf(user, data_age):
@@ -378,16 +371,14 @@ def remove_peer_conf(user, data_age):
             last_seen, expired = h.neo4j_data_age(relationship.data, data_age)
             if expired:
                 h.delete_relationship(user, relationship.id)
-                if VERBOSE:
-                    print '.',
+                logger.info('Deleted relationship {relationship_id}'.format(relationship_id=relationship_id))
     for handle_id in peer_result.get('peer_groups', []):
         peer_group = nc.get_node_model(nc.neo4jdb, handle_id)
         if peer_group:
             last_seen, expired = h.neo4j_data_age(peer_group.data, data_age)
             if expired:
                 h.delete_node(user, peer_group.handle_id)
-                if VERBOSE:
-                    print '.',
+                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
 
 
 def remove_juniper_conf(data_age):
@@ -397,12 +388,12 @@ def remove_juniper_conf(data_age):
     """
     user = nt.get_user()
     data_age = int(data_age) * 24  # hours in a day
-    if VERBOSE:
-        print 'Deleting expired router nodes',
+    logger.info('Deleting expired router nodes and sub equipment nodes:')
     remove_router_conf(user, data_age)
-    if VERBOSE:
-        print 'Deleting expired peering nodes',
+    logger.info('...done!')
+    logger.info('Deleting expired peering partner nodes and relationships:')
     remove_peer_conf(user, data_age)
+    logger.info('...done!')
 
 
 def main():
@@ -418,8 +409,7 @@ def main():
     else:
         config = nt.init_config(args.C)
     if args.verbose:
-        global VERBOSE
-        VERBOSE = True
+        logger.setLevel(logging.INFO)
     if config.get('data', 'juniper_conf'):
         consume_juniper_conf(nt.load_json(config.get('data', 'juniper_conf')))
     if config.getboolean('delete_data', 'juniper_conf'):
@@ -427,7 +417,7 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')

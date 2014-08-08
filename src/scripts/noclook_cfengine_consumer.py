@@ -38,12 +38,10 @@ from norduniclient.exceptions import MultipleNodesReturned
 import noclook_consumer as nt
 from apps.noclook import helpers as h
 
-logger = logging.getLogger('noclook_cfengine_consumer')
+logger = logging.getLogger('noclook_consumer.cfengine')
 
 # This script is used for adding the objects collected with the
 # cfengine reports NERDS producers to the NOCLook database.
-
-VERBOSE = False
 
 # If the promise exists for the host and is "kept", "not kept" or "repaired" the
 # property named "property_name" will be set to the value on the node.
@@ -100,8 +98,7 @@ def insert(json_list):
                     host_properties.update(CFENGINE_MAP[promise_name][promise_status])
 
             h.dict_update_node(user, node.handle_id, host_properties, host_properties.keys())
-            if VERBOSE:
-                logger.info('{name} done.'.format(name=name))
+            logger.info('{name} done.'.format(name=name))
 
 
 def main():
@@ -116,8 +113,7 @@ def main():
         sys.exit(1)
     else:
         if args.verbose:
-            global VERBOSE
-            VERBOSE = True
+            logger.setLevel(logging.INFO)
         config = nt.init_config(args.C)
         cfengine_data = config.get('data', 'cfengine_report')
         if cfengine_data:
@@ -125,7 +121,7 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
