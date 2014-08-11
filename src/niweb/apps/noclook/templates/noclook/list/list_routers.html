@@ -35,17 +35,17 @@ $(document).ready(
         </thead>
         <tbody>
             {% load noclook_tags %}
-            {% for router in router_list %}
-                {% if router.node.operational_state == "Decommissioned" %}
+            {% for item in router_list %}
+                {% if item.router.operational_state == "Decommissioned" %}
                     <tr class="decommissioned">
-                        {% elif router.node.operational_state == "Reserved" %}
+                        {% elif item.router.operational_state == "Reserved" %}
                     <tr class="reserved">
-                        {% elif router.node.operational_state == "Testing" %}
+                        {% elif item.router.operational_state == "Testing" %}
                     <tr class="testing">
                         {% else %}
                     <tr>
                 {% endif %}
-                        <td><a class="handle" href="{% noclook_node_to_url router.node %}">{{ router.node.name }}</a></td><td>{{ router.model|default:"Unknown" }}</td><td>{{ router.version|default:"Unknown" }}</td>
+                        <td><a class="handle" href="{% noclook_node_to_url item.router.handle_id %}">{{ item.router.name }}</a></td><td>{{ item.model|default:"Unknown" }}</td><td>{{ item.version|default:"Unknown" }}</td>
                     </tr>
             {% endfor %}
         </tbody>

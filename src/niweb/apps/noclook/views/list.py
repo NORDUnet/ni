@@ -143,6 +143,41 @@ def list_racks(request):
                               {'rack_list': rack_list},
                               context_instance=RequestContext(request))
 
+
+@login_required
+def list_routers(request):
+    q = """
+        MATCH (router:Router)
+        RETURN router, router.model as model, router.version as version
+        ORDER BY router.name
+        """
+    router_list = nc.query_to_list(nc.neo4jdb, q)
+    return render_to_response('noclook/list/list_routers.html',
+                              {'router_list': router_list},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def list_services(request, service_class=None):
+    where_statement = ''
+    if service_class:
+        where_statement = 'WHERE service.service_class = "%s"' % service_class
+    q = """
+        MATCH (service:Service)
+        MATCH (service)<-[:Uses]-(customer:Customer)
+        WITH service, COLLECT(customer) as customers
+        MATCH (service)<-[:Uses]-(end_user:End_User)
+        %s
+        RETURN service, service.service_class as service_class,
+            service.service_type as service_type, service.description as description,
+            customers, COLLECT(end_user) as end_users
+        ORDER BY service.name
+        """ % where_statement
+    service_list = nc.query_to_list(nc.neo4jdb, q)
+    return render_to_response('noclook/list/list_services.html',
+                              {'service_list': service_list, 'service_class': service_class},
+                              context_instance=RequestContext(request))
+
 # TODO fix list views below
 
 @login_required
@@ -162,39 +197,6 @@ def list_sites(request):
         site['site'] = node
         site_list.append(site)
     return render_to_response('noclook/list/list_sites.html', {'site_list': site_list},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def list_services(request, service_class=None):
-    if service_class:
-        where_statement = 'WHERE node.service_class = "%s"' % service_class
-    else:
-        where_statement = ''
-    q = """
-        START node=node:node_types(node_type = "Service")
-        MATCH node<-[?:Uses]-user
-        %s
-        RETURN node, node.service_class? as service_class, node.service_type? as service_type,
-        node.description? as description, node.operational_state? as operational_state, collect(user) as users
-        ORDER BY node.name
-        """ % where_statement
-    service_list = nc.neo4jdb.query(q)
-    return render_to_response('noclook/list/list_services.html',
-                              {'service_list': service_list, 'service_class': service_class},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def list_routers(request):
-    q = """
-        START node=node:node_types(node_type = "Router")
-        RETURN node, node.model? as model, node.version? as version
-        ORDER BY node.name
-        """
-    router_list = nc.neo4jdb.query(q)
-    return render_to_response('noclook/list/list_routers.html',
-                              {'router_list': router_list},
                               context_instance=RequestContext(request))
 
 
