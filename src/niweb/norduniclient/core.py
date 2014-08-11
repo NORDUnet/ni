@@ -84,6 +84,16 @@ def query_to_list(manager, query, **kwargs):
     return l
 
 
+def query_to_iterator(manager, query, **kwargs):
+    with manager.read as r:
+        cursor = r.execute(query, **kwargs)
+        for row in cursor:
+            d = {}
+            for desc, data in zip(cursor.description, row):
+                d[desc[0]] = data
+            yield d
+
+
 def create_node(manager, name, meta_type_label, type_label, handle_id):
     """
     Creates a node with the mandatory attributes name and handle_id also sets type label.
