@@ -178,24 +178,15 @@ def list_services(request, service_class=None):
                               {'service_list': service_list, 'service_class': service_class},
                               context_instance=RequestContext(request))
 
-# TODO fix list views below
 
 @login_required
 def list_sites(request):
-    node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
-    hits = node_types_index['node_type']['Site']
-    site_list = []
-    for node in hits:
-        site = {
-            'name': node['name']
-        }
-        try:
-            site['country_code'] = node['country_code']
-            site['country'] = node['country']
-        except KeyError:
-            site['country_code'] = ''
-        site['site'] = node
-        site_list.append(site)
+    q = """
+        MATCH (site:Site)
+        RETURN site
+        ORDER BY site.country_code, site.name
+        """
+    site_list = nc.query_to_list(nc.neo4jdb, q)
     return render_to_response('noclook/list/list_sites.html', {'site_list': site_list},
                               context_instance=RequestContext(request))
 
