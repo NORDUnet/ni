@@ -506,3 +506,44 @@ class PeeringGroupModel(LogicalModel):
             RETURN true as created, type(r), id(r), r, dependency.handle_id
             """
         return self._basic_write_query_to_dict(q, dependency_handle_id=dependency_handle_id, ip_address=ip_address)
+
+
+class CableModel(PhysicalModel):
+
+    def get_connected_equipment(self):
+        q = '''
+            MATCH (n:Node {handle_id: {handle_id}})
+            OPTIONAL MATCH n-[rel:Connected_to]->port<-[:Has*1..10]-end-[:Located_in]->location<-[:Has]-site
+            RETURN rel, port, end, location, site
+            ORDER BY end.name, port.name
+            '''
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
+    def get_dependent_as_types(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})
+            MATCH (n)-[:Connected_to*1..10]-(equip)
+            WITH equip
+            MATCH (equip)<-[:Depends_on*1..10]-(dep)
+            WITH distinct dep
+            WITH collect(dep) as deps
+            WITH deps, filter(n in deps WHERE n:Service) as services
+            WITH deps, services, filter(n in deps WHERE n:Optical_Path) as paths
+            WITH deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
+            WITH deps, services, paths, oms, filter(n in deps WHERE n:Optical_Link) as links
+            RETURN services, paths, oms, links
+            """
+        return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
+
+    def get_services(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})
+            MATCH (n)-[:Connected_to*1..20]-(equip)
+            WITH equip
+            MATCH (equip)<-[:Depends_on*1..10]-(service)
+            WHERE service:Service
+            WITH distinct service
+            OPTIONAL MATCH service<-[:Uses]-user
+            RETURN service, collect(user) as users
+            """
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
