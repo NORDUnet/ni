@@ -34,8 +34,26 @@ def cable_detail(request, handle_id):
                                'history': history},
                               context_instance=RequestContext(request))
 
-# TODO: Fix views below
 
+@login_required
+def customer_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    customer = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(customer.data)
+    result = customer.with_same_name()
+    same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
+    # Handle relationships
+    uses_relationships = customer.get_uses()
+    return render_to_response('noclook/detail/customer_detail.html',
+                              {'node_handle': nh, 'node': customer, 'last_seen': last_seen, 'expired': expired,
+                               'same_name_relations': same_name_relations, 'uses_relationships': uses_relationships,
+                               'history': history},
+                              context_instance=RequestContext(request))
+
+
+# TODO: Fix views below
 @login_required
 def router_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -532,23 +550,6 @@ def end_user_detail(request, handle_id):
     # Handle relationships
     uses_relationships = h.iter2list(node.Uses.outgoing)
     return render_to_response('noclook/detail/end_user_detail.html',
-                              {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
-                               'same_name_relations': same_name_relations, 'uses_relationships': uses_relationships,
-                               'history': history},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def customer_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    same_name_relations = h.iter2list(h.get_same_name_relations(node))
-    # Handle relationships
-    uses_relationships = h.iter2list(node.Uses.outgoing)
-    return render_to_response('noclook/detail/customer_detail.html',
                               {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
                                'same_name_relations': same_name_relations, 'uses_relationships': uses_relationships,
                                'history': history},

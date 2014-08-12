@@ -337,7 +337,21 @@ class LocationModel(CommonQueries):
 
 
 class RelationModel(CommonQueries):
-    pass
+
+    def with_same_name(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (other:Node:Relation {name: {name}})
+            WHERE other.handle_id <> n.handle_id
+            RETURN COLLECT(other.handle_id) as ids
+            """
+        return core.query_to_dict(self.manager, q, handle_id=self.handle_id, name=self.data.get('name'))
+
+    def get_uses(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Uses]->(usable)
+            RETURN type(r), id(r), r, usable.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
 
 
 class EquipmentModel(PhysicalModel):
