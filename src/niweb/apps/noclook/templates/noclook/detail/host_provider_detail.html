@@ -29,7 +29,7 @@ $(document).ready(
     <div class="span4">
         <table class="table">
                 <tr>
-                    <th>Name:</th><td>{{ node.name }}</td>
+                    <th>Name:</th><td>{{ node.data.name }}</td>
                 </tr>
         </table>
     </div>
@@ -60,7 +60,7 @@ $(document).ready(
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
     </div>
-    {% if host_relationships %}
+    {% if provides_relationships.Provides %}
         <table id="hosts" class="tablesorter" cellspacing="1">
             <thead>
                 <tr>
@@ -68,14 +68,14 @@ $(document).ready(
                 </tr>
             </thead>
             <tbody>
-            {% for host in host_relationships %}
-                {% noclook_has_expired host.end as expired %}
+            {% for item in provides_relationships.Provides %}
+                {% noclook_has_expired item.node.data as expired %}
                 {% if expired %}
                     <tr class="expired">
                 {% else %}
                     <tr>
                 {% endif %}
-                    <td><a href="{% noclook_node_to_url host.end %}">{{ host.end.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>

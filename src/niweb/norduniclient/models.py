@@ -353,6 +353,20 @@ class RelationModel(CommonQueries):
             """
         return self._basic_read_query_to_dict(q)
 
+    def get_provides(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Provides]->(usable)
+            RETURN type(r), id(r), r, usable.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
+    def get_owns(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Owns]->(usable)
+            RETURN type(r), id(r), r, usable.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
 
 class EquipmentModel(PhysicalModel):
 
@@ -374,6 +388,14 @@ class EquipmentModel(PhysicalModel):
             RETURN type(r), id(r), r, port.handle_id
             """
         return self._basic_read_query_to_dict(q, port_name=port_name)
+
+    def get_connections(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})
+            OPTIONAL MATCH (n)-[:Has*1..10]->(porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb)<-[:Has*1..10]-(end)-[:Located_in]-(location)<-[:Has]-site
+            RETURN porta, r0, cable, r1, portb, end, location, site
+            """
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 
 
 class SubEquipmentModel(PhysicalModel):
@@ -561,3 +583,11 @@ class CableModel(PhysicalModel):
             RETURN service, collect(user) as users
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
+
+class ExternalEquipmentModel(EquipmentModel):
+    pass
+
+
+class ODFModel(EquipmentModel):
+    pass

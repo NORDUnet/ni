@@ -11,9 +11,7 @@ $(document).ready(
         {
             sortList: [[0,0]],
             headers:
-            {
-                1 : { sorter: "ipAddress"  },
-            },
+            {},
             widthFixed: true,
             widgets: ['zebra']
         });
@@ -57,7 +55,7 @@ $(document).ready(
 -->
 <div class="section">
     {% load noclook_tags %}
-    {% if host_relationships %}
+    {% if host_relationships.Uses or host_relationships.Owns %}
     <h3>Hosts used</h3>
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
@@ -65,18 +63,30 @@ $(document).ready(
     <table id="hosts" class="tablesorter" cellspacing="1">
         <thead>
             <tr>
-                <th>Host</th>
+                <th>Host</th><th>Host type</th>
             </tr>
         </thead>
         <tbody>
-        {% for host in host_relationships %}
-            {% noclook_has_expired host.end as expired %}
+        {% for item in host_relationships.Uses %}
+            {% noclook_has_expired item.node.data as expired %}
             {% if expired %}
                 <tr class="expired">
             {% else %}
                 <tr>
             {% endif %}
-                <td><a href="{% noclook_node_to_url host.end %}">{{ host.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                <td>Logical</td>
+            </tr>
+        {% endfor %}
+        {% for item in host_relationships.Owns %}
+            {% noclook_has_expired item.node.data as expired %}
+            {% if expired %}
+                <tr class="expired">
+            {% else %}
+                <tr>
+            {% endif %}
+                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                <td>Physical</td>
             </tr>
         {% endfor %}
         </tbody>
@@ -86,4 +96,3 @@ $(document).ready(
     {% endif %}
 </div>
 {% endblock %}
-

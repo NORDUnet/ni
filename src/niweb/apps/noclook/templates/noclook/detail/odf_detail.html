@@ -25,14 +25,14 @@ $(document).ready(
 <div class="row">
     <div class="span4">
         <table class="table">
-            {% if node.max_number_of_ports %}
+            {% if node.data.max_number_of_ports %}
                 <tr>
-                    <th>Max ports:</th><td>{{ node.max_number_of_ports }}</td>
+                    <th>Max ports:</th><td>{{ node.data.max_number_of_ports }}</td>
                 </tr>
             {% endif %}
-            {% if node.rack_units %}
+            {% if node.data.rack_units %}
                 <tr>
-                    <th>Height (u):</th><td>{{ node.rack_units }}</td>
+                    <th>Height (u):</th><td>{{ node.data.rack_units }}</td>
                 </tr>
             {% endif %}
         </table>

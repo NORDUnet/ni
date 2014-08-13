@@ -26,25 +26,25 @@ $(document).ready(
 <div class="row">
     <div class="span4">
         <table class="table">
-            {% if owner_relationships %}
+            {% if relations.Owns %}
                 <tr>
                     <th>Owner:</th>
                     <td>
-                        {% for item in owner_relationships %}
-                            <a href="{% noclook_node_to_url item.start %}">{{ item.start.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                        {% for item in relations.Owns %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
                 </tr>
             {% endif %}
 <!--
-            {% if node.depth %}
+            {% if node.data.depth %}
                 <tr>
-                    <th>Depth:</th><td>{{ node.depth }} mm</td>
+                    <th>Depth:</th><td>{{ node.data.depth }} mm</td>
                 </tr>
             {% endif %}
-            {% if node.width %}
+            {% if node.data.width %}
                 <tr>
-                    <th>Width:</th><td>{{ node.width }} mm</td>
+                    <th>Width:</th><td>{{ node.data.width }} mm</td>
                 </tr>
             {% endif %}
 -->
@@ -65,11 +65,11 @@ $(document).ready(
             </tr>
         </table>
     </div>
-    {% if node.description %}
+    {% if node.data.description %}
         <div class="span7">
             <table class="table">
                 <tr>
-                    <th>Description:</th><td>{{ node.description }}</td>
+                    <th>Description:</th><td>{{ node.data.description }}</td>
                 </tr>
             </table>
         </div>
@@ -81,21 +81,21 @@ $(document).ready(
 <br><br><br>
 <div class="section">
     <h3>Ports</h3>
-    {% if connections|length %}
+    {% if connections %}
         {% load noclook_tags %}
         <table id="connections" class="tablesorter" cellspacing="1">
             <thead>
                 <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
             </thead>
             <tbody>
-            {% for con in connections %}
+            {% for item in connections %}
                 <tr>
-                    <td><a href="{% noclook_node_to_url con.porta %}">{{ con.porta.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url con.cable %}">{{ con.cable.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url con.site %}">{{ con.site.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url con.location %}">{{ con.location.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url con.end %}">{{ con.end.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url con.portb %}">{{ con.portb.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.porta.handle_id %}">{{ item.porta.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.cable.handle_id %}">{{ item.cable.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.site.handle_id %}">{{ item.site.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.location.handle_id %}">{{ item.location.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.end.handle_id %}">{{ item.end.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.portb.handle_id %}">{{ item.portb.name }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>

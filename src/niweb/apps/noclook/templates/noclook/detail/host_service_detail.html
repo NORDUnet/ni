@@ -28,7 +28,7 @@ $(document).ready(
     <div class="span5">
         <table class="table">
             <tr>
-                <th>Name:</th><td>{{ node.name }}</td>
+                <th>Name:</th><td>{{ node.data.name }}</td>
             </tr>
         </table>
     </div>
@@ -60,7 +60,7 @@ $(document).ready(
         <span class="badge badge-important">Expired</span>
     </div>
     {% load noclook_tags %}
-    {% if service_relationships %}
+    {% if service_relationships.Depends_on %}
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
             <tr>
@@ -68,24 +68,24 @@ $(document).ready(
             </tr>
         </thead>
         <tbody>
-        {% for service in service_relationships %}
-            {% noclook_has_expired service as expired %}
+        {% for item in service_relationships.Depends_on %}
+            {% noclook_has_expired item.node.data as expired %}
             {% if expired %}
                 <tr class="expired">
             {% else %}
                 <tr>
             {% endif %}
-                <td><a href="{% noclook_node_to_url service.end %}">{{ service.end.name }}</a></td>
-                <td>{{ service.ip_address }}</td>
-                <td>{{ service.port }}</td>
-                <td>{{ service.protocol }}</td>
-                <td>{{ service.state }}</td>
-                <td>{% if not service.noclook_last_external_check %}{% else %}{{ service.public|yesno:"Yes,No" }}{% endif %}</td>
-                <td>{{ service.product }}</td>
-                <td>{{ service.version }}</td>
-                <td>{{ service.extrainfo }}</td>
-                <td>{{ service.conf }}</td>
-                <td>{% noclook_last_seen_to_dt service.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
+                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                <td>{{ item.relationship.ip_address }}</td>
+                <td>{{ item.relationship.port }}</td>
+                <td>{{ item.relationship.protocol }}</td>
+                <td>{{ item.relationship.state }}</td>
+                <td>{% if not item.relationship.noclook_last_external_check %}{% else %}{{ item.relationship.public|yesno:"Yes,No" }}{% endif %}</td>
+                <td>{{ item.relationship.product }}</td>
+                <td>{{ item.relationship.version }}</td>
+                <td>{{ item.relationship.extrainfo }}</td>
+                <td>{{ item.relationship.conf }}</td>
+                <td>{% noclook_last_seen_to_dt item.relationship.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
             </tr>
         {% endfor %}
         </tbody>

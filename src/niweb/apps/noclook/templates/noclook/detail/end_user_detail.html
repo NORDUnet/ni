@@ -26,9 +26,9 @@
             <table class="table">
                 <tr>
                     {% if node.url %}
-                        <th>More information:</th><td><a href="{{ node.url }}">Information link</a></td>
+                        <th>More information:</th><td><a href="{{ node.data.url }}">Information link</a></td>
                     {% else %}
-                        <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}">To Portal</a></td>
+                        <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.data.name }}">To Portal</a></td>
                     {% endif %}
                 </tr>
             </table>
@@ -53,7 +53,7 @@
         <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
     {% endif %}
     <br><br><br>
-    {% if uses_relationships %}
+    {% if uses_relationships.Uses %}
     <div class="section">
         <h3>Services</h3>
         <div class="pull-right">
@@ -64,22 +64,22 @@
         <table id="services" class="tablesorter" cellspacing="1">
             <thead>
                 <tr>
-                    <th>ID</th><th>Description</th>
+                    <th>Service ID</th><th>Description</th>
                 </tr>
             </thead>
             <tbody>
-            {% for uses in uses_relationships %}
-                {% if uses.end.operational_state == "Decommissioned" %}
+            {% for item in uses_relationships.Uses %}
+                {% if item.node.data.operational_state == "Decommissioned" %}
                     <tr class="decommissioned">
-                {% elif uses.end.operational_state == "Reserved" %}
+                {% elif item.node.data.operational_state == "Reserved" %}
                     <tr class="reserved">
-                {% elif uses.end.operational_state == "Testing" %}
+                {% elif item.node.data.operational_state == "Testing" %}
                     <tr class="testing">
                 {% else %}
                     <tr>
                 {% endif %}
-                    <td><a href="{% noclook_node_to_url uses.end %}">{{ uses.end.name }}</a></td>
-                    <td>{{ uses.end.description }}</td>
+                    <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                    <td>{{ item.node.data.description }}</td>
                 </tr>
             {% endfor %}
             </tbody>

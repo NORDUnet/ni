@@ -30,7 +30,7 @@
 {% if same_name_relations %}
     <h5 class="site">also as
         {% for nh in same_name_relations|dictsort:"node_type.type" %}
-            <a href="{% noclook_node_to_url handle_id %}"> {{ nh.node_type }}</a>{% if not forloop.last %},{% endif %}
+            <a href="{% noclook_node_to_url nh.handle_id %}"> {{ nh.node_type }}</a>{% if not forloop.last %},{% endif %}
         {% endfor %}
     </h5>
 {% endif %}
