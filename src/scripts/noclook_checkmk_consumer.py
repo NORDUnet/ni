@@ -25,6 +25,7 @@ import sys
 import argparse
 from datetime import datetime, timedelta
 from lucenequerybuilder import Q
+import re
 import logging
 
 ## Need to change this path depending on where the Django project is
@@ -189,6 +190,33 @@ def set_netapp_storage_usage(storage_collection):
         service['total_storage'] = 0.0
 
 
+def set_dell_service_tag(host, check):
+    """
+    :param host: norduniclient node model
+    :param check: check dictionary
+    :return: None
+    """
+    tag = None
+    try:
+        openmanage_linux_tag_regex = re.compile('servicetag=(?P<tag>[\w]+)', re.IGNORECASE)
+        tag = openmanage_linux_tag_regex.search(check['plugin_output']).group('tag')
+    except AttributeError:
+        pass
+    try:
+        openmanage_win_tag_regex = re.compile('SN: \'(?P<tag>[\w]+)\'', re.IGNORECASE)
+        tag = openmanage_win_tag_regex.search(check['plugin_output']).group('tag')
+    except AttributeError:
+        pass
+    try:
+        esxi_tag_regex = re.compile('s/n: (?P<tag>[\w]+)', re.IGNORECASE)
+        tag = esxi_tag_regex.search(check['plugin_output']).group('tag')
+    except AttributeError:
+        pass
+    if tag:
+        property_dict = {'service_tag': tag}
+        h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+
+
 def insert(json_list):
 
     # Setup persistent storage for collections done over multiple hosts
@@ -210,6 +238,10 @@ def insert(json_list):
                     set_backup(host, check)
                 if check['check_command'].startswith('check_netapp_vol'):   # NetApp storage usage
                     netapp_collection = collect_netapp_storage_usage(host, check, netapp_collection)
+                if check['check_command'] == 'CHECK_NRPE!check_openmanage':     # Dell OpenManage info
+                    set_dell_service_tag(host, check)
+                if check['check_command'] == 'check_esxi':                      # Dell esxi HW info
+                    set_dell_service_tag(host, check)
             set_nagios_checks(host, check_descriptions)
             h.update_noclook_auto_manage(host)
             logger.info('{name} done.'.format(name=host.data['name']))
