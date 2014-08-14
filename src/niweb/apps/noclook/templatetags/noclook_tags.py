@@ -78,7 +78,10 @@ def noclook_get_model(handle_id):
     :param handle_id: unique id
     :return: Node model
     """
-    return nc.get_node_model(nc.neo4jdb, handle_id)
+    try:
+        return nc.get_node_model(nc.neo4jdb, handle_id)
+    except nc.exceptions.NodeNotFound:
+        return ''
 
 
 @register.simple_tag
