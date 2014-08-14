@@ -131,9 +131,9 @@ def set_uptime(host, check):
         }
         h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
-        logger.error('{name} uptime check did not match the expected format.'.format(name=host.data['name']))
-        logger.error(check)
-        logger.error(e)
+        logger.info('{name} uptime check did not match the expected format.'.format(name=host.data['name']))
+        logger.info(check)
+        logger.info(e)
 
 
 def set_backup(host, check):
@@ -151,9 +151,9 @@ def set_backup(host, check):
             }
             h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
-        logger.error('{name} backup check did not match the expected format.'.format(name=host.data['name']))
-        logger.error(check)
-        logger.error(e)
+        logger.info('{name} backup check did not match the expected format.'.format(name=host.data['name']))
+        logger.info(check)
+        logger.info(e)
 
 
 def collect_netapp_storage_usage(host, check, storage_collection):
