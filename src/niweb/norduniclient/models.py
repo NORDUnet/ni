@@ -558,7 +558,7 @@ class CableModel(PhysicalModel):
     def get_dependent_as_types(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})
-            MATCH (n)-[:Connected_to*1..10]-(equip)
+            MATCH (n)-[:Connected_to*1..20]-(equip)
             WITH equip
             MATCH (equip)<-[:Depends_on*1..10]-(dep)
             WITH distinct dep
