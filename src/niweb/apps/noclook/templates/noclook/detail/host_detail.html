@@ -4,64 +4,22 @@
 
 {% block js %}
 {{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#services").tablesorter(
-            {
-                sortList: [[0,0]],
-                headers:
-                {
-                    1 : { sorter: "ipAddress"  }
-                },
-                widthFixed: true,
-                widgets: ['zebra']
-            });
-        $("#dependOut").tablesorter(
-            {
-                sortList: [[0,0]],
-                headers: {},
-                widthFixed: true,
-                widgets: ['zebra']
-            });
-        $("#servicesOut").tablesorter(
-            {
-                sortList: [[0,0]],
-                headers: {},
-                widthFixed: true,
-                widgets: ['zebra']
-            });
-        $("#pathsOut").tablesorter(
-            {
-                sortList: [[0,0]],
-                headers: {},
-                widthFixed: true,
-                widgets: ['zebra']
-            });
-        $("#omsOut").tablesorter(
-            {
-                sortList: [[0,0]],
-                headers: {},
-                widthFixed: true,
-                widgets: ['zebra']
-            });
-        $("#linksOut").tablesorter(
-            {
-                sortList: [[0,0]],
-                headers: {},
-                widthFixed: true,
-                widgets: ['zebra']
-            });
-        $("#cablesOut").tablesorter(
-            {
-                sortList: [[0,0]],
-                headers: {},
-                widthFixed: true,
-                widgets: ['zebra']
-            });
-    }
-);
-</script>
+    <script type="text/javascript">
+        $(document).ready(
+            function(){
+                $("#services").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers:
+                        {
+                            1 : { sorter: "ipAddress"  }
+                        },
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
+            }
+        );
+    </script>
 {% endblock %}
 
 {% block content %}

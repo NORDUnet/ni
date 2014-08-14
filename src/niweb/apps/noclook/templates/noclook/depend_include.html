@@ -1,399 +1,490 @@
-    {% load noclook_tags %}
+<script type="text/javascript">
+    $(document).ready(
+        function(){
+            $("#dependIn").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#servicesIn").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#pathsIn").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#omsIn").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#linksIn").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#dependOut").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#servicesOut").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#pathsOut").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#omsOut").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#linksOut").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $("#cablesOut").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers: {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+                });
+            $('#inServiceCopy').popover();
+            $('#outServiceCopy').popover();
+            $('#depTabsIn a:first').tab('show');
+            $('#depTabsOut a:first').tab('show');
+        }
+    );
+</script>
+
+{% load noclook_tags %}
+{% if dependent %}
     <div class="section">
         <h3>{{ node_handle.node_type }} is used by</h3>
-        {% if dependent.direct or dependent.services or dependent.paths or dependent.oms or dependent.links %}
-            <div class="pull-right">
-                <span class="badge badge-info">Testing</span>
-                <span class="badge badge-warning">Reserved</span>
-                <span class="badge badge-important">Decommissioned</span>
-            </div>
-            <ul class="nav nav-tabs" id="depTabsIn">
-                {% if dependent.direct %}
-                    <li class="active"><a href="#directTabIn" data-toggle="tab">Direct</a></li>
-                {% endif %}
-                {% if dependent.services %}
-                    <li><a href="#servicesTabIn" data-toggle="tab">Services</a></li>
-                {% endif %}
-                {% if dependent.paths %}
-                    <li><a href="#pathsTabIn" data-toggle="tab">Optical Paths</a></li>
-                {% endif %}
-                {% if dependent.oms %}
-                    <li><a href="#omsTabIn" data-toggle="tab">Optical Muliplex Sections</a></li>
-                {% endif %}
-                {% if dependent.links %}
-                    <li><a href="#linksTabIn" data-toggle="tab">Optical Links</a></li>
-                {% endif %}
-            </ul>
-
-            <div class="tab-content">
-                {% if dependent.direct %}
-                    <div class="tab-pane active" id="directTabIn">
-                        <table id="dependIn" class="tablesorter" cellspacing="1">
-                            <thead>
+        <div class="pull-right">
+            <span class="badge badge-info">Testing</span>
+            <span class="badge badge-warning">Reserved</span>
+            <span class="badge badge-important">Decommissioned</span>
+        </div>
+        <ul class="nav nav-tabs" id="depTabsIn">
+            {% if dependent.direct %}
+                <li><a href="#directTabIn" data-toggle="tab">Direct</a></li>
+            {% endif %}
+            {% if dependent.services %}
+                <li><a href="#servicesTabIn" data-toggle="tab">Services</a></li>
+            {% endif %}
+            {% if dependent.paths %}
+                <li><a href="#pathsTabIn" data-toggle="tab">Optical Paths</a></li>
+            {% endif %}
+            {% if dependent.oms %}
+                <li><a href="#omsTabIn" data-toggle="tab">Optical Muliplex Sections</a></li>
+            {% endif %}
+            {% if dependent.links %}
+                <li><a href="#linksTabIn" data-toggle="tab">Optical Links</a></li>
+            {% endif %}
+        </ul>
+        <div class="tab-content">
+            {% if dependent.direct %}
+                <div class="tab-pane active" id="directTabIn">
+                    <table id="dependIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependent.direct %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
                                 <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in dependent.direct %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
-                                        <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                        <td>{% noclook_get_type item.handle_id %}</td>
-                                        <td>{{ item.description }}</td>
-                                    </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependent.services %}
-                    <div class="tab-pane" id="servicesTabIn">
-                        <table id="servicesIn" class="tablesorter" cellspacing="1">
-                            <thead>
-                                <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in dependent.services %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
-                                    <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    <td>{{ item.service_class }} - {{ item.service_type }}</td>
-                                    <td>{{ item.description }}</td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependent.paths %}
-                    <div class="tab-pane" id="pathsTabIn">
-                        <table id="pathsIn" class="tablesorter" cellspacing="1">
-                            <thead>
-                                <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in all_dependent.paths %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
-                                        <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                        <td>{% noclook_get_type item.handle_id %}</td>
-                                        <td>{{ item.description }}</td>
-                                    </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependent.oms %}
-                    <div class="tab-pane" id="omsTabIn">
-                        <table id="omsIn" class="tablesorter" cellspacing="1">
-                            <thead>
-                                <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in all_dependent.oms %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
-                                        <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                        <td>{% noclook_get_type item.handle_id %}</td>
-                                        <td>{{ item.description }}</td>
-                                    </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependent.links %}
-                    <div class="tab-pane" id="linksTabIn">
-                        <table id="linksIn" class="tablesorter" cellspacing="1">
-                            <thead>
-                                <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in all_dependent.links %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
+                            {% endif %}
                                     <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
                                     <td>{% noclook_get_type item.handle_id %}</td>
                                     <td>{{ item.description }}</td>
-                                    <td>
-                                        {% noclook_get_model item.handle_id as model %}
-                                        {% for item in model.get_ports %}
-                                            <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.parent.name }} {{ item.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
-                                        {% endfor %}
-                                    </td>
                                 </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-            </div>
-        {% else %}
-            <p>Nothing dependent found.</p>
-        {% endif %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if dependent.services %}
+                <div class="tab-pane" id="servicesTabIn">
+                    <table id="servicesIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th><th>Users</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependent.services %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                <td>{{ item.service_class }} - {{ item.service_type }}</td>
+                                <td>{{ item.description }}</td>
+                                {% noclook_get_model item.handle_id as model %}
+                                <td>
+                                    {% for user in model.get_relations.Uses %}
+                                        <a href="{% noclook_node_to_url user.node.handle_id %}">{{ user.node.data.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <a id="inServiceCopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for item in dependent.services %}{{ item.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+                </div>
+            {% endif %}
+            {% if dependent.paths %}
+                <div class="tab-pane" id="pathsTabIn">
+                    <table id="pathsIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependent.paths %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                    <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    <td>{{ item.description }}</td>
+                                </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if dependent.oms %}
+                <div class="tab-pane" id="omsTabIn">
+                    <table id="omsIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependent.oms %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                    <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    <td>{{ item.description }}</td>
+                                </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if dependent.links %}
+                <div class="tab-pane" id="linksTabIn">
+                    <table id="linksIn" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependent.links %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                <td>{% noclook_get_type item.handle_id %}</td>
+                                <td>{{ item.description }}</td>
+                                <td>
+                                    {% noclook_get_model item.handle_id as model %}
+                                    {% for item in model.get_ports %}
+                                        <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.parent.name }} {{ item.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
     </div>
-
+{% endif %}
+{% if dependencies %}
     <div class="section">
         <h3>{{ node_handle.node_type }} depend on</h3>
-        {% if dependencies %}
-            <div class="pull-right">
-                <span class="badge badge-info">Testing</span>
-                <span class="badge badge-warning">Reserved</span>
-                <span class="badge badge-important">Decommissioned</span>
-            </div>
-            <ul class="nav nav-tabs" id="depTabsOut">
-                {% if dependencies.direct %}
-                    <li class="active"><a href="#directTabOut" data-toggle="tab">Direct</a></li>
-                {% endif %}
-                {% if dependencies.services %}
-                    <li><a href="#servicesTabOut" data-toggle="tab">Services</a></li>
-                {% endif %}
-                {% if dependencies.paths %}
-                    <li><a href="#pathsTabOut" data-toggle="tab">Optical Paths</a></li>
-                {% endif %}
-                {% if dependencies.oms %}
-                    <li><a href="#omsTabOut" data-toggle="tab">OMS</a></li>
-                {% endif %}
-                {% if dependencies.links %}
-                    <li><a href="#linksTabOut" data-toggle="tab">Optical Links</a></li>
-                {% endif %}
-                {% if dependencies.cables %}
-                    <li><a href="#cablesTabOut" data-toggle="tab">Cables</a></li>
-                {% endif %}
-            </ul>
 
-            <div class="tab-content">
-                {% if dependencies.services %}
-                    <div class="tab-pane active" id="directTabOut">
-                        <table id="dependOut" class="tablesorter" cellspacing="1">
-                            <thead>
+        <div class="pull-right">
+            <span class="badge badge-info">Testing</span>
+            <span class="badge badge-warning">Reserved</span>
+            <span class="badge badge-important">Decommissioned</span>
+        </div>
+        <ul class="nav nav-tabs" id="depTabsOut">
+            {% if dependencies.direct %}
+                <li><a href="#directTabOut" data-toggle="tab">Direct</a></li>
+            {% endif %}
+            {% if dependencies.services %}
+                <li><a href="#servicesTabOut" data-toggle="tab">Services</a></li>
+            {% endif %}
+            {% if dependencies.paths %}
+                <li><a href="#pathsTabOut" data-toggle="tab">Optical Paths</a></li>
+            {% endif %}
+            {% if dependencies.oms %}
+                <li><a href="#omsTabOut" data-toggle="tab">OMS</a></li>
+            {% endif %}
+            {% if dependencies.links %}
+                <li><a href="#linksTabOut" data-toggle="tab">Optical Links</a></li>
+            {% endif %}
+            {% if dependencies.cables %}
+                <li><a href="#cablesTabOut" data-toggle="tab">Cables</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="tab-content">
+            {% if dependencies.direct %}
+                <div class="tab-pane active" id="directTabOut">
+                    <table id="dependOut" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependencies.direct %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
                                 <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in dependencies.direct %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
-                                        {% noclook_get_model item.handle_id as model %}
-                                        <td>
-                                            <a href="{% noclook_node_to_url item.handle_id %}">
-                                                {% for loc in model.get_location %}{{ loc.name }} {% endfor %}{{ item.name }}
-                                            </a>
-                                        </td>
-                                        <td>{% noclook_get_type item.handle_id %}</td>
-                                        <td>{{ item.description }}</td>
-                                    </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependencies.services %}
-                    <div class="tab-pane" id="servicesTabOut">
-                        <table id="servicesOut" class="tablesorter" cellspacing="1">
-                            <thead>
-                                <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in dependencies.services %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
-                                    <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    <td>{{ item.service_class }} - {{ item.service_type }}</td>
+                            {% endif %}
+                                    {% noclook_get_model item.handle_id as model %}
+                                    <td>
+                                        <a href="{% noclook_node_to_url item.handle_id %}">
+                                            {% for loc in model.get_placement_path.placement_path %}{{ loc.name }} {% endfor %}{{ item.name }}
+                                        </a>
+                                    </td>
+                                    <td>{% noclook_get_type item.handle_id %}</td>
                                     <td>{{ item.description }}</td>
                                 </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependencies.paths %}
-                    <div class="tab-pane" id="pathsTabOut">
-                        <table id="pathsOut" class="tablesorter" cellspacing="1">
-                            <thead>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if dependencies.services %}
+                <div class="tab-pane" id="servicesTabOut">
+                    <table id="servicesOut" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependencies.services %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
                                 <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in dependencies.paths %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
-                                        <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                        <td>{% noclook_get_type item.handle_id %}</td>
-                                        <td>{{ item.description }}</td>
-                                    </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependencies.oms %}
-                    <div class="tab-pane" id="omsTabOut">
-                        <table id="omsOut" class="tablesorter" cellspacing="1">
-                            <thead>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                <td>{{ item.service_class }} - {{ item.service_type }}</td>
+                                <td>{{ item.description }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <a id="outServiceCopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for item in dependencies.services %}{{ item.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
+                </div>
+            {% endif %}
+            {% if dependencies.paths %}
+                <div class="tab-pane" id="pathsTabOut">
+                    <table id="pathsOut" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependencies.paths %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
                                 <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in dependencies.oms %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
-                                        <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                        <td>{% noclook_get_type item.handle_id %}</td>
-                                        <td>{{ item.description }}</td>
-                                    </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependencies.links %}
-                    <div class="tab-pane" id="linksTabOut">
-                        <table id="linksOut" class="tablesorter" cellspacing="1">
-                            <thead>
-                                <tr>
-                                    <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in dependencies.links %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
+                            {% endif %}
                                     <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
                                     <td>{% noclook_get_type item.handle_id %}</td>
                                     <td>{{ item.description }}</td>
-                                    <td>
-                                        {% noclook_get_model item.handle_id as model %}
-                                        {% for item in model.get_ports %}
-                                            <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.parent.name }} {{ item.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
-                                        {% endfor %}
-                                    </td>
                                 </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-                {% if dependencies.cables %}
-                    <div class="tab-pane" id="cablesTabOut">
-                        <table id="cablesOut" class="tablesorter" cellspacing="1">
-                            <thead>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if dependencies.oms %}
+                <div class="tab-pane" id="omsTabOut">
+                    <table id="omsOut" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependencies.oms %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
                                 <tr>
-                                    <th>Name</th><th>Type</th><th>Ports</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% for hit in dependencies.cables %}
-                                {% if item.operational_state == "Decommissioned" %}
-                                    <tr class="decommissioned">
-                                {% elif item.operational_state == "Reserved" %}
-                                    <tr class="reserved">
-                                {% elif item.operational_state == "Testing" %}
-                                    <tr class="testing">
-                                {% else %}
-                                    <tr>
-                                {% endif %}
+                            {% endif %}
                                     <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    <td>{{ item.cable_type }}</td>
-                                    <td>
-                                        {% noclook_get_model item.handle_id as model %}
-                                        {% for item in model.get_ports %}
-                                            <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.parent.name }} {{ item.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
-                                        {% endfor %}
-                                    </td>
+                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    <td>{{ item.description }}</td>
                                 </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% endif %}
-            </div>
-        {% else %}
-            <p>No dependencies found.</p>
-        {% endif %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if dependencies.links %}
+                <div class="tab-pane" id="linksTabOut">
+                    <table id="linksOut" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependencies.links %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                <td>{% noclook_get_type item.handle_id %}</td>
+                                <td>{{ item.description }}</td>
+                                <td>
+                                    {% noclook_get_model item.handle_id as model %}
+                                    {% for item in model.get_ports %}
+                                        <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.parent.name }} {{ item.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+            {% if dependencies.cables %}
+                <div class="tab-pane" id="cablesTabOut">
+                    <table id="cablesOut" class="tablesorter" cellspacing="1">
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Type</th><th>Ports</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in dependencies.cables %}
+                            {% if item.operational_state == "Decommissioned" %}
+                                <tr class="decommissioned">
+                            {% elif item.operational_state == "Reserved" %}
+                                <tr class="reserved">
+                            {% elif item.operational_state == "Testing" %}
+                                <tr class="testing">
+                            {% else %}
+                                <tr>
+                            {% endif %}
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                <td>{{ item.cable_type }}</td>
+                                <td>
+                                    {% noclook_get_model item.handle_id as model %}
+                                    {% for item in model.get_ports %}
+                                        <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.parent.name }} {{ item.port.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
     </div>
+{% endif %}

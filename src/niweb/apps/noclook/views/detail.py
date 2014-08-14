@@ -26,12 +26,10 @@ def cable_detail(request, handle_id):
     cable = nh.get_node()
     last_seen, expired = h.neo4j_data_age(cable.data)
     connections = cable.get_connected_equipment()
-    services = cable.get_services()
-    all_dependent = cable.get_dependent_as_types()
+    dependent = cable.get_dependent_as_types()
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': cable, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'connections': connections, 'services': services, 'all_dependent': all_dependent,
-                               'history': history},
+                               'connections': connections, 'dependent': dependent, 'history': history},
                               context_instance=RequestContext(request))
 
 
@@ -177,6 +175,38 @@ def odf_detail(request, handle_id):
                               context_instance=RequestContext(request))
 
 
+@login_required
+def optical_link_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    optical_link = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(optical_link.data)
+    relations = optical_link.get_relations()
+    dependent = optical_link.get_dependent_as_types()
+    dependencies = optical_link.get_dependencies_as_types()
+    return render_to_response('noclook/detail/optical_link_detail.html',
+                              {'node': optical_link, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
+                               'dependent': dependent, 'dependencies': dependencies, 'relations': relations,
+                               'history': history},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def optical_multiplex_section_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    oms = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(oms.data)
+    relations = oms.get_relations()
+    dependent = oms.get_dependent_as_types()
+    dependencies = oms.get_dependencies_as_types()
+    return render_to_response('noclook/detail/optical_multiplex_section_detail.html',
+                              {'node': oms, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
+                               'dependent': dependent, 'dependencies': dependencies, 'relations': relations,
+                               'history': history},
+                              context_instance=RequestContext(request))
 # TODO: Fix views below
 @login_required
 def router_detail(request, handle_id):
@@ -500,44 +530,6 @@ def service_detail(request, handle_id):
                                'depend_in': depend_in, 'depend_out': depend_out, 'all_dependent': all_dependent,
                                'all_dependencies': all_dependencies, 'users': users, 'providers': providers,
                                'history': history}, context_instance=RequestContext(request))
-
-
-@login_required
-def optical_link_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    depend_in = h.iter2list(node.Depends_on.incoming)
-    all_dependent = h.get_dependent_as_types(node)
-    depend_out = h.iter2list(h.get_logical_depends_on(node))
-    all_dependencies = h.get_dependencies_as_types(node)
-    providers = h.iter2list(node.Provides.incoming)
-    return render_to_response('noclook/detail/optical_link_detail.html',
-                              {'node': node, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'depend_in': depend_in, 'depend_out': depend_out, 'all_dependent': all_dependent,
-                               'all_dependencies': all_dependencies, 'providers': providers, 'history': history},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def optical_multiplex_section_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    depend_in = h.iter2list(node.Depends_on.incoming)
-    all_dependent = h.get_dependent_as_types(node)
-    depend_out = h.iter2list(h.get_logical_depends_on(node))
-    all_dependencies = h.get_dependencies_as_types(node)
-    providers = h.iter2list(node.Provides.incoming)
-    return render_to_response('noclook/detail/optical_multiplex_section_detail.html',
-                              {'node': node, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'depend_in': depend_in, 'depend_out': depend_out, 'all_dependent': all_dependent,
-                               'all_dependencies': all_dependencies, 'providers': providers, 'history': history},
-                              context_instance=RequestContext(request))
 
 
 @login_required
