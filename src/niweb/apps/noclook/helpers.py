@@ -231,9 +231,11 @@ def update_noclook_auto_manage(item):
         item.data['noclook_auto_manage'] = True
     item.data['noclook_last_seen'] = datetime.now().isoformat()
     if isinstance(item, nc.models.BaseNodeModel):
-        nc.set_node_properties(nc.neo4jdb, item.handle_id, item.data)
+        node = nc.get_node_model(nc.neo4jdb, item.handle_id)
+        nc.set_node_properties(nc.neo4jdb, item.handle_id, node.data)
     elif isinstance(item, nc.models.BaseRelationshipModel):
-        nc.set_relationship_properties(nc.neo4jdb, item.id, item.data)
+        relationship = nc.get_relationship_model(nc.neo4jdb, item.id)
+        nc.set_relationship_properties(nc.neo4jdb, item.id, relationship.data)
 
 
 def isots_to_dt(data):
