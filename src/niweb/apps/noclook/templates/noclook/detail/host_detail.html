@@ -154,12 +154,12 @@ $(document).ready(
                     <th>Contract number:</th><td>{{ node.data.contract_number }}</td>
                 </tr>
             {% endif %}
-            {% if node.service_tag %}
+            {% if node.data.service_tag %}
                 <tr>
                     <th>Service tag:</th><td>{{ node.data.service_tag }}</td>
                 </tr>
             {% endif %}
-            {% if node.end_support %}
+            {% if node.data.end_support %}
                 <tr>
                     <th>Support ends:</th><td>{{ node.data.end_support }}</td>
                 </tr>
@@ -173,7 +173,7 @@ $(document).ready(
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.data.vendor or node.data.model or node.data.cpu or node.data.ram or node.data.hdd or node.data.service_tag %}
+            {% if node.data.vendor or node.data.model or node.data.cpu or node.data.ram or node.data.hdd %}
                 {% if node.data.vendor %}
                     <tr>
                         <th>Vendor:</th><td>{{node.data.vendor}}</td>
