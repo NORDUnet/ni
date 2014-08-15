@@ -22,15 +22,6 @@ $(document).ready(
                     widthFixed: true,
                     widgets: ['zebra']
         });
-        $("#services").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers:
-                    {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-        });
-        $('#servicecopy').popover();
     }
 );
 </script>
@@ -43,28 +34,28 @@ $(document).ready(
     <div class="span4">
         <table class="table">
             <tr>
-                <th>Name:</th><td>{{ node_handle.node_name }}</td>
+                <th>Name:</th><td>{{ node.data.name }}</td>
             </tr>
             <tr>
-                <th>Operational State:</th><td>{{ node.operational_state }}</td>
+                <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
             </tr>
             {% if node.type %}
             <tr>
-                <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.type }}/">{{ node.type }}</a></td>
+                <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.data.type }}/">{{ node.data.type }}</a></td>
             </tr>
             {% endif %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.ots %}
+            {% if node.data.ots %}
                 <tr>
-                    <th>Optical Transport Section:</th><td><a href="/findin/optical-node/ots/{{ node.ots }}/">{{ node.ots }}</a></td>
+                    <th>Optical Transport Section:</th><td><a href="/findin/optical-node/ots/{{ node.data.ots }}/">{{ node.data.ots }}</a></td>
                 </tr>
             {% endif %}
-            {% if node.link %}
+            {% if node.data.link %}
                 <tr>
-                    <th>Link:</th><td><a href="/findin/optical-node/link/{{ node.link }}/">{{ node.link }}</a></td>
+                    <th>Link:</th><td><a href="/findin/optical-node/link/{{ node.data.link }}/">{{ node.data.link }}</a></td>
                 </tr>
             {% endif %}
             {% if node.noclook_auto_manage %}
@@ -84,76 +75,30 @@ $(document).ready(
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
-<br><br><br>
+{% include "noclook/depend_include.html" %}
 <div class="section">
-    <h3>Services dependent on equipment</h3>
-    {% if services %}
-        <table id="services" class="tablesorter" cellspacing="1">
-            <thead>
-            <tr>
-                <th>Service ID</th><th>Description</th><th>Customer</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for hit in services %}
-                {{ hit.service.relationships }}
-                <tr>
-                    <td><a href="{% noclook_node_to_url hit.service %}">{{ hit.service.name }}</a></td>
-                    <td>{{ hit.service.description }}</td>
-                    <td>
-                        {% for customer in hit.customers %}
-                            <a href="{% noclook_node_to_url customer %}">{{ customer.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
-                        {% endfor %}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        <a id="servicecopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for hit in services %}{{ hit.service.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
-    {% else %}
-        No services found.
-    {% endif %}
-</div>
-<div class="section">
-    <h3>Connections</h3>
-    {% if opt_info %}
+    <h3>Ports</h3>
+    {% if connections %}
+    {% load noclook_tags %}
     <table id="connections" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Connected to node</th><th>via</th>
+            <tr>
+                <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+            </tr>
         </thead>
         <tbody>
-        {% for item in opt_info %}
+        {% for con in connections %}
             <tr>
-                <td><a href="{{ item.node_url }}">{{ item.node_name }}</a></td>
-                <td><a href="{{ item.fiber_url }}">{{ item.fiber_name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.porta.handle_id %}">{{ con.porta.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.cable.handle_id %}">{{ con.cable.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.site.handle_id %}">{{ con.site.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.location.handle_id %}">{{ con.location.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.end.handle_id %}">{{ con.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.portb.handle_id %}">{{ con.portb.name }}</a></td>
             </tr>
-         {% endfor %}
+        {% endfor %}
         </tbody>
     </table>
-    {% else %}
-        No connections found.
-    {% endif %}
-</div>
-<div class="section">
-    <h3>Dependent on this optical node</h3>
-    {% if depends_on %}
-        {% load noclook_tags %}
-        <table id="ports" class="tablesorter" cellspacing="1">
-            <thead>
-            <th>Dependent on node</th><th>Port</th>
-            </thead>
-            <tbody>
-            {% for dep in depends_on %}
-                <tr>
-                {% if dep.port_logical %}
-                    <td><a href="{% noclook_node_to_url dep.port_logical %}">{{ dep.port_logical.name }}</a></td><td><a href="{% noclook_node_to_url dep.port %}">{{ dep.port.name }}</a></td>
-                {% elif dep.direct_logical %}
-                    <td><a href="{% noclook_node_to_url dep.direct_logical %}">{{ dep.direct_logical.name }}</a></td><td>No Port</td>
-                {% endif %}
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
     {% else %}
         No ports used.
     {% endif %}

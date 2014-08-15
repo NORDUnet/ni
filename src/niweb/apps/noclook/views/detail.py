@@ -207,6 +207,26 @@ def optical_multiplex_section_detail(request, handle_id):
                                'dependent': dependent, 'dependencies': dependencies, 'relations': relations,
                                'history': history},
                               context_instance=RequestContext(request))
+
+
+@login_required
+def optical_node_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    optical_node = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(optical_node.data)
+    location_path = optical_node.get_location_path()
+    connections = optical_node.get_connections()
+    dependent = optical_node.get_dependent_as_types()
+    dependencies = optical_node.get_dependencies_as_types()
+    return render_to_response('noclook/detail/optical_node_detail.html',
+                              {'node': optical_node, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
+                               'location_path': location_path, 'history': history, 'dependent': dependent,
+                               'dependencies': dependencies, 'connections': connections},
+                              context_instance=RequestContext(request))
+
+
 # TODO: Fix views below
 @login_required
 def router_detail(request, handle_id):
@@ -257,38 +277,6 @@ def router_detail(request, handle_id):
                               {'node_handle': nh, 'node': node, 'ports': ports, 'last_seen': last_seen,
                                'expired': expired, 'location': location, 'history': history,
                                'loopback_addresses': loopback_addresses},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def optical_node_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    location = h.iter2list(h.get_location(node))
-    #get incoming rels of fibers
-    connected_rel = node.Connected_to.incoming  # Legacy
-    depends_on = h.get_depends_on_equipment(node)
-    services = h.iter2list(h.get_services_dependent_on_equipment(node))
-    opt_info = []
-    for rel in connected_rel:
-        fibers = {}
-        fiber = rel.start
-        fibers['fiber_name'] = fiber['name']
-        fibers['fiber_url'] = h.get_node_url(fiber)
-        conn = fiber.Connected_to.outgoing
-        for item in conn:
-            tmp = item.end
-            if tmp['name'] != node['name']:
-                fibers['node_name'] = tmp['name']
-                fibers['node_url'] = h.get_node_url(tmp)
-        opt_info.append(fibers)
-    return render_to_response('noclook/detail/optical_node_detail.html',
-                              {'node': node, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'opt_info': opt_info, 'location': location, 'history': history, 'depends_on': depends_on,
-                               'services': services},
                               context_instance=RequestContext(request))
 
 
