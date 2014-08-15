@@ -391,8 +391,9 @@ class EquipmentModel(PhysicalModel):
 
     def get_connections(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})
-            OPTIONAL MATCH (n)-[:Has*1..10]->(porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb)<-[:Has*1..10]-(end)-[:Located_in]-(location)<-[:Has]-site
+            MATCH (n:Node {handle_id: {handle_id}})-[:Has*0..10]->(porta)<-[r0:Connected_to]-(cable)
+            OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb)
+            OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)-[:Located_in]-(location)<-[:Has]-site
             RETURN porta, r0, cable, r1, portb, end, location, site
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
@@ -547,12 +548,14 @@ class PeeringGroupModel(LogicalModel):
 class CableModel(PhysicalModel):
 
     def get_connected_equipment(self):
-        q = '''
-            MATCH (n:Node {handle_id: {handle_id}})
-            OPTIONAL MATCH n-[rel:Connected_to]->port<-[:Has*1..10]-end-[:Located_in]->location<-[:Has]-site
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[rel:Connected_to]->(port)
+            OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
+            OPTIONAL MATCH (end)-[:Located_in]->(location)
+            OPTIONAL MATCH (location)<-[:Has]-(site)
             RETURN rel, port, end, location, site
             ORDER BY end.name, port.name
-            '''
+            """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 
     def get_dependent_as_types(self):
