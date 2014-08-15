@@ -184,9 +184,9 @@ class CommonQueries(BaseNodeModel):
     def get_dependent_as_types(self):
         q = """
             MATCH (node {handle_id: {handle_id}})<-[:Depends_on]-(d)
-            WITH node, collect(d) as direct
+            WITH node, collect(DISTINCT d) as direct
             MATCH (node)<-[:Depends_on*1..20]-(dep)
-            WITH direct, collect(dep) as deps
+            WITH direct, collect(DISTINCT dep) as deps
             WITH direct, deps, filter(n in deps WHERE n:Service) as services
             WITH direct, deps, services, filter(n in deps WHERE n:Optical_Path) as paths
             WITH direct, deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
@@ -198,9 +198,9 @@ class CommonQueries(BaseNodeModel):
     def get_dependencies_as_types(self):
         q = """
             MATCH (node {handle_id: {handle_id}})-[:Depends_on]->(d)
-            WITH node, collect(d) as direct
+            WITH node, collect(DISTINCT d) as direct
             MATCH node-[:Depends_on*1..20]->dep
-            WITH node, direct, collect(dep) as deps
+            WITH node, direct, collect(DISTINCT dep) as deps
             WITH node, direct, deps, filter(n in deps WHERE n:Service) as services
             WITH node, direct, deps, services, filter(n in deps WHERE n:Optical_Path) as paths
             WITH node, direct, deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
@@ -428,9 +428,9 @@ class HostModel(CommonQueries):
     def get_dependent_as_types(self):  # Does not return Host_Service as a direct dependent
         q = """
             MATCH (node {handle_id: {handle_id}})<-[:Depends_on]-(d)
-            WITH node, filter(n in collect(d) WHERE NOT(n:Host_Service)) as direct
+            WITH node, filter(n in collect(DISTINCT d) WHERE NOT(n:Host_Service)) as direct
             MATCH (node)<-[:Depends_on*1..20]-(dep)
-            WITH direct, collect(dep) as deps
+            WITH direct, collect(DISTINCT dep) as deps
             WITH direct, deps, filter(n in deps WHERE n:Service) as services
             WITH direct, deps, services, filter(n in deps WHERE n:Optical_Path) as paths
             WITH direct, deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
@@ -561,8 +561,7 @@ class CableModel(PhysicalModel):
             MATCH (n)-[:Connected_to*1..20]-(equip)
             WITH equip
             MATCH (equip)<-[:Depends_on*1..10]-(dep)
-            WITH distinct dep
-            WITH collect(dep) as deps
+            WITH collect(DISTINCT dep) as deps
             WITH deps, filter(n in deps WHERE n:Service) as services
             WITH deps, services, filter(n in deps WHERE n:Optical_Path) as paths
             WITH deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
