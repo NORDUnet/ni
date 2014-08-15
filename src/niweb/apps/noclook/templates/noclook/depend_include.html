@@ -80,8 +80,24 @@
                 });
             $('#inServiceCopy').popover();
             $('#outServiceCopy').popover();
-            $('#depTabsIn a:first').tab('show');
-            $('#depTabsOut a:first').tab('show');
+            var depTabsIn = $('#depTabsIn');
+            var depTabsOut = $('#depTabsOut');
+            depTabsIn.find('a:first').tab('show');
+            depTabsOut.find('a:first').tab('show');
+            depTabsIn.find('a').click(function (e) {
+                e.preventDefault();
+                $(this).tab('show');
+                var table = $($(this).attr('href') + " table");
+                table.data("tablesorter").widgets = ["zebra"];
+                table.trigger('applyWidgets');
+            });
+            depTabsOut.find('a').click(function (e) {
+                e.preventDefault();
+                $(this).tab('show');
+                var table = $($(this).attr('href') + " table");
+                table.data("tablesorter").widgets = ["zebra"];
+                table.trigger('applyWidgets');
+            });
         }
     );
 </script>
