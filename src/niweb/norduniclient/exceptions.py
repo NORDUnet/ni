@@ -6,6 +6,7 @@ Created on Thu Oct 13 16:36:31 2011
 """
 
 from neo4j import IntegrityError, ProgrammingError, InternalError
+from socket import error as SocketError
 import core
 
 

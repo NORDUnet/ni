@@ -43,18 +43,22 @@ META_TYPES = ['Physical', 'Logical', 'Relation', 'Location']
 
 def init_db(uri=NEO4J_URI):
     if uri:
-        manager = _get_db_manager(uri)
         try:
-            with manager.transaction as w:
-                w.execute('CREATE CONSTRAINT ON (n:Node) ASSERT n.handle_id IS UNIQUE')
-        except IntegrityError:
-            pass
-        try:
-            with manager.transaction as w:
-                w.execute('CREATE INDEX ON :Node(name)')
-        except IntegrityError:
-            pass
-        return manager
+            manager = _get_db_manager(uri)
+            try:
+                with manager.transaction as w:
+                    w.execute('CREATE CONSTRAINT ON (n:Node) ASSERT n.handle_id IS UNIQUE')
+            except exceptions.IntegrityError:
+                pass
+            try:
+                with manager.transaction as w:
+                    w.execute('CREATE INDEX ON :Node(name)')
+            except exceptions.IntegrityError:
+                pass
+            return manager
+        except exceptions.SocketError as e:
+            print 'Could not connect to Neo4j database:'
+            print e
 
 
 def _get_db_manager(uri):
