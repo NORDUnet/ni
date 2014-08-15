@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age
 import norduniclient as nc
@@ -22,7 +23,10 @@ def noclook_node_to_url(handle_id):
     """
     Takes a node id as a string and returns the absolute url for a node.
     """
-    return get_node_url(handle_id)
+    try:
+        return get_node_url(handle_id)
+    except ObjectDoesNotExist:
+        return ''
 
 
 @register.assignment_tag
