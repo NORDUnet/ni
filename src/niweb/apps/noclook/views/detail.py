@@ -101,6 +101,8 @@ def host_detail(request, handle_id):
     host_services = host.get_host_services()
     relations = host.get_relations()
     dependent = host.get_dependent_as_types()
+    if not any(dependent.values()):
+        dependent = None
     dependencies = host.get_dependencies_as_types()
     return render_to_response('noclook/detail/host_detail.html',
                               {'node_handle': nh, 'node': host, 'last_seen': last_seen, 'expired': expired,
@@ -227,6 +229,114 @@ def optical_node_detail(request, handle_id):
                               context_instance=RequestContext(request))
 
 
+@login_required
+def optical_path_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    optical_path = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(optical_path.data)
+    relations = optical_path.get_relations()
+    dependent = optical_path.get_dependent_as_types()
+    dependencies = optical_path.get_dependencies_as_types()
+    return render_to_response('noclook/detail/optical_path_detail.html',
+                              {'node': optical_path, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
+                               'dependencies': dependencies, 'dependent': dependent, 'relations': relations,
+                               'history': history},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def peering_group_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    peering_group = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(peering_group.data)
+    # TODO: A better model for Peerings would be:
+    # (unit)<-[:Depends_on]-(peering:Peering)<-[:Uses]-(partner:Peering_Partner)
+    # (peering:Peering)-[:Depends_on]->(group:Peering_Group)
+    user_dependencies = []
+    dependencies = peering_group.get_dependencies()
+    users = peering_group.get_relations().get('Uses', [])
+    for item in dependencies.get('Depends_on', []):
+        network_address = ipaddr.IPNetwork(item['relationship']['ip_address'])
+        interface = {
+            'unit': item['node'],
+            'network_address': unicode(network_address),
+            'users': []
+        }
+        for user in users:
+            user_address = ipaddr.IPAddress(user['relationship']['ip_address'])
+            if user_address in network_address:
+                interface['users'].append({
+                    'user': user['node'],
+                    'user_address': unicode(user_address),
+                    'relationship': user['relationship']
+                })
+        user_dependencies.append(interface)
+    return render_to_response('noclook/detail/peering_group_detail.html',
+                              {'node_handle': nh, 'node': peering_group, 'last_seen': last_seen, 'expired': expired,
+                               'user_dependencies': user_dependencies, 'history': history},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def peering_partner_detail(request, handle_id):
+    # TODO: Needs to be rewritten using cypher
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    peering_partner = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(peering_partner.data)
+    result = peering_partner.with_same_name()
+    same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
+    # TODO: A better model for Peerings would be:
+    # (unit)<-[:Depends_on]-(peering:Peering)<-[:Uses]-(partner:Peering_Partner)
+    # (peering:Peering)-[:Depends_on]->(group:Peering_Group)
+    user_dependencies = []
+    peering_groups = peering_partner.get_uses().get('Uses', [])
+    for group in peering_groups:
+        user_address = ipaddr.IPAddress(group['relationship']['ip_address'])
+        peering_group = {
+            'peering_group': group['node'],
+            'user_address': unicode(user_address),
+        }
+        for unit in group['node'].get_dependencies().get('Depends_on', []):
+            network_address = ipaddr.IPNetwork(unit['relationship']['ip_address'])
+            if user_address in network_address:
+                peering_group.update({
+                    'unit': unit['node'],
+                    'network_address': unicode(network_address),
+                    'relationship': unit['relationship']
+                })
+                break
+        user_dependencies.append(peering_group)
+    return render_to_response('noclook/detail/peering_partner_detail.html',
+                              {'node_handle': nh, 'node': peering_partner, 'last_seen': last_seen, 'expired': expired,
+                               'same_name_relations': same_name_relations, 'user_dependencies': user_dependencies,
+                               'history': history},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def provider_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    provider = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(provider.data)
+    result = provider.with_same_name()
+    same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
+    # Handle relationships
+    provides_relationships = provider.get_provides()
+    return render_to_response('noclook/detail/provider_detail.html',
+                              {'node_handle': nh, 'node': provider, 'last_seen': last_seen, 'expired': expired,
+                               'same_name_relations': same_name_relations,
+                               'provides_relationships': provides_relationships, 'history': history},
+                              context_instance=RequestContext(request))
+
+
 # TODO: Fix views below
 @login_required
 def router_detail(request, handle_id):
@@ -315,93 +425,6 @@ def switch_detail(request, handle_id):
                               {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
                                'service_relationships': service_relationships, 'connections': connections,
                                'owner_relationships': owner_relationships, 'location': location, 'history': history},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def peering_partner_detail(request, handle_id):
-    # TODO: Needs to be rewritten using cypher
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    same_name_relations = h.iter2list(h.get_same_name_relations(node))
-    # Get services used
-    services_rel = node.Uses.outgoing
-    # services_rel are relations to bgp groups(Service)
-    peering_points = []
-    for s_rel in services_rel:
-        peering_point = {
-            'pp_ip': s_rel['ip_address'],
-            'service': s_rel.end['name'],
-            'service_url': h.get_node_url(s_rel.end),
-            's_rel': s_rel
-        }
-        unit_rels = s_rel.end.Depends_on.outgoing
-        org_address = ipaddr.IPAddress(s_rel['ip_address'])
-        for unit_rel in unit_rels:
-            unit_address = ipaddr.IPNetwork(unit_rel['ip_address'])
-            if org_address in unit_address:
-                peering_point['if_address'] = unit_rel['ip_address']
-                peering_point['unit'] = unit_rel.end['name']
-                pic = unit_rel.end.Part_of.outgoing.single.end
-                peering_point['pic'] = pic['name']
-                peering_point['pic_url'] = h.get_node_url(pic)
-                router = nc.get_root_parent(nc.neo4jdb, pic)[0]
-                peering_point['router'] = router['name']
-                peering_point['router_url'] = h.get_node_url(router)
-                peering_points.append(peering_point)
-    return render_to_response('noclook/detail/peering_partner_detail.html',
-                              {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
-                               'same_name_relations': same_name_relations, 'peering_points': peering_points,
-                               'history': history},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def peering_group_detail(request, handle_id):
-    # TODO: Needs to be rewritten using cypher
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    # Get the units dependendant on
-    unit_rels = node.Depends_on.outgoing
-    service_resources = []
-    for unit_rel in unit_rels:
-        if_address = ipaddr.IPNetwork(unit_rel['ip_address'])
-        interface = {
-            'unit': unit_rel.end,
-            'if_address': unit_rel['ip_address']
-        }
-        # TODO: If service depends on more than one PIC this won't show the correct information.
-        try:
-            pic = unit_rel.end.Part_of.outgoing.single.end
-            router = nc.get_root_parent(nc.neo4jdb, pic)[0]
-        except AttributeError:
-            # Service does not depend on any interface
-            pic = None
-            router = None
-        interface['pic'] = pic
-        interface['router'] = router
-        interface['relations'] = []
-        # Get relations who uses the service
-        rel_rels = node.Uses.incoming
-        for r_rel in rel_rels:
-            org_address = ipaddr.IPAddress(r_rel['ip_address'])
-            if org_address in if_address:
-                relation = {
-                    'rel_address': r_rel['ip_address'],
-                    'relation': r_rel.start,
-                    'r_rel': r_rel
-                }
-                interface['relations'].append(relation)
-        service_resources.append(interface)
-    return render_to_response('noclook/detail/peering_group_detail.html',
-                              {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
-                               'service_resources': service_resources, 'history': history},
                               context_instance=RequestContext(request))
 
 
@@ -519,40 +542,5 @@ def service_detail(request, handle_id):
                                'all_dependencies': all_dependencies, 'users': users, 'providers': providers,
                                'history': history}, context_instance=RequestContext(request))
 
-
-@login_required
-def optical_path_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    depend_in = h.iter2list(node.Depends_on.incoming)
-    all_dependent = h.get_dependent_as_types(node)
-    depend_out = h.iter2list(h.get_logical_depends_on(node))
-    all_dependencies = h.get_dependencies_as_types(node)
-    providers = h.iter2list(node.Provides.incoming)
-    return render_to_response('noclook/detail/optical_path_detail.html',
-                              {'node': node, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'depend_in': depend_in, 'depend_out': depend_out, 'all_dependent': all_dependent,
-                               'all_dependencies': all_dependencies, 'providers': providers, 'history': history},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def provider_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    same_name_relations = h.iter2list(h.get_same_name_relations(node))
-    # Handle relationships
-    provides_relationships = h.iter2list(node.Provides.outgoing)
-    return render_to_response('noclook/detail/provider_detail.html',
-                              {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
-                               'same_name_relations': same_name_relations,
-                               'provides_relationships': provides_relationships, 'history': history},
-                              context_instance=RequestContext(request))
 
 

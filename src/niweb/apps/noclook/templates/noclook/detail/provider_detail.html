@@ -26,16 +26,16 @@
             <table class="table">
                 <tr>
                     {% if node.url %}
-                        <th>More information:</th><td><a href="{{ node.url }}">Information link</td>
+                        <th>More information:</th><td><a href="{{ node.data.url }}">Information link</td>
                     {% else %}
-                        <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}">To Portal</td>
+                        <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.data.name }}">To Portal</a></td>
                     {% endif %}
                 </tr>
             </table>
         </div>
         <div class="span3">
             <table class="table">
-                {% if node.noclook_automanage %}
+                {% if node.data.noclook_automanage %}
                     <tr>
                         <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                     </tr>
@@ -52,7 +52,6 @@
     {% if user.is_staff %}
         <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
     {% endif %}
-    <br><br><br>
     {% if provides_relationships %}
     <div class="section">
         <h3>Services</h3>
@@ -68,19 +67,19 @@
                 </tr>
             </thead>
             <tbody>
-            {% for provide in provides_relationships %}
-                {% if provide.end.operational_state == "Decommissioned" %}
+            {% for item in provides_relationships.Provides %}
+                {% if item.node.data.operational_state == "Decommissioned" %}
                     <tr class="decommissioned">
-                {% elif provide.end.operational_state == "Reserved" %}
+                {% elif item.node.data.operational_state == "Reserved" %}
                     <tr class="reserved">
-                {% elif provide.end.operational_state == "Testing" %}
+                {% elif item.node.data.operational_state == "Testing" %}
                     <tr class="testing">
                 {% else %}
                     <tr>
                 {% endif %}
-                    <td><a href="{% noclook_node_to_url provide.end %}">{{ provide.end.name }}</a></td>
-                    <td>{{ provide.end.node_type }}</td>
-                    <td>{{ provide.end.description }}</td>
+                    <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                    <td>{% noclook_get_type item.node.handle_id %}</td>
+                    <td>{{ item.node.data.description }}</td>
                 </tr>
             {% endfor %}
             </tbody>

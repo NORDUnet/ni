@@ -13,7 +13,7 @@ $(document).ready(
             headers:
             {
                 0 : { sorter: "ipAddress"  },
-                2 : { sorter: "ipAddress"  },
+                2 : { sorter: "ipAddress"  }
             },
             widthFixed: true,
             widgets: ['zebra']
@@ -41,19 +41,19 @@ $(document).ready(
     <div class="span4">
         <table class="table">
             <tr>
-                <th>Name:</th><td>{{ node.name }}</td>
+                <th>Name:</th><td>{{ node.data.name }}</td>
             </tr>
             <tr>
-		    <th>AS Number:</th><td>{{ node.as_number }}</td>
+		    <th>AS Number:</th><td>{{ node.data.as_number }}</td>
             </tr>
             <tr>
-		    <th>PeeringDB:</th><td><a href="http://www.peeringdb.com/view.php?asn={{ node.as_number }}" target="_blank">{{ node.as_number }}</a></td>
+		    <th>PeeringDB:</th><td><a href="http://www.peeringdb.com/view.php?asn={{ node.data.as_number }}" target="_blank">{{ node.data.as_number }}</a></td>
             </tr>
         </table>
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.noclook_auto_manage %}
+            {% if node.data.noclook_auto_manage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
@@ -74,28 +74,40 @@ $(document).ready(
 <div class="section">
     <h3>Services used</h3>
     {% load noclook_tags %}
-    {% if peering_points %}
+    {% if user_dependencies %}
         <div class="pull-right">
             <span class="badge badge-important">Expired</span>
         </div>
         <table id="services" class="tablesorter" cellspacing="1">
             <thead>
-                <th>{{ node.name }} IP Address</th><th>Service</th><th>Interface Network</th><th>Unit</th><th>PIC</th><th>Router</th>
+                <tr>
+                    <th>{{ node.data.name }} IP Address</th><th>Service</th><th>Interface Network</th><th>Unit</th><th>PIC</th><th>Router</th>
+                </tr>
             </thead>
             <tbody>
-                {% for item in peering_points %}
-                    {% noclook_has_expired item.s_rel as expired %}
+                {% for item in user_dependencies %}
+                    {% noclook_has_expired item.relationship as expired %}
                     {% if expired %}
                         <tr class="expired">
                     {% else %}
                         <tr>
                     {% endif %}
-                    <td><span class="ip-address">{{ item.pp_ip }}</span></td>
-                    <td><a href="{{ item.service_url }}">{{ item.service }}</a></td>
-                    <td>{{ item.if_address }}</td>
-                    <td>{{ item.unit }}</td>
-                    <td><a href="{{ item.pic_url }}">{{ item.pic }}</a></td>
-                    <td><a href="{{ item.router_url }}">{{ item.router }}</a></td>
+                    <td><span class="ip-address">{{ item.user_address }}</span></td>
+                    <td><a href="{{ item.peering_group.handle_id }}">{{ item.peering_group.data.name }}</a></td>
+                    <td>{{ item.network_address }}</td>
+                    <td>{{ item.unit.data.name }}</td>
+                    {% for place in item.unit.get_placement %}
+                        {% if place.equipment %}
+                            <td><a href="{% noclook_node_to_url place.equipment.handle_id %}">{{ place.equipment.name }}</a></td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                        {% if place.port %}
+                            <td><a href="{% noclook_node_to_url place.port.handle_id %}">{{ place.port.name }}</a></td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                    {% endfor %}
                 </tr>
             {% endfor %}
             </tbody>

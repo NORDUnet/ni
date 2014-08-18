@@ -207,7 +207,6 @@ class CommonQueries(BaseNodeModel):
             WITH node, direct, deps, services, paths, oms, filter(n in deps WHERE n:Optical_Link) as links
             WITH node, direct, services, paths, oms, links
             OPTIONAL MATCH node-[:Depends_on*1..20]->()-[:Connected_to*1..50]-cable
-            WITH distinct direct, cable, services, paths, oms, links
             RETURN direct, services, paths, oms, links, filter(n in collect(cable) WHERE n:Cable) as cables
             """
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
@@ -583,6 +582,17 @@ class CableModel(PhysicalModel):
             WITH distinct service
             OPTIONAL MATCH service<-[:Uses]-user
             RETURN service, collect(user) as users
+            """
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
+
+class UnitModel(LogicalModel):
+
+    def get_placement(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[:Part_of]->(port:Port)
+            OPTIONAL MATCH (port)<-[:Has*1..10]-(equipment)
+            RETURN port, equipment
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 
