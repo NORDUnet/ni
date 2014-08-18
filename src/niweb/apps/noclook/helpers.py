@@ -91,10 +91,13 @@ def get_nh_node(handle_id):
 def delete_node(user, handle_id):
     try:
         nh = NodeHandle.objects.get(pk=handle_id)
-        nh.get_node().delete()
-        activitylog.delete_node(user, nh)
+        try:
+            nh.get_node().delete()
+            activitylog.delete_node(user, nh)
+        except NodeNotFound:
+            pass
         nh.delete()
-    except (ObjectDoesNotExist, NodeNotFound):
+    except ObjectDoesNotExist:
         pass
     return True
 
@@ -249,7 +252,7 @@ def isots_to_dt(data):
             dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')  # ex. 2011-11-01T14:37:13.713434
         except ValueError:
             dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S')     # ex. 2011-11-01T14:37:13
-    except TypeError:
+    except (TypeError, AttributeError):
         return None
     return dt
 
