@@ -183,6 +183,21 @@ def run_consume(config_file):
     if noclook_data:
         data = load_json(noclook_data)
         insert_graph_data(data)
+        # TODO: Discover more things that needs fixing
+        fix_host_services_locked()
+
+
+def fix_host_services_locked():
+    q = """
+        MATCH (n:Host)
+        WHERE has(n.services_locked)
+        WITH n, filter(x in collect(n) WHERE x.services_locked = 'True') as t
+        WITH t, filter(x in collect(n) WHERE x.services_locked = 'False') as f
+        FOREACH (x in t | SET x.services_locked = true)
+        FOREACH (x in f | SET x.services_locked = false)
+        """
+    with nc.neo4jdb.write as w:
+        w.execute(q)
 
 
 def main():
