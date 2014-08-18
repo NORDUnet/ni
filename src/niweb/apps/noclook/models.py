@@ -88,7 +88,10 @@ class NodeHandle(models.Model):
         """
         Delete that node handle and the handles node.
         """
-        self.get_node().delete()
+        try:
+            self.get_node().delete()
+        except nc.exceptions.NodeNotFound:
+            pass
         Comment.objects.filter(object_pk=self.pk).delete()
         super(NodeHandle, self).delete()
         return True
