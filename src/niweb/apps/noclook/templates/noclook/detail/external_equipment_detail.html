@@ -52,7 +52,7 @@ $(document).ready(
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.noclook_automanage %}
+            {% if node.data.noclook_automanage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>

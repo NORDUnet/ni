@@ -58,7 +58,7 @@ $(document).ready(
                     <th>Link:</th><td><a href="/findin/optical-node/link/{{ node.data.link }}/">{{ node.data.link }}</a></td>
                 </tr>
             {% endif %}
-            {% if node.noclook_auto_manage %}
+            {% if node.data.noclook_auto_manage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
