@@ -81,9 +81,12 @@
             $('#inServiceCopy').popover();
             $('#outServiceCopy').popover();
             var depTabsIn = $('#depTabsIn');
-            var depTabsOut = $('#depTabsOut');
-            depTabsIn.find('a:first').tab('show');
-            depTabsOut.find('a:first').tab('show');
+            var depsTabInLink = depTabsIn.find('a:first');
+            depsTabInLink.tab('show');
+            var inTable = $(depsTabInLink.attr('href') + " table");
+            inTable.data("tablesorter").widgets = ["zebra"];
+            inTable.trigger('applyWidgets');
+
             depTabsIn.find('a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
@@ -91,6 +94,14 @@
                 table.data("tablesorter").widgets = ["zebra"];
                 table.trigger('applyWidgets');
             });
+
+            var depTabsOut = $('#depTabsOut');
+            var depsTabOutLink = depTabsOut.find('a:first');
+            depsTabOutLink.tab('show');
+            var outTable = $(depsTabInLink.attr('href') + " table");
+            outTable.data("tablesorter").widgets = ["zebra"];
+            outTable.trigger('applyWidgets');
+
             depTabsOut.find('a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
