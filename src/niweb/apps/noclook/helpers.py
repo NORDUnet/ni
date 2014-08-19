@@ -132,8 +132,6 @@ def form_update_node(user, node, form, property_keys=None):
                     node[key] = form.cleaned_data[key]
                 if key == 'name':
                     nh.node_name = form.cleaned_data[key]
-                nh.modifier = user
-                nh.save()
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
                 update_node_search_index(nc.neo4jdb, node)
         elif not form.cleaned_data[key] and key in node.propertyKeys:

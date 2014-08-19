@@ -18,6 +18,8 @@ def update_node_property(user, action_object, property_key, value_before, value_
     :param value_after: JSON supported value
     :return: None
     """
+    action_object.modifier = user
+    action_object.save()
     action.send(
         user,
         verb='update',
@@ -97,7 +99,11 @@ def create_relationship(user, relationship):
     :return: None
     """
     start_nh, start_node = h.get_nh_node(relationship.start['handle_id'])
+    start_nh.modifier = user
+    start_nh.save()
     end_nh, end_node = h.get_nh_node(relationship.end['handle_id'])
+    end_nh.modifier = user
+    end_nh.save()
     action.send(
         user,
         verb='create',
@@ -117,7 +123,11 @@ def delete_relationship(user, relationship):
     :return: None
     """
     start_nh, start_node = h.get_nh_node(relationship.start['handle_id'])
+    start_nh.modifier = user
+    start_nh.save()
     end_nh, end_node = h.get_nh_node(relationship.end['handle_id'])
+    end_nh.modifier = user
+    end_nh.save()
     action.send(
         user,
         verb='delete',
