@@ -337,59 +337,81 @@ def provider_detail(request, handle_id):
                               context_instance=RequestContext(request))
 
 
-# TODO: Fix views below
+@login_required
+def rack_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = h.get_history(nh)
+    # Get node from neo4j-database
+    rack = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(rack.data)
+    location_path = rack.get_location_path()
+    # Get equipment in rack
+    physical_relationships = rack.get_located_in()
+    return render_to_response('noclook/detail/rack_detail.html',
+                              {'node': rack, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
+                               'physical_relationships': physical_relationships, 'location_path': location_path,
+                               'history': history},
+                              context_instance=RequestContext(request))
+
+
 @login_required
 def router_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     history = h.get_history(nh)
     # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    location = h.iter2list(h.get_location(node))
-    # Get all the Ports and what depends on the port.
+    router = nh.get_node()
+    last_seen, expired = h.neo4j_data_age(router.data)
+    location_path = router.get_location_path()
+    # Remove ISO address from loopback addresses
     loopback_addresses = []
-    ports = []
-    for hit in h.get_depends_on_router(node):
-        port = {
-            'port': hit['port'],
-            'units': [],
-            'depends_on_port': [],
-        }
-        for dep in hit['depends_on_port']:
-            depends = None
-            try:
-                if dep['node_type'] == 'Unit':
-                    port['units'].append(dep)
-                    try:
-                        for unit_dep in h.get_depends_on_unit(dep):
-                            depends = {
-                                'unit': dep,
-                                'dep': unit_dep['depends_on_unit']
-                            }
-                    except TypeError:
-                        pass
-                else:
-                    depends = {
-                        'dep': dep
-                    }
-                if depends:
-                    port['depends_on_port'].append(depends)
-            except TypeError:
-                pass
-        ports.append(port)
     for address in loopback_addresses:
         try:
             ipaddr.IPNetwork(address)
         except ValueError:
             # Remove the ISO address
             loopback_addresses.remove(address)
+    # Get all the Ports and what depends on the port.
+
+    dependent = router.get_dependent_as_types()
+
+    # ports = []
+    # for hit in h.get_depends_on_router(node):
+    #     port = {
+    #         'port': hit['port'],
+    #         'units': [],
+    #         'depends_on_port': [],
+    #     }
+    #     for dep in hit['depends_on_port']:
+    #         depends = None
+    #         try:
+    #             if dep['node_type'] == 'Unit':
+    #                 port['units'].append(dep)
+    #                 try:
+    #                     for unit_dep in h.get_depends_on_unit(dep):
+    #                         depends = {
+    #                             'unit': dep,
+    #                             'dep': unit_dep['depends_on_unit']
+    #                         }
+    #                 except TypeError:
+    #                     pass
+    #             else:
+    #                 depends = {
+    #                     'dep': dep
+    #                 }
+    #             if depends:
+    #                 port['depends_on_port'].append(depends)
+    #         except TypeError:
+    #             pass
+    #     ports.append(port)
+
     return render_to_response('noclook/detail/router_detail.html',
-                              {'node_handle': nh, 'node': node, 'ports': ports, 'last_seen': last_seen,
-                               'expired': expired, 'location': location, 'history': history,
+                              {'node_handle': nh, 'node': router, 'last_seen': last_seen, 'expired': expired,
+                               'location_path': location_path, 'history': history, 'dependent': dependent,
                                'loopback_addresses': loopback_addresses},
                               context_instance=RequestContext(request))
 
 
+# TODO: Fix views below
 @login_required
 def firewall_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -460,24 +482,6 @@ def site_owner_detail(request, handle_id):
     return render_to_response('noclook/detail/site_owner_detail.html',
                               {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
                                'same_name_relations': same_name_relations, 'site_relationships': site_relationships,
-                               'history': history},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def rack_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(node)
-    # Get equipment in rack
-    physical_relationships = h.iter2list(node.Located_in.incoming)
-    # Get rack location
-    location = h.iter2list(h.get_place(node))
-    return render_to_response('noclook/detail/rack_detail.html',
-                              {'node': node, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'physical_relationships': physical_relationships, 'location': location,
                                'history': history},
                               context_instance=RequestContext(request))
 

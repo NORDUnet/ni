@@ -320,9 +320,27 @@ class PhysicalModel(CommonQueries):
 
 class LocationModel(CommonQueries):
 
+    def get_location_path(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[:Has]-(r)
+            MATCH p=()-[:Has*0..20]->(r)
+            WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength
+            WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths
+            UNWIND(longestPaths) as location_path
+            RETURN location_path
+            """
+        return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
+
     def get_location(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Has]-(node)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
+    def get_located_in(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Located_in]-(node)
             RETURN type(r), id(r), r, node.handle_id
             """
         return self._basic_read_query_to_dict(q)
@@ -388,11 +406,30 @@ class EquipmentModel(PhysicalModel):
             """
         return self._basic_read_query_to_dict(q, port_name=port_name)
 
+    def get_dependent_as_types(self):
+        q = """
+            MATCH (node {handle_id: {handle_id}})
+            OPTIONAL MATCH (node)<-[:Depends_on]-(d)
+            WITH node, collect(DISTINCT d) as direct
+            OPTIONAL MATCH (node)-[:Has*1..20]->()<-[:Part_of|Depends_on*1..20]-(dep)
+            OPTIONAL MATCH (node)-[:Has*1..20]->()<-[:Connected_to]-()-[:Connected_to]->()<-[:Depends_on*1..20]-(cable_dep)
+            WITH direct, collect(DISTINCT dep) + collect(DISTINCT cable_dep) as coll UNWIND coll AS x
+            WITH direct, collect(DISTINCT x) as deps
+            WITH direct, deps, filter(n in deps WHERE n:Service) as services
+            WITH direct, deps, services, filter(n in deps WHERE n:Optical_Path) as paths
+            WITH direct, deps, services, paths, filter(n in deps WHERE n:Optical_Multiplex_Section) as oms
+            WITH direct, deps, services, paths, oms, filter(n in deps WHERE n:Optical_Link) as links
+            RETURN direct, services, paths, oms, links
+            """
+        return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
+
     def get_connections(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})-[:Has*0..10]->(porta)<-[r0:Connected_to]-(cable)
-            OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb)
-            OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)-[:Located_in]-(location)<-[:Has]-site
+            MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta)
+            OPTIONAL MATCH (n)-[:Has*0..10]->(porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb)
+            OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)
+            OPTIONAL MATCH (end)-[:Located_in]->(location)
+            OPTIONAL MATCH (location)<-[:Has]-site
             RETURN porta, r0, cable, r1, portb, end, location, site
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)

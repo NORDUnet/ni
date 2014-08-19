@@ -72,6 +72,7 @@ $(document).ready(
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
+{% include "noclook/depend_include.html" %}
 <div class="section top-space">
     <h3>Interfaces</h3>
     {% if ports %}

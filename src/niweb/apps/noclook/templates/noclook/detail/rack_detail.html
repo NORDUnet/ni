@@ -26,26 +26,26 @@ $(document).ready(
 <div class="row">
     <div class="span4">
         <table class="table">
-            {% if node.height %}
+            {% if node.data.height %}
                 <tr>
-                    <th>Height:</th><td>{{ node.height }} mm</td>
+                    <th>Height:</th><td>{{ node.data.height }} mm</td>
                 </tr>
             {% endif %}
-            {% if node.depth %}
+            {% if node.data.depth %}
                 <tr>
-                    <th>Depth:</th><td>{{ node.depth }} mm</td>
+                    <th>Depth:</th><td>{{ node.data.depth }} mm</td>
                 </tr>
             {% endif %}
-            {% if node.width %}
+            {% if node.data.width %}
                 <tr>
-                    <th>Width:</th><td>{{ node.width }} mm</td>
+                    <th>Width:</th><td>{{ node.data.width }} mm</td>
                 </tr>
             {% endif %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.noclook_automanage %}
+            {% if node.data.noclook_automanage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
@@ -68,13 +68,15 @@ $(document).ready(
     {% if physical_relationships %}
     <table id="equipment" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Type</th><th>Name</th>
+            <tr>
+                <th>Type</th><th>Name</th>
+            </tr>
         </thead>
         <tbody>
-        {% for equip in physical_relationships %}
+        {% for item in physical_relationships.Located_in %}
             <tr>
-                <td><a href="/{{ equip.start.node_type|slugify }}/">{{ equip.start.node_type }}</a></td>
-                <td><a href="{% noclook_node_to_url equip.start %}">{{ equip.start.name }}</a></td>
+                <td>{% noclook_get_type item.node.handle_id %}</td>
+                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
             </tr>
         {% endfor %}
         </tbody>
