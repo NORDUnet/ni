@@ -75,7 +75,8 @@ $(document).ready(
         <tbody>
         {% for item in physical_relationships.Located_in %}
             <tr>
-                <td>{% noclook_get_type item.node.handle_id %}</td>
+                {% noclook_get_type item.handle_id as node_type %}
+                <td>{{ node_type }}</td>
                 <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
             </tr>
         {% endfor %}

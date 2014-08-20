@@ -80,13 +80,15 @@
                 });
             $('#inServiceCopy').popover();
             $('#outServiceCopy').popover();
+            // Incoming dependencies table
             var depTabsIn = $('#depTabsIn');
             var depsTabInLink = depTabsIn.find('a:first');
             depsTabInLink.tab('show');
             var inTable = $(depsTabInLink.attr('href') + " table");
-            inTable.data("tablesorter").widgets = ["zebra"];
-            inTable.trigger('applyWidgets');
-
+            if (inTable.length) {
+                inTable.data("tablesorter").widgets = ["zebra"];
+                inTable.trigger('applyWidgets');
+            }
             depTabsIn.find('a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
@@ -94,14 +96,15 @@
                 table.data("tablesorter").widgets = ["zebra"];
                 table.trigger('applyWidgets');
             });
-
+            // Outgoing dependencies table
             var depTabsOut = $('#depTabsOut');
             var depsTabOutLink = depTabsOut.find('a:first');
             depsTabOutLink.tab('show');
-            var outTable = $(depsTabInLink.attr('href') + " table");
-            outTable.data("tablesorter").widgets = ["zebra"];
-            outTable.trigger('applyWidgets');
-
+            var outTable = $(depsTabOutLink.attr('href') + " table");
+            if (outTable.length) {
+                outTable.data("tablesorter").widgets = ["zebra"];
+                outTable.trigger('applyWidgets');
+            }
             depTabsOut.find('a').click(function (e) {
                 e.preventDefault();
                 $(this).tab('show');
@@ -160,7 +163,8 @@
                                 <tr>
                             {% endif %}
                                     <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    {% noclook_get_type item.handle_id as node_type %}
+                                    <td>{{ node_type }}</td>
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
@@ -223,7 +227,8 @@
                                 <tr>
                             {% endif %}
                                     <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    {% noclook_get_type item.handle_id as node_type %}
+                                    <td>{{ node_type }}</td>
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
@@ -251,7 +256,8 @@
                                 <tr>
                             {% endif %}
                                     <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    {% noclook_get_type item.handle_id as node_type %}
+                                    <td>{{ node_type }}</td>
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
@@ -279,7 +285,8 @@
                                 <tr>
                             {% endif %}
                                 <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                <td>{% noclook_get_type item.handle_id %}</td>
+                                {% noclook_get_type item.handle_id as node_type %}
+                                <td>{{ node_type }}</td>
                                 <td>{{ item.description }}</td>
                                 <td>
                                     {% noclook_get_model item.handle_id as model %}
@@ -352,7 +359,8 @@
                                             {% for loc in model.get_placement_path.placement_path %}{{ loc.name }} {% endfor %}{{ item.name }}
                                         </a>
                                     </td>
-                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    {% noclook_get_type item.handle_id as node_type %}
+                                    <td>{{ node_type }}</td>
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
@@ -409,7 +417,8 @@
                                 <tr>
                             {% endif %}
                                     <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    {% noclook_get_type item.handle_id as node_type %}
+                                    <td>{{ node_type }}</td>
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
@@ -437,7 +446,8 @@
                                 <tr>
                             {% endif %}
                                     <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    <td>{% noclook_get_type item.handle_id %}</td>
+                                    {% noclook_get_type item.handle_id as node_type %}
+                                    <td>{{ node_type }}</td>
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
@@ -465,7 +475,8 @@
                                 <tr>
                             {% endif %}
                                 <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                <td>{% noclook_get_type item.handle_id %}</td>
+                                {% noclook_get_type item.handle_id as node_type %}
+                                <td>{{ node_type }}</td>
                                 <td>{{ item.description }}</td>
                                 <td>
                                     {% noclook_get_model item.handle_id as model %}

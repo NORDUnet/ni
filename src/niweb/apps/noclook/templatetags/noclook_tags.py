@@ -88,7 +88,7 @@ def noclook_get_model(handle_id):
         return ''
 
 
-@register.simple_tag
+@register.assignment_tag
 def noclook_get_type(handle_id):
     try:
         model = nc.get_node_model(nc.neo4jdb, handle_id)
