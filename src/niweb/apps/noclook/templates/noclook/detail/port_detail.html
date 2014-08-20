@@ -9,19 +9,11 @@
         function(){
             $("#connections").tablesorter(
             {
-                sortList: [[0,0]],
+                sortList: [[1,0]],
                 headers:
                 {},
                 widthFixed: true,
                 widgets: ['zebra']
-            });
-            $("#depends").tablesorter(
-                    {
-                        sortList: [[0,0]],
-                        headers:
-                        {},
-                        widthFixed: true,
-                        widgets: ['zebra']
             });
         }
     );
@@ -35,14 +27,14 @@
     <div class="span4">
         <table class="table">
             <tr>
-                <th>Port Type:</th><td>{{ node.port_type }}</td>
+                <th>Port Type:</th><td>{{ node.data.port_type }}</td>
             </tr>
         </table>
-        {% if node.description %}
+        {% if node.data.description %}
             <div>
                 <table class="table">
                     <tr>
-                        <th>Description:</th><td>{{ node.description }}</td>
+                        <th>Description:</th><td>{{ node.data.description }}</td>
                     </tr>
                 </table>
             </div>
@@ -50,7 +42,7 @@
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.noclook_auto_manage %}
+            {% if node.data.noclook_auto_manage %}
                 <tr>
                     <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
                 </tr>
@@ -67,48 +59,34 @@
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
-<br><br><br>
+{% include "noclook/depend_include.html" %}
 <div class="section">
     <h3>Connected cables</h3>
-    {% if connected_to_rels %}
+    {% if connections %}
+    {% load noclook_tags %}
     <table id="connections" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Cables</th>
+            <tr>
+                <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+            </tr>
         </thead>
         <tbody>
-        {% for rel in connected_to_rels %}
+        {% for con in connections %}
             <tr>
-                <td><a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.porta.handle_id %}">{{ con.porta.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.cable.handle_id %}">{{ con.cable.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.site.handle_id %}">{{ con.site.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.location.handle_id %}">{{ con.location.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.end.handle_id %}">{{ con.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.portb.handle_id %}">{{ con.portb.name }}</a></td>
             </tr>
-         {% endfor %}
+        {% endfor %}
         </tbody>
     </table>
     {% else %}
         No cables connected to the port.
     {% endif %}
 </div>
-    <div class="section">
-        <h3>Depends on this port</h3>
-        {% if depends_on_port %}
-            <table id="depends" class="tablesorter" cellspacing="1">
-                <thead>
-                    <th>Name</th>
-                </thead>
-                <tbody>
-                {% for hit in depends_on_port %}
-                    <tr>
-                    {% if hit.port_logical %}
-                        <td><a href="{% noclook_node_to_url hit.port_logical %}">{{ hit.port_logical.node_type }} {{ hit.port_logical.name }}</a></td>
-                    {% else %}
-                        <td><a href="{% noclook_node_to_url hit.direct_logical %}">{{ hit.direct_logical.node_type }} {{ hit.direct_logical.name }}</a></td>
-                    {% endif %}
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            No connections found.
-        {% endif %}
-    </div>
+
 
 {% endblock %}

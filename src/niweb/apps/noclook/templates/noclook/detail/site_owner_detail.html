@@ -25,17 +25,17 @@ $(document).ready(
     <div class="span4">
         <table class="table">
             <tr>
-                {% if node.url %}
-                    <th>More information:</th><td><a href="{{ node.url }}">Information link</a></td>
+                {% if node.data.url %}
+                    <th>More information:</th><td><a href="{{ node.data.url }}">Information link</a></td>
                 {% else %}
-                    <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.name }}">To Portal</a></td>
+                    <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.data.name }}">To Portal</a></td>
                 {% endif %}
             </tr>
         </table>
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.noclook_automanage %}
+            {% if node.data.noclook_automanage %}
             <tr>
                 <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
             </tr>
@@ -52,19 +52,20 @@ $(document).ready(
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
-<br><br><br>
 <div class="section">
     <h3>Sites</h3>
-    {% if site_relationships %}
+    {% if responsible_relations.Responsible_for %}
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Country</th><th>Name</th>
+            <tr>
+                <th>Country</th><th>Name</th>
+            </tr>
         </thead>
         <tbody>
-        {% for equip in site_relationships %}
+        {% for item in responsible_relations.Responsible_for %}
             <tr>
-                <td><a href="/findin/site/country_code/{{ equip.end.country_code }}/">{{ equip.end.country }}</a></td>
-                <td><a href="{% noclook_node_to_url equip.end %}">{{ equip.end.name }}</a></td>
+                <td><a href="/findin/site/country_code/{{ item.node.data.country_code }}/">{{ item.node.data.country }}</a></td>
+                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
             </tr>
         {% endfor %}
         </tbody>

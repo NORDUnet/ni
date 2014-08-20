@@ -41,13 +41,6 @@
     {% endfor %}
     </h5>
 {% endif %}
-{% if part_of %}
-    <h5 class="site">Part of
-        {% for hit in part_of %}
-            <a href="{% noclook_node_to_url hit.parent %}"> {{ hit.parent.name }}</a> <a href="{% noclook_node_to_url hit.loc %}"> {{ hit.loc.name }}</a>
-        {% endfor %}
-    </h5>
-{% endif %}
 {% load comments %}
 {% get_comment_list for node_handle as comment_list %}
 {% if comment_list %}

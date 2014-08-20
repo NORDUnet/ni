@@ -56,14 +56,15 @@ $(document).ready(
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
-<br><br><br>
 <div class="section">
     <h3>Ports</h3>
     {% if connections %}
     {% load noclook_tags %}
     <table id="connections" class="tablesorter" cellspacing="1">
         <thead>
-            <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+            <tr>
+                <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+            </tr>
         </thead>
         <tbody>
         {% for con in connections %}

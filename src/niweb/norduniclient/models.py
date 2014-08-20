@@ -153,13 +153,6 @@ class CommonQueries(BaseNodeModel):
     def get_location_path(self):
         return {'location_path': []}
 
-    def get_location(self):
-        q = """
-            MATCH (n:Node {handle_id: {handle_id}})-[r:Located_in]->(node)
-            RETURN type(r), id(r), r, node.handle_id
-            """
-        return self._basic_read_query_to_dict(q)
-
     def get_relations(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
@@ -207,7 +200,7 @@ class CommonQueries(BaseNodeModel):
             WITH node, direct, deps, services, paths, oms, filter(n in deps WHERE n:Optical_Link) as links
             WITH node, direct, services, paths, oms, links
             OPTIONAL MATCH node-[:Depends_on*1..20]->()-[:Connected_to*1..50]-cable
-            RETURN direct, services, paths, oms, links, filter(n in collect(cable) WHERE n:Cable) as cables
+            RETURN direct, services, paths, oms, links, filter(n in collect(DISTINCT cable) WHERE n:Cable) as cables
             """
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
 
@@ -253,6 +246,13 @@ class LogicalModel(CommonQueries):
 
 
 class PhysicalModel(CommonQueries):
+
+    def get_location(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Located_in]->(node)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
 
     def set_owner(self, owner_handle_id):
         q = """
@@ -345,6 +345,13 @@ class LocationModel(CommonQueries):
             """
         return self._basic_read_query_to_dict(q)
 
+    def get_has(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Has]->(node:Location)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
     def delete(self):
         has = self.get_has()
         if has['Has']:
@@ -384,6 +391,13 @@ class RelationModel(CommonQueries):
             """
         return self._basic_read_query_to_dict(q)
 
+    def get_responsible_for(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Responsible_for]->(usable)
+            RETURN type(r), id(r), r, usable.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
 
 class EquipmentModel(PhysicalModel):
 
@@ -397,6 +411,13 @@ class EquipmentModel(PhysicalModel):
             RETURN location_path
             """
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
+
+    def get_ports(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r:Has]->(port:Port)
+            RETURN type(r), id(r), r, port.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
 
     def get_port(self, port_name):
         q = """
@@ -459,6 +480,17 @@ class SubEquipmentModel(PhysicalModel):
             """
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
 
+    def get_connections(self):
+        q = """
+            MATCH (porta:Node {handle_id: {handle_id}})<-[r0:Connected_to]-(cable)
+            OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb)
+            OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)
+            OPTIONAL MATCH (end)-[:Located_in]->(location)
+            OPTIONAL MATCH (location)<-[:Has]-site
+            RETURN porta, r0, cable, r1, portb, end, location, site
+            """
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
 
 class HostModel(CommonQueries):
 
@@ -514,7 +546,7 @@ class PortModel(SubEquipmentModel):
 
     def get_units(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[:Part_of]-(unit:Unit)
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Part_of]-(unit:Unit)
             RETURN type(r), id(r), r, unit.handle_id
             """
         return self._basic_read_query_to_dict(q)
@@ -625,13 +657,27 @@ class CableModel(PhysicalModel):
 
 class UnitModel(LogicalModel):
 
-    def get_placement(self):
+    def get_placement_path(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})-[:Part_of]->(port:Port)
-            OPTIONAL MATCH (port)<-[:Has*1..10]-(equipment)
-            RETURN port, equipment
+            MATCH (n:Node {handle_id: {handle_id}})-[:Part_of]->(parent)
+            OPTIONAL MATCH p=()-[:Has*0..20]->(parent)
+            WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength
+            WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths
+            UNWIND(longestPaths) as placement_path
+            RETURN placement_path
             """
-        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+        return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
+
+    def get_location_path(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[:Part_of]->(parent)
+            OPTIONAL MATCH p=()-[:Has*0..20]->(r)<-[:Located_in]-()-[:Has*0..20]->(parent)
+            WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength
+            WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths
+            UNWIND(longestPaths) as location_path
+            RETURN location_path
+            """
+        return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
 
 
 class ExternalEquipmentModel(EquipmentModel):
@@ -639,4 +685,12 @@ class ExternalEquipmentModel(EquipmentModel):
 
 
 class ODFModel(EquipmentModel):
+    pass
+
+
+class SwitchModel(EquipmentModel, HostModel):
+    pass
+
+
+class FirewallModel(EquipmentModel, HostModel):
     pass

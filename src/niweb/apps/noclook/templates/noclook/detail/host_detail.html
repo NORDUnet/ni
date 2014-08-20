@@ -227,11 +227,11 @@
             <i class="icon-lock"></i> Services locked
         </div>
     {% endif %}
+    {% load noclook_tags %}
+    {% if host_services %}
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
     </div>
-    {% load noclook_tags %}
-    {% if host_services %}
     <table id="services" class="tablesorter" cellspacing="1">
         <thead>
             <tr>
