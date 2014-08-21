@@ -122,7 +122,10 @@ def noclook_report_age(item, old, very_old):
     :param item: Neo4j node
     :return: String, current, old, very_old
     """
-    return neo4j_report_age(item, old, very_old)
+    try:
+        return neo4j_report_age(item, old, very_old)
+    except TypeError:
+        return ''
 
 
 @register.assignment_tag

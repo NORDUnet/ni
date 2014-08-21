@@ -72,6 +72,7 @@
         {% endif %}
     </ul>
     {% if hosts %}
+        <h3>Hosts: {{ hosts|length }}</h3>
         {% if status == "unauthorized-ports"%}
             <p class="pull-right"><span class="table-to-csv btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> Excel</span></p>
             <table id="unauthorized-ports" class="tablesorter" cellspacing="1">
@@ -85,7 +86,7 @@
                     {% for item in hosts %}
                         {% for port in item.ports %}
                             <tr>
-                                <td><a href="{% noclook_node_to_url item.node %}">{{ item.node.name }}</a></td>
+                                <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
                                 <td><a href="{% noclook_node_to_url port.start %}">{{ port.name }}</a></td>
                                 <td>{{ port.protocol }}</td>
                                 <td>{{ port.port }}</td>
@@ -97,7 +98,6 @@
                 </tbody>
             </table>
         {% else %}
-            <h3>Hosts: {{ num_hosts }}</h3>
             <p class="pull-right"><span class="table-to-csv btn btn-link" data-table="#hosts"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link" data-table="#hosts"><i class="icon-download"></i> Excel</span></p>
             <table id="hosts" class="tablesorter" cellspacing="1">
                 <thead>
@@ -109,9 +109,9 @@
                     {% load noclook_tags %}
                     {% for item in hosts %}
                         <tr>
-                            <td><a href="{% noclook_node_to_url item %}">{{ item.name }}</a></td>
-                            <td>{{ item.description|default:"" }}</td>
-                            <td>{% noclook_last_seen_to_dt item.noclook_last_seen as last_seen %}{{ last_seen|date:"D d M Y" }}</td>
+                            <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
+                            <td>{{ item.host.description|default:"" }}</td>
+                            <td>{% noclook_last_seen_to_dt item.host.noclook_last_seen as last_seen %}{{ last_seen|date:"D d M Y" }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

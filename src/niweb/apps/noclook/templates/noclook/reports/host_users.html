@@ -63,7 +63,7 @@
         {% endif %}
     </ul>
     {% if hosts %}
-        <h3>Hosts for {{ host_user_name }}: {{ hosts|length }}</h3>
+        <h3>Hosts for {{ host_user_name }}: {{ num_of_hosts }}</h3>
         <div class="pull-right">
             <span class="badge badge-warning">+14 days</span>
             <span class="badge badge-important">+30 days</span>
@@ -91,34 +91,37 @@
             </thead>
             <tbody>
                 {% load noclook_tags %}
-                {% for hit in hosts %}
-                    {% noclook_report_age hit.host 15 30 as age %}
-                    {% if age == "old" %}
-                        <tr class="report-old">
-                    {% elif age == "very_old" %}
-                        <tr class="report-very-old">
-                    {% else %}
-                        <tr>
-                    {% endif %}
-                    <td>{{ hit.host_user.name }}</td>
-                    <td><a href="{% noclook_node_to_url hit.host %}">{{ hit.host.name }}</a></td>
-                    <td>{{ hit.host_type|capfirst }} host</td>
-                    <td>
-                        {% for address in hit.host.ip_addresses %}
-                            {{ address }}{% if not forloop.last %},{% endif %}
-                        {% endfor %}
-                    </td>
-                    <td>{{ hit.host.contract_number|default:"" }}</td>
-                    <td>{{ hit.host.description|default:"" }}</td>
-                    <td>{{ hit.host.responsible_group }}</td>
-                    <td>{{ hit.host.backup }}</td>
-                    <td>{{ hit.host.syslog|yesno:"Yes,No,Not set" }}</td>
-                    <td>{{ hit.host.nagios_checks|yesno:"Yes,No,Not set" }}</td>
-                    <td>{{ hit.host.operational_state|default:"Not set" }}</td>
-                    <td>{{ hit.host.security_class }}</td>
-                    <td>{% noclook_last_seen_to_dt hit.host.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
-                    <td>{% timestamp_to_td hit.host.uptime as uptime %}{% if uptime %}{{ uptime.days }}{% endif %}</td>
-                </tr>
+                {% for item in hosts %}
+                    {% for handle_id in item.ids %}
+                        {% noclook_get_model handle_id as host %}
+                        {% noclook_report_age host.data 15 30 as age %}
+                        {% if age == "old" %}
+                            <tr class="report-old">
+                        {% elif age == "very_old" %}
+                            <tr class="report-very-old">
+                        {% else %}
+                            <tr>
+                        {% endif %}
+                        <td>{{ item.host_user.name }}</td>
+                        <td><a href="{% noclook_node_to_url host.handle_id %}">{{ host.data.name }}</a></td>
+                        <td>{{ host.meta_type|capfirst }} host</td>
+                        <td>
+                            {% for address in host.data.ip_addresses %}
+                                {{ address }}{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>{{ host.data.contract_number|default:"" }}</td>
+                        <td>{{ host.data.description|default:"" }}</td>
+                        <td>{{ host.data.responsible_group }}</td>
+                        <td>{{ host.data.backup }}</td>
+                        <td>{{ host.data.syslog|yesno:"Yes,No,Not set" }}</td>
+                        <td>{{ host.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
+                        <td>{{ host.data.operational_state|default:"Not set" }}</td>
+                        <td>{{ host.data.security_class }}</td>
+                        <td>{% noclook_last_seen_to_dt host.data.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
+                        <td>{% timestamp_to_td host.data.uptime as uptime %}{% if uptime %}{{ uptime.days }}{% endif %}</td>
+                    </tr>
+                    {% endfor %}
                 {% endfor %}
             </tbody>
         </table>

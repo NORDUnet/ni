@@ -680,6 +680,16 @@ class UnitModel(LogicalModel):
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
 
 
+class ServiceModel(LogicalModel):
+
+    def get_customers(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses]-(customer:Customer)
+            RETURN "customers", id(r), r, customer.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
+
 class ExternalEquipmentModel(EquipmentModel):
     pass
 

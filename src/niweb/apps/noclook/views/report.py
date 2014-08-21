@@ -13,6 +13,7 @@ from django.template.defaultfilters import yesno, date
 from django.views.decorators.cache import cache_page
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 import tempfile
 from datetime import datetime
@@ -36,70 +37,59 @@ def host_reports(request):
 @cache_page(60 * 5)
 @login_required
 def host_users(request, host_user_name=None):
+    hosts = []
     users = dict([(name, uid) for uid, name in get_node_type_tuples('Host User') if name])
     host_user_id = users.get(host_user_name, None)
-    hosts = []
     if host_user_id:
-        hosts_q = '''
-            START host_user=node({id})
-            MATCH host_user-[r:Uses|Owns]->host<-[:Contains]-meta
-            RETURN host_user, host, meta.name as host_type
-            ORDER BY host_user.name, host.name
+        host_user = nc.get_node_model(nc.neo4jdb, host_user_id).data
+        q = '''
+            MATCH (host_user:Host_User {handle_id: {handle_id}})-[:Uses|Owns]->(host:Host)
+            RETURN collect(DISTINCT host.handle_id) as ids
             '''
+        hosts = [{
+                'host_user': host_user,
+                'ids': nc.query_to_dict(nc.neo4jdb, q, handle_id=host_user_id)['ids']
+            }]
     elif host_user_name == 'Missing':
-        hosts_q = '''
-                START host=node:node_types(node_type = "Host")
-                MATCH meta-[:Contains]->host<-[r?:Uses|Owns]-()
-                WHERE r is null
-                RETURN host, meta.name as host_type
-                ORDER BY host.name
-                '''
-    else:
-        hosts_q = '''
-                START host_user=node:node_types(node_type = "Host User")
-                MATCH host_user-[r:Uses|Owns]->host<-[:Contains]-meta
-                RETURN host_user, host, meta.name as host_type
-                ORDER BY host_user.name, host.name
-                '''
-    if host_user_id:
-        hosts = [hit for hit in nc.neo4jdb.query(hosts_q, id=host_user_id)]
-    elif host_user_name:
-        hosts = [hit for hit in nc.neo4jdb.query(hosts_q)]
+        q = '''
+            MATCH (host:Host)
+            WHERE NOT (host)<-[:Uses|Owns]-()
+            RETURN collect(host.handle_id) as ids
+            '''
+        hosts = nc.query_to_list(nc.neo4jdb, q)
+    elif host_user_name == 'All':
+        q = '''
+            MATCH (host_user:Host_User)-[:Uses|Owns]->(host:Host)
+            RETURN host_user, collect(DISTINCT host.handle_id) as ids
+            '''
+        hosts = nc.query_to_list(nc.neo4jdb, q)
+    num_of_hosts = 0
+    for item in hosts:
+        num_of_hosts += len(item['ids'])
     return render_to_response('noclook/reports/host_users.html',
-                              {'host_user_name': host_user_name, 'host_users': users, 'hosts': hosts},
+                              {'host_user_name': host_user_name, 'host_users': users, 'hosts': hosts,
+                               'num_of_hosts': num_of_hosts},
                               context_instance=RequestContext(request))
 
 
 @cache_page(60 * 5)
 @login_required
 def host_security_class(request, status=None, form=None):
-    num_of_hosts = 0
     hosts = []
     where_statement = ''
     if status == 'classified':
-        where_statement = 'and (has(node.security_class) or has(node.security_comment))'
+        where_statement = 'and (has(host.security_class) or has(host.security_comment))'
     elif status == 'not-classified':
-        where_statement = 'and (not(has(node.security_class)) and not(has(node.security_comment)))'
+        where_statement = 'and (not(has(host.security_class)) and not(has(host.security_comment)))'
     if status:
-        num_of_hosts_q = '''
-            START node=node:node_types(node_type = "Host")
-            WHERE not(node.operational_state! = "Decommissioned") %s
-            RETURN COUNT(node) as num_of_hosts
+        q = '''
+            MATCH (host:Host)
+            WHERE not(host.operational_state = "Decommissioned") %s
+            RETURN host
             ''' % where_statement
-        hosts_q = '''
-            START node=node:node_types(node_type = "Host")
-            WHERE not(node.operational_state! = "Decommissioned") %s
-            RETURN node, node.name as host_name,
-            node.description? as description,
-            node.security_class? as security_class,
-            node.security_comment? as security_comment,
-            node.noclook_last_seen as last_seen
-            ''' % where_statement
-        num_of_hosts_hits = nc.neo4jdb.query(num_of_hosts_q)
-        num_of_hosts = [hit['num_of_hosts'] for hit in num_of_hosts_hits][0]
-        hosts = nc.neo4jdb.query(hosts_q)
+        hosts = nc.query_to_list(nc.neo4jdb, q)
     return render_to_response('noclook/reports/host_security_class.html',
-                              {'status': status, 'num_of_hosts': num_of_hosts, 'hosts': hosts},
+                              {'status': status, 'hosts': hosts},
                               context_instance=RequestContext(request))
 
 
@@ -107,32 +97,28 @@ def host_security_class(request, status=None, form=None):
 @login_required
 def host_services(request, status=None):
     hosts = []
-    num_hosts = 0
     if status:
         if status == 'unauthorized-ports':
             q = """
-                START node=node:node_types(node_type="Host")
-                MATCH node<-[r:Depends_on]-()
+                MATCH (host:Host)
+                MATCH host<-[r:Depends_on]-()
                 WHERE has(r.rogue_port)
-                RETURN node, collect(r) as ports
+                RETURN host, collect(r) as ports
                 """
-            hosts = nc.neo4jdb.query(q)
         else:
             where_statement = ''
             if status == 'locked':
-                where_statement = 'and has(node.services_locked)'
+                where_statement = 'and has(host.services_locked)'
             elif status == 'not-locked':
-                where_statement = 'and not(has(node.services_locked))'
+                where_statement = 'and not(has(host.services_locked))'
             q = """
-                START node=node:node_types(node_type="Host")
-                WHERE not(node.operational_state! = "Decommissioned") %s
-                RETURN collect(node) as nodes, count(*) as num_hosts
+                MATCH (host:Host)
+                WHERE not(host.operational_state = "Decommissioned") %s
+                RETURN host
                 """ % where_statement
-            for hit in nc.neo4jdb.query(q):
-                hosts = hit['nodes']
-                num_hosts = hit['num_hosts']
+        hosts = nc.query_to_list(nc.neo4jdb, q)
     return render_to_response('noclook/reports/host_services.html',
-                              {'status': status, 'hosts': hosts, 'num_hosts': num_hosts},
+                              {'status': status, 'hosts': hosts},
                               context_instance=RequestContext(request))
 
 
@@ -190,37 +176,37 @@ def mail_host_contract_report(contract_number):
         'Uptime (days)'
     ]
     result = []
-    hosts_q = '''
-        START host=node:node_types(node_type = "Host")
-        MATCH host_user-[r:Uses|Owns]->host<-[:Contains]-meta
-        WHERE host.contract_number! = {contract_number}
-        RETURN host_user, host, meta.name as host_type
+    q = '''
+        MATCH (host_user:Host_User)-[r:Uses|Owns]->(host:Host)
+        WHERE host.contract_number = {contract_number}
+        RETURN host_user.name as host_user_name, host.name, host.handle_id as host_handle_id
         ORDER BY host_user.name, host.name
         '''
-    for hit in nc.neo4jdb.query(hosts_q, contract_number=contract_number):
-        age = h.neo4j_report_age(hit['host'], 15, 30)
-        operational_state = hit['host'].get_property('operational_state', 'Not set')
-        host_type = hit['host_type']
-        host_user = hit['host_user']['name']
-        uptime = hit['host'].get_property('uptime', '')
+    for item in nc.query_to_list(nc.neo4jdb, q, contract_number=contract_number):
+        host = nc.get_node_model(nc.neo4jdb, item['handle_id'])
+        age = h.neo4j_report_age(host.data, 15, 30)
+        operational_state = host.data.get('operational_state', 'Not set')
+        host_type = host.meta_type
+        host_user = item['host_user_name']
+        uptime = host.get('uptime', '')
         if uptime:
             uptime = timestamp_to_td(uptime).days
-        if host_type == 'logical' and age != 'very_old' and operational_state != 'Decommissioned':
+        if host_type == 'Logical' and age != 'very_old' and operational_state != 'Decommissioned':
             values = [
                 unicode(host_user),
-                unicode(hit['host']['name']),
+                unicode(host.data['name']),
                 unicode(host_type).capitalize(),
-                u', '.join([address for address in hit['host']['ip_addresses']]),
-                unicode(hit['host']['contract_number']),
-                unicode(hit['host'].get_property('description', '')),
-                unicode(hit['host'].get_property('responsible_group', '')),
-                unicode(hit['host'].get_property('backup', 'Not set')),
-                unicode(yesno(hit['host'].get_property('syslog', None), 'Yes,No,Not set')),
-                unicode(yesno(hit['host'].get_property('nagios_checks', False), 'Yes,No,Not set')),
+                u', '.join([address for address in host.data['ip_addresses']]),
+                unicode(host.data['contract_number']),
+                unicode(host.data.get('description', '')),
+                unicode(host.data.get('responsible_group', '')),
+                unicode(host.data.get('backup', 'Not set')),
+                unicode(yesno(host.data.get('syslog', None), 'Yes,No,Not set')),
+                unicode(yesno(host.data.get('nagios_checks', False), 'Yes,No,Not set')),
                 unicode(operational_state),
-                unicode(hit['host'].get_property('security_class', '')),
+                unicode(host.data.get('security_class', '')),
                 unicode(''),
-                unicode(date(h.isots_to_dt(hit['host']), "Y-m-d")),
+                unicode(date(h.isots_to_dt(host.data), "Y-m-d")),
                 unicode(uptime),
             ]
             result.append(dict(zip(header, values)))
@@ -255,11 +241,11 @@ def monthly_netapp_usage():
     services = getattr(django_settings, 'NETAPP_REPORT_SETTINGS', [])
     for service in services:
         service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
-        monthly_dict = json.loads(service_node.get_property('netapp_storage_monthly', '{}'))
+        monthly_dict = json.loads(service_node.data.get('netapp_storage_monthly', '{}'))
         monthly_dict.setdefault(str(last_month.year), {})[str(last_month.month)] = \
-            service_node.get_property('netapp_storage_sum', 0.0)
+            service_node.data.get('netapp_storage_sum', 0.0)
         property_dict = {'netapp_storage_monthly': json.dumps(monthly_dict)}
-        h.dict_update_node(user, service_node, property_dict, property_dict.keys())
+        h.dict_update_node(user, service_node.handle_id, property_dict, property_dict.keys())
     return HttpResponse('Monthly NetApp usage saved.')
 
 
@@ -284,11 +270,9 @@ def quarterly_netapp_usage():
     for service in services:
         report_data = []
         service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
-        try:
-            customers = ', '.join([hit['customer'].get_property('name', '') for hit in h.get_customer(service_node)])
-        except Exception:  # Neo4j embedded jpype exception
-            customers = 'Missing customer name'
-        data_dict = json.loads(service_node.get_property('netapp_storage_monthly', '{}')).get(year, None)
+        customers = [item['node'].data.get('name', '') for item in service_node.get_customers().get('customers', [])]
+        customers = ', '.join(customers)
+        data_dict = json.loads(service_node.data.get('netapp_storage_monthly', '{}')).get(year, None)
         if data_dict:
             for month in quarter_month_map[last_quarter]:
                 key = '%s-%s' % (year, month)
@@ -342,10 +326,20 @@ def quarterly_netapp_usage():
 @login_required
 def unique_ids(request, organisation=None):
     if not organisation:
-        return render_to_response('noclook/reports/unique_ids.html', {},
-            context_instance=RequestContext(request))
+        return render_to_response('noclook/reports/unique_ids.html', {}, context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
-        id_list = NordunetUniqueId.objects.all().order_by('unique_id')
+        id_list = NordunetUniqueId.objects.all().order_by('created').reverse()
+        paginator = Paginator(id_list, 250, allow_empty_first_page=True)  # Show 50 activities per page
+        page = request.GET.get('page')
+        try:
+            id_list = paginator.page(page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver first page.
+            id_list = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), deliver last page of results.
+            id_list = paginator.page(paginator.num_pages)
+
     else:
         raise Http404
     return render_to_response('noclook/reports/unique_ids.html',

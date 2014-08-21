@@ -1,12 +1,10 @@
 {% extends "noclook/reports/base_report.html" %}
-
 {% block title %}{{ block.super }} {{ organisation }} reserved ID list{% endblock %}
-
 {% block js %}
     {{ block.super }}
     <script type="text/javascript">
     $(document).ready(
-        function(){
+       function(){
             $("#reserved").tablesorter(
             {
                 sortList: [[0,0]],
@@ -17,27 +15,24 @@
                 widthFixed: true,
                 widgets: ['zebra']
             });
-
             $(".table-to-csv").click(function() {
                 var elem = $(this);
                 elem.css('cursor','wait');
                 // Set table id here
                 var table = buildJSONTable($("#reserved"));
                 postJSONTable('csv', elem, table.header, table.data)
-
             });
-            $(".table-to-xls").click(function() {
+           $(".table-to-xls").click(function() {
                 var elem = $(this);
-                elem.css('cursor','wait');
+               elem.css('cursor','wait');
                 // Set table id here
                 var table = buildJSONTable($("#reserved"));
-                postJSONTable('xls', elem, table.header, table.data)
+               postJSONTable('xls', elem, table.header, table.data)
             });
         }
     );
     </script>
 {% endblock %}
-
 {% block content %}
 {{ block.super }}
     {% if not id_list %}
@@ -67,5 +62,20 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div>
+            <ul class="pager">
+            {% if id_list.has_previous %}
+                <li><a href="?page={{ id_list.previous_page_number }}">previous</a></li>
+            {% endif %}
+                <li>
+                    Page {{ id_list.number }} of {{ id_list.paginator.num_pages }}.
+                </li>
+            {% if id_list.has_next %}
+                <li>
+                    <a href="?page={{ id_list.next_page_number }}">next</a>
+                </li>
+            {% endif %}
+            </ul>
+        </div>
     {% endif %}
 {% endblock %}
