@@ -65,6 +65,13 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake'
+    }
+}
+
 # Neo4j settings
 NEO4J_RESOURCE_URI = '/path/to/neo4jdb/'
 NEO4J_MAX_DATA_AGE = '24' # hours
