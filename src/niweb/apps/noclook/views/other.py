@@ -79,23 +79,17 @@ def search(request, value='', form=None):
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/ or /slug/value/.
     """
+    result = []
     posted = False
     if request.POST:
         value = request.POST.get('q', '')
         posted = True
-    # See if the value is indexed
-    result = []
     if value:
-        value = re_escape(value)
-        i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-        q = Q('all', '*%s*' % value, wildcard=True)
-        nodes = h.iter2list(i1.query(unicode(q)))
-        if not nodes:
-            nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
+        nodes = nc.get_nodes_by_value(nc.neo4jdb, value)
         if form == 'csv':
-            return h.nodes_to_csv([node for node in nodes])
+            return h.dicts_to_csv_response(list(nodes))
         elif form == 'xls':
-            return h.nodes_to_xls([node for node in nodes])
+            return h.dicts_to_xls_response(list(nodes))
         for node in nodes:
             nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
             item = {'node': node, 'nh': nh}
@@ -121,11 +115,11 @@ def search_autocomplete(request):
     query = request.GET.get('query', None)
     if query:
         query = re_escape(query)
-        i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
         q = Q('name', '*%s*' % query, wildcard=True)
         suggestions = []
-        for node in i1.query(unicode(q)):
-            suggestions.append(node['name'])
+        for handle_id in nc.legacy_node_index_search(nc.neo4jdb, unicode(q))['result']:
+            node = nc.get_node_model(nc.neo4jdb, handle_id)
+            suggestions.append(node.data['name'])
         d = {'query': query, 'suggestions': suggestions, 'data': []}
         json.dump(d, response)
         return response
@@ -133,49 +127,39 @@ def search_autocomplete(request):
 
 
 @login_required
-def find_all(request, slug='', key='', value='', form=None):
+def find_all(request, slug=None, key=None, value=None, form=None):
     """
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/, /slug/value/ /key/value/, /value/ or /key/.
     """
+    label = None
+    node_type = None
     if request.POST:
         value = request.POST.get('q', '')  # search for '' if blank
     if slug:
         try:
             node_type = get_object_or_404(NodeType, slug=slug)
-            node_handle = node_type.nodehandle_set.all()[0]
-            node_meta_type = node_handle.node_meta_type
+            label = node_type.get_label()
         except Http404:
             return render_to_response('noclook/search_result.html',
                                       {'node_type': slug, 'key': key, 'value': value, 'result': None,
                                        'node_meta_type': None},
                                       context_instance=RequestContext(request))
-    else:
-        node_meta_type = None
-        node_type = None
     if value:
-        nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value, node_property=key)
+        nodes = nc.get_nodes_by_value(nc.neo4jdb, value, key, label)
     else:
-        node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
-        nodes = node_types_index['node_type'][str(node_type)]
+        nodes = nc.get_nodes_by_type(nc.neo4jdb, label)
     if form == 'csv':
-        return h.nodes_to_csv([node for node in nodes if node['node_type'] == str(node_type)])
+        return h.dicts_to_csv_response(list(nodes))
     elif form == 'xls':
-        return h.nodes_to_xls([node for node in nodes if node['node_type'] == str(node_type)])
-    elif form == 'json':
-        # TODO:
-        pass
+        return h.dicts_to_xls_response(list(nodes))
     result = []
     for node in nodes:
-        # Check so that the node_types are equal. A problem with meta type.
-        if node_type and not node['node_type'] == str(node_type):
-            continue
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
         item = {'node': node, 'nh': nh}
         result.append(item)
     return render_to_response('noclook/search_result.html',
-                              {'node_type': node_type, 'key': key, 'value': value, 'result': result,
-                               'node_meta_type': node_meta_type},
+                              {'node_type': node_type, 'key': key, 'value': value, 'result': result},
                               context_instance=RequestContext(request))
 
 

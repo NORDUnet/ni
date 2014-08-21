@@ -245,7 +245,7 @@ def get_node_meta_type(manager, handle_id):
 
 
 # TODO: Try out elasticsearch
-def get_node_by_value(manager, value, prop=None, node_type="Node"):
+def get_nodes_by_value(manager, value, prop=None, node_type=None):
     """
     Traverses all nodes or nodes of specified label and compares the property/properties of the node
     with the supplied string.
@@ -291,6 +291,17 @@ def get_node_by_value(manager, value, prop=None, node_type="Node"):
                     if pattern.match(unicode(v)):
                         yield node
                         break
+
+
+# TODO: Try out elasticsearch
+def get_nodes_by_type(manager, node_type):
+    q = '''
+        MATCH (n:{label})
+        RETURN n
+        '''.format(label=node_type)
+    with manager.transaction as r:
+        for node, in r.execute(q):
+            yield node
 
 
 def legacy_node_index_search(manager, lucene_query):

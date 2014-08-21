@@ -63,7 +63,10 @@ def normalize_whitespace(s):
     """
     Removes leading and ending whitespace from a string.
     """
-    return u' '.join(s.split())
+    try:
+        return u' '.join(s.split())
+    except AttributeError:
+        return s
 
 
 def get_node_url(handle_id):
@@ -296,34 +299,7 @@ def neo4j_report_age(item, old, very_old):
         return 'current'
 
 
-def nodes_to_csv(node_list, header=None):
-    """
-    Takes a list of nodes and returns a comma separated file with all node keys
-    and their values.
-    """
-    # Create the HttpResponse object with the appropriate CSV header.
-    response = HttpResponse(mimetype='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=result.csv; charset=utf-8;'
-    writer = UnicodeWriter(response, delimiter=';', quoting=csv.QUOTE_NONNUMERIC)
-    if not header:
-        key_set = set()
-        for node in node_list:
-            key_set.update(node.propertyKeys)
-        key_set = sorted(key_set)
-    else:
-        key_set = header
-    writer.writerow(key_set) # Line collection with header
-    for node in node_list: 
-        line = []
-        for key in key_set:
-            try:
-                line.append('%s' % unicode(node[key]))
-            except KeyError:
-                line.append('') # Node did not have that key, add a blank item.
-        writer.writerow(line)
-    return response
-
-def dicts_to_csv(dict_list, header=None):
+def dicts_to_csv_response(dict_list, header=None):
     """
     Takes a list of dicts and returns a comma separated file with all dict keys
     and their values.
@@ -346,37 +322,8 @@ def dicts_to_csv(dict_list, header=None):
             try:
                 line.append('%s' % normalize_whitespace(item[key]))
             except KeyError:
-                line.append('') # Node did not have that key, add a blank item.
+                line.append('')  # Node did not have that key, add a blank item.
         writer.writerow(line)
-    return response
-
-def nodes_to_xls(node_list, header=None):
-    """
-    Takes a list of nodes and returns an Excel file of all node keys and their values.
-    """
-    # Create the HttpResponse object with the appropriate Excel header.
-    response = HttpResponse(mimetype='application/excel')
-    response['Content-Disposition'] = 'attachment; filename=result.xls;'
-    wb = xlwt.Workbook(encoding='utf-8')
-    ws = wb.add_sheet('NOCLook result')
-    if not header:
-        key_set = set()
-        for node in node_list:
-            key_set.update(node.propertyKeys)
-        key_set = sorted(key_set)
-    else:
-        key_set = header
-    # Write header
-    for i in range(0, len(key_set)):
-        ws.write(0, i, key_set[i])
-    # Write body
-    for i in range(0, len(node_list)):
-        for j in range(0, len(key_set)):
-            try:
-                ws.write(i+1, j, unicode(node_list[i][key_set[j]]))
-            except KeyError:
-                ws.write(i+1, j, unicode(''))
-    wb.save(response)
     return response
 
 
@@ -422,22 +369,6 @@ def dicts_to_xls_response(dict_list, header=None):
     wb = dicts_to_xls(dict_list, key_set, 'NOCLook result')
     wb.save(response)
     return response
-
-def nodes_to_json(node_list):
-    """
-    Takes a list of nodes and returns a json formatted text with all node keys
-    and their values.
-    """
-    # TODO:
-    pass
-
-def nodes_to_geoff(node_list):
-    """
-    Takes a list of nodes and returns geoff format with all node keys
-    and their values.
-    """
-    # TODO:
-    pass
 
 
 def create_email(subject, body, to, cc=None, bcc=None, attachement=None, filename=None, mimetype=None):
