@@ -8,12 +8,12 @@
       #map_canvas { height: 100% }
     </style>
     <title>NOCLook Google Maps</title>
-{% load niweb_tags %}
+{% load noclook_tags %}
 <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.6.2.min.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&key=AIzaSyCxqtNjP8a1vDnviEnktTPijjBYvqzeWTo" type="text/javascript"></script>
 <script type="text/javascript">
     function initialize() {
-        var latlng = new google.maps.LatLng(63, 10.4);
+        var latlng = new google.maps.LatLng(59, 5);
         var myOptions = {
             zoom: 5,
             center: latlng,

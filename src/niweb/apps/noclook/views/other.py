@@ -201,16 +201,15 @@ def gmaps_sites(request):
         edges: []
     }
     """
-    node_types_index = nc.get_node_index(nc.neo4jdb, 'node_types')
-    hits = node_types_index['node_type']['Site']
+    sites = nc.get_nodes_by_type(nc.neo4jdb, 'Site')
     site_list = []
-    for node in hits:
+    for site in sites:
         try:
             site = {
-                'name': node['name'],
-                'url': h.get_node_url(node),
-                'lng': float(str(node.getProperty('longitude', 0))),
-                'lat': float(str(node.getProperty('latitude', 0)))
+                'name': site['name'],
+                'url': h.get_node_url(site['handle_id']),
+                'lng': float(str(site.get('longitude', 0))),
+                'lat': float(str(site.get('latitude', 0)))
             }
         except KeyError:
             continue
@@ -220,7 +219,7 @@ def gmaps_sites(request):
     return response
 
 
-#@login_required
+@login_required
 def gmaps_optical_nodes(request):
     """
     Return a json object with dicts of optical node and cables.
@@ -244,41 +243,41 @@ def gmaps_optical_nodes(request):
     # Cypher query to get all cables with cable type fiber that are connected
     # to two optical node.
     q = """
-        START cable = node:node_types(node_type="Cable")
-        MATCH cable-[Connected_to]->port
+        MATCH (cable:Cable)
         WHERE cable.cable_type = "Dark Fiber"
+        MATCH (cable)-[Connected_to]->port
         WITH cable, port
         MATCH port<-[:Has*0..]-equipment
-        WHERE equipment.node_type = "Optical Node" AND NOT equipment.type? =~ "(?i).*tss.*"
+        WHERE (equipment:Optical_Node) AND NOT equipment.type =~ "(?i).*tss.*"
         WITH cable, port, equipment
         MATCH p2=equipment-[:Located_in]->()<-[:Has*0..]-loc
-        WHERE loc.node_type = "Site"
+        WHERE (loc:Site)
         RETURN cable, equipment, loc
         """
-    hits = nc.neo4jdb.query(q)
+    result = nc.query_to_list(nc.neo4jdb, q)
     nodes = {}
     edges = {}
-    for hit in hits:
+    for item in result:
         node = {
-            'name': hit['equipment']['name'],
-            'url': h.get_node_url(hit['equipment']),
-            'lng': float(str(hit['loc'].getProperty('longitude', 0))),
-            'lat': float(str(hit['loc'].getProperty('latitude', 0)))
+            'name': item['equipment']['name'],
+            'url': h.get_node_url(item['equipment']['handle_id']),
+            'lng': float(str(item['loc'].get('longitude', 0))),
+            'lat': float(str(item['loc'].get('latitude', 0)))
         }
         coords = {
-            'lng': float(str(hit['loc'].getProperty('longitude', 0))),
-            'lat': float(str(hit['loc'].getProperty('latitude', 0)))
+            'lng': float(str(item['loc'].get('longitude', 0))),
+            'lat': float(str(item['loc'].get('latitude', 0)))
         }
         edge = {
-            'name': hit['cable']['name'],
-            'url': h.get_node_url(hit['cable']),
+            'name': item['cable']['name'],
+            'url': h.get_node_url(item['cable']['handle_id']),
             'end_points': [coords]
         }
-        nodes[hit['equipment']['name']] = node
-        if hit['cable']['name'] in edges:
-            edges[hit['cable']['name']]['end_points'].append(coords)
+        nodes[item['equipment']['name']] = node
+        if item['cable']['name'] in edges:
+            edges[item['cable']['name']]['end_points'].append(coords)
         else:
-            edges[hit['cable']['name']] = edge
+            edges[item['cable']['name']] = edge
     response = HttpResponse(mimetype='application/json')
     json.dump({'nodes': nodes.values(), 'edges': edges.values()}, response)
     return response
@@ -286,8 +285,7 @@ def gmaps_optical_nodes(request):
 
 @login_required
 def qr_lookup(request, name):
-    search_index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-    hits = h.iter2list(search_index['name'][name])
+    hits = list(nc.get_nodes_by_name(nc.neo4jdb, name))
     if len(hits) == 1:
         nh = get_object_or_404(NodeHandle, pk=hits[0]['handle_id'])
         return HttpResponseRedirect(nh.get_absolute_url())

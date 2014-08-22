@@ -306,6 +306,17 @@ def get_nodes_by_type(manager, node_type):
             yield node
 
 
+# TODO: Try out elasticsearch
+def get_nodes_by_name(manager, name):
+    q = '''
+        MATCH (n:Node {name: {name}})
+        RETURN n
+        '''
+    with manager.transaction as r:
+        for node, in r.execute(q, name=name):
+            yield node
+
+
 def legacy_node_index_search(manager, lucene_query):
     """
     :param lucene_query: string
