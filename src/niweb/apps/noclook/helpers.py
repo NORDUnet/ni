@@ -394,6 +394,15 @@ def create_email(subject, body, to, cc=None, bcc=None, attachement=None, filenam
     return email
 
 
+def get_node_type(handle_id):
+    model = nc.get_node_model(nc.neo4jdb, handle_id)
+    for t in model.labels:
+        try:
+            return NodeType.objects.get(type=t.replace('_', ' ')).type
+        except NodeType.DoesNotExist:
+            pass
+
+
 def slug_to_node_type(slug, create=False):
     """
     Returns or creates and returns the NodeType object from the supplied slug.

@@ -2,7 +2,7 @@
     <head>
         <title>Visualize {{ node_handle }}</title>
         <!-- Load the template tags before referencing them -->
-        {% load niweb_tags %}
+        {% load noclook_tags %}
         <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.min.css" type="text/css" />
         <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-responsive.min.css" type="text/css" />
         <link rel="stylesheet" href="{{ STATIC_URL }}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
@@ -18,7 +18,7 @@
             var sys = arbor.ParticleSystem({repulsion:200, stiffness:512, friction:0.5, gravity: true, dt:0.2});
             sys.screenPadding(20, 200, 20, 200)
             sys.renderer = Renderer("#viewport");
-            $.getJSON('/visualize/{{ node_handle.node_id }}.json', function(json) {
+            $.getJSON('/visualize/{{ node_handle.handle_id }}.json', function(json) {
                 sys.graft(json);
             });
             $('a#undo').click(function(e)

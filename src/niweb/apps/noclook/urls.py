@@ -10,7 +10,7 @@ urlpatterns += patterns('apps.noclook.views.other',
     # Log out
     (r'^logout/$', 'logout_page'),
     # Visualize views
-    (r'^visualize/(?P<node_id>\d+)\.json$', 'visualize_json'),
+    (r'^visualize/(?P<handle_id>\d+)\.json$', 'visualize_json'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', 'visualize_maximize'),
     (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'visualize'),
     # Google maps views

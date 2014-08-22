@@ -95,6 +95,14 @@ class BaseNodeModel(object):
         return self._basic_read_query_to_dict(q)
     outgoing = property(_outgoing)
 
+    def _relationships(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})-[r]-(node)
+            RETURN type(r), id(r), r, node.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+    relationships = property(_relationships)
+
     def _basic_read_query_to_dict(self, query, **kwargs):
         d = defaultdict(list)
         with self.manager.read as r:

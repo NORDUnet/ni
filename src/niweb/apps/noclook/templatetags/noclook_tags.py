@@ -1,6 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age
+from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age, get_node_type
 import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
@@ -91,12 +91,7 @@ def noclook_get_model(handle_id):
 @register.assignment_tag
 def noclook_get_type(handle_id):
     try:
-        model = nc.get_node_model(nc.neo4jdb, handle_id)
-        for t in model.labels:
-            try:
-                return NodeType.objects.get(type=t.replace('_', ' ')).type
-            except NodeType.DoesNotExist:
-                pass
+        return get_node_type(handle_id)
     except nc.exceptions.NodeNotFound:
         return ''
 

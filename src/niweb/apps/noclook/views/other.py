@@ -32,14 +32,15 @@ def logout_page(request):
 
 # Visualization views
 @login_required
-def visualize_json(request, node_id):
+def visualize_json(request, handle_id):
     """
     Creates a JSON representation of the node and the adjacent nodes.
     This JSON data is then used by Arbor.js (http://arborjs.org/) to make
     a visual representation.
     """
     # Get the node
-    root_node = nc.get_node_by_id(nc.neo4jdb, node_id)
+    nh = NodeHandle.objects.get(pk=handle_id)
+    root_node = nc.get_node_model(nc.neo4jdb, nh.handle_id)
     if root_node:
         # Create the data JSON structure needed
         graph_dict = arborgraph.create_generic_graph(root_node)
