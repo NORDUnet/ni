@@ -25,7 +25,7 @@
         <div class="span4">
             <table class="table">
                 <tr>
-                    {% if node.url %}
+                    {% if node.data.url %}
                         <th>More information:</th><td><a href="{{ node.data.url }}">Information link</a></td>
                     {% else %}
                         <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.data.name }}">To Portal</a></td>
