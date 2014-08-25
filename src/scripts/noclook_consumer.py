@@ -341,6 +341,8 @@ def consume_noclook(json_list):
                 print e
                 print i
                 sys.exit(1)
+            except UnicodeEncodeError:
+                pass
             nc.update_item_properties(nc.neo4jdb, rel, properties)
             # Add the relationship to indexes needed for NOCLook
             add_relationship_to_indexes(rel)
