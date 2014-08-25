@@ -351,6 +351,12 @@ class EditCableForm(forms.Form):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
+    def clean(self):
+        cleaned_data = super(EditCableForm, self).clean()
+        if cleaned_data.get('telenor_trunk_id', None):
+            cleaned_data['name'] = cleaned_data['telenor_trunk_id']
+        return cleaned_data
+
 
 class EditOpticalNodeForm(forms.Form):        
     name = forms.CharField()

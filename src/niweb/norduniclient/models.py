@@ -380,7 +380,7 @@ class LocationModel(CommonQueries):
 
     def delete(self):
         has = self.get_has()
-        if has['Has']:
+        if has.get('Has', []):
             for item in has['Has']:
                 item['node'].delete()
         super(LocationModel, self).delete()
@@ -647,7 +647,7 @@ class CableModel(PhysicalModel):
             OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
             OPTIONAL MATCH (end)-[:Located_in]->(location)
             OPTIONAL MATCH (location)<-[:Has]-(site)
-            RETURN rel, port, end, location, site
+            RETURN id(rel) as rel_id, rel, port, end, location, site
             ORDER BY end.name, port.name
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
@@ -678,6 +678,15 @@ class CableModel(PhysicalModel):
             RETURN service, collect(user) as users
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
+    def set_connected_to(self, connected_to_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (part:Node {handle_id: {connected_to_handle_id}})
+            WITH n, part, NOT EXISTS((n)-[:Connected_to]->(part)) as created
+            MERGE (n)-[r:Connected_to]->(part)
+            RETURN created, type(r), id(r), r, part.handle_id
+            """
+        return self._basic_write_query_to_dict(q, connected_to_handle_id=connected_to_handle_id)
 
 
 class UnitModel(LogicalModel):

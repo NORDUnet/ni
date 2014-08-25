@@ -740,10 +740,10 @@ def get_port(parent_name, port_name):
 def create_port(parent_node, port_name, creator):
     """
     Creates a port with the supplied parent.
-    :param parent_node: Neo4j node
+    :param parent_node: norduniclient model
     :param port_name: String
     :param creator: Django user
-    :return: Neo4j node
+    :return: norduniclient model
     """
     type_port = NodeType.objects.get(type="Port")
     nh = NodeHandle.objects.create(
@@ -753,9 +753,8 @@ def create_port(parent_node, port_name, creator):
         modifier=creator, creator=creator
     )
     activitylog.create_node(creator, nh)
-    port_node = nh.get_node()
-    place_child_in_parent(creator, port_node, parent_node.getId())
-    return port_node
+    set_has(creator, parent_node, nh.handle_id)
+    return nh.get_node()
 
 
 def logical_to_physical(user, handle_id):
@@ -954,24 +953,20 @@ def set_has(user, node, has_id):
     return relationship, created
 
 
-def connect_physical(user, node, other_node_id):
+def set_connected_to(user, node, has_id):
     """
-    Connects a cable to a physical node.
+    :param user: Django user
+    :param node: norduniclient model
+    :param has_id: unique id
+    :return: norduniclient model, boolean
     """
-    other_node = nc.get_node_by_id(nc.neo4jdb,  other_node_id)
-    rel_exist = nc.get_relationships(node, other_node, 'Connected_to')
-    # If the location is the same as before just update relationship
-    # properties
-    if rel_exist:
-        # TODO: Change properties here
-        #location_rel = rel_exist[0]
-        #with nc.neo4jdb.transaction:
-        pass
-    else:
-        rel = nc.create_relationship(nc.neo4jdb, node, other_node,
-            'Connected_to')
-        activitylog.create_relationship(user, rel)
-    return node
+    result = node.set_connected_to(has_id)
+    relationship_id = result.get('Connected_to')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    created = result.get('Connected_to')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
 
 
 def get_host_backup(host):

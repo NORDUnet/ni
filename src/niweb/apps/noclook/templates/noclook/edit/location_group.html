@@ -1,0 +1,64 @@
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Populate first level combo box
+        $.getJSON('/formdata/site/', function(data) {
+            $('#location_level0').append($('<option>').val("0").text("-- Please Select --"));
+            $.each(data, function(key, tuple) {
+                $('#location_level0').append($('<option>').val(tuple[0]).text(tuple[1]));
+            });
+        });
+        $('#level0').click(function() {
+            $("#id_relationship_location").val($(this).val());
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#location_level1").jCombo("/formdata/{id}/children/rack/", {
+            parent: "#location_level0",
+            end_value_field: "#id_relationship_location"
+            });
+    });
+</script>
+
+<div class="accordion-group">
+    <div class="accordion-heading">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseLocation">
+            Location
+        </a>
+    </div>
+    <div id="collapseLocation" class="accordion-body collapse" style="height: 0; ">
+        <div class="accordion-inner">
+            {% if location.Located_in %}
+                <label>Current location</label>
+                {% load noclook_tags %}
+                {% for item in location.Located_in %}
+                    <div class="row">
+                        <div class="span3">
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">
+                                {% for location in node.get_location_path.location_path %}
+                                    {% if forloop.last %}
+                                        {{ item.node.data.name }}
+                                    {% else %}
+                                        {{ location.name }}
+                                    {% endif %}
+                                {% endfor %}
+                            </a>
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important user-confirm">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <hr>
+            <label>Set location</label>
+            {{ form.relationship_location }}
+            <select class="stacked" name="location_level0" id="location_level0"></select>
+            <select class="stacked" name="location_level1" id="location_level1"></select>
+            <hr>
+            <label>Equipment height</label>
+            {{ form.rack_units }}
+            <span class="help-block">{{ form.rack_units.help_text }}</span>
+        </div>
+    </div>
+</div>
