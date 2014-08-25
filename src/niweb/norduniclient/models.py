@@ -241,6 +241,15 @@ class LogicalModel(CommonQueries):
             """
         return self._basic_write_query_to_dict(q, user_handle_id=user_handle_id)
 
+    def set_provider(self, provider_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (provider:Node {handle_id: {provider_handle_id}})
+            WITH n, provider, NOT EXISTS((n)<-[:Provides]-(provider)) as created
+            MERGE (n)<-[r:Provides]-(provider)
+            RETURN created, type(r), id(r), r, provider.handle_id
+            """
+        return self._basic_write_query_to_dict(q, provider_handle_id=provider_handle_id)
+
     def set_dependency(self, dependency_handle_id):
         q = """
             MATCH (n:Node {handle_id: {handle_id}}), (dependency:Node {handle_id: {dependency_handle_id}})
@@ -294,7 +303,7 @@ class PhysicalModel(CommonQueries):
             MERGE (n)-[r:Has]->(part)
             RETURN created, type(r), id(r), r, part.handle_id
             """
-        return self._basic_write_query_to_dict(q, part_handle_id=has_handle_id)
+        return self._basic_write_query_to_dict(q, has_handle_id=has_handle_id)
 
     def get_part_of(self):
         q = """
@@ -359,6 +368,15 @@ class LocationModel(CommonQueries):
             RETURN type(r), id(r), r, node.handle_id
             """
         return self._basic_read_query_to_dict(q)
+
+    def set_has(self, has_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (part:Node {handle_id: {has_handle_id}})
+            WITH n, part, NOT EXISTS((n)-[:Has]->(part)) as created
+            MERGE (n)-[r:Has]->(part)
+            RETURN created, type(r), id(r), r, part.handle_id
+            """
+        return self._basic_write_query_to_dict(q, has_handle_id=has_handle_id)
 
     def delete(self):
         has = self.get_has()
@@ -636,9 +654,8 @@ class CableModel(PhysicalModel):
 
     def get_dependent_as_types(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})
-            MATCH (n)-[:Connected_to*1..20]-(equip)
-            WITH equip
+            MATCH (n:Node {handle_id: {handle_id}})-[:Connected_to*1..20]-(equip)
+            WITH DISTINCT equip
             MATCH (equip)<-[:Depends_on*1..10]-(dep)
             WITH collect(DISTINCT dep) as deps
             WITH deps, filter(n in deps WHERE n:Service) as services

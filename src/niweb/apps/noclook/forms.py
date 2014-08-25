@@ -255,11 +255,20 @@ class ReserveIdForm(forms.Form):
 
 
 class NewSiteForm(forms.Form):
+    """
+    Concatenate country code with site name
+    """
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES, widget=forms.widgets.Select)
     address = forms.CharField(required=False)
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
+
+    def clean(self):
+        cleaned_data = super(NewSiteForm, self).clean()
+        cleaned_data['name'] = '%s-%s' % (cleaned_data['country_code'], cleaned_data['name'].upper())
+        cleaned_data['country'] = COUNTRY_MAP[cleaned_data['country_code']]
+        return cleaned_data
     
     
 class EditSiteForm(forms.Form):
@@ -632,6 +641,9 @@ class NewNordunetServiceForm(NewServiceForm):
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
             self._errors['project_end_date'].append('Missing project end date.')
+        # Convert  project_end_date to string if set
+        if cleaned_data.get('project_end_date', None):
+            cleaned_data['project_end_date'] = cleaned_data['project_end_date'].strftime('%Y-%m-%d')
         return cleaned_data
 
 
@@ -697,6 +709,9 @@ class EditServiceForm(forms.Form):
             self._errors = ErrorDict()
             self._errors['operational_state'] = ErrorList()
             self._errors['operational_state'].append('Missing operational state.')
+        # Convert  project_end_date to string if set
+        if cleaned_data.get('project_end_date', None):
+            cleaned_data['project_end_date'] = cleaned_data['project_end_date'].strftime('%Y-%m-%d')
         # Convert decommissioned_date to string if set
         if cleaned_data.get('decommissioned_date', None):
             cleaned_data['decommissioned_date'] = cleaned_data['decommissioned_date'].strftime('%Y-%m-%d')

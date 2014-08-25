@@ -954,29 +954,6 @@ def set_has(user, node, has_id):
     return relationship, created
 
 
-def place_child_in_parent(user, node, parent_id):
-    """
-    Places a child node in a parent node with a Has relationship.
-    """
-    parent_node = nc.get_node_by_id(nc.neo4jdb,  parent_id)
-    rel_exist = nc.get_relationships(parent_node, node, 'Has')
-    # If the parent is the same as before just update relationship
-    # properties
-    if rel_exist:
-        # TODO: Change properties here
-        #location_rel = rel_exist[0]
-        #with nc.neo4jdb.transaction:
-        pass
-    else:
-        # Remove the old parent(s) and create a new
-        for rel in iter2list(node.Has.incoming):
-            activitylog.delete_relationship(user, rel)
-            nc.delete_relationship(nc.neo4jdb, rel)
-        rel = nc.create_relationship(nc.neo4jdb, parent_node,
-            node, 'Has')
-        activitylog.create_relationship(user, rel)
-    return node
-
 def connect_physical(user, node, other_node_id):
     """
     Connects a cable to a physical node.
