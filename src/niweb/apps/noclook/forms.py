@@ -296,6 +296,7 @@ class NewCableForm(forms.Form):
     name = forms.CharField()
     cable_type = forms.ChoiceField(choices=CABLE_TYPES,
                                    widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewNordunetCableForm(NewCableForm):
