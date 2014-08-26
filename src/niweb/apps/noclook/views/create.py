@@ -160,14 +160,17 @@ def new_nordunet_cable(request, **kwargs):
             node = nh.get_node()
             keys = ['cable_type']
             h.form_update_node(request.user, node.handle_id, form, keys)
+            if form.cleaned_data['relationship_provider']:
+                provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
+                h.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         name = kwargs.get('name', None)
+        provider_id = get_provider_id('NORDUnet')
+        initial = {'relationship_provider': provider_id}
         if name:
-            initital = {'name': name}
-            form = forms.NewNordunetCableForm(initial=initital)
-        else:
-            form = forms.NewNordunetCableForm()
+            initial['name'] = name
+        form = forms.NewNordunetCableForm(initial=initial)
     return render_to_response('noclook/create/create_cable.html', {'form': form},
                               context_instance=RequestContext(request))
 

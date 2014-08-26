@@ -26,12 +26,14 @@ def cable_detail(request, handle_id):
     cable = nh.get_node()
     last_seen, expired = h.neo4j_data_age(cable.data)
     connections = cable.get_connected_equipment()
+    relations = cable.get_relations()
     dependent = cable.get_dependent_as_types()
     if not any(dependent.values()):
         dependent = None
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': cable, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'connections': connections, 'dependent': dependent, 'history': history},
+                               'connections': connections, 'dependent': dependent, 'history': history,
+                               'relations': relations},
                               context_instance=RequestContext(request))
 
 

@@ -48,6 +48,16 @@
                     <th>Global Connect Circuit ID:</th><td>{{ node.data.global_connect_circuit_id }}</td>
                 </tr>
             {% endif %}
+            {% if relations.Provides %}
+                <tr>
+                    <th>Provider:</th>
+                    <td>
+                        {% for item in relations.Provides %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endif %}
         </table>
     </div>
     <div class="span3">
