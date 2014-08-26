@@ -1,0 +1,117 @@
+<script type="text/javascript">
+    $(document).ready(
+        function(){
+            // End A //
+            // Populate first level combo box
+            $.getJSON('/formdata/site/', function(data) {
+                $('#depends_level0A').append($('<option>').val("0").text("-- Please Select --"));
+                $.each(data, function(key, tuple) {
+                    $('#depends_level0A').append($('<option>').val(tuple[0]).text(tuple[1]));
+                });
+            });
+            // Hook lower level combo boxes up to their parent
+            $("#depends_level1A").jCombo("/formdata/{id}/children/", {
+                parent: "#depends_level0A",
+                end_value_field: "#id_relationship_end_a"
+            });
+            $("#depends_level2A").jCombo("/formdata/{id}/children/", {
+                parent: "#depends_level1A",
+                end_value_field: "#id_relationship_end_a"
+            });
+            $("#depends_level3A").jCombo("/formdata/{id}/children/", {
+                parent: "#depends_level2A",
+                end_value_field: "#id_relationship_end_a"
+            });
+            $("#depends_level4A").jCombo("/formdata/{id}/children/", {
+                parent: "#depends_level3A",
+                end_value_field: "#id_relationship_end_a"
+            });
+            // End B //
+            // Populate first level combo box
+            $.getJSON('/formdata/site/', function(data) {
+                $('#depends_level0B').append($('<option>').val("0").text("-- Please Select --"));
+                $.each(data, function(key, tuple) {
+                    $('#depends_level0B').append($('<option>').val(tuple[0]).text(tuple[1]));
+                });
+            });
+            // Hook lower level combo boxes up to their parent
+            $("#depends_level1B").jCombo("/formdata/{id}/children/", {
+                parent: "#depends_level0B",
+                end_value_field: "#id_relationship_end_b"
+            });
+            $("#depends_level2B").jCombo("/formdata/{id}/children/", {
+                parent: "#depends_level1B",
+                end_value_field: "#id_relationship_end_b"
+            });
+            $("#depends_level3B").jCombo("/formdata/{id}/children/", {
+                parent: "#depends_level2B",
+                end_value_field: "#id_relationship_end_b"
+            });
+            $("#depends_level4B").jCombo("/formdata/{id}/children/", {
+                parent: "#depends_level3B",
+                end_value_field: "#id_relationship_end_b"
+            });
+        }
+    );
+    function add_port_a() {
+        var parent_id = $('#id_relationship_end_a').val();
+        window.open("/new/port/parent/" + parent_id + "/");
+    }
+    function add_port_b() {
+        var parent_id = $('#id_relationship_end_b').val();
+        window.open("/new/port/parent/" + parent_id + "/");
+    }
+</script>
+
+<div class="accordion-group">
+    <div class="accordion-heading">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseDepends">
+            {{ node_handle.node_type }} depends on on (optional)
+        </a>
+    </div>
+    <div id="collapseDepends" class="accordion-body in collapse">
+        <div class="accordion-inner">
+            {% if node_handle.meta_type == 'Physical' %}
+                <div class="alert alert-danger">Setting dependencies will remove any location for this host.</div>
+            {% endif %}
+            {% if depends_on.Depends_on %}
+                {% load noclook_tags %}
+                <h4>Remove depends on relationship</h4>
+                {% for item in depends_on.Depends_on %}
+                    <div class="row">
+                        <div class="span5">
+                            Depends on <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+                <hr>
+            {% endif %}
+            <h4>Add depends on relationships</h4>
+            <div class="row">
+                <div class="span4">
+                    {{ form.relationship_end_a }}
+                    <select class="stacked" name="depends_level0A" id="depends_level0A"></select>
+                    <select class="stacked" name="depends_level1A" id="depends_level1A"></select>
+                    <select class="stacked" name="depends_level2A" id="depends_level2A"></select>
+                    <select class="stacked" name="depends_level3A" id="depends_level3A"></select>
+                    <select class="stacked" name="depends_level4A" id="depends_level4A"></select>
+                    <span class="help-block">Choose end A</span>
+                    <a class="btn btn-mini" href="javascript:add_port_a()">Add port</a>
+                </div>
+                <div class="span4">
+                    {{ form.relationship_end_b }}
+                    <select class="stacked" name="depends_level0B" id="depends_level0B"></select>
+                    <select class="stacked" name="depends_level1B" id="depends_level1B"></select>
+                    <select class="stacked" name="depends_level2B" id="depends_level2B"></select>
+                    <select class="stacked" name="depends_level3B" id="depends_level3B"></select>
+                    <select class="stacked" name="depends_level4B" id="depends_level4B"></select>
+                    <span class="help-block">Choose end B</span>
+                    <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

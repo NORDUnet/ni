@@ -8,7 +8,12 @@
 $(document).ready(
     function(){
         // Accordion
-        $(".edit-accordion").collapse()
+        $(".edit-accordion").collapse();
+        // Provider
+        // Populate first level combo box
+        providerCategories = [
+            ['provider', 'Provider']
+        ];
     }
 );
 </script>
@@ -25,7 +30,8 @@ $(document).ready(
     </div>
 
     <div class="accordion" id="edit-accordion">
-        {% include "noclook/edit/connection_group.html" %}
+        {% include "noclook/edit/includes/connection_group.html" %}
+        {% include "noclook/edit/includes/provider_group.html" %}
         <div class="accordion-group">
             <div class="accordion-heading">
                 <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">

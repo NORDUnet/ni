@@ -161,6 +161,9 @@ class CommonQueries(BaseNodeModel):
     def get_location_path(self):
         return {'location_path': []}
 
+    def get_location(self):
+        return {}
+
     def get_relations(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
@@ -279,6 +282,15 @@ class PhysicalModel(CommonQueries):
             RETURN created, type(r), id(r), r, owner.handle_id
             """
         return self._basic_write_query_to_dict(q, owner_handle_id=owner_handle_id)
+
+    def set_provider(self, provider_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (provider:Node {handle_id: {provider_handle_id}})
+            WITH n, provider, NOT EXISTS((n)<-[:Provides]-(provider)) as created
+            MERGE (n)<-[r:Provides]-(provider)
+            RETURN created, type(r), id(r), r, provider.handle_id
+            """
+        return self._basic_write_query_to_dict(q, provider_handle_id=provider_handle_id)
 
     def set_location(self, location_handle_id):
         q = """

@@ -1,0 +1,75 @@
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $('#depends_categoryA').append($('<option>').val("0").text("-- Please Select --"));
+        $.each(dependencyCategories, function(key, tuple) {
+            $('#depends_categoryA').append($('<option>').val(tuple[0]).text(tuple[1]));
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#depends_level0A").jCombo("/formdata/{id}/", {
+            parent: "#depends_categoryA",
+            end_value_field: "#id_relationship_depends_on"
+        });
+        $("#depends_level1A").jCombo("/formdata/{id}/children/", {
+            parent: "#depends_level0A",
+            end_value_field: "#id_relationship_depends_on"
+        });
+        $("#depends_level2A").jCombo("/formdata/{id}/children/", {
+            parent: "#depends_level1A",
+            end_value_field: "#id_relationship_depends_on"
+        });
+        $("#depends_level3A").jCombo("/formdata/{id}/children/", {
+            parent: "#depends_level2A",
+            end_value_field: "#id_relationship_depends_on"
+        });
+        $("#depends_level4A").jCombo("/formdata/{id}/children/", {
+            parent: "#depends_level3A",
+            end_value_field: "#id_relationship_depends_on"
+        });
+    }
+);
+</script>
+
+<div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseDepends">
+                    {{ node_handle.node_type }} depends on on (optional)
+                </a>
+            </div>
+            <div id="collapseDepends" class="accordion-body collapse" style="height: 0px; ">
+
+                <div class="accordion-inner">
+                    {% if node_handle.meta_type == 'Physical' %}
+                        <div class="alert alert-danger">Setting dependencies will remove any location for this host.</div>
+                    {% endif %}
+                    {% if depends_on.Depends_on %}
+                        {% load noclook_tags %}
+                        <h4>Remove depends on relationship</h4>
+                        {% for item in depends_on.Depends_on %}
+                            <div class="row">
+                                <div class="span5">
+                                    Depends on <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                                </div>
+                                <div class="span1">
+                                    <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <hr>
+                    {% endif %}
+                    <h4>Add depends on relationship</h4>
+                    <div class="span4">
+                        {{ form.relationship_depends_on }}
+                        <select class="stacked" name="depends_categoryA" id="depends_categoryA"></select>
+                        <select class="stacked" name="depends_level0A" id="depends_level0A"></select>
+                        <select class="stacked" name="depends_level1A" id="depends_level1A"></select>
+                        <select class="stacked" name="depends_level2A" id="depends_level2A"></select>
+                        <select class="stacked" name="depends_level3A" id="depends_level3A"></select>
+                        <select class="stacked" name="depends_level4A" id="depends_level4A"></select>
+                        <span class="help-block">Choose a dependency</span>
+                        <br>
+                        <br>
+                    </div>
+                </div>
+            </div>
+        </div>

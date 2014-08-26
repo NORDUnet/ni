@@ -128,14 +128,14 @@ def form_update_node(user, handle_id, form, property_keys=list()):
             if field not in meta_fields:
                 property_keys.append(field)
     for key in property_keys:
-        if form.cleaned_data[key] or form.cleaned_data[key] == 0:
+        if form.cleaned_data.get(key, None) or form.cleaned_data.get(key, None) == 0:
             pre_value = node.data.get(key, '')
             if pre_value != form.cleaned_data[key]:
                 node.data[key] = form.cleaned_data[key]
                 if key == 'name':
                     nh.node_name = form.cleaned_data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
-        elif not form.cleaned_data[key] and key in node.data.keys():
+        elif form.cleaned_data.get(key, None) == '' and key in node.data.keys():
             if key != 'name':  # Never delete name
                 pre_value = node.data.get(key, '')
                 del node.data[key]

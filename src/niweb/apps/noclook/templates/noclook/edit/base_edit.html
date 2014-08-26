@@ -19,7 +19,8 @@
             $("#object-confirm").click(function(e) {
                 e.preventDefault();
                 var theHREF = $(this).attr("href");
-                $("#dialog-object-confirm").dialog('option', 'buttons', {
+                var modalDialog = $("#dialog-object-confirm");
+                modalDialog.dialog('option', 'buttons', {
                         "Confirm" : function() {
                             window.location.href = theHREF;
                             },
@@ -27,7 +28,30 @@
                             $(this).dialog("close");
                             }
                         });
-                $("#dialog-object-confirm").dialog("open");
+                modalDialog.dialog("open");
+            });
+            // Modal delete relationship confirm
+            $("#dialog-relationship-confirm").dialog({
+                modal: true,
+                bgiframe: true,
+                width: 500,
+                height: 200,
+                autoOpen: false
+            });
+
+            $("a.relationship-confirm").click(function(e) {
+                e.preventDefault();
+                var theHREF = $(this).attr("href");
+                var modalDialog = $("#dialog-relationship-confirm");
+                modalDialog.dialog('option', 'buttons', {
+                    "Confirm" : function() {
+                        window.location.href = theHREF;
+                    },
+                    "Cancel" : function() {
+                        $(this).dialog("close");
+                    }
+                });
+                modalDialog.dialog("open");
             });
         }
     );
@@ -35,11 +59,14 @@
 {% endblock %}
 
 {% block content %}
-    <div id="dialog-object-confirm" title="Delete {{ node.node_type }} {{ node.name }}?">
-        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The {{ node.node_type|lower }} will be permanently deleted and cannot be recovered. Are you sure?</p>
+    <div id="dialog-object-confirm" title="Delete {{ node_handle.node_type }} {{ node_handle.node_name }}?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The {{ node_handle.node_type|lower }} will be permanently deleted and cannot be recovered. Are you sure?</p>
+    </div>
+    <div id="dialog-relationship-confirm" title="Remove relationship?">
+        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
     </div>
     <form action="" method="post">{% csrf_token %}
-        <h1>Edit {{ node.node_type|lower }} <a href="">{{ node.name }}</a></h1>
+        <h1>Edit {{ node_handle.node_type|lower }} <a href="{{ node_handle.get_absolute_url }}">{{ node_handle.node_name }}</a></h1>
         {% if form.errors %}
             <div class="alert alert-error">
                 <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>

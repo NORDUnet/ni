@@ -1,0 +1,47 @@
+<div class="accordion-group">
+    <div class="accordion-heading">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseHostService">
+            Host Services
+        </a>
+    </div>
+    <div id="collapseHostService" class="accordion-body collapse" style="height: 0px; ">
+        <div class="accordion-inner">
+            <label class="checkbox">
+                {{ form.services_locked }}
+                Services locked
+            </label>
+
+            <label class="checkbox">
+                {{ form.services_checked }}
+                All services below have been checked
+            </label>
+
+            {% if host_services %}
+                {% load noclook_tags %}
+                <h4>Remove service</h4>
+                {% for item in host_services.Depends_on %}
+                    <div class="row">
+                        <div class="span2">
+                            {% if item.relationship.rogue_port %}
+                                <i class="icon-exclamation-sign"></i>
+                            {% endif %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                        </div>
+                        <div class="span3">
+                            {{ item.relationship.ip_address }} {{ item.relationship.protocol }} {{ item.relationship.port }}
+                        </div>
+                        <div class="span1">
+                            {% noclook_has_expired item.relationship as expired %}
+                            {% if expired %}
+                                <span class="help-inline">(Expired)</span>
+                            {% endif %}
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important user-confirm">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>

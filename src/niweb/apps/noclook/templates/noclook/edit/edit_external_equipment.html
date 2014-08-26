@@ -8,6 +8,14 @@ $(document).ready(
     function(){
         // Accordion
         $(".edit-accordion").collapse();
+        // Owner
+        // Populate first level combo box
+        ownerCategories = [
+            ['customer', 'Customer'],
+            ['end-user', 'End User'],
+            ['host-user', 'Host User'],
+            ['provider', 'Provider']
+        ];
     }
 );
 </script>
@@ -23,9 +31,9 @@ $(document).ready(
         <span class="help-block">{{ form.description.help_text }}</span>
     </div>
     <div class="accordion" id="edit-accordion">
-        {% include "noclook/edit/owner_group.html" %}
-        {% include "noclook/edit/port_group.html" %}
-        {% include "noclook/edit/location_group.html" %}
+        {% include "noclook/edit/includes/owner_group.html" %}
+        {% include "noclook/edit/includes/port_group.html" %}
+        {% include "noclook/edit/includes/location_group.html" %}
     </div>
 {% endblock %}
 
