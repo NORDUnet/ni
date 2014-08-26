@@ -2,37 +2,8 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
-        // Modal delete owner confirm
-        $("#dialog-owner-confirm").dialog({
-            modal: true,
-            bgiframe: true,
-            width: 500,
-            height: 200,
-            autoOpen: false
-        });
-
-        $("a.owner-confirm").click(function(e) {
-            e.preventDefault();
-            var theHREF = $(this).attr("href");
-            $("#dialog-owner-confirm").dialog('option', 'buttons', {
-                "Confirm" : function() {
-                    window.location.href = theHREF;
-                },
-                "Cancel" : function() {
-                    $(this).dialog("close");
-                }
-            });
-            $("#dialog-owner-confirm").dialog("open");
-        });
-        // Populate first level combo box
-        var categories = [
-            ['customer', 'Customer'],
-            ['end-user', 'End User'],
-            ['provider', 'Provider'],
-            ['site-owner', 'Site Owner']
-        ];
         $('#owner_category').append($('<option>').val("0").text("-- Please Select --"));
-        $.each(categories, function(key, tuple) {
+        $.each(ownerCategories, function(key, tuple) {
             $('#owner_category').append($('<option>').val(tuple[0]).text(tuple[1]));
         });
         // Hook lower level combo boxes up to their parent
@@ -43,34 +14,30 @@ $(document).ready(
     });
 </script>
 
-<div id="dialog-owner-confirm" title="Remove relationship?">
-    <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
-</div>
-
 <div class="accordion-group">
     <div class="accordion-heading">
         <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOwner">
-            Owner
+            {{ node_handle.node_type }} Owner (optional)
         </a>
     </div>
     <div id="collapseOwner" class="accordion-body collapse" style="height: 0; ">
         <div class="accordion-inner">
-            {% if owner_relationships.Owns %}
+            {% if relations.Owns %}
                 {% load noclook_tags %}
-                <h4>Remove equipment owner</h4>
-                {% for item in owner_relationships.Owns %}
+                <h4>Remove owner</h4>
+                {% for item in relations.Owns %}
                     <div class="row">
                         <div class="span5">
                             Owner <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
                         </div>
                         <div class="span1">
-                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important owner-confirm">Delete</a>
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
                         </div>
                     </div>
                 {% endfor %}
                 <hr>
             {% endif %}
-            <h4>Add equipment owner</h4>
+            <h4>Add owner</h4>
             <div class="span4">
                 {{ form.relationship_owner }}
                 <select class="stacked" name="owner_category" id="owner_category"></select>

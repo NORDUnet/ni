@@ -9,7 +9,7 @@ $(document).ready(
                 $('#location_level0').append($('<option>').val(tuple[0]).text(tuple[1]));
             });
         });
-        $('#level0').click(function() {
+        $('#location_level0').click(function() {
             $("#id_relationship_location").val($(this).val());
         });
         // Hook lower level combo boxes up to their parent
@@ -23,7 +23,7 @@ $(document).ready(
 <div class="accordion-group">
     <div class="accordion-heading">
         <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseLocation">
-            Location
+            Location (optional)
         </a>
     </div>
     <div id="collapseLocation" class="accordion-body collapse" style="height: 0; ">
@@ -45,7 +45,7 @@ $(document).ready(
                             </a>
                         </div>
                         <div class="span1">
-                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important user-confirm">Delete</a>
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
                         </div>
                     </div>
                 {% endfor %}
