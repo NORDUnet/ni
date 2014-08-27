@@ -2,90 +2,25 @@
 
 {% block js %}
 {{ block.super }}
-{% load niweb_tags %}
-<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+{% load noclook_tags %}
 <script type="text/javascript">
 $(document).ready(
     function(){
-        // Modal delete object confirm
-        $("#dialog-object-confirm").dialog({
-          modal: true,
-                bgiframe: true,
-                width: 500,
-                height: 200,
-          autoOpen: false
-          });
-
-        $("#object-confirm").click(function(e) {
-            e.preventDefault();
-            var theHREF = $(this).attr("href");
-
-            $("#dialog-object-confirm").dialog('option', 'buttons', {
-                    "Confirm" : function() {
-                        window.location.href = theHREF;
-                        },
-                    "Cancel" : function() {
-                        $(this).dialog("close");
-                        }
-                    });
-
-            $("#dialog-object-confirm").dialog("open");
-        });
+        // Accordion
+        $(".edit-accordion").collapse();
+        // Located in //
         // Populate first level combo box
-        $.getJSON('/formdata/site/', function(data) {
-            $('#level0').append($('<option>').val("0").text("-- Please Select --"));
-            $.each(data, function(key, tuple) {
-                $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
-            });
-        });
-        $('#level0').click(function() {
-            $("#id_relationship_location").val($(this).val());
-        });
-        // Modal delete connection confirm
-        $("#dialog-user-confirm").dialog({
-            modal: true,
-            bgiframe: true,
-            width: 500,
-            height: 200,
-            autoOpen: false
-        });
-
-        $("a.user-confirm").click(function(e) {
-            e.preventDefault();
-            var theHREF = $(this).attr("href");
-
-
-            $("#dialog-user-confirm").dialog('option', 'buttons', {
-                "Confirm" : function() {
-                    window.location.href = theHREF;
-                },
-                "Cancel" : function() {
-                    $(this).dialog("close");
-                }
-            });
-
-            $("#dialog-user-confirm").dialog("open");
-
-        });
-        // Depends on //
-        // Populate first level combo box
-        var categories = [
+        locatedInCategories = [
             ['host', 'Hosts'],
             ['odf', 'ODFs'],
             ['optical-node', 'Optical Nodes'],
             ['router', 'Routers']
         ];
-        $('#categoryA').append($('<option>').val("0").text("-- Please Select --"));
-        $.each(categories, function(key, tuple) {
-            $('#categoryA').append($('<option>').val(tuple[0]).text(tuple[1]));
-        });
-        // Hook lower level combo boxes up to their parent
-        $("#level0A").jCombo("/formdata/unlocated/{id}/", {
-            parent: "#categoryA",
-            end_value_field: "#id_relationship_located_in"
-        });
-        // Accordion
-        $(".edit-accordion").collapse()
+        // Parent
+        // Populate first level has relationship combo box
+        parentCategories = [
+            ['site', 'Sites']
+        ];
     }
 );
 </script>
@@ -93,9 +28,6 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-    <div id="dialog-user-confirm" title="Remove relationship?">
-        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
-    </div>
     <div class="well">
         <h3>Name</h3>
         {{ form.name }}
@@ -125,68 +57,8 @@ $(document).ready(
                 </div>
             </div>
         </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
-                    Location (optional)
-                </a>
-            </div>
-            <div id="collapseTwo" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    {% if location %}
-                        <label>Current location</label>
-                        {% load noclook_tags %}
-                        {% for hit in location %}
-                            <div class="row">
-                                <div class="span3">
-                                    <a href="{% noclook_node_to_url hit.loc %}">{{ hit.parent.name }} {{ hit.loc.name }}</a>
-                                </div>
-                                <div class="span1">
-                                    <a href="relationship/{{ hit.loc_rel.id }}/delete" class="label label-important user-confirm">Delete</a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                    <label>Set location</label>
-                    {{ form.relationship_location }}
-                    <select class="stacked" name="level0" id="level0"></select>
-                </div>
-            </div>
-        </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
-                    Located in rack (optional)
-                </a>
-            </div>
-            <div id="collapseThree" class="accordion-body collapse">
-                <div class="accordion-inner">
-                    {% if located_in %}
-                        {% load noclook_tags %}
-                        <h4>Located in rack</h4>
-                        {% for rel in located_in %}
-                            <div class="row">
-                                <div class="span5">
-                                     <a href="{% noclook_node_to_url rel.start %}">{{ rel.start.name }}</a>
-                                </div>
-                                <div class="span1">
-                                    <a href="relationship/{{ rel.id }}/delete" class="label label-important user-confirm">Delete</a>
-                                </div>
-                            </div>
-                        {% endfor %}
-                        <hr>
-                    {% endif %}
-                    <h4>Add to rack</h4>
-                    <div class="row">
-                        <div class="span4">
-                            {{ form.relationship_located_in }}
-                            <select class="stacked" name="categoryA" id="categoryA"></select>
-                            <select class="stacked" name="level0A" id="level0A"></select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% include "noclook/edit/includes/parent_group.html" %}
+        {% include "noclook/edit/includes/located_in_group.html" %}
     </div>
 {% endblock %}
 

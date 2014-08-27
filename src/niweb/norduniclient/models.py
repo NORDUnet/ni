@@ -333,6 +333,13 @@ class PhysicalModel(CommonQueries):
             """
         return self._basic_write_query_to_dict(q, part_handle_id=part_handle_id)
 
+    def get_parent(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Has]-(parent)
+            RETURN type(r), id(r), r, parent.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
     def delete(self):
         has = self.get_has()
         if has.get('Has', []):
@@ -360,10 +367,10 @@ class LocationModel(CommonQueries):
             """
         return core.query_to_dict(self.manager, q, handle_id=self.handle_id)
 
-    def get_location(self):
+    def get_parent(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})<-[r:Has]-(node)
-            RETURN type(r), id(r), r, node.handle_id
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Has]-(parent)
+            RETURN type(r), id(r), r, parent.handle_id
             """
         return self._basic_read_query_to_dict(q)
 

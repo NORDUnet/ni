@@ -2,36 +2,6 @@
 
 {% block js %}
 {{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Modal delete object confirm
-        $("#dialog-object-confirm").dialog({
-          modal: true,
-                bgiframe: true,
-                width: 500,
-                height: 200,
-          autoOpen: false
-          });
-
-        $("#object-confirm").click(function(e) {
-            e.preventDefault();
-            var theHREF = $(this).attr("href");
-
-            $("#dialog-object-confirm").dialog('option', 'buttons', {
-                    "Confirm" : function() {
-                        window.location.href = theHREF;
-                        },
-                    "Cancel" : function() {
-                        $(this).dialog("close");
-                        }
-                    });
-
-            $("#dialog-object-confirm").dialog("open");
-        });
-    }
-);
-</script>
 {% endblock %}
 
 {% block content %}

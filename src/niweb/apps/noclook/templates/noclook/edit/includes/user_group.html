@@ -16,11 +16,11 @@ $(document).ready(
 
 <div class="accordion-group">
     <div class="accordion-heading">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOwner">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseUser">
             {{ node_handle.node_type }} User (optional)
         </a>
     </div>
-    <div id="collapseOwner" class="accordion-body collapse" style="height: 0; ">
+    <div id="collapseUser" class="accordion-body collapse" style="height: 0; ">
         <div class="accordion-inner">
             {% if relations.Uses %}
                 {% load noclook_tags %}
@@ -28,7 +28,8 @@ $(document).ready(
                 {% for item in relations.Uses %}
                     <div class="row">
                         <div class="span5">
-                            User <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                            {% noclook_get_type item.node.handle_id as node_type %}
+                            {{ node_type }} <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
                         </div>
                         <div class="span1">
                             <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>

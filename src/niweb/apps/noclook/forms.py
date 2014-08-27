@@ -391,7 +391,7 @@ class EditRackForm(forms.Form):
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_located_in = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                 
                 
@@ -653,12 +653,6 @@ class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
 
 
 class EditServiceForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditServiceForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-        self.fields['relationship_customer'].choices = get_node_type_tuples('Customer')
-        self.fields['relationship_end_user'].choices = get_node_type_tuples('End User')
-
     name = forms.CharField(required=False)
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     service_type = forms.ChoiceField(choices=SERVICE_TYPES,
@@ -680,9 +674,8 @@ class EditServiceForm(forms.Form):
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this service?')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
     def clean(self):
@@ -851,10 +844,6 @@ class NewNordunetOpticalPathForm(NewOpticalPathForm):
 
 
 class EditOpticalPathForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditOpticalPathForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-
     framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
                                 widget=forms.widgets.Select)
     capacity = forms.ChoiceField(choices=OPTICAL_PATH_CAPACITY,
@@ -865,5 +854,5 @@ class EditOpticalPathForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
     enrs = JSONField(required=False, widget=JSONInput)
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)

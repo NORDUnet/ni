@@ -50,7 +50,8 @@ def list_hosts(request):
 def list_odfs(request):
     q = """
         MATCH (odf:ODF)
-        OPTIONAL MATCH (odf)-[:Located_in]->location<-[:Has]-site
+        OPTIONAL MATCH (odf)-[:Located_in]->location
+        OPTIONAL MATCH location<-[:Has]-site
         RETURN odf, location, site
         ORDER BY site.name, location.name, odf.name
         """

@@ -16,11 +16,11 @@ $(document).ready(
 
 <div class="accordion-group">
     <div class="accordion-heading">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOwner">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseProvider">
             {{ node_handle.node_type }} Provider (optional)
         </a>
     </div>
-    <div id="collapseOwner" class="accordion-body collapse" style="height: 0; ">
+    <div id="collapseProvider" class="accordion-body collapse" style="height: 0; ">
         <div class="accordion-inner">
             {% if relations.Provides %}
                 {% load noclook_tags %}

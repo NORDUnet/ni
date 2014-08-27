@@ -71,12 +71,11 @@ def get_unlocated_node_type(request, slug):
     node_type = h.slug_to_node_type(slug)
     q = '''
         MATCH (node:{node_type})
-        OPTIONAL MATCH node-[r:Located_in]->()
-        WHERE r IS NULL
+        WHERE NOT (node)-[:Located_in]->()
         RETURN node.handle_id, node.name
         ORDER BY node.name
         '''.format(node_type=node_type.type.replace(' ', '_'))
-    with nc.neo4jdb.read as r:
+    with nc.neo4jdb.transaction as r:
         type_list = r.execute(q).fetchall()
     return HttpResponse(json.dumps(type_list), mimetype='application/json')
 
@@ -502,6 +501,170 @@ def edit_optical_path(request, handle_id):
 
 
 @login_required
+def edit_peering_partner(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, peering_partner = h.get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditPeeringPartnerForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, peering_partner.handle_id, form)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditPeeringPartnerForm(peering_partner.data)
+    return render_to_response('noclook/edit/edit_peering_partner.html',
+                              {'node_handle': nh, 'node': peering_partner, 'form': form},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def edit_port(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    nh, port = h.get_nh_node(handle_id)
+    parent = port.get_parent()
+    if request.POST:
+        form = forms.EditPortForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, port.handle_id, form)
+            # Port specific updates
+            if form.cleaned_data['relationship_parent']:
+                parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent'])
+                h.set_has(request.user, parent_nh.get_node(), port.handle_id)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditPortForm(port.data)
+    return render_to_response('noclook/edit/edit_port.html',
+                              {'node_handle': nh, 'form': form, 'node': port, 'parent': parent},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def edit_provider(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, provider = h.get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditProviderForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, provider.handle_id, form)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditProviderForm(provider.data)
+    return render_to_response('noclook/edit/edit_provider.html',
+                              {'node_handle': nh, 'form': form, 'node': provider},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def edit_rack(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, rack = h.get_nh_node(handle_id)
+    parent = rack.get_parent()
+    located_in = rack.get_located_in()
+    if request.POST:
+        form = forms.EditRackForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, rack.handle_id, form)
+            # Rack specific updates
+            if form.cleaned_data['relationship_parent']:
+                parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent'])
+                h.set_has(request.user, parent_nh.get_node(), rack.handle_id)
+            if form.cleaned_data['relationship_located_in']:
+                equipment = NodeHandle.objects.get(pk=form.cleaned_data['relationship_located_in'])
+                h.set_location(request.user, equipment.get_node(), rack.handle_id)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditRackForm(rack.data)
+    return render_to_response('noclook/edit/edit_rack.html',
+                              {'node_handle': nh, 'form': form, 'parent': parent, 'node': rack,
+                               'located_in': located_in},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def edit_router(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, router = h.get_nh_node(handle_id)
+    location = router.get_location()
+    if request.POST:
+        form = forms.EditRouterForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, router.handle_id, form)
+            # Router specific updates
+            if form.cleaned_data['relationship_location']:
+                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+                h.set_location(request.user, router, location_nh.handle_id)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditRouterForm(router.data)
+        return render_to_response('noclook/edit/edit_router.html',
+                                  {'node_handle': nh, 'node': router, 'form': form, 'location': location},
+                                  context_instance=RequestContext(request))
+
+
+@login_required
+def edit_service(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, service = h.get_nh_node(handle_id)
+    relations = service.get_relations()
+    depends_on = service.get_dependencies()
+    if request.POST:
+        form = forms.EditServiceForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, service.handle_id, form)
+            # Service node updates
+            if form.cleaned_data['relationship_provider']:
+                owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
+                h.set_provider(request.user, service, owner_nh.handle_id)
+            if form.cleaned_data['relationship_user']:
+                user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
+                h.set_user(request.user, service, user_nh.handle_id)
+            if form.cleaned_data['relationship_depends_on']:
+                depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
+                h.set_depends_on(request.user, service, depends_on_nh.handle_id)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditServiceForm(service.data)
+    return render_to_response('noclook/edit/edit_service.html',
+                              {'node_handle': nh, 'form': form, 'node': service, 'relations': relations,
+                               'depends_on': depends_on},
+                              context_instance=RequestContext(request))
+
+
+@login_required
 def edit_switch(request, handle_id):
     if not request.user.is_staff:
         raise Http404
@@ -623,208 +786,6 @@ def edit_site_owner(request, handle_id):
         return render_to_response('noclook/edit/edit_site_owner.html',
                                   {'form': form, 'node': node},
                                 context_instance=RequestContext(request))
-
-
-@login_required        
-def edit_peering_partner(request, handle_id):
-    if not request.user.is_staff:
-        raise Http404
-    # Get needed data from node
-    nh, node = h.get_nh_node(handle_id)
-    if request.POST:
-        form = forms.EditPeeringPartnerForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            h.form_update_node(request.user, node, form)
-            if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
-            else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_peering_partner.html',
-                                  {'node': node, 'form': form},
-                                context_instance=RequestContext(request))
-    else:
-        form = forms.EditPeeringPartnerForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_peering_partner.html',
-                                  {'node': node, 'form': form},
-                                context_instance=RequestContext(request))
-
-@login_required        
-def edit_rack(request, handle_id):
-    if not request.user.is_staff:
-        raise Http404
-    # Get needed data from node
-    nh, node = h.get_nh_node(handle_id)
-    location = h.iter2list(h.get_place(node))
-    located_in = h.iter2list(node.Located_in.incoming)
-    if request.POST:
-        form = forms.EditRackForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            h.form_update_node(request.user, node, form)
-            # Rack specific updates
-            if form.cleaned_data['relationship_location']:
-                location_id = form.cleaned_data['relationship_location']
-                h.place_child_in_parent(request.user, node, location_id)
-            if form.cleaned_data['relationship_located_in']:
-                phys_node = nc.get_node_by_id(nc.neo4jdb, form.cleaned_data['relationship_located_in'])
-                phys_nh = NodeHandle.objects.get(pk=phys_node['handle_id'])
-                h.place_physical_in_location(request.user, phys_nh, phys_node, node.getId())
-            if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
-            else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_rack.html',
-                                      {'node': node, 'form': form, 'location': location,
-                                       'located_in': located_in},
-                                      context_instance=RequestContext(request))
-    else:
-        form = forms.EditRackForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_rack.html',
-                                  {'form': form, 'location': location, 'node': node,
-                                   'located_in': located_in},
-                                  context_instance=RequestContext(request))
-
-
-@login_required        
-def edit_router(request, handle_id):
-    if not request.user.is_staff:
-        raise Http404
-    # Get needed data from node
-    nh, node = h.get_nh_node(handle_id)
-    location = h.iter2list(h.get_location(node))
-    if request.POST:
-        form = forms.EditRouterForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            h.form_update_node(request.user, node, form)
-            # Router specific updates
-            if form.cleaned_data['relationship_location']:
-                location_id = form.cleaned_data['relationship_location']
-                nh, node = h.place_physical_in_location(request.user, nh, node, location_id)
-            if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
-            else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_router.html',
-                                  {'node': node, 'form': form, 
-                                   'location': location},
-                                context_instance=RequestContext(request))
-    else:
-        form = forms.EditRouterForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_router.html',
-                                  {'node': node, 'form': form,
-                                   'location': location},
-                                context_instance=RequestContext(request))
-
-
-@login_required
-def edit_port(request, handle_id):
-    if not request.user.is_staff:
-        raise Http404
-    nh, node = h.get_nh_node(handle_id)
-    location = h.iter2list(h.get_place(node))
-    if request.POST:
-        form = forms.EditPortForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            h.form_update_node(request.user, node, form)
-            # Port specific updates
-            if form.cleaned_data['relationship_parent']:
-                parent_id = form.cleaned_data['relationship_parent']
-                h.place_child_in_parent(request.user, node, parent_id)
-            else:
-                # Remove existing location if any
-                for rel in h.iter2list(node.Located_in.outgoing):
-                    nc.delete_relationship(nc.neo4jdb, rel)
-            if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
-            else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_port.html',
-                                     {'node': node, 'form': form, 'location': location},
-                                     context_instance=RequestContext(request))
-    else:
-        form = forms.EditPortForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_port.html',
-                                 {'form': form, 'node': node, 'location': location},
-                                 context_instance=RequestContext(request))
-
-
-@login_required
-def edit_provider(request, handle_id):
-    if not request.user.is_staff:
-        raise Http404
-    # Get needed data from node
-    nh, node = h.get_nh_node(handle_id)
-    if request.POST:
-        form = forms.EditProviderForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            h.form_update_node(request.user, node, form)
-            if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
-            else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_provider.html',
-                    {'node': node, 'form': form},
-                                      context_instance=RequestContext(request))
-    else:
-        form = forms.EditProviderForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_provider.html',
-                {'form': form, 'node': node},
-                                  context_instance=RequestContext(request))
-
-@login_required
-def edit_service(request, handle_id):
-    if not request.user.is_staff:
-        raise Http404
-    # Get needed data from node
-    nh, node = h.get_nh_node(handle_id)
-    providers =  h.iter2list(node.Provides.incoming)
-    customers = h.iter2list(h.get_customer(node))
-    end_users = h.iter2list(h.get_end_user(node))
-    depends_on = h.iter2list(h.get_logical_depends_on(node))
-    if request.POST:
-        form = forms.EditServiceForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            h.form_update_node(request.user, node, form)
-            # Service node updates
-            if form.cleaned_data['relationship_provider']:
-                provider_id = form.cleaned_data['relationship_provider']
-                h.set_provider(request.user, node, provider_id)
-            if form.cleaned_data['relationship_customer']:
-                customer_id = form.cleaned_data['relationship_customer']
-                h.set_user(request.user, node, customer_id)
-            if form.cleaned_data['relationship_end_user']:
-                end_user_id = form.cleaned_data['relationship_end_user']
-                h.set_user(request.user, node, end_user_id)
-            if form.cleaned_data['relationship_depends_on']:
-                depends_on_id = form.cleaned_data['relationship_depends_on']
-                h.set_depends_on(request.user, node, depends_on_id)
-            if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
-            else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_service.html',
-                                     {'form': form, 'node': node,
-                                      'providers': providers, 'customers': customers,
-                                      'end_users': end_users, 'depends_on': depends_on},
-                                     context_instance=RequestContext(request))
-    else:
-        form = forms.EditServiceForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_service.html',
-                                 {'form': form, 'node': node,
-                                  'providers': providers, 'customers': customers,
-                                  'end_users': end_users, 'depends_on': depends_on},
-                                  context_instance=RequestContext(request))
 
 
 EDIT_FUNC = {
