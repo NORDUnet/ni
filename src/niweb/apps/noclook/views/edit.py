@@ -665,6 +665,55 @@ def edit_service(request, handle_id):
 
 
 @login_required
+def edit_site(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, site = h.get_nh_node(handle_id)
+    relations = site.get_relations()
+    if request.POST:
+        form = forms.EditSiteForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, site.handle_id, form)
+            # Set site owner
+            if form.cleaned_data['relationship_responsible_for']:
+                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_responsible_for'])
+                h.set_responsible_for(request.user, site, responsible_nh.handle_id)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditSiteForm(site.data)
+    return render_to_response('noclook/edit/edit_site.html',
+                              {'node_handle': nh, 'form': form, 'relations': relations, 'node': site},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def edit_site_owner(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, site_owner = h.get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditSiteOwnerForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            h.form_update_node(request.user, site_owner.handle_id, form)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditSiteOwnerForm(site_owner.data)
+    return render_to_response('noclook/edit/edit_site_owner.html',
+                              {'node_handle': nh, 'form': form, 'node': site_owner},
+                              context_instance=RequestContext(request))
+
+
+@login_required
 def edit_switch(request, handle_id):
     if not request.user.is_staff:
         raise Http404
@@ -706,86 +755,6 @@ def edit_switch(request, handle_id):
                               {'node_handle': nh, 'node': switch, 'form': form, 'location': location,
                                'relations': relations, 'depends_on': depends_on, 'ports': ports,
                                'host_services': host_services}, context_instance=RequestContext(request))
-
-
-# TODO: Fix below
-@login_required
-def edit_site(request, handle_id):
-    if not request.user.is_staff:
-        raise Http404
-    # Get needed data from node
-    nh, node = h.get_nh_node(handle_id)
-    site_owner = h.iter2list(node.Responsible_for.incoming)
-    if request.POST:
-        form = forms.EditSiteForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            h.form_update_node(request.user, node, form)
-            # Site specific updates
-            if form.cleaned_data['name'].upper() != node['name']:
-                pre_value = node['name']
-                with nc.neo4jdb.transaction:
-                    node['name'] = form.cleaned_data['name'].upper()
-
-                    nh.node_name = node['name']
-                    nh.save()
-                    activitylog.update_node_property(
-                        request.user,
-                        nh,
-                        'name',
-                        pre_value,
-                        form.cleaned_data['name'].upper()
-                    )
-                # Update search index
-                index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-                nc.update_index_item(nc.neo4jdb, index, node, 'name')
-            if form.cleaned_data['country']:
-                inverse_cm = dict((forms.COUNTRY_MAP[key], key) for key  in forms.COUNTRY_MAP)
-                with nc.neo4jdb.transaction:
-                    node['country_code'] = inverse_cm[node['country']]
-            # Set site owner
-            if form.cleaned_data['relationship_site_owner']:
-                h.set_responsible_for(request.user, node, form.cleaned_data['relationship_site_owner'])
-            if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
-            else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_site.html',
-                                  {'node': node, 'form': form,
-                                   'site_owner': site_owner},
-                                context_instance=RequestContext(request))
-    else:
-        form = forms.EditSiteForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_site.html',
-                                  {'form': form, 'site_owner': site_owner,
-                                   'node': node},
-                                context_instance=RequestContext(request))
-
-@login_required
-def edit_site_owner(request, handle_id):
-    if not request.user.is_staff:
-        raise Http404
-    # Get needed data from node
-    nh, node = h.get_nh_node(handle_id)
-    if request.POST:
-        form = forms.EditSiteOwnerForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            h.form_update_node(request.user, node, form)
-            if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
-            else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
-        else:
-            return render_to_response('noclook/edit/edit_site_owner.html',
-                                  {'node': node, 'form': form},
-                                context_instance=RequestContext(request))
-    else:
-        form = forms.EditSiteOwnerForm(h.item2dict(node))
-        return render_to_response('noclook/edit/edit_site_owner.html',
-                                  {'form': form, 'node': node},
-                                context_instance=RequestContext(request))
 
 
 EDIT_FUNC = {

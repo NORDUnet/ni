@@ -397,6 +397,15 @@ class LocationModel(CommonQueries):
             """
         return self._basic_write_query_to_dict(q, has_handle_id=has_handle_id)
 
+    def set_responsible_for(self, owner_handle_id):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}}), (owner:Node {handle_id: {owner_handle_id}})
+            WITH n, owner, NOT EXISTS((n)<-[:Responsible_for]-(owner)) as created
+            MERGE (n)<-[r:Responsible_for]-(owner)
+            RETURN created, type(r), id(r), r, owner.handle_id
+            """
+        return self._basic_write_query_to_dict(q, owner_handle_id=owner_handle_id)
+
     def delete(self):
         has = self.get_has()
         if has.get('Has', []):

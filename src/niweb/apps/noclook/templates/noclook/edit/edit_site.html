@@ -5,40 +5,11 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
-        // Modal delete object confirm
-        $("#dialog-object-confirm").dialog({
-          modal: true,
-                bgiframe: true,
-                width: 500,
-                height: 200,
-          autoOpen: false
-          });
-
-        $("#object-confirm").click(function(e) {
-            e.preventDefault();
-            var theHREF = $(this).attr("href");
-
-            $("#dialog-object-confirm").dialog('option', 'buttons', {
-                    "Confirm" : function() {
-                        window.location.href = theHREF;
-                        },
-                    "Cancel" : function() {
-                        $(this).dialog("close");
-                        }
-                    });
-
-            $("#dialog-object-confirm").dialog("open");
-        });
+        // Responsible for
         // Populate first level combo box
-        $.getJSON('/formdata/site-owner/', function(data) {
-            $('#level0').append($('<option>').val("0").text("-- Please Select --"));
-            $.each(data, function(key, tuple) {
-                $('#level0').append($('<option>').val(tuple[0]).text(tuple[1]));
-            });
-        });
-        $('#level0').click(function() {
-            $("#id_relationship_site_owner").val($(this).val());
-        });
+        responsibleCategories = [
+            ['site-owner', 'Site Owners']
+        ];
         // Accordion
         $(".edit-accordion").collapse()
     }
@@ -100,28 +71,7 @@ $(document).ready(
                 </div>
             </div>
         </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
-                    Site Owner (optional)
-                </a>
-            </div>
-            <div id="collapseThree" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <label>Current</label></td>
-                    <span class="input-large uneditable-input">
-                    {% if site_owner %}
-                        {% for owner in site_owner %}
-                            {{ owner.start.name }}
-                        {% endfor %}
-                    {% endif %}
-                    </span>
-                    <label>Change</label>
-                    {{ form.relationship_site_owner }}
-                    <select class="stacked" name="level0" id="level0"></select>
-                </div>
-            </div>
-        </div>
+        {% include "noclook/edit/includes/responsible_for_group.html" %}
         <div class="accordion-group">
             <div class="accordion-heading">
                 <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">

@@ -121,7 +121,7 @@ def form_update_node(user, handle_id, form, property_keys=list()):
     meta_fields = ['relationship_location', 'relationship_end_a', 'relationship_end_b', 'relationship_parent',
                    'relationship_provider', 'relationship_end_user', 'relationship_customer', 'relationship_depends_on',
                    'relationship_user', 'relationship_owner', 'relationship_located_in', 'relationship_ports',
-                   'services_checked']
+                   'services_checked', 'relationship_responsible_for']
     nh, node = get_nh_node(handle_id)
     if not property_keys:
         for field in form.base_fields.keys():

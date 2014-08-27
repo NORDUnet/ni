@@ -52,6 +52,8 @@ COUNTRY_MAP = {
     'US': 'USA'
 }
 
+COUNTRY_CODE_MAP = dict((COUNTRY_MAP[key], key) for key in COUNTRY_MAP)
+
 SITE_TYPES = [
     ('', ''),
     ('POP', 'POP'),
@@ -288,7 +290,13 @@ class EditSiteForm(forms.Form):
     owner_id = forms.CharField(required=False)
     owner_site_name = forms.CharField(required=False)
     url = forms.URLField(required=False, help_text='An URL to more information about the site.')
-    relationship_site_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_responsible_for = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+    def clean(self):
+        cleaned_data = super(EditSiteForm, self).clean()
+        cleaned_data['name'] = cleaned_data['name'].upper()
+        cleaned_data['country_code'] = COUNTRY_CODE_MAP[cleaned_data['country']]
+        return cleaned_data
                               
                               
 class NewSiteOwnerForm(forms.Form):
