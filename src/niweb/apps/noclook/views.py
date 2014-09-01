@@ -846,9 +846,9 @@ def search(request, value='', form=None):
     # See if the value is indexed
     result = []
     if value:
-        value = re_escape(value)
+        escaped_value = re_escape(value)
         i1 = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
-        q = Q('all', '*%s*' % value, wildcard=True)
+        q = Q('all', '*%s*' % escaped_value, wildcard=True)
         nodes = h.iter2list(i1.query(unicode(q)))
         if not nodes:
             nodes = nc.get_node_by_value(nc.neo4jdb, node_value=value)
