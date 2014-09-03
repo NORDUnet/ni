@@ -364,82 +364,82 @@ def _create_relationship(manager, handle_id, other_handle_id, rel_type):
         return w.execute(q, start=handle_id, end=other_handle_id).fetchall()[0][0]
 
 
-def create_location_relationship(manager, location_node, other_node, rel_type):
+def create_location_relationship(manager, location_handle_id, other_handle_id, rel_type):
     """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
     """
-    if get_node_meta_type(manager, other_node) == 'Location' and rel_type == 'Has':
-        return _create_relationship(manager, location_node, other_node, rel_type)
-    raise exceptions.NoRelationshipPossible(manager, location_node, other_node, rel_type)
+    if get_node_meta_type(manager, other_handle_id) == 'Location' and rel_type == 'Has':
+        return _create_relationship(manager, location_handle_id, other_handle_id, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, location_handle_id, other_handle_id, rel_type)
 
 
-def create_logical_relationship(manager, logical_node, other_node, rel_type):
+def create_logical_relationship(manager, logical_handle_id, other_handle_id, rel_type):
     """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
     """
-    other_meta_type = get_node_meta_type(manager, other_node)
+    other_meta_type = get_node_meta_type(manager, other_handle_id)
     if rel_type == 'Depends_on':
         if other_meta_type == 'Logical' or other_meta_type == 'Physical':
-            return _create_relationship(manager, logical_node, other_node, rel_type)
+            return _create_relationship(manager, logical_handle_id, other_handle_id, rel_type)
     elif rel_type == 'Part_of':
         if other_meta_type == 'Physical':
-            return _create_relationship(manager, logical_node, other_node, rel_type)
-    raise exceptions.NoRelationshipPossible(manager, logical_node, other_node, rel_type)
+            return _create_relationship(manager, logical_handle_id, other_handle_id, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, logical_handle_id, other_handle_id, rel_type)
 
 
-def create_relation_relationship(manager, relation_node, other_node, rel_type):
+def create_relation_relationship(manager, relation_handle_id, other_handle_id, rel_type):
     """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
     """
-    other_meta_type = get_node_meta_type(manager, other_node)
+    other_meta_type = get_node_meta_type(manager, other_handle_id)
     if other_meta_type == 'Logical':
         if rel_type in ['Uses', 'Provides']:
-            return _create_relationship(manager, relation_node, other_node, rel_type)
+            return _create_relationship(manager, relation_handle_id, other_handle_id, rel_type)
     elif other_meta_type == 'Location' and rel_type == 'Responsible_for':
-        return _create_relationship(manager, relation_node, other_node, rel_type)
+        return _create_relationship(manager, relation_handle_id, other_handle_id, rel_type)
     elif other_meta_type == 'Physical':
         if rel_type in ['Owns', 'Provides']:
-            return _create_relationship(manager, relation_node, other_node, rel_type)
-    raise exceptions.NoRelationshipPossible(manager, relation_node, other_node, rel_type)
+            return _create_relationship(manager, relation_handle_id, other_handle_id, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, relation_handle_id, other_handle_id, rel_type)
 
 
-def create_physical_relationship(manager, physical_node, other_node, rel_type):
+def create_physical_relationship(manager, physical_handle_id, other_handle_id, rel_type):
     """
     Makes relationship between the two nodes and returns the relationship.
     If a relationship is not possible NoRelationshipPossible exception is
     raised.
     """
-    other_meta_type = get_node_meta_type(manager, other_node)
+    other_meta_type = get_node_meta_type(manager, other_handle_id)
     if other_meta_type == 'Physical':
         if rel_type == 'Has' or rel_type == 'Connected_to':
-            return _create_relationship(manager, physical_node, other_node, rel_type)
+            return _create_relationship(manager, physical_handle_id, other_handle_id, rel_type)
     elif other_meta_type == 'Location' and rel_type == 'Located_in':
-        return _create_relationship(manager, physical_node, other_node, rel_type)
-    raise exceptions.NoRelationshipPossible(manager, physical_node, other_node, rel_type)
+        return _create_relationship(manager, physical_handle_id, other_handle_id, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, physical_handle_id, other_handle_id, rel_type)
 
 
-def create_relationship(manager, node, other_node, rel_type):
+def create_relationship(manager, handle_id, other_handle_id, rel_type):
     """
     Makes a relationship from node to other_node depending on which
     meta_type the nodes are. Returns the relationship or raises
     NoRelationshipPossible exception.
     """
-    meta_type = get_node_meta_type(manager, node)
+    meta_type = get_node_meta_type(manager, handle_id)
     if meta_type == 'Location':
-        return create_location_relationship(manager, node, other_node, rel_type)
+        return create_location_relationship(manager, handle_id, other_handle_id, rel_type)
     elif meta_type == 'Logical':
-        return create_logical_relationship(manager, node, other_node, rel_type)
+        return create_logical_relationship(manager, handle_id, other_handle_id, rel_type)
     elif meta_type == 'Relation':
-        return create_relation_relationship(manager, node, other_node, rel_type)
+        return create_relation_relationship(manager, handle_id, other_handle_id, rel_type)
     elif meta_type == 'Physical':
-        return create_physical_relationship(manager, node, other_node, rel_type)
-    raise exceptions.NoRelationshipPossible(manager, node, other_node, rel_type)
+        return create_physical_relationship(manager, handle_id, other_handle_id, rel_type)
+    raise exceptions.NoRelationshipPossible(manager, handle_id, other_handle_id, rel_type)
 
 
 def get_relationships(manager, handle_id1, handle_id2, rel_type=None):
