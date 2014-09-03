@@ -39,8 +39,8 @@ class BaseRelationshipModel(object):
         self.id = relationship_bundle.get('id')
         self.type = relationship_bundle.get('type')
         self.data = relationship_bundle.get('data')
-        self.start = core.get_node_model(self.manager, relationship_bundle.get('start'))
-        self.end = core.get_node_model(self.manager, relationship_bundle.get('end'))
+        self.start = relationship_bundle.get('start')
+        self.end = relationship_bundle.get('end')
         return self
 
     def delete(self):
