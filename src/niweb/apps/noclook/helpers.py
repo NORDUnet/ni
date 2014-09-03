@@ -657,34 +657,13 @@ def get_services_dependent_on_equipment(equipment):
     return nc.neo4jdb.query(q, id=equipment.getId())
 
 
-def get_unit(port, unit_name):
-    """
-    Parents should be uniquely named and ports should be uniquely named for each parent.
-    :param port: Neo4j node
-    :param unit_name: String
-    :return unit: Neo4j node
-    """
-    q = '''
-        START port=node({port})
-        MATCH port<-[Part_of]-unit
-        WHERE unit.name = {unit}
-        RETURN unit
-        '''
-    hits = nc.neo4jdb.query(q, port=port.getId(), unit=str(unit_name))
-    try:
-        unit = [hit['unit'] for hit in hits][0]
-    except IndexError:
-        unit = None
-    return unit
-
-
 def create_unit(parent_node, unit_name, creator):
     """
     Creates a port with the supplied parent.
-    :param parent_node: Neo4j node
+    :param parent_node: norduniclient model
     :param unit_name: String
     :param creator: Django user
-    :return: Neo4j node
+    :return: norduniclient model
     """
     type_unit = NodeType.objects.get(type="Unit")
     nh = NodeHandle.objects.create(
@@ -694,47 +673,8 @@ def create_unit(parent_node, unit_name, creator):
         modifier=creator, creator=creator
     )
     activitylog.create_node(creator, nh)
-    unit_node = nh.get_node()
-    rel = nc.create_relationship(nc.neo4jdb, unit_node, parent_node, 'Part_of')
-    set_noclook_auto_manage(nc.neo4jdb, rel, True)
-    activitylog.create_relationship(creator, rel)
-    return unit_node
-
-
-def get_ports(equipment):
-    """
-    :param equipment: neo4j node
-    :return: list of neo4j nodes and their relationship towards equipment
-    """
-    q = '''
-        START parent=node({id})
-        MATCH parent-[r:Has*1..]->port
-        WHERE port.node_type = "Port"
-        RETURN port,last(r) as rel
-        ORDER BY port.name
-        '''
-    return nc.neo4jdb.query(q, id=equipment.getId())
-
-
-def get_port(parent_name, port_name):
-    """
-    Parents should be uniquely named and ports should be uniquely named for each parent.
-    :param parent_name: String
-    :param port_name: String
-    :return:port Neo4j node
-    """
-    q = '''
-        START parent=node:search(name = {parent})
-        MATCH parent-[Has*1..]->port
-        WHERE port.node_type = "Port" and port.name = {port}
-        RETURN port
-        '''
-    hits = nc.neo4jdb.query(q, parent=parent_name, port=port_name)
-    try:
-        port = [hit['port'] for hit in hits][0]
-    except IndexError:
-        port = None
-    return port
+    set_part_of(creator, parent_node, nh.handle_id)
+    return nh.get_node()
 
 
 def create_port(parent_node, port_name, creator):
@@ -1109,6 +1049,7 @@ def bulk_reserve_id_range(start, end, unique_id_generator, unique_id_collection,
     unique_id_collection.objects.bulk_create(reserve_list)
     return reserve_list
 
+
 def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, reserve_message, reserver):
     """
     Reserves IDs by incrementing the unique ID generator.
@@ -1121,15 +1062,13 @@ def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, r
     """
     reserve_list = []
     for x in range(0, num_of_ids):
-        id = unique_id_generator.get_id()
+        unique_id = unique_id_generator.get_id()
         error_message = ''
         try:
-            sid = transaction.savepoint()
-            unique_id_collection.objects.create(unique_id=id, reserved=True,
-                reserve_message=reserve_message, reserver=reserver)
-            transaction.savepoint_commit(sid)
+            with transaction.atomic():
+                unique_id_collection.objects.create(unique_id=unique_id, reserved=True,
+                                                    reserve_message=reserve_message, reserver=reserver)
         except IntegrityError:
-            transaction.savepoint_rollback(sid)
             error_message = 'ID already in database. Manual check needed.'
         reserve_list.append({'id': id, 'reserve_message': reserve_message, 'error_message': error_message})
     return reserve_list

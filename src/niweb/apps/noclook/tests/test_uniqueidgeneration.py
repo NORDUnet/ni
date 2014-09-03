@@ -91,7 +91,6 @@ class UniqueIdGeneration(TestCase):
         new_id = h.get_collection_unique_id(self.id_generator, self.id_collection)
         self.assertEqual(new_id, 'TEST-000101')
 
-
     def test_get_unique_id_jump(self):
         h.bulk_reserve_id_range(1, 99, self.id_generator, self.id_collection, 'Reserve message', self.user)
         self.assertEqual(self.id_generator.next_id, 'TEST-000001')

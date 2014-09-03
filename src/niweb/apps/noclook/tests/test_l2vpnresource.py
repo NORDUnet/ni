@@ -10,7 +10,7 @@ from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, UniqueId
 from apps.noclook import helpers as h
-import norduniclient as nc
+import sys
 
 
 class ServiceL2VPNResourceTest(ResourceTestCase):
@@ -51,54 +51,65 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         self.router1 = NodeHandle.objects.create(
             node_name='Test Router 1',
             node_type=router_node_type,
-            node_meta_type='physical',
+            node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.router2 = NodeHandle.objects.create(
             node_name='Test Router 2',
             node_type=router_node_type,
-            node_meta_type='physical',
+            node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.port1 = NodeHandle.objects.create(
             node_name='Test Port 1',
             node_type=port_node_type,
-            node_meta_type='physical',
+            node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.port2 = NodeHandle.objects.create(
             node_name='Test Port 2',
             node_type=port_node_type,
-            node_meta_type='physical',
+            node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.unit1 = NodeHandle.objects.create(
             node_name='Test Unit 1',
             node_type=unit_node_type,
-            node_meta_type='logical',
+            node_meta_type='Logical',
             creator=self.user,
             modifier=self.user,
         )
         self.unit2 = NodeHandle.objects.create(
             node_name='Test Unit 2',
             node_type=unit_node_type,
-            node_meta_type='logical',
+            node_meta_type='Logical',
             creator=self.user,
             modifier=self.user,
         )
-        h.place_child_in_parent(self.user, self.port1.get_node(), self.router1.get_node().getId())
-        h.place_child_in_parent(self.user, self.port2.get_node(), self.router2.get_node().getId())
-        nc.create_relationship(nc.neo4jdb, self.unit1.get_node(), self.port1.get_node(), 'Part_of')
-        nc.create_relationship(nc.neo4jdb, self.unit2.get_node(), self.port2.get_node(), 'Part_of')
 
-    def purge_neo4jdb(self):
-        for node in nc.get_all_nodes(nc.neo4jdb):
-            if node.getId() != 0:
-                nc.delete_node(nc.neo4jdb, node)
+        self.DEFAULT_HANDLE_IDS = [
+            self.router1.handle_id,
+            self.router2.handle_id,
+            self.port1.handle_id,
+            self.port2.handle_id,
+            self.unit1.handle_id,
+            self.unit2.handle_id
+        ]
+
+        h.set_has(self.user, self.router1.get_node(), self.port1.handle_id)
+        h.set_has(self.user, self.router2.get_node(), self.port2.handle_id)
+        h.set_part_of(self.user, self.port1.get_node(), self.unit1.handle_id)
+        h.set_part_of(self.user, self.port2.get_node(), self.unit2.handle_id)
+
+    def tearDown(self):
+        for handle_id in self.DEFAULT_HANDLE_IDS:
+            nh = NodeHandle.objects.get(pk=handle_id)
+            nh.delete()
+        super(ServiceL2VPNResourceTest, self).tearDown()
 
     def get_credentials(self):
         return self.create_apikey(username=self.username, api_key=str(self.api_key.key))
@@ -107,19 +118,16 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         resp = self.api_client.get('/api/v1/router/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
-        self.purge_neo4jdb()
 
     def test_port_list(self):
         resp = self.api_client.get('/api/v1/port/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
-        self.purge_neo4jdb()
 
     def test_unit_list(self):
         resp = self.api_client.get('/api/v1/unit/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 1)
-        self.purge_neo4jdb()
 
     #@override_settings(DEBUG=True)
     def test_create_l2vpn_existing_port_end_point(self):
@@ -144,11 +152,12 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         #sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpCreated(resp)
-        default_unit_1 = h.get_unit(self.port1.get_node(), '0')
-        default_unit_2 = h.get_unit(self.port2.get_node(), '0')
-        self.assertEqual(len([hit for hit in default_unit_1.Depends_on]), 1)
-        self.assertEqual(len([hit for hit in default_unit_2.Depends_on]), 1)
-        self.purge_neo4jdb()
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
+        default_unit_1 = self.port1.get_node().get_unit('0').get('Part_of')[0]['node']
+        default_unit_2 = self.port2.get_node().get_unit('0').get('Part_of')[0]['node']
+        self.assertEqual(len(default_unit_1.relationships['Depends_on']), 1)
+        self.assertEqual(len(default_unit_2.relationships['Depends_on']), 1)
 
     def test_create_l2vpn_new_port_end_point(self):
         data = {
@@ -172,13 +181,14 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         #sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpCreated(resp)
-        new_port_1 = h.get_port('Test Router 1', 'New Port 1')
-        default_unit_1 = h.get_unit(new_port_1, '0')
-        new_port_2 = h.get_port('Test Router 2', 'New Port 2')
-        default_unit_2 = h.get_unit(new_port_2, '0')
-        self.assertEqual(len([hit for hit in default_unit_1.Depends_on]), 1)
-        self.assertEqual(len([hit for hit in default_unit_2.Depends_on]), 1)
-        self.purge_neo4jdb()
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
+        new_port_1 = self.router1.get_node().get_port('New Port 1').get('Has')[0]['node']
+        new_port_2 = self.router2.get_node().get_port('New Port 2').get('Has')[0]['node']
+        default_unit_1 = new_port_1.get_unit('0').get('Part_of')[0]['node']
+        default_unit_2 = new_port_2.get_unit('0').get('Part_of')[0]['node']
+        self.assertEqual(len(default_unit_1.relationships['Depends_on']), 1)
+        self.assertEqual(len(default_unit_2.relationships['Depends_on']), 1)
 
     #@override_settings(DEBUG=True)
     def test_create_l2vpn_existing_unit_end_point(self):
@@ -205,8 +215,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         #sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpCreated(resp)
-        self.assertEqual(len([hit for hit in self.unit1.get_node().Depends_on]), 1)
-        self.purge_neo4jdb()
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
+        self.assertEqual(len(self.unit1.get_node().relationships['Depends_on']), 1)
 
     def test_create_l2vpn_new_unit_end_point(self):
         data = {
@@ -232,11 +243,12 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
-        new_unit_1 = h.get_unit(self.port1.get_node(), 'New Unit 1')
-        new_unit_2 = h.get_unit(self.port2.get_node(), 'New Unit 2')
-        self.assertEqual(len([hit for hit in new_unit_1.Depends_on]), 1)
-        self.assertEqual(len([hit for hit in new_unit_2.Depends_on]), 1)
-        self.purge_neo4jdb()
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
+        new_unit_1 = self.port1.get_node().get_unit('New Unit 1').get('Part_of')[0]['node']
+        new_unit_2 = self.port2.get_node().get_unit('New Unit 2').get('Part_of')[0]['node']
+        self.assertEqual(len(new_unit_1.relationships['Depends_on']), 1)
+        self.assertEqual(len(new_unit_2.relationships['Depends_on']), 1)
 
     def test_update_l2vpn(self):
         data = {
@@ -262,17 +274,20 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         data = {
             "route_distinguisher": "new-2603:0007",
             "operational_state": "Decommissioned",
-            "vpn_type": "new-l2vpn",
+            "vpn_type": "l2vpn",
             "description": "VPN updated by NOCLook test",
             "vlan": 4071,
             "vrf_target": "new-target:2603:4242000007"
         }
-        resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())
+        resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data,
+                                   authentication=self.get_credentials())
+        sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpOK(resp)
-        self.purge_neo4jdb()
 
     def test_failed_update_l2vpn(self):
         data = {
@@ -298,12 +313,13 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         data = {
             "operational_state": "Not in service",
         }
         resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())
         self.assertEqual(resp.status_code, 406)  # NotAcceptable
-        self.purge_neo4jdb()
 
     def test_update_l2vpn_new_end_point(self):
         data = {
@@ -329,8 +345,11 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
-        self.assertEqual(len([hit for hit in self.unit1.get_node().Depends_on]), 1)
-        self.assertEqual(len([hit for hit in self.unit2.get_node().Depends_on]), 1)
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
+        self.assertEqual(len(self.unit1.get_node().relationships['Depends_on']), 1)
+        self.assertEqual(len(self.unit2.get_node().relationships['Depends_on']), 1)
+
         data = {
             "end_points": [
                 {
@@ -345,13 +364,14 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
                 }
             ],
         }
-        resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data, authentication=self.get_credentials())
+        resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data,
+                                   authentication=self.get_credentials())
+        sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpOK(resp)
-        new_unit_1 = h.get_unit(self.port1.get_node(), 'New Unit 1')
-        new_unit_2 = h.get_unit(self.port2.get_node(), 'New Unit 2')
-        self.assertEqual(len([hit for hit in new_unit_1.Depends_on]), 1)
-        self.assertEqual(len([hit for hit in new_unit_2.Depends_on]), 1)
-        self.purge_neo4jdb()
+        new_unit_1 = self.port1.get_node().get_unit('New Unit 1').get('Part_of')[0]['node']
+        new_unit_2 = self.port2.get_node().get_unit('New Unit 2').get('Part_of')[0]['node']
+        self.assertEqual(len(new_unit_1.relationships['Depends_on']), 1)
+        self.assertEqual(len(new_unit_2.relationships['Depends_on']), 1)
 
     def test_create_interface_switch_new_unit_end_point(self):
         data = {
@@ -375,11 +395,12 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         }
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
-        new_unit_1 = h.get_unit(self.port1.get_node(), 'New Unit 1')
-        new_unit_2 = h.get_unit(self.port2.get_node(), 'New Unit 2')
-        self.assertEqual(len([hit for hit in new_unit_1.Depends_on]), 1)
-        self.assertEqual(len([hit for hit in new_unit_2.Depends_on]), 1)
-        self.purge_neo4jdb()
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
+        new_unit_1 = self.port1.get_node().get_unit('New Unit 1')['Part_of'][0]['node']
+        new_unit_2 = self.port2.get_node().get_unit('New Unit 2')['Part_of'][0]['node']
+        self.assertEqual(len(new_unit_1.relationships['Depends_on']), 1)
+        self.assertEqual(len(new_unit_2.relationships['Depends_on']), 1)
 
     def test_create_interface_switch_trunk_existing_port_end_point(self):
         data = {
@@ -401,8 +422,9 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/l2vpn/', format='json', data=data, authentication=self.get_credentials())
         #sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpCreated(resp)
-        default_unit_1 = h.get_unit(self.port1.get_node(), '0')
-        default_unit_2 = h.get_unit(self.port2.get_node(), '0')
-        self.assertEqual(len([hit for hit in default_unit_1.Depends_on]), 1)
-        self.assertEqual(len([hit for hit in default_unit_2.Depends_on]), 1)
-        self.purge_neo4jdb()
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
+        default_unit_1 = self.port1.get_node().get_unit('0').get('Part_of')[0]['node']
+        default_unit_2 = self.port2.get_node().get_unit('0').get('Part_of')[0]['node']
+        self.assertEqual(len(default_unit_1.relationships['Depends_on']), 1)
+        self.assertEqual(len(default_unit_2.relationships['Depends_on']), 1)
