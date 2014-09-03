@@ -86,7 +86,8 @@ def search(request, value='', form=None):
         value = request.POST.get('q', '')
         posted = True
     if value:
-        nodes = nc.get_nodes_by_value(nc.neo4jdb, value)
+        query = re_escape(value)
+        nodes = nc.get_nodes_by_value(nc.neo4jdb, query)
         if form == 'csv':
             return h.dicts_to_csv_response(list(nodes))
         elif form == 'xls':

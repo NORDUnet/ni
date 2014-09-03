@@ -95,6 +95,7 @@ def noclook_get_type(handle_id):
     except nc.exceptions.NodeNotFound:
         return ''
 
+
 @register.assignment_tag
 def noclook_get_ports(handle_id):
     """
@@ -126,7 +127,7 @@ def noclook_report_age(item, old, very_old):
 @register.assignment_tag
 def noclook_has_rogue_ports(handle_id):
     """
-    :param node:
+    :param handle_id: unique id
     :return: Boolean
     """
     q = """
