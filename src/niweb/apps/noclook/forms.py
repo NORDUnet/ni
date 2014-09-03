@@ -5,7 +5,7 @@ from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
 from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
-import apps.noclook.helpers as h
+from apps.noclook import unique_ids
 import norduniclient as nc
 
 # We should move this kind of data to the SQL database.
@@ -336,12 +336,12 @@ class NewNordunetCableForm(NewCableForm):
                     raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
                 try:
                     id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                    cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
                 except UniqueIdGenerator.DoesNotExist as e:
                     raise e
             else:
                 try:
-                    h.register_unique_id(self.Meta.id_collection, name)
+                    unique_ids.register_unique_id(self.Meta.id_collection, name)
                 except IntegrityError as e:
                     self._errors = ErrorDict()
                     self._errors['name'] = ErrorList()
@@ -616,7 +616,7 @@ class NewServiceForm(forms.Form):
                     raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
                 try:
                     id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                    cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
                 except UniqueIdGenerator.DoesNotExist as e:
                     raise e
             elif not name:
@@ -741,7 +741,7 @@ class NewOpticalLinkForm(forms.Form):
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
                 id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
         return cleaned_data
@@ -834,7 +834,7 @@ class NewOpticalPathForm(forms.Form):
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
                 id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
         return cleaned_data

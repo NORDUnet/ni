@@ -13,6 +13,7 @@ from django.forms.util import ErrorDict, ErrorList
 from apps.noclook import forms
 from apps.noclook.models import NodeHandle
 import apps.noclook.helpers as h
+from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 import norduniclient as nc
 
@@ -117,7 +118,7 @@ def new_end_user(request, **kwargs):
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('An End User with that name already exists.')
                 return render_to_response('noclook/create/create_end_user.html', {'form': form},
-                    context_instance=RequestContext(request))
+                                          context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['url']
             h.form_update_node(request.user, node.handle_id, form, keys)
@@ -217,7 +218,7 @@ def new_nordunet_optical_path(request, **kwargs):
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('An Optical Path with that name already exists.')
                 return render_to_response('noclook/create/create_nordunet_optical_path.html', {'form': form},
-                    context_instance=RequestContext(request))
+                                          context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['description', 'framing', 'capacity', 'operational_state']
             h.form_update_node(request.user, node.handle_id, form, keys)
@@ -429,10 +430,10 @@ def reserve_id_sequence(request, slug=None):
     if request.POST:
         form = forms.ReserveIdForm(request.POST)
         if form.is_valid():
-            unique_id_generator, unique_id_collection = h.unique_id_map(slug)
+            unique_id_generator, unique_id_collection = unique_ids.unique_id_map(slug)
             if not unique_id_generator or not unique_id_collection:
                 raise Http404
-            reserved_list = h.reserve_id_sequence(
+            reserved_list = unique_ids.reserve_id_sequence(
                 form.cleaned_data['amount'],
                 unique_id_generator,
                 unique_id_collection,
