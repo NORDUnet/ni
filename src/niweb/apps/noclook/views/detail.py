@@ -99,7 +99,7 @@ def firewall_detail(request, handle_id):
     history = h.get_history(nh)
     # Get node from neo4j-database
     firewall = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(switch.data)
+    last_seen, expired = h.neo4j_data_age(firewall.data)
     location_path = firewall.get_location_path()
     # Get ports in firewall
     connections = firewall.get_connections()

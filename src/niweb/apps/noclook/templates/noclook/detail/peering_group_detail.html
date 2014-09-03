@@ -92,16 +92,14 @@ $(document).ready(
                             {% else %}
                                 <tr>
                             {% endif %}
-                                {% for place in item.unit.get_placement %}
-                                    {% if place.equipment %}
-                                        <td><a href="{% noclook_node_to_url place.equipment.handle_id %}">{{ place.equipment.name }}</a></td>
+                                {% for place in item.unit.get_placement_path.placement_path %}
+                                    {% if forloop.first %}
+                                        <td><a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
+                                        <td>
+                                    {% elif forloop.last %}
+                                        <a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
                                     {% else %}
-                                        <td></td>
-                                    {% endif %}
-                                    {% if place.port %}
-                                        <td><a href="{% noclook_node_to_url place.port.handle_id %}">{{ place.port.name }}</a></td>
-                                    {% else %}
-                                        <td></td>
+                                        <a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a>
                                     {% endif %}
                                 {% endfor %}
                                 <td>{{ item.unit.data.name }}</td>
@@ -113,21 +111,19 @@ $(document).ready(
                         {% endfor %}
                     {% else %}
                         <tr>
-                            {% for place in item.unit.get_placement %}
-                                {% if place.equipment %}
-                                    <td><a href="{% noclook_node_to_url place.equipment.handle_id %}">{{ place.equipment.name }}</a></td>
-                                {% else %}
-                                    <td></td>
-                                {% endif %}
-                                {% if place.port %}
-                                    <td><a href="{% noclook_node_to_url place.port.handle_id %}">{{ place.port.name }}</a></td>
-                                {% else %}
-                                    <td></td>
-                                {% endif %}
+                            {% for place in item.unit.get_placement_path.placement_path %}
+                            {% if forloop.first %}
+                                <td><a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
+                                <td>
+                            {% elif forloop.last %}
+                                <a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
+                            {% else %}
+                                <a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a>
+                            {% endif %}
                             {% endfor %}
-                             <td>{{ item.unit.data.name }}</td>
-                             <td>{{ item.network_address }}</td>
-                             <td>{{ item.unit.data.vlanid }}</td>
+                            <td>{{ item.unit.data.name }}</td>
+                            <td>{{ item.network_address }}</td>
+                            <td>{{ item.unit.data.vlanid }}</td>
                             <td>None</td>
                             <td>None</td>
                         </tr>

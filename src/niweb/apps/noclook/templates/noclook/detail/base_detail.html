@@ -40,6 +40,12 @@
         <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
     {% endfor %}
     </h5>
+{% elif node.get_placement_path.placement_path %}
+    <h5 class="site">Located in
+    {% for loc in node.get_placement_path.placement_path %}
+        <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
+    {% endfor %}
+    </h5>
 {% endif %}
 {% load comments %}
 {% get_comment_list for node_handle as comment_list %}
