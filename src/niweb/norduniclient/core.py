@@ -67,7 +67,7 @@ def _get_db_manager(uri):
 
 def query_to_dict(manager, query, **kwargs):
     d = {}
-    with manager.transaction as r:
+    with manager.read as r:
         cursor = r.execute(query, **kwargs)
         result = cursor.fetchall()
         if result:
@@ -78,7 +78,7 @@ def query_to_dict(manager, query, **kwargs):
 
 def query_to_list(manager, query, **kwargs):
     l = []
-    with manager.transaction as r:
+    with manager.read as r:
         cursor = r.execute(query, **kwargs)
         for row in cursor.fetchall():
             d = {}
@@ -89,7 +89,7 @@ def query_to_list(manager, query, **kwargs):
 
 
 def query_to_iterator(manager, query, **kwargs):
-    with manager.transaction as r:
+    with manager.read as r:
         cursor = r.execute(query, **kwargs)
         for row in cursor:
             d = {}
@@ -126,7 +126,7 @@ def get_node(manager, handle_id):
     """
     q = 'MATCH (n:Node { handle_id: {handle_id} }) RETURN n'
     try:
-        with manager.transaction as r:
+        with manager.read as r:
             return r.execute(q, handle_id=handle_id).fetchall()[0][0]
     except IndexError:
         raise exceptions.NodeNotFound(manager, handle_id)
@@ -140,7 +140,7 @@ def get_node_bundle(manager, handle_id):
     """
     q = 'MATCH (n:Node { handle_id: {handle_id} }) RETURN labels(n),n'
     try:
-        with manager.transaction as r:
+        with manager.read as r:
             labels, data = r.execute(q, handle_id=handle_id).fetchall()[0]
     except (IndexError, ValueError):
         raise exceptions.NodeNotFound(manager, handle_id)
@@ -182,7 +182,7 @@ def get_relationship(manager, relationship_id):
     """
     q = 'START r=relationship({relationship_id}) RETURN r'
     try:
-        with manager.transaction as r:
+        with manager.read as r:
             return r.execute(q, relationship_id=relationship_id).fetchall()[0][0]
     except exceptions.InternalError:
         raise exceptions.RelationshipNotFound(manager, relationship_id)
@@ -199,7 +199,7 @@ def get_relationship_bundle(manager, relationship_id):
         RETURN  type(r), id(r), r, startNode(r).handle_id,endNode(r).handle_id
         """
     try:
-        with manager.transaction as r:
+        with manager.read as r:
             t, i, data, start, end = r.execute(q, relationship_id=relationship_id).fetchall()[0]
     except exceptions.InternalError:
         raise exceptions.RelationshipNotFound(manager, relationship_id)
@@ -236,7 +236,7 @@ def get_node_meta_type(manager, handle_id):
         RETURN labels(n)
         '''
 
-    with manager.transaction as r:
+    with manager.read as r:
         labels, = r.execute(q, handle_id=handle_id).fetchone()
         for label in labels:
             if label in META_TYPES:
@@ -266,7 +266,7 @@ def get_nodes_by_value(manager, value, prop=None, node_type=None):
             RETURN distinct n
             '''.format(label=node_type, prop=prop, value=value)
         try:
-            with manager.transaction as r:
+            with manager.read as r:
                 for node, in r.execute(q):
                     yield node
         except exceptions.ProgrammingError:  # Can't do regex on int. bool or lists
@@ -277,7 +277,7 @@ def get_nodes_by_value(manager, value, prop=None, node_type=None):
                 RETURN n
                 '''.format(label=node_type, prop=prop)
             pattern = re.compile('.*{0}.*'.format(value), re.IGNORECASE)
-            with manager.transaction as r:
+            with manager.read as r:
                 for node, in r.execute(q):
                     if pattern.match(unicode(node.get(prop, None))):
                         yield node
@@ -287,7 +287,7 @@ def get_nodes_by_value(manager, value, prop=None, node_type=None):
             RETURN n
             '''.format(label=node_type)
         pattern = re.compile('.*{0}.*'.format(value), re.IGNORECASE)
-        with manager.transaction as r:
+        with manager.read as r:
             for node, in r.execute(q):
                 for v in node.values():
                     if pattern.match(unicode(v)):
@@ -301,7 +301,7 @@ def get_nodes_by_type(manager, node_type):
         MATCH (n:{label})
         RETURN n
         '''.format(label=node_type)
-    with manager.transaction as r:
+    with manager.read as r:
         for node, in r.execute(q):
             yield node
 
@@ -312,7 +312,7 @@ def get_nodes_by_name(manager, name):
         MATCH (n:Node {name: {name}})
         RETURN n
         '''
-    with manager.transaction as r:
+    with manager.read as r:
         for node, in r.execute(q, name=name):
             yield node
 
@@ -343,7 +343,7 @@ def get_unique_node_by_name(manager, node_name, node_type):
         WHERE {label} IN labels(n)
         RETURN n.handle_id
         '''
-    with manager.transaction as r:
+    with manager.read as r:
         hits = r.execute(q, name=node_name, label=node_type).fetchall()
     if hits:
         if len(hits) == 1:
@@ -458,7 +458,7 @@ def get_relationships(manager, handle_id1, handle_id2, rel_type=None):
             MATCH (a:Node {handle_id: {handle_id1}})-[r]-(b:Node {handle_id: {handle_id2}})
             RETURN collect(ID(r))
             """
-    with manager.transaction as r:
+    with manager.read as r:
         return r.execute(q, handle_id1=handle_id1, handle_id2=handle_id2).fetchall()[0][0]
 
 
