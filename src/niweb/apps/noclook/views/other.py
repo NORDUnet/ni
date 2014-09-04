@@ -13,7 +13,7 @@ from lucenequerybuilder import Q
 
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph
-import apps.noclook.helpers as h
+from apps.noclook import helpers
 import norduniclient as nc
 
 
@@ -89,9 +89,9 @@ def search(request, value='', form=None):
         query = re_escape(value)
         nodes = nc.get_nodes_by_value(nc.neo4jdb, query)
         if form == 'csv':
-            return h.dicts_to_csv_response(list(nodes))
+            return helpers.dicts_to_csv_response(list(nodes))
         elif form == 'xls':
-            return h.dicts_to_xls_response(list(nodes))
+            return helpers.dicts_to_xls_response(list(nodes))
         for node in nodes:
             nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
             item = {'node': node, 'nh': nh}
@@ -152,9 +152,9 @@ def find_all(request, slug=None, key=None, value=None, form=None):
     else:
         nodes = nc.get_nodes_by_type(nc.neo4jdb, label)
     if form == 'csv':
-        return h.dicts_to_csv_response(list(nodes))
+        return helpers.dicts_to_csv_response(list(nodes))
     elif form == 'xls':
-        return h.dicts_to_xls_response(list(nodes))
+        return helpers.dicts_to_xls_response(list(nodes))
     result = []
     for node in nodes:
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
@@ -208,7 +208,7 @@ def gmaps_sites(request):
         try:
             site = {
                 'name': site['name'],
-                'url': h.get_node_url(site['handle_id']),
+                'url': helpers.get_node_url(site['handle_id']),
                 'lng': float(str(site.get('longitude', 0))),
                 'lat': float(str(site.get('latitude', 0)))
             }
@@ -261,7 +261,7 @@ def gmaps_optical_nodes(request):
     for item in result:
         node = {
             'name': item['equipment']['name'],
-            'url': h.get_node_url(item['equipment']['handle_id']),
+            'url': helpers.get_node_url(item['equipment']['handle_id']),
             'lng': float(str(item['loc'].get('longitude', 0))),
             'lat': float(str(item['loc'].get('latitude', 0)))
         }
@@ -271,7 +271,7 @@ def gmaps_optical_nodes(request):
         }
         edge = {
             'name': item['cable']['name'],
-            'url': h.get_node_url(item['cable']['handle_id']),
+            'url': helpers.get_node_url(item['cable']['handle_id']),
             'end_points': [coords]
         }
         nodes[item['equipment']['name']] = node
@@ -299,7 +299,7 @@ def ip_address_lookup(request):
     if request.POST:
         ip_address = request.POST.get('ip_address', None)
         if ip_address:
-            hostname = h.get_hostname_from_address(ip_address)
+            hostname = helpers.get_hostname_from_address(ip_address)
             return HttpResponse(json.dumps(hostname), mimetype='application/json')
     raise Http404
 
@@ -313,7 +313,7 @@ def json_table_to_file(request):
         table = json.loads(data)
         header = json.loads(header)
         if table and file_format == 'csv':
-            return h.dicts_to_csv(table, header)
+            return helpers.dicts_to_csv_response(table, header)
         elif table and file_format == 'xls':
-            return h.dicts_to_xls_response(table, header)
+            return helpers.dicts_to_xls_response(table, header)
     raise Http404

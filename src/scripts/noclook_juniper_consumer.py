@@ -37,7 +37,7 @@ sys.path.append(os.path.abspath(niweb_path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 import noclook_consumer as nt
-from apps.noclook import helpers as h
+from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
 
@@ -108,8 +108,8 @@ def insert_juniper_router(name, model, version):
         'model': model,
         'version': version
     }
-    h.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
-    h.set_noclook_auto_manage(node, True)
+    helpers.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
+    helpers.set_noclook_auto_manage(node, True)
     logging.info('Processing {name}...'.format(name=node.data['name']))
     return node
 
@@ -127,13 +127,13 @@ def insert_interface_unit(iface_node, unit):
     else:
         node_handle = nt.create_node_handle(unit_name, 'Unit', 'Logical')
         unit_node = node_handle.get_node()
-        h.set_part_of(user, iface_node, unit_node.handle_id)
+        helpers.set_part_of(user, iface_node, unit_node.handle_id)
         logger.info('Unit {interface}.{unit} created.'.format(interface=iface_node.data['name'],
                                                               unit=unit_node.data['name']))
-    h.set_noclook_auto_manage(unit_node, True)
+    helpers.set_noclook_auto_manage(unit_node, True)
     unit['ip_addresses'] = [address.lower() for address in unit.get('address', '')]
     property_keys = ['description', 'ip_addresses', 'vlanid']
-    h.dict_update_node(user, unit_node.handle_id, unit, property_keys)
+    helpers.dict_update_node(user, unit_node.handle_id, unit, property_keys)
 
 
 def insert_juniper_interfaces(router_node, interfaces):
@@ -157,10 +157,10 @@ def insert_juniper_interfaces(router_node, interfaces):
             else:
                 node_handle = nt.create_node_handle(port_name, 'Port', 'Physical')
                 port_node = node_handle.get_node()
-                h.set_has(user, router_node, port_node.handle_id)
-            h.set_noclook_auto_manage(port_node, True)
+                helpers.set_has(user, router_node, port_node.handle_id)
+            helpers.set_noclook_auto_manage(port_node, True)
             property_keys = ['description']
-            h.dict_update_node(user, port_node.handle_id, interface, property_keys)
+            helpers.dict_update_node(user, port_node.handle_id, interface, property_keys)
             # Update interface units
             for unit in interface['units']:
                 insert_interface_unit(port_node, unit)
@@ -198,15 +198,15 @@ def get_peering_partner(peering):
         logger.error('The following handle ids where found : {ids}'.format(ids=hits['result']))
     for handle_id in hits['result']:
         peer_node = nc.get_node_model(nc.neo4jdb, handle_id)
-        h.set_noclook_auto_manage(peer_node, True)
+        helpers.set_noclook_auto_manage(peer_node, True)
         if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
-            h.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
+            helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
         logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
     if not peer_node:
         node_handle = nt.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
         peer_node = node_handle.get_node()
-        h.set_noclook_auto_manage(peer_node, True)
-        h.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
+        helpers.set_noclook_auto_manage(peer_node, True)
+        helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
         logger.info('Peering Partner {name} created.'.format(name=peer_properties['name']))
     PEER_AS_CACHE[peering['as_number']] = peer_node
     return peer_node
@@ -280,7 +280,7 @@ def insert_external_bgp_peering(peering, peering_group):
         relationship_id = result.get('Uses')[0]['relationship_id']
         relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
         activitylog.create_relationship(user, relationship)
-        h.set_noclook_auto_manage(relationship, True)
+        helpers.set_noclook_auto_manage(relationship, True)
         if result.get('Uses')[0].get('created', False):
             activitylog.create_relationship(user, relationship)
         # Match the remote address against a local network
@@ -291,7 +291,7 @@ def insert_external_bgp_peering(peering, peering_group):
                 result = peering_group.set_group_dependency(dependency_node.handle_id, local_address)
             relationship_id = result.get('Depends_on')[0]['relationship_id']
             relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
-            h.set_noclook_auto_manage(relationship, True)
+            helpers.set_noclook_auto_manage(relationship, True)
             if result.get('Depends_on')[0].get('created', False):
                 activitylog.create_relationship(user, relationship)
         logger.info('Peering Partner {name} done.'.format(name=peer_node.data['name']))
@@ -306,7 +306,7 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         peering_group = peering.get('group', 'Unknown Peering Group')
         peering_group_handle = nt.get_unique_node_handle(peering_group, 'Peering Group', 'Logical')
         peering_group_node = peering_group_handle.get_node()
-        h.set_noclook_auto_manage(peering_group_node, True)
+        helpers.set_noclook_auto_manage(peering_group_node, True)
         peering_type = peering.get('type')
         if peering_type == 'internal':
             continue  # Not implemented
@@ -343,16 +343,16 @@ def remove_router_conf(user, data_age):
     for handle_id in router_result.get('logical', []):
         logical = nc.get_node_model(nc.neo4jdb, handle_id)
         if logical:
-            last_seen, expired = h.neo4j_data_age(logical.data, data_age)
+            last_seen, expired = helpers.neo4j_data_age(logical.data, data_age)
             if expired:
-                h.delete_node(user, logical.handle_id)
+                helpers.delete_node(user, logical.handle_id)
                 logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
     for handle_id in router_result.get('physical', []):
         physical = nc.get_node_model(nc.neo4jdb, handle_id)
         if physical:
-            last_seen, expired = h.neo4j_data_age(physical.data, data_age)
+            last_seen, expired = helpers.neo4j_data_age(physical.data, data_age)
             if expired:
-                h.delete_node(user, physical.handle_id)
+                helpers.delete_node(user, physical.handle_id)
                 logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
 
 
@@ -368,16 +368,16 @@ def remove_peer_conf(user, data_age):
     for relationship_id in peer_result.get('uses_relationships', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
         if relationship:
-            last_seen, expired = h.neo4j_data_age(relationship.data, data_age)
+            last_seen, expired = helpers.neo4j_data_age(relationship.data, data_age)
             if expired:
-                h.delete_relationship(user, relationship.id)
+                helpers.delete_relationship(user, relationship.id)
                 logger.info('Deleted relationship {relationship_id}'.format(relationship_id=relationship_id))
     for handle_id in peer_result.get('peer_groups', []):
         peer_group = nc.get_node_model(nc.neo4jdb, handle_id)
         if peer_group:
-            last_seen, expired = h.neo4j_data_age(peer_group.data, data_age)
+            last_seen, expired = helpers.neo4j_data_age(peer_group.data, data_age)
             if expired:
-                h.delete_node(user, peer_group.handle_id)
+                helpers.delete_node(user, peer_group.handle_id)
                 logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
 
 

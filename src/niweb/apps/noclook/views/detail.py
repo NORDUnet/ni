@@ -5,7 +5,7 @@ from django.template import RequestContext
 import ipaddr
 
 from apps.noclook.models import NodeHandle
-import apps.noclook.helpers as h
+from apps.noclook import helpers
 import norduniclient as nc
 
 
@@ -22,9 +22,9 @@ def generic_detail(request, handle_id, slug):
 @login_required
 def cable_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     cable = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(cable.data)
+    last_seen, expired = helpers.neo4j_data_age(cable.data)
     connections = cable.get_connected_equipment()
     relations = cable.get_relations()
     dependent = cable.get_dependent_as_types()
@@ -40,10 +40,10 @@ def cable_detail(request, handle_id):
 @login_required
 def customer_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     customer = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(customer.data)
+    last_seen, expired = helpers.neo4j_data_age(customer.data)
     result = customer.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     # Handle relationships
@@ -58,10 +58,10 @@ def customer_detail(request, handle_id):
 @login_required
 def end_user_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     end_user = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(end_user.data)
+    last_seen, expired = helpers.neo4j_data_age(end_user.data)
     result = end_user.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     # Handle relationships
@@ -76,10 +76,10 @@ def end_user_detail(request, handle_id):
 @login_required
 def external_equipment_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     external_equipment = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(external_equipment.data)
+    last_seen, expired = helpers.neo4j_data_age(external_equipment.data)
     # Get ports in equipment
     connections = external_equipment.get_connections()
     # Get location
@@ -96,10 +96,10 @@ def external_equipment_detail(request, handle_id):
 @login_required
 def firewall_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     firewall = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(firewall.data)
+    last_seen, expired = helpers.neo4j_data_age(firewall.data)
     location_path = firewall.get_location_path()
     # Get ports in firewall
     connections = firewall.get_connections()
@@ -118,10 +118,10 @@ def firewall_detail(request, handle_id):
 @login_required
 def host_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     host = nc.get_node_model(nc.neo4jdb, nh.handle_id)
-    last_seen, expired = h.neo4j_data_age(host.data)
+    last_seen, expired = helpers.neo4j_data_age(host.data)
     location_path = host.get_location_path()
     # Handle relationships
     host_services = host.get_host_services()
@@ -140,10 +140,10 @@ def host_detail(request, handle_id):
 @login_required
 def host_provider_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     host_provider = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(host_provider.data)
+    last_seen, expired = helpers.neo4j_data_age(host_provider.data)
     result = host_provider.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     provides_relationships = host_provider.get_provides()
@@ -157,10 +157,10 @@ def host_provider_detail(request, handle_id):
 @login_required
 def host_service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     host_service = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(host_service.data)
+    last_seen, expired = helpers.neo4j_data_age(host_service.data)
     service_relationships = host_service.get_dependencies()
     return render_to_response('noclook/detail/host_service_detail.html',
                               {'node_handle': nh, 'node': host_service, 'last_seen': last_seen, 'expired': expired,
@@ -171,10 +171,10 @@ def host_service_detail(request, handle_id):
 @login_required
 def host_user_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     host_user = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(host_user.data)
+    last_seen, expired = helpers.neo4j_data_age(host_user.data)
     result = host_user.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     host_relationships = host_user.get_uses()
@@ -189,10 +189,10 @@ def host_user_detail(request, handle_id):
 @login_required
 def odf_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     odf = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(odf.data)
+    last_seen, expired = helpers.neo4j_data_age(odf.data)
     # Get ports in ODF
     connections = odf.get_connections()
     # Get location
@@ -206,10 +206,10 @@ def odf_detail(request, handle_id):
 @login_required
 def optical_link_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     optical_link = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(optical_link.data)
+    last_seen, expired = helpers.neo4j_data_age(optical_link.data)
     relations = optical_link.get_relations()
     dependent = optical_link.get_dependent_as_types()
     dependencies = optical_link.get_dependencies_as_types()
@@ -223,10 +223,10 @@ def optical_link_detail(request, handle_id):
 @login_required
 def optical_multiplex_section_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     oms = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(oms.data)
+    last_seen, expired = helpers.neo4j_data_age(oms.data)
     relations = oms.get_relations()
     dependent = oms.get_dependent_as_types()
     dependencies = oms.get_dependencies_as_types()
@@ -240,10 +240,10 @@ def optical_multiplex_section_detail(request, handle_id):
 @login_required
 def optical_node_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     optical_node = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(optical_node.data)
+    last_seen, expired = helpers.neo4j_data_age(optical_node.data)
     location_path = optical_node.get_location_path()
     connections = optical_node.get_connections()
     dependent = optical_node.get_dependent_as_types()
@@ -258,10 +258,10 @@ def optical_node_detail(request, handle_id):
 @login_required
 def optical_path_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     optical_path = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(optical_path.data)
+    last_seen, expired = helpers.neo4j_data_age(optical_path.data)
     relations = optical_path.get_relations()
     dependent = optical_path.get_dependent_as_types()
     dependencies = optical_path.get_dependencies_as_types()
@@ -275,10 +275,10 @@ def optical_path_detail(request, handle_id):
 @login_required
 def peering_group_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     peering_group = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(peering_group.data)
+    last_seen, expired = helpers.neo4j_data_age(peering_group.data)
     # TODO: A better model for Peerings would be:
     # (unit)<-[:Depends_on]-(peering:Peering)<-[:Uses]-(partner:Peering_Partner)
     # (peering:Peering)-[:Depends_on]->(group:Peering_Group)
@@ -311,10 +311,10 @@ def peering_group_detail(request, handle_id):
 def peering_partner_detail(request, handle_id):
     # TODO: Needs to be rewritten using cypher
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     peering_partner = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(peering_partner.data)
+    last_seen, expired = helpers.neo4j_data_age(peering_partner.data)
     result = peering_partner.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     # TODO: A better model for Peerings would be:
@@ -348,10 +348,10 @@ def peering_partner_detail(request, handle_id):
 @login_required
 def port_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     port = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(port.data)
+    last_seen, expired = helpers.neo4j_data_age(port.data)
     location_path = port.get_location_path()
     connections = port.get_connections()
     dependent = port.get_dependent_as_types()
@@ -365,10 +365,10 @@ def port_detail(request, handle_id):
 @login_required
 def provider_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     provider = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(provider.data)
+    last_seen, expired = helpers.neo4j_data_age(provider.data)
     result = provider.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     # Handle relationships
@@ -383,10 +383,10 @@ def provider_detail(request, handle_id):
 @login_required
 def rack_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     rack = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(rack.data)
+    last_seen, expired = helpers.neo4j_data_age(rack.data)
     location_path = rack.get_location_path()
     # Get equipment in rack
     physical_relationships = rack.get_located_in()
@@ -400,10 +400,10 @@ def rack_detail(request, handle_id):
 @login_required
 def router_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     router = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(router.data)
+    last_seen, expired = helpers.neo4j_data_age(router.data)
     location_path = router.get_location_path()
     # Get all the Ports and what depends on the port.
     connections = router.get_connections()
@@ -418,10 +418,10 @@ def router_detail(request, handle_id):
 @login_required
 def unit_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     unit = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(unit.data)
+    last_seen, expired = helpers.neo4j_data_age(unit.data)
     location_path = unit.get_location_path()
     dependent = unit.get_dependent_as_types()
     dependencies = unit.get_dependencies_as_types()
@@ -435,10 +435,10 @@ def unit_detail(request, handle_id):
 @login_required
 def service_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     service = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(service.data)
+    last_seen, expired = helpers.neo4j_data_age(service.data)
     relations = service.get_relations()
     dependent = service.get_dependent_as_types()
     dependencies = service.get_dependencies_as_types()
@@ -452,10 +452,10 @@ def service_detail(request, handle_id):
 @login_required
 def site_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     site = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(site.data)
+    last_seen, expired = helpers.neo4j_data_age(site.data)
     relations = site.get_relations()
     equipment_relationships = site.get_located_in()
     location_relationships = site.get_has()
@@ -469,10 +469,10 @@ def site_detail(request, handle_id):
 @login_required
 def site_owner_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     site_owner = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(site_owner.data)
+    last_seen, expired = helpers.neo4j_data_age(site_owner.data)
     result = site_owner.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     responsible_relations = site_owner.get_responsible_for()
@@ -486,10 +486,10 @@ def site_owner_detail(request, handle_id):
 @login_required
 def switch_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    history = h.get_history(nh)
+    history = helpers.get_history(nh)
     # Get node from neo4j-database
     switch = nh.get_node()
-    last_seen, expired = h.neo4j_data_age(switch.data)
+    last_seen, expired = helpers.neo4j_data_age(switch.data)
     location_path = switch.get_location_path()
     # Get ports in switch
     connections = switch.get_connections()

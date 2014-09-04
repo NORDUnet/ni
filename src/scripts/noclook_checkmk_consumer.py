@@ -39,7 +39,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from django.conf import settings as django_settings
 import norduniclient as nc
 import noclook_consumer as nt
-from apps.noclook import helpers as h
+from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.checkmk')
 
@@ -111,7 +111,7 @@ def set_nagios_checks(host, checks):
     property_dict = {
         'nagios_checks': checks
     }
-    h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+    helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
 
 
 def set_uptime(host, check):
@@ -130,7 +130,7 @@ def set_uptime(host, check):
             'lastboot': lastboot.strftime("%a %b %d %H:%M:%S %Y"),
             'uptime': uptime
         }
-        h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+        helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
         logger.info('{name} uptime check did not match the expected format.'.format(name=host.data['name']))
         logger.info(check)
@@ -150,7 +150,7 @@ def set_backup(host, check):
             property_dict = {
                 'backup': 'tsm'
             }
-            h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+            helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
         logger.info('{name} backup check did not match the expected format.'.format(name=host.data['name']))
         logger.info(check)
@@ -186,7 +186,7 @@ def set_netapp_storage_usage(storage_collection):
     for service in storage_collection:
         service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
         property_dict = {'netapp_storage_sum': service['total_storage']}
-        h.dict_update_node(nt.get_user(), service_node.handle_id, property_dict, property_dict.keys())
+        helpers.dict_update_node(nt.get_user(), service_node.handle_id, property_dict, property_dict.keys())
         service['total_storage'] = 0.0
 
 
@@ -214,7 +214,7 @@ def set_dell_service_tag(host, check):
         pass
     if tag:
         property_dict = {'service_tag': tag}
-        h.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+        helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
 
 
 def insert(json_list):
@@ -243,7 +243,7 @@ def insert(json_list):
                 if check['check_command'] == 'check_esxi':                      # Dell esxi HW info
                     set_dell_service_tag(host, check)
             set_nagios_checks(host, check_descriptions)
-            h.update_noclook_auto_manage(host)
+            helpers.update_noclook_auto_manage(host)
             logger.info('{name} done.'.format(name=host.data['name']))
     # Set data collected from multiple hosts
     set_netapp_storage_usage(netapp_collection)

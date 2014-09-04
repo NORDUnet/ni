@@ -7,7 +7,6 @@ Created on 2012-11-23 10:18 AM
 
 from actstream import action
 from models import NodeHandle
-import helpers as h
 
 
 def update_node_property(user, action_object, property_key, value_before, value_after):

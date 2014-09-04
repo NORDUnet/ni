@@ -24,7 +24,7 @@ from decimal import Decimal, ROUND_DOWN
 from apps.noclook.forms import get_node_type_tuples
 from apps.noclook.models import NordunetUniqueId
 from apps.noclook.templatetags.noclook_tags import timestamp_to_td
-import apps.noclook.helpers as h
+from apps.noclook import helpers
 import norduniclient as nc
 
 
@@ -184,7 +184,7 @@ def mail_host_contract_report(contract_number):
         '''
     for item in nc.query_to_list(nc.neo4jdb, q, contract_number=contract_number):
         host = nc.get_node_model(nc.neo4jdb, item['handle_id'])
-        age = h.neo4j_report_age(host.data, 15, 30)
+        age = helpers.neo4j_report_age(host.data, 15, 30)
         operational_state = host.data.get('operational_state', 'Not set')
         host_type = host.meta_type
         host_user = item['host_user_name']
@@ -206,13 +206,13 @@ def mail_host_contract_report(contract_number):
                 unicode(operational_state),
                 unicode(host.data.get('security_class', '')),
                 unicode(''),
-                unicode(date(h.isots_to_dt(host.data), "Y-m-d")),
+                unicode(date(helpers.isots_to_dt(host.data), "Y-m-d")),
                 unicode(uptime),
             ]
             result.append(dict(zip(header, values)))
     num_hosts = len(result)
     filename = '%s hosts %s.xls' % (contract_number, last_month.strftime('%B %Y'))
-    wb = h.dicts_to_xls(result, header, contract_number)
+    wb = helpers.dicts_to_xls(result, header, contract_number)
     # Calculate and write pricing info
     ws = wb.get_sheet(0)
     ws.write(num_hosts + 2, 1, 'Number of Virtual Servers')
@@ -224,7 +224,7 @@ def mail_host_contract_report(contract_number):
     with tempfile.TemporaryFile() as temp:
         wb.save(temp)
         temp.seek(0)
-        msg = h.create_email(subject, body, extended_to, cc, bcc, temp.read(), filename, 'application/excel')
+        msg = helpers.create_email(subject, body, extended_to, cc, bcc, temp.read(), filename, 'application/excel')
         msg.send()
     return HttpResponse('Report for %s sent.' % contract_number)
 
@@ -245,7 +245,7 @@ def monthly_netapp_usage():
         monthly_dict.setdefault(str(last_month.year), {})[str(last_month.month)] = \
             service_node.data.get('netapp_storage_sum', 0.0)
         property_dict = {'netapp_storage_monthly': json.dumps(monthly_dict)}
-        h.dict_update_node(user, service_node.handle_id, property_dict, property_dict.keys())
+        helpers.dict_update_node(user, service_node.handle_id, property_dict, property_dict.keys())
     return HttpResponse('Monthly NetApp usage saved.')
 
 
@@ -289,7 +289,7 @@ def quarterly_netapp_usage():
             ''' % (service['service_id'], heading, utcnow.strftime('%Y-%m-%d %H:%M'))
             extended_to = to + extra_report.get(service['service_id'], [])  # Avoid changing REPORTS_TO :)
             filename = 'Storage cost for %s Q%d %s.xls' % (service['contract_reference'], last_quarter, year)
-            wb = h.dicts_to_xls({}, [], '%s Q%d %s' % (service['service_id'], last_quarter, year))
+            wb = helpers.dicts_to_xls({}, [], '%s Q%d %s' % (service['service_id'], last_quarter, year))
             # Calculate and write pricing info
             ws = wb.get_sheet(0)
             ws.write(1, 1, heading)
@@ -318,7 +318,7 @@ def quarterly_netapp_usage():
             with tempfile.TemporaryFile() as temp:
                 wb.save(temp)
                 temp.seek(0)
-                msg = h.create_email(subject, body, extended_to, cc, bcc, temp.read(), filename, 'application/excel')
+                msg = helpers.create_email(subject, body, extended_to, cc, bcc, temp.read(), filename, 'application/excel')
                 msg.send()
     return HttpResponse('Quarterly NetApp storage reports sent!')
 

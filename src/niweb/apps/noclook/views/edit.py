@@ -14,7 +14,7 @@ import json
 from apps.noclook.models import NodeHandle
 from apps.noclook import forms
 from apps.noclook import activitylog
-import apps.noclook.helpers as h
+from apps.noclook import helpers
 import norduniclient as nc
 
 
@@ -24,8 +24,8 @@ def delete_node(request, slug, handle_id):
     """
     Removes the node and all its relationships.
     """
-    nh, node = h.get_nh_node(handle_id)
-    h.delete_node(request.user, node)
+    nh, node = helpers.get_nh_node(handle_id)
+    helpers.delete_node(request.user, node)
     return HttpResponseRedirect('/%s' % slug)
 
 
@@ -35,7 +35,7 @@ def delete_relationship(request, slug, handle_id, rel_id):
     Removes the relationship if the node has a relationship matching the
     supplied id.
     """
-    nh, node = h.get_nh_node(handle_id)
+    nh, node = helpers.get_nh_node(handle_id)
     relationship = nc.get_relationship_model(nc.neo4jdb, rel_id)
     if node == relationship.start or node == relationship.end:
         activitylog.delete_relationship(request.user, relationship)
@@ -51,7 +51,7 @@ def get_node_type(request, slug):
     Compiles a list of alla nodes of that node type and returns a list of
     node name, node id tuples.
     """
-    node_type = h.slug_to_node_type(slug)
+    node_type = helpers.slug_to_node_type(slug)
     q = '''                   
         MATCH (node:{node_type})
         RETURN node.handle_id, node.name
@@ -68,7 +68,7 @@ def get_unlocated_node_type(request, slug):
     Compiles a list of alla nodes of that node type that does not have a Located_in
     relationship and returns a list of node name, node id tuples.
     """
-    node_type = h.slug_to_node_type(slug)
+    node_type = helpers.slug_to_node_type(slug)
     q = '''
         MATCH (node:{node_type})
         WHERE NOT (node)-[:Located_in]->()
@@ -90,7 +90,7 @@ def get_children(request, handle_id, slug=None):
     nh = get_object_or_404(NodeHandle, handle_id=handle_id)
     type_filter = ''
     if slug:
-        type_filter = 'and child:{node_type}'.format(node_type=h.slug_to_node_type(slug).type.replace(' ', '_'))
+        type_filter = 'and child:{node_type}'.format(node_type=helpers.slug_to_node_type(slug).type.replace(' ', '_'))
     q = '''                   
         MATCH (parent:Node {{handle_id:{{handle_id}}}})
         MATCH parent--child
@@ -112,15 +112,15 @@ def convert_host(request, handle_id, slug):
     """
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     if slug in ['firewall', 'switch'] and nh.node_type.type == 'Host':
-        node_type = h.slug_to_node_type(slug, create=True)
+        node_type = helpers.slug_to_node_type(slug, create=True)
         node = nh.get_node()
-        nh, node = h.logical_to_physical(request.user, node.handle_id)
+        nh, node = helpers.logical_to_physical(request.user, node.handle_id)
         nh.node_type = node_type
         nh.save()
         node_properties = {
             'backup': ''
         }
-        h.dict_update_node(request.user, node.handle_id, node_properties, node_properties.keys())
+        helpers.dict_update_node(request.user, node.handle_id, node_properties, node_properties.keys())
     return HttpResponseRedirect(nh.get_absolute_url())
 
 
@@ -145,23 +145,23 @@ def edit_cable(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, cable = h.get_nh_node(handle_id)
+    nh, cable = helpers.get_nh_node(handle_id)
     connections = cable.get_connected_equipment()
     relations = cable.get_relations()
     if request.POST:
         form = forms.EditCableForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, cable.handle_id, form)
+            helpers.form_update_node(request.user, cable.handle_id, form)
             if form.cleaned_data['relationship_end_a']:
                 end_a_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_a'])
-                h.set_connected_to(request.user, cable, end_a_nh.handle_id)
+                helpers.set_connected_to(request.user, cable, end_a_nh.handle_id)
             if form.cleaned_data['relationship_end_b']:
                 end_b_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_b'])
-                h.set_connected_to(request.user, cable, end_b_nh.handle_id)
+                helpers.set_connected_to(request.user, cable, end_b_nh.handle_id)
             if form.cleaned_data['relationship_provider']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, cable, owner_nh.handle_id)
+                helpers.set_provider(request.user, cable, owner_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -179,12 +179,12 @@ def edit_customer(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, customer = h.get_nh_node(handle_id)
+    nh, customer = helpers.get_nh_node(handle_id)
     if request.POST:
         form = forms.EditCustomerForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, customer.handle_id, form)
+            helpers.form_update_node(request.user, customer.handle_id, form)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -200,12 +200,12 @@ def edit_end_user(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, end_user = h.get_nh_node(handle_id)
+    nh, end_user = helpers.get_nh_node(handle_id)
     if request.POST:
         form = forms.EditEndUserForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, end_user.handle_id, form)
+            helpers.form_update_node(request.user, end_user.handle_id, form)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -221,7 +221,7 @@ def edit_external_equipment(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, external_equipment = h.get_nh_node(handle_id)
+    nh, external_equipment = helpers.get_nh_node(handle_id)
     relations = external_equipment.get_relations()
     location = external_equipment.get_location()
     ports = external_equipment.get_ports()
@@ -229,17 +229,17 @@ def edit_external_equipment(request, handle_id):
         form = forms.EditExternalEquipmentForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, external_equipment.handle_id, form)
+            helpers.form_update_node(request.user, external_equipment.handle_id, form)
             # External Equipment specific updates
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
-                h.set_owner(request.user, external_equipment, owner_nh.handle_id)
+                helpers.set_owner(request.user, external_equipment, owner_nh.handle_id)
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                h.set_location(request.user, external_equipment, location_nh.handle_id)
+                helpers.set_location(request.user, external_equipment, location_nh.handle_id)
             if form.cleaned_data['relationship_ports']:
                 for port_name in form.cleaned_data['relationship_ports']:
-                    h.create_port(external_equipment, port_name, request.user)
+                    helpers.create_port(external_equipment, port_name, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -257,7 +257,7 @@ def edit_firewall(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, firewall = h.get_nh_node(handle_id)
+    nh, firewall = helpers.get_nh_node(handle_id)
     location = firewall.get_location()
     relations = firewall.get_relations()
     depends_on = firewall.get_dependencies()
@@ -267,23 +267,23 @@ def edit_firewall(request, handle_id):
         form = forms.EditFirewallForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, firewall.handle_id, form)
+            helpers.form_update_node(request.user, firewall.handle_id, form)
             # Host specific updates
             if form.cleaned_data['relationship_user']:
                 user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
-                h.set_user(request.user, firewall, user_nh.handle_id)
+                helpers.set_user(request.user, firewall, user_nh.handle_id)
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
-                h.set_owner(request.user, firewall, owner_nh.handle_id)
+                helpers.set_owner(request.user, firewall, owner_nh.handle_id)
             # You can not set location and depends on at the same time
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                h.set_depends_on(request.user, firewall, depends_on_nh.handle_id)
+                helpers.set_depends_on(request.user, firewall, depends_on_nh.handle_id)
             elif form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                h.set_location(request.user, firewall, location_nh.handle_id)
+                helpers.set_location(request.user, firewall, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                h.remove_rogue_service_marker(request.user, firewall.handle_id)
+                helpers.remove_rogue_service_marker(request.user, firewall.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -301,7 +301,7 @@ def edit_host(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, host = h.get_nh_node(handle_id)
+    nh, host = helpers.get_nh_node(handle_id)
     location = host.get_location()
     relations = host.get_relations()
     depends_on = host.get_dependencies()
@@ -310,23 +310,23 @@ def edit_host(request, handle_id):
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, host.handle_id, form)
+            helpers.form_update_node(request.user, host.handle_id, form)
             # Host specific updates
             if form.cleaned_data['relationship_user']:
                 user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
-                h.set_user(request.user, host, user_nh.handle_id)
+                helpers.set_user(request.user, host, user_nh.handle_id)
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
-                h.set_owner(request.user, host, owner_nh.handle_id)
+                helpers.set_owner(request.user, host, owner_nh.handle_id)
             # You can not set location and depends on at the same time
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                h.set_depends_on(request.user, host, depends_on_nh.handle_id)
+                helpers.set_depends_on(request.user, host, depends_on_nh.handle_id)
             elif form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                h.set_location(request.user, host, location_nh.handle_id)
+                helpers.set_location(request.user, host, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                h.remove_rogue_service_marker(request.user, host.handle_id)
+                helpers.remove_rogue_service_marker(request.user, host.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -344,21 +344,21 @@ def edit_odf(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, odf = h.get_nh_node(handle_id)
+    nh, odf = helpers.get_nh_node(handle_id)
     location = odf.get_location()
     ports = odf.get_ports()
     if request.POST:
         form = forms.EditOdfForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, odf.handle_id, form)
+            helpers.form_update_node(request.user, odf.handle_id, form)
             # ODF specific updates
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                h.set_location(request.user, odf, location_nh.handle_id)
+                helpers.set_location(request.user, odf, location_nh.handle_id)
             if form.cleaned_data['relationship_ports']:
                 for port_name in form.cleaned_data['relationship_ports']:
-                    h.create_port(odf, port_name, request.user)
+                    helpers.create_port(odf, port_name, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -375,24 +375,24 @@ def edit_optical_link(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, link = h.get_nh_node(handle_id)
+    nh, link = helpers.get_nh_node(handle_id)
     relations = link.get_relations()
     depends_on = link.get_dependencies()
     if request.POST:
         form = forms.EditOpticalLinkForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, link.handle_id, form)
+            helpers.form_update_node(request.user, link.handle_id, form)
             # Optical Link node updates
             if form.cleaned_data['relationship_provider']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, link, owner_nh.handle_id)
+                helpers.set_provider(request.user, link, owner_nh.handle_id)
             if form.cleaned_data['relationship_end_a']:
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_a'])
-                h.set_depends_on(request.user, link, depends_on_nh.handle_id)
+                helpers.set_depends_on(request.user, link, depends_on_nh.handle_id)
             if form.cleaned_data['relationship_end_b']:
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_b'])
-                h.set_depends_on(request.user, link, depends_on_nh.handle_id)
+                helpers.set_depends_on(request.user, link, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -409,21 +409,21 @@ def edit_optical_multiplex_section(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, oms = h.get_nh_node(handle_id)
+    nh, oms = helpers.get_nh_node(handle_id)
     relations = oms.get_relations()
     depends_on = oms.get_dependencies()
     if request.POST:
         form = forms.EditOpticalMultiplexSectionForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, oms.handle_id, form)
+            helpers.form_update_node(request.user, oms.handle_id, form)
             # Optical Multiplex Section node updates
             if form.cleaned_data['relationship_provider']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, oms, owner_nh.handle_id)
+                helpers.set_provider(request.user, oms, owner_nh.handle_id)
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                h.set_depends_on(request.user, oms, depends_on_nh.handle_id)
+                helpers.set_depends_on(request.user, oms, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -441,21 +441,21 @@ def edit_optical_node(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, optical_node = h.get_nh_node(handle_id)
+    nh, optical_node = helpers.get_nh_node(handle_id)
     location = optical_node.get_location()
     ports = optical_node.get_ports()
     if request.POST:
         form = forms.EditOpticalNodeForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, optical_node.handle_id, form)
+            helpers.form_update_node(request.user, optical_node.handle_id, form)
             # Optical Node specific updates
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                h.set_location(request.user, optical_node, location_nh.handle_id)
+                helpers.set_location(request.user, optical_node, location_nh.handle_id)
             if form.cleaned_data['relationship_ports']:
                 for port_name in form.cleaned_data['relationship_ports']:
-                    h.create_port(optical_node, port_name, request.user)
+                    helpers.create_port(optical_node, port_name, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -473,21 +473,21 @@ def edit_optical_path(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, path = h.get_nh_node(handle_id)
+    nh, path = helpers.get_nh_node(handle_id)
     relations = path.get_relations()
     depends_on = path.get_dependencies()
     if request.POST:
         form = forms.EditOpticalPathForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, path.handle_id, form)
+            helpers.form_update_node(request.user, path.handle_id, form)
             # Optical Path node updates
             if form.cleaned_data['relationship_provider']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, path, owner_nh.handle_id)
+                helpers.set_provider(request.user, path, owner_nh.handle_id)
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                h.set_depends_on(request.user, path, depends_on_nh.handle_id)
+                helpers.set_depends_on(request.user, path, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -505,12 +505,12 @@ def edit_peering_partner(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, peering_partner = h.get_nh_node(handle_id)
+    nh, peering_partner = helpers.get_nh_node(handle_id)
     if request.POST:
         form = forms.EditPeeringPartnerForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, peering_partner.handle_id, form)
+            helpers.form_update_node(request.user, peering_partner.handle_id, form)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -526,17 +526,17 @@ def edit_peering_partner(request, handle_id):
 def edit_port(request, handle_id):
     if not request.user.is_staff:
         raise Http404
-    nh, port = h.get_nh_node(handle_id)
+    nh, port = helpers.get_nh_node(handle_id)
     parent = port.get_parent()
     if request.POST:
         form = forms.EditPortForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, port.handle_id, form)
+            helpers.form_update_node(request.user, port.handle_id, form)
             # Port specific updates
             if form.cleaned_data['relationship_parent']:
                 parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent'])
-                h.set_has(request.user, parent_nh.get_node(), port.handle_id)
+                helpers.set_has(request.user, parent_nh.get_node(), port.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -553,12 +553,12 @@ def edit_provider(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, provider = h.get_nh_node(handle_id)
+    nh, provider = helpers.get_nh_node(handle_id)
     if request.POST:
         form = forms.EditProviderForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, provider.handle_id, form)
+            helpers.form_update_node(request.user, provider.handle_id, form)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -575,21 +575,21 @@ def edit_rack(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, rack = h.get_nh_node(handle_id)
+    nh, rack = helpers.get_nh_node(handle_id)
     parent = rack.get_parent()
     located_in = rack.get_located_in()
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, rack.handle_id, form)
+            helpers.form_update_node(request.user, rack.handle_id, form)
             # Rack specific updates
             if form.cleaned_data['relationship_parent']:
                 parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent'])
-                h.set_has(request.user, parent_nh.get_node(), rack.handle_id)
+                helpers.set_has(request.user, parent_nh.get_node(), rack.handle_id)
             if form.cleaned_data['relationship_located_in']:
                 equipment = NodeHandle.objects.get(pk=form.cleaned_data['relationship_located_in'])
-                h.set_location(request.user, equipment.get_node(), rack.handle_id)
+                helpers.set_location(request.user, equipment.get_node(), rack.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -607,17 +607,17 @@ def edit_router(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, router = h.get_nh_node(handle_id)
+    nh, router = helpers.get_nh_node(handle_id)
     location = router.get_location()
     if request.POST:
         form = forms.EditRouterForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, router.handle_id, form)
+            helpers.form_update_node(request.user, router.handle_id, form)
             # Router specific updates
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                h.set_location(request.user, router, location_nh.handle_id)
+                helpers.set_location(request.user, router, location_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -634,24 +634,24 @@ def edit_service(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, service = h.get_nh_node(handle_id)
+    nh, service = helpers.get_nh_node(handle_id)
     relations = service.get_relations()
     depends_on = service.get_dependencies()
     if request.POST:
         form = forms.EditServiceForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, service.handle_id, form)
+            helpers.form_update_node(request.user, service.handle_id, form)
             # Service node updates
             if form.cleaned_data['relationship_provider']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, service, owner_nh.handle_id)
+                helpers.set_provider(request.user, service, owner_nh.handle_id)
             if form.cleaned_data['relationship_user']:
                 user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
-                h.set_user(request.user, service, user_nh.handle_id)
+                helpers.set_user(request.user, service, user_nh.handle_id)
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                h.set_depends_on(request.user, service, depends_on_nh.handle_id)
+                helpers.set_depends_on(request.user, service, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -669,17 +669,17 @@ def edit_site(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, site = h.get_nh_node(handle_id)
+    nh, site = helpers.get_nh_node(handle_id)
     relations = site.get_relations()
     if request.POST:
         form = forms.EditSiteForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, site.handle_id, form)
+            helpers.form_update_node(request.user, site.handle_id, form)
             # Set site owner
             if form.cleaned_data['relationship_responsible_for']:
                 responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_responsible_for'])
-                h.set_responsible_for(request.user, site, responsible_nh.handle_id)
+                helpers.set_responsible_for(request.user, site, responsible_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -696,12 +696,12 @@ def edit_site_owner(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, site_owner = h.get_nh_node(handle_id)
+    nh, site_owner = helpers.get_nh_node(handle_id)
     if request.POST:
         form = forms.EditSiteOwnerForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, site_owner.handle_id, form)
+            helpers.form_update_node(request.user, site_owner.handle_id, form)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -718,7 +718,7 @@ def edit_switch(request, handle_id):
     if not request.user.is_staff:
         raise Http404
     # Get needed data from node
-    nh, switch = h.get_nh_node(handle_id)
+    nh, switch = helpers.get_nh_node(handle_id)
     location = switch.get_location()
     relations = switch.get_relations()
     depends_on = switch.get_dependencies()
@@ -728,23 +728,23 @@ def edit_switch(request, handle_id):
         form = forms.EditSwitchForm(request.POST)
         if form.is_valid():
             # Generic node update
-            h.form_update_node(request.user, switch.handle_id, form)
+            helpers.form_update_node(request.user, switch.handle_id, form)
             # Host specific updates
             if form.cleaned_data['relationship_user']:
                 user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
-                h.set_user(request.user, switch, user_nh.handle_id)
+                helpers.set_user(request.user, switch, user_nh.handle_id)
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
-                h.set_owner(request.user, switch, owner_nh.handle_id)
+                helpers.set_owner(request.user, switch, owner_nh.handle_id)
             # You can not set location and depends on at the same time
             if form.cleaned_data['relationship_depends_on']:
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                h.set_depends_on(request.user, switch, depends_on_nh.handle_id)
+                helpers.set_depends_on(request.user, switch, depends_on_nh.handle_id)
             elif form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                h.set_location(request.user, switch, location_nh.handle_id)
+                helpers.set_location(request.user, switch, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
-                h.remove_rogue_service_marker(request.user, switch.handle_id)
+                helpers.remove_rogue_service_marker(request.user, switch.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:

@@ -8,9 +8,8 @@ Created on 2014-06-26 1:28 PM
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, UniqueId
-from apps.noclook import helpers as h
-import norduniclient as nc
+from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
+from apps.noclook import helpers
 
 import sys
 
@@ -75,8 +74,8 @@ class CableResourceTest(ResourceTestCase):
             self.port2.handle_id
         ]
 
-        h.set_has(self.user, self.router1.get_node(), self.port1.handle_id)
-        h.set_has(self.user, self.router2.get_node(), self.port2.handle_id)
+        helpers.set_has(self.user, self.router1.get_node(), self.port1.handle_id)
+        helpers.set_has(self.user, self.router2.get_node(), self.port2.handle_id)
 
     def tearDown(self):
         for handle_id in self.DEFAULT_HANDLE_IDS:

@@ -39,7 +39,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import norduniclient as nc
 import noclook_consumer as nt
 from apps.noclook import activitylog
-from apps.noclook import helpers as h
+from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.nmap')
 
@@ -79,9 +79,9 @@ def set_host_user(host):
     if host_user_name and not (relations.get('Uses', None) or relations.get('Owns', None)):
         relation_node_handle = nt.get_unique_node_handle(host_user_name, 'Host User', 'Relation')
         if host.meta_type == 'Logical':
-            h.set_user(user, host, relation_node_handle.handle_id)
+            helpers.set_user(user, host, relation_node_handle.handle_id)
         elif host.meta_type == 'Physical':
-            h.set_owner(user, host, relation_node_handle.handle_id)
+            helpers.set_owner(user, host, relation_node_handle.handle_id)
         logger.info('Host User {user_name} set for host {host_name}.'.format(user_name=host_user_name,
                                                                              host_name=host.data['name']))
 
@@ -106,7 +106,7 @@ def is_host(addresses):
                 except ValueError:
                     continue
                 if node_address in ip_addresses and not [l for l in node.labels if l in nmap_types]:
-                    h.update_noclook_auto_manage(node)
+                    helpers.update_noclook_auto_manage(node)
                     return False
     return True
 
@@ -180,7 +180,7 @@ def insert_services(service_dict, host_node, external_check=False):
                         service_name = 'unknown'
                     service_node_handle = nt.get_unique_node_handle(service_name, node_type, meta_type)
                     service_node = service_node_handle.get_node()
-                    h.update_noclook_auto_manage(service_node)
+                    helpers.update_noclook_auto_manage(service_node)
                     relationship_properties = {
                         'ip_address': address,
                         'protocol': protocol,
@@ -212,8 +212,8 @@ def insert_services(service_dict, host_node, external_check=False):
                             port=relationship.data['port'],
                             protocol=relationship.data['protocol']
                         ))
-                    h.update_noclook_auto_manage(relationship)
-                    h.dict_update_relationship(user, relationship.id, relationship_properties, property_keys)
+                    helpers.update_noclook_auto_manage(relationship)
+                    helpers.dict_update_relationship(user, relationship.id, relationship_properties, property_keys)
                     logger.info('{name} {ip_address} {port}/{protocol} processed...'.format(
                         name=host_node.data['name'], ip_address=address, protocol=protocol, port=port))
 
@@ -229,6 +229,7 @@ def insert_nmap(json_list, external_check=False):
     # Insert the host
     for i in json_list:
         name = i['host']['name']
+        logger.info('%s loaded' % name)
         addresses = i['host']['nmap_services_py']['addresses']
         # Check if the ipaddresses matches any non-host node as a router interface for example
         if not is_host(addresses):
@@ -238,7 +239,7 @@ def insert_nmap(json_list, external_check=False):
         node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
         # Set Node attributes
         node = node_handle.get_node()
-        h.update_noclook_auto_manage(node)
+        helpers.update_noclook_auto_manage(node)
         properties = {
             'hostnames': i['host']['nmap_services_py']['hostnames'],
             'ip_addresses': addresses
@@ -253,16 +254,11 @@ def insert_nmap(json_list, external_check=False):
         if 'uptime' in i['host']['nmap_services_py']:
             properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
             properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
-        #try:
         insert_services(i['host']['nmap_services_py']['services'], node, external_check)
-        #except KeyError as e:
-        #    if VERBOSE:
-        #        logger.error(e)
-        #    sys.exit(1)
         # Check if the host has backup
-        properties['backup'] = h.get_host_backup(node)
+        properties['backup'] = helpers.get_host_backup(node)
         # Update host node
-        h.dict_update_node(user, node.handle_id, properties, properties.keys())
+        helpers.dict_update_node(user, node.handle_id, properties, properties.keys())
         # Set host user depending on the domain.
         set_host_user(node)
         logger.info('%s done.' % name)

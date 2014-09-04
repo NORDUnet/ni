@@ -36,7 +36,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 import norduniclient as nc
 from norduniclient.exceptions import MultipleNodesReturned
 import noclook_consumer as nt
-from apps.noclook import helpers as h
+from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.cfengine')
 
@@ -97,7 +97,7 @@ def insert(json_list):
                     promise_status = promise['promisestatus']
                     host_properties.update(CFENGINE_MAP[promise_name][promise_status])
 
-            h.dict_update_node(user, node.handle_id, host_properties, host_properties.keys())
+            helpers.dict_update_node(user, node.handle_id, host_properties, host_properties.keys())
             logger.info('{name} done.'.format(name=name))
 
 

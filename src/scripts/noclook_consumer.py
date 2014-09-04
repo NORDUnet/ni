@@ -38,7 +38,7 @@ sys.path.append(os.path.abspath(niweb_path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 from django.conf import settings as django_settings
 from apps.noclook.models import NodeType, NodeHandle
-import apps.noclook.helpers as h  # Shortcircuit circular dependency
+from apps.noclook import helpers  # Shortcircuit circular dependency
 from apps.noclook import activitylog
 from django.contrib.comments import Comment
 from django.contrib.contenttypes.models import ContentType

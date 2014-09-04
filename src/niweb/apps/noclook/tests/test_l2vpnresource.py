@@ -8,8 +8,8 @@ Created on 2014-06-26 1:28 PM
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, UniqueId
-from apps.noclook import helpers as h
+from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
+from apps.noclook import helpers
 import sys
 
 
@@ -100,10 +100,10 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             self.unit2.handle_id
         ]
 
-        h.set_has(self.user, self.router1.get_node(), self.port1.handle_id)
-        h.set_has(self.user, self.router2.get_node(), self.port2.handle_id)
-        h.set_part_of(self.user, self.port1.get_node(), self.unit1.handle_id)
-        h.set_part_of(self.user, self.port2.get_node(), self.unit2.handle_id)
+        helpers.set_has(self.user, self.router1.get_node(), self.port1.handle_id)
+        helpers.set_has(self.user, self.router2.get_node(), self.port2.handle_id)
+        helpers.set_part_of(self.user, self.port1.get_node(), self.unit1.handle_id)
+        helpers.set_part_of(self.user, self.port2.get_node(), self.unit2.handle_id)
 
     def tearDown(self):
         for handle_id in self.DEFAULT_HANDLE_IDS:
@@ -286,7 +286,6 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         }
         resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data,
                                    authentication=self.get_credentials())
-        sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpOK(resp)
 
     def test_failed_update_l2vpn(self):
@@ -366,7 +365,6 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         }
         resp = self.api_client.put('/api/v1/l2vpn/ServiceID/', format='json', data=data,
                                    authentication=self.get_credentials())
-        sys.stderr.writelines('stderr: ' + str(resp))
         self.assertHttpOK(resp)
         new_unit_1 = self.port1.get_node().get_unit('New Unit 1').get('Part_of')[0]['node']
         new_unit_2 = self.port2.get_node().get_unit('New Unit 2').get('Part_of')[0]['node']

@@ -12,7 +12,7 @@ from django.template import RequestContext
 from django.forms.util import ErrorDict, ErrorList
 from apps.noclook import forms
 from apps.noclook.models import NodeHandle
-import apps.noclook.helpers as h
+from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 import norduniclient as nc
@@ -58,7 +58,7 @@ def new_cable(request, **kwargs):
         form = forms.NewCableForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'cable', 'Physical')
+                nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
             except UniqueNodeError:
                 form = forms.NewCableForm(request.POST)
                 form._errors = ErrorDict()
@@ -68,7 +68,7 @@ def new_cable(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['cable_type']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         name = kwargs.get('name', None)
@@ -87,7 +87,7 @@ def new_customer(request, **kwargs):
         form = forms.NewCustomerForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'customer', 'Relation')
+                nh = helpers.form_to_unique_node_handle(request, form, 'customer', 'Relation')
             except UniqueNodeError:
                 form = forms.NewCustomerForm(request.POST)
                 form._errors = ErrorDict()
@@ -97,7 +97,7 @@ def new_customer(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['url']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewCustomerForm()
@@ -111,7 +111,7 @@ def new_end_user(request, **kwargs):
         form = forms.NewEndUserForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'end-user', 'Relation')
+                nh = helpers.form_to_unique_node_handle(request, form, 'end-user', 'Relation')
             except UniqueNodeError:
                 form = forms.NewEndUserForm(request.POST)
                 form._errors = ErrorDict()
@@ -121,7 +121,7 @@ def new_end_user(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['url']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewEndUserForm()
@@ -134,9 +134,9 @@ def new_external_equipment(request, **kwargs):
     if request.POST:
         form = forms.NewExternalEquipmentForm(request.POST)
         if form.is_valid():
-            nh = h.form_to_generic_node_handle(request, form, 'external-equipment', 'Physical')
+            nh = helpers.form_to_generic_node_handle(request, form, 'external-equipment', 'Physical')
             node = nh.get_node()
-            h.form_update_node(request.user, node.handle_id, form)
+            helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewExternalEquipmentForm()
@@ -150,7 +150,7 @@ def new_nordunet_cable(request, **kwargs):
         form = forms.NewNordunetCableForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'cable', 'Physical')
+                nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
             except UniqueNodeError:
                 form = forms.NewNordunetCableForm(request.POST)
                 form._errors = ErrorDict()
@@ -160,10 +160,10 @@ def new_nordunet_cable(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['cable_type']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, node, provider_nh.handle_id)
+                helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         name = kwargs.get('name', None)
@@ -182,7 +182,7 @@ def new_nordunet_optical_link(request, **kwargs):
         form = forms.NewNordunetOpticalLinkForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'optical-link', 'Logical')
+                nh = helpers.form_to_unique_node_handle(request, form, 'optical-link', 'Logical')
             except UniqueNodeError:
                 form = forms.NewNordunetOpticalLinkForm(request.POST)
                 form._errors = ErrorDict()
@@ -192,10 +192,10 @@ def new_nordunet_optical_link(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['description', 'link_type', 'operational_state', 'interface_type']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, node, provider_nh.handle_id)
+                helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         provider_id = get_provider_id('NORDUnet')
@@ -211,7 +211,7 @@ def new_nordunet_optical_path(request, **kwargs):
         form = forms.NewNordunetOpticalPathForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'optical-path', 'Logical')
+                nh = helpers.form_to_unique_node_handle(request, form, 'optical-path', 'Logical')
             except UniqueNodeError:
                 form = forms.NewNordunetOpticalPathForm(request.POST)
                 form._errors = ErrorDict()
@@ -221,10 +221,10 @@ def new_nordunet_optical_path(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['description', 'framing', 'capacity', 'operational_state']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, node, provider_nh.handle_id)
+                helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         provider_id = get_provider_id('NORDUnet')
@@ -239,7 +239,7 @@ def new_nordunet_service(request, **kwargs):
         form = forms.NewNordunetServiceForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'service', 'Logical')
+                nh = helpers.form_to_unique_node_handle(request, form, 'service', 'Logical')
             except UniqueNodeError:
                 form = forms.NewNordunetServiceForm(request.POST)
                 form._errors = ErrorDict()
@@ -249,10 +249,10 @@ def new_nordunet_service(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['description', 'service_class', 'service_type', 'operational_state', 'project_end_date']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, node, provider_nh.handle_id)
+                helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         provider_id = get_provider_id('NORDUnet')
@@ -266,9 +266,9 @@ def new_odf(request, **kwargs):
     if request.POST:
         form = forms.NewOdfForm(request.POST)
         if form.is_valid():
-            nh = h.form_to_generic_node_handle(request, form, 'odf', 'Physical')
+            nh = helpers.form_to_generic_node_handle(request, form, 'odf', 'Physical')
             node = nh.get_node()
-            h.form_update_node(request.user, node.handle_id, form)
+            helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewOdfForm()
@@ -282,7 +282,7 @@ def new_optical_multiplex_section(request, **kwargs):
         form = forms.NewOpticalMultiplexSectionForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'optical-multiplex-section', 'Logical')
+                nh = helpers.form_to_unique_node_handle(request, form, 'optical-multiplex-section', 'Logical')
             except UniqueNodeError:
                 form = forms.NewOpticalMultiplexSectionForm(request.POST)
                 form._errors = ErrorDict()
@@ -292,10 +292,10 @@ def new_optical_multiplex_section(request, **kwargs):
                                           {'form': form}, context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['name', 'description', 'operational_state']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                h.set_provider(request.user, node, provider_nh.handle_id)
+                helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         provider_id = get_provider_id('NORDUnet')
@@ -309,14 +309,14 @@ def new_port(request, **kwargs):
     if request.POST:
         form = forms.NewPortForm(request.POST)
         if form.is_valid():
-            nh = h.form_to_generic_node_handle(request, form, 'port', 'Physical')
+            nh = helpers.form_to_generic_node_handle(request, form, 'port', 'Physical')
             node = nh.get_node()
             keys = ['port_type']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             if kwargs.get('parent_id', None):
                 try:
                     parent_nh = NodeHandle.objects.get(pk=kwargs['parent_id'])
-                    h.set_has(request.user, parent_nh.get_node(), nh.handle_id)
+                    helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
                 except NoRelationshipPossible:
                     nh.delete()
                     form = forms.NewSiteForm(request.POST)
@@ -338,7 +338,7 @@ def new_provider(request, **kwargs):
         form = forms.NewProviderForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'provider', 'Relation')
+                nh = helpers.form_to_unique_node_handle(request, form, 'provider', 'Relation')
             except UniqueNodeError:
                 form = forms.NewProviderForm(request.POST)
                 form._errors = ErrorDict()
@@ -348,7 +348,7 @@ def new_provider(request, **kwargs):
                     context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['url']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewProviderForm()
@@ -361,12 +361,12 @@ def new_rack(request, **kwargs):
     if request.POST:
         form = forms.NewRackForm(request.POST)
         if form.is_valid():
-            nh = h.form_to_generic_node_handle(request, form, 'rack', 'Location')
+            nh = helpers.form_to_generic_node_handle(request, form, 'rack', 'Location')
             node = nh.get_node()
-            h.form_update_node(request.user, node.handle_id, form)
+            helpers.form_update_node(request.user, node.handle_id, form)
             if form.cleaned_data['relationship_location']:
                 parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                h.set_has(request.user, parent_nh.get_node(), nh.handle_id)
+                helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewRackForm()
@@ -380,7 +380,7 @@ def new_site(request, **kwargs):
         form = forms.NewSiteForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'site', 'Location')
+                nh = helpers.form_to_unique_node_handle(request, form, 'site', 'Location')
             except UniqueNodeError:
                 form = forms.NewSiteForm(request.POST)
                 form._errors = ErrorDict()
@@ -390,7 +390,7 @@ def new_site(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['country_code', 'address', 'postarea', 'postcode']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewSiteForm()
@@ -404,7 +404,7 @@ def new_site_owner(request, **kwargs):
         form = forms.NewSiteOwnerForm(request.POST)
         if form.is_valid():
             try:
-                nh = h.form_to_unique_node_handle(request, form, 'site-owner', 'Relation')
+                nh = helpers.form_to_unique_node_handle(request, form, 'site-owner', 'Relation')
             except UniqueNodeError:
                 form = forms.NewSiteOwnerForm(request.POST)
                 form._errors = ErrorDict()
@@ -414,7 +414,7 @@ def new_site_owner(request, **kwargs):
                                           context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['url']
-            h.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewSiteOwnerForm()
