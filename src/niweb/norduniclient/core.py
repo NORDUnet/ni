@@ -47,12 +47,12 @@ def init_db(uri=NEO4J_URI):
             manager = _get_db_manager(uri)
             try:
                 with manager.transaction as w:
-                    w.execute('CREATE CONSTRAINT ON (n:Node) ASSERT n.handle_id IS UNIQUE')
+                    w.execute('CREATE CONSTRAINT ON (n:Node) ASSERT n.handle_id IS UNIQUE').fetchall()
             except exceptions.IntegrityError:
                 pass
             try:
                 with manager.transaction as w:
-                    w.execute('CREATE INDEX ON :Node(name)')
+                    w.execute('CREATE INDEX ON :Node(name)').fetchall()
             except exceptions.IntegrityError:
                 pass
             return manager
@@ -170,7 +170,7 @@ def delete_node(manager, handle_id):
         DELETE n,r
         """
     with manager.transaction as t:
-        t.execute(q, handle_id=handle_id)
+        t.execute(q, handle_id=handle_id).fetchall()
     return True
 
 
@@ -217,7 +217,7 @@ def delete_relationship(manager, relationship_id):
     q = 'START r=relationship({relationship_id}) DELETE r'
     try:
         with manager.transaction as t:
-            t.execute(q, relationship_id=relationship_id)
+            t.execute(q, relationship_id=relationship_id).fetchall()
     except exceptions.InternalError:
         raise exceptions.RelationshipNotFound(manager, relationship_id)
     return True

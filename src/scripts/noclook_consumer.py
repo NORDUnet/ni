@@ -255,7 +255,7 @@ def consume_noclook(json_list):
                     CREATE UNIQUE (start)-[r:%s { props } ]->(end)
                     """ % item.get('type')
 
-                w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props)
+                w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props).fetchall()
                 logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
                                                                    end=item.get('end')))
                 x += 1

@@ -117,7 +117,7 @@ def restore_node(handle_id, node_name, node_type_name, node_meta_type):
 def insert_graph_data(json_list):
 
     with nc.neo4jdb.transaction as w:
-        w.execute('CREATE CONSTRAINT ON (n:Node) ASSERT n.old_node_id IS UNIQUE')
+        w.execute('CREATE CONSTRAINT ON (n:Node) ASSERT n.old_node_id IS UNIQUE').fetchall()
 
     # Loop through all files starting with node
     for i in json_list:
@@ -157,7 +157,7 @@ def insert_graph_data(json_list):
                     RETURN start.name, type(r), end.name
                     """ % item.get('type')
 
-                w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props)
+                w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props).fetchall()
                 print '{start} -[{rel_type}]-> {end}'.format(start=item.get('start'), rel_type=item.get('type'),
                                                              end=item.get('end'))
                 x += 1
@@ -172,9 +172,9 @@ def insert_graph_data(json_list):
         REMOVE n.node_type
         """
     with nc.neo4jdb.write as w:
-        w.execute(q)
+        w.execute(q).fetchall()
         w.connection.commit()
-        w.execute('DROP CONSTRAINT ON (n:Node) ASSERT n.old_node_id IS UNIQUE')
+        w.execute('DROP CONSTRAINT ON (n:Node) ASSERT n.old_node_id IS UNIQUE').fetchall()
 
 
 def run_consume(config_file):
@@ -197,7 +197,7 @@ def fix_host_services_locked():
         FOREACH (x in f | SET x.services_locked = false)
         """
     with nc.neo4jdb.write as w:
-        w.execute(q)
+        w.execute(q).fetchall()
 
 
 def main():

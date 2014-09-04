@@ -124,7 +124,7 @@ def set_not_public(host):
         SET r.public = false
         '''
     with nc.neo4jdb.transaction as t:
-        t.execute(q, handle_id=host.handle_id)
+        t.execute(q, handle_id=host.handle_id).fetchall()
 
 
 def insert_services(service_dict, host_node, external_check=False):
