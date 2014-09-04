@@ -25,12 +25,13 @@ from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
 from apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
 from apps.noclook import forms
-#from apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, \
-#    get_unit, create_unit, set_depends_on, register_unique_id, is_free_unique_id, delete_relationship, dict_update_node
-import apps.noclook.helpers as h
+from apps.noclook import helpers
+from apps.noclook import unique_ids
 import norduniclient as nc
-from norduniclient.exceptions import MultipleNodesReturned, UniqueNodeError, NodeNotFound
+from norduniclient.exceptions import NodeNotFound
 import logging
+
+neo4jdb = nc.init_db()  # Open a separate manager for the REST API
 
 logger = logging.getLogger('api_resources')
 logger.setLevel(logging.DEBUG)
@@ -229,7 +230,7 @@ class NodeHandleResource(ModelResource):
             node = bundle.obj.get_node()
             if bundle.data.get('node'):
                 node.data.update(bundle.data.get('node'))
-                h.dict_update_node(bundle.request.user, node.handle_id, node.data, node.data.keys())
+                helpers.dict_update_node(bundle.request.user, node.handle_id, node.data, node.data.keys())
         except NodeNotFound:
             # Node is not yet created, obj_create will take care of that.
             pass
@@ -356,7 +357,7 @@ class RelationshipResource(Resource):
                 keys = relationships.keys()
             for key in keys:
                 for item in relationships.get(key, []):
-                    relationship = nc.get_relationship_model(nc.neo4jdb, item['relationship_id'])
+                    relationship = nc.get_relationship_model(neo4jdb, item['relationship_id'])
                     results.append(self._new_obj(relationship))
             return results
         else:
@@ -368,7 +369,7 @@ class RelationshipResource(Resource):
     def obj_get(self, request=None, **kwargs):
         pk = int(kwargs['pk'])
         try:
-            return self._new_obj(nc.get_relationship_model(nc.neo4jdb, pk))
+            return self._new_obj(nc.get_relationship_model(neo4jdb, pk))
         except KeyError:
             raise NotFound("Object not found") 
     
@@ -379,20 +380,20 @@ class RelationshipResource(Resource):
         end_pk = resource_uri2id(bundle.data['end'])        
         end_nh = NodeHandle.objects.get(pk=end_pk)
         end_node = end_nh.get_node()
-        rel = nc.create_relationship(nc.neo4jdb, start_node, end_node, bundle.data['type'])
-        nc.set_relationship_properties(nc.neo4jdb, rel, bundle.data['properties'])
+        rel = nc.create_relationship(neo4jdb, start_node, end_node, bundle.data['type'])
+        nc.set_relationship_properties(neo4jdb, rel, bundle.data['properties'])
         bundle.obj = self._new_obj(rel)
         return bundle
     
     def obj_update(self, bundle, **kwargs):
-        h.dict_update_relationship(nc.neo4jdb, kwargs['pk'], bundle.data['properties'],
+        helpers.dict_update_relationship(neo4jdb, kwargs['pk'], bundle.data['properties'],
                                    bundle.data['properties'].keys())
-        updated_rel = nc.get_relationship_model(nc.neo4jdb, kwargs['pk'])
+        updated_rel = nc.get_relationship_model(neo4jdb, kwargs['pk'])
         bundle.obj = self._new_obj(updated_rel)
         return bundle
     
     def obj_delete(self, request=None, **kwargs):
-        h.delete_relationship(request.user, kwargs['pk'])
+        helpers.delete_relationship(request.user, kwargs['pk'])
     
     def obj_delete_list(self, bundle, **kwargs):
         pass
@@ -431,7 +432,7 @@ class CableResource(NodeHandleResource):
 
     def obj_create(self, bundle, **kwargs):
         try:
-            node_type = h.slug_to_node_type(self.Meta.resource_name, create=True)
+            node_type = helpers.slug_to_node_type(self.Meta.resource_name, create=True)
             NodeHandle.objects.get(node_name=bundle.data['node_name'], node_type=node_type)
             raise_conflict_error('Cable ID (%s) is already in use.' % bundle.data['node_name'])
         except NodeHandle.DoesNotExist:
@@ -454,7 +455,7 @@ class CableResource(NodeHandleResource):
                 end_point_nodes = self.get_end_point_nodes(bundle)
                 node = bundle.obj.get_node()
                 for end_point in end_point_nodes:
-                    h.set_connected_to(bundle.request.user, node, end_point.handle_id)
+                    helpers.set_connected_to(bundle.request.user, node, end_point.handle_id)
                 return self.hydrate_node(bundle)
             else:
                 raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
@@ -465,9 +466,9 @@ class CableResource(NodeHandleResource):
         node = bundle.obj.get_node()
         if end_point_nodes:
             for result in node.relations.get('Connected_to', []):
-                h.delete_relationship(bundle.request.user, result['relationship_id'])
+                helpers.delete_relationship(bundle.request.user, result['relationship_id'])
             for end_point in end_point_nodes:
-                h.set_connected_to(bundle.request.user, node, end_point.handle_id)
+                helpers.set_connected_to(bundle.request.user, node, end_point.handle_id)
         return bundle
 
     def dehydrate(self, bundle):
@@ -488,8 +489,8 @@ class CableResource(NodeHandleResource):
         return end_point_nodes
 
     def get_port(self, bundle, device_name, device_type, port_name):
-        node_type = h.slug_to_node_type(slugify(device_type), create=True)
-        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.type)
+        node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
+        parent_node = nc.get_unique_node_by_name(neo4jdb, device_name, node_type.type)
         if not parent_node:
             raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
         result = parent_node.get_port(port_name).get('Has', [])
@@ -498,7 +499,7 @@ class CableResource(NodeHandleResource):
         if result:
             port_node = result[0]['node']
         else:
-            port_node = h.create_port(parent_node, port_name, bundle.request.user)
+            port_node = helpers.create_port(parent_node, port_name, bundle.request.user)
         return port_node
 
 
@@ -512,7 +513,7 @@ class NordunetCableResource(CableResource):
     def obj_create(self, bundle, **kwargs):
         try:
             if bundle.data.get('node_name', None):
-                if h.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
+                if unique_ids.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
                     bundle.data['name'] = bundle.data['node_name']
                 else:
                     raise_conflict_error('Cable ID (%s) is already in use.' % bundle.data['node_name'])
@@ -744,7 +745,7 @@ class ServiceResource(NodeHandleResource):
         data.update(bundle.data)
         form = forms.EditServiceForm(data)
         if form.is_valid():
-            h.form_update_node(bundle.request.user, node.handle_id, form)
+            helpers.form_update_node(bundle.request.user, node.handle_id, form)
         else:
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
         return bundle
@@ -794,7 +795,7 @@ class ServiceL2VPNResource(ServiceResource):
     def obj_create(self, bundle, **kwargs):
         bundle.data.update(self._initial_form_data(bundle))
         try:
-            if h.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
+            if unique_ids.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
                 bundle.data['name'] = bundle.data['node_name']
             else:
                 raise_conflict_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
@@ -825,11 +826,11 @@ class ServiceL2VPNResource(ServiceResource):
             end_point_nodes = self.get_end_point_nodes(bundle)
             # Create the new service
             bundle = super(ServiceL2VPNResource, self).obj_create(bundle, **kwargs)
-            h.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
+            unique_ids.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
             # Depend the created service on provided end points
             node = bundle.obj.get_node()
             for end_point in end_point_nodes:
-                h.set_depends_on(bundle.request.user, node, end_point.handle_id)
+                helpers.set_depends_on(bundle.request.user, node, end_point.handle_id)
             return self.hydrate_node(bundle)
         else:
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
@@ -840,9 +841,9 @@ class ServiceL2VPNResource(ServiceResource):
         node = bundle.obj.get_node()
         if end_point_nodes:
             for item in node.get_dependencies().get('Depends_on', []):
-                h.delete_relationship(bundle.request.user, item['relationship_id'])
+                helpers.delete_relationship(bundle.request.user, item['relationship_id'])
             for end_point in end_point_nodes:
-                h.set_depends_on(bundle.request.user, node, end_point.handle_id)
+                helpers.set_depends_on(bundle.request.user, node, end_point.handle_id)
         return bundle
 
     def dehydrate(self, bundle):
@@ -859,15 +860,15 @@ class ServiceL2VPNResource(ServiceResource):
             WHERE node.service_type = "L2VPN" OR node.service_type = "Interface Switch"
             RETURN collect(node.handle_id) as handle_ids
             """
-        hits = nc.query_to_dict(nc.neo4jdb, q)
+        hits = nc.query_to_dict(neo4jdb, q)
         return NodeHandle.objects.filter(pk__in=hits['handle_ids'])
 
     def obj_get_list(self, request=None, **kwargs):
         return self.get_object_list(request, **kwargs)
 
     def get_port(self, bundle, device_name, device_type, port_name):
-        node_type = h.slug_to_node_type(slugify(device_type), create=True)
-        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.type)
+        node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
+        parent_node = nc.get_unique_node_by_name(neo4jdb, device_name, node_type.type)
         if not parent_node:
             raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
         result = parent_node.get_port(port_name).get('Has', [])
@@ -876,7 +877,7 @@ class ServiceL2VPNResource(ServiceResource):
         if result:
             port_node = result[0]['node']
         else:
-            port_node = h.create_port(parent_node, port_name, bundle.request.user)
+            port_node = helpers.create_port(parent_node, port_name, bundle.request.user)
         return port_node
 
     def get_unit(self, bundle, port_node, unit_name):
@@ -886,7 +887,7 @@ class ServiceL2VPNResource(ServiceResource):
         if result:
             unit_node = result[0]['node']
         else:
-            unit_node = h.create_unit(port_node, unit_name, bundle.request.user)
+            unit_node = helpers.create_unit(port_node, unit_name, bundle.request.user)
         return unit_node
 
     def get_vlan(self, bundle):
@@ -910,8 +911,8 @@ class ServiceL2VPNResource(ServiceResource):
                         vlan = self.get_vlan(bundle)
                     unit_node = self.get_unit(bundle, port_node, vlan)
                     unit_properties = {'vlan': vlan}
-                    h.dict_update_node(bundle.request.user, unit_node.handle_id, unit_properties,
-                                       unit_properties.keys())
+                    helpers.dict_update_node(bundle.request.user, unit_node.handle_id, unit_properties,
+                                             unit_properties.keys())
                 else:
                     # Use Unit 0 if nothing else is specified
                     unit_node = self.get_unit(bundle, port_node, '0')
