@@ -371,30 +371,30 @@ class RelationshipResource(Resource):
         try:
             return self._new_obj(nc.get_relationship_model(neo4jdb, pk))
         except KeyError:
-            raise NotFound("Object not found") 
-    
+            raise NotFound("Object not found")
+
     def obj_create(self, bundle, **kwargs):
         start_pk = resource_uri2id(bundle.data['start'])
         start_nh = NodeHandle.objects.get(pk=start_pk)
         start_node = start_nh.get_node()
-        end_pk = resource_uri2id(bundle.data['end'])        
+        end_pk = resource_uri2id(bundle.data['end'])
         end_nh = NodeHandle.objects.get(pk=end_pk)
         end_node = end_nh.get_node()
         rel = nc.create_relationship(neo4jdb, start_node, end_node, bundle.data['type'])
         nc.set_relationship_properties(neo4jdb, rel, bundle.data['properties'])
         bundle.obj = self._new_obj(rel)
         return bundle
-    
+
     def obj_update(self, bundle, **kwargs):
         helpers.dict_update_relationship(neo4jdb, kwargs['pk'], bundle.data['properties'],
                                    bundle.data['properties'].keys())
         updated_rel = nc.get_relationship_model(neo4jdb, kwargs['pk'])
         bundle.obj = self._new_obj(updated_rel)
         return bundle
-    
+
     def obj_delete(self, request=None, **kwargs):
         helpers.delete_relationship(request.user, kwargs['pk'])
-    
+
     def obj_delete_list(self, bundle, **kwargs):
         pass
 
