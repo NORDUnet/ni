@@ -90,9 +90,18 @@ def delete_node(user, handle_id):
     try:
         nh = NodeHandle.objects.get(pk=handle_id)
         try:
-            nh.get_node().delete()
+            node = nh.get_node()
+            if node.meta_type == 'Physical':
+                for has_child in node.get_has().get('Has', []):
+                    delete_node(user, has_child.handle_id)
+                for part_of_child in node.get_part_of().get('Part_of', []):
+                    delete_node(user, part_of_child.handle_id)
+            elif node.meta_type == 'Location':
+                for has_child in node.get_has().get('Has', []):
+                    delete_node(user, has_child.handle_id)
+            node.delete()
             activitylog.delete_node(user, nh)
-        except NodeNotFound:
+        except (NodeNotFound, AttributeError):
             pass
         nh.delete()
     except ObjectDoesNotExist:
@@ -209,12 +218,18 @@ def set_noclook_auto_manage(item, auto_manage):
     :param auto_manage: boolean
     :return: None
     """
-    item.data['noclook_auto_manage'] = auto_manage
-    item.data['noclook_last_seen'] = datetime.now().isoformat()
+    auto_manage_data = {
+        'noclook_auto_manage': auto_manage,
+        'noclook_last_seen': datetime.now().isoformat()
+    }
     if isinstance(item, nc.models.BaseNodeModel):
-        nc.set_node_properties(nc.neo4jdb, item.handle_id, item.data)
+        node = nc.get_node_model(nc.neo4jdb, item.handle_id)
+        node.data.update(auto_manage_data)
+        nc.set_node_properties(nc.neo4jdb, node.handle_id, node.data)
     elif isinstance(item, nc.models.BaseRelationshipModel):
-        nc.set_relationship_properties(nc.neo4jdb, item.id, item.data)
+        relationship = nc.get_relationship_model(nc.neo4jdb, item.id)
+        relationship.data.update(auto_manage_data)
+        nc.set_relationship_properties(nc.neo4jdb, relationship.id, relationship.data)
 
 
 def update_noclook_auto_manage(item):
@@ -225,16 +240,19 @@ def update_noclook_auto_manage(item):
     :param item: norduclient model
     :return: None
     """
+    auto_manage_data = {}
     auto_manage = item.data.get('noclook_auto_manage', None)
     if auto_manage is None:
-        item.data['noclook_auto_manage'] = True
-    item.data['noclook_last_seen'] = datetime.now().isoformat()
+        auto_manage_data['noclook_auto_manage'] = True
+        auto_manage_data['noclook_last_seen'] = datetime.now().isoformat()
     if isinstance(item, nc.models.BaseNodeModel):
         node = nc.get_node_model(nc.neo4jdb, item.handle_id)
-        nc.set_node_properties(nc.neo4jdb, item.handle_id, node.data)
+        node.data.update(auto_manage_data)
+        nc.set_node_properties(nc.neo4jdb, node.handle_id, node.data)
     elif isinstance(item, nc.models.BaseRelationshipModel):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.id)
-        nc.set_relationship_properties(nc.neo4jdb, item.id, relationship.data)
+        relationship.data.update(auto_manage_data)
+        nc.set_relationship_properties(nc.neo4jdb, relationship.id, relationship.data)
 
 
 def isots_to_dt(data):

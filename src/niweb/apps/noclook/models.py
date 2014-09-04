@@ -94,7 +94,6 @@ class NodeHandle(models.Model):
             pass
         Comment.objects.filter(object_pk=self.pk).delete()
         super(NodeHandle, self).delete()
-        return True
         
     delete.alters_data = True
 

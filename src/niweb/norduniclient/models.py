@@ -340,17 +340,6 @@ class PhysicalModel(CommonQueries):
             """
         return self._basic_read_query_to_dict(q)
 
-    def delete(self):
-        has = self.get_has()
-        if has.get('Has', []):
-            for item in has['Has']:
-                item['node'].delete()
-        part_of = self.get_part_of()
-        if part_of.get('Part_of', []):
-            for item in part_of['Part_of']:
-                item['node'].delete()
-        super(PhysicalModel, self).delete()
-
     # TODO: Create a method that complains if any relationships that breaks the model exists
 
 
@@ -405,13 +394,6 @@ class LocationModel(CommonQueries):
             RETURN created, type(r), id(r), r, owner.handle_id
             """
         return self._basic_write_query_to_dict(q, owner_handle_id=owner_handle_id)
-
-    def delete(self):
-        has = self.get_has()
-        if has.get('Has', []):
-            for item in has['Has']:
-                item['node'].delete()
-        super(LocationModel, self).delete()
 
 
 class RelationModel(CommonQueries):
