@@ -1,0 +1,15 @@
+Django==1.6.5
+Paver==1.2.2
+South==1.0
+django-activity-stream==0.4.5
+django-jsonfield==0.9.13
+django-tastypie==0.11.1
+ipaddr==2.1.11
+lucene-querybuilder==0.2
+neo4jdb==0.0.5
+psycopg2==2.5.3
+python-dateutil==2.2
+python-mimeparse==0.1.4
+six==1.7.3
+wsgiref==0.1.2
+xlwt==0.7.5
