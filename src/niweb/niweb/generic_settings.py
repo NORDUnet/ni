@@ -1,6 +1,4 @@
-from os import environ
-from os.path import join
-from sys import path
+import os
 from apps.saml2auth import config
 
 # Django settings for niweb project.
@@ -9,25 +7,23 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 SOUTH_TESTS_MIGRATE = False
-TEST_RUNNER = 'niweb_test_runner.NiwebTestSuiteRunner'
 
-NIWEB_ROOT = ''
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+NIWEB_ROOT = os.path.join(BASE_DIR, os.pardir)
+
 # URL without the host name,
 # eg. /niweb/ for http://www.example.com/niweb/.
 NIWEB_URL = '/'
 
-# Add niweb directory to the python path
-path.append(NIWEB_ROOT)
-
 # Static files collection
-STATIC_ROOT = join(NIWEB_ROOT, 'sitestatic/')
+STATIC_ROOT = os.path.join(NIWEB_ROOT, 'sitestatic/')
 
 # Static URL
 STATIC_URL = '/static/'
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = join(NIWEB_ROOT, 'media/')
+MEDIA_ROOT = os.path.join(NIWEB_ROOT, 'media/')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
@@ -54,14 +50,14 @@ NETAPP_REPORT_SETTINGS = [
 
 # Please fill in a mail server.
 DEFAULT_FROM_EMAIL = 'postmaster@example.com'
-EMAIL_HOST = 'smtp.example.com'
+EMAIL_HOST = 'localhost'
 EMAIL_PORT = '25'
 
 # Database settings
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': join(NIWEB_ROOT, 'niweb.sqlite3'),
+        'NAME': os.path.join(NIWEB_ROOT, 'niweb.sqlite3'),
     }
 }
 
@@ -73,8 +69,8 @@ CACHES = {
 }
 
 # Neo4j settings
-NEO4J_RESOURCE_URI = '/path/to/neo4jdb/'
-NEO4J_MAX_DATA_AGE = '24' # hours
+NEO4J_RESOURCE_URI = 'http://localhost:7474'
+NEO4J_MAX_DATA_AGE = '24'  # hours
 
 # Login settings
 #LOGIN_URL = '/login/'
@@ -156,11 +152,11 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    join(NIWEB_ROOT, 'templates/'),
+    os.path.join(NIWEB_ROOT, 'templates/'),
 )
 
 STATICFILES_DIRS = (
-    join(NIWEB_ROOT, 'static/'),
+    os.path.join(NIWEB_ROOT, 'static/'),
 )
 
 INSTALLED_APPS = (
