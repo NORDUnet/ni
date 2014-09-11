@@ -39,7 +39,7 @@ def get_arbor_node(node):
         node.handle_id: {
             'color': '',
             'label': '%s %s' % (node.labels[0], node.data['name']),
-            'url': '%s' % get_node_url(node)
+            'url': '%s' % get_node_url(node.handle_id)
             #'mass': len(node.relationships),
         }
     }
