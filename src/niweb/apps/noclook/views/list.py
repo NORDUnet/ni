@@ -164,10 +164,10 @@ def list_services(request, service_class=None):
         where_statement = 'WHERE service.service_class = "%s"' % service_class
     q = """
         MATCH (service:Service)
-        MATCH (service)<-[:Uses]-(customer:Customer)
-        WITH service, COLLECT(customer) as customers
-        MATCH (service)<-[:Uses]-(end_user:End_User)
         %s
+        OPTIONAL MATCH (service)<-[:Uses]-(customer:Customer)
+        WITH service, COLLECT(customer) as customers
+        OPTIONAL MATCH (service)<-[:Uses]-(end_user:End_User)
         RETURN service, service.service_class as service_class,
             service.service_type as service_type, service.description as description,
             customers, COLLECT(end_user) as end_users

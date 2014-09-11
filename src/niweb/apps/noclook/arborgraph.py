@@ -73,8 +73,8 @@ def get_directed_adjacency(relationship):
     }}
     """
     structure = {
-        relationship.start.handle_id: {
-            relationship.end.handle_id: {
+        relationship.start: {
+            relationship.end: {
                 'directed': True,
                 'label': relationship.type.replace('_', ' '),
                 #'lenght': 1
@@ -113,7 +113,7 @@ def create_generic_graph(root_node, graph_dict=None):
     for rel_type in relationships:
         for item in relationships[rel_type]:
             relationship = nc.get_relationship_model(nc.neo4jdb, item['relationship_id'])
-            if relationship.start.handle_id == root_node.handle_id:
+            if relationship.start == root_node.handle_id:
                 arbor_node = get_arbor_node(relationship.end)
             else:
                 arbor_node = get_arbor_node(relationship.start)

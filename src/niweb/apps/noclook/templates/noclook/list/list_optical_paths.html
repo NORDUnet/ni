@@ -36,11 +36,11 @@
         <tbody>
         {% load noclook_tags %}
         {% for optical_path in optical_path_list %}
-            {% if optical_path.node.operational_state == "Decommissioned" %}
+            {% if optical_path.operational_state == "Decommissioned" %}
                 <tr class="decommissioned">
-                    {% elif optical_path.node.operational_state == "Reserved" %}
+                    {% elif optical_path.operational_state == "Reserved" %}
                 <tr class="reserved">
-                    {% elif optical_path.node.operational_state == "Testing" %}
+                    {% elif optical_path.operational_state == "Testing" %}
                 <tr class="testing">
                     {% else %}
                 <tr>
