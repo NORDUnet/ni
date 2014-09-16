@@ -101,41 +101,49 @@
                 <tr>
                     <th>Operational State:</th><td>{{ node.operational_state }}</td>
                 </tr>
-                {% if node.operational_state == "Decommissioned" %}
-                    <tr>
-                        <th>Decommissioned:</th><td>{{ node.decommissioned_date }}</td>
-                    </tr>
-                {% endif %}
+            {% if node.operational_state == "Decommissioned" %}
                 <tr>
-                    <th>Type:</th><td>{{ node.service_class }} - {{ node.service_type }}</td>
+                    <th>Decommissioned:</th><td>{{ node.decommissioned_date }}</td>
                 </tr>
-                {% if node.service_type == "Project" %}
-                    <tr>
-                        <th>Project end date:</th><td>{{ node.project_end_date }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.service_type == "L2VPN" or node.service_type == "Interface Switch" %}
-                    <tr>
-                        <th>NCS Service Name:</th>
-                        <td>{{ node.ncs_service_name }}</td>
-                    </tr>
-                    <tr>
-                        <th>VPN Type:</th>
-                        <td>{{ node.vpn_type }}</td>
-                    </tr>
-                    <tr>
-                        <th>VLAN:</th>
-                        <td>{{ node.vlan }}</td>
-                    </tr>
-                    <tr>
-                        <th>VRF Target:</th>
-                        <td>{{ node.vrf_target }}</td>
-                    </tr>
-                    <tr>
-                        <th>Route Distinguisher:</th>
-                        <td>{{ node.route_distinguisher }}</td>
-                    </tr>
-                {% endif %}
+            {% endif %}
+            <tr>
+                <th>Type:</th><td>{{ node.service_class }} - {{ node.service_type }}</td>
+            </tr>
+            {% if node.service_type == "Project" %}
+                <tr>
+                    <th>Project end date:</th><td>{{ node.project_end_date }}</td>
+                </tr>
+            {% endif %}
+            {% if node.ncs_service_name %}
+                <tr>
+                    <th>NCS Service Name:</th>
+                    <td>{{ node.ncs_service_name }}</td>
+                </tr>
+            {% endif %}
+            {% if node.vpn_type %}
+                <tr>
+                    <th>VPN Type:</th>
+                    <td>{{ node.vpn_type }}</td>
+                </tr>
+            {% endif %}
+            {% if node.vlan %}
+                <tr>
+                    <th>VLAN:</th>
+                    <td>{{ node.vlan }}</td>
+                </tr>
+            {% endif %}
+            {% if node.vrf_target %}
+                <tr>
+                    <th>VRF Target:</th>
+                    <td>{{ node.vrf_target }}</td>
+                </tr>
+            {% endif %}
+            {% if node.route_distinguisher %}
+                <tr>
+                    <th>Route Distinguisher:</th>
+                    <td>{{ node.route_distinguisher }}</td>
+                </tr>
+            {% endif %}
                 <tr>
                     <th>Provider:</th>
                     <td>
@@ -223,6 +231,91 @@
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
+    {% if node.description == "NSI circuit" %}
+<div class="section">
+    <h3>NSI information</h3>
+    <div class="row">
+        <div class="span7">
+            <table class="table">
+            {% if node.nsi_request_security_attributes %}
+                <tr>
+                    <th>Request Security Attributes:</th>
+                    <td>
+                        {% for attrib in node.nsi_request_security_attributes %}
+                            {{ attrib }}{% if forloop.last %}{% else %},{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_request_connection_trace %}
+                <tr>
+                    <th>Request Connection Trace:</th>
+                    <td>
+                        {% for trace in node.nsi_request_connection_trace %}
+                            {{ trace }}{% if forloop.last %}{% else %}, {% endif %}
+                        {% endfor %}
+                    </tr>
+            {% endif %}
+            {% if node.nsi_request_requester_nsa %}
+                <tr>
+                    <th>Request Requester NSA:</th><td>{{ node.nsi_request_requester_nsa }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_request_global_reservation_id %}
+                <tr>
+                    <th>Request Global Reservation ID:</th><td>{{ node.nsi_request_global_reservation_id }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_request_description %}
+                <tr>
+                    <th>Request Description:</th><td>{{ node.nsi_request_description }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_resource_reserve_time %}
+                <tr>
+                    <th>Resource Reserve Time:</th><td>{{ node.nsi_resource_reserve_time }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_resource_start_time %}
+                <tr>
+                    <th>Resource Start Time:</th><td>{{ node.nsi_resource_start_time }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_resource_end_time %}
+                <tr>
+                    <th>Resource End Time:</th><td>{{ node.nsi_resource_end_time }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_resource_bandwidth %}
+                <tr>
+                    <th>Resource Bandwidth:</th><td>{{ node.nsi_resource_bandwidth }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_aggregated_source_stp %}
+                <tr>
+                    <th>Aggregated Source STP:</th><td>{{ node.nsi_aggregated_source_stp }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_aggregated_dest_stp %}
+                <tr>
+                    <th>Aggregated Destination STP:</th><td>{{ node.nsi_aggregated_dest_stp }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_local_source_stp %}
+                <tr>
+                    <th>Local Source STP:</th><td>{{ node.nsi_local_source_stp }}</td>
+                </tr>
+            {% endif %}
+            {% if node.nsi_local_dest_stp %}
+                <tr>
+                    <th>Local Destination STP:</th><td>{{ node.nsi_local_dest_stp }}</td>
+                </tr>
+            {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
     <div class="section">
         {% load noclook_tags %}
         <h3>This service is used by</h3>
@@ -610,5 +703,6 @@
             <p>No dependencies found.</p>
         {% endif %}
     </div>
+<div>
 {% endblock %}
 
