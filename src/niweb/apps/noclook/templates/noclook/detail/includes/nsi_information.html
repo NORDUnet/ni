@@ -1,0 +1,83 @@
+<div class="section">
+    <h3>NSI information</h3>
+    <div class="row">
+        <div class="span7">
+            <table class="table">
+            {% if node.data.nsi_request_security_attributes %}
+                <tr>
+                    <th>Request Security Attributes:</th>
+                    <td>
+                        {% for attrib in node.data.nsi_request_security_attributes %}
+                            {{ attrib }}{% if forloop.last %}{% else %},{% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_request_connection_trace %}
+                <tr>
+                    <th>Request Connection Trace:</th>
+                    <td>
+                        {% for trace in node.data.nsi_request_connection_trace %}
+                            {{ trace }}{% if forloop.last %}{% else %}, {% endif %}
+                        {% endfor %}
+                    </tr>
+            {% endif %}
+            {% if node.data.nsi_request_requester_nsa %}
+                <tr>
+                    <th>Request Requester NSA:</th><td>{{ node.data.nsi_request_requester_nsa }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_request_global_reservation_id %}
+                <tr>
+                    <th>Request Global Reservation ID:</th><td>{{ node.data.nsi_request_global_reservation_id }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_request_description %}
+                <tr>
+                    <th>Request Description:</th><td>{{ node.data.nsi_request_description }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_resource_reserve_time %}
+                <tr>
+                    <th>Resource Reserve Time:</th><td>{{ node.data.nsi_resource_reserve_time }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_resource_start_time %}
+                <tr>
+                    <th>Resource Start Time:</th><td>{{ node.data.nsi_resource_start_time }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_resource_end_time %}
+                <tr>
+                    <th>Resource End Time:</th><td>{{ node.data.nsi_resource_end_time }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_resource_bandwidth %}
+                <tr>
+                    <th>Resource Bandwidth:</th><td>{{ node.data.nsi_resource_bandwidth }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_aggregated_source_stp %}
+                <tr>
+                    <th>Aggregated Source STP:</th><td>{{ node.data.nsi_aggregated_source_stp }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_aggregated_dest_stp %}
+                <tr>
+                    <th>Aggregated Destination STP:</th><td>{{ node.data.nsi_aggregated_dest_stp }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_local_source_stp %}
+                <tr>
+                    <th>Local Source STP:</th><td>{{ node.data.nsi_local_source_stp }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.nsi_local_dest_stp %}
+                <tr>
+                    <th>Local Destination STP:</th><td>{{ node.data.nsi_local_dest_stp }}</td>
+                </tr>
+            {% endif %}
+            </table>
+        </div>
+    </div>
+</div>

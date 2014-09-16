@@ -27,23 +27,31 @@
                         <th>Project end date:</th><td>{{ node.data.project_end_date }}</td>
                     </tr>
                 {% endif %}
-                {% if node.data.service_type == "L2VPN" or node.data.service_type == "Interface Switch" %}
+                {% if node.data.ncs_service_name %}
                     <tr>
                         <th>NCS Service Name:</th>
                         <td>{{ node.data.ncs_service_name }}</td>
                     </tr>
+                {% endif %}
+                {% if node.data.vpn_type %}
                     <tr>
                         <th>VPN Type:</th>
                         <td>{{ node.data.vpn_type }}</td>
                     </tr>
+                {% endif %}
+                {% if node.data.vlan %}
                     <tr>
                         <th>VLAN:</th>
                         <td>{{ node.data.vlan }}</td>
                     </tr>
+                {% endif %}
+                {% if node.data.vrf_target %}
                     <tr>
                         <th>VRF Target:</th>
                         <td>{{ node.data.vrf_target }}</td>
                     </tr>
+                {% endif %}
+                {% if node.data.route_distinguisher %}
                     <tr>
                         <th>Route Distinguisher:</th>
                         <td>{{ node.data.route_distinguisher }}</td>
@@ -136,6 +144,9 @@
     </div>
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+{% if node.data.description == "NSI circuit" %}
+    {% include "noclook/detail/includes/nsi_information.html" %}
 {% endif %}
 {% include "noclook/depend_include.html" %}
 {% endblock %}
