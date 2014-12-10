@@ -121,9 +121,9 @@ def host_services(request, status=None):
         else:
             where_statement = ''
             if status == 'locked':
-                where_statement = 'and has(node.services_locked)'
+                where_statement = 'and node.services_locked! = true'
             elif status == 'not-locked':
-                where_statement = 'and not(has(node.services_locked))'
+                where_statement = 'and (not(has(node.services_locked)) or node.services_locked! = false)'
             q = """
                 START node=node:node_types(node_type="Host")
                 WHERE not(node.operational_state! = "Decommissioned") %s
