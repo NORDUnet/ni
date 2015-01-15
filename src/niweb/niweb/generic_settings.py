@@ -1,5 +1,5 @@
 import os
-from apps.saml2auth import config
+#from apps.saml2auth import config
 
 # Django settings for niweb project.
 
@@ -9,7 +9,7 @@ TEMPLATE_DEBUG = DEBUG
 SOUTH_TESTS_MIGRATE = False
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-NIWEB_ROOT = os.path.join(BASE_DIR, os.pardir)
+NIWEB_ROOT = BASE_DIR
 
 # URL without the host name,
 # eg. /niweb/ for http://www.example.com/niweb/.
@@ -73,11 +73,11 @@ NEO4J_RESOURCE_URI = 'http://localhost:7474'
 NEO4J_MAX_DATA_AGE = '24'  # hours
 
 # Login settings
-#LOGIN_URL = '/login/'
+LOGIN_URL = '/login/'
 AUTH_PROFILE_MODULE = 'userprofile.UserProfile'
 
 # djangosaml2 settings
-LOGIN_URL = '/saml2/login/'
+#LOGIN_URL = '/saml2/login/'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SAML_CREATE_UNKNOWN_USER = True
 
@@ -89,7 +89,7 @@ SAML_ATTRIBUTE_MAPPING = {
     'displayName': ('display_name', ),
 }
 
-SAML_CONFIG = config.SAML_CONFIG
+#SAML_CONFIG = config.SAML_CONFIG
 
 ACTSTREAM_SETTINGS = {
     'MODELS': ('auth.user', 'auth.group', 'sites.site', 'comments.comment', 'noclook.NodeHandle'),
@@ -118,7 +118,7 @@ SITE_ID = 1
 USE_I18N = True
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = ''
+SECRET_KEY = 'secret_key_here'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -138,7 +138,7 @@ MIDDLEWARE_CLASSES = (
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'djangosaml2.backends.Saml2Backend',
+    #'djangosaml2.backends.Saml2Backend',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -169,7 +169,7 @@ INSTALLED_APPS = (
     'django.contrib.comments',
     'django.contrib.staticfiles',
     'tastypie',
-    'djangosaml2',
+    #'djangosaml2',
     'south',
     'actstream',
     'apps.userprofile',
