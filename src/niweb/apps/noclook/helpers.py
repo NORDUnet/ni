@@ -322,12 +322,13 @@ def neo4j_report_age(item, old, very_old):
     two_weeks = today - timedelta(days=old)
     month = today - timedelta(days=very_old)
     last_seen, expired = neo4j_data_age(item)
-    if two_weeks >= last_seen > month:
-        return 'old'
-    elif last_seen <= month:
-        return 'very_old'
-    else:
-        return 'current'
+    if last_seen:
+        if two_weeks >= last_seen > month:
+            return 'old'
+        elif last_seen <= month:
+            return 'very_old'
+    return 'current'
+
 
 def iter2list(pythonic_iterator):
     """
