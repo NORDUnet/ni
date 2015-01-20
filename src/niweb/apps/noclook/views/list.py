@@ -12,9 +12,14 @@ import norduniclient as nc
 @login_required
 def list_by_type(request, slug):
     node_type = get_object_or_404(NodeType, slug=slug)
-    node_handle_list = node_type.nodehandle_set.all()
+    q = """ 
+        MATCH (node:%(nodetype)s)
+        RETURN node
+        ORDER BY node.name
+        """ % {'nodetype': node_type.get_label()}
+    node_list = nc.query_to_list(nc.neo4jdb, q)
     return render_to_response('noclook/list/list_by_type.html',
-                              {'node_handle_list': node_handle_list, 'node_type': node_type},
+                              {'node_list': node_list, 'node_type': node_type},
                               context_instance=RequestContext(request))
 
 

@@ -31,14 +31,14 @@ $(document).ready(
         </thead>
         <tbody>
             {% load noclook_tags %}
-            {% for nh in node_handle_list %}
-                {% noclook_has_expired nh.get_node.data as expired %}
+            {% for item in node_list %}
+                {% noclook_has_expired item.node as expired %}
                 {% if expired %}
                     <tr class="expired">
                 {% else %}
                     <tr>
                 {% endif %}
-                    <td><a href="{{ nh.get_absolute_url }}">{{ nh.node_name }}</a></td>
+                    <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.name }}</a></td>
                 </tr>
             {% endfor %}
         </tbody>
