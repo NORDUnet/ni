@@ -4,8 +4,9 @@ from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age,
 import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
-register = template.Library()
 
+
+register = template.Library()
 
 @register.inclusion_tag('type_menu.html')
 def type_menu():
@@ -24,7 +25,7 @@ def noclook_node_to_url(handle_id):
     Takes a node id as a string and returns the absolute url for a node.
     """
     try:
-        return get_node_url(handle_id)
+        return "/nodes/%s" % handle_id
     except ObjectDoesNotExist:
         return ''
 

@@ -120,3 +120,7 @@ urlpatterns += patterns('apps.noclook.views.detail',
     # Generic detail
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
 )
+
+urlpatterns += patterns('apps.noclook.views.redirect',
+  (r'^nodes/(?P<handle_id>\d+)', 'node_redirect'),
+)
