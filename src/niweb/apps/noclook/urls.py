@@ -119,6 +119,7 @@ urlpatterns += patterns('apps.noclook.views.detail',
     (r'^switch/(?P<handle_id>\d+)/$', 'switch_detail'),
     # Generic detail
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
+    (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/history$', 'generic_history'),
 )
 
 urlpatterns += patterns('apps.noclook.views.redirect',

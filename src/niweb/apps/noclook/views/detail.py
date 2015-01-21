@@ -18,6 +18,14 @@ def generic_detail(request, handle_id, slug):
                               {'node_handle': nh, 'node': node, 'slug': slug},
                               context_instance=RequestContext(request))
 
+@login_required
+def generic_history(request, handle_id, slug):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    history = helpers.get_history(nh)
+    return render_to_response('noclook/detail/history.html',
+                              {'node_handle': nh, 'history': history},
+                              context_instance=RequestContext(request))
+
 
 @login_required
 def cable_detail(request, handle_id):

@@ -67,7 +67,7 @@
         <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseOne">
             <i class="icon-comment icon-white"></i> Add a comment
         </a>
-        <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseTwo">
+        <a class="btn btn-info" id="node-history" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseTwo">
             <i class="icon-book icon-white"></i> History
         </a>
         <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
@@ -94,52 +94,20 @@
                         </form>
                     </div>
                 </div>
-                <div id="collapseTwo" class="accordion-body no-border collapse">
+                <div id="collapseTwo" data-node-id="{{node.handle_id}}" class="accordion-body no-border collapse">
                     <div class="accordion-inner no-border well top-space">
-                        <h2>History</h2>
-                        {% if history %}
-                            <table class="table">
-                                {% for entry in history %}
-                                    <tr>
-                                        <td>
-                                            {% if entry.verb == 'create' %}
-                                                <span class="label label-success">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|date:"Y-m-d H:i" }}</strong><br>
-                                            {% elif entry.verb == 'delete' %}
-                                                <span class="label label-important">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|date:"Y-m-d H:i" }}</strong><br>
-                                            {% else %}
-                                                <span class="label label-info">{{ entry.verb }}</span><strong class="pull-right">{{ entry.timestamp|date:"Y-m-d H:i" }}</strong><br>
-                                            {% endif %}
-                                            {% if entry.data.noclook.action_type == 'node_property' %}
-                                                <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> updated <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
-                                                <p>{{ entry.data.noclook.property }}: {{ entry.data.noclook.value_before|default:"<em>No value</em>" }} <i class="icon-arrow-right"></i> {{ entry.data.noclook.value_after|default:"<em>No value</em>" }}</p>
-                                            {% elif entry.data.noclook.action_type == 'node' %}
-                                                {% if entry.verb == 'create' %}
-                                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> created <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a></strong>
-                                                {% else %}
-                                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted {{ entry.data.noclook.object_name }}</strong>
-                                                {% endif %}
-                                            {% elif entry.data.noclook.action_type == 'relationship' %}
-                                                {% if entry.verb == 'create' %}
-                                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> created {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
-                                                {% else %}
-                                                    <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
-                                                {% endif %}
-                                            {% elif entry.data.noclook.action_type == 'relationship_property' %}
-                                                <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> updated the {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
-                                                <p>{{ entry.data.noclook.property }}: {{ entry.data.noclook.value_before|default:"<em>No value</em>" }} <i class="icon-arrow-right"></i> {{ entry.data.noclook.value_after|default:"<em>No value</em>" }}</p>
-                                            {% else %}
-                                                {{ entry.data.noclook }}
-                                            {% endif %}
-                                        <td>
-                                    </tr>
-                                {% endfor %}
-                            </table>
-                        {% else %}
-                            <p>No history recorded.</p>
-                        {% endif %}
-
+                      <img src="{{ STATIC_URL }}/img/spinner.gif" alt="loading"> Loading history...
                     </div>
                 </div>
+                    <script type="text/javascript">
+                      $("#node-history").one("click", function(){
+                        var $collapse = $("#collapseTwo");
+                        var node_id = $collapse.data("node-id");
+                        $.get("/nodes/"+node_id+"/history", function(data){
+                          $(".accordion-inner", $collapse).html(data);
+                        }, "html");
+                      });
+                    </script>
             </div>
         </div>
     </div>
