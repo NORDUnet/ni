@@ -190,15 +190,25 @@
                                         Debug
                                     </a>
                                 </div>
-                                <div id="collapseDebug" class="accordion-body collapse" style="height: 0px; ">
+                                <div id="collapseDebug" data-node-id="{{node.handle_id}}" class="accordion-body collapse" style="height: 0px; ">
                                     <div class="accordion-inner">
                                         <h2>Debug</h2>
-                                        {% include "noclook/debug.html" %}
+                                        loading...
+                                        include "noclook/debug.html"
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <script type="text/javascript">
+                      $("#debug-accordion .accordion-toggle").one("click", function(){
+                        var $collapseDebug = $("#collapseDebug");
+                        var node_id = $collapseDebug.data("node-id");
+                        $.get("/nodes/"+node_id+"/debug", function(data){
+                          $(".accordion-inner", $collapseDebug).html(data);
+                        }, "html");
+                      });
+                    </script>
                 {% endif %}
             </div>
         </div>
