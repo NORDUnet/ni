@@ -45,11 +45,11 @@
                     {% else %}
                 <tr>
             {% endif %}
-                    <td><a href="{% noclook_node_to_url optical_multiplex_section.handle_id %}">{{ optical_multiplex_section.data.name }}</a></td>
+                    <td><a href="/optical-multiplex-section/{{ optical_multiplex_section.handle_id }}">{{ optical_multiplex_section.data.name }}</a></td>
                     <td>{{ optical_multiplex_section.data.description }}</td>
                     <td>
                         {% for dependency in optical_multiplex_section.get_dependencies.Depends_on %}
-                            <a href="{% noclook_node_to_url dependency.node.handle_id %}">{{ dependency.node.data.name }}</a><br>
+                            <a href="/optical-link/{{ dependency.node.handle_id }}">{{ dependency.node.data.name }}</a><br>
                         {%  endfor %}
                     </td>
                 </tr>
