@@ -92,7 +92,7 @@ $(document).ready(
                             {% else %}
                                 <tr>
                             {% endif %}
-                                {% for place in item.unit.get_placement_path.placement_path %}
+                                {% for place in item.placement.placement_path %}
                                     {% if forloop.first %}
                                         <td><a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
                                         <td>

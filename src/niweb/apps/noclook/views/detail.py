@@ -279,7 +279,7 @@ def optical_path_detail(request, handle_id):
                                'history': history},
                               context_instance=RequestContext(request))
 
-
+from time import time
 @login_required
 def peering_group_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -297,6 +297,8 @@ def peering_group_detail(request, handle_id):
         network_address = ipaddr.IPNetwork(item['relationship']['ip_address'])
         interface = {
             'unit': item['node'],
+            #calls neo4j but there are almost no dependencies normally
+            'placement': item['node'].get_placement_path(),
             'network_address': unicode(network_address),
             'users': []
         }
