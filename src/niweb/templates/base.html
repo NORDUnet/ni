@@ -14,6 +14,7 @@
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.autocomplete-min.js"></script>
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tablesorter.min.js"></script>
     <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/main.js?v=1"></script>
     <script type="text/javascript">
     $(document).ready(function() {
         var options, a, b, c;
@@ -186,28 +187,19 @@
                         <div class="accordion" id="debug-accordion">
                             <div class="accordion-group">
                                 <div class="accordion-heading">
-                                    <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#debug-accordion" href="#collapseDebug">
+                                    <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#debug-accordion" href="#collapseDebug" data-async-load="/nodes/{{node.handle_id}}/debug" data-async-load-target="#collapseDebug .accordion-inner">
                                         Debug
                                     </a>
                                 </div>
-                                <div id="collapseDebug" data-node-id="{{node.handle_id}}" class="accordion-body collapse" style="height: 0px; ">
+                                <div id="collapseDebug" class="accordion-body collapse" style="height: 0px; ">
                                     <div class="accordion-inner">
                                         <h2>Debug</h2>
-                                        <img src="{{ STATIC_URL }}/img/spinner.gif" alt="loading"> Loading debug info...
+                                        <img src="{{ STATIC_URL }}img/spinner.gif" alt="loading"> Loading debug info...
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <script type="text/javascript">
-                      $("#debug-accordion .accordion-toggle").one("click", function(){
-                        var $collapseDebug = $("#collapseDebug");
-                        var node_id = $collapseDebug.data("node-id");
-                        $.get("/nodes/"+node_id+"/debug", function(data){
-                          $(".accordion-inner", $collapseDebug).html(data);
-                        }, "html");
-                      });
-                    </script>
                 {% endif %}
             </div>
         </div>

@@ -67,7 +67,7 @@
         <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseOne">
             <i class="icon-comment icon-white"></i> Add a comment
         </a>
-        <a class="btn btn-info" id="node-history" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseTwo">
+        <a class="btn btn-info" id="node-history" data-toggle="collapse" data-parent="#detail-accordion" data-async-load="/nodes/{{node.handle_id}}/history" data-async-load-target="#collapseTwo .accordion-inner" href="#collapseTwo">
             <i class="icon-book icon-white"></i> History
         </a>
         <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
@@ -94,20 +94,11 @@
                         </form>
                     </div>
                 </div>
-                <div id="collapseTwo" data-node-id="{{node.handle_id}}" class="accordion-body no-border collapse">
+                <div id="collapseTwo" class="accordion-body no-border collapse">
                     <div class="accordion-inner no-border well top-space">
-                      <img src="{{ STATIC_URL }}/img/spinner.gif" alt="loading"> Loading history...
+                      <img src="{{ STATIC_URL }}img/spinner.gif" alt="loading"> Loading history...
                     </div>
                 </div>
-                    <script type="text/javascript">
-                      $("#node-history").one("click", function(){
-                        var $collapse = $("#collapseTwo");
-                        var node_id = $collapse.data("node-id");
-                        $.get("/nodes/"+node_id+"/history", function(data){
-                          $(".accordion-inner", $collapse).html(data);
-                        }, "html");
-                      });
-                    </script>
             </div>
         </div>
     </div>
