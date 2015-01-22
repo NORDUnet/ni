@@ -173,6 +173,9 @@ li.autocomplete {
 }
 
 /* Tablesorter tweeks */
+table.tablesorter {
+  border-bottom: 1px solid #ccc;
+}
 table.tablesorter thead .header {
  padding-right: 15px;
 }

@@ -3,11 +3,11 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery.tablesorter.blue.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/cupertino/jquery-ui-1.8.18.custom.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery.tablesorter.blue.css" type="text/css" media="screen" title="NORDUnet"/>
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/cupertino/jquery-ui-1.8.18.custom.css" type="text/css" media="screen" title="NORDUnet"/>
     <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.min.css" type="text/css" />
     <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-responsive.min.css" type="text/css" />
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/style.css" type="text/css" media="screen" title="NORDUnet"/>
     <title>NOCLook{% block title %}{% endblock %}</title>
 </head>
 <body>
@@ -58,9 +58,11 @@
                             {% endif %}
                             <li class="divider-vertical"></li>
                             {% if user.is_authenticated %}
-                                <form action="/search/" method="post" class="navbar-search pull-left">{% csrf_token %}
+                            <li class="pull-left">
+                                <form action="/search/" method="post" class="navbar-search">{% csrf_token %}
                                     <input class="xlarge search-query" type="search" id="mobile" name="q" placeholder="Search" />
                                 </form>
+                             </li>
                             {% endif %}
                         </ul>
                         {% if user.is_authenticated %}
@@ -147,11 +149,11 @@
             </div>
         </div>
     </div>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.7.2.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-ui-1.8.18.custom.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.autocomplete-min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tablesorter.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-ui-1.8.18.custom.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.autocomplete-min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/main.js?v=1"></script>
     <script type="text/javascript">
     $(document).ready(function() {
