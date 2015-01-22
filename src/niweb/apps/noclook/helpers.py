@@ -162,7 +162,7 @@ def dict_update_node(user, handle_id, properties, keys):
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
         elif properties.get(key, None) == '' and key in node.data.keys():
             if key != 'name':  # Never delete name
-                pre_value = node.get(key, '')
+                pre_value = node.data.get(key, '')
                 del node.data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
     nc.set_node_properties(nc.neo4jdb, handle_id, node.data)
