@@ -13,5 +13,6 @@ env
 *.crt
 *.key
 *.sqlite3
+*.swp
 src/niweb/sitestatic
 tools/nerds
