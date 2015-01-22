@@ -9,63 +9,6 @@
     <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-responsive.min.css" type="text/css" />
     <link rel="stylesheet" href="{{ STATIC_URL }}css/style.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
     <title>NOCLook{% block title %}{% endblock %}</title>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.7.2.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-ui-1.8.18.custom.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.autocomplete-min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tablesorter.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/main.js?v=1"></script>
-    <script type="text/javascript">
-    $(document).ready(function() {
-        var options, a, b, c;
-        jQuery(function(){
-            options = {
-                serviceUrl: '/search/autocomplete',
-                minChars: 2,
-                onSelect: function(suggestion) {
-                    $(this).closest("form").submit();
-                }
-            };
-            a = $("#main").autocomplete(options);
-            b = $("#index").autocomplete(options);
-            c = $("#mobile").autocomplete(options);
-        });
-        $(".dropdown-toggle").dropdown();
-        $(".debug-toggle").collapse();
-        $('#add_comment').toggle(false);
-        $('#add_comment_btn').toggle(true);
-        // AJAX setup
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie != '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-        var csrftoken = getCookie('csrftoken');
-        function csrfSafeMethod(method) {
-            // these HTTP methods do not require CSRF protection
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-        }
-        $.ajaxSetup({
-            crossDomain: false, // obviates need for sameOrigin test
-            beforeSend: function(xhr, settings) {
-                if (!csrfSafeMethod(settings.type)) {
-                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
-                }
-            }
-        });
-    });
-    </script>
-    {% block js %}{% endblock %}
 </head>
 <body>
     <br>
@@ -204,5 +147,62 @@
             </div>
         </div>
     </div>
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.7.2.min.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-ui-1.8.18.custom.min.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.autocomplete-min.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tablesorter.min.js"></script>
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/main.js?v=1"></script>
+    <script type="text/javascript">
+    $(document).ready(function() {
+        var options, a, b, c;
+        jQuery(function(){
+            options = {
+                serviceUrl: '/search/autocomplete',
+                minChars: 2,
+                onSelect: function(suggestion) {
+                    $(this).closest("form").submit();
+                }
+            };
+            a = $("#main").autocomplete(options);
+            b = $("#index").autocomplete(options);
+            c = $("#mobile").autocomplete(options);
+        });
+        $(".dropdown-toggle").dropdown();
+        $(".debug-toggle").collapse();
+        $('#add_comment').toggle(false);
+        $('#add_comment_btn').toggle(true);
+        // AJAX setup
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        var csrftoken = getCookie('csrftoken');
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+        $.ajaxSetup({
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+    });
+    </script>
+    {% block js %}{% endblock %}
 </body>
 </html>
