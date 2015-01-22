@@ -304,12 +304,12 @@ def neo4j_report_age(item, old, very_old):
     days_old = today - timedelta(days=old)
     days_very_old = today - timedelta(days=very_old)
     last_seen, expired = neo4j_data_age(item)
-    if days_old >= last_seen > days_very_old:
-        return 'old'
-    elif last_seen <= days_very_old:
-        return 'very_old'
-    else:
-        return 'current'
+    if last_seen:
+        if days_old >= last_seen > days_very_old:
+            return 'old'
+        elif last_seen <= days_very_old:
+            return 'very_old'
+    return 'current'
 
 
 def dicts_to_csv_response(dict_list, header=None):
