@@ -244,8 +244,7 @@ def insert_nmap(json_list, external_check=False):
             'hostnames': i['host']['nmap_services_py']['hostnames'],
             'ip_addresses': addresses
         }
-        if 'os' in i['host']['nmap_services_py'] and not node.data.get('os', None):
-            # Only set os if the property is missing as a user probably knows better than nmap
+        if 'os' in i['host']['nmap_services_py']:
             if 'class' in i['host']['nmap_services_py']['os']:
                 properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
                 properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
