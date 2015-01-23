@@ -162,7 +162,7 @@ def dict_update_node(user, handle_id, properties, keys):
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
         elif properties.get(key, None) == '' and key in node.data.keys():
             if key != 'name':  # Never delete name
-                pre_value = node.get(key, '')
+                pre_value = node.data.get(key, '')
                 del node.data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
     nc.set_node_properties(nc.neo4jdb, handle_id, node.data)
@@ -242,17 +242,17 @@ def update_noclook_auto_manage(item):
     """
     auto_manage_data = {}
     auto_manage = item.data.get('noclook_auto_manage', None)
-    if auto_manage is None:
+    if auto_manage or auto_manage is None:
         auto_manage_data['noclook_auto_manage'] = True
         auto_manage_data['noclook_last_seen'] = datetime.now().isoformat()
-    if isinstance(item, nc.models.BaseNodeModel):
-        node = nc.get_node_model(nc.neo4jdb, item.handle_id)
-        node.data.update(auto_manage_data)
-        nc.set_node_properties(nc.neo4jdb, node.handle_id, node.data)
-    elif isinstance(item, nc.models.BaseRelationshipModel):
-        relationship = nc.get_relationship_model(nc.neo4jdb, item.id)
-        relationship.data.update(auto_manage_data)
-        nc.set_relationship_properties(nc.neo4jdb, relationship.id, relationship.data)
+        if isinstance(item, nc.models.BaseNodeModel):
+            node = nc.get_node_model(nc.neo4jdb, item.handle_id)
+            node.data.update(auto_manage_data)
+            nc.set_node_properties(nc.neo4jdb, node.handle_id, node.data)
+        elif isinstance(item, nc.models.BaseRelationshipModel):
+            relationship = nc.get_relationship_model(nc.neo4jdb, item.id)
+            relationship.data.update(auto_manage_data)
+            nc.set_relationship_properties(nc.neo4jdb, relationship.id, relationship.data)
 
 
 def isots_to_dt(data):

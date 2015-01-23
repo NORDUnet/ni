@@ -40,11 +40,11 @@ $(document).ready(
                     {% else %}
                         <tr>
                     {% endif %}
-                        <td><a href="{% noclook_node_to_url item.peer.handle_id %}">{{ item.peer.name }}</a></td>
+                        <td><a href="/peering-partner/{{ item.peer.handle_id }}">{{ item.peer.name }}</a></td>
                         <td>{{ item.peer.as_number }}</td>
                         <td>
                             {% for group in item.peering_groups %}
-                                <a href="{% noclook_node_to_url group.handle_id %}">{{ group.name }}</a>{% if not forloop.last %},<br>{% endif %}
+                                <a href="/peering-group/{{ group.handle_id }}">{{ group.name }}</a>{% if not forloop.last %}<br>{% endif %}
                             {% endfor %}
                         </td>
                     </tr>
