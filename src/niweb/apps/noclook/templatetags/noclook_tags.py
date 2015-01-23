@@ -24,10 +24,7 @@ def noclook_node_to_url(handle_id):
     """
     Takes a node id as a string and returns the absolute url for a node.
     """
-    try:
-        return get_node_url(handle_id)
-    except ObjectDoesNotExist:
-        return ''
+    return "/nodes/%s" % handle_id
 
 
 @register.assignment_tag
