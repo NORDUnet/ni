@@ -93,11 +93,17 @@ $(document).ready(
                         <tr>
                     {% endif %}
                     <td><span class="ip-address">{{ item.user_address }}</span></td>
-                    <td><a href="{{ item.peering_group.handle_id }}">{{ item.peering_group.data.name }}</a></td>
+                    <td><a href="/peering-group/{{ item.peering_group.handle_id }}">{{ item.peering_group.data.name }}</a></td>
                     <td>{{ item.network_address }}</td>
                     <td>{{ item.unit.data.name }}</td>
                     {% for place in item.unit.get_placement_path.placement_path reversed %}
-                            <td><a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
+                            <td>
+                              {% if forloop.last %}
+                              <a href="/router/{{ place.handle_id }}">{{ place.name }}</a>
+                              {% else %}
+                              <a href="/port/{{ place.handle_id }}">{{ place.name }}</a>
+                              {% endif %}
+                            </td>
                     {% endfor %}
                 </tr>
             {% endfor %}

@@ -169,12 +169,12 @@ $(document).ready(
         <tbody>
         {% for con in connections %}
             <tr>
-                <td><a href="{% noclook_node_to_url con.porta.handle_id %}">{{ con.porta.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.cable.handle_id %}">{{ con.cable.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.site.handle_id %}">{{ con.site.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.location.handle_id %}">{{ con.location.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.end.handle_id %}">{{ con.end.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.portb.handle_id %}">{{ con.portb.name }}</a></td>
+                <td><a href="/port/{{ con.porta.handle_id }}">{{ con.porta.name }}</a></td>
+                <td><a href="/cable/{{ con.cable.handle_id }}">{{ con.cable.name }}</a></td>
+                <td><a href="/site/{{ con.site.handle_id }}">{{ con.site.name }}</a></td>
+                <td><a href="/rack/{{ con.location.handle_id }}">{{ con.location.name }}</a></td>
+                <td><a href="/odf/{{ con.end.handle_id }}">{{ con.end.name }}</a></td>
+                <td><a href="/port/{{ con.portb.handle_id }}">{{ con.portb.name }}</a></td>
             </tr>
         {% endfor %}
         </tbody>

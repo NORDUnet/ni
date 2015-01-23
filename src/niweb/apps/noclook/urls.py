@@ -122,6 +122,11 @@ urlpatterns += patterns('apps.noclook.views.detail',
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/history$', 'generic_history'),
 )
 
+urlpatterns += patterns('apps.noclook.views.redirect',
+  #wins only because of no /
+  (r'^nodes/(?P<handle_id>\d+)$', 'node_redirect'),
+)
+
 urlpatterns += patterns('apps.noclook.views.debug',
   (r'^nodes/(?P<handle_id>\d+)/debug$', 'generic_debug'),
 )
