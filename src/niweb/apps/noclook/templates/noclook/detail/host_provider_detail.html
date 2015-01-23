@@ -75,7 +75,7 @@ $(document).ready(
                 {% else %}
                     <tr>
                 {% endif %}
-                    <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                    <td><a href="/host/{{ item.node.handle_id }}">{{ item.node.data.name }}</a></td>
                 </tr>
             {% endfor %}
             </tbody>

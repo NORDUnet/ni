@@ -79,30 +79,6 @@ $(document).ready(
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
-<div class="section">
-    <h3>Ports</h3>
-    {% if connections %}
-        {% load noclook_tags %}
-        <table id="connections" class="tablesorter" cellspacing="1">
-            <thead>
-                <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
-            </thead>
-            <tbody>
-            {% for item in connections %}
-                <tr>
-                    <td><a href="{% noclook_node_to_url item.porta.handle_id %}">{{ item.porta.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url item.cable.handle_id %}">{{ item.cable.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url item.site.handle_id %}">{{ item.site.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url item.location.handle_id %}">{{ item.location.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url item.end.handle_id %}">{{ item.end.name }}</a></td>
-                    <td><a href="{% noclook_node_to_url item.portb.handle_id %}">{{ item.portb.name }}</a></td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        No ports used.
-    {% endif %}
-</div>
+{% include "noclook/detail/includes/connections.html" with connections=connections only %}
 {% endblock %}
 

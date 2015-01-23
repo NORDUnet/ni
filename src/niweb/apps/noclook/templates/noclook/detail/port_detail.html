@@ -61,33 +61,6 @@
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 {% include "noclook/depend_include.html" %}
-<div class="section">
-    <h3>Connected cables</h3>
-    {% if connections %}
-    {% load noclook_tags %}
-    <table id="connections" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
-                <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for con in connections %}
-            <tr>
-                <td><a href="{% noclook_node_to_url con.porta.handle_id %}">{{ con.porta.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.cable.handle_id %}">{{ con.cable.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.site.handle_id %}">{{ con.site.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.location.handle_id %}">{{ con.location.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.end.handle_id %}">{{ con.end.name }}</a></td>
-                <td><a href="{% noclook_node_to_url con.portb.handle_id %}">{{ con.portb.name }}</a></td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        No cables connected to the port.
-    {% endif %}
-</div>
-
+{% include "noclook/detail/includes/connections.html" with connections=connections only %}
 
 {% endblock %}
