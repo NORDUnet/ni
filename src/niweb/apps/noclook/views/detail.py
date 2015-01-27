@@ -136,10 +136,12 @@ def host_detail(request, handle_id):
     if not any(dependent.values()):
         dependent = None
     dependencies = host.get_dependencies_as_types()
+    
+    urls = helpers.get_node_urls(relations, host_services, dependent, dependencies)
     return render_to_response('noclook/detail/host_detail.html',
                               {'node_handle': nh, 'node': host, 'last_seen': last_seen, 'expired': expired,
                                'relations': relations, 'host_services': host_services, 'dependent': dependent,
-                               'dependencies': dependencies, 'location_path': location_path, 'history': True},
+                               'dependencies': dependencies, 'location_path': location_path, 'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -152,10 +154,13 @@ def host_provider_detail(request, handle_id):
     result = host_provider.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     provides_relationships = host_provider.get_provides()
+
+    urls = helpers.get_node_urls(host_provider,same_name_relations,provides_relationships)
     return render_to_response('noclook/detail/host_provider_detail.html',
                               {'node_handle': nh, 'node': host_provider, 'last_seen': last_seen, 'expired': expired,
                                'same_name_relations': same_name_relations,
-                               'provides_relationships': provides_relationships, 'history': True},
+                               'provides_relationships': provides_relationships, 
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -166,9 +171,11 @@ def host_service_detail(request, handle_id):
     host_service = nh.get_node()
     last_seen, expired = helpers.neo4j_data_age(host_service.data)
     service_relationships = host_service.get_dependencies()
+
+    urls = helpers.get_node_urls(host_service, service_relationships)
     return render_to_response('noclook/detail/host_service_detail.html',
                               {'node_handle': nh, 'node': host_service, 'last_seen': last_seen, 'expired': expired,
-                               'service_relationships': service_relationships, 'history': True},
+                               'service_relationships': service_relationships, 'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 

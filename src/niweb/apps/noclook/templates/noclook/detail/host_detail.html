@@ -248,7 +248,7 @@
             {% endif %}
                 <td>
                     {% if item.relationship.rogue_port %}<i class="icon-exclamation-sign"></i> {% endif %}
-                    <a href="/host-service/{{ item.node.handle_id }}">{{ item.node.data.name }}</a>
+                    <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
                 </td>
                 <td>{{ item.relationship.ip_address }}</td>
                 <td>{{ item.relationship.port }} </td>
