@@ -10,7 +10,6 @@ from apps.noclook.helpers import get_node_urls
 import norduniclient as nc
 
 
-from time import time
 @login_required
 def list_by_type(request, slug):
     node_type = get_object_or_404(NodeType, slug=slug)
