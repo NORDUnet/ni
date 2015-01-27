@@ -78,7 +78,7 @@
                     {% else %}
                         <tr>
                     {% endif %}
-                        <td><a href="/service/{{ item.node.handle_id }}">{{ item.node.data.name }}</a></td>
+                        <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
                         <td>{{ item.node.data.description }}</td>
                     </tr>
                 {% endfor %}

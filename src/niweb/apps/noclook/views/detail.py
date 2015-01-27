@@ -36,12 +36,13 @@ def cable_detail(request, handle_id):
     relations = cable.get_relations()
     dependent = cable.get_dependent_as_types()
 
+    urls = helpers.get_node_urls(cable,connections,relations,dependent)
     if not any(dependent.values()):
         dependent = None
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': cable, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'connections': connections, 'dependent': dependent, 'history': True,
-                               'relations': relations},
+                               'relations': relations, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -55,10 +56,12 @@ def customer_detail(request, handle_id):
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     # Handle relationships
     uses_relationships = customer.get_uses()
+    
+    urls = helpers.get_node_urls(customer, same_name_relations, uses_relationships)
     return render_to_response('noclook/detail/customer_detail.html',
                               {'node_handle': nh, 'node': customer, 'last_seen': last_seen, 'expired': expired,
                                'same_name_relations': same_name_relations, 'uses_relationships': uses_relationships,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 

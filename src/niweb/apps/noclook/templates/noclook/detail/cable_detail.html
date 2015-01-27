@@ -92,10 +92,10 @@
         <tbody>
         {% for item in connections %}
             <tr>
-                <td><a href="/site/{{ item.site.handle_id }}">{{ item.site.name }}</a></td>
-                <td><a href="/rack/{{ item.location.handle_id }}">{{ item.location.name }}</a></td>
+                <td><a href="{% noclook_node_to_url item.site.handle_id %}">{{ item.site.name }}</a></td>
+                <td><a href="{% noclook_node_to_url item.location.handle_id %}">{{ item.location.name }}</a></td>
                 <td><a href="{% noclook_node_to_url item.end.handle_id %}">{{ item.end.name }}</a></td>
-                <td><a href="/port/{{ item.port.handle_id }}">{{ item.port.name }}</a></td>
+                <td><a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.port.name }}</a></td>
             </tr>
          {% endfor %}
         </tbody>
