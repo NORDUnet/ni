@@ -25,7 +25,7 @@ def delete_node(request, slug, handle_id):
     Removes the node and all its relationships.
     """
     nh, node = helpers.get_nh_node(handle_id)
-    helpers.delete_node(request.user, node)
+    helpers.delete_node(request.user, node.handle_id)
     return HttpResponseRedirect('/%s' % slug)
 
 
