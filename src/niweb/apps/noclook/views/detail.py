@@ -381,7 +381,8 @@ def port_detail(request, handle_id):
     return render_to_response('noclook/detail/port_detail.html',
                               {'node': port, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'connections': connections, 'dependent': dependent,
-                               'location_path': location_path, 'history': True},
+                               'location_path': location_path, 
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -395,10 +396,13 @@ def provider_detail(request, handle_id):
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     # Handle relationships
     provides_relationships = provider.get_provides()
+    
+    urls = helpers.get_node_urls(provider, same_name_relations, provides_relationships)
     return render_to_response('noclook/detail/provider_detail.html',
                               {'node_handle': nh, 'node': provider, 'last_seen': last_seen, 'expired': expired,
                                'same_name_relations': same_name_relations,
-                               'provides_relationships': provides_relationships, 'history': True},
+                               'provides_relationships': provides_relationships, 
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
