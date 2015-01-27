@@ -5,10 +5,12 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 
-from apps.noclook.models import NodeType
+from apps.noclook.models import NodeType, NodeHandle
+from apps.noclook.helpers import get_node_urls
 import norduniclient as nc
 
 
+from time import time
 @login_required
 def list_by_type(request, slug):
     node_type = get_object_or_404(NodeType, slug=slug)
@@ -18,8 +20,10 @@ def list_by_type(request, slug):
         ORDER BY node.name
         """ % {'nodetype': node_type.get_label()}
     node_list = nc.query_to_list(nc.neo4jdb, q)
+    #Since all is the same type... we could use a defaultdict with type/id return
+    urls = get_node_urls(node_list)
     return render_to_response('noclook/list/list_by_type.html',
-                              {'node_list': node_list, 'node_type': node_type},
+                              {'node_list': node_list, 'node_type': node_type, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -31,8 +35,9 @@ def list_cables(request):
         ORDER BY cable.name
         """
     cable_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(cable_list)
     return render_to_response('noclook/list/list_cables.html',
-                              {'cable_list': cable_list},
+                              {'cable_list': cable_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -46,7 +51,8 @@ def list_hosts(request):
         """
     with nc.neo4jdb.read as r:
         host_list = r.execute(q).fetchall()
-    return render_to_response('noclook/list/list_hosts.html', {'host_list': host_list},
+    urls = get_node_urls(host_list)
+    return render_to_response('noclook/list/list_hosts.html', {'host_list': host_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -60,8 +66,9 @@ def list_odfs(request):
         ORDER BY site.name, location.name, odf.name
         """
     odf_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(odf_list)
     return render_to_response('noclook/list/list_odfs.html',
-                              {'odf_list': odf_list},
+                              {'odf_list': odf_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -75,8 +82,10 @@ def list_optical_links(request):
     optical_link_list = []
     for handle_id in result['ids']:
         optical_link_list.append(nc.get_node_model(nc.neo4jdb, handle_id))
+    #TODO: template looks up dependecies... is that correct?
+    urls = get_node_urls(optical_link_list)
     return render_to_response('noclook/list/list_optical_links.html',
-                              {'optical_link_list': optical_link_list},
+                              {'optical_link_list': optical_link_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -90,8 +99,10 @@ def list_optical_multiplex_section(request):
     optical_multiplex_section_list = []
     for handle_id in result['ids']:
         optical_multiplex_section_list.append(nc.get_node_model(nc.neo4jdb, handle_id))
+    #TODO: template looks up dependecies... is that correct?
+    urls = get_node_urls(optical_multiplex_section_list)
     return render_to_response('noclook/list/list_optical_multiplex_section.html',
-                              {'optical_multiplex_section_list': optical_multiplex_section_list},
+                              {'optical_multiplex_section_list': optical_multiplex_section_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 @login_required
@@ -102,8 +113,9 @@ def list_optical_nodes(request):
         ORDER BY node.name
         """
     optical_node_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(optical_node_list)
     return render_to_response('noclook/list/list_optical_nodes.html',
-                              {'optical_node_list': optical_node_list},
+                              {'optical_node_list': optical_node_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -116,8 +128,9 @@ def list_optical_paths(request):
         ORDER BY path.name
         """
     optical_path_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(optical_path_list)
     return render_to_response('noclook/list/list_optical_paths.html',
-                              {'optical_path_list': optical_path_list},
+                              {'optical_path_list': optical_path_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -131,7 +144,9 @@ def list_peering_partners(request):
         ORDER BY peer.name
         """
     partner_list = nc.query_to_list(nc.neo4jdb, q)
-    return render_to_response('noclook/list/list_peering_partners.html', {'partner_list': partner_list},
+    urls = get_node_urls(partner_list)
+    return render_to_response('noclook/list/list_peering_partners.html', 
+                              {'partner_list': partner_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -144,8 +159,9 @@ def list_racks(request):
         ORDER BY site.name, rack.name
         """
     rack_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(rack_list)
     return render_to_response('noclook/list/list_racks.html',
-                              {'rack_list': rack_list},
+                              {'rack_list': rack_list, 'urls':urls},
                               context_instance=RequestContext(request))
 
 
@@ -157,8 +173,9 @@ def list_routers(request):
         ORDER BY router.name
         """
     router_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(router_list)
     return render_to_response('noclook/list/list_routers.html',
-                              {'router_list': router_list},
+                              {'router_list': router_list, 'urls':urls},
                               context_instance=RequestContext(request))
 
 
@@ -179,8 +196,9 @@ def list_services(request, service_class=None):
         ORDER BY service.name
         """ % where_statement
     service_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(service_list)
     return render_to_response('noclook/list/list_services.html',
-                              {'service_list': service_list, 'service_class': service_class},
+                              {'service_list': service_list, 'service_class': service_class, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -192,7 +210,8 @@ def list_sites(request):
         ORDER BY site.country_code, site.name
         """
     site_list = nc.query_to_list(nc.neo4jdb, q)
-    return render_to_response('noclook/list/list_sites.html', {'site_list': site_list},
+    urls = get_node_urls(site_list)
+    return render_to_response('noclook/list/list_sites.html', {'site_list': site_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
 

@@ -41,6 +41,14 @@ class NodeType(models.Model):
         return True
     delete.alters_data = True
 
+#XXX: Does not handle slug renaming
+slug_cache = {}
+def get_slug(slug_id):
+  if slug_id in slug_cache:
+    return slug_cache[slug_id]
+  else:
+    slug_cache[slug_id] = NodeType.objects.get(pk=slug_id).get_slug()
+    return slug_cache[slug_id]
 
 class NodeHandle(models.Model):
     # Handle <-> Node data
@@ -68,7 +76,7 @@ class NodeHandle(models.Model):
     @models.permalink
     def get_absolute_url(self):
         return('apps.noclook.views.detail.generic_detail', (),
-               {'slug': self.node_type.get_slug(), 'handle_id': self.handle_id})
+               {'slug': get_slug(self.node_type_id), 'handle_id': self.handle_id})
 
     def save(self, *args, **kwargs):
         """

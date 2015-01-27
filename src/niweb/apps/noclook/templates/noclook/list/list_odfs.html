@@ -30,8 +30,8 @@ $(document).ready(
             {% load noclook_tags %}
             {% for item in odf_list %}
                 <tr>
-                    <td><a class="handle" href="/rack/{{ item.location.handle_id }}">{{ item.site.name }} {{ item.location.name }}</a></td>
-                    <td><a class="handle" href="/odf/{{ item.odf.handle_id }}">{{ item.odf.name }}</a></td>
+                    <td><a class="handle" href="{% noclook_node_to_url item.location.handle_id %}">{{ item.site.name }} {{ item.location.name }}</a></td>
+                    <td><a class="handle" href="{% noclook_node_to_url item.odf.handle_id %}">{{ item.odf.name }}</a></td>
                 </tr>
             {% endfor %}
         </tbody>

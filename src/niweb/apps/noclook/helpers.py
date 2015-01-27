@@ -746,3 +746,28 @@ def remove_rogue_service_marker(user, handle_id):
     for relationship_id in result['ids']:
         dict_update_relationship(user, relationship_id, properties, properties.keys())
     return True
+
+def find_recursive(key, target):
+  if type(target) in (list, tuple):
+    for d in target:
+      for result in find_recursive(key, d):
+        yield result
+  elif isinstance(target, dict):
+    for k, v in target.iteritems():
+      if k == key:
+        yield v
+      else:
+        for result in find_recursive(key,v):
+          yield result
+  elif hasattr(target,key):
+    yield getattr(target,key)
+
+def get_node_urls(*args):
+  ids = []
+  for arg in args:
+    ids += set(find_recursive("handle_id", arg))
+  nodes = NodeHandle.objects.filter(handle_id__in=ids)
+  urls = {}
+  for n in nodes:
+    urls[n.handle_id] = n.get_absolute_url() 
+  return urls

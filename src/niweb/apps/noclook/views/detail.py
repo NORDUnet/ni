@@ -35,6 +35,13 @@ def cable_detail(request, handle_id):
     connections = cable.get_connected_equipment()
     relations = cable.get_relations()
     dependent = cable.get_dependent_as_types()
+
+    print "Dependencies",dependent
+    #all_handle_ids = list(find_recursive("handle_id",cable)
+    #    + list(find_recursive("handle_id",connections))
+    #    + list(find_recursive("handle_id", relations)
+    #    + list(find_recursive("handle_id", dependent)
+
     if not any(dependent.values()):
         dependent = None
     return render_to_response('noclook/detail/cable_detail.html',

@@ -45,7 +45,7 @@ $(document).ready(
                         {% else %}
                     <tr>
                 {% endif %}
-                        <td><a class="handle" href="/routers/{{ item.router.handle_id }}">{{ item.router.name }}</a></td><td>{{ item.model|default:"Unknown" }}</td><td>{{ item.version|default:"Unknown" }}</td>
+                        <td><a class="handle" href="{% noclook_node_to_url item.router.handle_id %}">{{ item.router.name }}</a></td><td>{{ item.model|default:"Unknown" }}</td><td>{{ item.version|default:"Unknown" }}</td>
                     </tr>
             {% endfor %}
         </tbody>

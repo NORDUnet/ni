@@ -44,13 +44,13 @@ $(document).ready(
                         {% else %}
                             <tr>
                         {% endif %}
-                            <td><a class="handle" href="/host/{{host.handle_id}}">{{ host.name }}</a></td>
+                            <td><a class="handle" href="{% noclook_node_to_url host.handle_id %}">{{ host.name }}</a></td>
                             <td>{{ address }}</td>
                             <td>{{ host.os|default:"" }}</td>
                             <td>{{ host.os_version|default:"" }}</td>
                             <td>
                                 {% for user in users %}
-                                    <a href="/host-user/{{user.handle_id}}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
+                                    <a href="{% noclook_node_to_url user.handle_id %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
                                 {% endfor %}
                             </td>
                         </tr>
@@ -62,13 +62,13 @@ $(document).ready(
                             {% else %}
                         <tr>
                     {% endif %}
-                        <td><a class="handle" href="{% noclook_node_to_url host %}">{{ host.name }}</a></td>
+                        <td><a class="handle" href="{% noclook_node_to_url host.handle_id  %}">{{ host.name }}</a></td>
                         <td>No address</td>
                         <td>{{ host.os|default:"" }}</td>
                         <td>{{ host.os_version|default:"" }}</td>
                         <td>
                             {% for user in users %}
-                                <a href="/host-user/{{user.handle_id}}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
+                                <a href="{% noclook_node_to_url user.handle_id %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
                             {% endfor %}
                         </td>
                     </tr>

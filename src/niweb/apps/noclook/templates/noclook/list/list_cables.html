@@ -40,7 +40,7 @@ $(document).ready(
                     {% else %}
                         <tr>
                     {% endif %}
-                        <td><a href="{% noclook_node_to_url item.cable.handle_id %}">{{ item.cable.name }}</a></td><td>{{ item.cable.cable_type }}</td>
+                        <td><a href="{% noclook_node_to_url item.cable.handle_id  %}">{{ item.cable.name }}</a></td><td>{{ item.cable.cable_type }}</td>
                     </tr>
             {% endfor %}
         </tbody>

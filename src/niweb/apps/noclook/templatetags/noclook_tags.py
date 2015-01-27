@@ -19,13 +19,23 @@ def type_menu():
     return {'types': types}
 
 
-@register.simple_tag
-def noclook_node_to_url(handle_id):
+@register.simple_tag(takes_context=True)
+def noclook_node_to_url(context,handle_id):
     """
     Takes a node id as a string and returns the absolute url for a node.
     """
-    return "/nodes/%s" % handle_id
-
+    #handle fallback
+    urls = context.get('urls')
+    if urls and handle_id in urls:
+      return urls.get(handle_id)
+    else:
+      return "/nodes/%s" % handle_id
+   #else:
+      #
+      #try: 
+      #  return get_node_url(handle_id)
+      #except ObjectDoesNotExist:
+      #  return ''
 
 @register.assignment_tag
 def noclook_node_to_node_handle(node):

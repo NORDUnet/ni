@@ -45,18 +45,18 @@
             {% else %}
                 <tr>
             {% endif %}
-                <td><a href="/service/{{ item.service.handle_id }}">{{ item.service.name }}</a></td>
+                <td><a href="{% noclook_node_to_url item.service.handle_id %}">{{ item.service.name }}</a></td>
                 <td>{{ item.service_class }}</td>
                 <td>{{ item.service_type }}</td>
                 <td>{{ item.description }}</td>
                 <td>
                     {% for customer in item.customers %}
-                        <a href="/customer/{{ customer.handle_id }}">{{ customer.name }}</a><br>
+                        <a href="{% noclook_node_to_url customer.handle_id %}">{{ customer.name }}</a><br>
                     {% endfor %}
                 </td>
                 <td>
                     {% for end_user in item.end_users %}
-                        <a href="/end-user/{{ end_user.handle_id }}">{{ end_user.name }}</a><br>
+                        <a href="{% noclook_node_to_url end_user.handle_id %}">{{ end_user.name }}</a><br>
                     {% endfor %}
                 </td>
             </tr>

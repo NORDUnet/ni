@@ -45,12 +45,12 @@
                     {% else %}
                 <tr>
             {% endif %}
-                    <td><a href="/optical-link/{{ optical_link.handle_id }}">{{ optical_link.data.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url optical_link.handle_id %}">{{ optical_link.data.name }}</a></td>
                     <td>{{ optical_link.data.link_type }}</td>
                     <td>{{ optical_link.data.description }}</td>
                     <td>
                         {% for end_point in optical_link.get_dependencies.Depends_on %}
-                            <a href="/port/{{ end_point.node.handle_id }}">
+                            <a href="{% noclook_node_to_url end_point.node.handle_id %}">
                                 {% for loc in end_point.node.get_placement_path.placement_path %}
                                     {{ loc.name }}
                                 {% endfor %}

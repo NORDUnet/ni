@@ -46,7 +46,7 @@
                 <tr>
             {% endif %}
             <td>
-                <a class="handle" href="/optical-node/{{ optical_node.node.handle_id }}">{{ optical_node.node.name }}</a>
+                <a class="handle" href="{% noclook_node_to_url optical_node.node.handle_id %}">{{ optical_node.node.name }}</a>
             </td>
             <td>
                 {{ optical_node.type|default:"Unknown" }}
