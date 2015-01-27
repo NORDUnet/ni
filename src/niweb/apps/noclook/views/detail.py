@@ -435,6 +435,7 @@ def router_detail(request, handle_id):
     connections = router.get_connections()
     dependent = router.get_dependent_as_types()
     
+    #TODO: generally very inefficient lookups in view... 
     urls = helpers.get_node_urls(router, location_path, dependent, connections)
     return render_to_response('noclook/detail/router_detail.html',
                               {'node_handle': nh, 'node': router, 'last_seen': last_seen, 'expired': expired,
@@ -453,10 +454,12 @@ def unit_detail(request, handle_id):
     location_path = unit.get_location_path()
     dependent = unit.get_dependent_as_types()
     dependencies = unit.get_dependencies_as_types()
+    
+    urls = helpers.get_node_urls(unit, dependent, dependencies, location_path)
     return render_to_response('noclook/detail/unit_detail.html',
                               {'node': unit, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'dependent': dependent, 'dependencies': dependencies, 'location_path': location_path,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -469,10 +472,12 @@ def service_detail(request, handle_id):
     relations = service.get_relations()
     dependent = service.get_dependent_as_types()
     dependencies = service.get_dependencies_as_types()
+    
+    urls = helpers.get_node_urls(service, dependent, dependencies, relations)
     return render_to_response('noclook/detail/service_detail.html',
                               {'node': service, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'dependent': dependent, 'dependencies': dependencies, 'relations': relations,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -485,10 +490,13 @@ def site_detail(request, handle_id):
     relations = site.get_relations()
     equipment_relationships = site.get_located_in()
     location_relationships = site.get_has()
+    
+    urls = helpers.get_node_urls(site, equipment_relationships, relations, location_relationships)
     return render_to_response('noclook/detail/site_detail.html',
                               {'node_handle': nh, 'node': site, 'last_seen': last_seen, 'expired': expired,
                                'equipment_relationships': equipment_relationships, 'relations': relations,
-                               'location_relationships': location_relationships, 'history': True},
+                               'location_relationships': location_relationships, 
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -501,10 +509,13 @@ def site_owner_detail(request, handle_id):
     result = site_owner.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     responsible_relations = site_owner.get_responsible_for()
+    
+    urls = helpers.get_node_urls(site_owner, same_name_relations, responsible_relations)
     return render_to_response('noclook/detail/site_owner_detail.html',
                               {'node_handle': nh, 'node': site_owner, 'last_seen': last_seen, 'expired': expired,
                                'same_name_relations': same_name_relations,
-                               'responsible_relations': responsible_relations, 'history': True},
+                               'responsible_relations': responsible_relations, 
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -521,10 +532,12 @@ def switch_detail(request, handle_id):
     dependent = switch.get_dependent_as_types()
     dependencies = switch.get_dependencies_as_types()
     relations = switch.get_relations()
+    
+    urls = helpers.get_node_urls(switch, host_services, connections, dependent, dependencies, relations, location_path)
     return render_to_response('noclook/detail/switch_detail.html',
                               {'node_handle': nh, 'node': switch, 'last_seen': last_seen, 'expired': expired,
                                'host_services': host_services, 'connections': connections, 'dependent': dependent,
                                'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
