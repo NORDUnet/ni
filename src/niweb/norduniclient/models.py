@@ -228,6 +228,10 @@ class CommonQueries(BaseNodeModel):
 
 class LogicalModel(CommonQueries):
 
+    def get_placement_path(self):
+        # Not possible for logical things
+        pass
+
     def get_part_of(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})-[r:Part_of]->(node)
@@ -576,7 +580,6 @@ class PhysicalHostModel(HostModel, EquipmentModel):
 
 class LogicalHostModel(HostModel, LogicalModel):
     pass
-
 
 class PortModel(SubEquipmentModel):
 
