@@ -189,10 +189,12 @@ def host_user_detail(request, handle_id):
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     host_relationships = host_user.get_uses()
     host_relationships.update(host_user.get_owns())
+    
+    urls = helpers.get_node_urls(host_user, same_name_relations, host_relationships)
     return render_to_response('noclook/detail/host_user_detail.html',
                               {'node_handle': nh, 'node': host_user, 'last_seen': last_seen, 'expired': expired,
                                'same_name_relations': same_name_relations, 'host_relationships': host_relationships,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
