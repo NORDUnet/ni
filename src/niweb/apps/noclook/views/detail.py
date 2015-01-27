@@ -208,9 +208,12 @@ def odf_detail(request, handle_id):
     connections = odf.get_connections()
     # Get location
     location_path = odf.get_location_path()
+    
+    urls = helpers.get_node_urls(odf, connections, location_path)
     return render_to_response('noclook/detail/odf_detail.html',
                               {'node': odf, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'connections': connections, 'location_path': location_path, 'history': True},
+                               'connections': connections, 'location_path': location_path, 
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -239,10 +242,12 @@ def optical_multiplex_section_detail(request, handle_id):
     relations = oms.get_relations()
     dependent = oms.get_dependent_as_types()
     dependencies = oms.get_dependencies_as_types()
+
+    urls = helpers.get_node_urls(oms, dependent, dependencies, relations)
     return render_to_response('noclook/detail/optical_multiplex_section_detail.html',
                               {'node': oms, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'dependent': dependent, 'dependencies': dependencies, 'relations': relations,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
@@ -256,10 +261,13 @@ def optical_node_detail(request, handle_id):
     connections = optical_node.get_connections()
     dependent = optical_node.get_dependent_as_types()
     dependencies = optical_node.get_dependencies_as_types()
+
+    urls = helpers.get_node_urls(optical_node, location_path, dependent, dependencies, connections)
     return render_to_response('noclook/detail/optical_node_detail.html',
                               {'node': optical_node, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'location_path': location_path, 'history': True, 'dependent': dependent,
-                               'dependencies': dependencies, 'connections': connections},
+                               'location_path': location_path, 'dependent': dependent,
+                               'dependencies': dependencies, 'connections': connections,
+                               'history': True, 'urls': urls}, 
                               context_instance=RequestContext(request))
 
 
@@ -272,10 +280,12 @@ def optical_path_detail(request, handle_id):
     relations = optical_path.get_relations()
     dependent = optical_path.get_dependent_as_types()
     dependencies = optical_path.get_dependencies_as_types()
+    
+    urls = helpers.get_node_urls(optical_path, dependent, dependencies, relations)
     return render_to_response('noclook/detail/optical_path_detail.html',
                               {'node': optical_path, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'dependencies': dependencies, 'dependent': dependent, 'relations': relations,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 @login_required
