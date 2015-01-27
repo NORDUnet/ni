@@ -434,10 +434,13 @@ def router_detail(request, handle_id):
     # Get all the Ports and what depends on the port.
     connections = router.get_connections()
     dependent = router.get_dependent_as_types()
+    
+    urls = helpers.get_node_urls(router, location_path, dependent, connections)
     return render_to_response('noclook/detail/router_detail.html',
                               {'node_handle': nh, 'node': router, 'last_seen': last_seen, 'expired': expired,
-                               'location_path': location_path, 'history': True, 'dependent': dependent,
-                               'connections': connections},
+                               'location_path': location_path, 'dependent': dependent,
+                               'connections': connections, 
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
