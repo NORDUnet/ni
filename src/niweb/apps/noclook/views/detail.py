@@ -352,16 +352,18 @@ def peering_partner_detail(request, handle_id):
             network_address = ipaddr.IPNetwork(unit['relationship']['ip_address'])
             if user_address in network_address:
                 peering_group.update({
+                    #TODO: warn: unit.get.placement_path called from view 
                     'unit': unit['node'],
                     'network_address': unicode(network_address),
                     'relationship': unit['relationship']
                 })
                 break
         user_dependencies.append(peering_group)
+    urls = helpers.get_node_urls(peering_partner, same_name_relations, user_dependencies)
     return render_to_response('noclook/detail/peering_partner_detail.html',
                               {'node_handle': nh, 'node': peering_partner, 'last_seen': last_seen, 'expired': expired,
                                'same_name_relations': same_name_relations, 'user_dependencies': user_dependencies,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
