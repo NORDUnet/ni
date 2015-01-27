@@ -415,10 +415,12 @@ def rack_detail(request, handle_id):
     location_path = rack.get_location_path()
     # Get equipment in rack
     physical_relationships = rack.get_located_in()
+    
+    urls = helpers.get_node_urls(rack, physical_relationships, location_path)
     return render_to_response('noclook/detail/rack_detail.html',
                               {'node': rack, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'physical_relationships': physical_relationships, 'location_path': location_path,
-                               'history': True},
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
