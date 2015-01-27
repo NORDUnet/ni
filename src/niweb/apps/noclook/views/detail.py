@@ -300,6 +300,7 @@ def peering_group_detail(request, handle_id):
     user_dependencies = []
     dependencies = peering_group.get_dependencies()
     users = peering_group.get_relations().get('Uses', [])
+
     for item in dependencies.get('Depends_on', []):
         network_address = ipaddr.IPNetwork(item['relationship']['ip_address'])
         interface = {
@@ -318,9 +319,12 @@ def peering_group_detail(request, handle_id):
                     'relationship': user['relationship']
                 })
         user_dependencies.append(interface)
+
+    urls = helpers.get_node_urls(peering_group, user_dependencies)
     return render_to_response('noclook/detail/peering_group_detail.html',
                               {'node_handle': nh, 'node': peering_group, 'last_seen': last_seen, 'expired': expired,
-                               'user_dependencies': user_dependencies, 'history': True},
+                               'user_dependencies': user_dependencies, 
+                               'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 

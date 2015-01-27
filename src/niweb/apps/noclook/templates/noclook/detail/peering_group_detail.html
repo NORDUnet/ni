@@ -95,12 +95,12 @@ $(document).ready(
                             {% if item.placement.placement_path %}
                                 {% for place in item.placement.placement_path %}
                                     {% if forloop.first %}
-                                        <td><a href="/router/{{ place.handle_id }}">{{ place.name }}</a></td>
+                                        <td><a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
                                         <td>
                                     {% elif forloop.last %}
-                                        <a href="/port/{{ place.handle_id }}">{{ place.name }}</a></td>
+                                        <a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
                                     {% else %}
-                                        <a href="/port/{{ place.handle_id }}">{{ place.name }}</a>
+                                        <a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a>
                                     {% endif %}
                                 {% endfor %}
                             {% else %}
@@ -111,19 +111,19 @@ $(document).ready(
                                 <td>{{ item.network_address }}</td>
                                 <td>{{ item.unit.data.vlanid }}</td>
                                 <td><span class="ip-address">{{ relation.user_address }}</span></td>
-                                <td><a href="/peering-partner/{{ relation.user.handle_id }}">{{ relation.user.data.name }} (AS{{ relation.user.data.as_number }})</a></td>
+                                <td><a href="{% noclook_node_to_url relation.user.handle_id %}">{{ relation.user.data.name }} (AS{{ relation.user.data.as_number }})</a></td>
                             </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
                             {% for place in item.unit.get_placement_path.placement_path %}
                             {% if forloop.first %}
-                                <td><a href="/router/{{ place.handle_id }}">{{ place.name }}</a></td>
+                                <td><a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
                                 <td>
                             {% elif forloop.last %}
-                                <a href="/port/{{ place.handle_id }}">{{ place.name }}</a></td>
+                                <a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
                             {% else %}
-                                <a href="/port/{{ place.handle_id }}">{{ place.name }}</a>
+                                <a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a>
                             {% endif %}
                             {% endfor %}
                             <td>{{ item.unit.data.name }}</td>
