@@ -389,7 +389,7 @@ def new_site(request, **kwargs):
                 return render_to_response('noclook/create/create_site.html', {'form': form},
                                           context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['country_code', 'address', 'postarea', 'postcode']
+            keys = ['country', 'country_code', 'address', 'postarea', 'postcode']
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
