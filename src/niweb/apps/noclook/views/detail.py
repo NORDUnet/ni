@@ -18,6 +18,7 @@ def generic_detail(request, handle_id, slug):
                               {'node_handle': nh, 'node': node, 'slug': slug},
                               context_instance=RequestContext(request))
 
+
 @login_required
 def generic_history(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -287,6 +288,7 @@ def optical_path_detail(request, handle_id):
                                'dependencies': dependencies, 'dependent': dependent, 'relations': relations,
                                'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
+
 
 @login_required
 def peering_group_detail(request, handle_id):
