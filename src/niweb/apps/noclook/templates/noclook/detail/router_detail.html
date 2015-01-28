@@ -75,11 +75,11 @@ $(document).ready(
         <tbody>
         {% for con in connections %}
             <tr>
-                <td><a href="/port/{{ con.porta.handle_id }}">{{ con.porta.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.porta.handle_id %}">{{ con.porta.name }}</a></td>
                 <td>{{ con.porta.description }}</td>
-                <td><a href="/cable/{{ con.cable.handle_id }}">{{ con.cable.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.cable.handle_id %}">{{ con.cable.name }}</a></td>
                 <td><a href="{% noclook_node_to_url con.end.handle_id %}">{{ con.end.name }}</a></td>
-                <td><a href="/port/{{ con.portb.handle_id }}">{{ con.portb.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.portb.handle_id %}">{{ con.portb.name }}</a></td>
                 <td>
                     {% noclook_get_model con.porta.handle_id as port %}
                     {% for unit in port.get_units.Part_of|dictsort:"node.data.name" %}
