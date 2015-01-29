@@ -161,6 +161,9 @@ class CommonQueries(BaseNodeModel):
     def get_location_path(self):
         return {'location_path': []}
 
+    def get_placement_path(self):
+        return {'placement_path': []}
+
     def get_location(self):
         return {}
 
@@ -227,10 +230,6 @@ class CommonQueries(BaseNodeModel):
 
 
 class LogicalModel(CommonQueries):
-
-    def get_placement_path(self):
-        # Not possible for logical things
-        pass
 
     def get_part_of(self):
         q = """
