@@ -342,13 +342,21 @@ def peering_partner_detail(request, handle_id):
     # (peering:Peering)-[:Depends_on]->(group:Peering_Group)
     user_dependencies = []
     peering_groups = peering_partner.get_uses().get('Uses', [])
+    #pruning groups...
+    group_dependencies = {}
+    for group in peering_groups:
+      gnode = group['node']
+      gnode_id = gnode.handle_id
+      if not (gnode_id in group_dependencies):
+        group_dependencies[gnode_id] = gnode.get_dependencies().get('Depends_on', [])
+
     for group in peering_groups:
         user_address = ipaddr.IPAddress(group['relationship']['ip_address'])
         peering_group = {
             'peering_group': group['node'],
             'user_address': unicode(user_address),
         }
-        for unit in group['node'].get_dependencies().get('Depends_on', []):
+        for unit in group_dependencies[group['node'].handle_id]:
             network_address = ipaddr.IPNetwork(unit['relationship']['ip_address'])
             if user_address in network_address:
                 peering_group.update({
