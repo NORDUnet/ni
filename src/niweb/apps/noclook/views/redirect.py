@@ -10,3 +10,10 @@ from apps.noclook import helpers
 def node_redirect(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     return redirect(nh.get_absolute_url())
+
+from time import sleep
+@login_required
+def node_slow_redirect(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    sleep(10)
+    return redirect(nh.get_absolute_url())

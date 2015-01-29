@@ -125,6 +125,7 @@ urlpatterns += patterns('apps.noclook.views.detail',
 urlpatterns += patterns('apps.noclook.views.redirect',
   #wins only because of no /
   (r'^nodes/(?P<handle_id>\d+)$', 'node_redirect'),
+  (r'^slow-nodes/(?P<handle_id>\d+)$', 'node_slow_redirect'),
 )
 
 urlpatterns += patterns('apps.noclook.views.debug',
