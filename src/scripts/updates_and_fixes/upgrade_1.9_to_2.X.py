@@ -143,6 +143,9 @@ def insert_graph_data(json_list):
                 print e
                 print 'Failed at handle ID: {handle_id}'.format(handle_id=nh.handle_id)
                 sys.exit(1)
+            except UnicodeEncodeError as e:
+                print "Added node", node
+
 
     # Loop through all files starting with relationship
     x = 0
