@@ -1,11 +1,13 @@
   
 <div class="section">
-    <h3>ports</h3>
+    <h3>Ports</h3>
     {% if connections %}
         {% load noclook_tags %}
         <table id="connections" class="tablesorter" cellspacing="1">
             <thead>
-                <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+                <tr>
+                    <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+                </tr>
             </thead>
             <tbody>
             {% for item in connections %}
