@@ -179,7 +179,6 @@ def host_service_detail(request, handle_id):
                                'service_relationships': service_relationships, 'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
-
 @login_required
 def host_user_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -188,8 +187,16 @@ def host_user_detail(request, handle_id):
     last_seen, expired = helpers.neo4j_data_age(host_user.data)
     result = host_user.with_same_name()
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
-    host_relationships = host_user.get_uses()
-    host_relationships.update(host_user.get_owns())
+    q = """
+        MATCH (n:Node {handle_id: {handle_id}})-[r:Uses|:Owns]->(u) 
+        RETURN 
+        labels(u) as labels, 
+        u.handle_id as handle_id, 
+        u.name as name, 
+        u.noclook_last_seen as noclook_last_seen,
+        u.noclook_auto_manage as noclook_auto_manage
+        """
+    host_relationships = nc.query_to_list(nc.neo4jdb, q, handle_id=host_user.handle_id)
     
     urls = helpers.get_node_urls(host_user, same_name_relations, host_relationships)
     return render_to_response('noclook/detail/host_user_detail.html',

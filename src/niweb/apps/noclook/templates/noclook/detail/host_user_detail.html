@@ -55,7 +55,7 @@ $(document).ready(
 -->
 <div class="section">
     {% load noclook_tags %}
-    {% if host_relationships.Uses or host_relationships.Owns %}
+    {% if host_relationships %}
     <h3>Hosts used</h3>
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
@@ -67,26 +67,21 @@ $(document).ready(
             </tr>
         </thead>
         <tbody>
-        {% for item in host_relationships.Uses %}
-            {% noclook_has_expired item.node.data as expired %}
+        {% for item in host_relationships %}
+            {% noclook_has_expired item as expired %}
             {% if expired %}
                 <tr class="expired">
             {% else %}
                 <tr>
             {% endif %}
-                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
-                <td>Logical</td>
-            </tr>
-        {% endfor %}
-        {% for item in host_relationships.Owns %}
-            {% noclook_has_expired item.node.data as expired %}
-            {% if expired %}
-                <tr class="expired">
-            {% else %}
-                <tr>
-            {% endif %}
-                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
-                <td>Physical</td>
+                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                <td>
+                  {% if "Logical" in  item.labels %}
+                    Logical
+                  {% else %}
+                    Physical
+                  {% endif %}
+                </td>
             </tr>
         {% endfor %}
         </tbody>
