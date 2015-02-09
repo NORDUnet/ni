@@ -223,3 +223,10 @@ ul.errorlist {
     cursor: pointer;
 }
 */
+
+/* Do not print link urls */
+@media print {
+    a[href]:after {
+        content: "";
+    }
+}
