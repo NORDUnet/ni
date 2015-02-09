@@ -36,25 +36,19 @@
         <tbody>
         {% load noclook_tags %}
         {% for optical_link in optical_link_list %}
-            {% if optical_link.data.operational_state == "Decommissioned" %}
-                <tr class="decommissioned">
-                    {% elif optical_link.data.operational_state == "Reserved" %}
-                <tr class="reserved">
-                    {% elif optical_link.data.operational_state == "Testing" %}
-                <tr class="testing">
+            {% if optical_link.data.operational_state  %}
+                <tr class="{{optical_link.data.operational_state | lower }}">
                     {% else %}
                 <tr>
             {% endif %}
-                    <td><a href="{% noclook_node_to_url optical_link.handle_id %}">{{ optical_link.data.name }}</a></td>
+                    <td><a href="{% noclook_node_to_url optical_link.data.handle_id %}">{{ optical_link.data.name }}</a></td>
                     <td>{{ optical_link.data.link_type }}</td>
                     <td>{{ optical_link.data.description }}</td>
                     <td>
-                        {% for end_point in optical_link.get_dependencies.Depends_on %}
-                            <a href="{% noclook_node_to_url end_point.node.handle_id %}">
-                                {% for loc in end_point.node.get_placement_path.placement_path %}
-                                    {{ loc.name }}
-                                {% endfor %}
-                                {{ end_point.node.data.name }}
+                        {% for end_point in optical_link.dependencies %}
+                            <a href="{% noclook_node_to_url end_point.handle_id %}">
+                                {{ end_point.placement_path.name }}
+                                {{ end_point.name }}
                             </a><br>
                         {%  endfor %}
                     </td>

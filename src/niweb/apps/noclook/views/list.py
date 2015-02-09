@@ -6,7 +6,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 
 from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook.helpers import get_node_urls
+from apps.noclook.helpers import get_node_urls, find_recursive
 import norduniclient as nc
 
 
@@ -70,18 +70,29 @@ def list_odfs(request):
                               {'odf_list': odf_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
-
 @login_required
 def list_optical_links(request):
     q = """
-        MATCH (link:Optical_Link)
-        RETURN collect(link.handle_id) as ids
+        MATCH (link:Optical_Link) 
+        OPTIONAL MATCH (link)-[r:Depends_on]->(node)
+        RETURN link as data, collect(node) as dependencies
         """
-    result = nc.query_to_dict(nc.neo4jdb, q)
-    optical_link_list = []
-    for handle_id in result['ids']:
-        optical_link_list.append(nc.get_node_model(nc.neo4jdb, handle_id))
-    #TODO: template looks up dependecies... is that correct?
+    optical_link_list = nc.query_to_list(nc.neo4jdb, q)
+
+    q = """
+        MATCH (n:Node)<-[:Has]-(parent)
+        WHERE n.handle_id in {handle_ids}            
+        RETURN  n.handle_id, parent
+        """
+    handle_ids = [ hid for link in optical_link_list for hid in find_recursive("handle_id", link.get('dependencies', [])) ]
+    placement_paths_raw = nc.query_to_list(nc.neo4jdb, q, handle_ids=handle_ids)
+    
+    placement_paths = { p.get("n.handle_id"): p.get("parent") for p in placement_paths_raw }
+    
+    for link in optical_link_list:
+      for dependency in link.get("dependencies", []):
+        dependency.update({"placement_path": placement_paths.get(dependency.get("handle_id"))})
+
     urls = get_node_urls(optical_link_list)
     return render_to_response('noclook/list/list_optical_links.html',
                               {'optical_link_list': optical_link_list, 'urls': urls},
@@ -98,7 +109,7 @@ def list_optical_multiplex_section(request):
     optical_multiplex_section_list = []
     for handle_id in result['ids']:
         optical_multiplex_section_list.append(nc.get_node_model(nc.neo4jdb, handle_id))
-    #TODO: template looks up dependecies... is that correct?
+    #TODO: template looks up dependencies... is that correct?
     urls = get_node_urls(optical_multiplex_section_list)
     return render_to_response('noclook/list/list_optical_multiplex_section.html',
                               {'optical_multiplex_section_list': optical_multiplex_section_list, 'urls': urls},
