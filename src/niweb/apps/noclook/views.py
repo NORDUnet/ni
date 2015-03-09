@@ -470,12 +470,15 @@ def peering_partner_detail(request, handle_id):
             if org_address in unit_address:
                 peering_point['if_address'] = unit_rel['ip_address']
                 peering_point['unit'] = unit_rel.end['name']
-                pic = unit_rel.end.Part_of.outgoing.single.end
-                peering_point['pic'] = pic['name']
-                peering_point['pic_url'] = h.get_node_url(pic)
-                router = nc.get_root_parent(nc.neo4jdb, pic)[0]
-                peering_point['router'] = router['name']
-                peering_point['router_url'] = h.get_node_url(router)
+                try:
+                    pic = unit_rel.end.Part_of.outgoing.single.end
+                    peering_point['pic'] = pic['name']
+                    peering_point['pic_url'] = h.get_node_url(pic)
+                    router = nc.get_root_parent(nc.neo4jdb, pic)[0]
+                    peering_point['router'] = router['name']
+                    peering_point['router_url'] = h.get_node_url(router)
+                except AttributeError:
+                    pass  # Could not find PIC
                 peering_points.append(peering_point)
     return render_to_response('noclook/detail/peering_partner_detail.html',
                               {'node_handle': nh, 'node': node, 'last_seen': last_seen, 'expired': expired,
