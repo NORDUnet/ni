@@ -1,0 +1,121 @@
+{% extends "noclook/reports/base_report.html" %}
+
+{% block title %}{{ block.super }} | Host reports | Host services{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(
+            function(){
+                $("#hosts").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers:
+                        {
+                            2 : { sorter: "isoDate" }
+                        },
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
+                $("#unauthorized-ports").tablesorter(
+                    {
+                        sortList: [[0,0]],
+                        headers:
+                        {
+                            4 : { sorter: "isoDate" }
+                        },
+                        widthFixed: true,
+                        widgets: ['zebra']
+                    });
+
+                $(".table-to-csv").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set data-table attribute to table id
+                    var tableId = elem.attr('data-table');
+                    var table = buildJSONTable($(tableId));
+                    postJSONTable('csv', elem, table.header, table.data)
+
+                });
+                $(".table-to-xls").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set data-table attribute to table id
+                    var tableId = elem.attr('data-table');
+                    var table = buildJSONTable($(tableId));
+                    postJSONTable('xls', elem, table.header, table.data)
+                });
+            }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <h1>Host services</h1>
+    <hr>
+    <ul class="nav nav-pills">
+        {% if status == "unauthorized-ports" %}
+            <li class="active"><a href="/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
+        {% else %}
+            <li class=""><a href="/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
+        {% endif %}
+        {% if status == "locked" %}
+            <li class="active"><a href="/reports/hosts/host-services/locked/">Locked</a></li>
+        {% else %}
+            <li class=""><a href="/reports/hosts/host-services/locked/">Locked</a></li>
+        {% endif %}
+        {% if status == "not-locked" %}
+            <li class="active"><a href="/reports/hosts/host-services/not-locked/">Not locked</a></li>
+        {% else %}
+            <li class=""><a href="/reports/hosts/host-services/not-locked/">Not locked</a></li>
+        {% endif %}
+    </ul>
+    {% if hosts %}
+        <h3>Hosts: {{ hosts|length }}</h3>
+        {% if status == "unauthorized-ports"%}
+            <p class="pull-right"><span class="table-to-csv btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> Excel</span></p>
+            <table id="unauthorized-ports" class="tablesorter" cellspacing="1">
+                <thead>
+                    <tr>
+                        <th>Host</th><th>Host service</th><th>Protocol</th><th>Port</th><th>Last seen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% load noclook_tags %}
+                    {% for item in hosts %}
+                        {% for port in item.ports %}
+                            <tr>
+                                <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
+                                <td><a href="{% noclook_node_to_url port.start %}">{{ port.name }}</a></td>
+                                <td>{{ port.protocol }}</td>
+                                <td>{{ port.port }}</td>
+                                {% noclook_last_seen_to_dt port.noclook_last_seen as last_seen %}
+                                <td>{{ last_seen|date:"D d M Y" }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="pull-right"><span class="table-to-csv btn btn-link" data-table="#hosts"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link" data-table="#hosts"><i class="icon-download"></i> Excel</span></p>
+            <table id="hosts" class="tablesorter" cellspacing="1">
+                <thead>
+                    <tr>
+                        <th>Host</th><th>Description</th><th>Last seen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% load noclook_tags %}
+                    {% for item in hosts %}
+                        <tr>
+                            <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
+                            <td>{{ item.host.description|default:"" }}</td>
+                            <td>{% noclook_last_seen_to_dt item.host.noclook_last_seen as last_seen %}{{ last_seen|date:"D d M Y" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+{{ block.super }}
+{% load noclook_tags %}
+<script type="text/javascript">
+$(document).ready(
+    function() {
+        // Accordion
+        $(".edit-accordion").collapse();
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <div class="well">
+        <h3>Operational State</h3>
+        {{ form.operational_state }}
+    </div>
+    <div class="accordion" id="edit-accordion">
+        {% include "noclook/edit/includes/location_group.html" %}
+    </div>
+{% endblock %}
+

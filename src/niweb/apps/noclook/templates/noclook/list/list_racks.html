@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Rack list{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#nodes").tablesorter(
+        {
+            sortList: [[0,0],[1,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <h1>Racks</h1>
+    <table id="nodes" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Site</th><th>Name</th>
+        </thead>
+        <tbody>
+            {% load noclook_tags %}
+            {% for item in rack_list %}
+                <tr>
+                    <td><a class="handle" href="{% noclook_node_to_url item.site.handle_id %}">{{ item.site.name }}</a></td>
+                    <td><a class="handle" href="{% noclook_node_to_url item.rack.handle_id %}">{{ item.rack.name }}</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

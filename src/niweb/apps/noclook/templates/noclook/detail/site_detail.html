@@ -1,0 +1,189 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#equipment").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+        $("#locations").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            {% if node.data.site_type %}
+                <tr>
+                    <th>Type:</th><td>{{ node.data.site_type|capfirst }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.owner_id %}
+                <tr>
+                    <th>Owner Site ID:</th><td>{{ node.data.owner_id }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.owner_site_name %}
+                <tr>
+                    <th>Owner Site Name:</th><td>{{ node.data.owner_site_name }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.telenor_subscription_id %}
+                <tr>
+                    <th>Telenor Subscription ID:</th><td>{{ node.data.telenor_subscription_id }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.address %}
+                <tr>
+                    <th>Address:</th><td>{{ node.data.address }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.postarea %}
+                <tr>
+                    <th></th><td>{{ node.data.postcode }} {{ node.data.postarea }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.area %}
+                <tr>
+                    <th>Area:</th><td>{{ node.data.area }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.country %}
+                <tr>
+                    <th>Country:</th><td>{{ node.data.country }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.latitude and node.data.longitude %}
+                <tr>
+                    <th>Latitude:</th><td>{{ node.data.latitude }}</td>
+                </tr>
+                <tr>
+                    <th>Longitude:</th><td>{{ node.data.longitude }}</td>
+                </tr>
+                <tr>
+                    <th>Google Maps:</th><td><a href="https://maps.google.com/?q={{ node.data.latitude }},{{ node.data.longitude }}" target="_blank">Link</a></td>
+                </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.data.floor %}
+                <tr>
+                    <th>Floor:</th><td>{{ node.data.floor }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.room %}
+                <tr>
+                    <th>Room:</th><td>{{ node.data.room }}</td>
+                </tr>
+            {% endif %}
+            {% for item in relations.Responsible_for %}
+                {% if forloop.first %}
+                    <tr>
+                        <th>Site owner:</th><td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td></td><td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+            <tr>
+                <th>More information:</th>
+                <td>
+                    {% if node.url %}
+                        <a href="{{ node.data.url }}" target="_blank">Link</a>
+                    {% else %}
+                        <a href="https://portal.nordu.net/display/nordunetops/{{ node.data.name }}" target="_blank">To Portal</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% if node.data.noclook_automanage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<div class="section">
+    <h3>Racks and equipment</h3>
+    {% if location_relationships.Has %}
+        <table id="locations" class="tablesorter" cellspacing="1">
+            <thead>
+                <tr>
+                    <th>Rack</th><th>Equipment</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for rack in location_relationships.Has %}
+                {% for item in rack.node.get_located_in.Located_in %}
+                <tr>
+                    <td><a href="{% noclook_node_to_url rack.node.handle_id %}">{{ rack.node.data.name }}</a></td>
+                    {% noclook_get_type item.node.handle_id as node_type %}
+                    <td><a href="/{{ node_type|slugify }}/">{{ node_type }}</a> <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                </tr>
+                {% endfor %}
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        No racks on the site.
+    {% endif %}
+</div>
+<div class="section">
+{% if equipment_relationships.Located_in %}
+    <h3>Unracked equipment</h3>
+    <table id="equipment" class="tablesorter" cellspacing="1">
+        <thead>
+            <tr>
+                <th>Type</th><th>Name</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in equipment_relationships.Located_in %}
+            <tr>
+                {% noclook_get_type item.node.handle_id as node_type %}
+                <td><a href="/{{ node_type|slugify }}/">{{ node_type }}</a></td>
+                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    No unracked equipment on the site.
+</div>
+{% endif %}
+{% endblock %}
+

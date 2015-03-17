@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} {{ node.node_type }} {{ node.name }} {% endblock %}
+
+{% block js %}
+    {{ block.super }}
+<script type="text/javascript">
+    // Comment show/hide
+    function toggle_comment() {
+        $('#add_comment').toggle();
+        $('#add_comment_btn').toggle();
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(
+        function(){
+            $(".detail-toggle").collapse()
+        }
+    );
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+{% if node.noclook_auto_manage and expired %}
+    <span class="label label-important">Last seen {{ last_seen|timesince }} ago</span>
+{% endif %}
+<h1><a href="/{{ node_handle.node_type|slugify }}/">{{ node_handle.node_type }}</a> {{ node.data.name }}</h1>
+{% if same_name_relations %}
+    <h5 class="site">also as
+        {% for nh in same_name_relations|dictsort:"node_type.type" %}
+            <a href="{% noclook_node_to_url nh.handle_id %}"> {{ nh.node_type }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    </h5>
+{% endif %}
+{% if location_path.location_path %}
+    <h5 class="site">Located in
+    {% for loc in location_path.location_path %}
+        <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
+    {% endfor %}
+    </h5>
+{% elif node.get_placement_path.placement_path %}
+    <h5 class="site">Located in
+    {% for loc in node.get_placement_path.placement_path %}
+        <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
+    {% endfor %}
+    </h5>
+{% endif %}
+{% load comments %}
+{% get_comment_list for node_handle as comment_list %}
+{% if comment_list %}
+    {% for comment in comment_list|dictsortreversed:"submit_date" %}
+        <div class="alert alert-block">
+            <a href="/comments/delete/{{ comment.id }}" class="close">&times;</a>
+            <h4 class="alert-heading">{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</h4>
+            {{ comment.comment }}
+        </div>
+    {% endfor %}
+{% endif %}
+<br>
+{% endblock %}
+
+{% block content_footer %}
+{% if node_handle %}
+    <div class="section top-space">
+        <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseOne">
+            <i class="icon-comment icon-white"></i> Add a comment
+        </a>
+        <a class="btn btn-info" id="node-history" data-toggle="collapse" data-parent="#detail-accordion" data-async-load="/nodes/{{node.handle_id}}/history" data-async-load-target="#collapseTwo .accordion-inner" href="#collapseTwo">
+            <i class="icon-book icon-white"></i> History
+        </a>
+        <a href="/visualize{{ node_handle.get_absolute_url }}" class="btn btn-info">
+            <i class="icon-eye-open icon-white"></i> Visualize
+        </a>
+        <div class="accordion" id="detail-accordion">
+            <div class="accordion-group no-border">
+                <div id="collapseOne" class="accordion-body collapse">
+                    <div class="accordion-inner no-border well top-space">
+                        <h2>Comment</h2>
+                        {% get_comment_form for node_handle as form %}
+                        <form action="{% comment_form_target %}" method="POST">
+                            {% csrf_token %}
+                            <textarea class="input-xlarge" rows="3" id="id_comment" name="comment"></textarea>
+                            {{ form.honeypot }}
+                            {{ form.content_type }}
+                            {{ form.object_pk }}
+                            {{ form.timestamp }}
+                            {{ form.security_hash }}
+                            <input type="hidden" name="next" value="{{ node_handle.get_absolute_url }}" />
+                            <br><br>
+                            <input class="btn btn-info" type="submit" value="Submit" id="comment_submit" />
+                            <br>
+                        </form>
+                    </div>
+                </div>
+                <div id="collapseTwo" class="accordion-body no-border collapse">
+                    <div class="accordion-inner no-border well top-space">
+                      <img src="{{ STATIC_URL }}img/spinner.gif" alt="loading"> Loading history...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

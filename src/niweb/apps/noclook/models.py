@@ -6,15 +6,11 @@ from django.dispatch import receiver
 from django.contrib.comments import Comment
 from actstream import action
 
-import norduni_client as nc
+import norduniclient as nc
 
 
-NODE_META_TYPE_CHOICES = (
-    ('logical', 'Logical'),
-    ('physical', 'Physical'),
-    ('relation', 'Relation'),
-    ('location', 'Location'),
-)
+NODE_META_TYPE_CHOICES = zip(nc.META_TYPES, nc.META_TYPES)
+
 
 class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
@@ -27,9 +23,12 @@ class NodeType(models.Model):
     def get_slug(self):
         return self.slug
 
+    def get_label(self):
+        return self.type.replace(' ', '_')
+
     @models.permalink
     def get_absolute_url(self):
-        return('niweb.apps.noclook.views.list_by_type', (), {
+        return('apps.noclook.views.list.list_by_type', (), {
             'slug': self.slug})
             
     def delete(self, **kwargs):
@@ -42,11 +41,18 @@ class NodeType(models.Model):
         return True
     delete.alters_data = True
 
+#XXX: Does not handle slug renaming
+slug_cache = {}
+def get_slug(slug_id):
+  if slug_id in slug_cache:
+    return slug_cache[slug_id]
+  else:
+    slug_cache[slug_id] = NodeType.objects.get(pk=slug_id).get_slug()
+    return slug_cache[slug_id]
+
 class NodeHandle(models.Model):
     # Handle <-> Node data
     handle_id = models.AutoField(primary_key=True)
-    node_id = models.BigIntegerField(null=True, blank=True, unique=True,
-        editable=False)
     # Data shared with the node
     node_name = models.CharField(max_length=200)
     node_type = models.ForeignKey(NodeType)
@@ -65,40 +71,23 @@ class NodeHandle(models.Model):
         """
         Returns the NodeHandles node.
         """
-        return nc.get_node_by_id(nc.neo4jdb, self.node_id)
+        return nc.get_node_model(nc.neo4jdb, self.handle_id)
 
     @models.permalink
     def get_absolute_url(self):
-        """
-        Should we instead import neo4jclient here and traverse the node
-        to to root? That way we can do urls like se-tug/fpc/pic/port or
-        dk-ore-lm-01/rack/sub_rack/.
-        """
-        #return '%s/%d/' % (self.node_type, self.handle_id)
-        return('niweb.apps.noclook.views.generic_detail', (), {
-            'slug': self.node_type.get_slug(),
-            'handle_id': self.handle_id})
+        return('apps.noclook.views.detail.generic_detail', (),
+               {'slug': get_slug(self.node_type_id), 'handle_id': self.handle_id})
 
-    def save(self, create_node=False, *args, **kwargs):
+    def save(self, *args, **kwargs):
         """
         Create a new node and associate it to the handle.
         """
-        if self.node_id and not create_node: # Don't create a node
-            super(NodeHandle, self).save(*args, **kwargs)
-            return self
-        node = nc.create_node(nc.neo4jdb, self.node_name, str(self.node_type))
-        self.node_id = node.id
+        super(NodeHandle, self).save(*args, **kwargs)
         try:
-            super(NodeHandle, self).save(*args, **kwargs)
-        except utils.IntegrityError as e:
-            print e
-            print 'Node ID: %d' % node.id
-            raise Exception(e)
-        meta_node = nc.get_meta_node(nc.neo4jdb, str(self.node_meta_type))
-        node = nc.get_node_by_id(nc.neo4jdb, self.node_id)
-        with nc.neo4jdb.transaction:
-            node['handle_id'] = int(self.handle_id)
-            meta_node.Contains(node)
+            nc.create_node(nc.neo4jdb, self.node_name, self.node_meta_type, self.node_type.get_label(), self.handle_id)
+        except nc.exceptions.IntegrityError:
+            #  A node associated with this handle_id already exists
+            pass
         return self
     
     save.alters_data = True
@@ -108,14 +97,11 @@ class NodeHandle(models.Model):
         Delete that node handle and the handles node.
         """
         try:
-            node = self.get_node()
-            nc.delete_node(nc.neo4jdb, node)
-        except (KeyError, TypeError):
-            # Node already deleted or None was passed as node id
+            self.get_node().delete()
+        except nc.exceptions.NodeNotFound:
             pass
         Comment.objects.filter(object_pk=self.pk).delete()
         super(NodeHandle, self).delete()
-        return True
         
     delete.alters_data = True
 

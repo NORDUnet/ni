@@ -1,0 +1,48 @@
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $('#owner_category').append($('<option>').val("0").text("-- Please Select --"));
+        $.each(ownerCategories, function(key, tuple) {
+            $('#owner_category').append($('<option>').val(tuple[0]).text(tuple[1]));
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#owner_level0").jCombo("/formdata/{id}/", {
+            parent: "#owner_category",
+            end_value_field: "#id_relationship_owner"
+        });
+    });
+</script>
+
+<div class="accordion-group">
+    <div class="accordion-heading">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOwner">
+            {{ node_handle.node_type }} Owner (optional)
+        </a>
+    </div>
+    <div id="collapseOwner" class="accordion-body collapse" style="height: 0; ">
+        <div class="accordion-inner">
+            {% if relations.Owns %}
+                {% load noclook_tags %}
+                <h4>Remove owner</h4>
+                {% for item in relations.Owns %}
+                    <div class="row">
+                        <div class="span5">
+                            Owner <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+                <hr>
+            {% endif %}
+            <h4>Add owner</h4>
+            <div class="span4">
+                {{ form.relationship_owner }}
+                <select class="stacked" name="owner_category" id="owner_category"></select>
+                <select class="stacked" name="owner_level0" id="owner_level0"></select>
+             </div>
+        </div>
+    </div>
+</div>

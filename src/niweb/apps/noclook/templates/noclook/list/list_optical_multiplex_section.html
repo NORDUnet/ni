@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Optical Multiplex Section list{% endblock %}
+
+{% block js %}
+    <script type="text/javascript">
+        $(document).ready(
+                function(){
+                    $("#optical-links").tablesorter(
+                            {
+                                sortList: [[0,0]],
+                                headers:
+                                {},
+                                widthFixed: true,
+                                widgets: ['zebra']
+                            });
+                }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <h1>Optical Multiplex Sections</h1>
+    <div class="pull-right">
+        <span class="badge badge-info">Testing</span>
+        <span class="badge badge-warning">Reserved</span>
+        <span class="badge badge-important">Decommissioned</span>
+    </div>
+    <table id="optical-links" class="tablesorter" cellspacing="1">
+        <thead>
+            <tr>
+                <th>Optical Multiplex Section</th><th>Description</th><th>Depends on</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% load noclook_tags %}
+        {% for optical_multiplex_section in optical_multiplex_section_list %}
+            {% if optical_link.data.operational_state == "Decommissioned" %}
+                <tr class="decommissioned">
+                    {% elif optical_link.data.operational_state == "Reserved" %}
+                <tr class="reserved">
+                    {% elif optical_link.data.operational_state == "Testing" %}
+                <tr class="testing">
+                    {% else %}
+                <tr>
+            {% endif %}
+                    <td><a href="{% noclook_node_to_url optical_multiplex_section.handle_id %}">{{ optical_multiplex_section.data.name }}</a></td>
+                    <td>{{ optical_multiplex_section.data.description }}</td>
+                    <td>
+                        {% for dependency in optical_multiplex_section.get_dependencies.Depends_on %}
+                            <a href="{% noclook_node_to_url dependency.node.handle_id %}">{{ dependency.node.data.name }}</a><br>
+                        {%  endfor %}
+                    </td>
+                </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

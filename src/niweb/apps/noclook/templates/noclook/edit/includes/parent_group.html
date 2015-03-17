@@ -1,0 +1,52 @@
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $('#parent_categoryA').append($('<option>').val("0").text("-- Please Select --"));
+        $.each(parentCategories, function(key, tuple) {
+            $('#parent_categoryA').append($('<option>').val(tuple[0]).text(tuple[1]));
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#parent_level0A").jCombo("/formdata/{id}/", {
+            parent: "#parent_categoryA",
+            end_value_field: "#id_relationship_parent"
+        });
+    }
+);
+</script>
+
+<div class="accordion-group">
+    <div class="accordion-heading">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseDepends">
+            {{ node_handle.node_type }} is located in (optional)
+        </a>
+    </div>
+    <div id="collapseDepends" class="accordion-body collapse" style="height: 0px; ">
+        <div class="accordion-inner">
+            {% if parent.Has %}
+                {% load noclook_tags %}
+                <h4>Remove parent relationship</h4>
+                {% for item in parent.Has %}
+                    <div class="row">
+                        <div class="span5">
+                            Located in <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+                <hr>
+            {% endif %}
+            <h4>Add parent relationship</h4>
+            <div class="span4">
+                {{ form.relationship_parent }}
+                <select class="stacked" name="parent_categoryA" id="parent_categoryA"></select>
+                <select class="stacked" name="parent_level0A" id="parent_level0A"></select>
+                <span class="help-block">Choose a dependency</span>
+                <br>
+                <br>
+            </div>
+        </div>
+    </div>
+</div>

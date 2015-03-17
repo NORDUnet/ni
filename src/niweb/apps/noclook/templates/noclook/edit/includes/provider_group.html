@@ -1,0 +1,48 @@
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $('#provider_category').append($('<option>').val("0").text("-- Please Select --"));
+        $.each(providerCategories, function(key, tuple) {
+            $('#provider_category').append($('<option>').val(tuple[0]).text(tuple[1]));
+        });
+        // Hook lower level combo boxes up to their parent
+        $("#provider_level0").jCombo("/formdata/{id}/", {
+            parent: "#provider_category",
+            end_value_field: "#id_relationship_provider"
+        });
+    });
+</script>
+
+<div class="accordion-group">
+    <div class="accordion-heading">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseProvider">
+            {{ node_handle.node_type }} Provider (optional)
+        </a>
+    </div>
+    <div id="collapseProvider" class="accordion-body collapse" style="height: 0; ">
+        <div class="accordion-inner">
+            {% if relations.Provides %}
+                {% load noclook_tags %}
+                <h4>Remove provider</h4>
+                {% for item in relations.Provides %}
+                    <div class="row">
+                        <div class="span5">
+                            Provider <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+                <hr>
+            {% endif %}
+            <h4>Add provider</h4>
+            <div class="span4">
+                {{ form.relationship_provider }}
+                <select class="stacked" name="provider_category" id="provider_category"></select>
+                <select class="stacked" name="provider_level0" id="provider_level0"></select>
+             </div>
+        </div>
+    </div>
+</div>

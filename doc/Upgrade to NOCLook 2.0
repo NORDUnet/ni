@@ -1,0 +1,12 @@
+Instructions how to upgrade an existing NOCLook installation to NOCLook 2.0
+
+Start by setting up a Neo4j >=2.0 server.
+Follow the instructions in the "Setup >2.0 neo4j db" document.
+
+If you want to do this on a live machine make sure you got a recent backup of the data, both SQL and Neo4j.
+
+Restore the SQL data from a previous dump if necessary.
+
+Run "python manage.py migrate apps.noclook".
+
+Import the neo4j database backup with src/scripts/updates_and_fixes/upgrade_1.9_to_2.X.py.

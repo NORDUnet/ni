@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Peering Partner list{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#peering_partners").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <h1>Peering Partners</h1>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
+    <table id="peering_partners" class="tablesorter" cellspacing="1">
+        <thead>
+            <tr>
+                <th>Peering Partner</th><th>AS Number</th><th>Peering Groups</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% load noclook_tags %}
+            {% for item in partner_list %}
+                    {% noclook_has_expired item.peer as expired %}
+                    {% if expired %}
+                        <tr class="expired">
+                    {% else %}
+                        <tr>
+                    {% endif %}
+                        <td><a href="{% noclook_node_to_url item.peer.handle_id %}">{{ item.peer.name }}</a></td>
+                        <td>{{ item.peer.as_number }}</td>
+                        <td>
+                            {% for group in item.peering_groups %}
+                                <a href="{% noclook_node_to_url group.handle_id %}">{{ group.name }}</a>{% if not forloop.last %}<br>{% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

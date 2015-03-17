@@ -8,9 +8,8 @@ Created on 2014-06-26 1:28 PM
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, UniqueId
-from apps.noclook import helpers as h
-import norduni_client as nc
+from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
+from apps.noclook import helpers
 
 import sys
 
@@ -43,38 +42,46 @@ class CableResourceTest(ResourceTestCase):
         self.router1 = NodeHandle.objects.create(
             node_name='Test Router 1',
             node_type=router_node_type,
-            node_meta_type='physical',
+            node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.router2 = NodeHandle.objects.create(
             node_name='Test Router 2',
             node_type=router_node_type,
-            node_meta_type='physical',
+            node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.port1 = NodeHandle.objects.create(
             node_name='Test Port 1',
             node_type=port_node_type,
-            node_meta_type='physical',
+            node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.port2 = NodeHandle.objects.create(
             node_name='Test Port 2',
             node_type=port_node_type,
-            node_meta_type='physical',
+            node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
-        h.place_child_in_parent(self.user, self.port1.get_node(), self.router1.get_node().getId())
-        h.place_child_in_parent(self.user, self.port2.get_node(), self.router2.get_node().getId())
+        self.DEFAULT_HANDLE_IDS = [
+            self.router1.handle_id,
+            self.router2.handle_id,
+            self.port1.handle_id,
+            self.port2.handle_id
+        ]
 
-    def purge_neo4jdb(self):
-        for node in nc.get_all_nodes(nc.neo4jdb):
-            if node.getId() != 0:
-                nc.delete_node(nc.neo4jdb, node)
+        helpers.set_has(self.user, self.router1.get_node(), self.port1.handle_id)
+        helpers.set_has(self.user, self.router2.get_node(), self.port2.handle_id)
+
+    def tearDown(self):
+        for handle_id in self.DEFAULT_HANDLE_IDS:
+            nh = NodeHandle.objects.get(pk=handle_id)
+            nh.delete()
+        super(CableResourceTest, self).tearDown()
 
     def get_credentials(self):
         return self.create_apikey(username=self.username, api_key=str(self.api_key.key))
@@ -83,13 +90,11 @@ class CableResourceTest(ResourceTestCase):
         resp = self.api_client.get('/api/v1/router/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
-        self.purge_neo4jdb()
 
     def test_port_list(self):
         resp = self.api_client.get('/api/v1/port/', format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertGreaterEqual(len(self.deserialize(resp)['objects']), 2)
-        self.purge_neo4jdb()
 
     #@override_settings(DEBUG=True)
     def test_create_cable_existing_end_points(self):
@@ -112,11 +117,13 @@ class CableResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/cable/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
         nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         cable_node = nh.get_node()
-        self.assertEqual(cable_node['name'], data['node_name'])
-        connections = h.get_connected_cables(cable_node)
+        self.assertEqual(nh.node_name, data['node_name'])
+        #sys.stderr.writelines('stderr: ' + str(cable_node))
+        self.assertEqual(cable_node.data['name'], data['node_name'])
+        connections = cable_node.get_connected_equipment()
         self.assertEqual(len(connections), 2)
-        self.purge_neo4jdb()
 
     def test_create_cable_new_end_points(self):
         data = {
@@ -138,11 +145,11 @@ class CableResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/cable/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
         nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         cable_node = nh.get_node()
-        self.assertEqual(cable_node['name'], data['node_name'])
-        connections = h.get_connected_cables(cable_node)
+        self.assertEqual(cable_node.data['name'], data['node_name'])
+        connections = cable_node.get_connected_equipment()
         self.assertEqual(len(connections), 2)
-        self.purge_neo4jdb()
 
     def test_create_nordunet_cable_existing_end_points(self):
         data = {
@@ -164,11 +171,11 @@ class CableResourceTest(ResourceTestCase):
                                     authentication=self.get_credentials())
         self.assertHttpCreated(resp)
         nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         cable_node = nh.get_node()
-        self.assertIsNotNone(cable_node.get_property('name', None))
-        connections = h.get_connected_cables(cable_node)
+        self.assertIsNotNone(cable_node.data.get('name', None))
+        connections = cable_node.get_connected_equipment()
         self.assertEqual(len(connections), 2)
-        self.purge_neo4jdb()
 
     def test_create_nordunet_cable_new_end_points(self):
         data = {
@@ -190,11 +197,11 @@ class CableResourceTest(ResourceTestCase):
                                     authentication=self.get_credentials())
         self.assertHttpCreated(resp)
         nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         cable_node = nh.get_node()
-        self.assertIsNotNone(cable_node.get_property('name', None))
-        connections = h.get_connected_cables(cable_node)
+        self.assertIsNotNone(cable_node.data.get('name', None))
+        connections = cable_node.get_connected_equipment()
         self.assertEqual(len(connections), 2)
-        self.purge_neo4jdb()
 
     def test_create_cable_name_conflict(self):
         data = {
@@ -203,9 +210,10 @@ class CableResourceTest(ResourceTestCase):
         }
         resp = self.api_client.post('/api/v1/cable/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         resp = self.api_client.post('/api/v1/cable/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpConflict(resp)
-        self.purge_neo4jdb()
 
     def test_create_nordunet_cable_name_conflict(self):
         data = {
@@ -215,7 +223,8 @@ class CableResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/nordunet-cable/', format='json', data=data,
                                     authentication=self.get_credentials())
         self.assertHttpCreated(resp)
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         resp = self.api_client.post('/api/v1/nordunet-cable/', format='json', data=data,
                                     authentication=self.get_credentials())
         self.assertHttpConflict(resp)
-        self.purge_neo4jdb()

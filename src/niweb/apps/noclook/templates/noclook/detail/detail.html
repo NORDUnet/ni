@@ -1,0 +1,10 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }}{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <div class="section">
+        {% include "noclook/debug.html" %}
+    </div>
+{% endblock %}

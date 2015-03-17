@@ -1,0 +1,53 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+    {{ block.super }}
+    {% load noclook_tags %}
+    <script type="text/javascript">
+        $(document).ready(
+            function(){
+                // Accordion
+                $(".edit-accordion").collapse();
+                // Provider
+                // Populate first level combo box
+                providerCategories = [
+                    ['provider', 'Provider']
+                ];
+                // Depends on //
+                // Populate first level single dependency combo box
+                dependencyCategories = [
+                    ['odf', 'ODFs'],
+                    ['optical-link', 'Optical Links'],
+                    ['optical-multitplex-section', 'Optical Multiplex Sections'],
+                    ['optical-node', 'Optical Nodes'],
+                    ['optical-path', 'Optical Paths'],
+                    ['router', 'Routers']
+                ];
+            }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+
+    <div class="well">
+        <h3>Framing</h3>
+        {{ form.framing }}
+        <br><br>
+        <h3>Capacity</h3>
+        {{ form.capacity }}
+        <br><br>
+        <h3>Operational State</h3>
+        {{ form.operational_state }}
+        <br><br>
+        <h3>Description (optional)</h3>
+        {{ form.description }}
+        <span class="help-block">{{ form.description.help_text }}</span>
+    </div>
+    <div class="accordion" id="edit-accordion">
+        {% include "noclook/edit/includes/dependency_group.html" %}
+        {% include "noclook/edit/includes/enrs_group.html" %}
+        {% include "noclook/edit/includes/provider_group.html" %}
+    </div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#connections").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            {% if node.data.max_number_of_ports %}
+                <tr>
+                    <th>Max ports:</th><td>{{ node.data.max_number_of_ports }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.rack_units %}
+                <tr>
+                    <th>Height (u):</th><td>{{ node.data.rack_units }}</td>
+                </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.data.noclook_automanage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+
+{% include "noclook/detail/includes/connections.html" with connections=connections urls=urls only %}
+{% endblock %}
+

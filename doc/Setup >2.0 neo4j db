@@ -1,0 +1,35 @@
+Up max open files
+
+    Create /etc/security/limits.d/neo4j.conf and add these two lines,
+
+    *   soft    nofile  40000
+    *   hard    nofile  40000
+
+
+Activate full text auto index
+
+    Start the neo4j database.
+
+    Run these two commands in a terminal:
+    curl -D - -H "Content-Type: application/json" --data '{"name" : "node_auto_index","config" : {"type" : "fulltext","provider" : "lucene"}}' -X POST http://localhost:7474/db/data/index/node/
+    curl -D - -H "Content-Type: application/json" --data '{"name" : "relationship_auto_index","config" : {"type" : "fulltext","provider" : "lucene"}}' -X POST http://localhost:7474/db/data/index/relationship/
+
+    Edit $neo4jroot/conf/neo4j.properties
+
+    Add these lines:
+
+        # Autoindexing
+
+        # Enable auto-indexing for nodes, default is false
+        node_auto_indexing=true
+
+        # The node property keys to be auto-indexed, if enabled
+        node_keys_indexable=name, description, ip_address, ip_addresses, as_number, hostname, hostnames, telenor_tn1_number, nordunet_id, version
+
+        # Enable auto-indexing for relationships, default is false
+        relationship_auto_indexing=true
+
+        # The relationship property keys to be auto-indexed, if enabled
+        relationship_keys_indexable=ip_address
+
+    Restart the database.

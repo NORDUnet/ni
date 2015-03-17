@@ -4,7 +4,7 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from niweb.apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId
+from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]

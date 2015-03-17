@@ -1,0 +1,101 @@
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.json-2.4.min.js"></script>
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jeditable.mini.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Editable list
+        function makeEditable()
+        {
+            $('.editable').editable(function(value, settings)
+            {
+                $(this).parent().parent().remove();
+                addItem(value);
+                saveList();
+                return(value);
+            });
+        }
+        function makeDelable()
+        {
+            $('a.delete').click(function(e)
+            {
+                e.preventDefault();
+                $(this).parent().parent().remove();
+                saveList();
+            });
+        }
+        function saveList()
+        {
+            var list = [];
+            $('.editable').each(function(i, item) {
+                list.push($(item).html());
+            });
+            $('#id_relationship_ports').val($.toJSON(list));
+        }
+        function addItem(itemName)
+        {
+            $("#new-ports").append('<div class="row"><div class="span2"><span class="editable">' + itemName + '</span></div><div class="span1"><a class="btn btn-mini delete"><i class="icon-minus"></i></a></div></div>');
+            makeEditable();
+            makeDelable();
+        }
+        makeEditable();
+        makeDelable();
+        // Disable Enter key in the text input so to now submit form when trying to add item
+        $('input[name=addport]').keypress(function (e) {
+            var code = (e.keyCode ? e.keyCode : e.which);
+            if (code === 13) {
+                var item = $('input[name=addport]');
+                addItem(item.val());
+                item.val('');
+                saveList();
+            }
+            return (code != 13);
+        });
+        $('a#add').click(function(e)
+        {
+            e.preventDefault();
+            var item = $('input[name=addport]');
+            addItem(item.val());
+            item.val('');
+            saveList();
+        });
+    });
+</script>
+
+<div class="accordion-group">
+    <div class="accordion-heading">
+        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapsePort">
+            Ports
+        </a>
+    </div>
+    <div id="collapsePort" class="accordion-body collapse" style="height: 0; ">
+        <div class="accordion-inner">
+            {% if ports.Has %}
+                <label>Current ports</label>
+                {% load noclook_tags %}
+                {% for item in ports.Has %}
+                    <div class="row">
+                        <div class="span3">
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                        </div>
+                        <div class="span1">
+                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <hr>
+            <label>Add ports</label>
+            {{ form.relationship_ports }}
+            <div id="new-ports"></div>
+            <br><br>
+            <div class="input-append">
+                <input class="input-large" type="text" name="addport" placeholder="Port name"/>
+                <a id="add" class="btn" type="button"><i class="icon-plus"></i></a>
+            </div>
+            <div class="alert alert-info">
+                <strong>Naming of ports</strong><br>
+                ODF: 1, 2, or 1+2, 3+4 or use part of Alcatel Lucent naming scheme if applicable, eg. slX/port#X.
+            </div>
+        </div>
+    </div>
+</div>

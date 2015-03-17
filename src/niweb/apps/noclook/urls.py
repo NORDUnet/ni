@@ -2,12 +2,42 @@
 from django.conf.urls import *
 
 urlpatterns = patterns('',
-    # Login / logout.
     (r'^login/$', 'django.contrib.auth.views.login'),
-    (r'^logout/$', 'niweb.apps.noclook.views.logout_page'),
 )
 
-urlpatterns += patterns('niweb.apps.noclook.create_views',
+urlpatterns += patterns('apps.noclook.views.other',
+    (r'^$', 'index'),
+    # Log out
+    (r'^logout/$', 'logout_page'),
+    # Visualize views
+    (r'^visualize/(?P<handle_id>\d+)\.json$', 'visualize_json'),
+    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', 'visualize_maximize'),
+    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'visualize'),
+    # Google maps views
+    (r'^gmaps/(?P<slug>[-\w]+)\.json$', 'gmaps_json'),
+    (r'^gmaps/(?P<slug>[-\w]+)/$', 'gmaps'),
+    # Get all
+    (r'^getall/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
+    # Find all
+    (r'^findall/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
+    (r'^findall/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
+    # Find in
+    (r'^findin/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
+    (r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
+    (r'^findin/(?P<slug>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
+    # Search
+    (r'^search/$', 'search'),
+    (r'^search/autocomplete$', 'search_autocomplete'),
+    (r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'search'),
+    # QR lookup
+    (r'^lu/(?P<name>[-\w]+)/$', 'qr_lookup'),
+    # Hostname lookup
+    (r'^ajax/hostname/$', 'ip_address_lookup'),
+    # Table to CSV or Excel
+    (r'^download/tabletofile/$', 'json_table_to_file'),
+)
+
+urlpatterns += patterns('apps.noclook.views.create',
     (r'^new/$', 'new_node'),
     (r'^new/(?P<slug>[-\w]+)/$', 'new_node'),
     (r'^new/(?P<slug>[-\w]+)/parent/(?P<parent_id>\d+)/$', 'new_node'),
@@ -17,19 +47,18 @@ urlpatterns += patterns('niweb.apps.noclook.create_views',
     (r'^reserve-id/(?P<slug>[-\w]+)/$', 'reserve_id_sequence'),
 )
 
-urlpatterns += patterns('niweb.apps.noclook.edit_views',
+urlpatterns += patterns('apps.noclook.views.edit',
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', 'edit_node'),
-    # Convert host
     (r'^host/(?P<handle_id>\d+)/edit/convert-to/(?P<slug>[-\w]+)/$', 'convert_host'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/delete$', 'delete_node'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/delete$', 'delete_relationship'),
     (r'^formdata/(?P<slug>[-\w]+)/$', 'get_node_type'),
     (r'^formdata/unlocated/(?P<slug>[-\w]+)/$', 'get_unlocated_node_type'),
-    (r'^formdata/(?P<node_id>\d+)/children/$', 'get_children'),
-    (r'^formdata/(?P<node_id>\d+)/children/(?P<slug>[-\w]+)/$', 'get_children'),
+    (r'^formdata/(?P<handle_id>\d+)/children/$', 'get_children'),
+    (r'^formdata/(?P<handle_id>\d+)/children/(?P<slug>[-\w]+)/$', 'get_children'),
 )
 
-urlpatterns += patterns('niweb.apps.noclook.report_views',
+urlpatterns += patterns('apps.noclook.views.report',
     (r'^reports/hosts/$', 'host_reports'),
     (r'^reports/hosts/host-users/$', 'host_users'),
     (r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/$', 'host_users'),
@@ -43,10 +72,26 @@ urlpatterns += patterns('niweb.apps.noclook.report_views',
     (r'^reports/send/(?P<report>[-\w]+)/(?P<contract_number>[-\w]+)/$', 'send_report'),
 )
 
-urlpatterns += patterns('niweb.apps.noclook.views',
-    # NOCLook views
-    (r'^$', 'index'),
-    # Detailed views
+urlpatterns += patterns('apps.noclook.views.list',
+    (r'^peering-partner/$', 'list_peering_partners'),
+    (r'^host/$', 'list_hosts'),
+    (r'^site/$', 'list_sites'),
+    (r'^service/(?P<service_class>(DWDM|Ethernet|External|IAAS|IP|Internal|MPLS|Hosting|SAAS)?)/$',
+     'list_services'),
+    (r'^service/$', 'list_services'),
+    (r'^optical-path/$', 'list_optical_paths'),
+    (r'^optical-multiplex-section/$', 'list_optical_multiplex_section'),
+    (r'^optical-link/$', 'list_optical_links'),
+    (r'^optical-node/$', 'list_optical_nodes'),
+    (r'^router/$', 'list_routers'),
+    (r'^rack/$', 'list_racks'),
+    (r'^odf/$', 'list_odfs'),
+    (r'^cable/$', 'list_cables'),
+    # Generic list
+    (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
+)
+
+urlpatterns += patterns('apps.noclook.views.detail',
     (r'^router/(?P<handle_id>\d+)/$', 'router_detail'),
     (r'^peering-partner/(?P<handle_id>\d+)/$', 'peering_partner_detail'),
     (r'^peering-group/(?P<handle_id>\d+)/$', 'peering_group_detail'),
@@ -72,47 +117,17 @@ urlpatterns += patterns('niweb.apps.noclook.views',
     (r'^optical-multiplex-section/(?P<handle_id>\d+)/$', 'optical_multiplex_section_detail'),
     (r'^firewall/(?P<handle_id>\d+)/$', 'firewall_detail'),
     (r'^switch/(?P<handle_id>\d+)/$', 'switch_detail'),
-    # Visualize views
-    (r'^visualize/(?P<node_id>\d+)\.json$', 'visualize_json'),
-    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', 'visualize_maximize'),
-    (r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'visualize'),
-    # Google maps views
-    (r'^gmaps/(?P<slug>[-\w]+)\.json$', 'gmaps_json'),
-    (r'^gmaps/(?P<slug>[-\w]+)/$', 'gmaps'),
-    # Get all
-    (r'^getall/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
-    # Find all
-    (r'^findall/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
-    (r'^findall/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
-    # Find in
-    (r'^findin/(?P<slug>[-\w]+)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
-    (r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
-    (r'^findin/(?P<slug>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'find_all'),
-    # Search
-    (r'^search/$', 'search'),
-    (r'^search/autocomplete$', 'search_autocomplete'),
-    (r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'search'),
-    # QR lookup
-    (r'^lu/(?P<name>[-\w]+)/$', 'qr_lookup'),
-    # Hostname lookup
-    (r'^ajax/hostname/$', 'ip_address_lookup'),
-    # Table to CSV or Excel
-    (r'^download/tabletofile/$', 'json_table_to_file'),
-    # List views
-    (r'^peering-partner/$', 'list_peering_partners'),
-    (r'^host/$', 'list_hosts'),
-    (r'^site/$', 'list_sites'),
-    (r'^service/(?P<service_class>(DWDM|Ethernet|External|IAAS|IP|Internal|MPLS|Hosting|SAAS)?)/$', 'list_services'),
-    (r'^service/$', 'list_services'),
-    (r'^optical-path/$', 'list_optical_paths'),
-    (r'^optical-multiplex-section/$', 'list_optical_multiplex_section'),
-    (r'^optical-link/$', 'list_optical_links'),
-    (r'^optical-node/$', 'list_optical_nodes'),
-    (r'^router/$', 'list_routers'),
-    (r'^rack/$', 'list_racks'),
-    (r'^odf/$', 'list_odfs'),
-    (r'^cable/$', 'list_cables'),
-    (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
-    # Generic view
+    # Generic detail
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
+    (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/history$', 'generic_history'),
+)
+
+urlpatterns += patterns('apps.noclook.views.redirect',
+  #wins only because of no /
+  (r'^nodes/(?P<handle_id>\d+)$', 'node_redirect'),
+  (r'^slow-nodes/(?P<handle_id>\d+)$', 'node_slow_redirect'),
+)
+
+urlpatterns += patterns('apps.noclook.views.debug',
+  (r'^nodes/(?P<handle_id>\d+)/debug$', 'generic_debug'),
 )

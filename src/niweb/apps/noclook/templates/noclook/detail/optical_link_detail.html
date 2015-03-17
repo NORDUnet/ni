@@ -1,0 +1,62 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} Detail{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    {% load noclook_tags %}
+    <div class="row">
+        <div class="span4">
+            <table class="table">
+                <tr>
+                    <th>Name:</th><td>{{ node.data.name }}</td>
+                </tr>
+                <tr>
+                    <th>Type:</th><td>{{ node.data.link_type }}</td>
+                </tr>
+                <tr>
+                    <th>Interface:</th><td>{{ node.data.interface_type }}</td>
+                </tr>
+                <tr>
+                    <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
+                </tr>
+                <tr>
+                    <th>Provider:</th>
+                    <td>
+                        {% for item in relations.Provides %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a><br>
+                        {% endfor %}
+                    </td>
+                </tr>
+            </table>
+            {% if node.data.description %}
+                <div>
+                    <table class="table">
+                        <tr>
+                            <th>Description:</th><td>{{ node.data.description }}</td>
+                        </tr>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+        <div class="span3">
+            <table class="table">
+                {% if node.data.noclook_auto_manage %}
+                    <tr>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+                </tr>
+                <tr>
+                    <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+{% include "noclook/depend_include.html" %}
+{% endblock %}

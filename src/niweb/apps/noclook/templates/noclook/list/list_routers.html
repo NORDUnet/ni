@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} Router list{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#routers").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <h1>Routers</h1>
+    <div class="pull-right">
+        <span class="badge badge-info">Testing</span>
+        <span class="badge badge-warning">Reserved</span>
+        <span class="badge badge-important">Decommissioned</span>
+    </div>
+    <table id="routers" class="tablesorter" cellspacing="1">
+        <thead>
+            <tr>
+                <th>Router</th><th>Model</th><th>JUNOS version</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% load noclook_tags %}
+            {% for item in router_list %}
+                {% if item.router.operational_state == "Decommissioned" %}
+                    <tr class="decommissioned">
+                        {% elif item.router.operational_state == "Reserved" %}
+                    <tr class="reserved">
+                        {% elif item.router.operational_state == "Testing" %}
+                    <tr class="testing">
+                        {% else %}
+                    <tr>
+                {% endif %}
+                        <td><a class="handle" href="{% noclook_node_to_url item.router.handle_id %}">{{ item.router.name }}</a></td><td>{{ item.model|default:"Unknown" }}</td><td>{{ item.version|default:"Unknown" }}</td>
+                    </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

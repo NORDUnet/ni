@@ -1,0 +1,110 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#connections").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {
+                1 : { sorter: "ipAddress"  }
+            },
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{% load noclook_tags %}
+{{ block.super }}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            <tr>
+                <th>Name:</th><td>{{ node.data.name }}</td>
+            </tr>
+            <tr>
+                <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
+            </tr>
+            <tr>
+                <th>Model:</th><td>{{ node.data.model }}</td>
+            </tr>
+            <tr>
+                <th>JUNOS Version:</th><td>{{ node.data.version }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.data.noclook_auto_manage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+{% include "noclook/depend_include.html" %}
+<div class="section">
+    <h3>Interfaces</h3>
+    {% if connections %}
+    {% load noclook_tags %}
+    <table id="connections" class="tablesorter" cellspacing="1">
+        <thead>
+            <tr>
+                <th>Port</th><th>Description</th><th>Cable</th><th>End equipment</th><th>End port</th><th>Units</th><th>Depends on port</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for con in connections %}
+            <tr>
+                <td><a href="{% noclook_node_to_url con.porta.handle_id %}">{{ con.porta.name }}</a></td>
+                <td>{{ con.porta.description }}</td>
+                <td><a href="{% noclook_node_to_url con.cable.handle_id %}">{{ con.cable.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.end.handle_id %}">{{ con.end.name }}</a></td>
+                <td><a href="{% noclook_node_to_url con.portb.handle_id %}">{{ con.portb.name }}</a></td>
+                <td>
+                    {% noclook_get_model con.porta.handle_id as port %}
+                    {% for unit in port.get_units.Part_of|dictsort:"node.data.name" %}
+                        <a href="{% noclook_node_to_url unit.node.handle_id %}">{{ unit.node.data.name }}</a>{% if forloop.last %}{% else %},<br>{% endif %}
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for item in port.get_dependents.Depends_on|dictsort:"node.data.name" %}
+                        {% noclook_get_type item.handle_id as node_type %}
+                        <a href="{% noclook_node_to_url item.node.handle_id %}">{{ node_type }} {{ item.node.data.name }}</a>{% if item.node.data.service_type %} ({{ item.node.data.service_type }}){% endif %}{% if port.get_units.Part_of %},<br>{% endif %}
+                    {% endfor %}
+                    {% for unit in port.get_units.Part_of|dictsort:"node.data.name" %}
+                        {% for item in unit.node.get_dependents.Depends_on|dictsort:"node.data.name" %}
+                            {% noclook_get_type item.handle_id as node_type %}
+                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ node_type }} {{ item.node.data.name }}</a> (Unit {{ unit.node.data.name }}){% if forloop.parentloop.last and forloop.last %}{% else %},<br>{% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No interfaces found.
+    {% endif %}
+</div>
+{% endblock %}
+

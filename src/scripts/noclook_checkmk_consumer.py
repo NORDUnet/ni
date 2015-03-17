@@ -26,24 +26,25 @@ import argparse
 from datetime import datetime, timedelta
 from lucenequerybuilder import Q
 import re
+import logging
 
 ## Need to change this path depending on where the Django project is
 ## located.
-#path = '/var/norduni/src/niweb/'
-path = '/home/lundberg/norduni/src/niweb/'
-##
-##
-sys.path.append(os.path.abspath(path))
+base_path = '../niweb/'
+sys.path.append(os.path.abspath(base_path))
+niweb_path = os.path.join(base_path, 'niweb')
+sys.path.append(os.path.abspath(niweb_path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+
 from django.conf import settings as django_settings
-import norduni_client as nc
+import norduniclient as nc
 import noclook_consumer as nt
-from apps.noclook import helpers as h
+from apps.noclook import helpers
+
+logger = logging.getLogger('noclook_consumer.checkmk')
 
 # This script is used for adding the objects collected with the
 # NERDS producer checkmk_livestatus.
-
-VERBOSE = False
 
 """
 {
@@ -91,16 +92,17 @@ def get_host(ip_address):
     :param ip_address: string
     :return: neo4j node or None
     """
-    index = nc.get_node_index(nc.neo4jdb, nc.search_index_name())
     q = Q('ip_addresses', '%s' % ip_address)
-    for hit in index.query(unicode(q)):
-        if hit['node_type'] == 'Host':  # Do we want to set nagios checks for other things?
-            return hit
+    search = nc.legacy_node_index_search(nc.neo4jdb, unicode(q))
+    for handle_id in search['result']:
+        node = nc.get_node_model(nc.neo4jdb, handle_id)
+        if 'Host' in node.labels:
+            return node
 
 
 def set_nagios_checks(host, checks):
     """
-    :param host: neo4j node
+    :param host: norduniclient node model
     :param checks: list of strings
     :return: None
     """
@@ -109,14 +111,14 @@ def set_nagios_checks(host, checks):
     property_dict = {
         'nagios_checks': checks
     }
-    h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
+    helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
 
 
 def set_uptime(host, check):
     """
     Parses uptime collected with check_uptime (https://github.com/willixix/WL-NagiosPlugins).
 
-    :param host: neo4j node
+    :param host: norduniclient node model
     :param check: check dictionary
     :return: None
     """
@@ -128,19 +130,18 @@ def set_uptime(host, check):
             'lastboot': lastboot.strftime("%a %b %d %H:%M:%S %Y"),
             'uptime': uptime
         }
-        h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
+        helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
-        if VERBOSE:
-            print '%s uptime check did not match the expected format.' % host['name']
-            print check
-            print e
+        logger.info('{name} uptime check did not match the expected format.'.format(name=host.data['name']))
+        logger.info(check)
+        logger.info(e)
 
 
 def set_backup(host, check):
     """
     Parses output from check_backup, looks for known backup processes and if the check returned ok.
 
-    :param host: neo4j node
+    :param host: norduniclient node model
     :param check: check dictionary
     :return: None
     """
@@ -149,17 +150,16 @@ def set_backup(host, check):
             property_dict = {
                 'backup': 'tsm'
             }
-            h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
+            helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
-        if VERBOSE:
-            print '%s backup check did not match the expected format.' % host['name']
-            print check
-            print e
+        logger.info('{name} backup check did not match the expected format.'.format(name=host.data['name']))
+        logger.info(check)
+        logger.info(e)
 
 
 def collect_netapp_storage_usage(host, check, storage_collection):
     """
-    :param host: neo4j node
+    :param host: norduniclient node model
     :param check: check dictionary
     :param storage_collection: persistent list for collecting data
     :return: list storage_collection
@@ -171,10 +171,10 @@ def collect_netapp_storage_usage(host, check, storage_collection):
                 try:
                     service['total_storage'] += float(plugin_output.split('usage:')[1].split()[0])
                 except ValueError as e:
-                    if VERBOSE:
-                        print '%s NetApp storage check did not match the expected format.' % host['name']
-                        print check
-                        print e
+                    logger.error('{name} Netapp storage check did not match the expected format.'.format(
+                        name=host.data['name']))
+                    logger.error(check)
+                    logger.error(e)
     return storage_collection
 
 
@@ -186,11 +186,16 @@ def set_netapp_storage_usage(storage_collection):
     for service in storage_collection:
         service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
         property_dict = {'netapp_storage_sum': service['total_storage']}
-        h.dict_update_node(nt.get_user(), service_node, property_dict, property_dict.keys())
+        helpers.dict_update_node(nt.get_user(), service_node.handle_id, property_dict, property_dict.keys())
         service['total_storage'] = 0.0
 
 
 def set_dell_service_tag(host, check):
+    """
+    :param host: norduniclient node model
+    :param check: check dictionary
+    :return: None
+    """
     tag = None
     try:
         openmanage_linux_tag_regex = re.compile('servicetag=(?P<tag>[\w]+)', re.IGNORECASE)
@@ -209,7 +214,7 @@ def set_dell_service_tag(host, check):
         pass
     if tag:
         property_dict = {'service_tag': tag}
-        h.dict_update_node(nt.get_user(), host, property_dict, property_dict.keys())
+        helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
 
 
 def insert(json_list):
@@ -220,27 +225,26 @@ def insert(json_list):
     # Parse collected Nagios data
     for item in json_list:
         base = item['host']['checkmk_livestatus']
-        ip_address = base['host_address']
-        host = get_host(ip_address)
+        host = nc.get_unique_node_by_name(nc.neo4jdb, base['host_name'], 'Host')
+        if not host:
+            host = get_host(base['host_address'])
         if host:
             check_descriptions = []
             for check in base['checks']:
                 check_descriptions.append(check.get('description', 'Missing description'))
-                if check['check_command'] == 'CHECK_NRPE!check_uptime':         # Host uptime
+                if check['check_command'] == 'CHECK_NRPE!check_uptime':     # Host uptime
                     set_uptime(host, check)
-                if check['check_command'] == 'CHECK_NRPE!check_backup':         # TSM backup process
+                if check['check_command'] == 'CHECK_NRPE!check_backup':     # TSM backup process
                     set_backup(host, check)
-                if check['check_command'].startswith('check_netapp_vol'):       # NetApp storage usage
+                if check['check_command'].startswith('check_netapp_vol'):   # NetApp storage usage
                     netapp_collection = collect_netapp_storage_usage(host, check, netapp_collection)
                 if check['check_command'] == 'CHECK_NRPE!check_openmanage':     # Dell OpenManage info
                     set_dell_service_tag(host, check)
                 if check['check_command'] == 'check_esxi':                      # Dell esxi HW info
                     set_dell_service_tag(host, check)
             set_nagios_checks(host, check_descriptions)
-            h.update_noclook_auto_manage(nc.neo4jdb, host)
-            if VERBOSE:
-                print '%s done.' % host['name']
-
+            helpers.update_noclook_auto_manage(host)
+            logger.info('{name} done.'.format(name=host.data['name']))
     # Set data collected from multiple hosts
     set_netapp_storage_usage(netapp_collection)
 
@@ -249,12 +253,11 @@ def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
-    parser.add_argument('--verbose', '-v', default=False, action='store_true',
+    parser.add_argument('--verbose', '-V', default=False, action='store_true',
                         help='Verbose output')
     args = parser.parse_args()
     if args.verbose:
-        global VERBOSE
-        VERBOSE = True
+        logger.setLevel(logging.INFO)
     # Load the configuration file
     if not args.C:
         print 'Please provide a configuration file with -C.'
@@ -267,4 +270,10 @@ def main():
     return 0
 
 if __name__ == '__main__':
+    logger.setLevel(logging.WARNING)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
     main()

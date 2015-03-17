@@ -1,0 +1,153 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} Detail{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    {% load noclook_tags %}
+    <div class="row">
+        <div class="span4">
+            <table class="table">
+                <tr>
+                    <th>Name:</th><td>{{ node.data.name }}</td>
+                </tr>
+                <tr>
+                    <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
+                </tr>
+                {% if node.operational_state == "Decommissioned" %}
+                    <tr>
+                        <th>Decommissioned:</th><td>{{ node.data.decommissioned_date }}</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Type:</th><td>{{ node.data.service_class }} - {{ node.data.service_type }}</td>
+                </tr>
+                {% if node.data.service_type == "Project" %}
+                    <tr>
+                        <th>Project end date:</th><td>{{ node.data.project_end_date }}</td>
+                    </tr>
+                {% endif %}
+                {% if node.data.ncs_service_name %}
+                    <tr>
+                        <th>NCS Service Name:</th>
+                        <td>{{ node.data.ncs_service_name }}</td>
+                    </tr>
+                {% endif %}
+                {% if node.data.vpn_type %}
+                    <tr>
+                        <th>VPN Type:</th>
+                        <td>{{ node.data.vpn_type }}</td>
+                    </tr>
+                {% endif %}
+                {% if node.data.vlan %}
+                    <tr>
+                        <th>VLAN:</th>
+                        <td>{{ node.data.vlan }}</td>
+                    </tr>
+                {% endif %}
+                {% if node.data.vrf_target %}
+                    <tr>
+                        <th>VRF Target:</th>
+                        <td>{{ node.data.vrf_target }}</td>
+                    </tr>
+                {% endif %}
+                {% if node.data.route_distinguisher %}
+                    <tr>
+                        <th>Route Distinguisher:</th>
+                        <td>{{ node.data.route_distinguisher }}</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Provider:</th>
+                    <td>
+                        {% for provider in relations.Provides %}
+                            <a href="{% noclook_node_to_url provider.node.handle_id %}">{{ provider.node.data.name }}</a><br>
+                        {% endfor %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Customers:</th>
+                    <td>
+                        {% for user in relations.Uses %}
+                            {% noclook_get_type user.node.handle_id as node_type %}
+                            {% if node_type == "Customer" %}
+                                <a href="{% noclook_node_to_url user.node.handle_id %}">{{ user.node.data.name }}</a><br>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>End Users:</th>
+                    <td>
+                        {% for user in relations.Uses %}
+                            {% noclook_get_type user.node.handle_id as node_type %}
+                            {% if node_type == "End User" %}
+                                <a href="{% noclook_node_to_url user.node.handle_id %}">{{ user.node.data.name }}</a><br>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% if node.data.contract_number %}
+                    <tr>
+                        <th>Contract number:</th><td>{{ node.data.contract_number }}</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+        <div class="span3">
+            <table class="table">
+                {% if node.data.netapp_storage_sum %}
+                    <tr>
+                        <th>NetApp storage use:</th><td>{{ node.data.netapp_storage_sum }}GB</td>
+                    </tr>
+                {% endif %}
+                {% if node.data.noclook_auto_manage %}
+                    <tr>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+                </tr>
+                <tr>
+                    <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+                </tr>
+            </table>
+        </div>
+        {% if node.data.description or node.data.responsible_group or node.data.support_group %}
+            <div class="span7">
+                <table class="table">
+                    {% if node.data.description %}
+                        <tr>
+                            <th>Description:</th><td>{{ node.data.description }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if node.data.responsible_group %}
+                        <tr>
+                            <th>Responsible group:</th>
+                            <td>
+                                {{ node.data.responsible_group }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if node.data.support_group %}
+                        <tr>
+                            <th>Support group:</th>
+                            <td>
+                                {{ node.data.support_group }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+{% if node.data.description == "NSI circuit" %}
+    {% include "noclook/detail/includes/nsi_information.html" %}
+{% endif %}
+{% include "noclook/depend_include.html" %}
+{% endblock %}
+

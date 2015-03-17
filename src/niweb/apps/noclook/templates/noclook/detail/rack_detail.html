@@ -1,0 +1,90 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#equipment").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            {% if node.data.height %}
+                <tr>
+                    <th>Height:</th><td>{{ node.data.height }} mm</td>
+                </tr>
+            {% endif %}
+            {% if node.data.depth %}
+                <tr>
+                    <th>Depth:</th><td>{{ node.data.depth }} mm</td>
+                </tr>
+            {% endif %}
+            {% if node.data.width %}
+                <tr>
+                    <th>Width:</th><td>{{ node.data.width }} mm</td>
+                </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.data.noclook_automanage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<br><br><br>
+<div class="section">
+    <h3>Equipment in rack</h3>
+    {% if physical_relationships %}
+    <table id="equipment" class="tablesorter" cellspacing="1">
+        <thead>
+            <tr>
+                <th>Type</th><th>Name</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in physical_relationships.Located_in %}
+            <tr>
+                {% noclook_get_type item.node.handle_id as node_type %}
+                <td>{{ node_type }}</td>
+                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No equipment on site.
+    {% endif %}
+</div>
+{% endblock %}
+

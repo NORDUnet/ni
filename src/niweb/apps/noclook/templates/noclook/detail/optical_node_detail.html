@@ -1,0 +1,80 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }}{% endblock %}
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#connections").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+        $("#ports").tablesorter(
+                {
+                    sortList: [[0,0]],
+                    headers:
+                    {},
+                    widthFixed: true,
+                    widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            <tr>
+                <th>Name:</th><td>{{ node.data.name }}</td>
+            </tr>
+            <tr>
+                <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
+            </tr>
+            {% if node.type %}
+            <tr>
+                <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.data.type }}/">{{ node.data.type }}</a></td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.data.ots %}
+                <tr>
+                    <th>Optical Transport Section:</th><td><a href="/findin/optical-node/ots/{{ node.data.ots }}/">{{ node.data.ots }}</a></td>
+                </tr>
+            {% endif %}
+            {% if node.data.link %}
+                <tr>
+                    <th>Link:</th><td><a href="/findin/optical-node/link/{{ node.data.link }}/">{{ node.data.link }}</a></td>
+                </tr>
+            {% endif %}
+            {% if node.data.noclook_auto_manage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+{% include "noclook/depend_include.html" %}
+{% include "noclook/detail/includes/connections.html" with connections=connections urls=urls only %}
+{% endblock %}

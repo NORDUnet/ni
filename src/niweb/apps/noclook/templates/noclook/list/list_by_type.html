@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ block.super }} {{node_type}} list{% endblock %}
+
+{% block js %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#nodes").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <h1>{{node_type}}s</h1>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
+    <table id="nodes" class="tablesorter" cellspacing="1">
+        <thead>
+            <th>Name</th>
+        </thead>
+        <tbody>
+            {% load noclook_tags %}
+            {% for item in node_list %}
+                {% noclook_has_expired item.node as expired %}
+                {% if expired %}
+                    <tr class="expired">
+                {% else %}
+                    <tr>
+                {% endif %}
+                    <td><a href="{% noclook_node_to_url item.node.handle_id  %}">{{ item.node.name }}</a></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

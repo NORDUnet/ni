@@ -1,10 +1,12 @@
-from niweb.apps.noclook.models import NodeType, NodeHandle
-from niweb.apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age, get_location
-import norduni_client as nc
+from django.core.exceptions import ObjectDoesNotExist
+from apps.noclook.models import NodeType, NodeHandle
+from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age, get_node_type
+import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
-register = template.Library()
 
+
+register = template.Library()
 
 @register.inclusion_tag('type_menu.html')
 def type_menu():
@@ -17,13 +19,23 @@ def type_menu():
     return {'types': types}
 
 
-@register.simple_tag
-def noclook_node_to_url(node):
+@register.simple_tag(takes_context=True)
+def noclook_node_to_url(context,handle_id):
     """
     Takes a node id as a string and returns the absolute url for a node.
     """
-    return get_node_url(node)
-
+    #handle fallback
+    urls = context.get('urls')
+    if urls and handle_id in urls:
+      return urls.get(handle_id)
+    else:
+      return "/nodes/%s" % handle_id
+   #else:
+      #
+      #try: 
+      #  return get_node_url(handle_id)
+      #except ObjectDoesNotExist:
+      #  return ''
 
 @register.assignment_tag
 def noclook_node_to_node_handle(node):
@@ -73,28 +85,39 @@ def noclook_has_expired(item):
 
 
 @register.assignment_tag
-def noclook_get_ports(item):
+def noclook_get_model(handle_id):
     """
-    Return port nodes that are either dependencies or connected to item. Also returns the
-    ports top parent.
-    :param item: Neo4j node
-    :return: Cypher ExecutionResult
+    :param handle_id: unique id
+    :return: Node model
     """
-    q = """
-        START node = node({id})
-        MATCH node-[r:Connected_to|Depends_on]-port
-        WHERE port.node_type = "Port"
-        WITH port, r
-        MATCH p=port<-[?:Has*1..]-parent
-        RETURN port, r, LAST(nodes(p)) as parent
-        ORDER BY parent.name
-        """
-    return nc.neo4jdb.query(q, id=item.getId())
+    try:
+        return nc.get_node_model(nc.neo4jdb, handle_id)
+    except nc.exceptions.NodeNotFound:
+        return ''
 
 
 @register.assignment_tag
-def noclook_get_location(node):
-    return get_location(node)
+def noclook_get_type(handle_id):
+    try:
+        return get_node_type(handle_id)
+    except nc.exceptions.NodeNotFound:
+        return ''
+
+
+@register.assignment_tag
+def noclook_get_ports(handle_id):
+    """
+    Return port nodes that are either dependencies or connected to item. Also returns the
+    ports top parent.
+    :param handle_id: unique id
+    :return: list
+    """
+    return nc.get_node_model(nc.neo4jdb, handle_id).get_ports()
+
+
+@register.assignment_tag
+def noclook_get_location(handle_id):
+    return nc.get_node_model(nc.neo4jdb, handle_id).get_location()
 
 
 @register.assignment_tag
@@ -103,21 +126,24 @@ def noclook_report_age(item, old, very_old):
     :param item: Neo4j node
     :return: String, current, old, very_old
     """
-    return neo4j_report_age(item, old, very_old)
+    try:
+        return neo4j_report_age(item, old, very_old)
+    except TypeError:
+        return ''
 
 
 @register.assignment_tag
-def noclook_has_rogue_ports(node):
+def noclook_has_rogue_ports(handle_id):
     """
-    :param node: Neo4j node
+    :param handle_id: unique id
     :return: Boolean
     """
     q = """
-        START host=node({id})
-        MATCH host<-[r:Depends_on]-host_service
-        RETURN count(r.rogue_port?) as c
+        MATCH (host {handle_id: {handle_id}})<-[r:Depends_on]-()
+        RETURN count(r.rogue_port)
         """
-    hits = int(str([hit['c'] for hit in nc.neo4jdb.query(q, id=node.getId())][0]))  # java.lang.Long
-    if hits != 0:
+    with nc.neo4jdb.read as r:
+        count, = r.execute(q, handle_id=handle_id).fetchall()[0]
+    if count:
         return True
     return False

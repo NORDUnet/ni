@@ -14,7 +14,7 @@ class UserProfile(models.Model):
 
     @models.permalink
     def get_absolute_url(self):
-        return('niweb.apps.userprofile.views.userprofile_detail', (),
+        return('apps.userprofile.views.userprofile_detail', (),
                {'userprofile_id': self.pk})
 
 

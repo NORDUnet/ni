@@ -23,25 +23,25 @@
 import os
 import sys
 import argparse
-
+import logging
 
 ## Need to change this path depending on where the Django project is
 ## located.
-#path = '/var/norduni/src/niweb/'
-path = '/home/lundberg/norduni/src/niweb/'
-##
-##
-sys.path.append(os.path.abspath(path))
+base_path = '../niweb/'
+sys.path.append(os.path.abspath(base_path))
+niweb_path = os.path.join(base_path, 'niweb')
+sys.path.append(os.path.abspath(niweb_path))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-import norduni_client as nc
-from norduni_client_exceptions import MultipleNodesReturned
+
+import norduniclient as nc
+from norduniclient.exceptions import MultipleNodesReturned
 import noclook_consumer as nt
-from apps.noclook import helpers as h
+from apps.noclook import helpers
+
+logger = logging.getLogger('noclook_consumer.cfengine')
 
 # This script is used for adding the objects collected with the
 # cfengine reports NERDS producers to the NOCLook database.
-
-VERBOSE = True
 
 # If the promise exists for the host and is "kept", "not kept" or "repaired" the
 # property named "property_name" will be set to the value on the node.
@@ -82,12 +82,13 @@ def insert(json_list):
     """
     user = nt.get_user()
     for i in json_list:
+        node = None
         name = i['host']['name']
         promises = i['host']['cfengine_report']
         try:
             node = nc.get_unique_node_by_name(nc.neo4jdb, name, 'Host')
-        except MultipleNodesReturned:
-            node = None
+        except MultipleNodesReturned as e:
+            logger.error(e)
         if node:
             host_properties = {}
             for promise in promises:
@@ -96,21 +97,23 @@ def insert(json_list):
                     promise_status = promise['promisestatus']
                     host_properties.update(CFENGINE_MAP[promise_name][promise_status])
 
-            h.dict_update_node(user, node, host_properties, host_properties.keys())
-            if VERBOSE:
-                print '%s done.' % name
+            helpers.dict_update_node(user, node.handle_id, host_properties, host_properties.keys())
+            logger.info('{name} done.'.format(name=name))
 
 
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
+    parser.add_argument('--verbose', '-V', action='store_true', default=False)
     args = parser.parse_args()
     # Load the configuration file
     if not args.C:
         print 'Please provide a configuration file with -C.'
         sys.exit(1)
     else:
+        if args.verbose:
+            logger.setLevel(logging.INFO)
         config = nt.init_config(args.C)
         cfengine_data = config.get('data', 'cfengine_report')
         if cfengine_data:
@@ -118,4 +121,10 @@ def main():
     return 0
 
 if __name__ == '__main__':
+    logger.setLevel(logging.WARNING)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
     main()

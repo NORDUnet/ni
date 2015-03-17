@@ -1,0 +1,31 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+{{ block.super }}
+{% load noclook_tags %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Accordion
+        $(".edit-accordion").collapse();
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <div class="well">
+        <h3>Name</h3>
+        {{ form.name }}
+        <h3>Max ports</h3>
+        {{ form.max_number_of_ports }}
+        <span class="help-block">{{ form.max_number_of_ports.help_text }}</span>
+    </div>
+
+    <div class="accordion" id="edit-accordion">
+        {% include "noclook/edit/includes/port_group.html" %}
+        {% include "noclook/edit/includes/location_group.html" %}
+    </div>
+{% endblock %}
+

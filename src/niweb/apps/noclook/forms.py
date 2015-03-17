@@ -4,11 +4,9 @@ from django.forms.util import ErrorDict, ErrorList
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
-from niweb.apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
-import niweb.apps.noclook.helpers as h
-import norduni_client as nc
-
-TRUEFALSE = [(True, True), (False, False)]
+from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
+from apps.noclook import unique_ids
+import norduniclient as nc
 
 # We should move this kind of data to the SQL database.
 COUNTRY_CODES = [
@@ -53,6 +51,8 @@ COUNTRY_MAP = {
     'UK': 'United Kingdom',
     'US': 'USA'
 }
+
+COUNTRY_CODE_MAP = dict((COUNTRY_MAP[key], key) for key in COUNTRY_MAP)
 
 SITE_TYPES = [
     ('', ''),
@@ -215,18 +215,20 @@ RESPONSIBLE_GROUPS = [
     ('WAYF', 'WAYF'),
 ]
 
+
 def get_node_type_tuples(node_type):
     """
-    Returns a list of tuple of node.id and node['name'] of the node_type.
+    Returns a list of tuple of node.handle_id and node['name'] of label node_type.
     """
-    from operator import itemgetter
-    index = nc.get_node_index(nc.neo4jdb, 'node_types')
-    nodes = h.iter2list(index['node_type'][node_type])
-    node_list = [('', '')]
-    for node in nodes:
-        node_list.append((node.id, node['name']))
-    node_list.sort(key=itemgetter(1))
-    return node_list
+    choices = [('', '')]
+    q = """
+        MATCH (n:{node_type})
+        RETURN n.handle_id, n.name
+        ORDER BY n.name
+        """.format(node_type=node_type.replace(' ', '_'))
+    with nc.neo4jdb.read as r:
+        choices.extend(r.execute(q).fetchall())
+    return choices
 
 
 class JSONField(forms.CharField):
@@ -255,11 +257,20 @@ class ReserveIdForm(forms.Form):
 
 
 class NewSiteForm(forms.Form):
+    """
+    Concatenate country code with site name
+    """
     name = forms.CharField()
     country_code = forms.ChoiceField(choices=COUNTRY_CODES, widget=forms.widgets.Select)
     address = forms.CharField(required=False)
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
+    
+    def clean(self):
+        cleaned_data = super(NewSiteForm, self).clean()
+        cleaned_data['name'] = '%s-%s' % (cleaned_data['country_code'], cleaned_data['name'].upper())
+        cleaned_data['country'] = COUNTRY_MAP[cleaned_data['country_code']]
+        return cleaned_data
     
     
 class EditSiteForm(forms.Form):
@@ -279,7 +290,13 @@ class EditSiteForm(forms.Form):
     owner_id = forms.CharField(required=False)
     owner_site_name = forms.CharField(required=False)
     url = forms.URLField(required=False, help_text='An URL to more information about the site.')
-    relationship_site_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_responsible_for = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+    def clean(self):
+        cleaned_data = super(EditSiteForm, self).clean()
+        cleaned_data['name'] = cleaned_data['name'].upper()
+        cleaned_data['country_code'] = COUNTRY_CODE_MAP[cleaned_data['country']]
+        return cleaned_data
                               
                               
 class NewSiteOwnerForm(forms.Form):
@@ -294,8 +311,7 @@ class EditSiteOwnerForm(forms.Form):
 
 class NewCableForm(forms.Form):
     name = forms.CharField()
-    cable_type = forms.ChoiceField(choices=CABLE_TYPES,
-                                   widget=forms.widgets.Select)
+    cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
@@ -320,12 +336,12 @@ class NewNordunetCableForm(NewCableForm):
                     raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
                 try:
                     id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                    cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
                 except UniqueIdGenerator.DoesNotExist as e:
                     raise e
             else:
                 try:
-                    h.register_unique_id(self.Meta.id_collection, name)
+                    unique_ids.register_unique_id(self.Meta.id_collection, name)
                 except IntegrityError as e:
                     self._errors = ErrorDict()
                     self._errors['name'] = ErrorList()
@@ -334,10 +350,6 @@ class NewNordunetCableForm(NewCableForm):
 
                                        
 class EditCableForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditCableForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-
     name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
     cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
     telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.')
@@ -346,7 +358,13 @@ class EditCableForm(forms.Form):
     global_connect_circuit_id = forms.CharField(required=False, help_text='Global Connect circuit ID')
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+    def clean(self):
+        cleaned_data = super(EditCableForm, self).clean()
+        if cleaned_data.get('telenor_trunk_id', None):
+            cleaned_data['name'] = cleaned_data['telenor_trunk_id']
+        return cleaned_data
 
 
 class EditOpticalNodeForm(forms.Form):        
@@ -381,15 +399,11 @@ class EditRackForm(forms.Form):
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_located_in = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                 
                 
 class EditHostForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditHostForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
-        self.fields['relationship_owner'].choices = get_node_type_tuples('Host User')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
@@ -413,20 +427,16 @@ class EditHostForm(forms.Form):
     end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
-    services_locked = forms.ChoiceField(choices=TRUEFALSE, widget=forms.CheckboxInput(), required=False)
-    services_checked = forms.ChoiceField(choices=TRUEFALSE, widget=forms.CheckboxInput(), required=False)
+    services_locked = forms.BooleanField(required=False)
+    services_checked = forms.BooleanField(required=False)
 
 
 class EditSwitchForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditSwitchForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_owner'].choices = get_node_type_tuples('Host User')
-
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
     description = forms.CharField(required=False,
@@ -448,15 +458,11 @@ class EditSwitchForm(forms.Form):
     service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the switch?')
     end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_ports = JSONField(required=False, widget=JSONInput)
 
 
 class EditFirewallForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditFirewallForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_owner'].choices = get_node_type_tuples('Host User')
-
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
@@ -477,7 +483,8 @@ class EditFirewallForm(forms.Form):
     service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the firewall?')
     end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_owner = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
 
 
 class EditRouterForm(forms.Form):
@@ -609,7 +616,7 @@ class NewServiceForm(forms.Form):
                     raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
                 try:
                     id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                    cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
                 except UniqueIdGenerator.DoesNotExist as e:
                     raise e
             elif not name:
@@ -638,6 +645,9 @@ class NewNordunetServiceForm(NewServiceForm):
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
             self._errors['project_end_date'].append('Missing project end date.')
+        # Convert  project_end_date to string if set
+        if cleaned_data.get('project_end_date', None):
+            cleaned_data['project_end_date'] = cleaned_data['project_end_date'].strftime('%Y-%m-%d')
         return cleaned_data
 
 
@@ -651,12 +661,6 @@ class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
 
 
 class EditServiceForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditServiceForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-        self.fields['relationship_customer'].choices = get_node_type_tuples('Customer')
-        self.fields['relationship_end_user'].choices = get_node_type_tuples('End User')
-
     name = forms.CharField(required=False)
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     service_type = forms.ChoiceField(choices=SERVICE_TYPES,
@@ -678,9 +682,8 @@ class EditServiceForm(forms.Form):
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this service?')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_customer = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_end_user = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
     def clean(self):
@@ -703,6 +706,9 @@ class EditServiceForm(forms.Form):
             self._errors = ErrorDict()
             self._errors['operational_state'] = ErrorList()
             self._errors['operational_state'].append('Missing operational state.')
+        # Convert  project_end_date to string if set
+        if cleaned_data.get('project_end_date', None):
+            cleaned_data['project_end_date'] = cleaned_data['project_end_date'].strftime('%Y-%m-%d')
         # Convert decommissioned_date to string if set
         if cleaned_data.get('decommissioned_date', None):
             cleaned_data['decommissioned_date'] = cleaned_data['decommissioned_date'].strftime('%Y-%m-%d')
@@ -710,10 +716,6 @@ class EditServiceForm(forms.Form):
 
 
 class NewOpticalLinkForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(NewOpticalLinkForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES, widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
@@ -721,7 +723,7 @@ class NewOpticalLinkForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical link.')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
     class Meta:
         id_generator_name = None    # UniqueIdGenerator instance name
@@ -739,7 +741,7 @@ class NewOpticalLinkForm(forms.Form):
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
                 id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
         return cleaned_data
@@ -769,22 +771,18 @@ class EditOpticalLinkForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical link.')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewOpticalMultiplexSectionForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(NewOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-
     name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical link.')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class EditOpticalMultiplexSectionForm(forms.Form):
@@ -799,8 +797,8 @@ class EditOpticalMultiplexSectionForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_depends_on = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewOpticalPathForm(forms.Form):
@@ -836,7 +834,7 @@ class NewOpticalPathForm(forms.Form):
                 raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
             try:
                 id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                cleaned_data['name'] = h.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
         return cleaned_data
@@ -854,10 +852,6 @@ class NewNordunetOpticalPathForm(NewOpticalPathForm):
 
 
 class EditOpticalPathForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(EditOpticalPathForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-
     framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
                                 widget=forms.widgets.Select)
     capacity = forms.ChoiceField(choices=OPTICAL_PATH_CAPACITY,
@@ -868,5 +862,5 @@ class EditOpticalPathForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
     enrs = JSONField(required=False, widget=JSONInput)
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)

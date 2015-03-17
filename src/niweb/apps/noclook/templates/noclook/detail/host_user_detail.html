@@ -1,0 +1,93 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} Detail{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        $("#hosts").tablesorter(
+        {
+            sortList: [[0,0]],
+            headers:
+            {},
+            widthFixed: true,
+            widgets: ['zebra']
+        });
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            <tr>
+                <th>Name:</th><td>{{ node.name }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+            {% if node.data.noclook_auto_manage %}
+                <tr>
+                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+            </tr>
+            <tr>
+                <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+<!--
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<br><br><br>
+-->
+<div class="section">
+    {% load noclook_tags %}
+    {% if host_relationships %}
+    <h3>Hosts used</h3>
+    <div class="pull-right">
+        <span class="badge badge-important">Expired</span>
+    </div>
+    <table id="hosts" class="tablesorter" cellspacing="1">
+        <thead>
+            <tr>
+                <th>Host</th><th>Host type</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in host_relationships %}
+            {% noclook_has_expired item as expired %}
+            {% if expired %}
+                <tr class="expired">
+            {% else %}
+                <tr>
+            {% endif %}
+                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                <td>
+                  {% if "Logical" in  item.labels %}
+                    Logical
+                  {% else %}
+                    Physical
+                  {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        No hosts used.
+    {% endif %}
+</div>
+{% endblock %}

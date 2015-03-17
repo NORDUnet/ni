@@ -1,0 +1,64 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+{{ block.super }}
+{% load noclook_tags %}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Accordion
+        $(".edit-accordion").collapse();
+        // Located in //
+        // Populate first level combo box
+        locatedInCategories = [
+            ['host', 'Hosts'],
+            ['odf', 'ODFs'],
+            ['optical-node', 'Optical Nodes'],
+            ['router', 'Routers']
+        ];
+        // Parent
+        // Populate first level has relationship combo box
+        parentCategories = [
+            ['site', 'Sites']
+        ];
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <div class="well">
+        <h3>Name</h3>
+        {{ form.name }}
+    </div>
+
+    <div class="accordion" id="edit-accordion">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
+                    Dimensions (optional)
+                </a>
+            </div>
+            <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
+                <div class="accordion-inner">
+                    <label>Height</label>
+                    {{ form.height }}
+                    <span class="help-block">{{ form.height.help_text }}</span>
+                    <label>Depth</label>
+                    {{ form.depth }}
+                    <span class="help-block">{{ form.depth.help_text }}</span>
+                    <label>Width</label>
+                    {{ form.width }}
+                    <span class="help-block">{{ form.width.help_text }}</span>
+                    <label>Rack units</label>
+                    {{ form.rack_units }}
+                    <span class="help-block">{{ form.rack_units.help_text }}</span>
+                </div>
+            </div>
+        </div>
+        {% include "noclook/edit/includes/parent_group.html" %}
+        {% include "noclook/edit/includes/located_in_group.html" %}
+    </div>
+{% endblock %}
+

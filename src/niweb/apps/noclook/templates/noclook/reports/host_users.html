@@ -1,0 +1,129 @@
+{% extends "noclook/reports/base_report.html" %}
+
+{% block title %}{{ block.super }} | Host reports | Host users{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(
+            function(){
+                $("#hosts").tablesorter(
+                    {
+                        sortList: [[0,0], [1,0]],
+                        headers:
+                        {
+                            3 : { sorter: "ipAddress" },
+                            12 : { sorter: "isoDate" }
+                        },
+                        widthFixed: false,
+                        widgets: ['zebra']
+                    });
+
+                $(".table-to-csv").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set table id here
+                    var table = buildJSONTable($("#hosts"));
+                    postJSONTable('csv', elem, table.header, table.data)
+
+                });
+                $(".table-to-xls").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set table id here
+                    var table = buildJSONTable($("#hosts"));
+                    postJSONTable('xls', elem, table.header, table.data)
+                });
+            }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <h1>Host users</h1>
+    <hr>
+    <ul class="nav nav-pills">
+        {% if host_user_name == "All" %}
+            <li class="active"><a href="/reports/hosts/host-users/All/">All</a></li>
+        {% else %}
+            <li class=""><a href="/reports/hosts/host-users/All/">All</a></li>
+        {% endif %}
+        {% for key in host_users %}
+            {% if key == host_user_name %}
+                <li class="active"><a href="/reports/hosts/host-users/{{ key }}/">{{ key }}</a></li>
+            {% else %}
+                <li class=""><a href="/reports/hosts/host-users/{{ key }}/">{{ key }}</a></li>
+            {% endif %}
+        {% endfor %}
+        {% if host_user_name == "Missing" %}
+            <li class="active"><a href="/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
+        {% else %}
+            <li class=""><a href="/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
+        {% endif %}
+    </ul>
+    {% if hosts %}
+        <h3>Hosts for {{ host_user_name }}: {{ num_of_hosts }}</h3>
+        <div class="pull-right">
+            <span class="badge badge-warning">+14 days</span>
+            <span class="badge badge-important">+30 days</span>
+            <span class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</span>
+            <span class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</span>
+        </div>
+        <table id="hosts" class="tablesorter" cellspacing="1">
+            <thead>
+                <tr>
+                    <th>Host user</th>
+                    <th>Host</th>
+                    <th>Host type</th>
+                    <th>IP address(es)</th>
+                    <th>Contract number</th>
+                    <th>Description</th>
+                    <th>Responsible</th>
+                    <th>Backup</th>
+                    <th>Syslog</th>
+                    <th>Nagios</th>
+                    <th>Operational State</th>
+                    <th>Security Class</th>
+                    <th>Last seen</th>
+                    <th>Uptime (days)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% load noclook_tags %}
+                {% for item in hosts %}
+                    {% for handle_id in item.ids %}
+                        {% noclook_get_model handle_id as host %}
+                        {% noclook_report_age host.data 15 30 as age %}
+                        {% if age == "old" %}
+                            <tr class="report-old">
+                        {% elif age == "very_old" %}
+                            <tr class="report-very-old">
+                        {% else %}
+                            <tr>
+                        {% endif %}
+                        <td>{{ item.host_user.name }}</td>
+                        <td><a href="{% noclook_node_to_url host.handle_id %}">{{ host.data.name }}</a></td>
+                        <td>{{ host.meta_type|capfirst }} host</td>
+                        <td>
+                            {% for address in host.data.ip_addresses %}
+                                {{ address }}{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>{{ host.data.contract_number|default:"" }}</td>
+                        <td>{{ host.data.description|default:"" }}</td>
+                        <td>{{ host.data.responsible_group }}</td>
+                        <td>{{ host.data.backup }}</td>
+                        <td>{{ host.data.syslog|yesno:"Yes,No,Not set" }}</td>
+                        <td>{{ host.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
+                        <td>{{ host.data.operational_state|default:"Not set" }}</td>
+                        <td>{{ host.data.security_class }}</td>
+                        <td>{% noclook_last_seen_to_dt host.data.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
+                        <td>{% timestamp_to_td host.data.uptime as uptime %}{% if uptime %}{{ uptime.days }}{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

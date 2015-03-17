@@ -1,0 +1,82 @@
+{% extends "noclook/edit/base_edit.html" %}
+
+{% block js %}
+{{ block.super }}
+{% load noclook_tags %}
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Accordion
+        $(".edit-accordion").collapse();
+        // Provider
+        // Populate first level combo box
+        providerCategories = [
+            ['provider', 'Provider']
+        ];
+    }
+);
+</script>
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+    <div class="well">
+        <h3>Name</h3>
+        {{ form.name }}
+        <span class="help-block">{{ form.name.help_text }}</span>
+        <h3>Type (optional)</h3>
+        {{ form.cable_type }}
+    </div>
+
+    <div class="accordion" id="edit-accordion">
+        {% include "noclook/edit/includes/connection_group.html" %}
+        {% include "noclook/edit/includes/provider_group.html" %}
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
+                    Telenor Information (optional)
+                </a>
+            </div>
+            <div id="collapseTwo" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <h4>TN1 Number</h4>
+                    {{ form.telenor_tn1_number }}
+                    <span class="help-inline">{{ form.telenor_tn1_number.help_text }}</span>
+                    <h4>Trunk ID</h4>
+                    {{ form.telenor_trunk_id }}
+                    <span class="help-inline">{{ form.telenor_trunk_id.help_text }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
+                    Global Crossing Information (optional)
+                </a>
+            </div>
+            <div id="collapseThree" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <h4>Circuit ID</h4>
+                    {{ form.global_crossing_circuit_id }}
+                    <span class="help-inline">{{ form.global_crossing_circuit_id.help_text }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
+                    Global Connect Information (optional)
+                </a>
+            </div>
+            <div id="collapseFour" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <h4>Circuit ID</h4>
+                    {{ form.global_connect_circuit_id }}
+                    <span class="help-inline">{{ form.global_connect_circuit_id.help_text }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+

@@ -3,19 +3,18 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Load the template tags before referencing them -->
-    {% load niweb_tags %}
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery.tablesorter.blue.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/cupertino/jquery-ui-1.8.18.custom.css" type="text/css" media="screen" title="NORDUnet" charset="utf-8" />
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery.tablesorter.blue.css" type="text/css" media="screen" title="NORDUnet"/>
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/cupertino/jquery-ui-1.8.18.custom.css" type="text/css" media="screen" title="NORDUnet"/>
     <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.min.css" type="text/css" />
     <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-responsive.min.css" type="text/css" />
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/style.css" type="text/css" charset="utf-8" />
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/style.css" type="text/css"/>
     <title>NOCLook{% block title %}{% endblock %}</title>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.7.2.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-ui-1.8.18.custom.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.autocomplete-min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tablesorter.min.js"></script>
-    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-ui-1.8.18.custom.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.autocomplete-min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/main.js?v=1"></script>
     <script type="text/javascript">
     $(document).ready(function() {
         var options, a, b, c;
@@ -116,9 +115,11 @@
                             {% endif %}
                             <li class="divider-vertical"></li>
                             {% if user.is_authenticated %}
-                                <form action="/search/" method="post" class="navbar-search pull-left">{% csrf_token %}
+                            <li class="pull-left">
+                                <form action="/search/" method="post" class="navbar-search">{% csrf_token %}
                                     <input class="xlarge search-query" type="search" id="mobile" name="q" placeholder="Search" />
                                 </form>
+                             </li>
                             {% endif %}
                         </ul>
                         {% if user.is_authenticated %}
@@ -134,7 +135,7 @@
         </div>
         <div class="row">
             <div class="span2 well visible-desktop">
-                <a href="{% niweb_url %}"><img class="logo" src="{{ STATIC_URL }}img/noclook_logo.png"></a>
+                <a href="/"><img class="logo" src="{{ STATIC_URL }}img/noclook_logo.png"></a>
                 {% block menu %}
                     {% load noclook_tags %}
                     <ul class="nav nav-list">
@@ -188,69 +189,14 @@
                         <div class="accordion" id="debug-accordion">
                             <div class="accordion-group">
                                 <div class="accordion-heading">
-                                    <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#debug-accordion" href="#collapseDebug">
+                                    <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#debug-accordion" href="#collapseDebug" data-async-load="/nodes/{{node.handle_id}}/debug" data-async-load-target="#collapseDebug .accordion-inner">
                                         Debug
                                     </a>
                                 </div>
                                 <div id="collapseDebug" class="accordion-body collapse" style="height: 0px; ">
                                     <div class="accordion-inner">
                                         <h2>Debug</h2>
-                                        <h3>Node properties</h3>
-                                        <table class="table">
-                                            {% for key,value in node.items %}
-                                                <tr>
-                                                    <td><strong>{{key}}</strong></td><td>{{value}}</td>
-                                                </tr>
-                                            {% endfor %}
-                                        </table>
-                                        <h3>Relationships</h3>
-                                        <table class="table">
-                                            {% for rel in node.getRelationships %}
-                                                <tr>
-                                                    <td><a href="/{{rel.start.node_type|slugify}}/{{rel.start.handle_id}}/">{{rel.start.name}}</a></td><td>{{rel.type}}</td><td><a href="/{{rel.end.node_type|slugify}}/{{rel.end.handle_id}}/">{{rel.end.name}}</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td></td>
-                                                    <td>
-                                                        <table>
-                                                            {% for key, value in rel.items %}
-                                                                <tr>
-                                                                    <td><strong>{{ key }}</strong></td><td>{{ value }}</td>
-                                                                </tr>
-                                                            {% endfor %}
-                                                        </table>
-                                                    </td>
-                                                    <td></td>
-                                                </tr>
-                                            {% endfor %}
-                                        </table>
-                                        <h3>Meta information</h3>
-                                        <table class="table">
-                                            <tr>
-                                                <td><b>handle_id:</b> </td><td>{{ node_handle.handle_id }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>node_id:</b> </td><td>{{ node_handle.node_id }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>node_name:</b> </td><td>{{ node_handle.node_name }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>node_type:</b> </td><td>{{ node_handle.node_type }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>node_meta_type:</b> </td><td>{{ node_handle.get_node_meta_type_display }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>creator:</b> </td><td><a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>created:</b> </td><td>{{ node_handle.created }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>modified:</b> </td><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
-                                            </tr>
-                                        </table>
+                                        <img src="{{ STATIC_URL }}img/spinner.gif" alt="loading"> Loading debug info...
                                     </div>
                                 </div>
                             </div>

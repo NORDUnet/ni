@@ -1,0 +1,85 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} Detail{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(
+                function(){
+                    $("#depend_inc").tablesorter(
+                            {
+                                sortList: [[0,0]],
+                                headers:
+                                {},
+                                widthFixed: true,
+                                widgets: ['zebra']
+                            });
+                    $("#depend_out").tablesorter(
+                            {
+                                sortList: [[0,0]],
+                                headers:
+                                {},
+                                widthFixed: true,
+                                widgets: ['zebra']
+                            });
+                }
+        );
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    {% load noclook_tags %}
+    <div class="row">
+        <div class="span4">
+            <table class="table">
+                <tr>
+                    <th>Name:</th><td>{{ node.data.name }}</td>
+                </tr>
+                <tr>
+                    <th>IP Addresses:</th><td class="break-word">{% for address in node.data.ip_addresses %}{{ address }}<br>{% endfor %}</td>
+                </tr>
+                {% if node.data.vlan %}
+                    <tr>
+                        <th>VLAN:</th><td>{{ node.data.vlan }}</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+        <div class="span3">
+            <table class="table">
+                {% if node.data.noclook_auto_manage %}
+                    <tr>
+                        <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
+                </tr>
+                <tr>
+                    <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
+                </tr>
+            </table>
+        </div>
+        {% if node.data.description %}
+            <div class="span7">
+                <table class="table">
+                    {% if node.data.description %}
+                        <tr>
+                            <th>Description:</th><td>{{ node.data.description }}</td>
+                        </tr>
+                    {% endif %}
+                </table>
+            </div>
+        {% endif %}
+    </div>
+<!--
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<br><br><br>
+-->
+{% include "noclook/depend_include.html" %}
+{% endblock %}
+

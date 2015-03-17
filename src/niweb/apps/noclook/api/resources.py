@@ -4,7 +4,7 @@ Created on Thu Apr 12 15:56:38 2012
 
 @author: lundberg
 
-For use with neo4j-embedded >1.7 <1.9.
+For use with python-neo4jdb, norduniclient and neo4j >2.0
 """
 
 from tastypie.resources import Resource, ModelResource
@@ -23,14 +23,15 @@ from django.core.urlresolvers import reverse, resolve, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
-from niweb.apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
-from niweb.apps.noclook import forms
-#from niweb.apps.noclook.helpers import item2dict, form_update_node, get_port, create_port, \
-#    get_unit, create_unit, set_depends_on, register_unique_id, is_free_unique_id, delete_relationship, dict_update_node
-import niweb.apps.noclook.helpers as h
-import norduni_client as nc
-from norduni_client_exceptions import MultipleNodesReturned, UniqueNodeError
+from apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
+from apps.noclook import forms
+from apps.noclook import helpers
+from apps.noclook import unique_ids
+import norduniclient as nc
+from norduniclient.exceptions import NodeNotFound
 import logging
+
+neo4jdb = nc.init_db()  # Open a separate manager for the REST API
 
 logger = logging.getLogger('api_resources')
 logger.setLevel(logging.DEBUG)
@@ -45,10 +46,7 @@ def handle_id2resource_uri(handle_id):
     """
     Returns a NodeHandleResource URI from a Neo4j node.
     """
-    if not handle_id:
-        return 'Meta Node'
-    # str() is a neo4j-embedded hack handle_id can be a java.lang.Integer.
-    nh = NodeHandle.objects.get(pk=str(handle_id))
+    nh = NodeHandle.objects.get(pk=handle_id)
     view = 'api_dispatch_detail'
     nhr = NodeHandleResource()
     kwargs = nhr.resource_uri_kwargs()
@@ -73,6 +71,7 @@ def resource_uri2id(resource_uri):
     """
     return resolve(resource_uri).kwargs.get('pk', None)
 
+
 def raise_not_acceptable_error(message):
     """
     Raises Http406 error with message.
@@ -87,6 +86,7 @@ def raise_not_acceptable_error(message):
         HttpMethodNotAcceptable(message)
     )
 
+
 def raise_conflict_error(message):
     """
     Raises Http409 error with message.
@@ -97,6 +97,7 @@ def raise_conflict_error(message):
     raise ImmediateHttpResponse(
         HttpConflict(message)
     )
+
 
 def raise_app_error(message):
     """
@@ -122,10 +123,9 @@ class FullUserResource(ModelResource):
             "username": ALL
         }
     
-    created = fields.ToManyField('niweb.apps.noclook.api.resources.NodeHandleResource', 
-                                      'creator', related_name='creator')
-    modified = fields.ToManyField('niweb.apps.noclook.api.resources.NodeHandleResource', 
-                                      'modifier', related_name='modifier')
+    created = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource', 'creator', related_name='creator')
+    modified = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource', 'modifier', related_name='modifier')
+
 
 class UserResource(ModelResource):
     class Meta:
@@ -135,9 +135,10 @@ class UserResource(ModelResource):
         authentication = ApiKeyAuthentication()
         excludes = ['email', 'password', 'is_staff', 'is_superuser']
 
+
 class NodeTypeResource(ModelResource):
     
-    node_handles = fields.ToManyField('niweb.apps.noclook.api.resources.NodeHandleResource', 
+    node_handles = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource',
                                       'nodehandle_set', related_name='node_type')
     
     class Meta:
@@ -145,8 +146,7 @@ class NodeTypeResource(ModelResource):
         resource_name = 'node_type'
         authentication = ApiKeyAuthentication()
         authorization = Authorization() 
-    
-    
+
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<slug>[-\w]+)/$" % self._meta.resource_name,
@@ -154,15 +154,14 @@ class NodeTypeResource(ModelResource):
         ]
     
     def dehydrate(self, bundle):
-        bundle.data['resource_uri'] = bundle.data['resource_uri'].replace(
-                           '/%d/' % bundle.obj.pk,'/%s/' % bundle.obj.slug)
+        bundle.data['resource_uri'] = bundle.data['resource_uri'].replace('/%d/' % bundle.obj.pk,
+                                                                          '/%s/' % bundle.obj.slug)
         return bundle  
 
 
 class NodeHandleResource(ModelResource):
     
     handle_id = fields.IntegerField(attribute='handle_id', readonly=True, unique=True)
-    node_id = fields.IntegerField(attribute='node_id', readonly=True)
     node_name = fields.CharField(attribute='node_name')
     node_type = fields.ForeignKey(NodeTypeResource, 'node_type')
     node_meta_type = fields.CharField(attribute='node_meta_type')
@@ -185,16 +184,17 @@ class NodeHandleResource(ModelResource):
             "node_name": ALL,
         }
 
-
     def obj_create(self, bundle, **kwargs):
         bundle = super(NodeHandleResource, self).obj_create(bundle, **kwargs)
         return self.hydrate_node(bundle)
 
     def prepend_urls(self):
         return [
-            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships/(?P<rel_type>\w[\w]*)%s$" % (self._meta.resource_name, utils.trailing_slash()),
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships/(?P<rel_type>\w[\w]*)%s$" % (
+                self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('get_relationships'), name="api_get_relationships"),
-            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (self._meta.resource_name, utils.trailing_slash()),
+            url(r"^(?P<resource_name>%s)/(?P<pk>\w[\w/-]*)/relationships%s$" % (
+                self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('get_relationships'), name="api_get_relationships"),
         ]
     
@@ -221,30 +221,34 @@ class NodeHandleResource(ModelResource):
             kwargs['rel_type'] = rel_type
         child_resource = RelationshipResource()
         return child_resource.get_list(request, **kwargs)
-        
+
     def dehydrate_node(self, bundle):
-        return h.item2dict(bundle.obj.get_node())
+        return bundle.obj.get_node().data
         
     def hydrate_node(self, bundle):
         try:
             node = bundle.obj.get_node()
-            nc.update_item_properties(nc.neo4jdb, node, 
-                                      bundle.data.get('node', {}))
-        except TypeError:
+            if bundle.data.get('node'):
+                node.data.update(bundle.data.get('node'))
+                helpers.dict_update_node(bundle.request.user, node.handle_id, node.data, node.data.keys())
+        except NodeNotFound:
             # Node is not yet created, obj_create will take care of that.
             pass
         return bundle
-        
+
     def dehydrate_node_type(self, bundle):
-        return bundle.data['node_type'].replace('/%d/' % bundle.obj.node_type_id, '/%s/' % slugify(bundle.obj.node_type))
+        return bundle.data['node_type'].replace('/%d/' % bundle.obj.node_type_id,
+                                                '/%s/' % slugify(bundle.obj.node_type))
 
     def dehydrate(self, bundle):
         bundle.data['relationships'] = []
         rr = RelationshipResource()
         tmp_obj = RelationshipObject()
-        for rel in bundle.obj.get_node().relationships:            
-            tmp_obj.id = rel.id
-            bundle.data['relationships'].append(rr.get_resource_uri(tmp_obj))
+        relationships = bundle.obj.get_node().relationships
+        for key in relationships.keys():
+            for rel in relationships.get(key, []):
+                tmp_obj.id = rel['relationship_id']
+                bundle.data['relationships'].append(rr.get_resource_uri(tmp_obj))
         return bundle
 
     def resource_uri_kwargs(self, bundle_or_obj=None):
@@ -275,8 +279,9 @@ class NodeHandleResource(ModelResource):
         if getattr(self._meta, 'pk_field', 'pk') != 'pk':
             urls = [x for x in urls if (x.name != "api_get_multiple" and x.name != "api_dispatch_detail")]
             urls += [
-                url(r"^(?P<resource_name>%s)/(?P<%s>%s)%s$" % (self._meta.resource_name, self._meta.pk_field, self._meta.pk_field_regex, trailing_slash()),self.wrap_view('dispatch_detail'),
-                    name="api_dispatch_detail")
+                url(r"^(?P<resource_name>%s)/(?P<%s>%s)%s$" % (self._meta.resource_name, self._meta.pk_field,
+                                                               self._meta.pk_field_regex, trailing_slash()),
+                    self.wrap_view('dispatch_detail'), name="api_dispatch_detail")
             ]
         return urls
 
@@ -316,11 +321,11 @@ class RelationshipResource(Resource):
 
     def _new_obj(self, rel):
         new_obj = RelationshipObject()
-        new_obj.id = rel.getId()
-        new_obj.type = rel.type.name()
-        new_obj.properties.update(h.item2dict(rel))
-        new_obj.start = handle_id2resource_uri(rel.start.get_property('handle_id', None))
-        new_obj.end = handle_id2resource_uri(rel.end.get_property('handle_id', None))
+        new_obj.id = rel.id
+        new_obj.type = rel.type
+        new_obj.properties.update(rel.data)
+        new_obj.start = handle_id2resource_uri(rel.start)
+        new_obj.end = handle_id2resource_uri(rel.end)
         return new_obj
 
     def get_resource_uri(self, bundle_or_obj=None, url_name='api_dispatch_detail'):
@@ -343,12 +348,17 @@ class RelationshipResource(Resource):
     def get_object_list(self, request, **kwargs):
         results = []
         if kwargs.get('parent_obj', None):
-            rel_type = kwargs.get('rel_type', 'relationships')
+            rel_type = kwargs.get('rel_type', None)
             nh = NodeHandle.objects.get(pk=kwargs['parent_obj'])
-            parent = nh.get_node()
-            rels = getattr(parent, rel_type)
-            for rel in rels:
-                results.append(self._new_obj(rel))
+            relationships = nh.get_node().relationships
+            if rel_type:
+                keys = [rel_type]
+            else:
+                keys = relationships.keys()
+            for key in keys:
+                for item in relationships.get(key, []):
+                    relationship = nc.get_relationship_model(neo4jdb, item['relationship_id'])
+                    results.append(self._new_obj(relationship))
             return results
         else:
             raise ImmediateHttpResponse(HttpResponseNotAllowed(['POST']))
@@ -359,33 +369,32 @@ class RelationshipResource(Resource):
     def obj_get(self, request=None, **kwargs):
         pk = int(kwargs['pk'])
         try:
-            return self._new_obj(nc.neo4jdb.relationships[pk])
+            return self._new_obj(nc.get_relationship_model(neo4jdb, pk))
         except KeyError:
-            raise NotFound("Object not found") 
-    
+            raise NotFound("Object not found")
+
     def obj_create(self, bundle, **kwargs):
         start_pk = resource_uri2id(bundle.data['start'])
         start_nh = NodeHandle.objects.get(pk=start_pk)
         start_node = start_nh.get_node()
-        end_pk = resource_uri2id(bundle.data['end'])        
+        end_pk = resource_uri2id(bundle.data['end'])
         end_nh = NodeHandle.objects.get(pk=end_pk)
         end_node = end_nh.get_node()
-        rel = nc.create_relationship(nc.neo4jdb, start_node, end_node, bundle.data['type'])
-        nc.update_item_properties(nc.neo4jdb, rel, bundle.data['properties'])
+        rel = nc.create_relationship(neo4jdb, start_node, end_node, bundle.data['type'])
+        nc.set_relationship_properties(neo4jdb, rel, bundle.data['properties'])
         bundle.obj = self._new_obj(rel)
         return bundle
-    
+
     def obj_update(self, bundle, **kwargs):
-        rel = nc.get_relationship_by_id(nc.neo4jdb, kwargs['pk'])
-        updated_rel = nc.update_item_properties(nc.neo4jdb, rel,
-                                                bundle.data['properties'])
+        helpers.dict_update_relationship(neo4jdb, kwargs['pk'], bundle.data['properties'],
+                                   bundle.data['properties'].keys())
+        updated_rel = nc.get_relationship_model(neo4jdb, kwargs['pk'])
         bundle.obj = self._new_obj(updated_rel)
         return bundle
-    
+
     def obj_delete(self, request=None, **kwargs):
-        rel = nc.get_relationship_by_id(nc.neo4jdb, kwargs['pk'])
-        nc.delete_relationship(nc.neo4jdb, rel)
-    
+        helpers.delete_relationship(request.user, kwargs['pk'])
+
     def obj_delete_list(self, bundle, **kwargs):
         pass
 
@@ -417,13 +426,13 @@ class CableResource(NodeHandleResource):
     def _initial_form_data(self, bundle):
         initial_data = {
             'node_type': '/api/v1/node_type/cable/',
-            'node_meta_type': 'physical',
+            'node_meta_type': 'Physical',
         }
         return initial_data
 
     def obj_create(self, bundle, **kwargs):
         try:
-            node_type = h.slug_to_node_type(self.Meta.resource_name, create=True)
+            node_type = helpers.slug_to_node_type(self.Meta.resource_name, create=True)
             NodeHandle.objects.get(node_name=bundle.data['node_name'], node_type=node_type)
             raise_conflict_error('Cable ID (%s) is already in use.' % bundle.data['node_name'])
         except NodeHandle.DoesNotExist:
@@ -446,7 +455,7 @@ class CableResource(NodeHandleResource):
                 end_point_nodes = self.get_end_point_nodes(bundle)
                 node = bundle.obj.get_node()
                 for end_point in end_point_nodes:
-                    h.connect_physical(bundle.request.user, node, end_point.getId())
+                    helpers.set_connected_to(bundle.request.user, node, end_point.handle_id)
                 return self.hydrate_node(bundle)
             else:
                 raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
@@ -456,10 +465,10 @@ class CableResource(NodeHandleResource):
         end_point_nodes = self.get_end_point_nodes(bundle)
         node = bundle.obj.get_node()
         if end_point_nodes:
-            for rel in node.Connected_to.outgoing:
-                h.delete_relationship(bundle.request.user, rel)
+            for result in node.relations.get('Connected_to', []):
+                helpers.delete_relationship(bundle.request.user, result['relationship_id'])
             for end_point in end_point_nodes:
-                h.connect_physical(bundle.request.user, node, end_point.getId())
+                helpers.set_connected_to(bundle.request.user, node, end_point.handle_id)
         return bundle
 
     def dehydrate(self, bundle):
@@ -480,16 +489,17 @@ class CableResource(NodeHandleResource):
         return end_point_nodes
 
     def get_port(self, bundle, device_name, device_type, port_name):
-        port_node = h.get_port(device_name, port_name)
-        if not port_node:
-            try:
-                node_type = h.slug_to_node_type(slugify(device_type), create=True)
-                parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.type)
-                if not parent_node:
-                    raise_not_acceptable_error("End point {0} {1] not found.".format(device_type, device_name))
-                port_node = h.create_port(parent_node, port_name, bundle.request.user)
-            except MultipleNodesReturned as e:
-                raise_not_acceptable_error(e)
+        node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
+        parent_node = nc.get_unique_node_by_name(neo4jdb, device_name, node_type.type)
+        if not parent_node:
+            raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
+        result = parent_node.get_port(port_name).get('Has', [])
+        if len(result) > 1:
+            raise_not_acceptable_error('Multiple port objects returned for a unique port name.')
+        if result:
+            port_node = result[0]['node']
+        else:
+            port_node = helpers.create_port(parent_node, port_name, bundle.request.user)
         return port_node
 
 
@@ -503,7 +513,7 @@ class NordunetCableResource(CableResource):
     def obj_create(self, bundle, **kwargs):
         try:
             if bundle.data.get('node_name', None):
-                if h.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
+                if unique_ids.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
                     bundle.data['name'] = bundle.data['node_name']
                 else:
                     raise_conflict_error('Cable ID (%s) is already in use.' % bundle.data['node_name'])
@@ -731,11 +741,11 @@ class ServiceResource(NodeHandleResource):
     def obj_update(self, bundle, **kwargs):
         bundle = super(ServiceResource, self).obj_update(bundle, **kwargs)
         node = bundle.obj.get_node()
-        data = h.item2dict(node)
+        data = node.data
         data.update(bundle.data)
         form = forms.EditServiceForm(data)
         if form.is_valid():
-            h.form_update_node(bundle.request.user, node, form)
+            helpers.form_update_node(bundle.request.user, node.handle_id, form)
         else:
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
         return bundle
@@ -768,7 +778,7 @@ class ServiceL2VPNResource(ServiceResource):
     def _initial_form_data(self, bundle):
         initial_data = {
             'node_type': '/api/v1/node_type/service/',
-            'node_meta_type': 'logical',
+            'node_meta_type': 'Logical',
         }
         try:
             vpn_type = bundle.data['vpn_type'].lower()
@@ -785,7 +795,7 @@ class ServiceL2VPNResource(ServiceResource):
     def obj_create(self, bundle, **kwargs):
         bundle.data.update(self._initial_form_data(bundle))
         try:
-            if h.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
+            if unique_ids.is_free_unique_id(NordunetUniqueId, bundle.data['node_name']):
                 bundle.data['name'] = bundle.data['node_name']
             else:
                 raise_conflict_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
@@ -816,11 +826,11 @@ class ServiceL2VPNResource(ServiceResource):
             end_point_nodes = self.get_end_point_nodes(bundle)
             # Create the new service
             bundle = super(ServiceL2VPNResource, self).obj_create(bundle, **kwargs)
-            h.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
+            unique_ids.register_unique_id(NordunetUniqueId, bundle.data['node_name'])
             # Depend the created service on provided end points
             node = bundle.obj.get_node()
             for end_point in end_point_nodes:
-                h.set_depends_on(bundle.request.user, node, end_point.getId())
+                helpers.set_depends_on(bundle.request.user, node, end_point.handle_id)
             return self.hydrate_node(bundle)
         else:
             raise_not_acceptable_error(["%s is missing or incorrect." % key for key in form.errors.keys()])
@@ -830,10 +840,10 @@ class ServiceL2VPNResource(ServiceResource):
         end_point_nodes = self.get_end_point_nodes(bundle)
         node = bundle.obj.get_node()
         if end_point_nodes:
-            for rel in node.Depends_on.outgoing:
-                h.delete_relationship(bundle.request.user, rel)
+            for item in node.get_dependencies().get('Depends_on', []):
+                helpers.delete_relationship(bundle.request.user, item['relationship_id'])
             for end_point in end_point_nodes:
-                h.set_depends_on(bundle.request.user, node, end_point.getId())
+                helpers.set_depends_on(bundle.request.user, node, end_point.handle_id)
         return bundle
 
     def dehydrate(self, bundle):
@@ -846,32 +856,38 @@ class ServiceL2VPNResource(ServiceResource):
 
     def get_object_list(self, request, **kwargs):
         q = """
-            START node=node:node_types(node_type = "Service")
-            WHERE node.service_type! = "L2VPN" OR node.service_type! = "Interface Switch"
+            MATCH (node:Service)
+            WHERE node.service_type = "L2VPN" OR node.service_type = "Interface Switch"
             RETURN collect(node.handle_id) as handle_ids
             """
-        hits = nc.neo4jdb.query(q)
-        return NodeHandle.objects.filter(pk__in=[[id.value for id in hit['handle_ids']] for hit in hits][0])
+        hits = nc.query_to_dict(neo4jdb, q)
+        return NodeHandle.objects.filter(pk__in=hits['handle_ids'])
 
     def obj_get_list(self, request=None, **kwargs):
         return self.get_object_list(request, **kwargs)
 
-    def get_port(self, bundle, device_name, port_name):
-        port_node = h.get_port(device_name, port_name)
-        if not port_node:
-            try:
-                parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, 'Router')
-                if not parent_node:
-                    raise_not_acceptable_error("End point Router %s not found." % device_name)
-                port_node = h.create_port(parent_node, port_name, bundle.request.user)
-            except MultipleNodesReturned as e:
-                raise_not_acceptable_error(e)
+    def get_port(self, bundle, device_name, device_type, port_name):
+        node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
+        parent_node = nc.get_unique_node_by_name(neo4jdb, device_name, node_type.type)
+        if not parent_node:
+            raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
+        result = parent_node.get_port(port_name).get('Has', [])
+        if len(result) > 1:
+            raise_not_acceptable_error('Multiple port objects returned for a unique port name.')
+        if result:
+            port_node = result[0]['node']
+        else:
+            port_node = helpers.create_port(parent_node, port_name, bundle.request.user)
         return port_node
 
     def get_unit(self, bundle, port_node, unit_name):
-        unit_node = h.get_unit(port_node, unit_name)
-        if not unit_node:
-            unit_node = h.create_unit(port_node, unit_name, bundle.request.user)
+        result = port_node.get_unit(unit_name).get('Part_of', [])
+        if len(result) > 1:
+            raise_not_acceptable_error('Multiple unit objects returned for a unique unit name.')
+        if result:
+            unit_node = result[0]['node']
+        else:
+            unit_node = helpers.create_unit(port_node, unit_name, bundle.request.user)
         return unit_node
 
     def get_vlan(self, bundle):
@@ -886,7 +902,7 @@ class ServiceL2VPNResource(ServiceResource):
         end_point_nodes = []
         for end_point in bundle.data.get('end_points', []):
             try:
-                port_node = self.get_port(bundle, end_point['device'], end_point['port'])
+                port_node = self.get_port(bundle, end_point['device'], 'Router', end_point['port'])
                 if end_point.get('unit', None):
                     unit_node = self.get_unit(bundle, port_node, end_point.get('unit'))
                 elif end_point.get('vlan', None) or self.get_vlan(bundle):
@@ -895,7 +911,8 @@ class ServiceL2VPNResource(ServiceResource):
                         vlan = self.get_vlan(bundle)
                     unit_node = self.get_unit(bundle, port_node, vlan)
                     unit_properties = {'vlan': vlan}
-                    h.dict_update_node(bundle.request.user, unit_node, unit_properties, unit_properties.keys())
+                    helpers.dict_update_node(bundle.request.user, unit_node.handle_id, unit_properties,
+                                             unit_properties.keys())
                 else:
                     # Use Unit 0 if nothing else is specified
                     unit_node = self.get_unit(bundle, port_node, '0')
