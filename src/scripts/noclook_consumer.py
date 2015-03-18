@@ -68,9 +68,9 @@ def init_config(p):
     Initializes the configuration file located in the path provided.
     """
     try:
-       config = ConfigParser.SafeConfigParser()
+        config = ConfigParser.SafeConfigParser()
         config.read(p)
-       return config
+        return config
     except IOError as (errno, strerror):
         logger.error("I/O error({0}): {1}".format(errno, strerror))
 
@@ -257,7 +257,7 @@ def consume_noclook(json_list):
 
                 w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props).fetchall()
                 logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
-                                                                   end=item.get('end')))
+                                                                 end=item.get('end')))
                 x += 1
                 if x >= 1000:
                     w.connection.commit()

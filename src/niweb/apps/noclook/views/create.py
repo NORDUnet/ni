@@ -65,20 +65,20 @@ def new_cable(request, **kwargs):
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('A Cable with that name already exists.')
                 return render_to_response('noclook/create/create_cable.html', {'form': form},
-                    context_instance=RequestContext(request))
+                                          context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['cable_type']
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
-        name = kwargs.get('name', None)
+            name = kwargs.get('name', None)
         if name:
             initital = {'name': name}
             form = forms.NewCableForm(initial=initital)
     else:
-            form = forms.NewCableForm()
+        form = forms.NewCableForm()
     return render_to_response('noclook/create/create_cable.html', {'form': form},
-            context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -94,15 +94,15 @@ def new_customer(request, **kwargs):
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('A Customer with that name already exists.')
                 return render_to_response('noclook/create/create_customer.html', {'form': form},
-                    context_instance=RequestContext(request))
+                                          context_instance=RequestContext(request))
             node = nh.get_node()
             keys = ['url']
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         form = forms.NewCustomerForm()
     return render_to_response('noclook/create/create_customer.html', {'form': form},
-                context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -124,9 +124,9 @@ def new_end_user(request, **kwargs):
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
-        form = forms.NewEndUserForm()
+            form = forms.NewEndUserForm()
     return render_to_response('noclook/create/create_end_user.html', {'form': form},
-                context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -141,7 +141,7 @@ def new_external_equipment(request, **kwargs):
     else:
         form = forms.NewExternalEquipmentForm()
     return render_to_response('noclook/create/create_external_equipment.html', {'form': form},
-            context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -167,17 +167,17 @@ def new_nordunet_cable(request, **kwargs):
             # Provider
             if form.cleaned_data['relationship_provider']:
                 provider_id = form.cleaned_data['relationship_provider']
-                h.set_provider(request.user, node, provider_id)
+                helpers.set_provider(request.user, node, provider_id)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
-            name = kwargs.get('name', None)
-            provider_id = get_provider_id('NORDUnet')
-            initial = {'relationship_provider': provider_id}
-            if name:
-                initial['name'] = name
-            form = forms.NewNordunetCableForm(initial=initial)
-        return render_to_response('noclook/create/create_cable.html', {'form': form},
-                                  context_instance=RequestContext(request))
+    else:
+        name = kwargs.get('name', None)
+        provider_id = get_provider_id('NORDUnet')
+        initial = {'relationship_provider': provider_id}
+        if name:
+            initial['name'] = name
+        form = forms.NewNordunetCableForm(initial=initial)
+    return render_to_response('noclook/create/create_cable.html', {'form': form},
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -214,7 +214,7 @@ def new_nordunet_optical_path(request, **kwargs):
     if request.POST:
         form = forms.NewNordunetOpticalPathForm(request.POST)
         if form.is_valid():
-                    try:
+            try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'optical-path', 'Logical')
             except UniqueNodeError:
                 form = forms.NewNordunetOpticalPathForm(request.POST)
@@ -230,11 +230,11 @@ def new_nordunet_optical_path(request, **kwargs):
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         provider_id = get_provider_id('NORDUnet')
         form = forms.NewNordunetOpticalPathForm(initial={'relationship_provider': provider_id})
     return render_to_response('noclook/create/create_nordunet_optical_path.html', {'form': form},
-                context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -262,7 +262,7 @@ def new_nordunet_service(request, **kwargs):
         provider_id = get_provider_id('NORDUnet')
         form = forms.NewNordunetServiceForm(initial={'relationship_provider': provider_id})
     return render_to_response('noclook/create/create_nordunet_service.html', {'form': form},
-            context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -274,10 +274,10 @@ def new_odf(request, **kwargs):
             node = nh.get_node()
             helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         form = forms.NewOdfForm()
-        return render_to_response('noclook/create/create_odf.html', {'form': form},
-            context_instance=RequestContext(request))
+    return render_to_response('noclook/create/create_odf.html', {'form': form},
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -301,7 +301,7 @@ def new_optical_multiplex_section(request, **kwargs):
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         provider_id = get_provider_id('NORDUnet')
         form = forms.NewOpticalMultiplexSectionForm(initial={'relationship_provider': provider_id})
     return render_to_response('noclook/create/create_optical_multiplex_section.html', {'form': form},
@@ -328,12 +328,12 @@ def new_port(request, **kwargs):
                     form._errors['parent'] = ErrorList()
                     form._errors['parent'].append('Parent type can not have ports.')
                     return render_to_response('noclook/create/create_port.html', {'form': form},
-                        context_instance=RequestContext(request))
+                                              context_instance=RequestContext(request))
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         form = forms.NewPortForm()
-        return render_to_response('noclook/create/create_port.html', {'form': form},
-            context_instance=RequestContext(request))
+    return render_to_response('noclook/create/create_port.html', {'form': form},
+                                  context_instance=RequestContext(request))
 
 
 @login_required
@@ -354,10 +354,10 @@ def new_provider(request, **kwargs):
             keys = ['url']
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         form = forms.NewProviderForm()
-        return render_to_response('noclook/create/create_provider.html', {'form': form},
-            context_instance=RequestContext(request))
+    return render_to_response('noclook/create/create_provider.html', {'form': form},
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -372,10 +372,10 @@ def new_rack(request, **kwargs):
                 parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         form = forms.NewRackForm()
     return render_to_response('noclook/create/create_rack.html', {'form': form},
-                context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -396,10 +396,10 @@ def new_site(request, **kwargs):
             keys = ['country', 'country_code', 'address', 'postarea', 'postcode']
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         form = forms.NewSiteForm()
     return render_to_response('noclook/create/create_site.html', {'form': form},
-                context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 @login_required
@@ -420,10 +420,10 @@ def new_site_owner(request, **kwargs):
             keys = ['url']
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
+    else:
         form = forms.NewSiteOwnerForm()
     return render_to_response('noclook/create/create_site_owner.html', {'form': form},
-            context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 # Reserve Ids
@@ -445,11 +445,11 @@ def reserve_id_sequence(request, slug=None):
                 request.user
             )
             return render_to_response('noclook/edit/reserve_id.html', {'reserved_list': reserved_list, 'slug': slug},
-                context_instance=RequestContext(request))
+                                      context_instance=RequestContext(request))
     else:
         form = forms.ReserveIdForm()
         return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},
-            context_instance=RequestContext(request))
+                                  context_instance=RequestContext(request))
 
 NEW_FUNC = {
     'cable': new_cable,

@@ -19,7 +19,7 @@ import cStringIO
 import xlwt
 
 from apps.noclook.models import NodeHandle, NodeType
-    from apps.noclook import activitylog
+from apps.noclook import activitylog
 import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 
@@ -100,7 +100,7 @@ def delete_node(user, handle_id):
                 for has_child in node.get_has().get('Has', []):
                     delete_node(user, has_child.handle_id)
             node.delete()
-        activitylog.delete_node(user, nh)
+            activitylog.delete_node(user, nh)
         except (NodeNotFound, AttributeError):
             pass
         nh.delete()
@@ -496,8 +496,8 @@ def logical_to_physical(user, handle_id):
     meta_type = 'Physical'
     physical_node = logical_node.change_meta_type(meta_type)
     nh.node_meta_type = meta_type
-        nh.save()
-        # Convert Uses relationships to Owns.
+    nh.save()
+    # Convert Uses relationships to Owns.
     relations = physical_node.get_relations()
     for item in relations.get('Uses', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
@@ -526,8 +526,8 @@ def physical_to_logical(user, handle_id):
     meta_type = 'Logical'
     logical_node = physical_node.change_meta_type(meta_type)
     nh.node_meta_type = meta_type
-        nh.save()
-         # Convert Owns relationships to Uses.
+    nh.save()
+    # Convert Owns relationships to Uses.
     relations = logical_node.get_relations()
     for item in relations.get('Owns', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
@@ -748,27 +748,29 @@ def remove_rogue_service_marker(user, handle_id):
         dict_update_relationship(user, relationship_id, properties, properties.keys())
     return True
 
+
 def find_recursive(key, target):
-  if type(target) in (list, tuple):
-    for d in target:
-      for result in find_recursive(key, d):
-        yield result
-  elif isinstance(target, dict):
-    for k, v in target.iteritems():
-      if k == key:
-        yield v
-      else:
-        for result in find_recursive(key,v):
-          yield result
-  elif hasattr(target,key):
-    yield getattr(target,key)
+    if type(target) in (list, tuple):
+        for d in target:
+            for result in find_recursive(key, d):
+                yield result
+    elif isinstance(target, dict):
+        for k, v in target.iteritems():
+            if k == key:
+                yield v
+            else:
+                for result in find_recursive(key, v):
+                    yield result
+    elif hasattr(target, key):
+        yield getattr(target, key)
+
 
 def get_node_urls(*args):
-  ids = []
-  for arg in args:
-    ids += set(find_recursive("handle_id", arg))
-  nodes = NodeHandle.objects.filter(handle_id__in=ids)
-  urls = {}
-  for n in nodes:
-    urls[n.handle_id] = n.get_absolute_url() 
-  return urls
+    ids = []
+    for arg in args:
+        ids += set(find_recursive("handle_id", arg))
+    nodes = NodeHandle.objects.filter(handle_id__in=ids)
+    urls = {}
+    for n in nodes:
+        urls[n.handle_id] = n.get_absolute_url()
+    return urls

@@ -43,12 +43,15 @@ class NodeType(models.Model):
 
 #XXX: Does not handle slug renaming
 slug_cache = {}
+
+
 def get_slug(slug_id):
-  if slug_id in slug_cache:
+    if slug_id in slug_cache:
+        return slug_cache[slug_id]
+    else:
+        slug_cache[slug_id] = NodeType.objects.get(pk=slug_id).get_slug()
     return slug_cache[slug_id]
-  else:
-    slug_cache[slug_id] = NodeType.objects.get(pk=slug_id).get_slug()
-    return slug_cache[slug_id]
+
 
 class NodeHandle(models.Model):
     # Handle <-> Node data
@@ -202,6 +205,7 @@ def comment_posted_handler(sender, comment, request, **kwargs):
         }
     )
 
+
 @receiver(comment_was_flagged, dispatch_uid="apps.noclook.models")
 def comment_removed_handler(sender, comment, flag, created, request, **kwargs):
     action.send(
@@ -211,5 +215,5 @@ def comment_removed_handler(sender, comment, flag, created, request, **kwargs):
         target=comment.content_object,
         noclook={
             'action_type': 'comment',
-            }
+        }
     )
