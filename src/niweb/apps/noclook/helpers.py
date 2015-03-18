@@ -501,7 +501,7 @@ def logical_to_physical(user, handle_id):
     relations = physical_node.get_relations()
     for item in relations.get('Uses', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
-        set_owner(user, physical_node, relationship.start.handle_id)
+        set_owner(user, physical_node, relationship.start)
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
         # Remove Depends_on relationships
@@ -531,7 +531,7 @@ def physical_to_logical(user, handle_id):
     relations = logical_node.get_relations()
     for item in relations.get('Owns', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
-        set_user(user, logical_node, relationship.start.handle_id)
+        set_user(user, logical_node, relationship.start)
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
     return nh, logical_node
