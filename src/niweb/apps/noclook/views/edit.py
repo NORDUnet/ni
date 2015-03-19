@@ -37,7 +37,7 @@ def delete_relationship(request, slug, handle_id, rel_id):
     """
     nh, node = helpers.get_nh_node(handle_id)
     relationship = nc.get_relationship_model(nc.neo4jdb, rel_id)
-    if node == relationship.start or node == relationship.end:
+    if node.handle_id == relationship.start or node.handle_id == relationship.end:
         activitylog.delete_relationship(request.user, relationship)
         relationship.delete()
         return HttpResponseRedirect('/%s/%d/edit' % (slug, nh.handle_id))
