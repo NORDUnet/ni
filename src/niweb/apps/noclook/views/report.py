@@ -183,12 +183,12 @@ def mail_host_contract_report(contract_number):
         ORDER BY host_user.name, host.name
         '''
     for item in nc.query_to_list(nc.neo4jdb, q, contract_number=contract_number):
-        host = nc.get_node_model(nc.neo4jdb, item['handle_id'])
+        host = nc.get_node_model(nc.neo4jdb, item['host_handle_id'])
         age = helpers.neo4j_report_age(host.data, 15, 30)
         operational_state = host.data.get('operational_state', 'Not set')
         host_type = host.meta_type
         host_user = item['host_user_name']
-        uptime = host.get('uptime', '')
+        uptime = host.data.get('uptime', '')
         if uptime:
             uptime = timestamp_to_td(uptime).days
         if host_type == 'Logical' and age != 'very_old' and operational_state != 'Decommissioned':
