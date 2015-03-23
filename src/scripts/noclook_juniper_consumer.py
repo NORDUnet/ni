@@ -100,6 +100,7 @@ def insert_juniper_router(name, model, version):
     Inserts a physical meta type node of the type Router.
     Returns the node created.
     """
+    logger.info('Processing {name}...'.format(name=name))
     user = nt.get_user()
     node_handle = nt.get_unique_node_handle(name, 'Router', 'Physical')
     node = node_handle.get_node()
@@ -110,7 +111,6 @@ def insert_juniper_router(name, model, version):
     }
     helpers.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
     helpers.set_noclook_auto_manage(node, True)
-    logging.info('Processing {name}...'.format(name=node.data['name']))
     return node
 
 
