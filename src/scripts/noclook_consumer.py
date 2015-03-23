@@ -87,6 +87,7 @@ def load_json(json_dir):
     """
     Thinks all files in the supplied dir are text files containing json.
     """
+    logger.info('Loading data from {!s}.'.format(json_dir))
     json_list = []
     try:
         for subdir, dirs, files in os.walk(json_dir):
@@ -226,6 +227,9 @@ def consume_noclook(json_list):
     """
     Inserts the backup made with NOCLook producer.
     """
+    tot_items = len(json_list)
+    tot_nodes = 0
+    print 'Adding {!s} items.'.format(tot_items)
     # Loop through all files starting with node
     for i in json_list:
         if i['host']['name'].startswith('node'):
@@ -239,7 +243,8 @@ def consume_noclook(json_list):
             nh = restore_node(handle_id, node_name, node_type, meta_type)
             nc.set_node_properties(nc.neo4jdb, nh.handle_id, properties)
             logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
-            json_list.remove(i)
+            tot_nodes += 1
+    print 'Added {!s} nodes.'.format(tot_nodes)
 
     # Loop through all files starting with relationship
     x = 0
@@ -262,6 +267,8 @@ def consume_noclook(json_list):
                 if x >= 1000:
                     w.connection.commit()
                 x = 0
+    tot_rels = tot_items - tot_nodes
+    print 'Added {!s} relationships.'.format(tot_rels)
 
 
 def run_consume(config_file):
