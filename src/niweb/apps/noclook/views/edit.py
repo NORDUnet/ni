@@ -110,11 +110,12 @@ def convert_host(request, handle_id, slug):
     """
     Convert a Host to Firewall or Switch.
     """
+    allowed_types = ['firewall', 'switch', 'pdu']  # Types that can be added as Hosts by nmap
     nh = get_object_or_404(NodeHandle, pk=handle_id)
-    if slug in ['firewall', 'switch'] and nh.node_type.type == 'Host':
+    if slug in allowed_types and nh.node_type.type == 'Host':
         node_type = helpers.slug_to_node_type(slug, create=True)
-        node = nh.get_node()
-        nh, node = helpers.logical_to_physical(request.user, node.handle_id)
+        nh, node = helpers.logical_to_physical(request.user, handle_id)
+        node.switch_type(nh.node_type.get_label(), node_type.get_label())
         nh.node_type = node_type
         nh.save()
         node_properties = {

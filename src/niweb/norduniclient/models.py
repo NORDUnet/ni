@@ -138,18 +138,38 @@ class BaseNodeModel(object):
         self.data = node_bundle.get('data')
         return self
 
-    def change_meta_type(self, meta_type):
-        if meta_type == self.meta_type:
-            return self
-        if meta_type not in core.META_TYPES:
-            raise core.exceptions.MetaLabelNamingError(meta_type)
+    def add_label(self, label):
         q = """
             MATCH (n:Node {{handle_id: {{handle_id}}}})
-            REMOVE n:{old_meta_type}
-            SET n:{meta_type}
-            """.format(old_meta_type=self.meta_type, meta_type=meta_type)
+            SET n:{label}
+            """.format(old_meta_type=self.meta_type, label=label)
         with self.manager.transaction as t:
             t.execute(q, handle_id=self.handle_id).fetchall()
+        return True
+
+    def remove_label(self, label):
+        q = """
+            MATCH (n:Node {{handle_id: {{handle_id}}}})
+            REMOVE n:{label}
+            """.format(old_meta_type=self.meta_type, label=label)
+        with self.manager.transaction as t:
+            t.execute(q, handle_id=self.handle_id).fetchall()
+        return True
+
+    def change_meta_type(self, meta_type):
+        if meta_type not in core.META_TYPES:
+            raise core.exceptions.MetaLabelNamingError(meta_type)
+        if meta_type == self.meta_type:
+            return self
+        if self.remove_label(self.meta_type):
+            self.add_label(meta_type)
+        return core.get_node_model(self.manager, self.handle_id)
+
+    def switch_type(self, old_type, new_type):
+        if old_type == new_type:
+            return self
+        if self.remove_label(old_type):
+            self.add_label(new_type)
         return core.get_node_model(self.manager, self.handle_id)
 
     def delete(self):
