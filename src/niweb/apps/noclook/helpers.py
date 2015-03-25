@@ -421,7 +421,7 @@ def slug_to_node_type(slug, create=False):
     """
     Returns or creates and returns the NodeType object from the supplied slug.
     """
-    acronym_types = ['odf'] # TODO: Move to sql db
+    acronym_types = ['odf', 'pdu']  # TODO: Move to sql db
     if create:
         node_type, created = NodeType.objects.get_or_create(slug=slug)
         if created:

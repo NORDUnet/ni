@@ -506,6 +506,53 @@ def edit_optical_path(request, handle_id):
 
 
 @login_required
+def edit_pdu(request, handle_id):
+    if not request.user.is_staff:
+        raise Http404
+    # Get needed data from node
+    nh, pdu = helpers.get_nh_node(handle_id)
+    location = pdu.get_location()
+    relations = pdu.get_relations()
+    depends_on = pdu.get_dependencies()
+    host_services = pdu.get_host_services()
+    ports = pdu.get_ports()
+    if request.POST:
+        form = forms.EditPDUForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, pdu.handle_id, form)
+            # Host specific updates
+            if form.cleaned_data['relationship_user']:
+                user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
+                helpers.set_user(request.user, pdu, user_nh.handle_id)
+            if form.cleaned_data['relationship_owner']:
+                owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
+                helpers.set_owner(request.user, pdu, owner_nh.handle_id)
+            # You can not set location and depends on at the same time
+            if form.cleaned_data['relationship_depends_on']:
+                depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
+                helpers.set_depends_on(request.user, pdu, depends_on_nh.handle_id)
+            elif form.cleaned_data['relationship_location']:
+                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+                helpers.set_location(request.user, pdu, location_nh.handle_id)
+            if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
+                helpers.remove_rogue_service_marker(request.user, pdu.handle_id)
+            if form.cleaned_data['relationship_ports']:
+                for port_name in form.cleaned_data['relationship_ports']:
+                    helpers.create_port(pdu, port_name, request.user)
+            if 'saveanddone' in request.POST:
+                return HttpResponseRedirect(nh.get_absolute_url())
+            else:
+                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditSwitchForm(pdu.data)
+    return render_to_response('noclook/edit/edit_pdu.html',
+                              {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
+                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
+                               'host_services': host_services}, context_instance=RequestContext(request))
+
+
+@login_required
 def edit_peering_partner(request, handle_id):
     if not request.user.is_staff:
         raise Http404
@@ -778,6 +825,7 @@ EDIT_FUNC = {
     'optical-link': edit_optical_link,
     'optical-multiplex-section': edit_optical_multiplex_section,
     'optical-path': edit_optical_path,
+    'pdu': edit_pdu,
     'peering-partner': edit_peering_partner,
     'port': edit_port,
     'provider': edit_provider,

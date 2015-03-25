@@ -182,6 +182,7 @@ def host_service_detail(request, handle_id):
                                'service_relationships': service_relationships, 'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
+
 @login_required
 def host_user_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -296,6 +297,29 @@ def optical_path_detail(request, handle_id):
     return render_to_response('noclook/detail/optical_path_detail.html',
                               {'node': optical_path, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
                                'dependencies': dependencies, 'dependent': dependent, 'relations': relations,
+                               'history': True, 'urls': urls},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def pdu_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    pdu = nh.get_node()
+    last_seen, expired = helpers.neo4j_data_age(pdu.data)
+    location_path = pdu.get_location_path()
+    # Get ports in pdu
+    connections = pdu.get_connections()
+    host_services = pdu.get_host_services()
+    dependent = pdu.get_dependent_as_types()
+    dependencies = pdu.get_dependencies_as_types()
+    relations = pdu.get_relations()
+
+    urls = helpers.get_node_urls(pdu, host_services, connections, dependent, dependencies, relations, location_path)
+    return render_to_response('noclook/detail/pdu_detail.html',
+                              {'node_handle': nh, 'node': pdu, 'last_seen': last_seen, 'expired': expired,
+                               'host_services': host_services, 'connections': connections, 'dependent': dependent,
+                               'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
                                'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 

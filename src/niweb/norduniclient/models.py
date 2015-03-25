@@ -774,3 +774,7 @@ class SwitchModel(EquipmentModel, HostModel):
 
 class FirewallModel(EquipmentModel, HostModel):
     pass
+
+
+class PDUModel(EquipmentModel, HostModel):
+    pass

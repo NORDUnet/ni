@@ -117,6 +117,7 @@ urlpatterns += patterns('apps.noclook.views.detail',
     (r'^optical-multiplex-section/(?P<handle_id>\d+)/$', 'optical_multiplex_section_detail'),
     (r'^firewall/(?P<handle_id>\d+)/$', 'firewall_detail'),
     (r'^switch/(?P<handle_id>\d+)/$', 'switch_detail'),
+    (r'^pdu/(?P<handle_id>\d+)/$', 'pdu_detail'),
     # Generic detail
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', 'generic_detail'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/history$', 'generic_history'),
