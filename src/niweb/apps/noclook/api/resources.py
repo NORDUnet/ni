@@ -556,6 +556,32 @@ class EndUserResource(NodeHandleResource):
         }
 
 
+class ExternalEquipmentResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='external-equipment')
+        resource_name = 'external-equipment'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class FirewallResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='firewall')
+        resource_name = 'firewall'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
 class HostResource(NodeHandleResource):
     
     class Meta:
@@ -619,13 +645,64 @@ class ODFResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
+
+
+class OpticalLinkResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='optical-link')
+        resource_name = 'optical-link'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class OpticalMultiplexSectionResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='optical-multiplex-section')
+        resource_name = 'optical-multiplex-section'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
 
 class OpticalNodeResource(NodeHandleResource):
     
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='optical-node')
         resource_name = 'optical-node'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class OpticalPathResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='optical-path')
+        resource_name = 'optical-path'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
+
+class PDUResource(NodeHandleResource):
+
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='pdu')
+        resource_name = 'pdu'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
@@ -946,7 +1023,19 @@ class SiteOwnerResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
+
+
+class SwitchResource(NodeHandleResource):
+    class Meta:
+        queryset = NodeHandle.objects.filter(node_type__slug__exact='switch')
+        resource_name = 'switch'
+        authentication = ApiKeyAuthentication()
+        authorization = Authorization()
+        allowed_methods = ['get', 'put', 'post']
+        filtering = {
+            "node_name": ALL,
+        }
+
 
 class UnitResource(NodeHandleResource):
 

@@ -18,12 +18,18 @@ v1_api.register(CableResource())
 v1_api.register(NordunetCableResource())
 v1_api.register(CustomerResource())
 v1_api.register(EndUserResource())
+v1_api.register(ExternalEquipmentResource())
+v1_api.register(FirewallResource())
 v1_api.register(HostResource())
 v1_api.register(HostProviderResource())
 v1_api.register(HostServiceResource())
 v1_api.register(HostUserResource())
 v1_api.register(ODFResource())
+v1_api.register(OpticalLinkResource())
+v1_api.register(OpticalMultiplexSectionResource())
 v1_api.register(OpticalNodeResource())
+v1_api.register(OpticalPathResource())
+v1_api.register(PDUResource())
 v1_api.register(PeeringGroupResource())
 v1_api.register(PeeringPartnerResource())
 v1_api.register(PortResource())
@@ -34,12 +40,13 @@ v1_api.register(ServiceResource())
 v1_api.register(ServiceL2VPNResource())
 v1_api.register(SiteResource())
 v1_api.register(SiteOwnerResource())
+v1_api.register(SwitchResource())
 v1_api.register(UnitResource())
 
 urlpatterns = patterns('',
 
     # Uncomment the admin/doc line below to enable admin documentation:
-    (r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    #(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
