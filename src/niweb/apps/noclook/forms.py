@@ -1,6 +1,6 @@
 from datetime import datetime
 from django import forms
-from django.forms.util import ErrorDict, ErrorList
+from django.forms.util import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
@@ -239,10 +239,11 @@ class JSONField(forms.CharField):
     def clean(self, value):
         value = super(JSONField, self).clean(value)
         try:
-            json_data = json.loads(value)
-        except Exception:
-            raise forms.validators.ValidationError(self.error_messages['invalid'])
-        return json_data
+            if value:
+                value = json.loads(value)
+        except ValueError:
+            raise ValidationError(self.error_messages['invalid'], code='invalid')
+        return value
 
 
 class JSONInput(HiddenInput):
