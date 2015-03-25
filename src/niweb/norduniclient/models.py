@@ -285,6 +285,9 @@ class LogicalModel(CommonQueries):
             """
         return self._basic_write_query_to_dict(q, dependency_handle_id=dependency_handle_id)
 
+    def get_connections(self):  # Logical versions of physical things can't have physical connections
+        return []
+
     # TODO: Create a method that complains if any relationships that breaks the model exists
 
 

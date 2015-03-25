@@ -431,61 +431,23 @@ class EditHostForm(forms.Form):
     relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
     security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
     services_locked = forms.BooleanField(required=False)
     services_checked = forms.BooleanField(required=False)
 
 
-class EditSwitchForm(forms.Form):
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+class EditSwitchForm(EditHostForm):
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of what the machine is used for.')
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
-    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
-                                          help_text='Name of the group responsible for the host.')
-    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
-                                      help_text='Name of the support group.')
-    os = forms.CharField(required=False,
-                         help_text='What operating system is running on the switch?')
-    os_version = forms.CharField(required=False,
-                                 help_text='Which version of the operating system is running on the switch?')
-    model = forms.CharField(required=False,
-                            help_text='What is the switchs hardware model name?')
-    vendor = forms.CharField(required=False,
-                             help_text='Name of the vendor that should be contacted for hardware support?')
-    service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the switch?')
-    end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_ports = JSONField(required=False, widget=JSONInput)
 
 
-class EditFirewallForm(forms.Form):
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of what the machine is used for.')
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
-    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
-                                          help_text='Name of the group responsible for the host.')
-    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
-                                      help_text='Name of the support group.')
-    os = forms.CharField(required=False,
-                         help_text='What operating system is running on the firewall?')
-    os_version = forms.CharField(required=False,
-                                 help_text='Which version of the operating system is running on the firewall?')
-    model = forms.CharField(required=False,
-                            help_text='What is the firewalls hardware model name?')
-    vendor = forms.CharField(required=False,
-                             help_text='Name of the vendor that should be contacted for hardware support?')
-    service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the firewall?')
-    end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_ports = JSONField(required=False, widget=JSONInput)
+class EditFirewallForm(EditHostForm):
+    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
+
+
+class EditPDUForm(EditHostForm):
+    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
 class EditRouterForm(forms.Form):

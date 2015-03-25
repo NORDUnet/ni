@@ -134,6 +134,8 @@ def host_detail(request, handle_id):
     host_services = host.get_host_services()
     relations = host.get_relations()
     dependent = host.get_dependent_as_types()
+    # Get ports in Host
+    connections = host.get_connections()
     if not any(dependent.values()):
         dependent = None
     dependencies = host.get_dependencies_as_types()
@@ -142,7 +144,8 @@ def host_detail(request, handle_id):
     return render_to_response('noclook/detail/host_detail.html',
                               {'node_handle': nh, 'node': host, 'last_seen': last_seen, 'expired': expired,
                                'relations': relations, 'host_services': host_services, 'dependent': dependent,
-                               'dependencies': dependencies, 'location_path': location_path, 'history': True, 'urls': urls},
+                               'dependencies': dependencies, 'location_path': location_path, 'history': True,
+                               'urls': urls, 'connections': connections},
                               context_instance=RequestContext(request))
 
 

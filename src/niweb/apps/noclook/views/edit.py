@@ -307,6 +307,7 @@ def edit_host(request, handle_id):
     relations = host.get_relations()
     depends_on = host.get_dependencies()
     host_services = host.get_host_services()
+    ports = host.get_ports()
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
@@ -328,6 +329,9 @@ def edit_host(request, handle_id):
                 helpers.set_location(request.user, host, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, host.handle_id)
+            if form.cleaned_data['relationship_ports']:
+                for port_name in form.cleaned_data['relationship_ports']:
+                    helpers.create_port(host, port_name, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -336,7 +340,7 @@ def edit_host(request, handle_id):
         form = forms.EditHostForm(host.data)
     return render_to_response('noclook/edit/edit_host.html',
                               {'node_handle': nh, 'node': host, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on,
+                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
                                'host_services': host_services}, context_instance=RequestContext(request))
 
 
@@ -746,6 +750,9 @@ def edit_switch(request, handle_id):
                 helpers.set_location(request.user, switch, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, switch.handle_id)
+            if form.cleaned_data['relationship_ports']:
+                for port_name in form.cleaned_data['relationship_ports']:
+                    helpers.create_port(switch, port_name, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
