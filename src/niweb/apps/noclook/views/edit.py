@@ -285,6 +285,9 @@ def edit_firewall(request, handle_id):
                 helpers.set_location(request.user, firewall, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, firewall.handle_id)
+            if form.cleaned_data['relationship_ports']:
+                for port_name in form.cleaned_data['relationship_ports']:
+                    helpers.create_port(firewall, port_name, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
