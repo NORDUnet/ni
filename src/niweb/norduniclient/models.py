@@ -604,6 +604,7 @@ class PhysicalHostModel(HostModel, EquipmentModel):
 class LogicalHostModel(HostModel, LogicalModel):
     pass
 
+
 class PortModel(SubEquipmentModel):
 
     def get_units(self):

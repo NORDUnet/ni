@@ -116,7 +116,7 @@ def create_node(manager, name, meta_type_label, type_label, handle_id):
         """ % (meta_type_label, type_label)
     with manager.transaction as w:
         return w.execute(q, name=name, handle_id=handle_id).fetchall()[0][0]
-    
+
 
 def get_node(manager, handle_id):
     """

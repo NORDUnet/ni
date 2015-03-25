@@ -492,7 +492,7 @@ def logical_to_physical(user, handle_id):
     :return: NodeHandle, norduniclient model
     """
     nh, logical_node = get_nh_node(handle_id)
-        # Make the node physical
+    # Make the node physical
     meta_type = 'Physical'
     physical_node = logical_node.change_meta_type(meta_type)
     nh.node_meta_type = meta_type
@@ -504,7 +504,7 @@ def logical_to_physical(user, handle_id):
         set_owner(user, physical_node, relationship.start)
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
-        # Remove Depends_on relationships
+    # Remove Depends_on relationships
     logical = physical_node.get_dependencies()
     for item in logical.get('Depends_on', []):
         relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
