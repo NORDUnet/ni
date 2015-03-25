@@ -183,50 +183,5 @@ $(document).ready(
         No ports used.
     {% endif %}
 </div>
-{% if host_services %}
-    <div class="section">
-        <h3>Host Services provided</h3>
-        {% if node.data.services_locked %}
-            <div class="alert alert-info">
-                <i class="icon-lock"></i> Services locked
-            </div>
-        {% endif %}
-        {% load noclook_tags %}
-        <div class="pull-right">
-            <span class="badge badge-important">Expired</span>
-        </div>
-        <table id="services" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
-                    <th>Service</th><th>Address</th><th>Port</th><th>Protocol</th><th>State</th><th>Public</th><th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th><th>Last seen</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for item in host_services.Depends_on %}
-                {% noclook_has_expired item.relationship as expired %}
-                {% if expired %}
-                    <tr class="expired">
-                {% else %}
-                    <tr>
-                {% endif %}
-                    <td>
-                        {% if item.relationship.rogue_port %}<i class="icon-exclamation-sign"></i> {% endif %}
-                        <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
-                    </td>
-                    <td>{{ item.relationship.ip_address }}</td>
-                    <td>{{ item.relationship.port }} </td>
-                    <td>{{ item.relationship.protocol }}</td>
-                    <td>{{ item.relationship.state }}</td>
-                    <td>{% if not item.relationship.noclook_last_external_check %}{% else %}{{ item.relationship.public|yesno:"Yes,No" }}{% endif %}</td>
-                    <td>{{ item.relationship.product }}</td>
-                    <td>{{ item.relationship.version }}</td>
-                    <td>{{ item.relationship.extrainfo }}</td>
-                    <td>{{ item.relationship.conf }}</td>
-                    <td>{% noclook_last_seen_to_dt item.relationship.noclook_last_seen as last_seen %}{{ last_seen|date:"Y-m-d" }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-{% endif %}
+{% include "noclook/detail/includes/host_services.html" %}
 {% endblock %}

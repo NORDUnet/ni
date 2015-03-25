@@ -1,7 +1,6 @@
-  
+{% if connections %}
 <div class="section">
     <h3>Ports</h3>
-    {% if connections %}
         {% load noclook_tags %}
         <table id="connections" class="tablesorter" cellspacing="1">
             <thead>
@@ -22,7 +21,5 @@
             {% endfor %}
             </tbody>
         </table>
-    {% else %}
-        no ports used.
-    {% endif %}
 </div>
+{% endif %}

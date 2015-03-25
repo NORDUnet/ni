@@ -21,7 +21,7 @@ $(document).ready(
 
 {% block content %}
 {{ block.super }}
-    <h1>{{node_type}}s</h1>
+    <h1>{{node_type}}{% if node_type.type == "Switch" %}es{% else %}s{% endif %}</h1>
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
     </div>

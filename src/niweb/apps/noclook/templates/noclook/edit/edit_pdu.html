@@ -101,25 +101,8 @@ $(document).ready(
         {% endif %}
         {% if node.meta_type == 'Physical' %}
             {% include "noclook/edit/includes/owner_group.html" %}
-            {% include "noclook/edit/includes/port_group.html" %}
         {% endif %}
+        {% include "noclook/edit/includes/port_group.html" %}
         {% include "noclook/edit/includes/host_service_group.html" %}
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseSix">
-                    Convert host
-                </a>
-            </div>
-            <div id="collapseSix" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <div class="alert alert-danger">
-                        Warning. This action is not reversible.
-                    </div>
-                    <a class="btn btn-danger" href="edit/convert-to/switch/"><i class="icon-exclamation-sign icon-white"></i> Convert to switch</a>
-                    <a class="btn btn-danger" href="edit/convert-to/firewall/"><i class="icon-exclamation-sign icon-white"></i> Convert to firewall</a>
-                    <a class="btn btn-danger" href="edit/convert-to/pdu/"><i class="icon-exclamation-sign icon-white"></i> Convert to PDU</a>
-                </div>
-            </div>
-        </div>
     </div>
 {% endblock %}
