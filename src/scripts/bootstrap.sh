@@ -29,6 +29,11 @@ msg "Removing neo4j data"
 $NEO4J_DIR/bin/neo4j-shell -c "MATCH (n:Node) OPTIONAL MATCH (n)-[r]-() DELETE n,r;"
 
 
+msg "Adding indexes to neo4j"
+curl -D - -H "Content-Type: application/json" --data '{"name" : "node_auto_index","config" : {"type" : "fulltext"," provider" : "lucene"}}' -X POST http://localhost:7474/db/data/index/node/
+curl -D - -H "Content-Type: application/json" --data '{"name" : "relationship_auto_index","config" : {"type" : "fulltext","provider" : "lucene"}}' -X POST http://localhost:7474/db/data/index/relationship/
+
+
 msg "Drop DB"
 dropdb $DB_NAME
 createdb $DB_NAME
@@ -37,15 +42,20 @@ createdb $DB_NAME
 msg "Import SQL DB"
 psql -f $SQL_DUMP/postgres.sql norduni
 
-
 msg "Reset DB sequences"
 psql -f "$NOCLOOK_DIR/sql/reset-sequences-noclook.sql" norduni
 
 
-msg "Importing data from json"
+msg "Importing data from json backup"
 . $VIRTUAL_ENV/bin/activate
 cd $NOCLOOK_DIR
 python noclook_consumer.py -C $SCRIPT_DIR/restore.conf -I
+
+
+msg "Updating data from nistore"
+. $VIRTUAL_ENV/bin/activate
+cd $NOCLOOK_DIR
+python noclook_consumer.py -C $SCRIPT_DIR/ndn.conf -I
 
 
 msg "Restore done."
