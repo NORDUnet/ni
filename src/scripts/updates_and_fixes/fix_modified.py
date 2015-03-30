@@ -19,7 +19,7 @@ for nh in NodeHandle.objects.all():
         latest_action = nh.action_object_actions.order_by('timestamp').reverse()[0]
         modified = latest_action.timestamp
         modifier = latest_action.actor
-    except IndexError:
+    except (IndexError, AttributeError):
         modified = nh.created
         modifier = nh.creator
 
