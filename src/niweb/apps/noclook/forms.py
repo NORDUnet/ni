@@ -501,13 +501,13 @@ class EditExternalEquipmentForm(forms.Form):
 
 class NewPortForm(forms.Form):
     name = forms.CharField()
-    port_type = forms.ChoiceField(choices=PORT_TYPES, widget=forms.widgets.Select)
+    port_type = forms.ChoiceField(required=False, choices=PORT_TYPES, widget=forms.widgets.Select)
     relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class EditPortForm(forms.Form):
     name = forms.CharField()
-    port_type = forms.ChoiceField(choices=PORT_TYPES, widget=forms.widgets.Select)
+    port_type = forms.ChoiceField(required=False, choices=PORT_TYPES, widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Notes regarding port usage.')
