@@ -71,11 +71,16 @@ CABLE_TYPES = [
 
 PORT_TYPES = [
     ('', ''),
+    ('C13 / C14', 'C13 / C14'),
+    ('C19 / C20', 'C19 / C20'),
+    ('CEE', 'CEE'),
     ('E2000', 'E2000'),
+    ('Fixed', 'Fixed'),
     ('LC', 'LC'),
     ('MU', 'MU'),
     ('RJ45', 'RJ45'),
     ('SC', 'SC'),
+    ('Schuko', 'Schuko'),
 ]
 
 SERVICE_TYPES = [
