@@ -88,6 +88,7 @@ SERVICE_TYPES = [
     ('Alien wavelenght', 'DWDM - Alien wavelenght'),
     ('Ethernet', 'DWDM - Ethernet'),
     ('SDH', 'DWDM - SDH'),
+    ('Interface Switch', 'Ethernet - Interface Switch'),
     ('External', 'External Service'),
     ('Hosting', 'Hosting'),
     ('CFG Management', 'Internal - CFG Management'),
@@ -99,6 +100,7 @@ SERVICE_TYPES = [
     ('NDN Tor', 'Internal - NDN Tor'),
     ('CMS', 'IAAS - CMS'),
     ('EDUID', 'IAAS - EDUID'),
+    ('HSM', 'IAAS - HSM'),
     ('Social2SAML', 'IAAS - Social2SAML'),
     ('Storage', 'IAAS - Storage'),
     ('TCS', 'IAAS - TCS'),
@@ -118,7 +120,6 @@ SERVICE_TYPES = [
     ('Connect', 'SAAS - Connect'),
     ('Survey', 'SAAS - Survey'),
     ('Box', 'SAAS - Box'),
-    ('Interface Switch', 'Ethernet - Interface Switch'),
 ]
 
 SERVICE_CLASS_MAP = {
@@ -131,6 +132,7 @@ SERVICE_CLASS_MAP = {
     'Connect': 'SAAS',
     'Customer Connection': 'IP',
     'EDUID': 'IAAS',
+    'HSM': 'IAAS',
     'Ethernet': 'DWDM',
     'External': 'External',
     'Hosting': 'Hosting',
