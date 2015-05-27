@@ -118,6 +118,7 @@ SERVICE_TYPES = [
     ('VPLS', 'MPLS - VPLS'),
     ('CanIt', 'SAAS - CanIt'),
     ('Connect', 'SAAS - Connect'),
+    ('Kaltura', 'SAAS - Kaltura'),
     ('Survey', 'SAAS - Survey'),
     ('Box', 'SAAS - Box'),
 ]
@@ -139,6 +140,7 @@ SERVICE_CLASS_MAP = {
     'Interface Switch': 'Ethernet',
     'Internal': 'Internal',
     'Internet Exchange': 'IP',
+    'Kaltura': 'SAAS',
     'L2VPN': 'MPLS',
     'L3VPN': 'MPLS',
     'Mail': 'Internal',
