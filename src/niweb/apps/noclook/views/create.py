@@ -123,8 +123,8 @@ def new_end_user(request, **kwargs):
             keys = ['url']
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
-            form = forms.NewEndUserForm()
+    else:
+        form = forms.NewEndUserForm()
     return render_to_response('noclook/create/create_end_user.html', {'form': form},
                               context_instance=RequestContext(request))
 
