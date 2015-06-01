@@ -102,6 +102,7 @@ def get_children(request, handle_id, slug=None):
     for child_handle_id, child in NodeHandle.objects.in_bulk(id_list.get('ids')).items():
         name = '%s %s' % (child.node_type.type, child.node_name)
         child_list.append((child_handle_id, name))
+        child_list.sort()
     return HttpResponse(json.dumps(child_list), mimetype='application/json')
 
 
