@@ -6,6 +6,7 @@ Created on Wed Dec 14 14:00:03 2011
 
 Node manipulation views.
 """
+from operator import itemgetter
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
@@ -102,7 +103,7 @@ def get_children(request, handle_id, slug=None):
     for child_handle_id, child in NodeHandle.objects.in_bulk(id_list.get('ids')).items():
         name = '%s %s' % (child.node_type.type, child.node_name)
         child_list.append((child_handle_id, name))
-        child_list.sort()
+        child_list = sorted(child_list, key=itemgetter(1))
     return HttpResponse(json.dumps(child_list), mimetype='application/json')
 
 
