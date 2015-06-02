@@ -108,9 +108,9 @@ def host_services(request, status=None):
         else:
             where_statement = ''
             if status == 'locked':
-                where_statement = 'and has(host.services_locked)'
+                where_statement = 'and (has(host.services_locked) and host.services_locked)'
             elif status == 'not-locked':
-                where_statement = 'and not(has(host.services_locked))'
+                where_statement = 'and (not(has(host.services_locked)) or not host.services_locked)'
             q = """
                 MATCH (host:Host)
                 WHERE not(host.operational_state = "Decommissioned") %s
