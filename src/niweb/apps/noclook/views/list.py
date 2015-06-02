@@ -179,7 +179,7 @@ def list_racks(request):
 def list_routers(request):
     q = """
         MATCH (router:Router)
-        RETURN router, router.model as model, router.version as version
+        RETURN router, router.model as model, router.version as version, router.operational_state as operational_state
         ORDER BY router.name
         """
     router_list = nc.query_to_list(nc.neo4jdb, q)
