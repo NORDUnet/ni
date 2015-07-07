@@ -276,7 +276,7 @@ class SearchIdForm(forms.Form):
         print generators
         categories = [('','')]
         if generators:
-          categories.extend([(g.prefix, " ".join(g.name.split("_")).title()) for g in generators if g.prefix != ""])
+          categories.extend([(g.prefix, g.name.replace("_", " ").title()) for g in generators if g.prefix != ""])
         self.fields['id_type'].choices= categories
     
 
