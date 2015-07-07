@@ -326,7 +326,7 @@ def quarterly_netapp_usage():
 @login_required
 def unique_ids(request, organisation=None):
     if not organisation:
-        return render_to_response('noclook/reports/unique_ids_choose.html', {}, context_instance=RequestContext(request))
+        return render_to_response('noclook/reports/unique_ids/choose_organization.html', {}, context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
         if request.POST:
           id_list = get_id_list(request.POST)
@@ -346,7 +346,7 @@ def unique_ids(request, organisation=None):
     else:
         raise Http404
     search_form = SearchIdForm(request.POST or None)
-    return render_to_response('noclook/reports/unique_ids.html',
+    return render_to_response('noclook/reports/unique_ids/list.html',
         {'id_list': id_list, 'organisation': organisation, 'search_form': search_form},
         context_instance=RequestContext(request))
 

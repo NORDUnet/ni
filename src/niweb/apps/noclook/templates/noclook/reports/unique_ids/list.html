@@ -64,7 +64,7 @@
                         <td>{{ id.reserved }}</td>
                         <td>{{ id.reserve_message|default_if_none:"" }}</td>
                         <td>{{ id.reserver|default_if_none:"" }}</td>
-                        <td>{{ id.created }}</td>
+                        <td class="date">{{ id.created }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

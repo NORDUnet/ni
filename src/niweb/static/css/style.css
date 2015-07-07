@@ -180,6 +180,10 @@ table.tablesorter thead .header {
  padding-right: 15px;
 }
 
+td.date {
+  min-width: 140px;
+}
+
 /* List color coding */
 tr.decommissioned {
     border-left: 3px #B94A48 solid;
