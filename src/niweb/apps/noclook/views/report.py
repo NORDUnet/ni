@@ -21,7 +21,7 @@ from dateutil.relativedelta import relativedelta
 import json
 from decimal import Decimal, ROUND_DOWN
 
-from apps.noclook.forms import get_node_type_tuples
+from apps.noclook.forms import get_node_type_tuples, SearchIdForm
 from apps.noclook.models import NordunetUniqueId
 from apps.noclook.templatetags.noclook_tags import timestamp_to_td
 from apps.noclook import helpers
@@ -326,10 +326,13 @@ def quarterly_netapp_usage():
 @login_required
 def unique_ids(request, organisation=None):
     if not organisation:
-        return render_to_response('noclook/reports/unique_ids.html', {}, context_instance=RequestContext(request))
+        return render_to_response('noclook/reports/unique_ids_choose.html', {}, context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
-        id_list = NordunetUniqueId.objects.all().order_by('created').reverse()
-        paginator = Paginator(id_list, 250, allow_empty_first_page=True)  # Show 50 activities per page
+        if request.POST:
+          id_list = get_id_list(request.POST)
+        else:
+          id_list = NordunetUniqueId.objects.all().order_by('created').reverse()
+        paginator = Paginator(id_list, 250, allow_empty_first_page=True)
         page = request.GET.get('page')
         try:
             id_list = paginator.page(page)
@@ -342,6 +345,22 @@ def unique_ids(request, organisation=None):
 
     else:
         raise Http404
+    search_form = SearchIdForm(request.POST or None)
     return render_to_response('noclook/reports/unique_ids.html',
-        {'id_list': id_list, 'organisation': organisation},
+        {'id_list': id_list, 'organisation': organisation, 'search_form': search_form},
         context_instance=RequestContext(request))
+
+def get_id_list(data):
+  id_list = []
+  form = SearchIdForm(data)
+  if form.is_valid():
+    #do stuff
+    id_list = NordunetUniqueId.objects.all()
+    if form.cleaned_data['reserved'] != None:
+      id_list = id_list.filter(reserved=form.cleaned_data['reserved'])
+    if form.cleaned_data['reserve_message']:
+      id_list = id_list.filter(reserve_message__icontains=form.cleaned_data['reserve_message'])
+    id_list = id_list.filter(unique_id__startswith=form.cleaned_data['id_type'])
+    
+    
+  return id_list.order_by('created').reverse()

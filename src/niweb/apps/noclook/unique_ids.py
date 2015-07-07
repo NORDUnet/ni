@@ -118,5 +118,5 @@ def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, r
                                                     reserve_message=reserve_message, reserver=reserver)
         except IntegrityError:
             error_message = 'ID already in database. Manual check needed.'
-        reserve_list.append({'id': id, 'reserve_message': reserve_message, 'error_message': error_message})
+        reserve_list.append({'unique_id': unique_id, 'reserve_message': reserve_message, 'error_message': error_message})
     return reserve_list

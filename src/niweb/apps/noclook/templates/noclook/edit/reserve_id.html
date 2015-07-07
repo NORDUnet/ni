@@ -103,11 +103,11 @@
                 {% for item in reserved_list %}
                     {% if item.error_message != '' %}
                         <tr class="error">
-                            <td>{{ item.id }}</td><td>{{ item.reserve_message }}</td><td>{{ item.error_message }}</td>
+                            <td>{{ item.unique_id }}</td><td>{{ item.reserve_message }}</td><td>{{ item.error_message }}</td>
                         </tr>
                     {% else %}
                         <tr class="success">
-                            <td>{{ item.id }}</td><td>{{ item.reserve_message }}</td><td></td>
+                            <td>{{ item.unique_id }}</td><td>{{ item.reserve_message }}</td><td></td>
                         </tr>
                     {% endif %}
                 {% endfor %}

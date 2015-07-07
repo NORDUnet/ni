@@ -265,6 +265,10 @@ class ReserveIdForm(forms.Form):
     amount = forms.IntegerField()
     reserve_message = forms.CharField(help_text='A message to help understand what the reservation was for.')
 
+class SearchIdForm(forms.Form):
+    reserved = forms.NullBooleanField(help_text='Show only IDs currently not in use', required=False)
+    id_type = forms.ChoiceField(choices=[('', ''), ('NU-0','Cables')], required=False)
+    reserve_message = forms.CharField(help_text='Search by message', required=False)
 
 class NewSiteForm(forms.Form):
     """

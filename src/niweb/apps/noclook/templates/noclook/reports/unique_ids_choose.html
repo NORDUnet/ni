@@ -1,0 +1,10 @@
+{% extends "noclook/reports/base_report.html" %}
+{% block title %}{{ block.super }} {{ organisation }} reserved ID list{% endblock %}
+{% block content %}
+{{ block.super }}
+  <h1>Unique IDs</h1>
+  <dl>
+    <dt><a href="NORDUnet/">NORDUnet</a></dt>
+    <dd>Unique IDs for NORDUnet.</dd>
+  </dl>
+{% endblock %}
