@@ -267,8 +267,18 @@ class ReserveIdForm(forms.Form):
 
 class SearchIdForm(forms.Form):
     reserved = forms.NullBooleanField(help_text='Show only IDs currently not in use', required=False)
-    id_type = forms.ChoiceField(choices=[('', ''), ('NU-0','Cables')], required=False)
+    id_type = forms.ChoiceField( required=False)
     reserve_message = forms.CharField(help_text='Search by message', required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(SearchIdForm, self).__init__(*args, **kwargs)
+        generators = UniqueIdGenerator.objects.all()
+        print generators
+        categories = [('','')]
+        if generators:
+          categories.extend([(g.prefix, " ".join(g.name.split("_")).title()) for g in generators if g.prefix != ""])
+        self.fields['id_type'].choices= categories
+    
 
 class NewSiteForm(forms.Form):
     """
