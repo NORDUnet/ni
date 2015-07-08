@@ -364,6 +364,9 @@ def dicts_to_xls(dict_list, header, sheet_name):
                 ws.write(i+1, j, unicode(''))
         if i % 1000 == 0:
             ws.flush_row_data()
+        if i == 65534:
+            # Reached the limit of old xls format
+            break
     return wb
 
 
