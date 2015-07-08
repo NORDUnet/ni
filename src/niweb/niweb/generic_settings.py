@@ -144,6 +144,7 @@ AUTHENTICATION_BACKENDS = (
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.static',
+    'django.core.context_processors.request',
 )
 
 ROOT_URLCONF = 'niweb.urls'
@@ -174,6 +175,7 @@ INSTALLED_APPS = (
     'actstream',
     'apps.userprofile',
     'apps.noclook',
+    'crispy_forms',
 )
 
 LOGGING = {
@@ -207,3 +209,5 @@ LOGGING = {
             },
         }
 }
+DATETIME_FORMAT = "N j, Y, H:i"
+TIME_FORMAT = "H:i"

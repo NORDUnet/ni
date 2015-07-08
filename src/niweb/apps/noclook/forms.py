@@ -273,7 +273,6 @@ class SearchIdForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(SearchIdForm, self).__init__(*args, **kwargs)
         generators = UniqueIdGenerator.objects.all()
-        print generators
         categories = [('','')]
         if generators:
           categories.extend([(g.prefix, g.name.replace("_", " ").title()) for g in generators if g.prefix != ""])

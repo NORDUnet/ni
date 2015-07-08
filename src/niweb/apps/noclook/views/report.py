@@ -328,10 +328,7 @@ def unique_ids(request, organisation=None):
     if not organisation:
         return render_to_response('noclook/reports/unique_ids/choose_organization.html', {}, context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
-        if request.POST:
-          id_list = get_id_list(request.POST)
-        else:
-          id_list = NordunetUniqueId.objects.all().order_by('created').reverse()
+        id_list = get_id_list(request.GET or None)
         paginator = Paginator(id_list, 250, allow_empty_first_page=True)
         page = request.GET.get('page')
         try:
@@ -345,17 +342,32 @@ def unique_ids(request, organisation=None):
 
     else:
         raise Http404
-    search_form = SearchIdForm(request.POST or None)
+    search_form = SearchIdForm(request.GET or None)
     return render_to_response('noclook/reports/unique_ids/list.html',
         {'id_list': id_list, 'organisation': organisation, 'search_form': search_form},
         context_instance=RequestContext(request))
 
-def get_id_list(data):
-  id_list = []
+@login_required
+def download_unique_ids(request, organisation=None, file_format=None):
+    header = ["ID", "Reserved", "Reserve message", "Reserver", "Created"]
+
+    if organisation == 'NORDUnet':
+        id_list = get_id_list(request.GET or None)
+        create_dict = lambda uid : {'ID': uid.unique_id, 'Reserve message': uid.reserve_message, 'Reserved': uid.reserved, 'Reserver': str(uid.reserver), 'Created': uid.created}
+        table = [ create_dict(uid)  for uid in id_list]
+        # using values is faster, a lot, but no nice header :( and no username
+        #table = id_list.values()
+    if table and file_format == 'xls':  
+        return helpers.dicts_to_xls_response(table, header)
+    elif table and file_format == 'csv':
+        return helpers.dicts_to_csv_response(table, header)
+    else:
+        raise Http404
+def get_id_list(data=None):
+  id_list = NordunetUniqueId.objects.all().prefetch_related('reserver')
   form = SearchIdForm(data)
   if form.is_valid():
     #do stuff
-    id_list = NordunetUniqueId.objects.all()
     if form.cleaned_data['reserved'] != None:
       id_list = id_list.filter(reserved=form.cleaned_data['reserved'])
     if form.cleaned_data['reserve_message']:
