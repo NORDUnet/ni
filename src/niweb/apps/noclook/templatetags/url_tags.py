@@ -20,7 +20,8 @@ def export_as(context, file_type, param_del=["page"]):
     req = context['request']
     params = req.GET.copy()
     for param in  param_del:
-        del params[param]
+        if param in params:
+          del params[param]
     params = clean_queryparams(params)
     if req.path.endswith("/"):
         path = req.path[:-1]
