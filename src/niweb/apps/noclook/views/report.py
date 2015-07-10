@@ -329,17 +329,7 @@ def unique_ids(request, organisation=None):
         return render_to_response('noclook/reports/unique_ids/choose_organization.html', {}, context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
         id_list = get_id_list(request.GET or None)
-        paginator = Paginator(id_list, 250, allow_empty_first_page=True)
-        page = request.GET.get('page')
-        try:
-            id_list = paginator.page(page)
-        except PageNotAnInteger:
-            # If page is not an integer, deliver first page.
-            id_list = paginator.page(1)
-        except EmptyPage:
-            # If page is out of range (e.g. 9999), deliver last page of results.
-            id_list = paginator.page(paginator.num_pages)
-
+        id_list = paginate(id_list, request.GET.get('page'))
     else:
         raise Http404
     search_form = SearchIdForm(request.GET or None)
@@ -363,16 +353,27 @@ def download_unique_ids(request, organisation=None, file_format=None):
         return helpers.dicts_to_csv_response(table, header)
     else:
         raise Http404
+
+def paginate(full_list, page=None):
+    paginator = Paginator(full_list, 250, allow_empty_first_page=True)
+    try:
+        paginated_list = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        paginated_list = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        paginated_list = paginator.page(paginator.num_pages)
+    return paginated_list
+  
 def get_id_list(data=None):
-  id_list = NordunetUniqueId.objects.all().prefetch_related('reserver')
-  form = SearchIdForm(data)
-  if form.is_valid():
-    #do stuff
-    if form.cleaned_data['reserved'] != None:
-      id_list = id_list.filter(reserved=form.cleaned_data['reserved'])
-    if form.cleaned_data['reserve_message']:
-      id_list = id_list.filter(reserve_message__icontains=form.cleaned_data['reserve_message'])
-    id_list = id_list.filter(unique_id__startswith=form.cleaned_data['id_type'])
-    
-    
-  return id_list.order_by('created').reverse()
+    id_list = NordunetUniqueId.objects.all().prefetch_related('reserver')
+    form = SearchIdForm(data)
+    if form.is_valid():
+        #do stuff
+        if form.cleaned_data['reserved'] != None:
+            id_list = id_list.filter(reserved=form.cleaned_data['reserved'])
+        if form.cleaned_data['reserve_message']:
+            id_list = id_list.filter(reserve_message__icontains=form.cleaned_data['reserve_message'])
+        id_list = id_list.filter(unique_id__startswith=form.cleaned_data['id_type'])
+    return id_list.order_by('created').reverse()
