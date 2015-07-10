@@ -178,6 +178,10 @@
                         {% endif %}
                     </div>
                 </div>
+                {% if page_flash.strip %}
+                    <div id="page_flash" class="alert alert-info">{{ page_flash }}</div>
+                {% endif %}
+
                 {% block content %}{% endblock %}
 
                 {% block content_footer %}{% endblock %}
