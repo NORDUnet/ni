@@ -145,6 +145,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.static',
     'django.core.context_processors.request',
+    'apps.noclook.announcements.page_flash',
 )
 
 ROOT_URLCONF = 'niweb.urls'
