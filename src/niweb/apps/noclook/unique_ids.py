@@ -65,7 +65,7 @@ def register_unique_id(unique_id_collection, unique_id):
     return True
 
 
-def bulk_reserve_id_range(start, end, unique_id_generator, unique_id_collection, reserve_message, reserver):
+def bulk_reserve_id_range(start, end, unique_id_generator, unique_id_collection, reserve_message, reserver, site=None):
     """
     Reserves IDs start to end in the format used in the unique id generator in the unique id collection without
     incrementing the unique ID generator.
@@ -93,12 +93,13 @@ def bulk_reserve_id_range(start, end, unique_id_generator, unique_id_collection,
             reserved=True,
             reserve_message=reserve_message,
             reserver=reserver,
+            site=site,
         ))
     unique_id_collection.objects.bulk_create(reserve_list)
     return reserve_list
 
 
-def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, reserve_message, reserver):
+def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, reserve_message, reserver, site=None):
     """
     Reserves IDs by incrementing the unique ID generator.
     :param num_of_ids: Number of IDs to reserve.
@@ -115,7 +116,7 @@ def reserve_id_sequence(num_of_ids, unique_id_generator, unique_id_collection, r
         try:
             with transaction.atomic():
                 unique_id_collection.objects.create(unique_id=unique_id, reserved=True,
-                                                    reserve_message=reserve_message, reserver=reserver)
+                                                    reserve_message=reserve_message, reserver=reserver, site=site)
         except IntegrityError:
             error_message = 'ID already in database. Manual check needed.'
         reserve_list.append({'unique_id': unique_id, 'reserve_message': reserve_message, 'error_message': error_message})

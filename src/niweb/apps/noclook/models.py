@@ -173,6 +173,7 @@ class UniqueId(models.Model):
     reserved = models.BooleanField(default=False)
     reserve_message = models.CharField(max_length=512, null=True, blank=True)
     reserver = models.ForeignKey(User, null=True, blank=True)
+    site = models.ForeignKey(NodeHandle, null=True, blank=True)
     # Meta
     created = models.DateTimeField(auto_now_add=True)
 

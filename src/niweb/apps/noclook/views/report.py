@@ -339,11 +339,12 @@ def unique_ids(request, organisation=None):
 
 @login_required
 def download_unique_ids(request, organisation=None, file_format=None):
-    header = ["ID", "Reserved", "Reserve message", "Reserver", "Created"]
+    header = ["ID", "Reserved", "Reserve message", "Site", "Reserver", "Created"]
 
     if organisation == 'NORDUnet':
         id_list = get_id_list(request.GET or None)
-        create_dict = lambda uid : {'ID': uid.unique_id, 'Reserve message': uid.reserve_message, 'Reserved': uid.reserved, 'Reserver': str(uid.reserver), 'Created': uid.created}
+        get_site = lambda uid : uid.site.node_name if uid.site else ""
+        create_dict = lambda uid : {'ID': uid.unique_id, 'Reserve message': uid.reserve_message, 'Reserved': uid.reserved, 'Site': get_site(uid), 'Reserver': str(uid.reserver), 'Created': uid.created}
         table = [ create_dict(uid)  for uid in id_list]
         # using values is faster, a lot, but no nice header :( and no username
         #table = id_list.values()
@@ -355,13 +356,17 @@ def download_unique_ids(request, organisation=None, file_format=None):
         raise Http404
 
 def get_id_list(data=None):
-    id_list = NordunetUniqueId.objects.all().prefetch_related('reserver')
+    id_list = NordunetUniqueId.objects.all().prefetch_related('reserver').prefetch_related('site')
     form = SearchIdForm(data)
     if form.is_valid():
         #do stuff
-        if form.cleaned_data['reserved'] != None:
-            id_list = id_list.filter(reserved=form.cleaned_data['reserved'])
-        if form.cleaned_data['reserve_message']:
-            id_list = id_list.filter(reserve_message__icontains=form.cleaned_data['reserve_message'])
-        id_list = id_list.filter(unique_id__startswith=form.cleaned_data['id_type'])
+        data = form.cleaned_data
+        if data['reserved']:
+            id_list = id_list.filter(reserved=data['reserved'])
+        if data['reserve_message']:
+            id_list = id_list.filter(reserve_message__icontains=data['reserve_message'])
+        if data['site']:
+            id_list = id_list.filter(site=data['site'])
+        if data['id_type']:
+            id_list = id_list.filter(unique_id__startswith=data['id_type'])
     return id_list.order_by('created').reverse()

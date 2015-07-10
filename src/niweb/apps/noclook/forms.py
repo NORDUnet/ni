@@ -4,7 +4,7 @@ from django.forms.util import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
-from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
+from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId, NodeHandle
 from apps.noclook import unique_ids
 import norduniclient as nc
 
@@ -261,13 +261,24 @@ class JSONInput(HiddenInput):
         return super(JSONInput, self).render(name, json.dumps(value), attrs)
 
 
+
+class NodeChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, node):
+        return node.node_name
+
 class ReserveIdForm(forms.Form):
-    amount = forms.IntegerField()
-    reserve_message = forms.CharField(help_text='A message to help understand what the reservation was for.')
+    amount = forms.IntegerField(min_value=1, initial=1)
+    site = NodeChoiceField(
+            queryset=NodeHandle.objects.filter(node_type__type='Site').order_by('node_name'),
+            required=False, 
+            help_text='If applicable choose a site')
+    reserve_message = forms.CharField(help_text='A message to help understand what the reservation was for.', widget=forms.TextInput(attrs={'class': 'input-xxlarge'}))
 
 class SearchIdForm(forms.Form):
     reserved = forms.NullBooleanField(help_text='Choosing "yes" shows avaliable (not in use) IDs', required=False)
     id_type = forms.ChoiceField( required=False)
+    site = NodeChoiceField(required=False,
+            queryset=NodeHandle.objects.filter(node_type__type='Site').order_by('node_name'))
     reserve_message = forms.CharField(help_text='Search by message', required=False)
 
     def __init__(self, *args, **kwargs):
