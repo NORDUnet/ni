@@ -329,7 +329,7 @@ def unique_ids(request, organisation=None):
         return render_to_response('noclook/reports/unique_ids/choose_organization.html', {}, context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
         id_list = get_id_list(request.GET or None)
-        id_list = paginate(id_list, request.GET.get('page'))
+        id_list = helpers.paginate(id_list, request.GET.get('page'))
     else:
         raise Http404
     search_form = SearchIdForm(request.GET or None)
@@ -354,18 +354,6 @@ def download_unique_ids(request, organisation=None, file_format=None):
     else:
         raise Http404
 
-def paginate(full_list, page=None):
-    paginator = Paginator(full_list, 250, allow_empty_first_page=True)
-    try:
-        paginated_list = paginator.page(page)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver first page.
-        paginated_list = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), deliver last page of results.
-        paginated_list = paginator.page(paginator.num_pages)
-    return paginated_list
-  
 def get_id_list(data=None):
     id_list = NordunetUniqueId.objects.all().prefetch_related('reserver')
     form = SearchIdForm(data)

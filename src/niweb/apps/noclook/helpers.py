@@ -13,6 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMessage
 from datetime import datetime, timedelta
 from actstream.models import action_object_stream, target_stream
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import csv
 import codecs
 import cStringIO
@@ -779,3 +780,15 @@ def get_node_urls(*args):
     for n in nodes:
         urls[n.handle_id] = n.get_absolute_url()
     return urls
+
+def paginate(full_list, page=None, per_page=250):
+    paginator = Paginator(full_list, per_page, allow_empty_first_page=True)
+    try:
+        paginated_list = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        paginated_list = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        paginated_list = paginator.page(paginator.num_pages)
+    return paginated_list
