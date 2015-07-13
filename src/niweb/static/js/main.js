@@ -14,4 +14,12 @@ $(document).ready(function() {
     var target = $(this).data("async-load-target");
     async_load(url,this,target);
   });
+
+
+
+    $("table[data-tablesort]").dataTable(
+        {
+            "paging": false,
+            "order": []
+        });
 });

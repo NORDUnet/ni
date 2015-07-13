@@ -1,32 +1,14 @@
 {% extends "base.html" %}
 
 {% block title %}{{ block.super }} Cable list{% endblock %}
-
-{% block js %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#sites").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
 {% block content %}
 {{ block.super }}
     <h1>Cables</h1>
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
     </div>
-    <table id="sites" class="tablesorter" cellspacing="1">
-        <thead>
+    <table id="sites" class="table table-condensed compact" data-tablesort cellspacing="1">
+        <thead> 
             <tr>
                 <th>Name</th><th>Cable type</th>
             </tr>
