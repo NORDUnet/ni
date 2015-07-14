@@ -172,6 +172,9 @@ li.autocomplete {
     list-style: none;
 }
 
+.dataTables_wrapper {
+    padding-top: 2px;
+} 
 /* Tablesorter tweeks */
 table.tablesorter {
   border-bottom: 1px solid #ccc;
