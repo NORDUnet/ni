@@ -1,20 +1,14 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} Hosts{% endblock %}
 
-{% block content %}
-{{ block.super }}
+{% block before_tabe %}
     <h1>Hosts</h1>
-    <div class="pull-right">
-        <span class="badge badge-important">Expired</span>
-    </div>
-    <table id="hosts" data-tablesort class="table table-condensed compact" cellspacing="1">
-        <thead>
-            <tr>
-                <th>Host</th><th>Address</th><th>OS</th><th>OS version</th><th>User</th>
-            </tr>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_head %}
+    <th>Host</th><th>Address</th><th>OS</th><th>OS version</th><th>User</th>
+{% endblock %}
+{% block table_body %}
             {% load noclook_tags %}
             {% for host, users in host_list %}
                 {% if host.ip_addresses %}
@@ -55,6 +49,4 @@
                     </tr>
                 {% endif %}
             {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}

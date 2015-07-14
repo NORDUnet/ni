@@ -1,39 +1,19 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} Optical Path list{% endblock %}
 
-{% block js %}
-    <script type="text/javascript">
-        $(document).ready(
-                function(){
-                    $("#services").tablesorter(
-                            {
-                                sortList: [[0,0]],
-                                headers:
-                                {},
-                                widthFixed: true,
-                                widgets: ['zebra']
-                            });
-                }
-        );
-    </script>
-{% endblock %}
-
-{% block content %}
-    {{ block.super }}
+{% block before_table %}
     <h1>Optical Paths</h1>
-    <div class="pull-right">
+{% endblock %}
+{% block table_labels %}
         <span class="badge badge-info">Testing</span>
         <span class="badge badge-warning">Reserved</span>
         <span class="badge badge-important">Decommissioned</span>
-    </div>
-    <table id="services" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
-                <th>Optical Path</th><th>Framing</th><th>Capacity</th><th>Description</th><th>ENRs</th>
-            </tr>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_head %}
+    <th>Optical Path</th><th>Framing</th><th>Capacity</th><th>Description</th><th>ENRs</th>
+{% endblock %}
+{% block table_body %}
         {% load noclook_tags %}
         {% for optical_path in optical_path_list %}
             {% if optical_path.operational_state == "Decommissioned" %}
@@ -52,6 +32,4 @@
                     <td>{% for enr in optical_path.enrs %}{{ enr }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                 </tr>
         {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}

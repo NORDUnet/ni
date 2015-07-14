@@ -1,19 +1,13 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} Cable list{% endblock %}
-{% block content %}
-{{ block.super }}
+{% block before_table %}
     <h1>Cables</h1>
-    <div class="pull-right">
-        <span class="badge badge-important">Expired</span>
-    </div>
-    <table id="sites" class="table table-condensed compact" data-tablesort cellspacing="1">
-        <thead> 
-            <tr>
-                <th>Name</th><th>Cable type</th>
-            </tr>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_head %}
+    <th>Name</th><th>Cable type</th>
+{% endblock %}
+{% block table_body %}
             {% load noclook_tags %}
             {% for item in cable_list %}
                     {% noclook_has_expired item.cable as expired %}

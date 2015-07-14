@@ -1,39 +1,19 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} {{ service_class }} Service list{% endblock %}
 
-{% block js %}
-    <script type="text/javascript">
-        $(document).ready(
-                function(){
-                    $("#services").tablesorter(
-                            {
-                                sortList: [[0,0]],
-                                headers:
-                                {},
-                                widthFixed: true,
-                                widgets: ['zebra']
-                            });
-                }
-        );
-    </script>
-{% endblock %}
-
-{% block content %}
-    {{ block.super }}
+{% block before_table %}
     <h1>{% if service_class %}{{ service_class }}{% endif %} Services</h1>
-    <div class="pull-right">
+{% endblock %}
+{% block table_labels %}
         <span class="badge badge-info">Testing</span>
         <span class="badge badge-warning">Reserved</span>
         <span class="badge badge-important">Decommissioned</span>
-    </div>
-    <table id="services" class="tablesorter" cellspacing="1">
-        <thead>
-        <tr>
+{% endblock %}
+{% block table_head %}
             <th>Service</th><th>Service Class</th><th>Service Type</th><th>Description</th><th>Customers</th><th>End Users</th>
-        </tr>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_body %}
         {% load noclook_tags %}
         {% for item in service_list %}
             {% if item.service.operational_state == "Decommissioned" %}
@@ -61,6 +41,4 @@
                 </td>
             </tr>
         {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}

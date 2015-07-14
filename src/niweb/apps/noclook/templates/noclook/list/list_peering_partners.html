@@ -1,37 +1,14 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} Peering Partner list{% endblock %}
 
-{% block js %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#peering_partners").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
-{% block content %}
-{{ block.super }}
+{% block before_table %}
     <h1>Peering Partners</h1>
-    <div class="pull-right">
-        <span class="badge badge-important">Expired</span>
-    </div>
-    <table id="peering_partners" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
-                <th>Peering Partner</th><th>AS Number</th><th>Peering Groups</th>
-            </tr>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_head %}
+    <th>Peering Partner</th><th>AS Number</th><th>Peering Groups</th>
+{% endblock %}
+{% block table_body %}
             {% load noclook_tags %}
             {% for item in partner_list %}
                     {% noclook_has_expired item.peer as expired %}
@@ -49,6 +26,4 @@ $(document).ready(
                         </td>
                     </tr>
             {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}

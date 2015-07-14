@@ -1,39 +1,19 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} Optical Multiplex Section list{% endblock %}
 
-{% block js %}
-    <script type="text/javascript">
-        $(document).ready(
-                function(){
-                    $("#optical-links").tablesorter(
-                            {
-                                sortList: [[0,0]],
-                                headers:
-                                {},
-                                widthFixed: true,
-                                widgets: ['zebra']
-                            });
-                }
-        );
-    </script>
-{% endblock %}
-
-{% block content %}
-    {{ block.super }}
+{% block before_table %}
     <h1>Optical Multiplex Sections</h1>
-    <div class="pull-right">
+{% endblock %}
+{% block table_labels %}
         <span class="badge badge-info">Testing</span>
         <span class="badge badge-warning">Reserved</span>
         <span class="badge badge-important">Decommissioned</span>
-    </div>
-    <table id="optical-links" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
-                <th>Optical Multiplex Section</th><th>Description</th><th>Depends on</th>
-            </tr>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_head %}
+    <th>Optical Multiplex Section</th><th>Description</th><th>Depends on</th>
+{% endblock %}
+{% block table_bodt %}
         {% load noclook_tags %}
         {% for optical_multiplex_section in optical_multiplex_section_list %}
             {% if optical_link.data.operational_state == "Decommissioned" %}
@@ -54,6 +34,4 @@
                     </td>
                 </tr>
         {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}

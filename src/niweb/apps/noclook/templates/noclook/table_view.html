@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+    {{ block.super }}
+    
+    {% block before_table %}{% endblock %}
+    <div class="pull-right">
+        {% block table_labels %}
+            <span class="badge badge-important">Expired</span>
+        {% endblock %}
+    </div>
+    <table id="sites" class="table table-condensed compact" data-tablesort cellspacing="1">
+        <thead> 
+            <tr>
+                {% block table_head %}{% endblock %}
+            </tr>
+        </thead>
+        <tbody>
+            {% block table_body %}{% endblock %}
+        </tbody>
+    </table>
+    {% block after_table %}{% endblock %}
+{% endblock %}
