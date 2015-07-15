@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from django.db import models, utils
+from django.db import models
 from django.contrib.auth.models import User
-from django.contrib.comments.signals import comment_was_posted, comment_was_flagged
+from django_comments.signals import comment_was_posted, comment_was_flagged
 from django.dispatch import receiver
-from django.contrib.comments import Comment
+from django_comments.models import Comment
 from actstream import action
 
 import norduniclient as nc
@@ -215,5 +215,6 @@ def comment_removed_handler(sender, comment, flag, created, request, **kwargs):
         target=comment.content_object,
         noclook={
             'action_type': 'comment',
+            'comment': comment.comment,
         }
     )

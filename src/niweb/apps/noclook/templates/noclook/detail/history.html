@@ -30,6 +30,12 @@
                     {% elif entry.data.noclook.action_type == 'relationship_property' %}
                         <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> updated the {{ entry.data.noclook.relationship_type }} relationship between <a href="{{ entry.action_object.get_absolute_url }}">{{ entry.action_object }}</a> and <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
                         <p>{{ entry.data.noclook.property }}: {{ entry.data.noclook.value_before|default:"<em>No value</em>" }} <i class="icon-arrow-right"></i> {{ entry.data.noclook.value_after|default:"<em>No value</em>" }}</p>
+                    {% elif entry.data.noclook.action_type == 'comment' %}
+                        {% if entry.verb == 'create' %}
+                            <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> commented on <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                        {% elif entry.verb == 'delete' %}
+                            <strong><a href="{{ entry.actor.profile.get_absolute_url }}">{{ entry.actor }}</a> deleted comment <em>"{{ entry.data.noclook.comment }}"</em> from <a href="{{ entry.target.get_absolute_url }}">{{ entry.target }}</a></strong>
+                        {% endif %}
                     {% else %}
                         {{ entry.data.noclook }}
                     {% endif %}
