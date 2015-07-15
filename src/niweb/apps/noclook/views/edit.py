@@ -271,7 +271,7 @@ def edit_firewall(request, handle_id):
         if form.is_valid():
             # Generic node update
             helpers.form_update_node(request.user, firewall.handle_id, form)
-            # Host specific updates
+            #  Firewall specific updates
             if form.cleaned_data['relationship_user']:
                 user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
                 helpers.set_user(request.user, firewall, user_nh.handle_id)
