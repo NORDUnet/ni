@@ -1,8 +1,7 @@
-Django<1.7
-South==1.0
-django-activity-stream==0.4.5
+Django<1.9
+django-activity-stream<0.7
 django-jsonfield==0.9.13
-django-tastypie==0.11.1
+django-tastypie<0.13
 ipaddr==2.1.11
 lucene-querybuilder==0.2
 neo4jdb==0.0.8
@@ -12,3 +11,4 @@ python-mimeparse==0.1.4
 six==1.7.3
 wsgiref==0.1.2
 xlwt==0.7.5
+django-contrib-comments

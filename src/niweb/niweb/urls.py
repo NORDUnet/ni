@@ -65,7 +65,7 @@ urlpatterns = patterns('',
     (r'^api/', include(v1_api.urls)),
 
     # Django Generic Comments
-    (r'^comments/', include('django.contrib.comments.urls')),
+    (r'^comments/', include('django_comments.urls')),
 
     # Activity Streams
     ('^activity/', include('actstream.urls')),

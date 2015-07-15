@@ -18,8 +18,8 @@ import codecs
 import cStringIO
 import xlwt
 
-from apps.noclook.models import NodeHandle, NodeType
-from apps.noclook import activitylog
+from .models import NodeHandle, NodeType
+from . import activitylog
 import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 

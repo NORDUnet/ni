@@ -3,7 +3,7 @@ __author__ = 'lundberg'
 
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
-from apps.noclook.models import NordunetUniqueId, UniqueIdGenerator
+from .models import NordunetUniqueId, UniqueIdGenerator
 
 
 # TODO: Maybe move this to settings.py?

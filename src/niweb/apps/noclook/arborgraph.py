@@ -6,7 +6,7 @@ Created on Thu Nov 10 14:52:53 2011
 """
 
 import json
-from apps.noclook.helpers import get_node_url
+from .helpers import get_node_url
 import norduniclient as nc
 
 # Color and shape settings for know node types
