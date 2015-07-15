@@ -22,7 +22,7 @@ class BaseRelationshipModel(object):
 
     def __unicode__(self):
         return u'({start})-[{id}:{type}{data}]->({end}) in database {db}.'.format(
-            start=self.start.handle_id, type=self.type, id=self.id, data=self.data, end=self.end.handle_id,
+            start=self.start, type=self.type, id=self.id, data=self.data, end=self.end,
             db=self.manager.dsn
         )
 
