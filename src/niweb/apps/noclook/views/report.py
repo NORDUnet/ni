@@ -83,6 +83,7 @@ def host_security_class(request, status=None, form=None):
             MATCH (host:Host)
             WHERE not(host.operational_state = "Decommissioned") %s
             RETURN host
+            ORDER BY host.noclook_last_seen DESC
             ''' % where_statement
     hosts = nc.query_to_list(nc.neo4jdb, q)
     urls = helpers.get_node_urls(hosts)
