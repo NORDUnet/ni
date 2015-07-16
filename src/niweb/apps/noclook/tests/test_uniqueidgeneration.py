@@ -8,13 +8,12 @@ Created on 2014-06-26 1:40 PM
 from django.test import TestCase
 from django.db import connection, transaction, IntegrityError
 from django.contrib.auth.models import User
-from apps.noclook.models import UniqueIdGenerator, UniqueId
+from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
 from apps.noclook import unique_ids
 
 
 class UniqueIdGeneration(TestCase):
 
-    #@transaction.autocommit
     def setUp(self):
         # Set up a user
         self.username = 'TestUser'
@@ -28,39 +27,7 @@ class UniqueIdGeneration(TestCase):
             prefix='TEST-',
             creator=self.user
         )
-        # Set up an ID collection
-        #try:
-        # sqlite3
-#        connection.cursor().execute("""
-#            CREATE TABLE "tests_testuniqueid" (
-#                "id" integer NOT NULL PRIMARY KEY,
-#                "unique_id" varchar(256) NOT NULL UNIQUE,
-#                "reserved" bool NOT NULL,
-#                "reserve_message" varchar(512),
-#                "reserver_id" integer REFERENCES "auth_user" ("id"),
-#                "created" datetime NOT NULL
-#            );
-#            """)
-        # postgresql
-        connection.cursor().execute("""
-                CREATE TABLE "tests_testuniqueid" (
-                    "id" serial NOT NULL PRIMARY KEY,
-                    "unique_id" varchar(256) NOT NULL UNIQUE,
-                    "reserved" boolean NOT NULL,
-                    "reserve_message" varchar(512),
-                    "reserver_id" integer REFERENCES "auth_user" ("id") DEFERRABLE INITIALLY DEFERRED,
-                    "created" timestamp with time zone NOT NULL
-                );
-                """)
-        #except DatabaseError as e:
-            # Table already created
-            #print e
-            #pass
-
-        class TestUniqueId(UniqueId):
-            def __unicode__(self):
-                return unicode('Test: %s' % self.unique_id)
-        self.id_collection = TestUniqueId
+        self.id_collection = NordunetUniqueId
 
     def test_id_generation(self):
         new_id = self.id_generator.get_id()

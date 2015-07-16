@@ -10,7 +10,10 @@ from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
 from apps.noclook import helpers
-import sys
+import norduniclient as nc
+
+# Use test instance of the neo4j db
+nc.neo4jdb = nc.init_db('http://localhost:7475')
 
 
 class ServiceL2VPNResourceTest(ResourceTestCase):
@@ -109,6 +112,8 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         for handle_id in self.DEFAULT_HANDLE_IDS:
             nh = NodeHandle.objects.get(pk=handle_id)
             nh.delete()
+        with nc.neo4jdb.transaction as t:
+            t.execute("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r").fetchall()
         super(ServiceL2VPNResourceTest, self).tearDown()
 
     def get_credentials(self):
