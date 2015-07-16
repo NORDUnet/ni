@@ -34,12 +34,12 @@
     <th>Host</th><th>Description</th><th>Last seen</th>
 {% endblock %}
 {% block table_body %}
-                    {% load noclook_tags %}
-                    {% for item in hosts %}
-                        <tr>
-                            <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
-                            <td>{{ item.host.description|default:"" }}</td>
-                            {% noclook_last_seen_as_td item.host.noclook_last_seen %}
-                        </tr>
-                    {% endfor %}
+    {% load noclook_tags %}
+    {% for item in hosts %}
+        <tr>
+            <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
+            <td>{{ item.host.description|default:"" }}</td>
+            {% noclook_last_seen_as_td item.host.noclook_last_seen %}
+        </tr>
+    {% endfor %}
 {% endblock %}
