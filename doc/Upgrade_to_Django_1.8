@@ -1,0 +1,16 @@
+Due to migrations is now integrated in to Django you need to make a fake migrations before starting the app 
+
+$ python manage.py migrate --fake-initial
+
+Due to django.contrib.comments are deprecated you need to remove the old
+comment content types from the ContentType table.
+
+$ python manage.py shell
+>>> from django.contrib.contenttypes.models import ContentType
+>>> for ct in ContentType.objects.all():
+>>>     print ct.pk, ct.name
+
+Look in the resulting list and delete the first comment and commentflag.
+
+>>> ContentType.objects.get(pk=X).delete()
+
