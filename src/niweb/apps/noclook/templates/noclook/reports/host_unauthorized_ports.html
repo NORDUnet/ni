@@ -2,33 +2,6 @@
 
 {% block title %}{{ block.super }} | Host reports | Host services{% endblock %}
 
-{% block js %}
-    {{ block.super }}
-    <script type="text/javascript">
-        $(document).ready(
-            function(){
-                $(".table-to-csv").click(function() {
-                    var elem = $(this);
-                    elem.css('cursor','wait');
-                    // Set data-table attribute to table id
-                    var tableId = elem.attr('data-table');
-                    var table = buildJSONTable($(tableId));
-                    postJSONTable('csv', elem, table.header, table.data)
-
-                });
-                $(".table-to-xls").click(function() {
-                    var elem = $(this);
-                    elem.css('cursor','wait');
-                    // Set data-table attribute to table id
-                    var tableId = elem.attr('data-table');
-                    var table = buildJSONTable($(tableId));
-                    postJSONTable('xls', elem, table.header, table.data)
-                });
-            }
-        );
-    </script>
-{% endblock %}
-
 {% block before_table %}
     <h1>Host services</h1>
     <hr>

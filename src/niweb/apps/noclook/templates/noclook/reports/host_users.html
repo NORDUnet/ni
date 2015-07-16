@@ -2,30 +2,6 @@
 
 {% block title %}{{ block.super }} | Host reports | Host users{% endblock %}
 
-{% block js %}
-    {{ block.super }}
-    <script type="text/javascript">
-        $(document).ready(
-                $(".table-to-csv").click(function() {
-                    var elem = $(this);
-                    elem.css('cursor','wait');
-                    // Set table id here
-                    var table = buildJSONTable($("#hosts"));
-                    postJSONTable('csv', elem, table.header, table.data)
-
-                });
-                $(".table-to-xls").click(function() {
-                    var elem = $(this);
-                    elem.css('cursor','wait');
-                    // Set table id here
-                    var table = buildJSONTable($("#hosts"));
-                    postJSONTable('xls', elem, table.header, table.data)
-                });
-            }
-        );
-    </script>
-{% endblock %}
-
 {% block before_table %}
     <h1>Host users</h1>
     <hr>
