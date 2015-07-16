@@ -17,9 +17,15 @@ $(document).ready(function() {
 
 
 
-    $("table[data-tablesort]").dataTable(
+  var $table = $("table[data-tablesort]").DataTable(
         {
             "paging": false,
-            "order": []
+            "order": [],
+            "dom": "lrti"
         });
+  if ($table) {
+    $("input[data-tablefilter]").on('keyup', function(){
+        $table.search(this.value).draw();
+    });
+  }
 });

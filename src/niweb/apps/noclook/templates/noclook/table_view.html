@@ -61,6 +61,12 @@
         {% block table_labels %}
             <span class="badge badge-important">Expired</span>
         {% endblock %}
+        {% block table_search %}
+            <div class="input-prepend">
+                <span class="add-on"><i class="icon-search"></i></span>
+                <input data-tablefilter type="search" class="input-medium" placeholder="Filter">
+            </div>
+        {% endblock %}
     </div>
     <table id="{% block table_id %}{% endblock %}" class="table table-condensed compact" data-tablesort cellspacing="1">
         <thead> 
