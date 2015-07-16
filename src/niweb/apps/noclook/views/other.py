@@ -47,7 +47,7 @@ def visualize_json(request, handle_id):
         jsonstr = arborgraph.get_json(graph_dict)
     else:
         jsonstr = '{}'
-    return HttpResponse(jsonstr, mimetype='application/json')
+    return HttpResponse(jsonstr, content_type='application/json')
 
 
 @login_required
@@ -113,7 +113,7 @@ def search_autocomplete(request):
      data:['LR','LY','LI','LT']
     }
     """
-    response = HttpResponse(mimetype='application/json')
+    response = HttpResponse(content_type='application/json')
     query = request.GET.get('query', None)
     if query:
         query = re_escape(query)
@@ -215,7 +215,7 @@ def gmaps_sites(request):
         except KeyError:
             continue
         site_list.append(site)
-    response = HttpResponse(mimetype='application/json')
+    response = HttpResponse(content_type='application/json')
     json.dump({'nodes': site_list, 'edges': []}, response)
     return response
 
@@ -279,7 +279,7 @@ def gmaps_optical_nodes(request):
             edges[item['cable']['name']]['end_points'].append(coords)
         else:
             edges[item['cable']['name']] = edge
-    response = HttpResponse(mimetype='application/json')
+    response = HttpResponse(content_type='application/json')
     json.dump({'nodes': nodes.values(), 'edges': edges.values()}, response)
     return response
 
@@ -300,7 +300,7 @@ def ip_address_lookup(request):
         ip_address = request.POST.get('ip_address', None)
         if ip_address:
             hostname = helpers.get_hostname_from_address(ip_address)
-            return HttpResponse(json.dumps(hostname), mimetype='application/json')
+            return HttpResponse(json.dumps(hostname), content_type='application/json')
     raise Http404
 
 

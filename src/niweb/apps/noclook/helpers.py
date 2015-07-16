@@ -319,7 +319,7 @@ def dicts_to_csv_response(dict_list, header=None):
     and their values.
     """
     # Create the HttpResponse object with the appropriate CSV header.
-    response = HttpResponse(mimetype='text/csv')
+    response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename=result.csv; charset=utf-8;'
     writer = UnicodeWriter(response, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
     if not header:
@@ -370,7 +370,7 @@ def dicts_to_xls_response(dict_list, header=None):
     Takes a list of dicts and returns a response object with and Excel file.
     """
     # Create the HttpResponse object with the appropriate Excel header.
-    response = HttpResponse(mimetype='application/excel')
+    response = HttpResponse(content_type='application/excel')
     response['Content-Disposition'] = 'attachment; filename=result.xls;'
 
     if not header:

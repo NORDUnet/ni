@@ -60,7 +60,7 @@ def get_node_type(request, slug):
         '''.format(node_type=node_type.type.replace(' ', '_'))
     with nc.neo4jdb.transaction as r:
         type_list = r.execute(q).fetchall()
-    return HttpResponse(json.dumps(type_list), mimetype='application/json')
+    return HttpResponse(json.dumps(type_list), content_type='application/json')
 
 
 @login_required
@@ -78,7 +78,7 @@ def get_unlocated_node_type(request, slug):
         '''.format(node_type=node_type.type.replace(' ', '_'))
     with nc.neo4jdb.transaction as r:
         type_list = r.execute(q).fetchall()
-    return HttpResponse(json.dumps(type_list), mimetype='application/json')
+    return HttpResponse(json.dumps(type_list), content_type='application/json')
 
 
 @login_required
@@ -104,7 +104,7 @@ def get_children(request, handle_id, slug=None):
         name = '%s %s' % (child.node_type.type, child.node_name)
         child_list.append((child_handle_id, name))
         child_list = sorted(child_list, key=itemgetter(1))
-    return HttpResponse(json.dumps(child_list), mimetype='application/json')
+    return HttpResponse(json.dumps(child_list), content_type='application/json')
 
 
 @login_required
