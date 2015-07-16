@@ -6,7 +6,7 @@ Created on 2012-06-11 5:48 PM
 """
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, render
 from django.template import RequestContext
 from django.http import Http404, HttpResponse
 from django.template.defaultfilters import yesno, date
@@ -34,45 +34,43 @@ def host_reports(request):
                               context_instance=RequestContext(request))
 
 
-@cache_page(60 * 5)
+#@cache_page(60 * 5)
 @login_required
 def host_users(request, host_user_name=None):
     hosts = []
     users = dict([(name, uid) for uid, name in get_node_type_tuples('Host User') if name])
     host_user_id = users.get(host_user_name, None)
     if host_user_id:
-        host_user = nc.get_node_model(nc.neo4jdb, host_user_id).data
         q = '''
             MATCH (host_user:Host_User {handle_id: {handle_id}})-[:Uses|Owns]->(host:Host)
-            RETURN collect(DISTINCT host.handle_id) as ids
+            RETURN host_user, collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
             '''
-        hosts = [{
-                'host_user': host_user,
-                'ids': nc.query_to_dict(nc.neo4jdb, q, handle_id=host_user_id)['ids']
-            }]
+        hosts = nc.query_to_list(nc.neo4jdb, q, handle_id=host_user_id)
     elif host_user_name == 'Missing':
         q = '''
             MATCH (host:Host)
             WHERE NOT (host)<-[:Uses|Owns]-()
-            RETURN collect(host.handle_id) as ids
-                '''
+            RETURN collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
+          '''
         hosts = nc.query_to_list(nc.neo4jdb, q)
-    elif host_user_name == 'All':
+    elif host_user_name == 'All' or host_user_name == None:
         q = '''
-            MATCH (host_user:Host_User)-[:Uses|Owns]->(host:Host)
-            RETURN host_user, collect(DISTINCT host.handle_id) as ids
-                '''
+            MATCH (host_user:Host_User)-[:Uses|Owns]->(host:Host) 
+            RETURN host_user, collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
+            '''
         hosts = nc.query_to_list(nc.neo4jdb, q)
     num_of_hosts = 0
     for item in hosts:
-        num_of_hosts += len(item['ids'])
+        num_of_hosts += len(item['hosts'])
+
+    urls = helpers.get_node_urls(hosts)
     return render_to_response('noclook/reports/host_users.html',
                               {'host_user_name': host_user_name, 'host_users': users, 'hosts': hosts,
-                               'num_of_hosts': num_of_hosts},
+                               'num_of_hosts': num_of_hosts, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
-@cache_page(60 * 5)
+#@cache_page(60 * 5)
 @login_required
 def host_security_class(request, status=None, form=None):
     hosts = []
@@ -81,19 +79,19 @@ def host_security_class(request, status=None, form=None):
         where_statement = 'and (has(host.security_class) or has(host.security_comment))'
     elif status == 'not-classified':
         where_statement = 'and (not(has(host.security_class)) and not(has(host.security_comment)))'
-    if status:
-        q = '''
+    q = '''
             MATCH (host:Host)
             WHERE not(host.operational_state = "Decommissioned") %s
             RETURN host
             ''' % where_statement
-        hosts = nc.query_to_list(nc.neo4jdb, q)
+    hosts = nc.query_to_list(nc.neo4jdb, q)
+    urls = helpers.get_node_urls(hosts)
     return render_to_response('noclook/reports/host_security_class.html',
-                              {'status': status, 'hosts': hosts},
+                              {'status': status, 'hosts': hosts, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
-@cache_page(60 * 5)
+#@cache_page(60 * 5)
 @login_required
 def host_services(request, status=None):
     hosts = []
@@ -104,7 +102,12 @@ def host_services(request, status=None):
                 MATCH host<-[r:Depends_on]-()
                 WHERE has(r.rogue_port)
                 RETURN host, collect(r) as ports
+                ORDER BY host.noclook_last_seen DESC
                 """
+            hosts = nc.query_to_list(nc.neo4jdb, q)
+            return render_to_response('noclook/reports/host_unauthorized_ports.html', 
+                    {'status': status, 'hosts': hosts},
+                    context_instance=RequestContext(request))
         else:
             where_statement = ''
             if status == 'locked':
@@ -115,6 +118,7 @@ def host_services(request, status=None):
                 MATCH (host:Host)
                 WHERE not(host.operational_state = "Decommissioned") %s
                 RETURN host
+                ORDER BY host.noclook_last_seen DESC
                 """ % where_statement
         hosts = nc.query_to_list(nc.neo4jdb, q)
     return render_to_response('noclook/reports/host_services.html',

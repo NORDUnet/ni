@@ -33,21 +33,9 @@
     <h1>Host services</h1>
     <hr>
     <ul class="nav nav-pills">
-        {% if status == "unauthorized-ports" %}
             <li class="active"><a href="/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
-        {% else %}
-            <li class=""><a href="/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
-        {% endif %}
-        {% if status == "locked" %}
-            <li class="active"><a href="/reports/hosts/host-services/locked/">Locked</a></li>
-        {% else %}
             <li class=""><a href="/reports/hosts/host-services/locked/">Locked</a></li>
-        {% endif %}
-        {% if status == "not-locked" %}
-            <li class="active"><a href="/reports/hosts/host-services/not-locked/">Not locked</a></li>
-        {% else %}
             <li class=""><a href="/reports/hosts/host-services/not-locked/">Not locked</a></li>
-        {% endif %}
     </ul>
     {% if hosts %}
         <h3>Hosts: {{ hosts|length }}</h3>
@@ -58,15 +46,19 @@
             <span class="table-to-xls btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> Excel</span>
 {% endblock %}
 {% block table_head %}
-    <th>Host</th><th>Description</th><th>Last seen</th>
+    <th>Host</th><th>Host service</th><th>Protocol</th><th>Port</th><th>Last seen</th>
 {% endblock %}
 {% block table_body %}
-                    {% load noclook_tags %}
-                    {% for item in hosts %}
-                        <tr>
-                            <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
-                            <td>{{ item.host.description|default:"" }}</td>
-                            {% noclook_last_seen_as_td item.host.noclook_last_seen %}
-                        </tr>
-                    {% endfor %}
+    {% load noclook_tags %}
+    {% for item in hosts %}
+        {% for port in item.ports %}
+            <tr>
+                <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
+                <td><a href="{% noclook_node_to_url port.start %}">{{ port.name }}</a></td>
+                <td>{{ port.protocol }}</td>
+                <td>{{ port.port }}</td>
+                {% noclook_last_seen_as_td port.noclook_last_seen %}
+            </tr>
+        {% endfor %}
+    {% endfor %}
 {% endblock %}
