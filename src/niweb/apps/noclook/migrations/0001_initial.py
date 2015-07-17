@@ -41,6 +41,7 @@ class Migration(migrations.Migration):
                 ('reserve_message', models.CharField(max_length=512, null=True, blank=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('reserver', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True)),
+                ('site', models.ForeignKey(blank=True, to='noclook.NodeHandle', null=True)),
             ],
             options={
                 'abstract': False,
