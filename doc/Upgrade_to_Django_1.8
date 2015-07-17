@@ -10,7 +10,7 @@ $ python manage.py shell
 >>> for ct in ContentType.objects.all():
 >>>     print ct.pk, ct.name
 
-Look in the resulting list and delete the first comment and commentflag.
+Look in the resulting list and delete the first comment and commentflag (and maybe south).
 
 >>> ContentType.objects.get(pk=X).delete()
 
