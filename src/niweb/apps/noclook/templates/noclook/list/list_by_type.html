@@ -1,35 +1,14 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} {{node_type}} list{% endblock %}
 
-{% block js %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#nodes").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
-{% block content %}
-{{ block.super }}
+{% block before_table %}
     <h1>{{node_type}}{% if node_type.type == "Switch" %}es{% else %}s{% endif %}</h1>
-    <div class="pull-right">
-        <span class="badge badge-important">Expired</span>
-    </div>
-    <table id="nodes" class="tablesorter" cellspacing="1">
-        <thead>
-            <th>Name</th>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_head %}
+    <th>Name</th>
+{% endblock %}
+{% block table_body %}
             {% load noclook_tags %}
             {% for item in node_list %}
                 {% noclook_has_expired item.node as expired %}
@@ -41,6 +20,4 @@ $(document).ready(
                     <td><a href="{% noclook_node_to_url item.node.handle_id  %}">{{ item.node.name }}</a></td>
                 </tr>
             {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}

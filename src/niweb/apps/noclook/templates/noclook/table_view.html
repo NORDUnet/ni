@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block js %}
+    {{ block.super }}
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tabletojson.min.js"></script>
+    <script type="text/javascript">
+        // Get CSV or Excel representation of the table
+        function postJSONTable(format, elem, header, table) {
+            $('#form-file-format').val(format);
+            $('#form-json-header').val(header);
+            $('#form-json-data').val(table);
+            $('#json-table-form').submit();
+            elem.css('cursor','pointer');
+        }
+
+        function buildJSONTable(table) {
+            var data = JSON.stringify(table.tableToJSON());
+            // Gather headings
+            var headings = [];
+            table.find("tr > th").each(function(colIndex, col) {
+                if($(col).data("column-name") !== undefined && $(col).data("column-name") != null) {
+                    headings[colIndex] = $(col).data("column-name");
+                } else {
+                    headings[colIndex] = $.trim($(col).text());
+                }
+            });
+            var header = JSON.stringify(headings);
+            return {header: header, data: data}
+        }
+    </script>
+    {% block js_table_covert %}
+    <script type="text/javascript">
+        $(document).ready(
+            function(){
+                $("span.table-to-csv").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set data-table attribute to table id
+                    var table = buildJSONTable($("table[data-tablesort]"));
+                    postJSONTable('csv', elem, table.header, table.data)
+
+                });
+                $("span.table-to-xls").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set data-table attribute to table id
+                    var table = buildJSONTable($("table[data-tablesort]"));
+                    postJSONTable('xls', elem, table.header, table.data)
+                });
+            }
+        );
+    </script>
+    {% endblock %}
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    
+    {% block before_table %}{% endblock %}
+    <div class="pull-right">
+        {% block table_labels %}
+            <span class="badge badge-important">Expired</span>
+        {% endblock %}
+        {% block table_search %}
+            <div class="input-prepend">
+                <span class="add-on"><i class="icon-search"></i></span>
+                <input data-tablefilter type="search" class="input-medium" placeholder="Filter">
+            </div>
+        {% endblock %}
+    </div>
+    <table id="{% block table_id %}{% endblock %}" class="table table-condensed compact" data-tablesort cellspacing="1">
+        <thead> 
+            <tr>
+                {% block table_head %}{% endblock %}
+            </tr>
+        </thead>
+        <tbody>
+            {% block table_body %}{% endblock %}
+        </tbody>
+    </table>
+    {% block after_table %}{% endblock %}
+    <!-- Hidden table to post json data to download table as a file -->
+    <div class="hidden">
+        <form id="json-table-form" action="/download/tabletofile/" method="post">{% csrf_token %}
+            <input id="form-file-format" name="format" type="text">
+            <input id="form-json-header" name="header" type="text">
+            <input id="form-json-data" name="data" type="text">
+            <button type="submit"></button>
+        </form>
+    </div>
+{% endblock %}

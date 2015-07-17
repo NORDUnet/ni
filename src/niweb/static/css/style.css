@@ -172,12 +172,19 @@ li.autocomplete {
     list-style: none;
 }
 
+.dataTables_wrapper {
+    padding-top: 2px;
+} 
 /* Tablesorter tweeks */
 table.tablesorter {
   border-bottom: 1px solid #ccc;
 }
 table.tablesorter thead .header {
  padding-right: 15px;
+}
+
+td.date {
+  min-width: 140px;
 }
 
 /* List color coding */

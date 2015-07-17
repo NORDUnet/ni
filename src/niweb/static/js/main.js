@@ -14,4 +14,18 @@ $(document).ready(function() {
     var target = $(this).data("async-load-target");
     async_load(url,this,target);
   });
+
+
+
+  var $table = $("table[data-tablesort]").DataTable(
+        {
+            "paging": false,
+            "order": [],
+            "dom": "lrti"
+        });
+  if ($table) {
+    $("input[data-tablefilter]").on('keyup', function(){
+        $table.search(this.value).draw();
+    });
+  }
 });

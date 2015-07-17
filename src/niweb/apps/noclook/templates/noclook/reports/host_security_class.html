@@ -1,49 +1,12 @@
-{% extends "noclook/reports/base_report.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} | Host reports | Host security class{% endblock %}
 
-{% block js %}
-    {{ block.super }}
-    <script type="text/javascript">
-        $(document).ready(
-            function(){
-                $("#hosts").tablesorter(
-                    {
-                        sortList: [[0,0], [1,0]],
-                        headers:
-                        {
-                            3 : { sorter: "isoDate" }
-                        },
-                        widthFixed: true,
-                        widgets: ['zebra']
-                    });
-
-                $(".table-to-csv").click(function() {
-                    var elem = $(this);
-                    elem.css('cursor','wait');
-                    // Set table id here
-                    var table = buildJSONTable($("#hosts"));
-                    postJSONTable('csv', elem, table.header, table.data)
-
-                });
-                $(".table-to-xls").click(function() {
-                    var elem = $(this);
-                    elem.css('cursor','wait');
-                    // Set table id here
-                    var table = buildJSONTable($("#hosts"));
-                    postJSONTable('xls', elem, table.header, table.data)
-                });
-            }
-        );
-    </script>
-{% endblock %}
-
-{% block content %}
-    {{ block.super }}
+{% block before_table %}
     <h1>Host security class</h1>
     <hr>
     <ul class="nav nav-pills">
-        {% if status == "all" %}
+        {% if status == "all" or status == None %}
             <li class="active"><a href="/reports/hosts/host-security-class/all/">All</a></li>
         {% else %}
             <li class=""><a href="/reports/hosts/host-security-class/all/">All</a></li>
@@ -59,28 +22,24 @@
             <li class=""><a href="/reports/hosts/host-security-class/not-classified/">Not Classified</a></li>
         {% endif %}
     </ul>
-    {% if hosts %}
-        <h3>Hosts: {{ hosts|length }}</h3>
-        <p class="pull-right"><span class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</span> <span class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</span></p>
-        <table id="hosts" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
-                    <th>Host</th><th>Description</th><th>Class</th><th>Comment</th><th>Last seen</th>
-                </tr>
-            </thead>
-            <tbody>
+    <h3>Hosts: {{ hosts|length }}</h3>
+{% endblock %}
+{% block table_labels %}
+        <span class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</span>
+        <span class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</span>
+{% endblock %}
+{% block table_head %}
+    <th>Host</th><th>Description</th><th>Class</th><th>Comment</th><th>Last seen</th>
+{% endblock %}
+{% block table_body %}
                 {% load noclook_tags %}
                 {% for item in hosts %}
-
                 <tr>
                     <td><a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a></td>
                     <td>{{ item.host.description|default:"" }}</td>
                     <td>{{ item.host.security_class|default:"" }}</td>
                     <td>{{ item.host.security_comment|default:"" }}</td>
-                    <td>{% noclook_last_seen_to_dt item.host.noclook_last_seen as last_seen %}{{ last_seen|date:"D d M Y" }}</td>
+                    {% noclook_last_seen_as_td item.host.noclook_last_seen %}
                 </tr>
                 {% endfor %}
-            </tbody>
-        </table>
-    {% endif %}
 {% endblock %}

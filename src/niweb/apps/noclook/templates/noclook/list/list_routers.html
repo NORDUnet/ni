@@ -1,37 +1,14 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} Router list{% endblock %}
 
-{% block js %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#routers").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
-{% block content %}
-{{ block.super }}
+{% block before_table %}
     <h1>Routers</h1>
-    <div class="pull-right">
-        <span class="badge badge-important">Expired</span>
-    </div>
-    <table id="routers" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
-                <th>Router</th><th>Model</th><th>JUNOS version</th><th>Operational state</th>
-            </tr>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_head %}
+     <th>Router</th><th>Model</th><th>JUNOS version</th><th>Operational state</th>
+{% endblock %}
+{% block table_body %}
             {% load noclook_tags %}
             {% for item in router_list %}
                 {% noclook_has_expired item.router as expired %}
@@ -46,6 +23,4 @@ $(document).ready(
                         <td>{{ item.operational_state|default:"Unknown" }}</td>
                     </tr>
             {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}

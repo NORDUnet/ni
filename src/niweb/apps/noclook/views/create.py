@@ -442,10 +442,14 @@ def reserve_id_sequence(request, slug=None):
                 unique_id_generator,
                 unique_id_collection,
                 form.cleaned_data['reserve_message'],
-                request.user
+                request.user,
+                form.cleaned_data['site'] 
             )
             return render_to_response('noclook/edit/reserve_id.html', {'reserved_list': reserved_list, 'slug': slug},
-                                      context_instance=RequestContext(request))
+                                  context_instance=RequestContext(request))
+        else:
+            return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},
+                                  context_instance=RequestContext(request))
     else:
         form = forms.ReserveIdForm()
         return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},

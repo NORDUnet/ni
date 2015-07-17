@@ -1,32 +1,14 @@
-{% extends "base.html" %}
+{% extends "noclook/table_view.html" %}
 
 {% block title %}{{ block.super }} ODF list{% endblock %}
 
-{% block js %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#nodes").tablesorter(
-        {
-            sortList: [[0,0],[1,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
-{% block content %}
-{{ block.super }}
+{% block before_table %}
     <h1>ODFs</h1>
-    <table id="nodes" class="tablesorter" cellspacing="1">
-        <thead>
+{% endblock %}
+{% block table_head %}
             <th>Location</th><th>Name</th>
-        </thead>
-        <tbody>
+{% endblock %}
+{% block table_body %}
             {% load noclook_tags %}
             {% for item in odf_list %}
                 <tr>
@@ -34,6 +16,4 @@ $(document).ready(
                     <td><a class="handle" href="{% noclook_node_to_url item.odf.handle_id %}">{{ item.odf.name }}</a></td>
                 </tr>
             {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}

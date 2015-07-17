@@ -62,6 +62,18 @@ def noclook_last_seen_to_dt(noclook_last_seen):
         dt = None
     return dt
 
+@register.inclusion_tag('noclook/table_date_column.html')
+def noclook_last_seen_as_td(date):
+    """
+    Returns noclook_last_seen property (ex. 2011-11-01T14:37:13.713434) as a
+    table column.
+    """
+    if type(date) is datetime:
+        last_seen = date    
+    else:
+        last_seen = noclook_last_seen_to_dt(date)
+    return {'last_seen': last_seen}
+
 
 @register.assignment_tag
 def timestamp_to_td(seconds):

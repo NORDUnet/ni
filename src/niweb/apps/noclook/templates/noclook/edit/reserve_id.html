@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
 
 {% block title %}{{ block.super }} Reserve {{ slug|capfirst }} IDs{% endblock %}
 
@@ -62,23 +63,15 @@
     {% if slug and not reserved_list %}
         <h1>Reserve {{ slug|capfirst }} IDs</h1>
         <form action="" id="reserve-form" method="post">{% csrf_token %}
-            {% if form.errors %}
-                <div class="alert alert-error">
-                    <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
-                    Please resubmit the form after making the following changes:
-                    {{ form.errors }}
-                </div>
-            {% endif %}
                  <div class="well span7">
                      <div class="span5">
                          <h3>Amount of IDs</h3>
-                        <input type="text" class="input-mini" name="amount" value="1" id="id_amount"><br>
+                        {{ form.amount | as_crispy_field }}
                         <div id="slider"></div>
                      </div>
                      <div class="span5">
-                         <h3>Reserve message</h3>
-                         <input type="text" class="input-xxlarge" name="reserve_message" id="id_reserve_message">
-                        <span class="help-block">{{ form.reserve_message.help_text }}</span>
+                        {{ form.reserve_message | as_crispy_field }} 
+                        {{ form.site | as_crispy_field }}
                      </div>
                 </div>
             <br>
@@ -103,11 +96,11 @@
                 {% for item in reserved_list %}
                     {% if item.error_message != '' %}
                         <tr class="error">
-                            <td>{{ item.id }}</td><td>{{ item.reserve_message }}</td><td>{{ item.error_message }}</td>
+                            <td>{{ item.unique_id }}</td><td>{{ item.reserve_message }}</td><td>{{ item.error_message }}</td>
                         </tr>
                     {% else %}
                         <tr class="success">
-                            <td>{{ item.id }}</td><td>{{ item.reserve_message }}</td><td></td>
+                            <td>{{ item.unique_id }}</td><td>{{ item.reserve_message }}</td><td></td>
                         </tr>
                     {% endif %}
                 {% endfor %}

@@ -1,0 +1,54 @@
+{% extends "noclook/table_view.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+{% load url_tags %}
+{% block title %}{{ block.super }} {{ organisation }} reserved ID list{% endblock %}
+
+{% block before_table %}
+  <h1>{{ organisation }} unique IDs</h1>
+  <div class="well">
+    <form action="" method="get" class="form-horizontal">
+      {{ search_form | crispy }}
+      <div class="controls">
+        <input type="submit" class="btn btn-primary" value="Search" />
+        <a href="." class="btn">Show all</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+{% block table_labels %}
+          <a href="{% export_as "csv" %}" class="table-to-csv btn btn-link"><i class="icon-download"></i> CSV</a> 
+          <a href="{% export_as "xls" %}" class="table-to-xls btn btn-link"><i class="icon-download"></i> Excel</a>
+{% endblock %}
+{% block table_head %}
+    <th>ID</th><th>Reserved</th><th>Reserve message</th><th>Site</th><th>Reserver</th><th>Created</th>
+{% endblock %}
+{% block table_body %}
+                {% for id in id_list %}
+                    <tr>
+                        <td>{{ id.unique_id }}</td>
+                        <td>{{ id.reserved }}</td>
+                        <td>{{ id.reserve_message|default_if_none:"" }}</td>
+                        <td>{{ id.site.node_name|default_if_none:"" }}</td>
+                        <td>{{ id.reserver|default_if_none:"" }}</td>
+                        {% noclook_last_seen_as_td id.created %}
+                    </tr>
+                {% endfor %}
+{% endblock %}
+{% block after_table %}
+        <div>
+            <ul class="pager">
+            {% if id_list.has_previous %}
+                <li><a href="?{% paginate_path id_list.previous_page_number %}">previous</a></li>
+            {% endif %}
+                <li>
+                    Page {{ id_list.number }} of {{ id_list.paginator.num_pages }}.
+                </li>
+            {% if id_list.has_next %}
+                <li>
+                    <a href="?{% paginate_path id_list.next_page_number %}">next</a>
+                </li>
+            {% endif %}
+            </ul>
+        </div>
+{% endblock %}
