@@ -13,3 +13,4 @@ wsgiref==0.1.2
 xlwt==0.7.5
 django-crispy-forms==1.4.0
 django-contrib-comments==1.6.1
+django-dotenv==1.3
