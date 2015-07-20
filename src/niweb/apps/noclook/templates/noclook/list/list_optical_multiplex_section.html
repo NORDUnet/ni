@@ -13,14 +13,14 @@
 {% block table_head %}
     <th>Optical Multiplex Section</th><th>Description</th><th>Depends on</th>
 {% endblock %}
-{% block table_bodt %}
+{% block table_body %}
         {% load noclook_tags %}
         {% for optical_multiplex_section in optical_multiplex_section_list %}
-            {% if optical_link.data.operational_state == "Decommissioned" %}
+            {% if optical_multiplex_section.data.operational_state == "Decommissioned" %}
                 <tr class="decommissioned">
-                    {% elif optical_link.data.operational_state == "Reserved" %}
+                    {% elif optical_multiplex_section.data.operational_state == "Reserved" %}
                 <tr class="reserved">
-                    {% elif optical_link.data.operational_state == "Testing" %}
+                    {% elif optical_multiplex_section.data.operational_state == "Testing" %}
                 <tr class="testing">
                     {% else %}
                 <tr>
