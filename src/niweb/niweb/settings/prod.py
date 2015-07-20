@@ -13,6 +13,9 @@ from common import *
 dotenv.read_dotenv(join(SITE_ROOT, '.env'))
 
 ########## PROJECT CONFIGURATION
+# Neo4j settings
+NEO4J_RESOURCE_URI = environ.get('NEO4J_RESOURCE_URI', 'http://localhost:7474')
+NEO4J_MAX_DATA_AGE = environ.get('NEO4J_MAX_DATA_AGE', '24')  # hours
 # To be able to use the report mailing functionality you need to set a to address and a key.
 REPORTS_TO = environ['REPORTS_TO'].split()
 REPORTS_CC = environ.get('REPORTS_CC', '').split()     # Optional
