@@ -77,6 +77,7 @@ INSTALLED_APPS = INSTALLED_APPS + (
 ########## APP CONFIGURATION
 
 ########## EMAIL CONFIGURATION
+DEFAULT_FROM_EMAIL = environ['DEFAULT_FROM_EMAIL']
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
