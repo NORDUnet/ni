@@ -17,7 +17,7 @@ class HostReportForm(forms.Form):
     cut_off = forms.ChoiceField(
             choices=[('1','Present'), ('14', 'Last 14 days'),('All','All')],
             required=False,
-            initial='Present',)
+            initial='All',)
 
     def to_where(self, host="host", additional=None):
         q = ""

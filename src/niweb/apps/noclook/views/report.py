@@ -41,7 +41,7 @@ def host_users(request, host_user_name=None):
     hosts = []
     users = dict([(name, uid) for uid, name in get_node_type_tuples('Host User') if name])
     host_user_id = users.get(host_user_name, None)
-    form = HostReportForm(request.GET or None)
+    form = HostReportForm(request.GET or {'cut_off': '1'})
 
     if host_user_id:
         q = '''
