@@ -25,7 +25,7 @@
             <li class=""><a href="/reports/hosts/host-users/Missing/">Hosts missing user</a></li>
         {% endif %}
     </ul>
-    <h3>Hosts for {{ host_user_name }}: {{ num_of_hosts }}</h3>
+    <h3>Hosts for {{ host_user_name|default:"All" }}: {{ num_of_hosts }}</h3>
     <div class="well">
         <form action="" method="get" class="form-horizontal">
         {{ form | crispy }}
