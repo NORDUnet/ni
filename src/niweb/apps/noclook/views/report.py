@@ -22,6 +22,7 @@ import json
 from decimal import Decimal, ROUND_DOWN
 
 from apps.noclook.forms import get_node_type_tuples, SearchIdForm
+from apps.noclook.forms.reports import HostReportForm
 from apps.noclook.models import NordunetUniqueId
 from apps.noclook.templatetags.noclook_tags import timestamp_to_td
 from apps.noclook import helpers
@@ -40,6 +41,8 @@ def host_users(request, host_user_name=None):
     hosts = []
     users = dict([(name, uid) for uid, name in get_node_type_tuples('Host User') if name])
     host_user_id = users.get(host_user_name, None)
+    form = HostReportForm(request.GET or None)
+
     if host_user_id:
         q = '''
             MATCH (host_user:Host_User {handle_id: {handle_id}})-[:Uses|Owns]->(host:Host)
@@ -66,7 +69,7 @@ def host_users(request, host_user_name=None):
     urls = helpers.get_node_urls(hosts)
     return render_to_response('noclook/reports/host_users.html',
                               {'host_user_name': host_user_name, 'host_users': users, 'hosts': hosts,
-                               'num_of_hosts': num_of_hosts, 'urls': urls},
+                               'num_of_hosts': num_of_hosts, 'urls': urls, 'form': form},
                               context_instance=RequestContext(request))
 
 

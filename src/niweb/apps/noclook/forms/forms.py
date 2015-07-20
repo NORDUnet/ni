@@ -4,8 +4,8 @@ from django.forms.util import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
-from .models import NodeHandle, UniqueIdGenerator, NordunetUniqueId
-from . import unique_ids
+from apps.noclook.models import NodeHandle, UniqueIdGenerator, NordunetUniqueId
+from .. import unique_ids
 import norduniclient as nc
 
 # We should move this kind of data to the SQL database.
