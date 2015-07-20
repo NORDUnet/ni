@@ -1,6 +1,6 @@
 # Neo4j settings
-NEO4J_RESOURCE_URI=
-NEO4J_MAX_DATA_AGE=
+NEO4J_RESOURCE_URI=http://localhost:7474
+NEO4J_MAX_DATA_AGE=24
 
 # Report settings
 REPORTS_TO=
@@ -10,19 +10,19 @@ EXTRA_REPORT_TO=
 REPORT_KEY=
 
 # Database settings
-DB_ENGINE=
-DB_NAME=
-DB_USER=
+DB_ENGINE=django.db.backends.postgresql_psycopg2
+DB_NAME=norduni
+DB_USER=ni
 DB_PASSWORD=
-DB_HOST=
-DB_PORT=
+DB_HOST=localhost
+DB_PORT=5432
 
 # Cache settings
-CACHE_BACKEND=
-CACHE_LOCATION=
+CACHE_BACKEND=django.core.cache.backends.filebased.FileBasedCache
+CACHE_LOCATION=/tmp/django_cache
 
 # General settings
-LOGIN_URL=
+LOGIN_URL=/saml2/login/
 ALLOWED_HOSTS=
 SENTRY_DSN=
 EMAIL_HOST=
