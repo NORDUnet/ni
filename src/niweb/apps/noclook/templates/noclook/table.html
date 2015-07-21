@@ -1,4 +1,4 @@
-<table {% if id %}id="{{id}}" {% endif %}class="table table-condensed compact" data-tablesort cellspacing="1">
+<table {% if id %}id="{{id}}" {% endif %}class="table table-condensed compact" data-order="{{ order|default:"[[ 0, &quot;asc&quot; ]]" }}"data-tablesort cellspacing="1">
     <thead> 
         <tr>
             {{ th }}

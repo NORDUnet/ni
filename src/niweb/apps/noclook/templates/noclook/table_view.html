@@ -68,7 +68,7 @@
             </div>
         {% endblock %}
     </div>
-    <table id="{% block table_id %}{% endblock %}" class="table table-condensed compact" data-tablesort cellspacing="1">
+    <table id="{% block table_id %}{% endblock %}" data-order="{% block table_order %}[[0,&quot;asc&quot;]]{% endblock %}" class="table table-condensed compact" data-tablesort cellspacing="1">
         <thead> 
             <tr>
                 {% block table_head %}{% endblock %}
