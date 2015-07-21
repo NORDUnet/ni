@@ -2,33 +2,14 @@
 
 {% block title %}{{ block.super }} | User profiles{% endblock %}
 
-{% block js %}
-    <script type="text/javascript">
-        $(document).ready(
-                function(){
-                    $("#profiles").tablesorter(
-                            {
-                                sortList: [[0,0]],
-                                headers:
-                                {},
-                                widthFixed: true,
-                                widgets: ['zebra']
-                            });
-                }
-        );
-    </script>
-{% endblock %}
-
 {% block content %}
+    {% load noclook_tags %}
     {{ block.super }}
     <h1>User profiles</h1>
-    <table id="profiles" class="tablesorter" cellspacing="1">
-        <thead>
-        <tr>
+    {% blockvar th %}
             <th>Username</th><th>Name</th><th>Can edit?</th>
-        </tr>
-        </thead>
-        <tbody>
+    {% endblockvar %}
+    {% blockvar tbody %}
         {% for profile in profile_list %}
             <tr>
                 <td><a href="{{ profile.get_absolute_url }}">{{ profile.user.username }}</a></td>
@@ -40,6 +21,6 @@
                 {% endif %}
             </tr>
         {% endfor %}
-        </tbody>
-    </table>
+    {% endblockvar %}
+    {% table th tbody id="profiles" %}
 {% endblock %}
