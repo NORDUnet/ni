@@ -1,6 +1,6 @@
 from datetime import datetime
 from django import forms
-from django.forms.util import ErrorDict, ErrorList, ValidationError
+from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json

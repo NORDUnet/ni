@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.forms.util import ErrorDict, ErrorList
+from django.forms.utils import ErrorDict, ErrorList
 from apps.noclook import forms
 from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
