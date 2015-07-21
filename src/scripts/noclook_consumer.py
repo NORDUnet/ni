@@ -35,7 +35,7 @@ base_path = '../niweb/'
 sys.path.append(os.path.abspath(base_path))
 niweb_path = os.path.join(base_path, 'niweb')
 sys.path.append(os.path.abspath(niweb_path))
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
 import django
 from django.conf import settings as django_settings
 from apps.noclook.models import NodeType, NodeHandle
