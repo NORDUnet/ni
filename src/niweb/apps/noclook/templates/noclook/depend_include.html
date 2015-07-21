@@ -1,122 +1,22 @@
 <script type="text/javascript">
     $(document).ready(
         function(){
-            $("#dependIn").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#servicesIn").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#pathsIn").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#omsIn").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#linksIn").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#dependOut").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#servicesOut").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#pathsOut").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#omsOut").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#linksOut").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
-            $("#cablesOut").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers: {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-                });
             $('#inServiceCopy').popover();
             $('#outServiceCopy').popover();
             // Incoming dependencies table
             var depTabsIn = $('#depTabsIn');
             var depsTabInLink = depTabsIn.find('a:first');
             depsTabInLink.tab('show');
-            var inTable = $(depsTabInLink.attr('href') + " table");
-            if (inTable.length) {
-                inTable.data("tablesorter").widgets = ["zebra"];
-                inTable.trigger('applyWidgets');
-            }
-            depTabsIn.find('a').click(function (e) {
-                e.preventDefault();
-                $(this).tab('show');
-                var table = $($(this).attr('href') + " table");
-                table.data("tablesorter").widgets = ["zebra"];
-                table.trigger('applyWidgets');
-            });
             // Outgoing dependencies table
             var depTabsOut = $('#depTabsOut');
             var depsTabOutLink = depTabsOut.find('a:first');
             depsTabOutLink.tab('show');
-            var outTable = $(depsTabOutLink.attr('href') + " table");
-            if (outTable.length) {
-                outTable.data("tablesorter").widgets = ["zebra"];
-                outTable.trigger('applyWidgets');
-            }
-            depTabsOut.find('a').click(function (e) {
-                e.preventDefault();
-                $(this).tab('show');
-                var table = $($(this).attr('href') + " table");
-                table.data("tablesorter").widgets = ["zebra"];
-                table.trigger('applyWidgets');
-            });
         }
     );
 </script>
 
 {% load noclook_tags %}
+
 {% if dependent %}
     <div class="section">
         <h3>{{ node_handle.node_type }} is used by</h3>
@@ -144,43 +44,36 @@
         </ul>
         <div class="tab-content">
             {% if dependent.direct %}
-                <div class="tab-pane active" id="directTabIn">
-                    <table id="dependIn" class="tablesorter" cellspacing="1">
-                        <thead>
+                {% blockvar th %}
+                    <th>Name</th><th>Type</th><th>Description</th>
+                {% endblockvar %}
+                {% blockvar tbody %}
+                    {% for item in dependent.direct %}
+                        {% if item.operational_state == "Decommissioned" %}
+                            <tr class="decommissioned">
+                        {% elif item.operational_state == "Reserved" %}
+                            <tr class="reserved">
+                        {% elif item.operational_state == "Testing" %}
+                            <tr class="testing">
+                        {% else %}
                             <tr>
-                                <th>Name</th><th>Type</th><th>Description</th>
+                        {% endif %}
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                {% noclook_get_type item.handle_id as node_type %}
+                                <td>{{ node_type }}</td>
+                                <td>{{ item.description }}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                        {% for item in dependent.direct %}
-                            {% if item.operational_state == "Decommissioned" %}
-                                <tr class="decommissioned">
-                            {% elif item.operational_state == "Reserved" %}
-                                <tr class="reserved">
-                            {% elif item.operational_state == "Testing" %}
-                                <tr class="testing">
-                            {% else %}
-                                <tr>
-                            {% endif %}
-                                    <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    {% noclook_get_type item.handle_id as node_type %}
-                                    <td>{{ node_type }}</td>
-                                    <td>{{ item.description }}</td>
-                                </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    {% endfor %}
+                {% endblockvar %}
+                <div class="tab-pane active" id="directTabIn">
+                    {% table th tbody id="dependIn" %}
                 </div>
             {% endif %}
             {% if dependent.services %}
-                <div class="tab-pane" id="servicesTabIn">
-                    <table id="servicesIn" class="tablesorter" cellspacing="1">
-                        <thead>
-                            <tr>
-                                <th>Name</th><th>Type</th><th>Description</th><th>Users</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                {% blockvar th %}
+                    <th>Name</th><th>Type</th><th>Description</th><th>Users</th>
+                {% endblockvar %}
+                {% blockvar tbody %}
                         {% for item in dependent.services %}
                             {% if item.operational_state == "Decommissioned" %}
                                 <tr class="decommissioned">
@@ -202,78 +95,69 @@
                                 </td>
                             </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                {% endblockvar %}
+                <div class="tab-pane" id="servicesTabIn">
+                    {% table th tbody id="servicesIn" %}
                     <a id="inServiceCopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for item in dependent.services %}{{ item.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
                 </div>
             {% endif %}
             {% if dependent.paths %}
-                <div class="tab-pane" id="pathsTabIn">
-                    <table id="pathsIn" class="tablesorter" cellspacing="1">
-                        <thead>
+                {% blockvar th %}
+                        <th>Name</th><th>Type</th><th>Description</th>
+                {% endblockvar %}
+                {% blockvar tbody %}
+                    {% for item in dependent.paths %}
+                        {% if item.operational_state == "Decommissioned" %}
+                            <tr class="decommissioned">
+                        {% elif item.operational_state == "Reserved" %}
+                            <tr class="reserved">
+                        {% elif item.operational_state == "Testing" %}
+                            <tr class="testing">
+                        {% else %}
                             <tr>
-                                <th>Name</th><th>Type</th><th>Description</th>
+                        {% endif %}
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                {% noclook_get_type item.handle_id as node_type %}
+                                <td>{{ node_type }}</td>
+                                <td>{{ item.description }}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                        {% for item in dependent.paths %}
-                            {% if item.operational_state == "Decommissioned" %}
-                                <tr class="decommissioned">
-                            {% elif item.operational_state == "Reserved" %}
-                                <tr class="reserved">
-                            {% elif item.operational_state == "Testing" %}
-                                <tr class="testing">
-                            {% else %}
-                                <tr>
-                            {% endif %}
-                                    <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    {% noclook_get_type item.handle_id as node_type %}
-                                    <td>{{ node_type }}</td>
-                                    <td>{{ item.description }}</td>
-                                </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    {% endfor %}
+                {% endblockvar %}
+                <div class="tab-pane" id="pathsTabIn">
+                    {% table th tbody id="pathsIn" %}
                 </div>
             {% endif %}
             {% if dependent.oms %}
-                <div class="tab-pane" id="omsTabIn">
-                    <table id="omsIn" class="tablesorter" cellspacing="1">
-                        <thead>
+                {% blockvar th %}
+                    <th>Name</th><th>Type</th><th>Description</th>
+                {% endblockvar %}
+                {% blockvar tbody %}
+                    {% for item in dependent.oms %}
+                        {% if item.operational_state == "Decommissioned" %}
+                            <tr class="decommissioned">
+                        {% elif item.operational_state == "Reserved" %}
+                            <tr class="reserved">
+                        {% elif item.operational_state == "Testing" %}
+                            <tr class="testing">
+                        {% else %}
                             <tr>
-                                <th>Name</th><th>Type</th><th>Description</th>
+                        {% endif %}
+                                <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
+                                {% noclook_get_type item.handle_id as node_type %}
+                                <td>{{ node_type }}</td>
+                                <td>{{ item.description }}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                        {% for item in dependent.oms %}
-                            {% if item.operational_state == "Decommissioned" %}
-                                <tr class="decommissioned">
-                            {% elif item.operational_state == "Reserved" %}
-                                <tr class="reserved">
-                            {% elif item.operational_state == "Testing" %}
-                                <tr class="testing">
-                            {% else %}
-                                <tr>
-                            {% endif %}
-                                    <td><a href="{% noclook_node_to_url item.handle_id %}">{{ item.name }}</a></td>
-                                    {% noclook_get_type item.handle_id as node_type %}
-                                    <td>{{ node_type }}</td>
-                                    <td>{{ item.description }}</td>
-                                </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    {% endfor %}
+                {% endblockvar %}
+                <div class="tab-pane" id="omsTabIn">
+                    {% table th tbody id="omsIn" %}
                 </div>
             {% endif %}
             {% if dependent.links %}
-                <div class="tab-pane" id="linksTabIn">
-                    <table id="linksIn" class="tablesorter" cellspacing="1">
-                        <thead>
-                            <tr>
-                                <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                {% blockvar th %}
+                    <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
+                {% endblockvar %}
+                {% blockvar tbody %}
                         {% for item in dependent.links %}
                             {% if item.operational_state == "Decommissioned" %}
                                 <tr class="decommissioned">
@@ -296,8 +180,9 @@
                                 </td>
                             </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                {% endblockvar %}
+                <div class="tab-pane" id="linksTabIn">
+                    {% table th tbody id="linksIn" %}
                 </div>
             {% endif %}
         </div>
@@ -335,14 +220,10 @@
 
         <div class="tab-content">
             {% if dependencies.direct %}
-                <div class="tab-pane active" id="directTabOut">
-                    <table id="dependOut" class="tablesorter" cellspacing="1">
-                        <thead>
-                            <tr>
+                {% blockvar th %}
                                 <th>Name</th><th>Type</th><th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                {% endblockvar %}
+                {% blockvar tbody %}
                         {% for item in dependencies.direct %}
                             {% if item.operational_state == "Decommissioned" %}
                                 <tr class="decommissioned">
@@ -364,19 +245,17 @@
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                {% endblockvar %}
+
+                <div class="tab-pane active" id="directTabOut">
+                    {% table th tbody id="dependOut" %}
                 </div>
             {% endif %}
             {% if dependencies.services %}
-                <div class="tab-pane" id="servicesTabOut">
-                    <table id="servicesOut" class="tablesorter" cellspacing="1">
-                        <thead>
-                            <tr>
+                {% blockvar th %}
                                 <th>Name</th><th>Type</th><th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                {% endblockvar %}
+                {% blockvar tbody %}
                         {% for item in dependencies.services %}
                             {% if item.operational_state == "Decommissioned" %}
                                 <tr class="decommissioned">
@@ -392,20 +271,17 @@
                                 <td>{{ item.description }}</td>
                             </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                {% endblockvar %}
+                <div class="tab-pane" id="servicesTabOut">
+                    {% table th tbody id="servicesOut" %}
                     <a id="outServiceCopy" class="btn btn-mini pull-right" rel="popover" data-placement="top" data-content="{% for item in dependencies.services %}{{ item.name }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}" data-original-title="Copy and paste"><i class="icon-share-alt"></i> Copy</a>
                 </div>
             {% endif %}
             {% if dependencies.paths %}
-                <div class="tab-pane" id="pathsTabOut">
-                    <table id="pathsOut" class="tablesorter" cellspacing="1">
-                        <thead>
-                            <tr>
+                {% blockvar th %}
                                 <th>Name</th><th>Type</th><th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                {% endblockvar %}
+                {% blockvar tbody %}
                         {% for item in dependencies.paths %}
                             {% if item.operational_state == "Decommissioned" %}
                                 <tr class="decommissioned">
@@ -422,19 +298,16 @@
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                {% endblockvar %}
+                <div class="tab-pane" id="pathsTabOut">
+                    {% table th tbody id="pathsOut" %}
                 </div>
             {% endif %}
             {% if dependencies.oms %}
-                <div class="tab-pane" id="omsTabOut">
-                    <table id="omsOut" class="tablesorter" cellspacing="1">
-                        <thead>
-                            <tr>
+                {% blockvar th %}
                                 <th>Name</th><th>Type</th><th>Description</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                {% endblockvar %}
+                {% blockvar tbody %}
                         {% for item in dependencies.oms %}
                             {% if item.operational_state == "Decommissioned" %}
                                 <tr class="decommissioned">
@@ -451,19 +324,16 @@
                                     <td>{{ item.description }}</td>
                                 </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                {% endblockvar %}
+                <div class="tab-pane" id="omsTabOut">
+                    {% table th tbody id="omsOut" %}
                 </div>
             {% endif %}
             {% if dependencies.links %}
-                <div class="tab-pane" id="linksTabOut">
-                    <table id="linksOut" class="tablesorter" cellspacing="1">
-                        <thead>
-                            <tr>
+                {% blockvar th %}
                                 <th>Name</th><th>Type</th><th>Description</th><th>Ports</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                {% endblockvar %}
+                {% blockvar tbody %}
                         {% for item in dependencies.links %}
                             {% if item.operational_state == "Decommissioned" %}
                                 <tr class="decommissioned">
@@ -486,19 +356,16 @@
                                 </td>
                             </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                {% endblockvar %}
+                <div class="tab-pane" id="linksTabOut">
+                    {% table th tbody id="linksOut" %}
                 </div>
             {% endif %}
             {% if dependencies.cables %}
-                <div class="tab-pane" id="cablesTabOut">
-                    <table id="cablesOut" class="tablesorter" cellspacing="1">
-                        <thead>
-                            <tr>
+                {% blockvar th %}
                                 <th>Name</th><th>Type</th><th>Ports</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                {% endblockvar %}
+                {% blockvar tbody %}
                         {% for item in dependencies.cables %}
                             {% if item.operational_state == "Decommissioned" %}
                                 <tr class="decommissioned">
@@ -519,8 +386,9 @@
                                 </td>
                             </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
+                {% endblockvar %}
+                <div class="tab-pane" id="cablesTabOut">
+                    {% table th tbody id="cablesOut" %}
                 </div>
             {% endif %}
         </div>

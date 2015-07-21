@@ -2,13 +2,11 @@
 <div class="section">
     <h3>Ports</h3>
         {% load noclook_tags %}
-        <table id="connections" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
-                    <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
-                </tr>
-            </thead>
-            <tbody>
+
+        {% blockvar th %}
+            <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+        {% endblockvar %}
+        {% blockvar tbody %}
             {% for item in connections %}
                 <tr>
                     <td><a href="{% noclook_node_to_url item.porta.handle_id %}">{{ item.porta.name }}</a></td>
@@ -19,7 +17,7 @@
                     <td><a href="{% noclook_node_to_url item.portb.handle_id %}">{{ item.portb.name }}</a></td>
                 </tr>
             {% endfor %}
-            </tbody>
-        </table>
+        {% endblockvar %}
+        {% table th tbody id="connections" %}
 </div>
 {% endif %}

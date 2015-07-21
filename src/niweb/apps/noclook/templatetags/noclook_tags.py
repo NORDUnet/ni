@@ -159,3 +159,24 @@ def noclook_has_rogue_ports(handle_id):
     if count:
         return True
     return False
+
+class BlockVar(template.Node):
+    def __init__(self, nodelist, context_var):
+       self.nodelist = nodelist
+       self.context_var = context_var
+    def render(self, context):
+       output = self.nodelist.render(context)
+       context[self.context_var] = output
+       return '' 
+@register.tag
+def blockvar(parser, token):
+    tagname, args= token.contents.split(None, 1)
+    out_var = args.split(None,1)[0]
+    nodelist = parser.parse("endblockvar",)
+    parser.delete_first_token()
+    return BlockVar(nodelist, out_var)
+@register.inclusion_tag("noclook/table.html")
+def table(th, tbody, *args, **kwargs):
+    context = {'th': th, 'tbody': tbody}
+    context.update(kwargs)
+    return context
