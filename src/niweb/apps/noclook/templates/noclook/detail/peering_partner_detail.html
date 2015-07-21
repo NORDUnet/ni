@@ -7,17 +7,6 @@
 <script type="text/javascript">
 $(document).ready(
     function(){
-        $("#services").tablesorter(
-        {
-            sortList: [[1,0]],
-            headers:
-            {
-                0 : { sorter: "ipAddress"  },
-                2 : { sorter: "ipAddress"  }
-            },
-            widthFixed: true,
-            widgets: ['zebra']
-        });
         // IP address lookup
         $(".ip-address").click(function() {
             var ip_address = $(this).text();
@@ -73,18 +62,14 @@ $(document).ready(
 <br><br><br>
 <div class="section">
     <h3>Services used</h3>
-    {% load noclook_tags %}
-    {% if user_dependencies %}
         <div class="pull-right">
             <span class="badge badge-important">Expired</span>
         </div>
-        <table id="services" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
+    {% load noclook_tags %}
+    {% blockvar th %}
                     <th>{{ node.data.name }} IP Address</th><th>Service</th><th>Interface Network</th><th>Unit</th><th>PIC</th><th>Router</th>
-                </tr>
-            </thead>
-            <tbody>
+    {% endblockvar %}
+    {% blockvar tbody %}
                 {% for item in user_dependencies %}
                     {% noclook_has_expired item.relationship as expired %}
                     {% if expired %}
@@ -101,10 +86,7 @@ $(document).ready(
                     {% endfor %}
                 </tr>
             {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        No services used.
-    {% endif %}
+    {% endblockvar %}
+    {% table th tbody id="services" %}
 </div>
 {% endblock %}

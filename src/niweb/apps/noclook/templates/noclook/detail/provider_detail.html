@@ -1,23 +1,5 @@
 {% extends "noclook/detail/base_detail.html" %}
 
-{% block js %}
-    {{ block.super }}
-    <script type="text/javascript">
-        $(document).ready(
-                function(){
-                    $("#services").tablesorter(
-                            {
-                                sortList: [[0,0]],
-                                headers:
-                                {},
-                                widthFixed: true,
-                                widgets: ['zebra']
-                            });
-                }
-        );
-    </script>
-{% endblock %}
-
 {% block content %}
     {{ block.super }}
     {% load noclook_tags %}
@@ -60,13 +42,10 @@
             <span class="badge badge-warning">Reserved</span>
             <span class="badge badge-important">Decommissioned</span>
         </div>
-        <table id="services" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
-                    <th>ID</th><th>Type</th><th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
+        {% blockvar th %}
+            <th>ID</th><th>Type</th><th>Description</th>
+        {% endblockvar %}
+        {% blockvar tbody %}
             {% for item in provides_relationships.Provides %}
                 {% if item.node.data.operational_state == "Decommissioned" %}
                     <tr class="decommissioned">
@@ -83,8 +62,8 @@
                     <td>{{ item.node.data.description }}</td>
                 </tr>
             {% endfor %}
-            </tbody>
-        </table>
+        {% endblockvar %}
+        {% table th tbody id="services" %}
     </div>
     {% endif %}
 {% endblock %}

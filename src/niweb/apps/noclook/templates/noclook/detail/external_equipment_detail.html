@@ -2,24 +2,6 @@
 
 {% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
 
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#connections").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}

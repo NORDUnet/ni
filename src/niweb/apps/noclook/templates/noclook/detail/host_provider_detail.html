@@ -2,26 +2,6 @@
 
 {% block title %}{{ block.super }}{% endblock %}
 
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#hosts").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {
-                1 : { sorter: "ipAddress"  },
-            },
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
@@ -60,14 +40,11 @@ $(document).ready(
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
     </div>
-    {% if provides_relationships.Provides %}
-        <table id="hosts" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
+
+    {% blockvar th %}
                     <th>Host</th>
-                </tr>
-            </thead>
-            <tbody>
+    {% endblockvar %}
+    {% blockvar tbody %}
             {% for item in provides_relationships.Provides %}
                 {% noclook_has_expired item.node.data as expired %}
                 {% if expired %}
@@ -78,11 +55,8 @@ $(document).ready(
                     <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
                 </tr>
             {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        No hosts provided.
-    {% endif %}
+    {% endblockvar %}
+    {% table th tbody id="hosts" %}
 </div>
 {% endblock %}
 

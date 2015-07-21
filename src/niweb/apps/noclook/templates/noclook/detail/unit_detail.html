@@ -2,32 +2,6 @@
 
 {% block title %}{{ block.super }} Detail{% endblock %}
 
-{% block js %}
-    {{ block.super }}
-    <script type="text/javascript">
-        $(document).ready(
-                function(){
-                    $("#depend_inc").tablesorter(
-                            {
-                                sortList: [[0,0]],
-                                headers:
-                                {},
-                                widthFixed: true,
-                                widgets: ['zebra']
-                            });
-                    $("#depend_out").tablesorter(
-                            {
-                                sortList: [[0,0]],
-                                headers:
-                                {},
-                                widthFixed: true,
-                                widgets: ['zebra']
-                            });
-                }
-        );
-    </script>
-{% endblock %}
-
 {% block content %}
     {{ block.super }}
     {% load noclook_tags %}

@@ -1,31 +1,6 @@
 {% extends "noclook/detail/base_detail.html" %}
 
 {% block title %}{{ block.super }}{% endblock %}
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#connections").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-        $("#ports").tablesorter(
-                {
-                    sortList: [[0,0]],
-                    headers:
-                    {},
-                    widthFixed: true,
-                    widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
 
 {% block content %}
 {{ block.super }}

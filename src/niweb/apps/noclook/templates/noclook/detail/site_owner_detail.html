@@ -1,23 +1,5 @@
 {% extends "noclook/detail/base_detail.html" %}
 
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#services").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
@@ -54,25 +36,19 @@ $(document).ready(
 {% endif %}
 <div class="section">
     <h3>Sites</h3>
-    {% if responsible_relations.Responsible_for %}
-    <table id="services" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
+
+    {% blockvar th %}
                 <th>Country</th><th>Name</th>
-            </tr>
-        </thead>
-        <tbody>
+    {% endblockvar %}
+    {% blockvar tbody %}
         {% for item in responsible_relations.Responsible_for %}
             <tr>
                 <td><a href="/findin/site/country_code/{{ item.node.data.country_code }}/">{{ item.node.data.country }}</a></td>
                 <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
             </tr>
         {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        No sites found.
-    {% endif %}
+    {% endblockvar %}
+    {% table th tbody id="services" %}
 </div>
 {% endblock %}
 

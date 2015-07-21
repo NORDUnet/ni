@@ -2,32 +2,6 @@
 
 {% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
 
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#equipment").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-        $("#locations").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
@@ -139,14 +113,10 @@ $(document).ready(
 {% endif %}
 <div class="section">
     <h3>Racks and equipment</h3>
-    {% if location_relationships.Has %}
-        <table id="locations" class="tablesorter" cellspacing="1">
-            <thead>
-                <tr>
-                    <th>Rack</th><th>Equipment</th>
-                </tr>
-            </thead>
-            <tbody>
+    {% blockvar th %}
+        <th>Rack</th><th>Equipment</th>
+    {% endblockvar %}
+    {% blockvar tbody %}
             {% for rack in location_relationships.Has %}
                 {% for item in rack.node.get_located_in.Located_in %}
                 <tr>
@@ -156,22 +126,15 @@ $(document).ready(
                 </tr>
                 {% endfor %}
             {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        No racks on the site.
-    {% endif %}
+    {% endblockvar %}
+    {% table th tbody id="locations" %}
 </div>
 <div class="section">
-{% if equipment_relationships.Located_in %}
     <h3>Unracked equipment</h3>
-    <table id="equipment" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
-                <th>Type</th><th>Name</th>
-            </tr>
-        </thead>
-        <tbody>
+    {% blockvar th %}
+        <th>Type</th><th>Name</th>
+    {% endblockvar %}
+    {% blockvar tbody %}
         {% for item in equipment_relationships.Located_in %}
             <tr>
                 {% noclook_get_type item.node.handle_id as node_type %}
@@ -179,11 +142,7 @@ $(document).ready(
                 <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
             </tr>
         {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    No unracked equipment on the site.
-</div>
-{% endif %}
+    {% endblockvar %}
+    {% table th tbody id="equipment" %}
 {% endblock %}
 

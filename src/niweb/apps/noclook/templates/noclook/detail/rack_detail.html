@@ -2,24 +2,6 @@
 
 {% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
 
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#equipment").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
@@ -65,14 +47,10 @@ $(document).ready(
 <br><br><br>
 <div class="section">
     <h3>Equipment in rack</h3>
-    {% if physical_relationships %}
-    <table id="equipment" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
+    {% blockvar th %}
                 <th>Type</th><th>Name</th>
-            </tr>
-        </thead>
-        <tbody>
+    {% endblockvar %}
+    {% blockvar tbody %}
         {% for item in physical_relationships.Located_in %}
             <tr>
                 {% noclook_get_type item.node.handle_id as node_type %}
@@ -80,11 +58,8 @@ $(document).ready(
                 <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
             </tr>
         {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        No equipment on site.
-    {% endif %}
+    {% endblockvar %}
+    {% table th tbody id="equipment" %}
 </div>
 {% endblock %}
 

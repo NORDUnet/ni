@@ -2,24 +2,6 @@
 
 {% block title %}{{ block.super }} Detail{% endblock %}
 
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $("#hosts").tablesorter(
-        {
-            sortList: [[0,0]],
-            headers:
-            {},
-            widthFixed: true,
-            widgets: ['zebra']
-        });
-    }
-);
-</script>
-{% endblock %}
-
 {% block content %}
 {{ block.super }}
 {% load noclook_tags %}
@@ -55,18 +37,14 @@ $(document).ready(
 -->
 <div class="section">
     {% load noclook_tags %}
-    {% if host_relationships %}
     <h3>Hosts used</h3>
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
     </div>
-    <table id="hosts" class="tablesorter" cellspacing="1">
-        <thead>
-            <tr>
+    {% blockvar th %}
                 <th>Host</th><th>Host type</th>
-            </tr>
-        </thead>
-        <tbody>
+    {% endblockvar %}
+    {% blockvar tbody %}
         {% for item in host_relationships %}
             {% noclook_has_expired item as expired %}
             {% if expired %}
@@ -84,10 +62,7 @@ $(document).ready(
                 </td>
             </tr>
         {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-        No hosts used.
-    {% endif %}
+    {% endblockvar %}
+    {% table th tbody id="hosts" %}
 </div>
 {% endblock %}
