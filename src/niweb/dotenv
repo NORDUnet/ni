@@ -7,7 +7,6 @@ REPORTS_TO=
 REPORTS_CC=
 REPORTS_BCC=
 EXTRA_REPORT_TO=
-REPORT_KEY=
 
 # Database settings
 DB_ENGINE=django.db.backends.postgresql_psycopg2

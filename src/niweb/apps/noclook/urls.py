@@ -69,8 +69,6 @@ urlpatterns += patterns('apps.noclook.views.report',
     (r'^reports/unique-ids/(?P<organisation>[-\w]+)\.(?P<file_format>xls|csv)$', 'download_unique_ids'),
     (r'^reports/unique-ids/(?P<organisation>[-\w]+)/$', 'unique_ids'),
     (r'^reports/unique-ids/$', 'unique_ids'),
-    (r'^reports/send/(?P<report>[-\w]+)/(?P<period>monthly|quarterly)/$', 'send_report'),
-    (r'^reports/send/(?P<report>[-\w]+)/(?P<contract_number>[-\w]+)/$', 'send_report'),
 )
 
 urlpatterns += patterns('apps.noclook.views.list',

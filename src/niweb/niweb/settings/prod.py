@@ -22,20 +22,6 @@ REPORTS_CC = environ.get('REPORTS_CC', '').split()     # Optional
 REPORTS_BCC = environ.get('REPORTS_BCC', '').split()   # Optional
 # EXTRA_REPORT_TO = {'ID': ['address', ]}
 EXTRA_REPORT_TO = json.loads(environ.get('EXTRA_REPORT_TO', '{}'))
-REPORT_KEY = environ['REPORT_KEY']
-
-try:
-    #NETAPP_REPORT_SETTINGS = [
-    #    {
-    #        'volumes': [re.compile('pattern')],
-    #        'service_id': '',
-    #        'contract_reference': '',
-    #        'total_storage': 0.0
-    #    }
-    #]
-    from secrets import NETAPP_REPORT_SETTINGS
-except ImportError:
-    NETAPP_REPORT_SETTINGS = []
 ########## PROJECT CONFIGURATION
 
 ########## END GENERAL CONFIGURATION

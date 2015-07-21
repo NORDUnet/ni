@@ -22,8 +22,6 @@ REPORTS_CC = environ.get('REPORTS_CC', '').split()     # Optional
 REPORTS_BCC = environ.get('REPORTS_BCC', '').split()   # Optional
 # EXTRA_REPORT_TO = {'ID': ['address', ]}
 EXTRA_REPORT_TO = json.loads(environ.get('EXTRA_REPORT_TO', '{}'))  # Optional
-REPORT_KEY = environ['REPORT_KEY']
-
 ########## END PROJECT CONFIGURATION
 
 ########## DEBUG CONFIGURATION
