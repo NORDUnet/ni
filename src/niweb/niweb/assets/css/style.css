@@ -180,6 +180,10 @@ td.date {
   min-width: 140px;
 }
 
+.table-hover tbody tr:hover>td, .table-hover tbody tr:hover>th {
+    background-color: #CAEDFC;
+}
+
 /* List color coding */
 tr.decommissioned {
     border-left: 3px #B94A48 solid;
