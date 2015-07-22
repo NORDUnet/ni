@@ -379,9 +379,9 @@ def new_rack(request, **kwargs):
 
 
 @login_required
-def new_site(request, **kwargs):
+def new_nordunet_site(request, **kwargs):
     if request.POST:
-        form = forms.NewSiteForm(request.POST)
+        form = forms.NewNordunetSiteForm(request.POST)
         if form.is_valid():
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'site', 'Location')
@@ -397,7 +397,31 @@ def new_site(request, **kwargs):
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
-        form = forms.NewSiteForm()
+        form = forms.NewNordunetSiteForm()
+    return render_to_response('noclook/create/create_site.html', {'form': form},
+                              context_instance=RequestContext(request))
+
+
+@login_required
+def new_sunet_site(request, **kwargs):
+    if request.POST:
+        form = forms.NewSunetSiteForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'site', 'Location')
+            except UniqueNodeError:
+                form = forms.NewSiteForm(request.POST)
+                form._errors = ErrorDict()
+                form._errors['name'] = ErrorList()
+                form._errors['name'].append('A Site with that name already exists.')
+                return render_to_response('noclook/create/create_site.html', {'form': form},
+                    context_instance=RequestContext(request))
+            node = nh.get_node()
+            keys = ['country', 'country_code', 'address', 'postarea', 'postcode']
+            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            return HttpResponseRedirect(nh.get_absolute_url())
+    else:
+        form = forms.NewSunetSiteForm()
     return render_to_response('noclook/create/create_site.html', {'form': form},
                               context_instance=RequestContext(request))
 
@@ -469,6 +493,7 @@ NEW_FUNC = {
     'port': new_port,
     'provider': new_provider,
     'rack': new_rack,
-    'site': new_site,
+    'nordunet-site': new_nordunet_site,
+    'sunet-site': new_sunet_site,
     'site-owner': new_site_owner,
 }

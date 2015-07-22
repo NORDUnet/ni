@@ -4,7 +4,7 @@ from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, NordunetUniqueId
+from apps.noclook.models import NodeHandle, UniqueIdGenerator
 from .. import unique_ids
 import norduniclient as nc
 
@@ -261,10 +261,10 @@ class JSONInput(HiddenInput):
         return super(JSONInput, self).render(name, json.dumps(value), attrs)
 
 
-
 class NodeChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, node):
         return node.node_name
+
 
 class ReserveIdForm(forms.Form):
     amount = forms.IntegerField(min_value=1, initial=1)
@@ -274,11 +274,12 @@ class ReserveIdForm(forms.Form):
             help_text='If applicable choose a site')
     reserve_message = forms.CharField(help_text='A message to help understand what the reservation was for.', widget=forms.TextInput(attrs={'class': 'input-xxlarge'}))
 
+
 class SearchIdForm(forms.Form):
     reserved = forms.NullBooleanField(help_text='Choosing "yes" shows avaliable (not in use) IDs', required=False)
     id_type = forms.ChoiceField( required=False)
     site = NodeChoiceField(required=False,
-            queryset=NodeHandle.objects.filter(node_type__type='Site').order_by('node_name'))
+                           queryset=NodeHandle.objects.filter(node_type__type='Site').order_by('node_name'))
     reserve_message = forms.CharField(help_text='Search by message', required=False)
 
     def __init__(self, *args, **kwargs):
@@ -286,7 +287,7 @@ class SearchIdForm(forms.Form):
         generators = UniqueIdGenerator.objects.all()
         categories = [('','')]
         if generators:
-          categories.extend([(g.prefix, g.name.replace("_", " ").title()) for g in generators if g.prefix != ""])
+            categories.extend([(g.prefix, g.name.replace("_", " ").title()) for g in generators if g.prefix != ""])
         self.fields['id_type'].choices= categories
 
 
@@ -302,7 +303,6 @@ class NewSiteForm(forms.Form):
     
     def clean(self):
         cleaned_data = super(NewSiteForm, self).clean()
-        cleaned_data['name'] = '%s-%s' % (cleaned_data['country_code'], cleaned_data['name'].upper())
         cleaned_data['country'] = COUNTRY_MAP[cleaned_data['country_code']]
         return cleaned_data
     
@@ -328,7 +328,7 @@ class EditSiteForm(forms.Form):
 
     def clean(self):
         cleaned_data = super(EditSiteForm, self).clean()
-        cleaned_data['name'] = cleaned_data['name'].upper()
+        cleaned_data['name'] = cleaned_data['name']
         cleaned_data['country_code'] = COUNTRY_CODE_MAP[cleaned_data['country']]
         return cleaned_data
                               
@@ -349,38 +349,7 @@ class NewCableForm(forms.Form):
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
-class NewNordunetCableForm(NewCableForm):
-    name = forms.CharField(required=False,
-                           help_text="If no name is specified the next NORDUnet cable ID will be used.")
 
-    class Meta:
-        id_generator_name = 'nordunet_cable_id'
-        id_collection = NordunetUniqueId
-
-    def clean(self):
-        """
-        Sets name to next generated ID or register the name in the ID collection.
-        """
-        cleaned_data = super(NewNordunetCableForm, self).clean()
-        # Set name to a generated id if the cable is not a manually named cable.
-        name = cleaned_data.get("name")
-        if self.is_valid():
-            if not name:
-                if not self.Meta.id_generator_name or not self.Meta.id_collection:
-                    raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
-                try:
-                    id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
-                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
-                except UniqueIdGenerator.DoesNotExist as e:
-                    raise e
-            else:
-                try:
-                    unique_ids.register_unique_id(self.Meta.id_collection, name)
-                except IntegrityError as e:
-                    self._errors = ErrorDict()
-                    self._errors['name'] = ErrorList()
-                    self._errors['name'].append(e.message)
-        return cleaned_data
 
                                        
 class EditCableForm(forms.Form):
@@ -624,38 +593,6 @@ class NewServiceForm(forms.Form):
         return cleaned_data
 
 
-class NewNordunetServiceForm(NewServiceForm):
-
-    project_end_date = forms.DateField(required=False)
-
-    class Meta(NewServiceForm.Meta):
-        id_generator_name = 'nordunet_service_id'
-        id_collection = NordunetUniqueId
-
-    def clean(self):
-        """
-        Checks that project_end_date was not omitted if service is of type project.
-        """
-        cleaned_data = super(NewNordunetServiceForm, self).clean()
-        if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
-            self._errors = ErrorDict()
-            self._errors['project_end_date'] = ErrorList()
-            self._errors['project_end_date'].append('Missing project end date.')
-        # Convert  project_end_date to string if set
-        if cleaned_data.get('project_end_date', None):
-            cleaned_data['project_end_date'] = cleaned_data['project_end_date'].strftime('%Y-%m-%d')
-        return cleaned_data
-
-
-class NewNordunetL2vpnServiceForm(NewNordunetServiceForm):
-
-    ncs_service_name = forms.CharField(required=False, help_text='')
-    vpn_type = forms.CharField(required=False, help_text='')
-    vlan = forms.CharField(required=False, help_text='')
-    vrf_target = forms.CharField(required=False, help_text='')
-    route_distinguisher = forms.CharField(required=False, help_text='')
-
-
 class EditServiceForm(forms.Form):
     name = forms.CharField(required=False)
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
@@ -743,17 +680,6 @@ class NewOpticalLinkForm(forms.Form):
         return cleaned_data
 
 
-class NewNordunetOpticalLinkForm(NewOpticalLinkForm):
-
-    class Meta(NewOpticalLinkForm.Meta):
-        id_generator_name = 'nordunet_optical_link_id'
-        id_collection = NordunetUniqueId
-
-    def clean(self):
-        cleaned_data = super(NewNordunetOpticalLinkForm, self).clean()
-        return cleaned_data
-
-
 class EditOpticalLinkForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(EditOpticalLinkForm, self).__init__(*args, **kwargs)
@@ -833,17 +759,6 @@ class NewOpticalPathForm(forms.Form):
                 cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
-        return cleaned_data
-
-
-class NewNordunetOpticalPathForm(NewOpticalPathForm):
-
-    class Meta(NewOpticalLinkForm.Meta):
-        id_generator_name = 'nordunet_optical_path_id'
-        id_collection = NordunetUniqueId
-
-    def clean(self):
-        cleaned_data = super(NewNordunetOpticalPathForm, self).clean()
         return cleaned_data
 
 

@@ -1,3 +1,5 @@
 # -*- coding: utf-8 -*-
 __author__ = 'lundberg'
-from .forms import *
+from .common import *
+from .nordunet import *
+from .sunet import *
