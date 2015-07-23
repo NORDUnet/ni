@@ -33,17 +33,7 @@
                     <th>Link:</th><td><a href="/findin/optical-node/link/{{ node.data.link }}/">{{ node.data.link }}</a></td>
                 </tr>
             {% endif %}
-            {% if node.data.noclook_auto_manage %}
-                <tr>
-                    <th>Last seen:</th><td>{{ last_seen|timesince }} ago</td>
-                </tr>
-            {% endif %}
-            <tr>
-                <th>Modified:</th><td>{{ node_handle.modified }} by <a href="{{ node_handle.modifier.get_profile.get_absolute_url }}">{{ node_handle.modifier }}</a></td>
-            </tr>
-            <tr>
-                <th>Created:</th><td>{{ node_handle.created }} by <a href="{{ node_handle.creator.get_profile.get_absolute_url }}">{{ node_handle.creator }}</a></td>
-            </tr>
+            {% include "noclook/detail/includes/last_changed.html" with inline=True %}
         </table>
     </div>
 </div>
