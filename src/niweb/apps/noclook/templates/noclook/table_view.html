@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load noclook_tags %}
 
 {% block js %}
     {{ block.super }}
@@ -62,10 +63,7 @@
             <span class="badge badge-important">Expired</span>
         {% endblock %}
         {% block table_search %}
-            <div class="input-prepend">
-                <span class="add-on"><i class="icon-search"></i></span>
-                <input data-tablefilter type="search" class="input-medium" placeholder="Filter">
-            </div>
+            {% table_search %}
         {% endblock %}
     </div>
     <table id="{% block table_id %}{% endblock %}" data-order="{% block table_order %}[[0,&quot;asc&quot;]]{% endblock %}" class="table table-condensed table-striped table-hover compact" data-tablesort cellspacing="1">

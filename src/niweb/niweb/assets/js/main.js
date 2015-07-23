@@ -17,15 +17,23 @@ $(document).ready(function() {
 
 
 
-  var $table = $("table[data-tablesort]").DataTable(
+   var $tables = $("table[data-tablesort]")
+   $tables.each(function(){
+        var $table = $(this).DataTable(
         {
             "paging": false,
             "order": [],
             "dom": "lrti"
         });
-  if ($table) {
-    $("input[data-tablefilter]").on('keyup', function(){
-        $table.search(this.value).draw();
+        if($tables.length > 1) {
+            $("input[data-tablefilter="+this.id+"]").on('keyup', function(){
+                $table.search(this.value).draw();
+            });
+        }else{
+            $("input[data-tablefilter]").on('keyup', function(){
+                $table.search(this.value).draw();
+            });
+
+        }
     });
-  }
 });

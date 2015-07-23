@@ -1,3 +1,4 @@
+{% load noclook_tags %}
 {% if host_services %}
     <div class="section">
         <h3>Host Services provided</h3>
@@ -6,9 +7,9 @@
                 <i class="icon-lock"></i> Services locked
             </div>
         {% endif %}
-        {% load noclook_tags %}
         <div class="pull-right">
             <span class="badge badge-important">Expired</span>
+            {% table_search "services" %}
         </div>
         {% blockvar th %}
             <th>Service</th>

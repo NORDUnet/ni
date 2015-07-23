@@ -180,3 +180,6 @@ def table(th, tbody, *args, **kwargs):
     context = {'th': th, 'tbody': tbody}
     context.update(kwargs)
     return context
+@register.inclusion_tag("noclook/table_search.html")
+def table_search(target=None, field_id=None):
+    return {"target": target, "field_id":field_id}

@@ -3,14 +3,33 @@
         function(){
             $('#inServiceCopy').popover();
             $('#outServiceCopy').popover();
+            // Search functions
+            var search = function(tables){
+                return function(){
+                    var str = this.value;
+                    $(tables).each(function(){
+                        $(this).DataTable().search(str).draw();
+                    })
+                }};
+            var getTable = function(idx,elm){return $("table", elm.getAttribute("href"));};
+            
             // Incoming dependencies table
             var depTabsIn = $('#depTabsIn');
             var depsTabInLink = depTabsIn.find('a:first');
             depsTabInLink.tab('show');
+            
+            // Incomming search
+            var $depTablesIn = depTabsIn.find("a").map(getTable); 
+            $("#usedBySearch").on('keyup', search($depTablesIn));
+            
             // Outgoing dependencies table
             var depTabsOut = $('#depTabsOut');
             var depsTabOutLink = depTabsOut.find('a:first');
             depsTabOutLink.tab('show');
+
+            // Incomming search
+            var $depTablesOut = depTabsOut.find("a").map(getTable);
+            $("#dependsOnSearch").on('keyup', search($depTablesOut));
         }
     );
 </script>
@@ -24,6 +43,7 @@
             <span class="badge badge-info">Testing</span>
             <span class="badge badge-warning">Reserved</span>
             <span class="badge badge-important">Decommissioned</span>
+            {% table_search field_id="usedBySearch" %}
         </div>
         <ul class="nav nav-tabs" id="depTabsIn">
             {% if dependent.direct %}
@@ -196,6 +216,7 @@
             <span class="badge badge-info">Testing</span>
             <span class="badge badge-warning">Reserved</span>
             <span class="badge badge-important">Decommissioned</span>
+            {% table_search field_id="dependsOnSearch" %}
         </div>
         <ul class="nav nav-tabs" id="depTabsOut">
             {% if dependencies.direct %}
