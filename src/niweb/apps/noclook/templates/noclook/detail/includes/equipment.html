@@ -1,0 +1,20 @@
+{% load noclook_tags %}
+<div class="section">
+    <div class="pull-right">
+        {% table_search "equipment" %}
+    </div>
+    <h3>{{ title|default:"Equipment" }}</h3>
+    {% blockvar th %}
+                <th>Type</th><th>Name</th>
+    {% endblockvar %}
+    {% blockvar tbody %}
+        {% for item in equipment %}
+            <tr>
+                {% noclook_get_type item.node.handle_id as node_type %}
+                <td>{{ node_type }}</td>
+                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+            </tr>
+        {% endfor %}
+    {% endblockvar %}
+    {% table th tbody id="equipment" %}
+</div>

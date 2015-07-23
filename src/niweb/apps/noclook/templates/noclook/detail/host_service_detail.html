@@ -35,11 +35,12 @@
 <br><br><br>
 -->
 <div class="section">
-    <h3>Resources used</h3>
+    {% load noclook_tags %}
     <div class="pull-right">
         <span class="badge badge-important">Expired</span>
+        {% table_search "services" %}
     </div>
-    {% load noclook_tags %}
+    <h3>Resources used</h3>
     {% blockvar th %}
         <th>Host</th><th>Address</th><th>Port</th><th>Protocol</th><th>State</th><th>Public</th><th>Product</th><th>Version</th><th>Extra info</th><th>Confidence</th><th>Last seen</th>
     {% endblockvar %}

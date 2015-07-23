@@ -59,11 +59,12 @@ $(document).ready(
 <br><br><br>
 -->
 <div class="section">
-    <h3>Resources used</h3>
     {% load noclook_tags %}
         <div class="pull-right">
             <span class="badge badge-important">Expired</span>
+            {% table_search "resources" %}
         </div>
+    <h3>Resources used</h3>
     {% blockvar th %}
         <th>Router</th><th>PIC</th><th>Unit</th><th>Interface Address</th><th>VLAN</th><th>User Address<th>User</th>
     {% endblockvar %}

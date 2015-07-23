@@ -43,8 +43,11 @@
 {% endif %}
 {% include "noclook/depend_include.html" %}
 <div class="section">
-    <h3>Interfaces</h3>
     {% load noclook_tags %}
+    <div class="pull-right">
+        {% table_search "connections" %}
+    </div>
+    <h3>Interfaces</h3>
     {% blockvar th %}
         <th>Port</th><th>Description</th><th>Cable</th><th>End equipment</th><th>End port</th><th>Units</th><th>Depends on port</th>
     {% endblockvar %}

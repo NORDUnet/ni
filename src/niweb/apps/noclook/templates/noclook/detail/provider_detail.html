@@ -36,12 +36,13 @@
     {% endif %}
     {% if provides_relationships %}
     <div class="section">
-        <h3>Provides</h3>
         <div class="pull-right">
             <span class="badge badge-info">Testing</span>
             <span class="badge badge-warning">Reserved</span>
             <span class="badge badge-important">Decommissioned</span>
+            {% table_search "services" %}
         </div>
+        <h3>Provides</h3>
         {% blockvar th %}
             <th>ID</th><th>Type</th><th>Description</th>
         {% endblockvar %}

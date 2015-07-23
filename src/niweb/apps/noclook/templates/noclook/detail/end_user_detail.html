@@ -35,35 +35,6 @@
         <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
     {% endif %}
     <br><br><br>
-    {% if uses_relationships.Uses %}
-    <div class="section">
-        <h3>Services</h3>
-        <div class="pull-right">
-            <span class="badge badge-info">Testing</span>
-            <span class="badge badge-warning">Reserved</span>
-            <span class="badge badge-important">Decommissioned</span>
-        </div>
-        {% blockvar th %}
-                    <th>Service ID</th><th>Description</th>
-        {% endblockvar %}
-        {% blockvar tbody %}
-            {% for item in uses_relationships.Uses %}
-                {% if item.node.data.operational_state == "Decommissioned" %}
-                    <tr class="decommissioned">
-                {% elif item.node.data.operational_state == "Reserved" %}
-                    <tr class="reserved">
-                {% elif item.node.data.operational_state == "Testing" %}
-                    <tr class="testing">
-                {% else %}
-                    <tr>
-                {% endif %}
-                    <td><a href="/service/{{ item.node.handle_id }}">{{ item.node.data.name }}</a></td>
-                    <td>{{ item.node.data.description }}</td>
-                </tr>
-            {% endfor %}
-        {% endblockvar %}
-        {% table th tbody id="services" %}
-    </div>
-    {% endif %}
+    {% include "noclook/detail/includes/user_services.html" with services=uses_relationships.Uses %}
 {% endblock %}
 

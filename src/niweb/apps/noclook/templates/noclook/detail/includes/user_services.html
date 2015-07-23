@@ -1,0 +1,32 @@
+{% load noclook_tags %}
+{% if services %}
+        <div class="section">
+            <div class="pull-right">
+                <span class="badge badge-info">Testing</span>
+                <span class="badge badge-warning">Reserved</span>
+                <span class="badge badge-important">Decommissioned</span>
+                {% table_search "services" %}
+            </div>
+            <h3>Services</h3>
+            {% blockvar th %}
+                        <th>Service ID</th><th>Description</th>
+            {% endblockvar %}
+            {% blockvar tbody %}
+                {% for item in services %}
+                    {% if item.node.data.operational_state == "Decommissioned" %}
+                        <tr class="decommissioned">
+                    {% elif item.node.data.operational_state == "Reserved" %}
+                        <tr class="reserved">
+                    {% elif item.node.data.operational_state == "Testing" %}
+                        <tr class="testing">
+                    {% else %}
+                        <tr>
+                    {% endif %}
+                        <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                        <td>{{ item.node.data.description }}</td>
+                    </tr>
+                {% endfor %}
+            {% endblockvar %}
+            {% table th tbody id="services" %}
+        </div>
+    {% endif %}

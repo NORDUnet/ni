@@ -112,6 +112,9 @@
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <div class="section">
+    <div class="pull-right">
+        {% table_search "locations" %}
+    </div>
     <h3>Racks and equipment</h3>
     {% blockvar th %}
         <th>Rack</th><th>Equipment</th>
@@ -129,20 +132,6 @@
     {% endblockvar %}
     {% table th tbody id="locations" %}
 </div>
-<div class="section">
-    <h3>Unracked equipment</h3>
-    {% blockvar th %}
-        <th>Type</th><th>Name</th>
-    {% endblockvar %}
-    {% blockvar tbody %}
-        {% for item in equipment_relationships.Located_in %}
-            <tr>
-                {% noclook_get_type item.node.handle_id as node_type %}
-                <td><a href="/{{ node_type|slugify }}/">{{ node_type }}</a></td>
-                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
-            </tr>
-        {% endfor %}
-    {% endblockvar %}
-    {% table th tbody id="equipment" %}
+{% include "noclook/detail/includes/equipment.html" with equipment=equipment_relationships.Located_in title="Unracked equipment" %}
 {% endblock %}
 

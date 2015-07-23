@@ -45,21 +45,6 @@
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
-<div class="section">
-    <h3>Equipment in rack</h3>
-    {% blockvar th %}
-                <th>Type</th><th>Name</th>
-    {% endblockvar %}
-    {% blockvar tbody %}
-        {% for item in physical_relationships.Located_in %}
-            <tr>
-                {% noclook_get_type item.node.handle_id as node_type %}
-                <td>{{ node_type }}</td>
-                <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
-            </tr>
-        {% endfor %}
-    {% endblockvar %}
-    {% table th tbody id="equipment" %}
-</div>
+{% include "noclook/detail/includes/equipment.html" with equipment=physical_relationships.Located_in title="Equipment in rack" %}
 {% endblock %}
 

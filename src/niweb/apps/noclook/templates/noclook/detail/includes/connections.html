@@ -1,8 +1,10 @@
 {% if connections %}
 <div class="section">
-    <h3>Ports</h3>
         {% load noclook_tags %}
-
+        <div class="pull-right">
+            {% table_search "connections" %}
+        </div>
+    <h3>Ports</h3>
         {% blockvar th %}
             <th>Port</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
         {% endblockvar %}

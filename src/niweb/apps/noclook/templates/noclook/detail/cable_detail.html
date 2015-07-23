@@ -65,7 +65,10 @@
 {% include "noclook/depend_include.html" %}
 <div class="section">
     <h3>Connected to</h3>
-    {% if connections %}
+    {% if connecoions %}
+        <div class="pull-right">
+            {% table_search "connections" %}
+        </div>
         {% blockvar th %}
                 <th>Site</th><th>Rack</th><th>Equipment</th><th>Port</th>
         {% endblockvar %}
