@@ -1,6 +1,4 @@
-from django.conf import settings
 from dynamic_preferences import global_preferences_registry
-import os
 
 
 def page_flash(request):

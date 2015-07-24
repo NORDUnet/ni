@@ -11,27 +11,12 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.forms.utils import ErrorDict, ErrorList
 from apps.noclook import forms
+from apps.noclook.forms import common as common_forms
 from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 import norduniclient as nc
-
-
-# Helper functions
-def get_provider_id(provider_name):
-    """
-    Get a node id to be able to provide a forms initial with a default provider.
-    :provider_name String Provider name
-    :return String Provider node id or empty string
-    """
-    provider = nc.get_nodes_by_value(nc.neo4jdb, provider_name, 'name', 'Provider')
-    try:
-        provider_id = str(provider.next().get('handle_id', ''))
-    except StopIteration:
-        provider_id = ''
-    provider.close()
-    return provider_id
 
 
 # Create functions
@@ -53,9 +38,9 @@ def new_node(request, slug=None, **kwargs):
 
 
 @login_required
-def new_cable(request, **kwargs):
+def new_external_cable(request, **kwargs):
     if request.POST:
-        form = forms.NewCableForm(request.POST)
+        form = common_forms.NewCableForm(request.POST)
         if form.is_valid():
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
@@ -67,16 +52,15 @@ def new_cable(request, **kwargs):
                 return render_to_response('noclook/create/create_cable.html', {'form': form},
                                           context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['cable_type']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
             name = kwargs.get('name', None)
         if name:
             initital = {'name': name}
-            form = forms.NewCableForm(initial=initital)
+            form = common_forms.NewCableForm(initial=initital)
     else:
-        form = forms.NewCableForm()
+        form = common_forms.NewCableForm()
     return render_to_response('noclook/create/create_cable.html', {'form': form},
                               context_instance=RequestContext(request))
 
@@ -145,14 +129,14 @@ def new_external_equipment(request, **kwargs):
 
 
 @login_required
-def new_nordunet_cable(request, **kwargs):
+def new_cable(request, **kwargs):
     if request.POST:
-        form = forms.NewNordunetCableForm(request.POST)
+        form = forms.NewCableForm(request.POST)
         if form.is_valid():
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
             except UniqueNodeError:
-                form = forms.NewNordunetCableForm(request.POST)
+                form = forms.NewCableForm(request.POST)
                 form._errors = ErrorDict()
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('A Cable with that name already exists.')
@@ -171,17 +155,14 @@ def new_nordunet_cable(request, **kwargs):
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         name = kwargs.get('name', None)
-        provider_id = get_provider_id('NORDUnet')
-        initial = {'relationship_provider': provider_id}
-        if name:
-            initial['name'] = name
-        form = forms.NewNordunetCableForm(initial=initial)
+        initial = {'name': name}
+        form = forms.NewCableForm(initial=initial)
     return render_to_response('noclook/create/create_cable.html', {'form': form},
                               context_instance=RequestContext(request))
 
 
 @login_required
-def new_nordunet_optical_link(request, **kwargs):
+def new_optical_link(request, **kwargs):
     if request.POST:
         form = forms.NewNordunetOpticalLinkForm(request.POST)
         if form.is_valid():
@@ -210,7 +191,7 @@ def new_nordunet_optical_link(request, **kwargs):
 
 
 @login_required
-def new_nordunet_optical_path(request, **kwargs):
+def new_optical_path(request, **kwargs):
     if request.POST:
         form = forms.NewNordunetOpticalPathForm(request.POST)
         if form.is_valid():
@@ -238,7 +219,7 @@ def new_nordunet_optical_path(request, **kwargs):
 
 
 @login_required
-def new_nordunet_service(request, **kwargs):
+def new_service(request, **kwargs):
     if request.POST:
         form = forms.NewNordunetServiceForm(request.POST)
         if form.is_valid():
@@ -323,7 +304,7 @@ def new_port(request, **kwargs):
                     helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
                 except NoRelationshipPossible:
                     nh.delete()
-                    form = forms.NewSiteForm(request.POST)
+                    form = forms.NewPortForm(request.POST)
                     form._errors = ErrorDict()
                     form._errors['parent'] = ErrorList()
                     form._errors['parent'].append('Parent type can not have ports.')
@@ -379,9 +360,9 @@ def new_rack(request, **kwargs):
 
 
 @login_required
-def new_nordunet_site(request, **kwargs):
+def new_site(request, **kwargs):
     if request.POST:
-        form = forms.NewNordunetSiteForm(request.POST)
+        form = forms.NewSiteForm(request.POST)
         if form.is_valid():
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'site', 'Location')
@@ -397,31 +378,7 @@ def new_nordunet_site(request, **kwargs):
             helpers.form_update_node(request.user, node.handle_id, form, keys)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
-        form = forms.NewNordunetSiteForm()
-    return render_to_response('noclook/create/create_site.html', {'form': form},
-                              context_instance=RequestContext(request))
-
-
-@login_required
-def new_sunet_site(request, **kwargs):
-    if request.POST:
-        form = forms.NewSunetSiteForm(request.POST)
-        if form.is_valid():
-            try:
-                nh = helpers.form_to_unique_node_handle(request, form, 'site', 'Location')
-            except UniqueNodeError:
-                form = forms.NewSiteForm(request.POST)
-                form._errors = ErrorDict()
-                form._errors['name'] = ErrorList()
-                form._errors['name'].append('A Site with that name already exists.')
-                return render_to_response('noclook/create/create_site.html', {'form': form},
-                    context_instance=RequestContext(request))
-            node = nh.get_node()
-            keys = ['country', 'country_code', 'address', 'postarea', 'postcode']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
-            return HttpResponseRedirect(nh.get_absolute_url())
-    else:
-        form = forms.NewSunetSiteForm()
+        form = forms.NewSiteForm()
     return render_to_response('noclook/create/create_site.html', {'form': form},
                               context_instance=RequestContext(request))
 
@@ -484,16 +441,14 @@ NEW_FUNC = {
     'customer': new_customer,
     'end-user': new_end_user,
     'external-equipment': new_external_equipment,
-    'nordunet-cable': new_nordunet_cable,
-    'nordunet-optical-link': new_nordunet_optical_link,
-    'nordunet-optical-path': new_nordunet_optical_path,
-    'nordunet-service': new_nordunet_service,
+    'external-cable': new_external_cable,
+    'optical-path': new_optical_path,
+    'service': new_service,
     'odf': new_odf,
     'optical-multiplex-section': new_optical_multiplex_section,
     'port': new_port,
     'provider': new_provider,
     'rack': new_rack,
-    'nordunet-site': new_nordunet_site,
-    'sunet-site': new_sunet_site,
+    'site': new_site,
     'site-owner': new_site_owner,
 }

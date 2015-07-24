@@ -59,12 +59,7 @@ SITE_TYPES = [
     ('POP', 'POP'),
     ('Regenerator', 'Regenerator'),
     ('Optical Amplifier', 'Optical Amplifier'),
-    ('Passive ODF', 'Passive ODF'),
-    # SUNET
-    ('ILA', 'ILA'),
-    ('Roadm', 'Roadm'),
-    ('Stam', 'Stam'),
-
+    ('Passive ODF', 'Passive ODF')
 ]
 
 CABLE_TYPES = [

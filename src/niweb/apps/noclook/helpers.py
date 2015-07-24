@@ -117,6 +117,21 @@ def delete_relationship(user, relationship_id):
     return True
 
 
+def get_provider_id(provider_name):
+    """
+    Get a node id to be able to provide a forms initial with a default provider.
+    :provider_name String Provider name
+    :return String Provider node id or empty string
+    """
+    providers = nc.get_nodes_by_value(nc.neo4jdb, provider_name, 'name', 'Provider')
+    try:
+        provider_id = str(providers.next().get('handle_id', ''))
+    except StopIteration:
+        provider_id = ''
+    providers.close()
+    return provider_id
+
+
 def form_update_node(user, handle_id, form, property_keys=list()):
     """
     Take a node, a form and the property keys that should be used to fill the

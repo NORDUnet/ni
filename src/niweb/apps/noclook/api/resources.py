@@ -25,6 +25,7 @@ from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
 from apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
 from apps.noclook import forms
+from apps.noclook.forms import common as common_forms
 from apps.noclook import helpers
 from apps.noclook import unique_ids
 import norduniclient as nc
@@ -436,7 +437,7 @@ class CableResource(NodeHandleResource):
         except NodeHandle.DoesNotExist:
             bundle.data.update(self._initial_form_data(bundle))
             bundle.data['name'] = bundle.data['node_name']
-            form = forms.NewCableForm(bundle.data)
+            form = common_forms.NewCableForm(bundle.data)
             if form.is_valid():
                 bundle.data.update({
                     'node_name': form.cleaned_data['name'],
@@ -516,7 +517,7 @@ class NordunetCableResource(CableResource):
                 else:
                     raise_conflict_error('Cable ID (%s) is already in use.' % bundle.data['node_name'])
 
-            form = forms.NewNordunetCableForm(bundle.data)
+            form = forms.NewCableForm(bundle.data)
             if form.is_valid():
                 bundle.data.update({
                     'node_name': form.cleaned_data['name'],
@@ -876,7 +877,7 @@ class ServiceL2VPNResource(ServiceResource):
                 raise_conflict_error('Service ID (%s) is already in use.' % bundle.data['node_name'])
         except KeyError as e:
             raise_not_acceptable_error('%s is missing.' % e)
-        form = forms.NewNordunetL2vpnServiceForm(bundle.data)
+        form = forms.NewL2vpnServiceForm(bundle.data)
         if form.is_valid():
             bundle.data.update({
                 'node_name': form.cleaned_data['name'],
