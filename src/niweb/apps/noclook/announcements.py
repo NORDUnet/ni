@@ -1,9 +1,10 @@
 from django.conf import settings
+from dynamic_preferences import global_preferences_registry
 import os
+
+
 def page_flash(request):
-    path = os.path.join(settings.SITE_ROOT, "niweb", "page_message.txt")
-    msg = None
-    if os.path.isfile(path):
-        with open(path, 'r') as f:
-            msg = f.read()
-    return {'page_flash': msg}
+    global_preferences = global_preferences_registry.manager()
+    msg = global_preferences['announcements__page_flash_message']
+    level = global_preferences['announcements__page_flash_message_level']
+    return {'page_flash': {'level': level, 'message': msg}}
