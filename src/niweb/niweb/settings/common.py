@@ -175,6 +175,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.tz',
     'django.contrib.messages.context_processors.messages',
     'django.core.context_processors.request',
+    'dynamic_preferences.processors.global_preferences',
     'apps.noclook.announcements.page_flash',
 )
 
@@ -233,6 +234,7 @@ THIRD_PARTY_APPS = (
     'actstream',
     'django_comments',
     'crispy_forms',
+    'dynamic_preferences',
 )
 
 LOCAL_APPS = (
