@@ -16,7 +16,6 @@ from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
-import norduniclient as nc
 
 
 # Create functions
@@ -80,8 +79,7 @@ def new_customer(request, **kwargs):
                 return render_to_response('noclook/create/create_customer.html', {'form': form},
                                           context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['url']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewCustomerForm()
@@ -102,10 +100,9 @@ def new_end_user(request, **kwargs):
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('An End User with that name already exists.')
                 return render_to_response('noclook/create/create_end_user.html', {'form': form},
-                    context_instance=RequestContext(request))
+                                          context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['url']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewEndUserForm()
@@ -143,8 +140,7 @@ def new_cable(request, **kwargs):
                 return render_to_response('noclook/create/create_cable.html', {'form': form},
                                           context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['cable_type']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, node, provider_nh.handle_id)
@@ -164,85 +160,78 @@ def new_cable(request, **kwargs):
 @login_required
 def new_optical_link(request, **kwargs):
     if request.POST:
-        form = forms.NewNordunetOpticalLinkForm(request.POST)
+        form = forms.NewOpticalLinkForm(request.POST)
         if form.is_valid():
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'optical-link', 'Logical')
             except UniqueNodeError:
-                form = forms.NewNordunetOpticalLinkForm(request.POST)
+                form = forms.NewOpticalLinkForm(request.POST)
                 form._errors = ErrorDict()
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('An Optical Link with that name already exists.')
-                return render_to_response('noclook/create/create_nordunet_optical_link.html', {'form': form},
+                return render_to_response('noclook/create/create_link.html', {'form': form},
                                           context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['description', 'link_type', 'operational_state', 'interface_type']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
-        provider_id = get_provider_id('NORDUnet')
-        initial = {'relationship_provider': provider_id, 'interface_type': 'WDM'}
-        form = forms.NewNordunetOpticalLinkForm(initial=initial)
-    return render_to_response('noclook/create/create_nordunet_optical_link.html', {'form': form},
+        form = forms.NewOpticalLinkForm()
+    return render_to_response('noclook/create/create_optical_link.html', {'form': form},
                               context_instance=RequestContext(request))
 
 
 @login_required
 def new_optical_path(request, **kwargs):
     if request.POST:
-        form = forms.NewNordunetOpticalPathForm(request.POST)
+        form = forms.NewOpticalPathForm(request.POST)
         if form.is_valid():
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'optical-path', 'Logical')
             except UniqueNodeError:
-                form = forms.NewNordunetOpticalPathForm(request.POST)
+                form = forms.NewOpticalPathForm(request.POST)
                 form._errors = ErrorDict()
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('An Optical Path with that name already exists.')
-                return render_to_response('noclook/create/create_nordunet_optical_path.html', {'form': form},
+                return render_to_response('noclook/create/create_optical_path.html', {'form': form},
                                           context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['description', 'framing', 'capacity', 'operational_state']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
-        provider_id = get_provider_id('NORDUnet')
-        form = forms.NewNordunetOpticalPathForm(initial={'relationship_provider': provider_id})
-    return render_to_response('noclook/create/create_nordunet_optical_path.html', {'form': form},
+        form = forms.NewOpticalPathForm()
+    return render_to_response('noclook/create/create_optical_path.html', {'form': form},
                               context_instance=RequestContext(request))
 
 
 @login_required
 def new_service(request, **kwargs):
     if request.POST:
-        form = forms.NewNordunetServiceForm(request.POST)
+        form = forms.NewServiceForm(request.POST)
         if form.is_valid():
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'service', 'Logical')
             except UniqueNodeError:
-                form = forms.NewNordunetServiceForm(request.POST)
+                form = forms.NewServiceForm(request.POST)
                 form._errors = ErrorDict()
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('A Service with that name already exists.')
-                return render_to_response('noclook/create/create_nordunet_service.html', {'form': form},
+                return render_to_response('noclook/create/create_service.html', {'form': form},
                                           context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['description', 'service_class', 'service_type', 'operational_state', 'project_end_date']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, node, provider_nh.handle_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
-        provider_id = get_provider_id('NORDUnet')
-        form = forms.NewNordunetServiceForm(initial={'relationship_provider': provider_id})
-    return render_to_response('noclook/create/create_nordunet_service.html', {'form': form},
+        form = forms.NewServiceForm()
+    return render_to_response('noclook/create/create_service.html', {'form': form},
                               context_instance=RequestContext(request))
 
 
@@ -276,8 +265,7 @@ def new_optical_multiplex_section(request, **kwargs):
                 return render_to_response('noclook/create/create_optical_multiplex_section.html',
                                           {'form': form}, context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['name', 'description', 'operational_state']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             if form.cleaned_data['relationship_provider']:
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, node, provider_nh.handle_id)
@@ -296,8 +284,7 @@ def new_port(request, **kwargs):
         if form.is_valid():
             nh = helpers.form_to_generic_node_handle(request, form, 'port', 'Physical')
             node = nh.get_node()
-            keys = ['port_type']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             if kwargs.get('parent_id', None):
                 try:
                     parent_nh = NodeHandle.objects.get(pk=kwargs['parent_id'])
@@ -330,10 +317,9 @@ def new_provider(request, **kwargs):
                 form._errors['name'] = ErrorList()
                 form._errors['name'].append('A Provider with that name already exists.')
                 return render_to_response('noclook/create/create_provider.html', {'form': form},
-                    context_instance=RequestContext(request))
+                                          context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['url']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewProviderForm()
@@ -374,8 +360,7 @@ def new_site(request, **kwargs):
                 return render_to_response('noclook/create/create_site.html', {'form': form},
                     context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['country', 'country_code', 'address', 'postarea', 'postcode']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewSiteForm()
@@ -398,8 +383,7 @@ def new_site_owner(request, **kwargs):
                 return render_to_response('noclook/create/create_site_owner.html', {'form': form},
                     context_instance=RequestContext(request))
             node = nh.get_node()
-            keys = ['url']
-            helpers.form_update_node(request.user, node.handle_id, form, keys)
+            helpers.form_update_node(request.user, node.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewSiteOwnerForm()

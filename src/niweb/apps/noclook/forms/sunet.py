@@ -12,6 +12,14 @@ SITE_TYPES = [
     ('Stam', 'Stam'),
 ]
 
+RESPONSIBLE_GROUPS = [
+    ('', ''),
+    ('DEV', 'DEV'),
+    ('NOC', 'NOC'),
+    ('NPE', 'NPE'),
+    ('SWAMID', 'SWAMID'),
+]
+
 
 class NewSiteForm(common.NewSiteForm):
     """

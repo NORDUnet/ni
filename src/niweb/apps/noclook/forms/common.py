@@ -57,8 +57,6 @@ COUNTRY_CODE_MAP = dict((COUNTRY_MAP[key], key) for key in COUNTRY_MAP)
 SITE_TYPES = [
     ('', ''),
     ('POP', 'POP'),
-    ('Regenerator', 'Regenerator'),
-    ('Optical Amplifier', 'Optical Amplifier'),
     ('Passive ODF', 'Passive ODF')
 ]
 
@@ -85,83 +83,9 @@ PORT_TYPES = [
 
 SERVICE_TYPES = [
     ('', ''),
-    ('Alien wavelenght', 'DWDM - Alien wavelenght'),
-    ('Ethernet', 'DWDM - Ethernet'),
-    ('SDH', 'DWDM - SDH'),
-    ('Interface Switch', 'Ethernet - Interface Switch'),
-    ('External', 'External Service'),
-    ('Hosting', 'Hosting'),
-    ('CFG Management', 'Internal - CFG Management'),
-    ('Mail', 'Internal - Mail'),
-    ('NDN CoreInfra', 'Internal - NDN CoreInfra'),
-    ('NDN IDM', 'Internal - NDN IDM'),
-    ('NDN Instrumentation', 'Internal - NDN Instrumentation'),
-    ('NDN Tools', 'Internal - NDN Tools'),
-    ('NDN Tor', 'Internal - NDN Tor'),
-    ('CMS', 'IAAS - CMS'),
-    ('EDUID', 'IAAS - EDUID'),
-    ('HSM', 'IAAS - HSM'),
-    ('Social2SAML', 'IAAS - Social2SAML'),
-    ('Storage', 'IAAS - Storage'),
-    ('TCS', 'IAAS - TCS'),
-    ('VConf', 'IAAS - VConf'),
-    ('VMWare', 'IAAS - VMWare'),
-    ('Backbone', 'IP - Backbone'),
-    ('Customer Connection', 'IP - Customer Connection'),
-    ('Internet Exchange', 'IP - Internet Exchange'),
-    ('Private Interconnect', 'IP - Private Interconnect'),
-    ('Private Interconnection', 'IP - Private Interconnection'),
-    ('Project', 'IP - Project'),
-    ('Transit', 'IP - Transit'),
-    ('L2VPN', 'MPLS - L2VPN'),
-    ('L3VPN', 'MPLS - L3VPN'),
-    ('VPLS', 'MPLS - VPLS'),
-    ('CanIt', 'SAAS - CanIt'),
-    ('Connect', 'SAAS - Connect'),
-    ('Kaltura', 'SAAS - Kaltura'),
-    ('Survey', 'SAAS - Survey'),
-    ('Box', 'SAAS - Box'),
 ]
 
-SERVICE_CLASS_MAP = {
-    'Alien wavelenght': 'DWDM',
-    'Backbone': 'IP',
-    'Box': 'SAAS',
-    'CanIt': 'SAAS',
-    'CFG Management': 'Internal',
-    'CMS': 'IAAS',
-    'Connect': 'SAAS',
-    'Customer Connection': 'IP',
-    'EDUID': 'IAAS',
-    'HSM': 'IAAS',
-    'Ethernet': 'DWDM',
-    'External': 'External',
-    'Hosting': 'Hosting',
-    'Interface Switch': 'Ethernet',
-    'Internal': 'Internal',
-    'Internet Exchange': 'IP',
-    'Kaltura': 'SAAS',
-    'L2VPN': 'MPLS',
-    'L3VPN': 'MPLS',
-    'Mail': 'Internal',
-    'NDN CoreInfra': 'Internal',
-    'NDN IDM': 'Internal',
-    'NDN Instrumentation': 'Internal',
-    'NDN Tor': 'Internal',
-    'NDN Tools': 'Internal',
-    'Private Interconnect': 'IP',
-    'Private Interconnection': 'IP',
-    'Project': 'IP',
-    'SDH': 'DWDM',
-    'Social2SAML': 'IAAS',
-    'Storage': 'IAAS',
-    'Survey': 'SAAS',
-    'TCS': 'IAAS',
-    'Transit': 'IP',
-    'VConf': 'IAAS',
-    'VPLS': 'MPLS',
-    'VMWare': 'IAAS',
-}
+SERVICE_CLASS_MAP = {}
 
 OPERATIONAL_STATES = [
     ('', ''),
@@ -173,31 +97,18 @@ OPERATIONAL_STATES = [
 
 OPTICAL_LINK_TYPES = [
     ('', ''),
-    ('OTS', 'OTS'),
-    ('OPS', 'OPS'),
 ]
 
 OPTICAL_PATH_FRAMING = [
     ('', ''),
-    ('OTN(CBR)', 'OTN(CBR)'),
-    ('OTN(Ethernet)', 'OTN(Ethernet)'),
-    ('WDM', 'WDM'),
-    ('WDM(Ethernet)', 'WDM(Ethernet)'),
-    ('WDM(CBR)', 'WDM(CBR)'),
-    ('WDM(OTN)', 'WDM(OTN)'),
 ]
 
 OPTICAL_PATH_CAPACITY = [
     ('', ''),
-    ('10Gb', '10Gb'),
-    ('100Gb', '100Gb'),
-    ('CBR', 'CBR'),
-    ('cbr 10Gb', 'cbr 10Gb'),
 ]
 
 OPTICAL_LINK_INTERFACE_TYPE = [
     ('', ''),
-    ('WDM', 'WDM'),
 ]
 
 SECURITY_CLASSES = [
@@ -210,18 +121,8 @@ SECURITY_CLASSES = [
 
 RESPONSIBLE_GROUPS = [
     ('', ''),
-    ('ADMIN', 'ADMIN'),
     ('DEV', 'DEV'),
-    ('EDUIX', 'EDUIX'),
-    ('FUNET', 'FUNET'),
-    ('NDGF', 'NDGF'),
     ('NOC', 'NOC'),
-    ('NPE', 'NPE'),
-    ('RHNET', 'RHNET'),
-    ('SUNET', 'SUNET'),
-    ('SWAMID', 'SWAMID'),
-    ('UNINETT', 'UNINETT'),
-    ('WAYF', 'WAYF'),
 ]
 
 
