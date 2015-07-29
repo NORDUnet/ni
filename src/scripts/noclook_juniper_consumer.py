@@ -95,7 +95,7 @@ PEER_AS_CACHE = {}
 REMOTE_IP_MATCH_CACHE = {}
 
 
-def insert_juniper_router(name, model, version):
+def insert_juniper_router(name, model, version, hardware=None):
     """
     Inserts a physical meta type node of the type Router.
     Returns the node created.
@@ -109,6 +109,9 @@ def insert_juniper_router(name, model, version):
         'model': model,
         'version': version
     }
+    if hardware:
+        node_dict['serial_number'] = hardware.get('serial_number')
+
     helpers.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
     helpers.set_noclook_auto_manage(node, True)
     return node
@@ -148,18 +151,24 @@ def insert_juniper_interfaces(router_node, interfaces):
         """
     not_interesting_interfaces = re.compile(p, re.VERBOSE)
     user = nt.get_user()
+    q = """
+        MATCH (n:Router {handle_id: {handle_id}})-[:Has*1..4]->(port:Port)
+        RETURN port.handle_id as handle_id, port.name as name
+        """
+    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
     for interface in interfaces:
         port_name = interface['name']
         if port_name and not not_interesting_interfaces.match(port_name):
-            result = router_node.get_port(port_name)
-            if result.get('Has', None):
-                port_node = result.get('Has')[0].get('node')
+            #XXX: Currently we check if port_name ends with node name for backwards compat
+            result = [ p['handle_id'] for p in ports if port_name.endswith(p['name']) ]
+            if result:
+                port_node = nc.get_node_model(nc.neo4jdb, result[0])
             else:
                 node_handle = nt.create_node_handle(port_name, 'Port', 'Physical')
                 port_node = node_handle.get_node()
                 helpers.set_has(user, router_node, port_node.handle_id)
             helpers.set_noclook_auto_manage(port_node, True)
-            property_keys = ['description']
+            property_keys = ['description', 'name']
             helpers.dict_update_node(user, port_node.handle_id, interface, property_keys)
             # Update interface units
             for unit in interface['units']:
@@ -313,6 +322,90 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         elif peering_type == 'external':
             insert_external_bgp_peering(peering, peering_group_node)
 
+def _get_or_create_node(name, parent, meta_type_label, labels):
+    user = nt.get_user()
+    q = """
+        MATCH (p:Node {handle_id: {handle_id}})-[:Has]->(n:Node {name: {name}})
+        RETURN n.handle_id as handle_id
+        """
+    result = nc.query_to_list(nc.neo4jdb, q, handle_id=parent.handle_id, name=name)
+    if not isinstance(labels, str):
+        labels = ':'.join(labels)
+    if result:
+        node = nc.get_node_model(nc.neo4jdb,result[0]['handle_id'])
+    else:
+        node_handle = nt.create_node_handle(name, meta_type_label, labels)
+        node = node_handle.get_node()
+        helpers.set_has(user, parent, node.handle_id)
+    return node
+def _module(module, parent):
+    user = nt.get_user()
+    name = module['name']
+    if name.startswith("PIC "):
+        node = _get_or_create_node(name, parent, 'PIC', 'Physical')
+    elif name.startswith("FPC "):
+        node = _get_or_create_node(name, parent, 'FPC', 'Physical')
+    else:
+        node = _get_or_create_node(name, parent, 'Module', 'Physical')
+    node_dict = module.copy()
+    del node_dict['sub_modules']
+    helpers.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
+    helpers.set_noclook_auto_manage(node, True)
+    return node
+
+def insert_juniper_hardware_interfaces(router, fpc, pic, modules):   
+    user = nt.get_user()
+    fpc_name = fpc.data['name']
+    pic_name = pic.data['name']
+    q = """
+        MATCH (n:Router {handle_id: {handle_id}})-[r:Has*1..4]->(port:Port) 
+        RETURN extract(rel IN r |id(rel)) as relationships, 
+               port.handle_id as port_id, 
+               port.name as name
+        """
+    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router.handle_id)
+    fpcN = re.search("(\d+)$", fpc_name).group()
+    picN = re.search("(\d+)$", pic_name).group()
+    for module in modules:
+        try:
+            ifN = re.search("(\d+)$", module['name']).group()
+            ifname = "{0}/{1}/{2}".format(fpcN, picN, ifN)
+            port = [(p['port_id'], p['relationships']) for p in ports if p['name'].endswith(ifname)]
+            if port:
+                port_id, rel_ids = port[0]
+                if len(rel_ids) == 1:
+                    #move it
+                    helpers.set_has(user, pic, port_id)
+                    #remove old
+                    nc.delete_relationship(nc.neo4jdb, rel_ids[0])
+                port = nc.get_node_model(nc.neo4jdb,port_id)
+            else:
+                #chicken and egg... Haven't got the full real name yet
+                node_handle = nt.create_node_handle(ifname, 'Port', 'Physical')
+                port = node_handle.get_node()
+                helpers.set_has(user, pic, port.handle_id)
+            node_dict = module.copy()
+            del node_dict['sub_modules']
+            del node_dict['name']
+            helpers.dict_update_node(user, port.handle_id, node_dict)
+            helpers.set_noclook_auto_manage(port, True)
+            
+        except AttributeError:
+            logger.error("Unable to extract name from port: {0} of {1} - {2} on {3}".format(module['name'], pic_name, fpc_name, router['data']['name']))
+
+def insert_juniper_submodules(parent, modules, router):
+    for module in modules:
+        node = _module(module, parent)
+        if module['name'].startswith("PIC "):
+            insert_juniper_hardware_interfaces(router, parent, node, module['sub_modules'])
+        elif module['sub_modules']:
+            insert_juniper_submodules(node, module['sub_modules'], router)
+
+def insert_juniper_hardware(router_node, hardware):
+    for module in hardware.get('modules',[]):
+        node = _module(module, router_node)
+        if module['sub_modules']:
+            insert_juniper_submodules(node, module['sub_modules'], router_node)
 
 def consume_juniper_conf(json_list):
     """
@@ -322,13 +415,16 @@ def consume_juniper_conf(json_list):
     """
     bgp_peerings = []
     for i in json_list:
-        name = i['host']['juniper_conf']['name']
-        version = i['host']['juniper_conf'].get('version', 'Unknown')
-        model = i['host']['juniper_conf'].get('model', 'Unknown')
-        router_node = insert_juniper_router(name, model, version)
-        interfaces = i['host']['juniper_conf']['interfaces']
+        jconf = i['host']['juniper_conf']
+        name = jconf['name']
+        version = jconf.get('version', 'Unknown')
+        model = jconf.get('model', 'Unknown')
+        hardware = jconf.get('hardware')
+        router_node = insert_juniper_router(name, model, version, hardware)
+        insert_juniper_hardware(router_node, hardware)
+        interfaces = jconf['interfaces']
         insert_juniper_interfaces(router_node, interfaces)
-        bgp_peerings += i['host']['juniper_conf']['bgp_peerings']
+        bgp_peerings += jconf['bgp_peerings']
     insert_juniper_bgp_peerings(bgp_peerings)
 
 
