@@ -16,6 +16,7 @@ class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
     slug = models.SlugField(unique=True, help_text='Suggested value \
         #automatically generated from type. Must be unique.')
+    hidden = models.BooleanField(default=False, help_text="Hide from menus")
 
     def __unicode__(self):
         return self.type

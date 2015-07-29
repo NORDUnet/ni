@@ -15,7 +15,7 @@ def type_menu():
     handling.
     Just chain .exclude(type='name') to remove unwanted types.
     """
-    types = NodeType.objects.exclude(type='Port').exclude(type='Unit')
+    types = NodeType.objects.exclude(hidden=True)
     return {'types': types}
 
 
