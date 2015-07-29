@@ -508,9 +508,9 @@ class EquipmentModel(PhysicalModel):
 
     def get_connections(self):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta)
+            MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta:Port)
             OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
-            OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb)
+            OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb:Port)
             OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)
             OPTIONAL MATCH (end)-[:Located_in]->(location)
             OPTIONAL MATCH (location)<-[:Has]-site
