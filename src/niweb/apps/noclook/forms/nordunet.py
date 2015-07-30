@@ -182,10 +182,19 @@ class NewCableForm(common.NewCableForm):
         return cleaned_data
 
 
+class EditHostForm(common.EditHostForm):
+
+    def __init__(self, *args, **kwargs):
+        super(EditHostForm, self).__init__(*args, **kwargs)
+        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+
+
 class NewServiceForm(common.NewServiceForm):
     def __init__(self, *args, **kwargs):
         super(NewServiceForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
+        self.fields['service_type'].choices = SERVICE_TYPES
 
     project_end_date = forms.DateField(required=False)
 
@@ -198,6 +207,7 @@ class NewServiceForm(common.NewServiceForm):
         Checks that project_end_date was not omitted if service is of type project.
         """
         cleaned_data = super(NewServiceForm, self).clean()
+        cleaned_data['service_class'] = SERVICE_CLASS_MAP[cleaned_data.get("service_type")]
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
@@ -217,10 +227,25 @@ class NewL2vpnServiceForm(NewServiceForm):
     route_distinguisher = forms.CharField(required=False, help_text='')
 
 
+class EditServiceForm(common.EditServiceForm):
+    def __init__(self, *args, **kwargs):
+        super(EditServiceForm, self).__init__(*args, **kwargs)
+        self.fields['service_type'].choices = SERVICE_TYPES
+        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+
+    def clean(self):
+        cleaned_data = super(EditServiceForm, self).clean()
+        # Set service_class depending on service_type.
+        cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
+
+
 class NewOpticalLinkForm(common.NewOpticalLinkForm):
     def __init__(self, *args, **kwargs):
         super(NewOpticalLinkForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
+        self.fields['link_type'].choices = OPTICAL_LINK_TYPES
+        self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
         self.fields['interface_type'].initial = 'WDM'
 
     class Meta(common.NewOpticalLinkForm.Meta):
@@ -232,10 +257,26 @@ class NewOpticalLinkForm(common.NewOpticalLinkForm):
         return cleaned_data
 
 
+class EditOpticalLinkForm(common.EditOpticalLinkForm):
+
+    def __init__(self, *args, **kwargs):
+        super(EditOpticalLinkForm, self).__init__(*args, **kwargs)
+        self.fields['link_type'].choices = OPTICAL_LINK_TYPES
+        self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
+
+
+class NewOpticalMultiplexSectionForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
+
+
 class NewOpticalPathForm(common.NewOpticalPathForm):
     def __init__(self, *args, **kwargs):
         super(NewOpticalPathForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
+        self.fields['framing'].choices = OPTICAL_PATH_FRAMING
+        self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
 
     class Meta(common.NewOpticalLinkForm.Meta):
         id_generator_name = 'nordunet_optical_path_id'
@@ -244,6 +285,14 @@ class NewOpticalPathForm(common.NewOpticalPathForm):
     def clean(self):
         cleaned_data = super(NewOpticalPathForm, self).clean()
         return cleaned_data
+
+
+class EditOpticalPathForm(common.EditOpticalPathForm):
+
+    def __init__(self, *args, **kwargs):
+        super(EditOpticalPathForm, self).__init__(*args, **kwargs)
+        self.fields['framing'].choices = OPTICAL_PATH_FRAMING
+        self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
 
 
 class NewSiteForm(common.NewSiteForm):
@@ -255,3 +304,10 @@ class NewSiteForm(common.NewSiteForm):
         cleaned_data = super(NewSiteForm, self).clean()
         cleaned_data['name'] = '%s-%s' % (cleaned_data['country_code'], cleaned_data['name'].upper())
         return cleaned_data
+
+
+class EditSiteForm(common.EditSiteForm):
+
+    def __init__(self, *args, **kwargs):
+        super(EditSiteForm, self).__init__(*args, **kwargs)
+        self.fields['site_type'].choices = SITE_TYPES

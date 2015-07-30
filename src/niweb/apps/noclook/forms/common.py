@@ -83,9 +83,14 @@ PORT_TYPES = [
 
 SERVICE_TYPES = [
     ('', ''),
+    ('Internal', 'Internal'),
+    ('External', 'External'),
 ]
 
-SERVICE_CLASS_MAP = {}
+SERVICE_CLASS_MAP = {
+    'Internal': 'Internal',
+    'External': 'External',
+}
 
 OPERATIONAL_STATES = [
     ('', ''),
@@ -193,11 +198,14 @@ class SearchIdForm(forms.Form):
 
 
 class NewSiteForm(forms.Form):
-    """
-    Concatenate country code with site name
-    """
+
+    def __init__(self, *args, **kwargs):
+        super(NewSiteForm, self).__init__(*args, **kwargs)
+        self.fields['country_code'].choices = COUNTRY_CODES
+
     name = forms.CharField()
-    country_code = forms.ChoiceField(choices=COUNTRY_CODES, widget=forms.widgets.Select)
+    country_code = forms.ChoiceField(widget=forms.widgets.Select)
+    country = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     address = forms.CharField(required=False)
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
@@ -209,10 +217,17 @@ class NewSiteForm(forms.Form):
     
     
 class EditSiteForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(EditSiteForm, self).__init__(*args, **kwargs)
+        self.fields['country_code'].choices = COUNTRY_CODES
+        self.fields['country'].choices = COUNTRIES
+        self.fields['site_type'].choices = SITE_TYPES
+
     name = forms.CharField()
-    country_code = forms.ChoiceField(choices=COUNTRY_CODES, widget=forms.widgets.Select, required=False)
-    country = forms.ChoiceField(choices=COUNTRIES, widget=forms.widgets.Select, required=False)
-    site_type = forms.ChoiceField(choices=SITE_TYPES, widget=forms.widgets.Select, required=False)
+    country_code = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+    country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+    site_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     address = forms.CharField(required=False)
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     room = forms.CharField(required=False, help_text='Room identifier in building if applicable.')
@@ -237,6 +252,7 @@ class EditSiteForm(forms.Form):
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+    debug_test = forms.CharField(required=False)
 
 
 class EditSiteOwnerForm(forms.Form):
@@ -245,17 +261,24 @@ class EditSiteOwnerForm(forms.Form):
 
 
 class NewCableForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(NewCableForm, self).__init__(*args, **kwargs)
+        self.fields['cable_type'].choices = CABLE_TYPES
+
     name = forms.CharField()
-    cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
+    cable_type = forms.ChoiceField(widget=forms.widgets.Select)
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
-
-
-                                       
 class EditCableForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(EditCableForm, self).__init__(*args, **kwargs)
+        self.fields['cable_type'].choices = CABLE_TYPES
+
     name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
-    cable_type = forms.ChoiceField(choices=CABLE_TYPES, widget=forms.widgets.Select)
+    cable_type = forms.ChoiceField(widget=forms.widgets.Select)
     telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.')
     telenor_trunk_id = forms.CharField(required=False, help_text='Telenor Trunk ID, nnn-nnnn.')
     global_crossing_circuit_id = forms.CharField(required=False, help_text='Global Crossing circuit ID, nnnnnnnnnn')
@@ -271,9 +294,14 @@ class EditCableForm(forms.Form):
         return cleaned_data
 
 
-class EditOpticalNodeForm(forms.Form):        
+class EditOpticalNodeForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(EditOpticalNodeForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
+
     name = forms.CharField()
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     sites = get_node_type_tuples('Site')
     relationship_ports = JSONField(required=False, widget=JSONInput)
@@ -308,16 +336,24 @@ class EditRackForm(forms.Form):
                 
                 
 class EditHostForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(EditHostForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['security_class'].choices = SECURITY_CLASSES
+
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     #responsible_persons = JSONField(required=False, widget=JSONInput,
     #                                help_text='Name of the person responsible for the host.')
-    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+    responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the host.')
-    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+    support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
     os = forms.CharField(required=False,
                          help_text='What operating system is running on the host?')
@@ -335,7 +371,7 @@ class EditHostForm(forms.Form):
     relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    security_class = forms.ChoiceField(required=False, choices=SECURITY_CLASSES, widget=forms.widgets.Select)
+    security_class = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
     services_locked = forms.BooleanField(required=False)
     services_checked = forms.BooleanField(required=False)
@@ -360,6 +396,7 @@ class EditRouterForm(forms.Form):
     
     
 class NewOdfForm(forms.Form):
+
     def __init__(self, *args, **kwargs):
         super(NewOdfForm, self).__init__(*args, **kwargs)
         # Set max number of ports to choose from
@@ -398,14 +435,24 @@ class EditExternalEquipmentForm(forms.Form):
 
 
 class NewPortForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(NewPortForm, self).__init__(*args, **kwargs)
+        self.fields['port_type'].choices = PORT_TYPES
+
     name = forms.CharField()
-    port_type = forms.ChoiceField(required=False, choices=PORT_TYPES, widget=forms.widgets.Select)
+    port_type = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class EditPortForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(EditPortForm, self).__init__(*args, **kwargs)
+        self.fields['port_type'].choices = PORT_TYPES
+
     name = forms.CharField()
-    port_type = forms.ChoiceField(required=False, choices=PORT_TYPES, widget=forms.widgets.Select)
+    port_type = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Notes regarding port usage.')
@@ -443,21 +490,25 @@ class EditProviderForm(forms.Form):
 
 
 class NewServiceForm(forms.Form):
+
     def __init__(self, *args, **kwargs):
         super(NewServiceForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['service_type'].choices = SERVICE_TYPES
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
 
-    name = forms.CharField(required=False,
-                           help_text='Name will only be available for manually named service types.')
+    name = forms.CharField(required=False, help_text='Name will only be available for manually named service types.')
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
-    service_type = forms.ChoiceField(choices=SERVICE_TYPES, widget=forms.widgets.Select)
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    service_type = forms.ChoiceField(widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
-    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+    responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
-    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+    support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
@@ -473,6 +524,8 @@ class NewServiceForm(forms.Form):
         Sets the service class from the service type.
         """
         cleaned_data = super(NewServiceForm, self).clean()
+        # Set service_class depending on service_type.
+        cleaned_data['service_class'] = SERVICE_CLASS_MAP.get(cleaned_data.get("service_type"), None)
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
         service_type = cleaned_data.get("service_type")
@@ -489,26 +542,30 @@ class NewServiceForm(forms.Form):
                 self._errors = ErrorDict()
                 self._errors['name'] = ErrorList()
                 self._errors['name'].append('Missing name for %s service.' % service_type)
-        # Set service_class depending on service_type.
-        cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
         return cleaned_data
 
 
 class EditServiceForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(EditServiceForm, self).__init__(*args, **kwargs)
+        self.fields['service_type'].choices = SERVICE_TYPES
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+
     name = forms.CharField(required=False)
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
-    service_type = forms.ChoiceField(choices=SERVICE_TYPES,
-                                     widget=forms.widgets.Select)
+    service_type = forms.ChoiceField(widget=forms.widgets.Select)
     project_end_date = forms.DateField(required=False)
     decommissioned_date = forms.DateField(required=False)
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-                                          widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the service.')
-    responsible_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+    responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
-    support_group = forms.ChoiceField(choices=RESPONSIBLE_GROUPS, required=False, widget=forms.widgets.Select,
+    support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
     ncs_service_name = forms.CharField(required=False, help_text='')
     vpn_type = forms.CharField(required=False, help_text='')
@@ -523,7 +580,7 @@ class EditServiceForm(forms.Form):
     def clean(self):
         cleaned_data = super(EditServiceForm, self).clean()
         # Set service_class depending on service_type.
-        cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
+        cleaned_data['service_class'] = SERVICE_CLASS_MAP.get(self.cleaned_data['service_type'], None)
         # Check that project_end_date is filled in for Project service type
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
             self._errors = ErrorDict()
@@ -550,10 +607,17 @@ class EditServiceForm(forms.Form):
 
 
 class NewOpticalLinkForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(NewOpticalLinkForm, self).__init__(*args, **kwargs)
+        self.fields['link_type'].choices = OPTICAL_LINK_TYPES
+        self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
+
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
-    link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES, widget=forms.widgets.Select)
-    interface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
+    link_type = forms.ChoiceField(widget=forms.widgets.Select)
+    interface_type = forms.ChoiceField(widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical link.')
@@ -582,15 +646,17 @@ class NewOpticalLinkForm(forms.Form):
 
 
 class EditOpticalLinkForm(forms.Form):
+
     def __init__(self, *args, **kwargs):
         super(EditOpticalLinkForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['link_type'].choices = OPTICAL_LINK_TYPES
+        self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
 
-    link_type = forms.ChoiceField(choices=OPTICAL_LINK_TYPES,
-                                  widget=forms.widgets.Select)
-    interface_type = forms.ChoiceField(choices=OPTICAL_LINK_INTERFACE_TYPE)
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-                                          widget=forms.widgets.Select)
+    link_type = forms.ChoiceField(widget=forms.widgets.Select)
+    interface_type = forms.ChoiceField(widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical link.')
@@ -613,10 +679,10 @@ class EditOpticalMultiplexSectionForm(forms.Form):
         super(EditOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
         self.fields['relationship_depends_on'].choices = get_node_type_tuples('Optical Link')
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
 
     name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-                                          widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
@@ -628,14 +694,14 @@ class NewOpticalPathForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewOpticalPathForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['framing'].choices = OPTICAL_PATH_FRAMING
+        self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
 
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
-    framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
-                                widget=forms.widgets.Select)
-    capacity = forms.ChoiceField(choices=OPTICAL_PATH_CAPACITY,
-                                 widget=forms.widgets.Select)
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-                                          widget=forms.widgets.Select)
+    framing = forms.ChoiceField(widget=forms.widgets.Select)
+    capacity = forms.ChoiceField(widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
@@ -664,12 +730,16 @@ class NewOpticalPathForm(forms.Form):
 
 
 class EditOpticalPathForm(forms.Form):
-    framing = forms.ChoiceField(choices=OPTICAL_PATH_FRAMING,
-                                widget=forms.widgets.Select)
-    capacity = forms.ChoiceField(choices=OPTICAL_PATH_CAPACITY,
-                                 widget=forms.widgets.Select)
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES,
-                                          widget=forms.widgets.Select)
+
+    def __init__(self, *args, **kwargs):
+        super(EditOpticalPathForm, self).__init__(*args, **kwargs)
+        self.fields['framing'].choices = OPTICAL_PATH_FRAMING
+        self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
+
+    framing = forms.ChoiceField(widget=forms.widgets.Select)
+    capacity = forms.ChoiceField(widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
