@@ -328,7 +328,6 @@ def neo4j_report_age(item, old, very_old):
     return 'current'
 
 
-
 def dicts_to_csv_response(dict_list, header=None):
     """
     Takes a list of dicts and returns a comma separated file with all dict keys
