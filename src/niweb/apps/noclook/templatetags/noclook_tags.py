@@ -183,3 +183,28 @@ def table(th, tbody, *args, **kwargs):
 @register.inclusion_tag("noclook/table_search.html")
 def table_search(target=None, field_id=None):
     return {"target": target, "field_id":field_id}
+
+@register.filter
+def as_json(value):
+    import json
+    return json.dumps(value, indent=4, sort_keys=True)
+@register.simple_tag
+def hardware_module(module, level=0):
+    result =""
+    indent = " "*4*level
+    keys = ["name", 
+            "version", 
+            "part_number", 
+            "serial_number", 
+            "description",
+            "hardware_description", 
+            "model_number",
+            "clei_code"]
+    if module:
+        result += "\n".join(["{0}{1}: {2}".format(indent,key,module[key]) for key in keys if key in module ])
+        if 'modules' in module and module['modules']:
+            result += "\n{0}Modules:\n\n".format(indent)
+            result += "\n".join([ hardware_module(mod, level+1) for mod in module['modules'] ])
+        result += "\n{0}{1}\n".format(indent,"-"*8)
+    
+    return result

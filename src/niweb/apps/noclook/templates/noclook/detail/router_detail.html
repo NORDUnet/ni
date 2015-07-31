@@ -26,8 +26,9 @@
         {% include "noclook/detail/includes/last_changed.html" %}
     </div>
 </div>
+
 {% if user.is_staff %}
-    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+    <p><a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a></p>
 {% endif %}
 {% include "noclook/depend_include.html" %}
 <div class="section">
@@ -70,5 +71,27 @@
     {% endblockvar %}
     {% table th tbody id="connections" %}
 </div>
+{% if hardware_modules %}
+<div class="accordion" id="hardware">
+    <div class="accordion-group">
+        <div class="accordion-heading">
+            <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#hardware" href="#showHardware">
+                Hardware information
+            </a>
+        </div>
+        <div id="showHardware" class="accordion-body collapse">
+            <div class="accordion-inner">
+                <dl>
+                    <dt>Model: </dt><dd>{{node.data.model}}</dd>
+                    <dt>Serial number: </dt><dd>{{node.data.serial_number}}</dd>
+                </dl>
+                <pre>{% for module in  hardware_modules %}
+{% hardware_module module %}
+{% endfor %}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 

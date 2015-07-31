@@ -467,6 +467,18 @@ def rack_detail(request, handle_id):
                                'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
+def _zip_modules(chain, out):
+    if chain:
+        part = chain[0] 
+        name = part['name']
+        out_part = next((p for p in out if p['name'] == name), None)
+        if not out_part:
+            out_part = part
+            out_part['modules'] = []
+            out.append(out_part)
+        # process rest of chain
+        _zip_modules(chain[1:], out_part['modules'])
+
 
 @login_required
 def router_detail(request, handle_id):
@@ -478,13 +490,23 @@ def router_detail(request, handle_id):
     # Get all the Ports and what depends on the port.
     connections = router.get_connections()
     dependent = router.get_dependent_as_types()
+    q = """
+        MATCH p=(n:Router {handle_id: {handle_id}})-[r:Has*1..4]->(part) 
+        WHERE has(part.hardware_description)
+        RETURN tail(nodes(p)) as hardware
+        """
+    result = nc.query_to_list(nc.neo4jdb, q, handle_id=router.handle_id)
+    hardware_modules = []
+    for chain in result:
+        _zip_modules(chain['hardware'],hardware_modules)
     
     #TODO: generally very inefficient lookups in view... 
-    urls = helpers.get_node_urls(router, location_path, dependent, connections)
+    urls = helpers.get_node_urls(router, location_path, dependent, connections, hardware_modules)
     return render_to_response('noclook/detail/router_detail.html',
                               {'node_handle': nh, 'node': router, 'last_seen': last_seen, 'expired': expired,
                                'location_path': location_path, 'dependent': dependent,
                                'connections': connections, 
+                               'hardware_modules': hardware_modules,
                                'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 

@@ -349,6 +349,8 @@ def _module(module, parent):
         node = _get_or_create_node(name, parent, 'Module', 'Physical')
     node_dict = module.copy()
     del node_dict['sub_modules']
+    node_dict['hardware_description'] = node_dict['description']
+    del node_dict['description']
     helpers.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
     helpers.set_noclook_auto_manage(node, True)
     return node
@@ -387,6 +389,8 @@ def insert_juniper_hardware_interfaces(router, fpc, pic, modules):
             node_dict = module.copy()
             del node_dict['sub_modules']
             del node_dict['name']
+            node_dict['hardware_description'] = node_dict['description']
+            del node_dict['description']
             helpers.dict_update_node(user, port.handle_id, node_dict)
             helpers.set_noclook_auto_manage(port, True)
             
@@ -402,10 +406,11 @@ def insert_juniper_submodules(parent, modules, router):
             insert_juniper_submodules(node, module['sub_modules'], router)
 
 def insert_juniper_hardware(router_node, hardware):
-    for module in hardware.get('modules',[]):
-        node = _module(module, router_node)
-        if module['sub_modules']:
-            insert_juniper_submodules(node, module['sub_modules'], router_node)
+    if hardware:
+        for module in hardware.get('modules',[]):
+            node = _module(module, router_node)
+            if module['sub_modules']:
+                insert_juniper_submodules(node, module['sub_modules'], router_node)
 
 def consume_juniper_conf(json_list):
     """
