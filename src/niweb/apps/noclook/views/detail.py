@@ -499,6 +499,7 @@ def router_detail(request, handle_id):
     hardware_modules = []
     for chain in result:
         _zip_modules(chain['hardware'],hardware_modules)
+    hardware_modules.sort(key=lambda mod: mod['name'])
     
     #TODO: generally very inefficient lookups in view... 
     urls = helpers.get_node_urls(router, location_path, dependent, connections, hardware_modules)
