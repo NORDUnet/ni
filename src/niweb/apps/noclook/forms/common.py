@@ -252,7 +252,6 @@ class EditSiteForm(forms.Form):
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
-    debug_test = forms.CharField(required=False)
 
 
 class EditSiteOwnerForm(forms.Form):

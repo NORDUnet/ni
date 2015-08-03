@@ -132,7 +132,7 @@ def get_provider_id(provider_name):
     return provider_id
 
 
-def form_update_node(user, handle_id, form, property_keys=list()):
+def form_update_node(user, handle_id, form, property_keys=None):
     """
     Take a node, a form and the property keys that should be used to fill the
     node if the property keys are omitted the form.base_fields will be used.
@@ -144,6 +144,7 @@ def form_update_node(user, handle_id, form, property_keys=list()):
                    'services_checked', 'relationship_responsible_for']
     nh, node = get_nh_node(handle_id)
     if not property_keys:
+        property_keys = []
         for field in form.base_fields.keys():
             if field not in meta_fields:
                 property_keys.append(field)
@@ -206,7 +207,7 @@ def form_to_generic_node_handle(request, form, slug, node_meta_type):
     node_name = form.cleaned_data['name']
     node_type = slug_to_node_type(slug, create=True)
     node_handle = NodeHandle(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
-        modifier=request.user, creator=request.user)
+                             modifier=request.user, creator=request.user)
     node_handle.save()
     activitylog.create_node(request.user, node_handle)
     set_noclook_auto_manage(node_handle.get_node(), False)
@@ -796,6 +797,7 @@ def get_node_urls(*args):
     for n in nodes:
         urls[n.handle_id] = n.get_absolute_url()
     return urls
+
 
 def paginate(full_list, page=None, per_page=250):
     paginator = Paginator(full_list, per_page, allow_empty_first_page=True)
