@@ -188,8 +188,10 @@ def dict_update_node(user, handle_id, properties, keys=None):
     return True
 
 
-def dict_update_relationship(user, relationship_id, properties, keys):
+def dict_update_relationship(user, relationship_id, properties, keys=None):
     relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    if not keys:
+        keys = properties.keys()
     for key in keys:
         pre_value = relationship.data.get(key, '')
         if properties.get(key, None) or properties.get(key, None) == 0:
