@@ -52,13 +52,10 @@ def new_external_cable(request, **kwargs):
                                           context_instance=RequestContext(request))
             helpers.form_update_node(request.user, nh.handle_id, form)
             return HttpResponseRedirect(nh.get_absolute_url())
-        else:
-            name = kwargs.get('name', None)
-        if name:
-            initital = {'name': name}
-            form = common_forms.NewCableForm(initial=initital)
     else:
-        form = common_forms.NewCableForm()
+        name = kwargs.get('name', None)
+        initial = {'name': name}
+        form = common_forms.NewCableForm(initial=initial)
     return render_to_response('noclook/create/create_cable.html', {'form': form},
                               context_instance=RequestContext(request))
 
@@ -140,10 +137,6 @@ def new_cable(request, **kwargs):
                 node = nh.get_node()
                 provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, node, provider_nh.handle_id)
-            # Provider
-            if form.cleaned_data['relationship_provider']:
-                provider_id = form.cleaned_data['relationship_provider']
-                helpers.set_provider(request.user, node, provider_id)
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         name = kwargs.get('name', None)
@@ -278,9 +271,12 @@ def new_port(request, **kwargs):
         if form.is_valid():
             nh = helpers.form_to_generic_node_handle(request, form, 'port', 'Physical')
             helpers.form_update_node(request.user, nh.handle_id, form)
-            if kwargs.get('parent_id', None):
+            if kwargs.get('parent_id', None) or form.cleaned_data['relationship_parent']:
+                parent_id = kwargs.get('parent_id', None)
+                if not parent_id:
+                    parent_id = form.cleaned_data['relationship_parent']
                 try:
-                    parent_nh = NodeHandle.objects.get(pk=kwargs['parent_id'])
+                    parent_nh = NodeHandle.objects.get(pk=parent_id)
                     helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
                 except NoRelationshipPossible:
                     nh.delete()

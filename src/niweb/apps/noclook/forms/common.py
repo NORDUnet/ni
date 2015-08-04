@@ -276,21 +276,11 @@ class EditCableForm(forms.Form):
         super(EditCableForm, self).__init__(*args, **kwargs)
         self.fields['cable_type'].choices = CABLE_TYPES
 
-    name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
+    name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
-    telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.')
-    telenor_trunk_id = forms.CharField(required=False, help_text='Telenor Trunk ID, nnn-nnnn.')
-    global_crossing_circuit_id = forms.CharField(required=False, help_text='Global Crossing circuit ID, nnnnnnnnnn')
-    global_connect_circuit_id = forms.CharField(required=False, help_text='Global Connect circuit ID')
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-
-    def clean(self):
-        cleaned_data = super(EditCableForm, self).clean()
-        if cleaned_data.get('telenor_trunk_id', None):
-            cleaned_data['name'] = cleaned_data['telenor_trunk_id']
-        return cleaned_data
 
 
 class EditOpticalNodeForm(forms.Form):
