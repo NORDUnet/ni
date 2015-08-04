@@ -45,7 +45,12 @@
                 var modalDialog = $("#dialog-relationship-confirm");
                 modalDialog.dialog('option', 'buttons', {
                     "Confirm" : function() {
-                        window.location.href = theHREF;
+                        $.post(theHREF, {}, function(response) {
+                            if (response.success === true) {
+                                $(e.target).parent().parent().hide();
+                            }
+                        });
+                        $(this).dialog("close");
                     },
                     "Cancel" : function() {
                         $(this).dialog("close");

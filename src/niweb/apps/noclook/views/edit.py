@@ -8,7 +8,7 @@ Node manipulation views.
 """
 from operator import itemgetter
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 import json
@@ -36,13 +36,37 @@ def delete_relationship(request, slug, handle_id, rel_id):
     Removes the relationship if the node has a relationship matching the
     supplied id.
     """
-    nh, node = helpers.get_nh_node(handle_id)
-    relationship = nc.get_relationship_model(nc.neo4jdb, rel_id)
-    if node.handle_id == relationship.start or node.handle_id == relationship.end:
-        activitylog.delete_relationship(request.user, relationship)
-        relationship.delete()
-        return HttpResponseRedirect('/%s/%d/edit' % (slug, nh.handle_id))
-    raise Http404
+    success = False
+    if request.method == 'POST':
+        nh, node = helpers.get_nh_node(handle_id)
+        try:
+            relationship = nc.get_relationship_model(nc.neo4jdb, rel_id)
+            if node.handle_id == relationship.start or node.handle_id == relationship.end:
+                activitylog.delete_relationship(request.user, relationship)
+                relationship.delete()
+                success = True
+        except nc.exceptions.RelationshipNotFound:
+            success = True
+    return JsonResponse({'success': success, 'relationship_id': '{}'.format(rel_id)})
+
+
+@login_required
+def update_relationship(request, slug, handle_id, rel_id):
+    """
+    Removes the relationship if the node has a relationship matching the
+    supplied id.
+    """
+    success = False
+    properties = request.POST
+    if properties:
+        nh, node = helpers.get_nh_node(handle_id)
+        try:
+            relationship = nc.get_relationship_model(nc.neo4jdb, rel_id)
+            if node.handle_id == relationship.start or node.handle_id == relationship.end:
+                success = helpers.dict_update_relationship(request.user, relationship.id, properties)
+        except nc.exceptions.RelationshipNotFound:
+            success = True
+    return JsonResponse({'success': success, 'relationship_id': '{}'.format(rel_id), 'data': properties})
 
 
 # Form data returns
