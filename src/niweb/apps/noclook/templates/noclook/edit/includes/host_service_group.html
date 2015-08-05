@@ -24,7 +24,7 @@
                 <th>Address</th>
                 <th>Protocol</th>
                 <th>Port</th>
-                <th>Public</th>
+                <th>Public service</th>
                 <th>Expired</th>
                 <th>Delete</th>
             {% endblockvar %}
@@ -40,12 +40,13 @@
                     <td>{{ item.relationship.ip_address }}</td>
                     <td>{{ item.relationship.protocol }}</td>
                     <td>{{ item.relationship.port }}</td>
-                    <td>Public</td>
                     <td>
-                         {% noclook_has_expired item.relationship as expired %}
-                            {% if expired %}
-                                Expired
-                            {% endif %}
+                        <a href="relationship/{{ item.relationship_id }}/update" class="relationship-toggle" data-true-text="Yes" data-false-text="No"
+                           data-properties='{"public_service": {{ item.relationship.public_service|default:False|lower }}}'>{{ item.relationship.public_service|yesno:"Yes,No" }}</a>
+                    </td>
+                    <td>
+                        {% noclook_has_expired item.relationship as expired %}
+                        {{ expired|yesno:"Yes,No,Unknown" }}
                     </td>
                     <td>
                         <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>

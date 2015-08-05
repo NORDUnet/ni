@@ -45,11 +45,15 @@
                 var modalDialog = $("#dialog-relationship-confirm");
                 modalDialog.dialog('option', 'buttons', {
                     "Confirm" : function() {
-                        $.post(theHREF, {}, function(response) {
-                            if (response.success === true) {
-                                $(e.target).parent().parent().hide();
-                            }
-                        });
+                        var jqxhr = $.post(theHREF, {}, function(response) {})
+                                .done(function(response) {
+                                    if (response.success === true) {
+                                        $(e.target).parent().parent().hide();
+                                    }
+                                })
+                                .fail(function(response) {
+                                    $(e.target).text('Server failure');
+                                });
                         $(this).dialog("close");
                     },
                     "Cancel" : function() {
@@ -57,6 +61,52 @@
                     }
                 });
                 modalDialog.dialog("open");
+            });
+
+            $("a.relationship-toggle").click(function(e) {
+                e.preventDefault();
+                var theHREF = $(this).attr("href");
+                var target = $(e.target);
+                var properties = $.parseJSON(target.attr('data-properties'));
+                var trueText = target.attr('data-true-text');
+                var falseText = target.attr('data-false-text');
+                var toggleText = '';
+
+                $.each(properties, function( key, value ) {
+                    properties[key] = !value;
+                    toggleText = (!value === true ? trueText : falseText);
+                });
+                var jqxhr = $.post(theHREF, properties, function(response) {})
+                        .done(function(response) {
+                            if (response.success === true) {
+                                target.attr('data-properties', JSON.stringify(response.data));
+                                target.text(toggleText);
+                            } else {
+                                target.text('Task failure');
+                            }
+                        })
+                        .fail(function(response) {
+                            target.text('Server failure');
+                        });
+            });
+
+            $("a.relationship-update").click(function(e) {
+                e.preventDefault();
+                var theHREF = $(this).attr("href");
+                var target = $(e.target);
+                var properties = $.parseJSON(target.attr('data-properties'));
+
+                var jqxhr = $.post(theHREF, properties, function(response) {})
+                        .done(function(response) {
+                            if (response.success === true) {
+                                target.attr('data-properties', JSON.stringify(response.data));
+                            } else {
+                                target.text('Task failure');
+                            }
+                        })
+                        .fail(function(response) {
+                            target.text('Server failure');
+                        });
             });
         }
     );
