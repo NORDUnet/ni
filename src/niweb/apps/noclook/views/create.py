@@ -6,7 +6,7 @@ Created on 2012-11-07 4:43 PM
 """
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect, Http404, HttpResponseForbidden
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.forms.utils import ErrorDict, ErrorList
@@ -25,8 +25,6 @@ def new_node(request, slug=None, **kwargs):
     Generic edit function that redirects calls to node type sensitive edit
     functions.
     """
-    if not request.user.is_staff:
-        raise Http404
     if not slug:
         return render_to_response('noclook/create/new_node.html', {}, context_instance=RequestContext(request))
     try:
@@ -38,6 +36,9 @@ def new_node(request, slug=None, **kwargs):
 
 @login_required
 def new_external_cable(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = common_forms.NewCableForm(request.POST)
         if form.is_valid():
@@ -62,6 +63,9 @@ def new_external_cable(request, **kwargs):
 
 @login_required
 def new_customer(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewCustomerForm(request.POST)
         if form.is_valid():
@@ -84,6 +88,9 @@ def new_customer(request, **kwargs):
 
 @login_required
 def new_end_user(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewEndUserForm(request.POST)
         if form.is_valid():
@@ -106,6 +113,9 @@ def new_end_user(request, **kwargs):
 
 @login_required
 def new_external_equipment(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewExternalEquipmentForm(request.POST)
         if form.is_valid():
@@ -120,6 +130,9 @@ def new_external_equipment(request, **kwargs):
 
 @login_required
 def new_cable(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewCableForm(request.POST)
         if form.is_valid():
@@ -148,6 +161,9 @@ def new_cable(request, **kwargs):
 
 @login_required
 def new_optical_link(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewOpticalLinkForm(request.POST)
         if form.is_valid():
@@ -174,6 +190,9 @@ def new_optical_link(request, **kwargs):
 
 @login_required
 def new_optical_path(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewOpticalPathForm(request.POST)
         if form.is_valid():
@@ -200,6 +219,9 @@ def new_optical_path(request, **kwargs):
 
 @login_required
 def new_service(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewServiceForm(request.POST)
         if form.is_valid():
@@ -226,6 +248,9 @@ def new_service(request, **kwargs):
 
 @login_required
 def new_odf(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewOdfForm(request.POST)
         if form.is_valid():
@@ -240,6 +265,9 @@ def new_odf(request, **kwargs):
 
 @login_required
 def new_optical_multiplex_section(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewOpticalMultiplexSectionForm(request.POST)
         if form.is_valid():
@@ -266,6 +294,9 @@ def new_optical_multiplex_section(request, **kwargs):
 
 @login_required
 def new_port(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewPortForm(request.POST)
         if form.is_valid():
@@ -295,6 +326,9 @@ def new_port(request, **kwargs):
 
 @login_required
 def new_provider(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewProviderForm(request.POST)
         if form.is_valid():
@@ -317,6 +351,9 @@ def new_provider(request, **kwargs):
 
 @login_required
 def new_rack(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewRackForm(request.POST)
         if form.is_valid():
@@ -334,6 +371,9 @@ def new_rack(request, **kwargs):
 
 @login_required
 def new_site(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewSiteForm(request.POST)
         if form.is_valid():
@@ -356,6 +396,9 @@ def new_site(request, **kwargs):
 
 @login_required
 def new_site_owner(request, **kwargs):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if request.POST:
         form = forms.NewSiteOwnerForm(request.POST)
         if form.is_valid():
@@ -379,6 +422,9 @@ def new_site_owner(request, **kwargs):
 # Reserve Ids
 @login_required
 def reserve_id_sequence(request, slug=None):
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
+
     if not slug:
         return render_to_response('noclook/edit/reserve_id.html', {}, context_instance=RequestContext(request))
     if request.POST:
@@ -396,10 +442,10 @@ def reserve_id_sequence(request, slug=None):
                 form.cleaned_data['site'] 
             )
             return render_to_response('noclook/edit/reserve_id.html', {'reserved_list': reserved_list, 'slug': slug},
-                                  context_instance=RequestContext(request))
+                                      context_instance=RequestContext(request))
         else:
             return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},
-                                  context_instance=RequestContext(request))
+                                      context_instance=RequestContext(request))
     else:
         form = forms.ReserveIdForm()
         return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},

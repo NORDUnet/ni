@@ -8,7 +8,7 @@ Node manipulation views.
 """
 from operator import itemgetter
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse, HttpResponseForbidden
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 import json
@@ -25,6 +25,8 @@ def delete_node(request, slug, handle_id):
     """
     Removes the node and all its relationships.
     """
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
     nh, node = helpers.get_nh_node(handle_id)
     helpers.delete_node(request.user, node.handle_id)
     return HttpResponseRedirect('/%s' % slug)
@@ -36,6 +38,8 @@ def delete_relationship(request, slug, handle_id, rel_id):
     Removes the relationship if the node has a relationship matching the
     supplied id.
     """
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
     success = False
     if request.method == 'POST':
         nh, node = helpers.get_nh_node(handle_id)
@@ -56,6 +60,8 @@ def update_relationship(request, slug, handle_id, rel_id):
     Removes the relationship if the node has a relationship matching the
     supplied id.
     """
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
     success = False
     properties = {}
     if request.POST:
@@ -140,6 +146,8 @@ def convert_host(request, handle_id, slug):
     """
     Convert a Host to Firewall or Switch.
     """
+    if not request.user.is_staff:
+        return HttpResponseForbidden()
     allowed_types = ['firewall', 'switch', 'pdu']  # Types that can be added as Hosts by nmap
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     if slug in allowed_types and nh.node_type.type == 'Host':
@@ -163,7 +171,7 @@ def edit_node(request, slug, handle_id):
     functions.
     """
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     try:
         func = EDIT_FUNC[slug]
     except KeyError:
@@ -174,7 +182,7 @@ def edit_node(request, slug, handle_id):
 @login_required
 def edit_cable(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, cable = helpers.get_nh_node(handle_id)
     connections = cable.get_connected_equipment()
@@ -208,7 +216,7 @@ def edit_cable(request, handle_id):
 @login_required
 def edit_customer(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, customer = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -229,7 +237,7 @@ def edit_customer(request, handle_id):
 @login_required
 def edit_end_user(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, end_user = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -250,7 +258,7 @@ def edit_end_user(request, handle_id):
 @login_required
 def edit_external_equipment(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, external_equipment = helpers.get_nh_node(handle_id)
     relations = external_equipment.get_relations()
@@ -286,7 +294,7 @@ def edit_external_equipment(request, handle_id):
 @login_required
 def edit_firewall(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, firewall = helpers.get_nh_node(handle_id)
     location = firewall.get_location()
@@ -333,7 +341,7 @@ def edit_firewall(request, handle_id):
 @login_required
 def edit_host(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, host = helpers.get_nh_node(handle_id)
     location = host.get_location()
@@ -380,7 +388,7 @@ def edit_host(request, handle_id):
 @login_required
 def edit_odf(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, odf = helpers.get_nh_node(handle_id)
     location = odf.get_location()
@@ -411,7 +419,7 @@ def edit_odf(request, handle_id):
 @login_required
 def edit_optical_link(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, link = helpers.get_nh_node(handle_id)
     relations = link.get_relations()
@@ -442,10 +450,11 @@ def edit_optical_link(request, handle_id):
                                'depends_on': depends_on},
                               context_instance=RequestContext(request))
 
+
 @login_required
 def edit_optical_multiplex_section(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, oms = helpers.get_nh_node(handle_id)
     relations = oms.get_relations()
@@ -477,7 +486,7 @@ def edit_optical_multiplex_section(request, handle_id):
 @login_required
 def edit_optical_node(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, optical_node = helpers.get_nh_node(handle_id)
     location = optical_node.get_location()
@@ -509,7 +518,7 @@ def edit_optical_node(request, handle_id):
 @login_required
 def edit_optical_path(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, path = helpers.get_nh_node(handle_id)
     relations = path.get_relations()
@@ -541,7 +550,7 @@ def edit_optical_path(request, handle_id):
 @login_required
 def edit_pdu(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, pdu = helpers.get_nh_node(handle_id)
     location = pdu.get_location()
@@ -588,7 +597,7 @@ def edit_pdu(request, handle_id):
 @login_required
 def edit_peering_partner(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, peering_partner = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -610,7 +619,7 @@ def edit_peering_partner(request, handle_id):
 @login_required
 def edit_port(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     nh, port = helpers.get_nh_node(handle_id)
     parent = port.get_parent()
     if request.POST:
@@ -636,7 +645,7 @@ def edit_port(request, handle_id):
 @login_required
 def edit_provider(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, provider = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -658,7 +667,7 @@ def edit_provider(request, handle_id):
 @login_required
 def edit_rack(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, rack = helpers.get_nh_node(handle_id)
     parent = rack.get_parent()
@@ -690,7 +699,7 @@ def edit_rack(request, handle_id):
 @login_required
 def edit_router(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, router = helpers.get_nh_node(handle_id)
     location = router.get_location()
@@ -717,7 +726,7 @@ def edit_router(request, handle_id):
 @login_required
 def edit_service(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, service = helpers.get_nh_node(handle_id)
     relations = service.get_relations()
@@ -752,7 +761,7 @@ def edit_service(request, handle_id):
 @login_required
 def edit_site(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, site = helpers.get_nh_node(handle_id)
     relations = site.get_relations()
@@ -779,7 +788,7 @@ def edit_site(request, handle_id):
 @login_required
 def edit_site_owner(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, site_owner = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -801,7 +810,7 @@ def edit_site_owner(request, handle_id):
 @login_required
 def edit_switch(request, handle_id):
     if not request.user.is_staff:
-        raise Http404
+        return HttpResponseForbidden()
     # Get needed data from node
     nh, switch = helpers.get_nh_node(handle_id)
     location = switch.get_location()
