@@ -76,7 +76,6 @@ def host_users(request, host_user_name=None):
 
 @login_required
 def host_security_class(request, status=None, form=None):
-    hosts = []
     where_statement = ''
     if status == 'classified':
         where_statement = 'and (has(host.security_class) or has(host.security_comment))'
@@ -103,20 +102,33 @@ def host_services(request, status=None):
             q = """
                 MATCH (host:Host)
                 MATCH host<-[r:Depends_on]-()
-                WHERE has(r.rogue_port)
+                WHERE not(host.operational_state = "Decommissioned") and has(r.rogue_port)
                 RETURN host, collect(r) as ports
                 ORDER BY host.noclook_last_seen DESC
                 """
             hosts = nc.query_to_list(nc.neo4jdb, q)
-            return render_to_response('noclook/reports/host_unauthorized_ports.html', 
-                    {'status': status, 'hosts': hosts},
-                    context_instance=RequestContext(request))
+            return render_to_response('noclook/reports/host_unauthorized_ports.html',
+                                      {'status': status, 'hosts': hosts},
+                                      context_instance=RequestContext(request))
+        elif status == 'public':
+            q = """
+                MATCH (host:Host)
+                MATCH host<-[r:Depends_on]-()
+                WHERE not(host.operational_state = "Decommissioned") and r.public
+                RETURN host, collect({data: r, id: id(r)}) as ports
+                ORDER BY host.noclook_last_seen DESC
+                """
+            hosts = nc.query_to_list(nc.neo4jdb, q)
+            return render_to_response('noclook/reports/host_public_ports.html',
+                                      {'status': status, 'hosts': hosts},
+                                      context_instance=RequestContext(request))
         else:
-            where_statement = ''
             if status == 'locked':
                 where_statement = 'and (has(host.services_locked) and host.services_locked)'
             elif status == 'not-locked':
                 where_statement = 'and (not(has(host.services_locked)) or not host.services_locked)'
+            else:
+                raise Http404()
             q = """
                 MATCH (host:Host)
                 WHERE not(host.operational_state = "Decommissioned") %s
@@ -129,21 +141,11 @@ def host_services(request, status=None):
                               context_instance=RequestContext(request))
 
 
-
-def monthly_netapp_usage():
-    """
-    :return: Http200
-
-    This should be run the 1st of every month.
-    """
-
-    return HttpResponse('Monthly NetApp usage saved.')
-
-
 @login_required
 def unique_ids(request, organisation=None):
     if not organisation:
-        return render_to_response('noclook/reports/unique_ids/choose_organization.html', {}, context_instance=RequestContext(request))
+        return render_to_response('noclook/reports/unique_ids/choose_organization.html', {},
+                                  context_instance=RequestContext(request))
     if organisation == 'NORDUnet':
         id_list = get_id_list(request.GET or None)
         id_list = helpers.paginate(id_list, request.GET.get('page'))
@@ -154,17 +156,25 @@ def unique_ids(request, organisation=None):
         {'id_list': id_list, 'organisation': organisation, 'search_form': search_form},
         context_instance=RequestContext(request))
 
+
 @login_required
 def download_unique_ids(request, organisation=None, file_format=None):
     header = ["ID", "Reserved", "Reserve message", "Site", "Reserver", "Created"]
-
+    table = None
     if organisation == 'NORDUnet':
         id_list = get_id_list(request.GET or None)
         get_site = lambda uid : uid.site.node_name if uid.site else ""
-        create_dict = lambda uid : {'ID': uid.unique_id, 'Reserve message': uid.reserve_message, 'Reserved': uid.reserved, 'Site': get_site(uid), 'Reserver': str(uid.reserver), 'Created': uid.created}
-        table = [ create_dict(uid)  for uid in id_list]
+        create_dict = lambda uid : {
+            'ID': uid.unique_id,
+            'Reserve message': uid.reserve_message,
+            'Reserved': uid.reserved,
+            'Site': get_site(uid),
+            'Reserver': str(uid.reserver),
+            'Created': uid.created
+        }
+        table = [create_dict(uid) for uid in id_list]
         # using values is faster, a lot, but no nice header :( and no username
-        #table = id_list.values()
+        # table = id_list.values()
     if table and file_format == 'xls':  
         return helpers.dicts_to_xls_response(table, header)
     elif table and file_format == 'csv':
@@ -172,11 +182,12 @@ def download_unique_ids(request, organisation=None, file_format=None):
     else:
         raise Http404
 
+
 def get_id_list(data=None):
     id_list = NordunetUniqueId.objects.all().prefetch_related('reserver').prefetch_related('site')
     form = SearchIdForm(data)
     if form.is_valid():
-        #do stuff
+        # do stuff
         data = form.cleaned_data
         if data['reserved']:
             id_list = id_list.filter(reserved=data['reserved'])

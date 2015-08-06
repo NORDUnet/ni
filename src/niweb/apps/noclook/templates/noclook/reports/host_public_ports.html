@@ -1,0 +1,83 @@
+{% extends "noclook/table_view.html" %}
+
+{% block title %}{{ block.super }} | Host reports | Host services{% endblock %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+    $(document).ready(
+        function(){
+            $("a.relationship-toggle").click(function(e) {
+                e.preventDefault();
+                var theHREF = $(this).attr("href");
+                var target = $(e.target);
+                var properties = $.parseJSON(target.attr('data-properties'));
+                var trueText = target.attr('data-true-text');
+                var falseText = target.attr('data-false-text');
+                var toggleText = '';
+
+                $.each(properties, function( key, value ) {
+                    properties[key] = !value;
+                    toggleText = (!value === true ? trueText : falseText);
+                });
+                var jqxhr = $.post(theHREF, properties, function(response) {})
+                        .done(function(response) {
+                            if (response.success === true) {
+                                target.attr('data-properties', JSON.stringify(response.data));
+                                target.text(toggleText);
+                            } else {
+                                target.text('Task failure');
+                            }
+                        })
+                        .fail(function(response) {
+                            target.text(response.statusText);
+                        });
+            });
+        }
+    );
+</script>
+{% endblock %}
+
+{% block before_table %}
+    <h1>Host services</h1>
+    <hr>
+    <ul class="nav nav-pills">
+            <li class=""><a href="/reports/hosts/host-services/unauthorized-ports/">Unauthorized Ports</a></li>
+            <li class=""><a href="/reports/hosts/host-services/locked/">Locked Hosts</a></li>
+            <li class=""><a href="/reports/hosts/host-services/not-locked/">Not locked Hosts</a></li>
+            <li class="active"><a href="/reports/hosts/host-services/public/">Public Ports</a></li>
+    </ul>
+    {% if hosts %}
+        <h3>Hosts: {{ hosts|length }}</h3>
+    {% endif %}
+{% endblock %}
+{% block table_labels %}
+            <span class="table-to-csv btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> CSV</span> 
+            <span class="table-to-xls btn btn-link" data-table="#unauthorized-ports"><i class="icon-download"></i> Excel</span>
+{% endblock %}
+{% block table_head %}
+    <th>Host</th><th>Host service</th><th>Protocol</th><th>Port</th><th>Public service</th><th>Public</th><th>Last public check</th><th>Last seen</th>
+{% endblock %}
+{% block table_body %}
+    {% load noclook_tags %}
+    {% for item in hosts %}
+        {% for port in item.ports %}
+            <tr>
+                <td>
+                    {% if port.data.public_service and port.data.public %}{% else %}<i class="icon-exclamation-sign"></i>{% endif %}
+                    <a href="{% noclook_node_to_url item.host.handle_id %}">{{ item.host.name }}</a>
+                </td>
+                <td><a href="{% noclook_node_to_url port.data.start %}">{{ port.data.name }}</a></td>
+                <td>{{ port.data.protocol }}</td>
+                <td>{{ port.data.port }}</td>
+                <td>
+                    <a href="/host/{{ item.host.handle_id }}/relationship/{{ port.id }}/update" class="relationship-toggle" data-true-text="Yes" data-false-text="No"
+                           data-properties='{"public_service": {{ port.data.public_service|default:False|lower }}}'>{{ port.data.public_service|yesno:"Yes,No" }}</a>
+                </td>
+                <td>{{ port.data.public|yesno:"Yes,No" }}</td>
+                {% noclook_last_seen_as_td port.data.noclook_last_external_check %}
+                {% noclook_last_seen_as_td port.data.noclook_last_seen %}
+            </tr>
+        {% endfor %}
+    {% endfor %}
+{% endblock %}
