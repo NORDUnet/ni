@@ -2,7 +2,6 @@
 __author__ = 'lundberg'
 
 from django.contrib.sites.models import Site
-from django.core.urlresolvers import reverse
 from django.core.management.base import BaseCommand
 from django.conf import settings as django_settings
 from datetime import datetime
@@ -29,10 +28,6 @@ class Command(BaseCommand):
         results = nc.query_to_dict(nc.neo4jdb, unauthorized_q)
         results.update(nc.query_to_dict(nc.neo4jdb, public_q))
         results['now'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
-        results['unauthorized_path'] = reverse('apps.noclook.views.report.host_services',
-                                               kwargs={'status': 'unauthorized-ports'})
-        results['public_path'] = reverse('apps.noclook.views.report.host_services',
-                                         kwargs={'status': 'public'})
         results['domain'] = Site.objects.get_current().domain
 
         subject = 'NOCLook host security report'
@@ -46,7 +41,7 @@ class Command(BaseCommand):
             {unauthorized_host_count} hosts have unauthorized ports.
             There are a total of {unauthorized_port_count} unauthorized ports.
 
-            See https://{domain}{unauthorized_path} for more information.
+            See https://{domain}/reports/hosts/host-services/unauthorized-ports/ for more information.
 
             ---
 
@@ -54,7 +49,7 @@ class Command(BaseCommand):
             {public_host_count} hosts have unverified public ports.
             There are a total of {public_port_count} unverified public ports.
 
-            See https://{domain}{public_path} for more information.
+            See https://{domain}/reports/hosts/host-services/public/ for more information.
 
             This report was generated on {now} UTC.
             '''.format(**results)
