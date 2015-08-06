@@ -256,6 +256,9 @@ def insert_nmap(json_list, external_check=False):
         insert_services(i['host']['nmap_services_py']['services'], node, external_check)
         # Check if the host has backup
         properties['backup'] = helpers.get_host_backup(node)
+        # Set operational state if it is missing
+        if not node.data.get('operational_state', None):
+            properties['operational_state'] = 'In service'
         # Update host node
         helpers.dict_update_node(user, node.handle_id, properties, properties.keys())
         # Set host user depending on the domain.
