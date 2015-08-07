@@ -27,9 +27,17 @@ def delete_node(request, slug, handle_id):
     """
     if not request.user.is_staff:
         return HttpResponseForbidden()
+    redirect = '/{}'.format(slug)
     nh, node = helpers.get_nh_node(handle_id)
+    try:
+        # Redirect to parent if deleted node was a child node
+        parent = node.get_parent().get('Has', [])
+        if parent:
+            redirect = helpers.get_node_url(parent[0]['node'].handle_id)
+    except AttributeError:
+        pass
     helpers.delete_node(request.user, node.handle_id)
-    return HttpResponseRedirect('/%s' % slug)
+    return HttpResponseRedirect(redirect)
 
 
 @login_required
