@@ -119,7 +119,7 @@
 {% if user.is_staff %}
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
-{% include "noclook/depend_include.html" %}
+{% include "noclook/detail/includes/depend_include.html" %}
 {% include "noclook/detail/includes/connections.html" with connections=connections only %}
 {% include "noclook/detail/includes/host_services.html" %}
 {% endblock %}
