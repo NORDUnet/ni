@@ -271,7 +271,14 @@ class NordunetNewForms(FormTestCase):
             name='nordunet_service_id',
             base_id_length=6,
             zfill=True,
-            prefix='TEST-',
+            prefix='SERVICE-',
+            creator=self.user
+        )
+        self.cable_id_generator, created = UniqueIdGenerator.objects.get_or_create(
+            name='nordunet_cable_id',
+            base_id_length=6,
+            zfill=True,
+            prefix='CABLE-',
             creator=self.user
         )
 
@@ -309,12 +316,28 @@ class NordunetNewForms(FormTestCase):
         self.assertDictContainsSubset(data, nh.get_node().data)
         self.assertEqual(len(nh.get_node().relationships), 1)
 
-    def test_NewServiceForm_full_internal(self):
+    def test_NewCableForm_generated(self):
+        node_type = 'Cable'
+        data = {
+            'cable_type': 'Patch',
+            'relationship_provider': helpers.get_provider_id('NORDUnet')
+        }
+        resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
+        nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
+        self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
+        del data['relationship_provider']
+        self.assertDictContainsSubset(data, nh.get_node().data)
+        self.assertEqual(len(nh.get_node().relationships), 1)
+        self.assertEqual(nh.get_node().data['name'], 'CABLE-000001')
+
+    def test_NewServiceForm_full(self):
         node_type = 'Service'
         data = {
             'service_type': 'Private Interconnect',
             'operational_state': 'In service',
-            'description': 'Pretty good internal service',
+            'description': 'Pretty good Interconnect service',
             'responsible_group': 'DEV',
             'support_group': 'NOC',
             'relationship_provider': helpers.get_provider_id('NORDUnet')
@@ -327,4 +350,43 @@ class NordunetNewForms(FormTestCase):
         del data['relationship_provider']
         self.assertDictContainsSubset(data, nh.get_node().data)
         self.assertEqual(len(nh.get_node().relationships), 1)
+        self.assertEqual(nh.get_node().data['name'], 'SERVICE-000001')
+
+    def test_NewServiceForm_full_external(self):
+        node_type = 'Service'
+        data = {
+            'name': 'External Test Service',
+            'service_type': 'External',
+            'operational_state': 'In service',
+            'description': 'Pretty good external service',
+            'responsible_group': 'DEV',
+            'support_group': 'NOC'
+        }
+        resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
+        nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
+        self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
+        self.assertDictContainsSubset(data, nh.get_node().data)
+        self.assertEqual(nh.get_node().data['name'], 'External Test Service')
+
+    def test_NewOpticalLinkForm_full(self):
+        node_type = 'Service'
+        data = {
+            'service_type': 'Private Interconnect',
+            'operational_state': 'In service',
+            'description': 'Pretty good Interconnect service',
+            'responsible_group': 'DEV',
+            'support_group': 'NOC',
+            'relationship_provider': helpers.get_provider_id('NORDUnet')
+        }
+        resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
+        nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
+        self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
+        del data['relationship_provider']
+        self.assertDictContainsSubset(data, nh.get_node().data)
+        self.assertEqual(len(nh.get_node().relationships), 1)
+        self.assertEqual(nh.get_node().data['name'], 'SERVICE-000001')
 

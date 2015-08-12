@@ -11,6 +11,10 @@
     {% endif %}
     <div class="well">
         <form action="" method="post">{% csrf_token %}
+            {% if not form.name in form.hidden_fields %}
+                <h3>Name</h3>
+                {{ form.name }}
+            {% endif %}
             <h3>Framing</h3>
             {{ form.framing }}
             <h3>Capacity</h3>

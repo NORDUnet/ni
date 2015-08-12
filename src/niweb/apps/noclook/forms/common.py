@@ -102,18 +102,24 @@ OPERATIONAL_STATES = [
 
 OPTICAL_LINK_TYPES = [
     ('', ''),
+    ('OTS', 'OTS'),
+    ('OPS', 'OPS'),
 ]
 
 OPTICAL_PATH_FRAMING = [
     ('', ''),
+    ('WDM', 'WDM'),
 ]
 
 OPTICAL_PATH_CAPACITY = [
     ('', ''),
+    ('10Gb', '10Gb'),
+    ('100Gb', '100Gb'),
 ]
 
 OPTICAL_LINK_INTERFACE_TYPE = [
     ('', ''),
+    ('WDM', 'WDM'),
 ]
 
 SECURITY_CLASSES = [
@@ -603,7 +609,7 @@ class NewOpticalLinkForm(forms.Form):
         self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
         self.fields['operational_state'].choices = OPERATIONAL_STATES
 
-    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
+    name = forms.CharField(required=True)
     link_type = forms.ChoiceField(widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
@@ -621,7 +627,7 @@ class NewOpticalLinkForm(forms.Form):
         Sets name to next generated ID.
         """
         cleaned_data = super(NewOpticalLinkForm, self).clean()
-        # Set name to a generated id if the service is not a manually named service.
+        # Set name to a generated id if the name is not supplied
         name = cleaned_data.get("name")
         if not name and self.is_valid():
             if not self.Meta.id_generator_name or not self.Meta.id_collection:
@@ -631,6 +637,13 @@ class NewOpticalLinkForm(forms.Form):
                 cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
+        elif self.Meta.id_collection:
+            try:
+                unique_ids.register_unique_id(self.Meta.id_collection, name)
+            except IntegrityError as e:
+                self._errors = ErrorDict()
+                self._errors['name'] = ErrorList()
+                self._errors['name'].append(e.message)
         return cleaned_data
 
 
@@ -643,6 +656,7 @@ class EditOpticalLinkForm(forms.Form):
         self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
         self.fields['operational_state'].choices = OPERATIONAL_STATES
 
+    name = forms.CharField(required=True)
     link_type = forms.ChoiceField(widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
@@ -687,7 +701,7 @@ class NewOpticalPathForm(forms.Form):
         self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
         self.fields['operational_state'].choices = OPERATIONAL_STATES
 
-    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
+    name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
@@ -715,6 +729,13 @@ class NewOpticalPathForm(forms.Form):
                 cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
             except UniqueIdGenerator.DoesNotExist as e:
                 raise e
+        elif self.Meta.id_collection:
+            try:
+                unique_ids.register_unique_id(self.Meta.id_collection, name)
+            except IntegrityError as e:
+                self._errors = ErrorDict()
+                self._errors['name'] = ErrorList()
+                self._errors['name'].append(e.message)
         return cleaned_data
 
 
@@ -726,6 +747,7 @@ class EditOpticalPathForm(forms.Form):
         self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
         self.fields['operational_state'].choices = OPERATIONAL_STATES
 
+    name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)

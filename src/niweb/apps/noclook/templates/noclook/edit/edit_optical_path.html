@@ -32,6 +32,10 @@
     {{ block.super }}
 
     <div class="well">
+        {% if not form.name in form.hidden_fields %}
+            <h3>Name</h3>
+            {{ form.name }}
+        {% endif %}
         <h3>Framing</h3>
         {{ form.framing }}
         <br><br>

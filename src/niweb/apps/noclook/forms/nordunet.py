@@ -266,6 +266,8 @@ class NewOpticalLinkForm(common.NewOpticalLinkForm):
         id_generator_name = 'nordunet_optical_link_id'
         id_collection = NordunetUniqueId
 
+    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
+
     def clean(self):
         cleaned_data = super(NewOpticalLinkForm, self).clean()
         return cleaned_data
@@ -277,6 +279,8 @@ class EditOpticalLinkForm(common.EditOpticalLinkForm):
         super(EditOpticalLinkForm, self).__init__(*args, **kwargs)
         self.fields['link_type'].choices = OPTICAL_LINK_TYPES
         self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
+
+    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewOpticalMultiplexSectionForm(forms.Form):
@@ -296,6 +300,8 @@ class NewOpticalPathForm(common.NewOpticalPathForm):
         id_generator_name = 'nordunet_optical_path_id'
         id_collection = NordunetUniqueId
 
+    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
+
     def clean(self):
         cleaned_data = super(NewOpticalPathForm, self).clean()
         return cleaned_data
@@ -307,6 +313,8 @@ class EditOpticalPathForm(common.EditOpticalPathForm):
         super(EditOpticalPathForm, self).__init__(*args, **kwargs)
         self.fields['framing'].choices = OPTICAL_PATH_FRAMING
         self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
+
+    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewSiteForm(common.NewSiteForm):

@@ -21,6 +21,10 @@
 {% block content %}
     {{ block.super }}
     <div class="well">
+        {% if not form.name in form.hidden_fields %}
+            <h3>Name</h3>
+            {{ form.name }}
+        {% endif %}
         <h3>Link Type</h3>
         {{ form.link_type }}
         <br><br>
