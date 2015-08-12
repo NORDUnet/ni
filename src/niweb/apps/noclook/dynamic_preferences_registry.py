@@ -9,7 +9,7 @@ from dynamic_preferences import user_preferences_registry, global_preferences_re
 class DataDomain(StringPreference):
     section = 'general'
     name = 'data_domain'
-    default = 'nordunet'
+    default = 'common'
     help_text = 'Used for dynamic loading of forms (restart required)'
 
 
