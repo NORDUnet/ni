@@ -187,6 +187,19 @@ class CommonQueries(BaseNodeModel):
     def get_location(self):
         return {}
 
+    def get_child_form_data(self, node_type):
+        type_filter = ''
+        if node_type:
+            type_filter = 'and child:{node_type}'.format(node_type)
+        q = """
+            MATCH (parent:Node {{handle_id:{{handle_id}}}})
+            MATCH parent--child
+            WHERE (parent-[:Has]->child or parent<-[:Located_in|Part_of]-child) {type_filter}
+            RETURN child.handle_id as handle_id, labels(child) as labels, child.name as name,
+                   child.description as description
+            """.format(type_filter=type_filter)
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
     def get_relations(self):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})<-[r:Owns|Uses|Provides|Responsible_for]-(node)
@@ -352,7 +365,7 @@ class PhysicalModel(CommonQueries):
 
     def set_part_of(self, part_handle_id):
         q = """
-            MATCH (n:Node {handle_id: {handle_id}}), (part:Node {handle_id: {part_handle_id}})
+            MATCH (n:Node {handle_id: {handle_id}}), (part:Node:Logical {handle_id: {part_handle_id}})
             WITH n, part, NOT EXISTS((n)<-[:Part_of]-(part)) as created
             MERGE (n)<-[r:Part_of]-(part)
             RETURN created, type(r), id(r), r, part.handle_id
@@ -628,7 +641,19 @@ class OpticalNodeModel(EquipmentModel):
 
 
 class RouterModel(EquipmentModel):
-    pass
+
+    def get_child_form_data(self, node_type):
+        if node_type:
+            type_filter = ':{node_type}'.format(node_type)
+        else:
+            type_filter = ':Port'
+        q = """
+            MATCH (parent:Node {{handle_id:{{handle_id}}}})
+            MATCH parent-[:Has*]->(child{type_filter})
+            RETURN child.handle_id as handle_id, labels(child) as labels, child.name as name,
+                   child.description as description
+            """.format(type_filter=type_filter)
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 
 
 class PeeringPartnerModel(RelationModel):

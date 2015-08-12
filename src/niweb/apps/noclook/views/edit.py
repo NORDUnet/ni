@@ -102,7 +102,7 @@ def get_node_type(request, slug):
         '''.format(node_type=node_type.type.replace(' ', '_'))
     with nc.neo4jdb.transaction as r:
         type_list = r.execute(q).fetchall()
-    return HttpResponse(json.dumps(type_list), content_type='application/json')
+    return JsonResponse(type_list, safe=False)
 
 
 @login_required
@@ -120,33 +120,30 @@ def get_unlocated_node_type(request, slug):
         '''.format(node_type=node_type.type.replace(' ', '_'))
     with nc.neo4jdb.transaction as r:
         type_list = r.execute(q).fetchall()
-    return HttpResponse(json.dumps(type_list), content_type='application/json')
+    return JsonResponse(type_list, safe=False)
 
 
 @login_required
-def get_children(request, handle_id, slug=None):
+def get_child_form_data(request, handle_id, slug=None):
     """
     Compiles a list of the nodes children and returns a list of
     node name, node id tuples. If node_type is set the function will only return
     nodes of that type.
     """
     nh = get_object_or_404(NodeHandle, handle_id=handle_id)
-    type_filter = ''
+    node_type = slug
     if slug:
-        type_filter = 'and child:{node_type}'.format(node_type=helpers.slug_to_node_type(slug).type.replace(' ', '_'))
-    q = '''                   
-        MATCH (parent:Node {{handle_id:{{handle_id}}}})
-        MATCH parent--child
-        WHERE (parent-[:Has]->child or parent<-[:Located_in|Part_of]-child) {type_filter}
-        RETURN collect(child.handle_id) as ids
-        '''.format(type_filter=type_filter)
-    id_list = nc.query_to_dict(nc.neo4jdb, q, handle_id=nh.handle_id)
+        node_type = helpers.slug_to_node_type(slug).type.replace(' ', '_')
     child_list = []
-    for child_handle_id, child in NodeHandle.objects.in_bulk(id_list.get('ids')).items():
-        name = '%s %s' % (child.node_type.type, child.node_name)
-        child_list.append((child_handle_id, name))
+    for child in nh.get_node().get_child_form_data(node_type):
+        if not slug:
+            node_type = helpers.labels_to_node_type(child['labels'])
+        name = '{} {}'.format(node_type, child['name'])
+        if child.get('description', None):
+            name = '{} ({})'.format(name, child['description'])
+        child_list.append((child['handle_id'], name))
         child_list = sorted(child_list, key=itemgetter(1))
-    return HttpResponse(json.dumps(child_list), content_type='application/json')
+    return JsonResponse(child_list, safe=False)
 
 
 @login_required

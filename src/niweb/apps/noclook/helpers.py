@@ -442,6 +442,13 @@ def get_node_type(handle_id):
             pass
 
 
+def labels_to_node_type(labels):
+    for label in labels:
+        if label in nc.core.META_TYPES or label == 'Node':
+            continue
+        return label.replace('_', ' ')
+
+
 def slug_to_node_type(slug, create=False):
     """
     Returns or creates and returns the NodeType object from the supplied slug.
