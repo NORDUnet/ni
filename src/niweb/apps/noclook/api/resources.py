@@ -532,7 +532,7 @@ class CustomerResource(NodeHandleResource):
         queryset = NodeHandle.objects.filter(node_type__slug__exact='customer')
         resource_name = 'customer'
         pk_field = 'node_name'
-        pk_field_regex = '[-\w]+'
+        pk_field_regex = '[-\w\ ]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
@@ -546,7 +546,7 @@ class EndUserResource(NodeHandleResource):
         queryset = NodeHandle.objects.filter(node_type__slug__exact='end-user')
         resource_name = 'end-user'
         pk_field = 'node_name'
-        pk_field_regex = '[-\w]+'
+        pk_field_regex = '[-\w\ ]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         allowed_methods = ['get', 'put', 'post']
