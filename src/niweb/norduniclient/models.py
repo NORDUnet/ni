@@ -525,6 +525,7 @@ class EquipmentModel(PhysicalModel):
             OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
             OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb:Port)
             OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)
+            WITH  porta, r0, cable, portb, r1, last(collect(end)) as end
             OPTIONAL MATCH (end)-[:Located_in]->(location)
             OPTIONAL MATCH (location)<-[:Has]-site
             RETURN porta, r0, cable, r1, portb, end, location, site
@@ -561,6 +562,7 @@ class SubEquipmentModel(PhysicalModel):
             MATCH (porta:Node {handle_id: {handle_id}})<-[r0:Connected_to]-(cable)
             OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)-[r1:Connected_to]->(portb)
             OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)
+            WITH  porta, r0, cable, portb, r1, last(collect(end)) as end
             OPTIONAL MATCH (end)-[:Located_in]->(location)
             OPTIONAL MATCH (location)<-[:Has]-site
             RETURN porta, r0, cable, r1, portb, end, location, site
@@ -707,6 +709,7 @@ class CableModel(PhysicalModel):
         q = """
             MATCH (n:Node {handle_id: {handle_id}})-[rel:Connected_to]->(port)
             OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
+            WITH  rel, port, last(collect(end)) as end
             OPTIONAL MATCH (end)-[:Located_in]->(location)
             OPTIONAL MATCH (location)<-[:Has]-(site)
             RETURN id(rel) as rel_id, rel, port, end, location, site
