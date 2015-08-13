@@ -175,6 +175,21 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     return node_handle
 
 
+def get_unique_node_handle_by_name(node_name, node_type_name, node_meta_type):
+    """
+    Takes the arguments needed to create a NodeHandle, if there already
+    is a NodeHandle with the same name considered the same one.
+    Returns a NodeHandle object.
+    """
+    try:
+        return NodeHandle.objects.get(node_name=node_name)
+    except NodeHandle.DoesNotExist:
+        return get_unique_node_handle(node_name, node_type_name, node_meta_type)
+    except NodeHandle.MultipleObjectsReturned:
+        logger.error("Assumed unique node not unique: {0}".format(node_name))
+        return None
+
+
 def create_node_handle(node_name, node_type_name, node_meta_type):
     """
     Takes the arguments needed to create a NodeHandle.

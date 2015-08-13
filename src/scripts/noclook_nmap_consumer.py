@@ -47,6 +47,9 @@ logger = logging.getLogger('noclook_consumer.nmap')
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
 
+# Type of equipment we want to update with this consumer
+ALLOWED_NODE_TYPE_SET = {'Host', 'Firewall', 'Switch', 'PDU'}
+
 HOST_USERS_MAP = {
     'eduroam.se':       'SUNET',
     'eduid.se':         'SUNET',
@@ -91,7 +94,6 @@ def is_host(addresses):
     :param addresses: List of IP addresses
     :return: True if the addresses belongs to a host or does not belong to anything
     """
-    nmap_types = {'Host', 'Firewall', 'Switch'}  # Type of equipment we want to collect with nmap
     ip_addresses = [IPAddress(item) for item in addresses]
     for address in addresses:
         q1 = Q('ip_address', '%s*' % address, wildcard=True)
@@ -105,9 +107,10 @@ def is_host(addresses):
                     node_address = IPAddress(addr.split('/')[0])
                 except ValueError:
                     continue
-                if node_address in ip_addresses and not [l for l in node.labels if l in nmap_types]:
-                    helpers.update_noclook_auto_manage(node)
-                    return False
+                if node_address in ip_addresses:
+                        if not [l for l in node.labels if l.replace(' ', '_') in ALLOWED_NODE_TYPE_SET]:
+                            helpers.update_noclook_auto_manage(node)
+                            return False
     return True
 
 
@@ -235,8 +238,12 @@ def insert_nmap(json_list, external_check=False):
         if not is_host(addresses):
             logger.info('%s does not appear to be a host.' % name)
             continue
-        # Create the NodeHandle and the Node
-        node_handle = nt.get_unique_node_handle(name, node_type, meta_type)
+        # Get or create the NodeHandle and the Node by name, bail if there are more than one match
+        # TODO: We should probably have a get function that takes a list of acceptable node types so we can
+        # TODO: have uniquely named nodes spanning more than one category.
+        node_handle = nt.get_unique_node_handle_by_name(name, node_type, meta_type)
+        if not node_handle or node_handle.node_type.type not in ALLOWED_NODE_TYPE_SET:
+            continue
         # Set Node attributes
         node = node_handle.get_node()
         helpers.update_noclook_auto_manage(node)
