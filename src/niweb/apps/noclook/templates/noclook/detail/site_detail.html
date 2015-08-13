@@ -111,20 +111,18 @@
     {% endblockvar %}
     {% blockvar tbody %}
             {% for rack in location_relationships.Has %}
-                {% if rack.node.get_located_in.Located_in %}
-                    {% for item in rack.node.get_located_in.Located_in %}
-                    <tr>
-                        <td><a href="{% noclook_node_to_url rack.node.handle_id %}">{{ rack.node.data.name }}</a></td>
-                        {% noclook_get_type item.node.handle_id as node_type %}
-                        <td><a href="/{{ node_type|slugify }}/">{{ node_type }}</a> <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td><a href="{% noclook_node_to_url rack.node.handle_id %}">{{ rack.node.data.name }}</a></td>
-                        <td></td>
-                    </tr>
-                {% endif %}
+                {% for item in rack.node.get_located_in.Located_in %}
+                <tr>
+                    <td><a href="{% noclook_node_to_url rack.node.handle_id %}">{{ rack.node.data.name }}</a></td>
+                    {% noclook_get_type item.node.handle_id as node_type %}
+                    <td><a href="/{{ node_type|slugify }}/">{{ node_type }}</a> <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td><a href="{% noclook_node_to_url rack.node.handle_id %}">{{ rack.node.data.name }}</a></td>
+                    <td></td>
+                </tr>
+                {% endfor %}
             {% endfor %}
     {% endblockvar %}
     {% table th tbody id="locations" %}
