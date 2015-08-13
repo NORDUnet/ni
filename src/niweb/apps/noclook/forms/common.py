@@ -339,6 +339,7 @@ class EditHostForm(forms.Form):
         self.fields['support_group'].choices = RESPONSIBLE_GROUPS
         self.fields['security_class'].choices = SECURITY_CLASSES
 
+    name = forms.CharField()
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),

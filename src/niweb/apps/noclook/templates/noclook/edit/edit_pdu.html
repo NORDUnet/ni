@@ -35,6 +35,8 @@ $(document).ready(
     <div id="operation-section">
         <h3>Operational information</h3>
         <div class="well">
+            <label><strong>Name</strong></label>
+            {{ form.name }}
             <label><strong>Description</strong></label>
             {{ form.description }}
             <span class="help-block">{{ form.description.help_text }}</span>
