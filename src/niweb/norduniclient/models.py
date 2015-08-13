@@ -190,7 +190,7 @@ class CommonQueries(BaseNodeModel):
     def get_child_form_data(self, node_type):
         type_filter = ''
         if node_type:
-            type_filter = 'and child:{node_type}'.format(node_type)
+            type_filter = 'and child:{node_type}'.format(node_type=node_type)
         q = """
             MATCH (parent:Node {{handle_id:{{handle_id}}}})
             MATCH parent--child
