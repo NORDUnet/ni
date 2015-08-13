@@ -6,7 +6,7 @@
         </div>
     <h3>Connections</h3>
         {% blockvar th %}
-            <th>Port</th><th>Description</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th>
+            <th>Port</th><th>Description</th><th>Cable</th><th>End site</th><th>End rack</th><th>End equipment</th><th>End port</th><th>Description</th>
         {% endblockvar %}
         {% blockvar tbody %}
             {% for item in connections %}
@@ -17,12 +17,8 @@
                     <td><a href="{% noclook_node_to_url item.site.handle_id %}">{{ item.site.name }}</a></td>
                     <td><a href="{% noclook_node_to_url item.location.handle_id %}">{{ item.location.name }}</a></td>
                     <td><a href="{% noclook_node_to_url item.end.handle_id %}">{{ item.end.name }}</a></td>
-                    <td>
-                        <a href="{% noclook_node_to_url item.portb.handle_id %}">{{ item.portb.name }}</a>
-                        {% if item.portb.description %}
-                            ({{ item.portb.description }})
-                        {% endif %}
-                    </td>
+                    <td><a href="{% noclook_node_to_url item.portb.handle_id %}">{{ item.portb.name }}</a></td>
+                    <td>{{ item.portb.description }}</td>
                 </tr>
             {% endfor %}
         {% endblockvar %}
