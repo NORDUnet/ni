@@ -453,6 +453,7 @@ class EditPortForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Notes regarding port usage.')
     relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_connected_to = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewCustomerForm(forms.Form):

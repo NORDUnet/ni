@@ -138,12 +138,36 @@ def get_child_form_data(request, handle_id, slug=None):
     for child in nh.get_node().get_child_form_data(node_type):
         if not slug:
             node_type = helpers.labels_to_node_type(child['labels'])
-        name = '{} {}'.format(node_type, child['name'])
+        name = '{} {}'.format(node_type.replace('_', ' '), child['name'])
         if child.get('description', None):
             name = '{} ({})'.format(name, child['description'])
         child_list.append((child['handle_id'], name))
         child_list = sorted(child_list, key=itemgetter(1))
     return JsonResponse(child_list, safe=False)
+
+
+@login_required
+def get_subtype_form_data(request, slug, key, value):
+    """
+    Compiles a list of the nodes children and returns a list of
+    node name, node id tuples. If node_type is set the function will only return
+    nodes of that type.
+    """
+    node_type = helpers.slug_to_node_type(slug).type.replace(' ', '_')
+    q = """
+        MATCH (n:{node_type})
+        WHERE n.{key} = '{value}'
+        RETURN n.handle_id as handle_id, n.name as name, n.description as description
+        ORDER BY n.name
+        """.format(node_type=node_type, key=key, value=value)
+    subtype_list = []
+    for subtype in nc.query_to_list(nc.neo4jdb, q):
+        name = subtype['name']
+        if subtype.get('description', None):
+            name = '{} ({})'.format(name, subtype['description'])
+        subtype_list.append((subtype['handle_id'], name))
+        subtype_list = sorted(subtype_list, key=itemgetter(1))
+    return JsonResponse(subtype_list, safe=False)
 
 
 @login_required
@@ -627,6 +651,7 @@ def edit_port(request, handle_id):
         return HttpResponseForbidden()
     nh, port = helpers.get_nh_node(handle_id)
     parent = port.get_parent()
+    connected_to = port.get_connected_to()
     if request.POST:
         form = forms.EditPortForm(request.POST)
         if form.is_valid():
@@ -636,6 +661,9 @@ def edit_port(request, handle_id):
             if form.cleaned_data['relationship_parent']:
                 parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent'])
                 helpers.set_has(request.user, parent_nh.get_node(), port.handle_id)
+            if form.cleaned_data['relationship_connected_to']:
+                cable_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_connected_to'])
+                helpers.set_connected_to(request.user, cable_nh.get_node(), port.handle_id)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -643,8 +671,8 @@ def edit_port(request, handle_id):
     else:
         form = forms.EditPortForm(port.data)
     return render_to_response('noclook/edit/edit_port.html',
-                              {'node_handle': nh, 'form': form, 'node': port, 'parent': parent},
-                              context_instance=RequestContext(request))
+                              {'node_handle': nh, 'form': form, 'node': port, 'parent': parent,
+                               'connected_to': connected_to}, context_instance=RequestContext(request))
 
 
 @login_required

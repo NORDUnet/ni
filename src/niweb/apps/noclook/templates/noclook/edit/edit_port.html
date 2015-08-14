@@ -12,12 +12,19 @@
             // Populate first level has relationship combo box
             parentCategories = [
                 ['external-equipment', 'External Equipment'],
-                //['firewall', 'Firewalls'],
+                ['firewall', 'Firewalls'],
                 ['host', 'Hosts'],
                 ['odf', 'ODFs'],
                 ['optical-node', 'Optical Nodes'],
                 ['router', 'Routers'],
                 ['switch', 'Switchs']
+            ];
+            // Connected to //
+            // Populate first level combo box
+            cableTypes = [
+                ['Dark Fiber', 'Dark Fibers'],
+                ['Patch', 'Patches'],
+                ['Power Cable', 'Power Cables']
             ];
         }
     );
@@ -43,6 +50,7 @@
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/parent_group.html" %}
+        {% include "noclook/edit/includes/connect_cable_group.html" %}
     </div>
 {% endblock %}
 

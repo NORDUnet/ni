@@ -637,6 +637,13 @@ class PortModel(SubEquipmentModel):
             """
         return self._basic_read_query_to_dict(q, unit_name=unit_name)
 
+    def get_connected_to(self):
+        q = """
+            MATCH (n:Node {handle_id: {handle_id}})<-[r:Connected_to]-(cable:Cable)
+            RETURN type(r), id(r), r, cable.handle_id
+            """
+        return self._basic_read_query_to_dict(q)
+
 
 class OpticalNodeModel(EquipmentModel):
     pass
@@ -654,6 +661,7 @@ class RouterModel(EquipmentModel):
             MATCH parent-[:Has*]->(child{type_filter})
             RETURN child.handle_id as handle_id, labels(child) as labels, child.name as name,
                    child.description as description
+            ORDER BY child.name
             """.format(type_filter=type_filter)
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 

@@ -57,6 +57,7 @@ urlpatterns += patterns('apps.noclook.views.edit',
     (r'^formdata/unlocated/(?P<slug>[-\w]+)/$', 'get_unlocated_node_type'),
     (r'^formdata/(?P<handle_id>\d+)/children/$', 'get_child_form_data'),
     (r'^formdata/(?P<handle_id>\d+)/children/(?P<slug>[-\w]+)/$', 'get_child_form_data'),
+    (r'^formdata/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w ]+)/$', 'get_subtype_form_data'),
 )
 
 urlpatterns += patterns('apps.noclook.views.report',
