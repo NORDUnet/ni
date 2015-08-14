@@ -11,6 +11,10 @@ $(document).ready(
             parent: "#parent_categoryA",
             end_value_field: "#id_relationship_parent"
         });
+        $("#parent_level1A").jCombo("/formdata/{id}/children/", {
+            parent: "#parent_level0A",
+            end_value_field: "#id_relationship_parent"
+        });
     }
 );
 </script>
@@ -43,6 +47,7 @@ $(document).ready(
                 {{ form.relationship_parent }}
                 <select class="stacked" name="parent_categoryA" id="parent_categoryA"></select>
                 <select class="stacked" name="parent_level0A" id="parent_level0A"></select>
+                <select class="stacked" name="parent_level1A" id="parent_level1A"></select>
                 <span class="help-block">Choose a dependency</span>
                 <br>
                 <br>
