@@ -77,7 +77,7 @@ $(document).ready(
                 {% for item in connections %}
                     <div class="row">
                         <div class="span5">
-                            Connected to <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.end.name }} {{ item.port.name }}</a>
+                            Connected to <a href="{% noclook_node_to_url item.end.handle_id %}">{{ item.end.name }}</a> <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.port.name }}</a>
                         </div>
                         <div class="span1">
                             <a href="relationship/{{ item.rel_id }}/delete" class="label label-important relationship-confirm">Delete</a>
