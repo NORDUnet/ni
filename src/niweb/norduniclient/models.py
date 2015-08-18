@@ -754,14 +754,15 @@ class CableModel(PhysicalModel):
 
     def get_connection_path(self):
         q = """
-            MATCH (n:Cable {handle_id: 15912})-[:Connected_to]->(m:Port)
-            MATCH path=(m)-[:Connected_to*1..]-(cable)
-            WITH nodes(path) as parts, length(path) as len
-            ORDER BY len desc
+            MATCH (n:Cable {handle_id: {handle_id}})-[:Connected_to*1..10]-(port:Port)
+            OPTIONAL MATCH path=(port)-[:Connected_to*]-()
+            WITH nodes(path) AS parts, length(path) AS len
+            ORDER BY len DESC
             LIMIT 1
-            UNWIND parts as part
-            //OPTIONAL MATCH p=(part)<-[:Has*1..10]-(parent)  // This should work...
-            RETURN part//, last(collect(parent))              // but the order get messed up
+            UNWIND parts AS part
+            OPTIONAL MATCH (part)<-[:Has*1..10]-(parent)
+            WHERE NOT (parent)<-[:Has]-()
+            RETURN part, parent
             """
         return core.query_to_list(self.manager, q, handle_id=self.handle_id)
 

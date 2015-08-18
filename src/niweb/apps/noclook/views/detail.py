@@ -36,14 +36,14 @@ def cable_detail(request, handle_id):
     connections = cable.get_connected_equipment()
     relations = cable.get_relations()
     dependent = cable.get_dependent_as_types()
-
+    connection_path = cable.get_connection_path()
     urls = helpers.get_node_urls(cable,connections,relations,dependent)
     if not any(dependent.values()):
         dependent = None
     return render_to_response('noclook/detail/cable_detail.html',
                               {'node': cable, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'connections': connections, 'dependent': dependent, 'history': True,
-                               'relations': relations, 'urls': urls},
+                               'connections': connections, 'dependent': dependent, 'connection_path': connection_path,
+                               'history': True, 'relations': relations, 'urls': urls},
                               context_instance=RequestContext(request))
 
 
