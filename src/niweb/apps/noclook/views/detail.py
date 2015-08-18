@@ -14,8 +14,10 @@ def generic_detail(request, handle_id, slug):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
     node = nh.get_node()
+    # Get location
+    location_path = node.get_location_path()
     return render_to_response('noclook/detail/detail.html',
-                              {'node_handle': nh, 'node': node, 'slug': slug},
+                              {'node_handle': nh, 'node': node, 'slug': slug, 'location_path': location_path},
                               context_instance=RequestContext(request))
 
 
@@ -420,7 +422,6 @@ def port_detail(request, handle_id):
     location_path = port.get_location_path()
     connections = port.get_connections()
     dependent = port.get_dependent_as_types()
-
     urls = helpers.get_node_urls(port, connections, dependent, location_path)
     return render_to_response('noclook/detail/port_detail.html',
                               {'node': port, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,

@@ -829,3 +829,11 @@ class FirewallModel(EquipmentModel, HostModel):
 
 class PDUModel(EquipmentModel, HostModel):
     pass
+
+
+class PICModel(SubEquipmentModel):
+    pass
+
+
+class FPCModel(SubEquipmentModel):
+    pass
