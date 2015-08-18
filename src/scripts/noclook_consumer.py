@@ -175,14 +175,19 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     return node_handle
 
 
-def get_unique_node_handle_by_name(node_name, node_type_name, node_meta_type):
+def get_unique_node_handle_by_name(node_name, node_type_name, node_meta_type, allowed_node_types=None):
     """
     Takes the arguments needed to create a NodeHandle, if there already
     is a NodeHandle with the same name considered the same one.
+
+    If the allowed_node_types is set the supplied node types will be used for filtering.
+
     Returns a NodeHandle object.
     """
     try:
-        return NodeHandle.objects.get(node_name=node_name)
+        if not allowed_node_types:
+            allowed_node_types = [node_type_name]
+        return NodeHandle.objects.filter(node_type__type__in=allowed_node_types).get(node_name=node_name)
     except NodeHandle.DoesNotExist:
         return get_unique_node_handle(node_name, node_type_name, node_meta_type)
     except NodeHandle.MultipleObjectsReturned:

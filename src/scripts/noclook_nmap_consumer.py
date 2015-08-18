@@ -239,11 +239,7 @@ def insert_nmap(json_list, external_check=False):
             logger.info('%s does not appear to be a host.' % name)
             continue
         # Get or create the NodeHandle and the Node by name, bail if there are more than one match
-        # TODO: We should probably have a get function that takes a list of acceptable node types so we can
-        # TODO: have uniquely named nodes spanning more than one category.
-        # TODO: Something like:
-        # TODO NodeHandle.objects.filter(node_type__type__in=ALLOWED_NODE_TYPE_SET).get(node_name=name)
-        node_handle = nt.get_unique_node_handle_by_name(name, node_type, meta_type)
+        node_handle = nt.get_unique_node_handle_by_name(name, node_type, meta_type, ALLOWED_NODE_TYPE_SET)
         if not node_handle or node_handle.node_type.type not in ALLOWED_NODE_TYPE_SET:
             continue
         # Set Node attributes
