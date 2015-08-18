@@ -422,12 +422,12 @@ def port_detail(request, handle_id):
     location_path = port.get_location_path()
     connections = port.get_connections()
     dependent = port.get_dependent_as_types()
+    connection_path = port.get_connection_path()
     urls = helpers.get_node_urls(port, connections, dependent, location_path)
     return render_to_response('noclook/detail/port_detail.html',
                               {'node': port, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
-                               'connections': connections, 'dependent': dependent,
-                               'location_path': location_path, 
-                               'history': True, 'urls': urls},
+                               'connections': connections, 'dependent': dependent, 'location_path': location_path,
+                               'connection_path': connection_path, 'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
 

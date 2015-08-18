@@ -644,6 +644,20 @@ class PortModel(SubEquipmentModel):
             """
         return self._basic_read_query_to_dict(q)
 
+    def get_connection_path(self):
+        q = """
+            MATCH (n:Port {handle_id: {handle_id}})-[:Connected_to*1..10]-(cable:Cable)
+            OPTIONAL MATCH path=(cable)-[:Connected_to*]-()
+            WITH nodes(path) AS parts, length(path) AS len
+            ORDER BY len DESC
+            LIMIT 1
+            UNWIND parts AS part
+            OPTIONAL MATCH (part)<-[:Has*1..10]-(parent)
+            WHERE NOT (parent)<-[:Has]-()
+            RETURN part, parent
+            """
+        return core.query_to_list(self.manager, q, handle_id=self.handle_id)
+
 
 class OpticalNodeModel(EquipmentModel):
     pass

@@ -75,24 +75,5 @@
         No connections found.
     {% endif %}
 </div>
-<div class="section">
-    <h3>Connection path</h3>
-    {% if connection_path %}
-        {% for item in connection_path %}
-            <div class="text-center">
-                {% if item.parent %}
-                    <a href="{% noclook_node_to_url item.parent.handle_id %}">{{ item.parent.name }}</a>
-                {% endif %}
-                <a href="{% noclook_node_to_url item.part.handle_id %}">{{ item.part.name }}</a>
-            </div>
-            {% if not forloop.last %}
-                <div class="text-center">
-                    <i class="icon-arrow-up"></i><i class="icon-arrow-down"></i>
-                </div>
-            {% endif %}
-        {% endfor %}
-    {% else %}
-        No connection path found.
-    {% endif %}
-</div>
+{% include "noclook/detail/includes/connection_path.html" %}
 {% endblock %}
