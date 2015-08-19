@@ -3,10 +3,16 @@
     <h3>Connection path</h3>
     {% for item in connection_path %}
         <div class="text-center">
+            {% if node.handle_id == item.part.handle_id %}
+                <strong style="font-size: 20px;">
+            {% endif %}
             {% if item.parent %}
                 <a href="{% noclook_node_to_url item.parent.handle_id %}">{{ item.parent.name }}</a>
             {% endif %}
             <a href="{% noclook_node_to_url item.part.handle_id %}">{{ item.part.name }}</a>
+            {% if node.handle_id == item.part.handle_id %}
+                </strong>
+            {% endif %}
         </div>
         {% if not forloop.last %}
             <div class="text-center">
