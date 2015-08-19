@@ -646,7 +646,7 @@ class PortModel(SubEquipmentModel):
 
     def get_connection_path(self):
         q = """
-            MATCH (n:Port {handle_id: {handle_id}})-[:Connected_to*1..10]-(port:Port)
+            MATCH (n:Port {handle_id: {handle_id}})-[:Connected_to*0..10]-(port:Port)
             OPTIONAL MATCH path=(port)-[:Connected_to*]-()
             WITH nodes(path) AS parts, length(path) AS len
             ORDER BY len DESC
