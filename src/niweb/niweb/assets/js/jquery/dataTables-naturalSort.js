@@ -79,12 +79,14 @@ function naturalSort (a, b) {
 
 jQuery.extend( jQuery.fn.dataTableExt.oSort, {
 	"natural-asc": function ( a, b ) {
-        var aStr = $(a).text(), bStr =  $(b).text();
+        //Remove html, and do a to lowercase
+        var aStr = $(a).text().toLowerCase(), bStr =  $(b).text().toLowerCase();
 		return naturalSort(aStr,bStr);
 	},
 
 	"natural-desc": function ( a, b ) {
-        var aStr = $(a).text(), bStr =  $(b).text();
+        //Remove html, and do a to lowercase
+        var aStr = $(a).text().toLowerCase(), bStr =  $(b).text().toLowerCase();
 		return naturalSort(aStr,bStr) * -1;
 	}
 } );
