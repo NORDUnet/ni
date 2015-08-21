@@ -79,11 +79,13 @@ function naturalSort (a, b) {
 
 jQuery.extend( jQuery.fn.dataTableExt.oSort, {
 	"natural-asc": function ( a, b ) {
-		return naturalSort(a,b);
+        var aStr = $(a).text(), bStr =  $(b).text();
+		return naturalSort(aStr,bStr);
 	},
 
 	"natural-desc": function ( a, b ) {
-		return naturalSort(a,b) * -1;
+        var aStr = $(a).text(), bStr =  $(b).text();
+		return naturalSort(aStr,bStr) * -1;
 	}
 } );
 
