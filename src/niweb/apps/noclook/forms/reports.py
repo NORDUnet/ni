@@ -8,16 +8,14 @@ OPERATIONAL_STATE = [
     ('Reserved', 'Reserved'),
     ('Not set', 'Not set'),
 ]
-    
+
+
 class HostReportForm(forms.Form):
-    operational_state = forms.MultipleChoiceField(
-            choices=OPERATIONAL_STATE,
-            required=False, 
-            widget=forms.CheckboxSelectMultiple)
+    operational_state = forms.MultipleChoiceField(choices=OPERATIONAL_STATE, required=False,
+                                                  widget=forms.CheckboxSelectMultiple)
     cut_off = forms.ChoiceField(
-            choices=[('1','Present'), ('14', 'Last 14 days'),('All','All')],
-            required=False,
-            initial='All',)
+        choices=[('1', 'Present'), ('14', 'Last 14 days'), ('30', 'Last 30 days'), ('All', 'All')],
+        required=False, initial='All')
 
     def to_where(self, host="host", additional=None):
         q = ""
