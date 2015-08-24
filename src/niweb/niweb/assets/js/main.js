@@ -23,7 +23,10 @@ $(document).ready(function() {
         {
             "paging": false,
             "order": [],
-            "dom": "lrti"
+            "dom": "lrti",
+            columnDefs: [
+                   { type: 'natural', targets: '_all'}
+            ]
         });
         if($tables.length > 1) {
             $("input[data-tablefilter="+this.id+"]").on('keyup', function(){
