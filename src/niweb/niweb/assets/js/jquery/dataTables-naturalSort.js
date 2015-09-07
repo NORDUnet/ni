@@ -94,7 +94,7 @@ jQuery.extend( jQuery.fn.dataTableExt.oSort, {
 function handleHtml(str) {
     var result = str || "";
     if ( result.indexOf("<") > -1 ) {
-        result = $(result).text();
+        result = $("<div>"+result+"</div>").text();
     }
     return result.toLowerCase();
 }
