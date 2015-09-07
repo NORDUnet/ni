@@ -80,15 +80,23 @@ function naturalSort (a, b) {
 jQuery.extend( jQuery.fn.dataTableExt.oSort, {
 	"natural-asc": function ( a, b ) {
         //Remove html, and do a to lowercase
-        var aStr = $(a).text().toLowerCase(), bStr =  $(b).text().toLowerCase();
+        var aStr = handleHtml(a), bStr =  handleHtml(b);
 		return naturalSort(aStr,bStr);
 	},
 
 	"natural-desc": function ( a, b ) {
         //Remove html, and do a to lowercase
-        var aStr = $(a).text().toLowerCase(), bStr =  $(b).text().toLowerCase();
+        var aStr = handleHtml(a), bStr =  handleHtml(b);
 		return naturalSort(aStr,bStr) * -1;
 	}
 } );
+
+function handleHtml(str) {
+    var result = str || "";
+    if ( result.indexOf("<") > -1 ) {
+        result = $(result).text();
+    }
+    return result.toLowerCase();
+}
 
 }());
