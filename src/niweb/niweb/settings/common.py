@@ -241,6 +241,7 @@ THIRD_PARTY_APPS = (
 LOCAL_APPS = (
     'apps.userprofile',
     'apps.noclook',
+    'apps.scan',
 )
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
