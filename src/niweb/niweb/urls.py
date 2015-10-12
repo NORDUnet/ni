@@ -7,6 +7,12 @@ from apps.noclook.api.resources import *
 from django.contrib import admin
 admin.autodiscover()
 
+def if_installed(appname, *args, **kwargs):
+    ret = url(*args, **kwargs)
+    if appname not in settings.INSTALLED_APPS:
+        ret.resolve = lambda *args: None
+    return ret
+
 v1_api = Api(api_name='v1')
 # Resources
 v1_api.register(NodeTypeResource())
@@ -72,6 +78,9 @@ urlpatterns = patterns('',
 
     # User Profiles
     ('^userprofile/', include('apps.userprofile.urls')),
+
+    # Scan
+    if_installed('apps.scan', r'^scan/', include('apps.scan.urls', namespace="scan")),
 
     # NOCLook URLs
     (r'', include('apps.noclook.urls')),
