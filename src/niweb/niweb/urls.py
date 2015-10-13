@@ -48,6 +48,9 @@ v1_api.register(SiteResource())
 v1_api.register(SiteOwnerResource())
 v1_api.register(SwitchResource())
 v1_api.register(UnitResource())
+if "apps.scan" in settings.INSTALLED_APPS:
+    from apps.scan.api.resources import *
+    v1_api.register(ScanQueryItemResource())
 
 urlpatterns = patterns('',
 
