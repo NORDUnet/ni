@@ -185,9 +185,12 @@
 </div>
 
 {% if user.is_staff %}
-    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
-    
-    <a href="{% url 'scan:host' node.data.hostnames.0 %}" class="btn btn-warning"><i class="icon-refresh icon-white"></i> Scan</a>
+    <form method="POST" action="{% url 'scan:host' %}">
+        <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+        {% csrf_token %}
+        <input type="hidden" name="data" value="{{ node.data.hostnames.0 }}" />
+        <button class="btn btn-warning"><i class="icon-refresh icon-white"></i> Scan</button>
+    </form>
 {% endif %}
 
 {% include "noclook/detail/includes/depend_include.html" %}
