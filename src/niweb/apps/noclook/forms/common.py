@@ -11,6 +11,7 @@ import norduniclient as nc
 # We should move this kind of data to the SQL database.
 COUNTRY_CODES = [
     ('BE', 'BE'),
+    ('CH', 'CH'),
     ('DE', 'DE'),
     ('DK', 'DK'),
     ('FI', 'FI'),
