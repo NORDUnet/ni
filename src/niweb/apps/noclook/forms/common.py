@@ -35,12 +35,14 @@ COUNTRIES = [
     ('Netherlands', 'Netherlands'),
     ('Norway', 'Norway'),
     ('Sweden', 'Sweden'),
+    ('Switzerland', 'Switzerland'),
     ('United Kingdom', 'United Kingdom'),
     ('USA', 'USA'),
 ]
 
 COUNTRY_MAP = {
     'BE': 'Belgium',
+    'CH': 'Switzerland',
     'DE': 'Germany',
     'DK': 'Denmark',
     'FI': 'Finland',
