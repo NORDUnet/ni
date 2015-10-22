@@ -287,7 +287,7 @@ class EditOpticalLinkForm(common.EditOpticalLinkForm):
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
 
 
-class NewOpticalMultiplexSectionForm(forms.Form):
+class NewOpticalMultiplexSectionForm(common.NewOpticalMultiplexSectionForm):
     def __init__(self, *args, **kwargs):
         super(NewOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
