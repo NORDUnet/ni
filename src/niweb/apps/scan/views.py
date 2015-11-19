@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views import generic
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
@@ -25,4 +25,12 @@ def host(request):
             messages.success(request, "Added {0} to the scan queue".format(hostname))
     else:
         messages.warning(request, "GET request not allowed")
+    return HttpResponseRedirect(reverse("scan:queue"))
+
+def rescan(request, pk):
+    if request.POST:
+        item = get_object_or_404(QueueItem, pk=pk)
+        item.status="QUEUED"
+        item.save()
+        messages.info(request, "Rescanning {0} {1}".format(item.type,item.data))
     return HttpResponseRedirect(reverse("scan:queue"))

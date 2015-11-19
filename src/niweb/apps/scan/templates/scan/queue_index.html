@@ -17,6 +17,7 @@
                 <th>Data</th>
                 <th>Created at</th>
                 <th>Updated at</th>
+                <th>Control</th>
             </tr>
         </thead>
         <tbody>
@@ -30,6 +31,14 @@
                 </td>
                 <td data-order="{{ item.updated_at|date:"c" }}">
                     {{item.updated_at|date:"SHORT_DATETIME_FORMAT"}}
+                </td>
+                <td>
+                    {% if item.status == "FAILED" or item.status ==  "DONE" %}
+                        <form class="navbar-form" method="POST" action="{% url 'scan:rescan' item.id %}">
+                        {% csrf_token %}
+                        <button class="btn btn-small btn-warning" title="Rescan"><i class="icon-refresh icon-white"></i></button>
+                        </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
