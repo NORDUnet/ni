@@ -51,6 +51,9 @@ v1_api.register(UnitResource())
 if "apps.scan" in settings.INSTALLED_APPS:
     from apps.scan.api.resources import *
     v1_api.register(ScanQueryItemResource())
+if "apps.nerds" in settings.INSTALLED_APPS:
+    from apps.nerds.api.resources import NerdsResource
+    v1_api.register(NerdsResource())
 
 urlpatterns = patterns('',
 
