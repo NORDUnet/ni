@@ -1,4 +1,4 @@
-
+from lib.noclook_nmap_consumer import insert_nmap
 
 class NmapConsumer:
     def __init__(self, nerds):
