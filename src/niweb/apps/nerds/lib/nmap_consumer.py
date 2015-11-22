@@ -1,3 +1,4 @@
+from datetime import datetime
 from apps.noclook import helpers
 import .consumer_util as nlu
 
@@ -35,9 +36,13 @@ def nmap_import(nerds_json, external_check=False):
     data = item['nmap_services_py']
     addresses = data['addresses']
 
+    #TODO: is_host check... what does it do? 
     # find or create node
     name = item['name']
     node_handle =  nlu.get_unique_node_handle(name, "Host", "Logical", ALLOWED_NODE_TYPE_SET)
+    if not node_handle or node_handle.node_type.type not in ALLOWED_NODE_TYPE_SET:
+        #TODO: log that it is not in ALLOWED_NODE_TYPE_SET
+        return None
     node = node_handle.get_node()
     helpers.update_noclook_auto_manage(node)
 
@@ -61,6 +66,7 @@ def nmap_import(nerds_json, external_check=False):
 
     #handle services
     # TODO: finish it!
+    insert_services(data['services'], node, external_check)
 
     properties['backup'] = helpers.get_host_backup(node)
 
@@ -91,3 +97,51 @@ def add_host_user(host):
 
 def extract_domain(host_name):
     return '.'.join(host_name.split('.')[-2:])
+
+def insert_services(services_dict, host_node, external_check=False):
+    #Same dict used for all observed ports
+    if external_check:
+        external_dict = {
+            'public': True,
+            'noclook_last_external_check': datetime.now().isoformat()
+        }
+        # set_not_public(host_node) WTF? external check == not public?
+    for address in services_dict.keys():
+        for protocol in services_dict[addresses].keys():
+            for port, service in services_dict[addresses][protocol].iteritems()
+                if service['state'] != 'closed':
+                    service_name = service.get('name', 'unknown')
+                    service_node_handle = nlu.get_unique_node_handle(service_name, 'Host Service', 'Logical')
+                    service_node = service_node_handle.get_node()
+                    helpers.update_noclook_auto_manage(service_node)
+                    
+                    relationship_properties = {
+                        'ip_address': addresses,
+                        'protocol': producer,
+                        'port': port
+                    }
+                    result = host_node.get_host_service(service_node.handle_id, **relationship_properties)
+                    if not result.get('Depends_on'):
+                        result = host_node.set_host_service(service_node.handle_id, **relationship_properties)
+                    relationship_id = result.get('Depends_on')[0].get('relationship_id')
+                    relationship = nlu.get_relationship_model(relationship_id) 
+                    created = result.get('Depends_on')[0].get('created')
+                    # Add servie info to relation
+                    relationship_properties.update(service)
+                    user = nlu.get_user()
+                    if external_check:
+                        relationship_properties.update(external_dict)
+                    if created:
+                        activitylog.create_relationship(user, relationship)
+                        #TODO: log creation
+                        if host_node.data.get('services_locked', False):
+                            #TODO: log warning with new port found
+                            relationship_properties['rouge_port'] = True
+                    else:
+                        #TODO: log found service
+                        None
+                    helpers.update_noclook_auto_manage(relationship)
+                    #TODO: is properties_keys needed?
+                    helpers.dict_update_relationship(user, relationship.id, relationship_properties)
+                    #TODO: log processed service
+

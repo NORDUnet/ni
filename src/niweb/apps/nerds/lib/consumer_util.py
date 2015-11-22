@@ -1,4 +1,5 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, NodeType, NodeHandle
+import norduniclient as nc
 
 def get_user(username='noclook'):
     try:
@@ -50,3 +51,6 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type, allowed_no
     except NodeHandle.MultipleObjectsReturned:
         logger.error("Assumed unique node not unique: {0}".format(node_name))
     return node_handle
+
+def get_relationship_model(relationship_id):
+    return nc.get_relationship_model(nc.neo4jdb, relationship_id)
