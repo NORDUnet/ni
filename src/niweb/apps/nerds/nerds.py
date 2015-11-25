@@ -1,4 +1,4 @@
-from lib.noclook_nmap_consumer import insert_nmap
+from lib.nmap_consumer import nmap_import
 
 class NmapConsumer:
     def __init__(self, nerds):
@@ -6,4 +6,5 @@ class NmapConsumer:
 
     def process(self):
         print "got data for", self.data["host"]["name"]
+        nmap_import(self.data)
 
