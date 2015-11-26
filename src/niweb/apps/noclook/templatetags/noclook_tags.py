@@ -4,6 +4,8 @@ from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age,
 import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
+import json
+from django.utils.html import escape
 
 
 register = template.Library()
@@ -186,7 +188,6 @@ def table_search(target=None, field_id=None):
 
 @register.filter
 def as_json(value):
-    import json
     return json.dumps(value, indent=4, sort_keys=True)
 @register.simple_tag
 def hardware_module(module, level=0):
@@ -208,3 +209,7 @@ def hardware_module(module, level=0):
         result += "\n{0}{1}\n".format(indent,"-"*8)
     
     return result
+
+@register.simple_tag
+def scan_data(host_node):
+    return escape(json.dumps({"target": host_node.data["hostnames"][0], "ipv4s": host_node.data["ip_addresses"]}))
