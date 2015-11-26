@@ -242,6 +242,7 @@ LOCAL_APPS = (
     'apps.userprofile',
     'apps.noclook',
     'apps.scan',
+    'apps.nerds',
 )
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -302,11 +303,16 @@ LOGGING = {
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler'
-        }
+        },
+        'error_console': {
+            'level': 'ERROR',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler'
+        },
     },
     'loggers': {
         '': {
-            'handlers': ['debugfile', 'errorfile'],
+            'handlers': ['debugfile', 'errorfile', 'error_console'],
             'level': 'DEBUG',
             'propagate': True,
         },
