@@ -190,7 +190,7 @@ def as_json(value):
     return json.dumps(value, indent=4, sort_keys=True)
 @register.simple_tag
 def hardware_module(module, level=0):
-    result =""
+    result = ""
     indent = " "*4*level
     keys = ["name", 
             "version", 
@@ -201,7 +201,7 @@ def hardware_module(module, level=0):
             "model_number",
             "clei_code"]
     if module:
-        result += "\n".join(["{0}{1}: {2}".format(indent,key,module[key]) for key in keys if key in module ])
+        result += "\n".join([u"{0}{1}: {2}".format(indent,key,module[key]) for key in keys if key in module ])
         if 'modules' in module and module['modules']:
             result += "\n{0}Modules:\n\n".format(indent)
             result += "\n".join([ hardware_module(mod, level+1) for mod in module['modules'] ])
