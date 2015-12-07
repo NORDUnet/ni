@@ -143,11 +143,12 @@ def host_detail(request, handle_id):
     dependencies = host.get_dependencies_as_types()
     
     urls = helpers.get_node_urls(relations, host_services, dependent, dependencies)
+    scan_enabled = helpers.app_enabled("apps.scan")
     return render_to_response('noclook/detail/host_detail.html',
                               {'node_handle': nh, 'node': host, 'last_seen': last_seen, 'expired': expired,
                                'relations': relations, 'host_services': host_services, 'dependent': dependent,
                                'dependencies': dependencies, 'location_path': location_path, 'history': True,
-                               'urls': urls, 'connections': connections},
+                               'urls': urls, 'connections': connections, 'scan_enabled': scan_enabled, },
                               context_instance=RequestContext(request))
 
 

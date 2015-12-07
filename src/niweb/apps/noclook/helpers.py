@@ -819,3 +819,6 @@ def paginate(full_list, page=None, per_page=250):
         # If page is out of range (e.g. 9999), deliver last page of results.
         paginated_list = paginator.page(paginator.num_pages)
     return paginated_list
+
+def app_enabled(appname):
+    return appname in django_settings.INSTALLED_APPS
