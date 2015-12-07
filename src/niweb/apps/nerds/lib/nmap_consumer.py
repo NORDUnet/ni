@@ -36,7 +36,7 @@ def nmap_import(nerds_json, external_check=False):
     data = item['nmap_services_py']
     addresses = data['addresses']
 
-    if address_is_a(addresses, ALLOWED_NODE_TYPE_SET):
+    if not nlu.address_is_a(addresses, ALLOWED_NODE_TYPE_SET):
         #Address existed but was not a "Host"
         return None
     # find or create node

@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook import helpers, activitylog
+from ipaddr import IPAddress
+from lucenequerybuilder import Q
 import norduniclient as nc
 
 def get_user(username='noclook'):
