@@ -138,9 +138,9 @@ def get_child_form_data(request, handle_id, slug=None):
     for child in nh.get_node().get_child_form_data(node_type):
         if not slug:
             node_type = helpers.labels_to_node_type(child['labels'])
-        name = '{} {}'.format(node_type.replace('_', ' '), child['name'])
+        name = u'{} {}'.format(node_type.replace('_', ' '), child['name'])
         if child.get('description', None):
-            name = '{} ({})'.format(name, child['description'])
+            name = u'{} ({})'.format(name, child['description'])
         child_list.append((child['handle_id'], name))
         child_list = sorted(child_list, key=itemgetter(1))
     return JsonResponse(child_list, safe=False)
@@ -164,7 +164,7 @@ def get_subtype_form_data(request, slug, key, value):
     for subtype in nc.query_to_list(nc.neo4jdb, q):
         name = subtype['name']
         if subtype.get('description', None):
-            name = '{} ({})'.format(name, subtype['description'])
+            name = u'{} ({})'.format(name, subtype['description'])
         subtype_list.append((subtype['handle_id'], name))
         subtype_list = sorted(subtype_list, key=itemgetter(1))
     return JsonResponse(subtype_list, safe=False)
