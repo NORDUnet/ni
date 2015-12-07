@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeType, NodeHandle
+from apps.noclook import helpers, activitylog
 import norduniclient as nc
 
 def get_user(username='noclook'):
@@ -71,3 +72,27 @@ def set_all_services_to_not_public(host):
         '''
     with nc.neo4jdb.transaction as t:
         t.execute(q, handle_id=host.handle_id).fetchall()
+
+def address_is_a(addresses, node_types):
+    """
+    :param addresses: List of IP addresses
+    :return: True if the addresses belongs to a host or does not belong to anything
+    """
+    ip_addresses = [IPAddress(item) for item in addresses]
+    for address in addresses:
+        q1 = Q('ip_address', '%s*' % address, wildcard=True)
+        q2 = Q('ip_addresses', '%s*' % address, wildcard=True)
+        lucene_query = unicode(q1 | q2)
+        for handle_id in nc.legacy_node_index_search(nc.neo4jdb, lucene_query)['result']:
+            node = nc.get_node_model(nc.neo4jdb, handle_id)
+            node_addresses = node.data.get('ip_addresses', None) or node.data.get('ip_address', None)
+            for addr in node_addresses:
+                try:
+                    node_address = IPAddress(addr.split('/')[0])
+                except ValueError:
+                    continue
+                if node_address in ip_addresses:
+                        if not [l for l in node.labels if l.replace(' ', '_') in node_types]:
+                            helpers.update_noclook_auto_manage(node)
+                            return False
+    return True
