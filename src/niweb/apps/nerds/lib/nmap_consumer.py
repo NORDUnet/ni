@@ -36,7 +36,9 @@ def nmap_import(nerds_json, external_check=False):
     data = item['nmap_services_py']
     addresses = data['addresses']
 
-    #TODO: is_host check... what does it do? 
+    if address_is_a(addresses, ALLOWED_NODE_TYPE_SET):
+        #Address existed but was not a "Host"
+        return None
     # find or create node
     name = item['name']
     node_handle =  nlu.get_unique_node_handle(name, "Host", "Logical", ALLOWED_NODE_TYPE_SET)
@@ -65,7 +67,6 @@ def nmap_import(nerds_json, external_check=False):
         properties['uptime'] = data['uptime']['seconds']
 
     #handle services
-    # TODO: finish it!
     insert_services(data['services'], node, external_check)
 
     properties['backup'] = helpers.get_host_backup(node)
