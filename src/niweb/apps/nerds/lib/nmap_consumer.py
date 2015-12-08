@@ -1,6 +1,7 @@
 from datetime import datetime
 from apps.noclook import helpers, activitylog
 from . import consumer_util as nlu
+from apps.nerds.models import HostUserMap
 
 
 # Type of equipment we want to update with this consumer
@@ -82,12 +83,13 @@ def add_host_user(host):
     """
     Tries to set a Uses or Owns relationship between the Host and a Host User if there are none.
     """
+    user = nlu.get_user()
     host_name = host.data['name']
     domain = extract_domain(host_name)
-    stakeholder = HOST_USERS_MAP.get(domain, None)
+    stakeholder = HostUserMap.objects.filter(domain=domain).first()
     relations = host.get_relations()
     if stakeholder and not (relations.get('Uses',None) or relations.get('Owns', None)):
-        stakeholder_nh = nlu.get_unique_node_handle(stakeholder, 'Host User', 'Relation')
+        stakeholder_nh = nlu.get_unique_node_handle(stakeholder.host_user, 'Host User', 'Relation')
         if host.meta_type == 'Logical':
             helpers.set_user(user, host, stakeholder_nh.handle_id)
         elif host.meta_type == 'Physical':
