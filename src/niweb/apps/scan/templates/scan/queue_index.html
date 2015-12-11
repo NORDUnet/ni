@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
 {% block title %} {{ block.super }} | Scan queue {% endblock %}
 
 {% block content %}
@@ -8,6 +9,12 @@
         {% endfor %}
     {% endif %}
     <h1>Scan queue</h1>
+
+    <form action="{% url 'scan:host' %}" method="post" class="form-inline">
+        {% csrf_token %}
+            <input type="text" placeholder="IP or hostname" name="data" id="id_data" />
+            <input type="submit" class="btn btn-primary" value="Scan" />
+    </form>
 
     <table class="table table-condensed table-striped table-hover compact" data-order="[[3, &quot;desc&quot;]]" data-tablesort>
         <thead>
