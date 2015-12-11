@@ -5,20 +5,8 @@
 {% block content %}
     <h1>Create new</h1>
     <ul class="menu">
-        <li><a href="customer">Customer</a></li>
-        <li><a href="cable">Cable</a></li>
-        <li><a href="end-user">End User</a></li>
-        <li><a href="external-cable">External Cable</a></li>
-        <li><a href="external-equipment">External Equipment</a></li>
-        <li><a href="optical-link">Optical Link</a></li>
-        <li><a href="optical-path">Optical Path</a></li>
-        <li><a href="service">Service</a></li>
-        <li><a href="odf">ODF</a></li>
-        <li><a href="optical-multiplex-section">Optical Multiplex Section</a></li>
-        <li><a href="port">Port</a></li>
-        <li><a href="provider">Provider</a></li>
-        <li><a href="rack">Rack</a></li>
-        <li><a href="site">Site</a></li>
-        <li><a href="site-owner">Site Owner</a></li>
+        {% for link, name in types %}
+            <li><a href="{{link}}">{{name}}</a></li>
+        {% endfor %}
     </ul>
 {% endblock %}

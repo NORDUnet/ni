@@ -18,6 +18,25 @@ from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 
+TYPES = [
+    ("customer", "Customer"),
+    ("cable", "Cable"),
+    ("end-user", "End User"),
+    ("external-cable", "External Cable"),
+    ("external-equipment", "External Equipment"),
+    ("optical-link", "Optical Link"),
+    ("optical-path", "Optical Path"),
+    ("service", "Service"),
+    ("odf", "ODF"),
+    ("optical-multiplex-section", "Optical Multiplex Section"),
+    ("port", "Port"),
+    ("provider", "Provider"),
+    ("rack", "Rack"),
+    ("site", "Site"),
+    ("site-owner", "Site Owner"),
+    ("/scan/queue", "Host scan"),
+]
+
 # Create functions
 @login_required
 def new_node(request, slug=None, **kwargs):
@@ -26,7 +45,8 @@ def new_node(request, slug=None, **kwargs):
     functions.
     """
     if not slug:
-        return render_to_response('noclook/create/new_node.html', {}, context_instance=RequestContext(request))
+        types = sorted(TYPES, key=lambda x: x[1])
+        return render_to_response('noclook/create/new_node.html', {"types": types}, context_instance=RequestContext(request))
     try:
         func = NEW_FUNC[slug]
     except KeyError:
