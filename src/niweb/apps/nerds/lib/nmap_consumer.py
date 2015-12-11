@@ -7,27 +7,6 @@ from apps.nerds.models import HostUserMap
 # Type of equipment we want to update with this consumer
 ALLOWED_NODE_TYPE_SET = {'Host', 'Firewall', 'Switch', 'PDU'}
 
-# TODO: should be in db...
-HOST_USERS_MAP = {
-    'eduroam.se':       'SUNET',
-    'eduid.se':         'SUNET',
-    'eid2.se':          'SUNET',
-    'funet.fi':         'FUNET',
-    'lobber.se':        'SUNET',
-    'ndgf.org':         'NDGF',
-    'nordu.net':        'NORDUnet',
-    'nordunet.tv':      'NORDUnet',
-    'nunoc.org':        'NORDUnet',
-    'nunoc.se':         'NORDUnet',
-    'sunet.se':         'SUNET',
-    'rhnet.is':         'RHnet',
-    'skolfederation.se':'SUNET',
-    'swami.se':         'SUNET',
-    'swamid.se':        'SUNET',
-    'uninett.no':       'UNINETT',
-    'wayf.dk':          'WAYF',
-}
-
 def nmap_import(nerds_json, external_check=False):
     """
     Inserts the data loaded from a json file created by

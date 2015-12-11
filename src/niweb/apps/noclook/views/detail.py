@@ -117,11 +117,12 @@ def firewall_detail(request, handle_id):
     dependent = firewall.get_dependent_as_types()
     dependencies = firewall.get_dependencies_as_types()
     relations = firewall.get_relations()
+    scan_enabled = helpers.app_enabled("apps.scan")
     return render_to_response('noclook/detail/firewall_detail.html',
                               {'node_handle': nh, 'node': firewall, 'last_seen': last_seen, 'expired': expired,
                                'host_services': host_services, 'connections': connections, 'dependent': dependent,
                                'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
-                               'history': True},
+                               'history': True, 'scan_enabled': scan_enabled},
                               context_instance=RequestContext(request))
 
 
@@ -319,11 +320,12 @@ def pdu_detail(request, handle_id):
     relations = pdu.get_relations()
 
     urls = helpers.get_node_urls(pdu, host_services, connections, dependent, dependencies, relations, location_path)
+    scan_enabled = helpers.app_enabled("apps.scan")
     return render_to_response('noclook/detail/pdu_detail.html',
                               {'node_handle': nh, 'node': pdu, 'last_seen': last_seen, 'expired': expired,
                                'host_services': host_services, 'connections': connections, 'dependent': dependent,
                                'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
-                               'history': True, 'urls': urls},
+                               'history': True, 'urls': urls, 'scan_enabled': scan_enabled},
                               context_instance=RequestContext(request))
 
 
@@ -603,10 +605,11 @@ def switch_detail(request, handle_id):
     relations = switch.get_relations()
     
     urls = helpers.get_node_urls(switch, host_services, connections, dependent, dependencies, relations, location_path)
+    scan_enabled = helpers.app_enabled("apps.scan")
     return render_to_response('noclook/detail/switch_detail.html',
                               {'node_handle': nh, 'node': switch, 'last_seen': last_seen, 'expired': expired,
                                'host_services': host_services, 'connections': connections, 'dependent': dependent,
                                'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
-                               'history': True, 'urls': urls},
+                               'history': True, 'urls': urls, 'scan_enabled': scan_enabled},
                               context_instance=RequestContext(request))
 
