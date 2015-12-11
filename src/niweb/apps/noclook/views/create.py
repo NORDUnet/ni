@@ -34,8 +34,9 @@ TYPES = [
     ("rack", "Rack"),
     ("site", "Site"),
     ("site-owner", "Site Owner"),
-    ("/scan/queue", "Host scan"),
 ]
+if helpers.app_enabled("apps.scan"):
+    TYPES.append(("/scan/queue", "Host scan"))
 
 # Create functions
 @login_required
