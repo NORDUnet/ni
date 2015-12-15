@@ -207,25 +207,32 @@ def dict_update_relationship(user, relationship_id, properties, keys=None):
 
 def form_to_generic_node_handle(request, form, slug, node_meta_type):
     node_name = form.cleaned_data['name']
+    return get_generic_node_handle(request.user, node_name, slug, node_meta_type)
+
+def get_generic_node_handle(user, node_name, slug, node_meta_type):
     node_type = slug_to_node_type(slug, create=True)
     node_handle = NodeHandle(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
-                             modifier=request.user, creator=request.user)
+                             modifier=user, creator=user)
     node_handle.save()
-    activitylog.create_node(request.user, node_handle)
+    activitylog.create_node(user, node_handle)
     set_noclook_auto_manage(node_handle.get_node(), False)
     return node_handle
 
 
+
 def form_to_unique_node_handle(request, form, slug, node_meta_type):
     node_name = form.cleaned_data['name']
+    return get_unique_node_handle(request.user, node_name, slug, node_meta_type)
+
+def get_unique_node_handle(user, node_name, slug, node_meta_type):
     node_type = slug_to_node_type(slug, create=True)
     try:
         node_handle = NodeHandle.objects.get(node_name=node_name, node_type=node_type)
         raise UniqueNodeError(node_name, node_handle.handle_id, node_type)
     except NodeHandle.DoesNotExist:
         node_handle = NodeHandle.objects.create(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
-                                                modifier=request.user, creator=request.user)
-        activitylog.create_node(request.user, node_handle)
+                                                modifier=user, creator=user)
+        activitylog.create_node(user, node_handle)
         set_noclook_auto_manage(node_handle.get_node(), False)
     return node_handle
 

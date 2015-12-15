@@ -10,6 +10,7 @@ from django.http import HttpResponseRedirect, Http404, HttpResponseForbidden
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.forms.utils import ErrorDict, ErrorList
+from django.forms import formset_factory
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
 from apps.noclook.models import NodeHandle
@@ -274,13 +275,39 @@ def new_odf(request, **kwargs):
 
     if request.POST:
         form = forms.NewOdfForm(request.POST)
-        if form.is_valid():
+        ports_form = forms.BulkPortsForm(request.POST)
+        if form.is_valid() and ports_form.is_valid():
             nh = helpers.form_to_generic_node_handle(request, form, 'odf', 'Physical')
             helpers.form_update_node(request.user, nh.handle_id, form)
+            if not ports_form.cleaned_data['no_ports']:
+                user = request.user
+                data = ports_form.cleaned_data
+                try:
+                    offset = int(data['offset'])
+                except (ValueError, TypeError):
+                    offset=1
+                num_ports = int(form.cleaned_data['max_number_of_ports'])
+                end_port = num_ports+offset
+                if data['bundled']:
+                    step=2
+                else:
+                    step=1
+                for p in range(offset, end_port, step):
+                    if data['bundled']:
+                        node_name = u'{}{}+{}'.format(data['prefix'],p,p+1)
+                    else:
+                        node_name = u'{}{}'.format(data['prefix'],p)
+                    port_handle = helpers.get_generic_node_handle(user, node_name, 'port', 'Physical')
+                    helpers.dict_update_node(user, port_handle.handle_id, {'port_type': data['port_type']})
+                    #set parent relation
+                    helpers.set_has(user, nh.get_node(), port_handle.handle_id)
+                    
+
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewOdfForm()
-    return render_to_response('noclook/create/create_odf.html', {'form': form},
+        ports_form = forms.BulkPortsForm({'port_type': 'LC'})
+    return render_to_response('noclook/create/create_odf.html', {'form': form, 'ports_form': ports_form},
                               context_instance=RequestContext(request))
 
 

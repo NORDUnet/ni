@@ -406,6 +406,13 @@ class NewOdfForm(forms.Form):
     name = forms.CharField()
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
+class BulkPortsForm(forms.Form):
+    no_ports = forms.BooleanField(required=False, help_text='Do not create any ports')
+    bundled = forms.BooleanField(required=False, help_text='Bundle the ports e.g 1+2, 2+3 (half the ports)')
+    port_type = forms.ChoiceField(choices=PORT_TYPES, required=False)
+    prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0')
+    offset = forms.IntegerField(required=False, min_value=0, initial=1)
+
 
 class EditOdfForm(forms.Form):
     name = forms.CharField()

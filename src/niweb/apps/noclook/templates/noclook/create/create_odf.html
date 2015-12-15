@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
 
 {% block content %}
     <h1>Create new ODF</h1>
@@ -10,14 +11,12 @@
         </div>
     {% endif %}
     <div class="well">
-        <form action="" method="post">{% csrf_token %}
-            <h3>Name</h3>
-            {{ form.name }}
-            <br><br>
-            <h3>Number of ports</h3>
-            {{ form.max_number_of_ports }}
-            <br />
-            <br />
+        <form action="" method="post" class="form-horizontal">{% csrf_token %}
+            {{ form | crispy }}
+            <div class="controls">
+                <h3>Create ports</h3>
+            </div>
+            {{ ports_form | crispy }}
             <input type="submit" value="Save" class="btn btn-primary" />
             <a href="/new/" class="btn">Cancel</a>
         </form>
