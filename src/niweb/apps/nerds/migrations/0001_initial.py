@@ -6,6 +6,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('noclook', '0002_nodetype_hidden'),
     ]
 
     operations = [
