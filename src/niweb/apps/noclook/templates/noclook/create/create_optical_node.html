@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+
+{% block content %}
+    <h1>Create new Optical Node</h1>
+
+    <div class="well">
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ form | crispy }}
+            <div class="controls">
+                <h3>Ports</h3>
+            </div>
+            
+            {% dynamic_ports bulk_ports %}
+            <input type="submit" value="Save" class="btn btn-primary" />
+            <a href="/new/" class="btn">Cancel</a>
+        </form>
+    </div>
+
+{% endblock %}

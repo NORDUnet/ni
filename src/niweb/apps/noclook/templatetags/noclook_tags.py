@@ -213,3 +213,10 @@ def hardware_module(module, level=0):
 @register.simple_tag
 def scan_data(host_node):
     return escape(json.dumps({"target": host_node.data.get("hostnames", ["unknown"])[0], "ipv4s": host_node.data.get("ip_addresses",[])}))
+
+@register.inclusion_tag("noclook/dynamic_ports.html")
+def dynamic_ports(bulk_ports, *args, **kwargs):
+    context = {"bulk_ports": bulk_ports}
+    context.update(kwargs)
+    return context
+

@@ -769,3 +769,11 @@ class EditOpticalPathForm(forms.Form):
     enrs = JSONField(required=False, widget=JSONInput)
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+
+class OpticalNodeForm(forms.Form):
+    name = forms.CharField()
+    #TODO: change to db field
+    type = forms.ChoiceField(required=False, choices=[('','-----'),('cienna6500', 'cienna6500')], initial='cienna6500')
+
+

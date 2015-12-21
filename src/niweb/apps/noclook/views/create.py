@@ -6,6 +6,7 @@ Created on 2012-11-07 4:43 PM
 """
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseRedirect, Http404, HttpResponseForbidden
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -30,6 +31,7 @@ TYPES = [
     ("service", "Service"),
     ("odf", "ODF"),
     ("optical-multiplex-section", "Optical Multiplex Section"),
+    ("optical-node", "Optical Node"),
     ("port", "Port"),
     ("provider", "Provider"),
     ("rack", "Rack"),
@@ -454,9 +456,7 @@ def new_site_owner(request, **kwargs):
                 nh = helpers.form_to_unique_node_handle(request, form, 'site-owner', 'Relation')
             except UniqueNodeError:
                 form = forms.NewSiteOwnerForm(request.POST)
-                form._errors = ErrorDict()
-                form._errors['name'] = ErrorList()
-                form._errors['name'].append('A Site Owner with that name already exists.')
+                form.add_error('name', 'A Site Owner with that name already exists.')
                 return render_to_response('noclook/create/create_site_owner.html', {'form': form},
                                           context_instance=RequestContext(request))
             helpers.form_update_node(request.user, nh.handle_id, form)
@@ -466,6 +466,23 @@ def new_site_owner(request, **kwargs):
     return render_to_response('noclook/create/create_site_owner.html', {'form': form},
                               context_instance=RequestContext(request))
 
+@staff_member_required
+def new_optical_node(request, slug=None):
+    form = forms.OpticalNodeForm(request.POST or None)
+    #TODO: add some ports...
+    bulk_ports = forms.BulkPortsForm(request.POST or None)
+
+    if request.POST:
+        if form.is_valid():
+            try: 
+                name = form.cleaned_data['name']
+                nh = helpers.get_unique_node_handle(request.user, name, 'Optical_Node', 'Logical')
+                helpers.dict_update_node(request.user, nh.handle_id, {'type': form.cleaned_data['type']}) 
+                return HttpResponseRedirect(nh.get_absolute_url())
+            except UniqueNodeError:
+                #TODO: add form errors
+                form.add_error('name', 'An Optical Node with that name already exists.')
+    return render_to_response('noclook/create/create_optical_node.html', {'form': form, 'bulk_ports': bulk_ports}, context_instance=RequestContext(request))
 
 # Reserve Ids
 @login_required
@@ -515,4 +532,5 @@ NEW_FUNC = {
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,
+    'optical-node': new_optical_node,
 }
