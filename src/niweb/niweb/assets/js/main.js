@@ -17,6 +17,20 @@ $(document).ready(function() {
 
 
 
+  var debounce = function(fn, _delay) {
+    var last_call;
+    var delay = _delay || 200;
+    return function(args) {
+      var that = this;
+      if (last_call) {
+        clearTimeout(last_call)
+      }
+      last_call = setTimeout(function(){
+        fn.apply(that, args);
+      }, delay);
+    }
+  }
+
    var $tables = $("table[data-tablesort]")
    $tables.each(function(){
         var $table = $(this).DataTable(
@@ -29,13 +43,14 @@ $(document).ready(function() {
             ]
         });
         if($tables.length > 1) {
-            $("input[data-tablefilter="+this.id+"]").on('keyup', function(){
+            $("input[data-tablefilter="+this.id+"]").on('keyup', 
+              debounce(function(){
                 $table.search(this.value).draw();
-            });
+            }));
         }else{
-            $("input[data-tablefilter]").on('keyup', function(){
+            $("input[data-tablefilter]").on('keyup', debounce(function(){
                 $table.search(this.value).draw();
-            });
+            }));
 
         }
     });

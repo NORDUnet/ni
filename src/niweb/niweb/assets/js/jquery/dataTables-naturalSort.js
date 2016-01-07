@@ -91,12 +91,16 @@ jQuery.extend( jQuery.fn.dataTableExt.oSort, {
 	}
 } );
 
+// Since we are adding natural type for sorting, we need to add it for search as well.
+// Should be easy, just strip html if needed.
+jQuery.fn.dataTableExt.ofnSearch["natural"] = handleHtml;
+
 function handleHtml(str) {
     var result = str || "";
     if ( result.indexOf("<") > -1 ) {
-        result = $("<div>"+result+"</div>").text();
+        result = jQuery.fn.dataTableExt.ofnSearch["html"](result);
     }
-    return result.toLowerCase();
+    return result;
 }
 
 }());
