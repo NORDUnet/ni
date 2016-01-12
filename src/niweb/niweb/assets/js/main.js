@@ -1,5 +1,6 @@
 $(document).ready(function() {
 
+  // Handle async loading (e.g. og history)
   function async_load(url, trigger,target) {
     var $trigger = $(trigger);
     $trigger.one("click", function(){
@@ -17,6 +18,7 @@ $(document).ready(function() {
 
 
 
+  // Utility
   var debounce = function(fn, _delay) {
     var last_call;
     var delay = _delay || 200;
@@ -31,6 +33,7 @@ $(document).ready(function() {
     }
   }
 
+  // Handle datatables (sorting, searching)
    var $tables = $("table[data-tablesort]")
    $tables.each(function(){
         var $table = $(this).DataTable(
@@ -54,4 +57,56 @@ $(document).ready(function() {
 
         }
     });
+
+
+  // Dynamic ports
+    var insertAfter = function insertBefore(elm, existing) {
+      existing.parentNode.insertBefore(elm, existing.nextSibling);
+    }
+
+    //Change to generic add extra?
+    var createAddPorts = function createAddPorts($dynPort) {
+      var $panel = document.createElement("div");
+      $panel.classList.add("control-group");
+
+      var $add = document.createElement("button");
+      $add.classList.add("btn","btn-primary");
+      $add.textContent = "Add port";
+      $add.onclick = function(e) {
+        e.preventDefault();
+        //Closure access to $panel
+        var $org = $panel.previousSibling;
+        var $copy = $org.cloneNode(true);
+        $copy.removeAttribute("data-dynamic-ports");
+        
+        if ($copy.hasChildNodes()) {
+          var child;
+          for (var i=0; i< $copy.children.length; i++) {
+            child = $copy.children[i];
+            child.removeAttribute("id");
+            if ($org.children[i].selectedIndex) {
+              child.selectedIndex = $org.children[i].selectedIndex;
+            }
+          }
+        }
+        insertAfter($copy, $org);
+        //focus that input
+        toFocus = $copy.querySelector("input:first-child");
+        toFocus.focus();
+        lastchar = toFocus.value.length * 2;
+        toFocus.setSelectionRange(lastchar, lastchar);
+      }
+      
+
+      //Add button to dom
+      $panel.appendChild($add);
+      insertAfter($panel, $dynPort)
+    }
+
+    //Add to pages where needed
+    var $dynPorts = document.querySelectorAll("[data-dynamic-ports]");
+    //So nodeList is not an array :(
+    for (var i=0; i < $dynPorts.length; i++) {
+      createAddPorts($dynPorts[i]);
+    }
 });

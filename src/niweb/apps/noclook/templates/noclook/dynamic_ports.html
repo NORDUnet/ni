@@ -1,2 +1,22 @@
 {% load crispy_forms_tags %}
-{{ bulk_ports | crispy }}
+
+{{ bulk_ports.no_ports|as_crispy_field }}
+
+{% if ports %}
+  {% for name, type in ports %}
+  <div {% if forloop.last %}data-dynamic-ports{% endif %} class="control-group">
+    <input name="port_name" type="text" class="textinput textInput" value="{{name}}" placeholder="Port name" />
+    <select name="port_type">
+      {% for value, text in bulk_ports.port_type.field.choices %}
+        <option {% if type == value %}selected {% endif %}value="{{value}}">{{text}}</option>
+      {% endfor %}
+    </select>
+  </div>
+{% endfor %} 
+
+{% else %}
+<div data-dynamic-ports class="control-group">
+  <input name="port_name" type="text" class="textinput textInput" placeholder="Port name" />
+  {{ bulk_ports.port_type }}
+</div>
+{% endif %}
