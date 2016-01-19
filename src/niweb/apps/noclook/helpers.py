@@ -512,7 +512,7 @@ def create_port(parent_node, port_name, creator):
     :param creator: Django user
     :return: norduniclient model
     """
-    type_port = NodeType.objects.get(type="Port")
+    type_port = slug_to_node_type("port", create=True)
     nh = NodeHandle.objects.create(
         node_name=port_name,
         node_type=type_port,
