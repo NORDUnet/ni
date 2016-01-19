@@ -89,6 +89,20 @@ $(document).ready(function() {
             }
           }
         }
+
+        var $del = document.createElement("a");
+        $del.textContent = "Remove";
+        $del.href="#remove";
+        $del.onclick = function(e) {
+          e.preventDefault();
+          this.parentNode.parentNode.removeChild(this.parentNode);
+        }
+        //Remove old remove link - since clone does not copy it
+        var $old = $copy.querySelector("[href='#remove']")
+        if ($old) {
+          $old.parentNode.removeChild($old);
+        }
+        $copy.appendChild($del);
         insertAfter($copy, $org);
         //focus that input
         toFocus = $copy.querySelector("input:first-child");
@@ -96,6 +110,7 @@ $(document).ready(function() {
         lastchar = toFocus.value.length * 2;
         toFocus.setSelectionRange(lastchar, lastchar);
       }
+
       
 
       //Add button to dom
