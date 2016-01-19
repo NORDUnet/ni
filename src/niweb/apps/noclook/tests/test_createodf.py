@@ -1,41 +1,18 @@
-from django.test import TestCase, Client
+from .neo4j_base import NeoTestCase
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
 from dynamic_preferences import global_preferences_registry
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
 from apps.noclook import forms, helpers
-import norduniclient as nc
-
-# Use test instance of the neo4j db
-nc.neo4jdb = nc.init_db('http://localhost:7475')
 
 # We instanciate a manager for our global preferences
 global_preferences = global_preferences_registry.manager()
 
 
-class FormTestCase(TestCase):
-
-    def setUp(self):
-        # Create user
-        user = User.objects.create_user(username='test user', email='test@localhost', password='test')
-        user.is_staff = True
-        user.save()
-        self.user = user
-        # Set up client
-        self.client = Client()
-        self.client.login(username='test user', password='test')
-
-    def tearDown(self):
-        with nc.neo4jdb.transaction as t:
-            t.execute("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r").fetchall()
-        super(FormTestCase, self).tearDown()
-
-    def get_full_url(self, path):
-        return 'http://testserver{}'.format(path)
-
+class FormTestCase(NeoTestCase):
+    pass
 
 class CreateODFCase(FormTestCase):
-
     def setUp(self):
         super(CreateODFCase, self).setUp()
         # Load the default forms
