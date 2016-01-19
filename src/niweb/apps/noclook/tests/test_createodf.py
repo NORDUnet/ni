@@ -9,10 +9,7 @@ from apps.noclook import forms, helpers
 global_preferences = global_preferences_registry.manager()
 
 
-class FormTestCase(NeoTestCase):
-    pass
-
-class CreateODFCase(FormTestCase):
+class CreateODFCase(NeoTestCase):
     def setUp(self):
         super(CreateODFCase, self).setUp()
         # Load the default forms
@@ -26,8 +23,8 @@ class CreateODFCase(FormTestCase):
 
     def test_only_ODF_creation(self):
         self.data['no_ports'] = True
-        resp = self.create_odf(self.data)
-        nh,node = self.get_odf(self.data['name'])
+        resp = self.create(self.data)
+        nh,node = self.get_node(self.data['name'])
         odf_data = node.data
 
         self.assertRedirects(resp, self.get_full_url(nh.get_absolute_url()))
@@ -39,8 +36,8 @@ class CreateODFCase(FormTestCase):
 
     def test_ODF_port_creation(self):
         self.data['port_type'] = 'LC'
-        resp=self.create_odf(self.data)
-        nh,node = self.get_odf(self.data['name'])
+        resp=self.create(self.data)
+        nh,node = self.get_node(self.data['name'])
         
         ports = self.get_ports(node)
         self.assertEqual(48, len(ports))
@@ -60,9 +57,9 @@ class CreateODFCase(FormTestCase):
     def test_ODF_port_bundle(self):
         self.data['bundled']=True
         self.data['max_number_of_ports']=12
-        self.create_odf(self.data)
+        self.create(self.data)
 
-        nh,node = self.get_odf(self.data['name'])
+        nh,node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
         
         self.assertEqual(6, len(ports))
@@ -76,9 +73,9 @@ class CreateODFCase(FormTestCase):
     def test_ODF_port_offset(self):
         self.data['offset'] = 13
         self.data['max_number_of_ports'] = 12
-        self.create_odf(self.data)
+        self.create(self.data)
 
-        nh, node = self.get_odf(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
         self.assertEqual(12, len(ports))
         
@@ -91,9 +88,9 @@ class CreateODFCase(FormTestCase):
     def test_ODF_port_prefix(self):
         self.data['prefix'] = 'ge-1/0/'
         self.data['max_number_of_ports'] = 12
-        self.create_odf(self.data)
+        self.create(self.data)
 
-        nh, node = self.get_odf(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
         self.assertEqual(12, len(ports))
         
@@ -109,9 +106,9 @@ class CreateODFCase(FormTestCase):
         self.data['bundled']=True
         self.data['offset']=2
         self.data['max_number_of_ports'] = 12
-        self.create_odf(self.data)
+        self.create(self.data)
 
-        nh, node = self.get_odf(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
         self.assertEqual(6, len(ports))
         
@@ -120,19 +117,4 @@ class CreateODFCase(FormTestCase):
 
         port = ports[-1].get('node').data
         self.assertEqual('ge-1/0/12+13', port['name'])
-
-        
-
-
-    def get_ports(self, node):
-        return node.get_ports().get("Has",[])
-
-    def get_odf(self,name):
-        nh = NodeHandle.objects.filter(node_type__type=self.node_type).get(node_name=name)
-        node = nh.get_node()
-        return nh,node
-    def create_odf(self,data):
-        url = '/new/{}/'.format(slugify(self.node_type))
-        return self.client.post(url, data)
-
 
