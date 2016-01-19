@@ -774,6 +774,6 @@ class EditOpticalPathForm(forms.Form):
 class OpticalNodeForm(forms.Form):
     name = forms.CharField()
     #TODO: change to db field
-    type = forms.ChoiceField(required=False, choices=[('','-----'),('cienna6500', 'cienna6500')], initial='cienna6500')
+    type = forms.ChoiceField(required=False, choices=[('','-----'),('ciena6500', 'ciena6500')], initial='ciena6500')
 
 
