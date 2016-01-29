@@ -234,3 +234,24 @@ ul.errorlist {
         content: "";
     }
 }
+
+.form-horizontal.compact .control-group {
+    margin-bottom: 10px;
+}
+
+.form-horizontal.compact .controls {
+    margin-left: 90px;
+}
+.form-horizontal.compact .control-label {
+    width: 80px;
+}
+
+.well-transparent {
+    background-color: transparent;
+}
+.well-opaque {
+    background-color: rgba(200,200,200,0.1);
+}
+h3.compact {
+  margin: 0;
+}

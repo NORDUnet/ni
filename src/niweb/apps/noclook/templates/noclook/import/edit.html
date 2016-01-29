@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load import_tags %}
+{% block content %}
+    {{ block.super }}
+    <h2>Import into {{parent.node_type}}: {{parent.node_name}}</h2>
+
+      {% for item in data %}
+        {% type_form item %}
+      {% endfor %}
+      <form method="POST">
+        {% csrf_token %}
+        <input id="json_data_field" type="hidden" name="import_data" />
+        <button class="btn btn-primary">Import</button>
+        <a href=".." class="btn">Cancel</a>
+      </form>
+
+{% endblock %}

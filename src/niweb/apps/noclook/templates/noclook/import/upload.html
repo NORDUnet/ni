@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+    {{ block.super }}
+    <h2>Import ni nodes</h2>
+    <form action="" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <label for="import-file"></label>
+      <input type="file" id="import-file" name="file" />
+      <button class="btn btn-primary">Import</button>
+    </form>
+{% endblock %}

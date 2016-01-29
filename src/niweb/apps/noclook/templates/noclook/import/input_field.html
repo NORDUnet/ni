@@ -1,0 +1,8 @@
+{% if show %}
+<div class="control-group">
+  <label for="{{id}}" class="control-label">{{key|capfirst}}: </label>
+  <div class="controls">
+    <input id="{{id}}" type="text" name="{{key}}" value="{{val}}" />
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,20 @@
+{% load import_tags %}
+<div class="well well-opaque">
+  <div class="form-horizontal compact">
+  <h3 class="compact">{{item.type}}</h3>
+  {% field_if item 'name' %}
+  {% field_if item 'description' %}
+  {% field_if item 'height' %}
+  {% field_if item 'width' %}
+  {% field_if item 'depth' %}
+  {% field_if item 'security_comment' %}
+  {% field_if item 'rack_units' %}
+  </div>
+
+  {% for child in item.children %}
+        {% type_form child %}
+  {% endfor %}
+  {% for port in item.ports %}
+        {% type_form port %}
+  {% endfor %}
+</div>
