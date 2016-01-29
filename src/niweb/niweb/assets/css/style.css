@@ -235,15 +235,22 @@ ul.errorlist {
     }
 }
 
-.form-horizontal.compact .control-group {
-    margin-bottom: 10px;
+.form-horizontal-flex {
+    display: flex;
+    flex-flow: row wrap;
 }
 
-.form-horizontal.compact .controls {
-    margin-left: 90px;
+.form-horizontal-flex .control-label {
+    flex: 0 1 20%;
+    margin: 0 0 .5rem;
+    padding: .5rem;
+    text-align: right;
+    display: initial;
 }
-.form-horizontal.compact .control-label {
-    width: 80px;
+.form-horizontal-flex input {
+    flex: 1 1 70%;
+    margin: 0 0 .5rem;
+    width: initial;
 }
 
 .well-transparent {
