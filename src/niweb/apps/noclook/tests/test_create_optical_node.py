@@ -9,13 +9,14 @@ class CreateOpticalNodeTest(NeoTestCase):
         self.node_type='Optical Node'
         self.data = {
             'name': 'test optical node',
-            'type': 'cienna6500',
+            'type': 'ciena6500',
             'operational_state': 'In service',
         }
 
     def test_plain_creation(self):
         self.data['no_ports'] = True
         resp = self.create(self.data)
+        print NodeType.objects.all()
 
         nh,node = self.get_node(self.data['name'])
         node_data = node.data
