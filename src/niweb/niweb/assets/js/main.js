@@ -124,4 +124,28 @@ $(document).ready(function() {
     for (var i=0; i < $dynPorts.length; i++) {
       createAddPorts($dynPorts[i]);
     }
+
+
+    /****
+     * Dismiss/remove button
+     ****/
+
+    var $toRemove = document.querySelectorAll("[data-removable]");
+
+    var $removeTemplate = document.createElement("a");
+    $removeTemplate.textContent = "x";
+    $removeTemplate.href="#remove"
+    $removeTemplate.classList.add("removeBtn");
+
+    for (var i=0; i < $toRemove.length; i++) {
+      var $target = $toRemove[i];
+
+      var $btn = $removeTemplate.cloneNode(true);
+      $btn.onclick = function(e) {
+        e.preventDefault();
+        var $parent = e.target.parentNode;
+        $parent.parentNode.removeChild($parent)
+      }
+      $target.appendChild($btn);
+    }
 });

@@ -273,3 +273,14 @@ ul.errorlist {
 h3.compact {
   margin: 0;
 }
+
+/* Remove button */
+[data-removable] {
+  position: relative;
+}
+
+[data-removable] .removeBtn {
+  position: absolute;
+  top: 5px
+}
+
