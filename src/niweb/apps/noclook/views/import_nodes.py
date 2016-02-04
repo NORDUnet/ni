@@ -191,6 +191,7 @@ class ExportNodesView(View):
         nh = get_object_or_404(NodeHandle, handle_id=handle_id)
         q = """
             MATCH p=(n:Node {handle_id: {handle_id}})-[r:Has|:Located_in*1..3]-(x) 
+            WHERE (not has(x.operational_state) or x.operational_state <> 'Decommissioned')
             RETURN tail(nodes(p)) as nodes, labels(x) as labels
         """
         results = nc.query_to_list(nc.neo4jdb, q, handle_id=nh.handle_id)
@@ -220,7 +221,8 @@ class ExportNodesView(View):
         for result in results:
             handle_id = result['nodes'][-1]['handle_id']
             node = self.export_node(result)
-            if node['type'] not in EXPORT_FILTER:
+            # Filter out unwanted nodes
+            if node['type'] not in EXPORT_FILTER and node.get('operational_state') not in ['Decommissioned']:
                 tmp[handle_id] = node
                 depth = len(result['nodes'])
                 if len(result['nodes']) == 1:
