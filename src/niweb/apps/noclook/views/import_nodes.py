@@ -5,13 +5,15 @@ from django.utils.decorators import method_decorator
 from django.template.defaultfilters import slugify
 from django.views.generic import View
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from ..models import NodeHandle
 import json
 import re
 
 from apps.noclook import forms
 from apps.noclook import helpers
+
+import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError
 
 VALIDATION_FORMS = {
@@ -40,6 +42,10 @@ GENERIC_TYPES = [
   'Port',
   'Rack',
   'External Equipment',
+  # TODO: maybe not?
+  'Module',
+  'FPC',
+  'PIC',
 ]
 
 class ImportNodesView(View):
@@ -174,3 +180,64 @@ class ImportNodesView(View):
         return super(ImportNodesView, self).dispatch(*args, **kwargs)
     # TODO: based on slug decide allowed node types
 
+class ExportNodesView(View):
+    def get(self, request, slug, handle_id):
+        nh = get_object_or_404(NodeHandle, handle_id=handle_id)
+        q = """
+            MATCH p=(n:Node {handle_id: {handle_id}})-[r:Has|:Located_in*1..3]-(x) 
+            RETURN tail(nodes(p)) as nodes, labels(x) as labels
+        """
+        results = nc.query_to_list(nc.neo4jdb, q, handle_id=nh.handle_id)
+        output = self.extract_results(results)
+
+        # Sorting output...
+        helpers.sort_nicely(output, "name")
+        for item in output:
+            self.sort_data(item)
+        json_result = json.dumps(output, indent=4)
+
+        filename = "{}.{}_export.json".format(nh.node_type, nh.node_name)
+
+        resp = HttpResponse(json_result, content_type="application/json")
+        resp['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
+        return resp
+
+    def sort_data(self, data):
+        if data.get('children', None):
+            helpers.sort_nicely(data['children'], "name")
+        for child in data['children']:
+            self.sort_data(child)
+
+    def extract_results(self, results):
+        tmp = {}
+        output = []
+        for result in results:
+            raw = result['nodes'][-1]
+            node = self.export_node(result)
+            depth = len(result['nodes'])
+            tmp[raw['handle_id']] = node
+            if len(result['nodes']) == 1:
+                output.append(node)
+            else:
+                parent = result['nodes'][-2]
+                tmp[parent['handle_id']]['children'].append(node)
+        return output
+
+    def export_node(self, data, parent=None):
+        node = {k: v for k,v in data['nodes'][-1].items() if k not in ['noclook_last_seen', 'noclook_auto_manage', 'handle_id']}
+        node_type = data['labels'][-1]
+
+        #Extra fields
+        node['type'] = node_type
+        node['children'] = []
+        form = VALIDATION_FORMS.get(node_type)
+        template = node
+        if form:
+            template = {k: '' for k in form().fields.keys() if not k.startswith("relationship_")}
+            template.update(node)
+        return template
+
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(ExportNodesView, self).dispatch(*args, **kwargs)

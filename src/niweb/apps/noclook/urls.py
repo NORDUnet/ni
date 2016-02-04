@@ -60,9 +60,10 @@ urlpatterns += patterns('apps.noclook.views.edit',
     (r'^formdata/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>[-\w ]+)/$', 'get_subtype_form_data'),
 )
 
-from .views.import_nodes import ImportNodesView
+from .views.import_nodes import ImportNodesView, ExportNodesView
 urlpatterns += [
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/import$',  ImportNodesView.as_view(), name='import_nodes'),
+    url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/export$',  ExportNodesView.as_view(), name='import_nodes'),
 ]
 
 urlpatterns += patterns('apps.noclook.views.report',

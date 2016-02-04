@@ -1,5 +1,5 @@
 {% load import_tags %}
-<div class="well well-opaque form-horizontal-flex">
+<div class="well well-compact well-opaque form-horizontal-flex" data-removable >
   <h3 class="compact title">{{item.type}}</h3>
   <input type="hidden" name="{{id}}.type" value="{{item.type}}" />
   {% field_if item 'name' id %}

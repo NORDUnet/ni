@@ -18,6 +18,7 @@ import csv
 import codecs
 import cStringIO
 import xlwt
+import re
 
 from .models import NodeHandle, NodeType
 from . import activitylog
@@ -831,3 +832,13 @@ def paginate(full_list, page=None, per_page=250):
 
 def app_enabled(appname):
     return appname in django_settings.INSTALLED_APPS
+
+
+# Simple sorting that handles numbers such as 1-1 1-2 1-11
+convert = lambda text: int(text) if text.isdigit() else text
+alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+def sort_nicely(l, key=None):
+    if key:
+        l.sort(key=lambda x: alphanum_key(x.get(key)))
+    else:
+        l.sort(key=alphanum_key)
