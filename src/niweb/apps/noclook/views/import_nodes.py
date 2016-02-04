@@ -153,7 +153,7 @@ class ImportNodesView(View):
 
     def create_node(self, item, parent_nh, user):
         errors = []
-        slug = slugify(item['type'])
+        slug = slugify(item['type']).replace("_","-")
         meta_type = META_TYPES.get(item['type'], 'Physical')
         nh = None
         if item['type'] in GENERIC_TYPES:
@@ -228,7 +228,7 @@ class ExportNodesView(View):
         node_type = data['labels'][-1]
 
         #Extra fields
-        node['type'] = node_type
+        node['type'] = node_type.replace("_"," ")
         node['children'] = []
         form = VALIDATION_FORMS.get(node_type)
         template = node
