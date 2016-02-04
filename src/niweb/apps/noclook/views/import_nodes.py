@@ -48,6 +48,12 @@ GENERIC_TYPES = [
   'PIC',
 ]
 
+EXPORT_FILTER = [
+  'Module',
+  'FPC',
+  'PIC',
+]
+
 class ImportNodesView(View):
     def get(self, request, slug, handle_id):
         parent = get_object_or_404(NodeHandle, handle_id=handle_id)
@@ -212,15 +218,19 @@ class ExportNodesView(View):
         tmp = {}
         output = []
         for result in results:
-            raw = result['nodes'][-1]
+            handle_id = result['nodes'][-1]['handle_id']
             node = self.export_node(result)
-            depth = len(result['nodes'])
-            tmp[raw['handle_id']] = node
-            if len(result['nodes']) == 1:
-                output.append(node)
-            else:
-                parent = result['nodes'][-2]
-                tmp[parent['handle_id']]['children'].append(node)
+            if node['type'] not in EXPORT_FILTER:
+                tmp[handle_id] = node
+                depth = len(result['nodes'])
+                if len(result['nodes']) == 1:
+                    output.append(node)
+                else:
+                    for parent in reversed(result['nodes'][:-1]):
+                        # Attach to nearest parent that was not in EXPORT_FILTER
+                        if parent['handle_id'] in tmp:
+                            tmp[parent['handle_id']]['children'].append(node)
+                            break
         return output
 
     def export_node(self, data, parent=None):
