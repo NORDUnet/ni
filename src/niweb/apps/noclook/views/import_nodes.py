@@ -222,7 +222,7 @@ class ExportNodesView(View):
             handle_id = result['nodes'][-1]['handle_id']
             node = self.export_node(result)
             # Filter out unwanted nodes
-            if node['type'] not in EXPORT_FILTER and node.get('operational_state') not in ['Decommissioned']:
+            if node['type'] not in EXPORT_FILTER:
                 tmp[handle_id] = node
                 depth = len(result['nodes'])
                 if len(result['nodes']) == 1:
