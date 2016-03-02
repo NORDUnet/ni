@@ -222,6 +222,7 @@ class ExportNodesView(View):
             handle_id = result['nodes'][-1]['handle_id']
             node = self.export_node(result)
             # Filter out unwanted nodes
+            # TODO: Skip, should be handled by cypher
             if node['type'] not in EXPORT_FILTER:
                 tmp[handle_id] = node
                 depth = len(result['nodes'])
