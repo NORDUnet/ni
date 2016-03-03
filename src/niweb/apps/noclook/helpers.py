@@ -165,11 +165,13 @@ def form_update_node(user, handle_id, form, property_keys=None):
     return True
 
 
-def dict_update_node(user, handle_id, properties, keys=None):
+def dict_update_node(user, handle_id, properties, keys=None, filtered_keys=None):
     nh, node = get_nh_node(handle_id)
     if not keys:
         keys = properties.keys()
     for key in keys:
+        if key in filtered_keys:
+            continue
         if properties.get(key, None) or properties.get(key, None) == 0:
             pre_value = node.data.get(key, '')
             if pre_value != properties[key]:

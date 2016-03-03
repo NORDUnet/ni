@@ -235,7 +235,7 @@ ul.errorlist {
     }
 }
 
-.form-horizontal-flex {
+.form-horizontal-flex, .form-horizontal-flex .control-group {
     display: flex;
     flex-flow: row wrap;
 }
@@ -247,10 +247,21 @@ ul.errorlist {
     text-align: right;
     display: initial;
 }
-.form-horizontal-flex input {
+.form-horizontal-flex input, .form-horizontal-flex select{
     flex: 1 1 70%;
     margin: 0 0 .5rem;
     width: initial;
+}
+
+.form-horizontal-flex .title, .form-horizontal-flex div{
+    flex: 1 1 100%;
+}
+
+.form-horizontal-flex .errorlist {
+    float: right;
+}
+.form-horizontal-flex .help-inline {
+    text-align: right;
 }
 
 .well-transparent {

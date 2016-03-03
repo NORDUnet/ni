@@ -139,7 +139,6 @@ RESPONSIBLE_GROUPS = [
     ('NOC', 'NOC'),
 ]
 
-
 def get_node_type_tuples(node_type):
     """
     Returns a list of tuple of node.handle_id and node['name'] of label node_type.
@@ -417,7 +416,7 @@ class BulkPortsForm(forms.Form):
 
 class EditOdfForm(forms.Form):
     name = forms.CharField()
-    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.')
+    max_number_of_ports = forms.IntegerField(required=False,help_text='Max number of ports.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
@@ -774,8 +773,6 @@ class EditOpticalPathForm(forms.Form):
 
 class OpticalNodeForm(forms.Form):
     name = forms.CharField()
-    #TODO: change to db field
     type = forms.ModelChoiceField(required=False, queryset=OpticalNodeType.objects.all(), to_field_name='name')
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, initial='In service')
-
 

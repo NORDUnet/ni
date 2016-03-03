@@ -1,20 +1,24 @@
 {% load import_tags %}
-<div class="well well-opaque">
-  <h3 class="compact">{{item.type}}</h3>
-  <div class="form-horizontal-flex">
-  {% field_if item 'name' %}
-  {% field_if item 'description' %}
-  {% field_if item 'height' %}
-  {% field_if item 'width' %}
-  {% field_if item 'depth' %}
-  {% field_if item 'security_comment' %}
-  {% field_if item 'rack_units' %}
-  </div>
+<div class="well well-opaque form-horizontal-flex">
+  <h3 class="compact title">{{item.type}}</h3>
+  <input type="hidden" name="{{id}}.type" value="{{item.type}}" />
+  {% field_if item 'name' id %}
+  {% field_if item 'description' id  %}
+  {% select_if item 'port_type' id %}
+  {% select_if item 'operational_state' id %}
+  {% field_if item 'height' id  %}
+  {% field_if item 'width' id  %}
+  {% field_if item 'depth' id  %}
+  {% select_if item 'responsible_group' id %}
+  {% select_if item 'support_group' id %}
+  {% select_if item 'security_class' id %}
+  {% field_if item 'security_comment' id  %}
+  {% field_if item 'rack_units' id  %}
 
   {% for child in item.children %}
-        {% type_form child %}
+    {% type_form child forloop.counter id %}
   {% endfor %}
   {% for port in item.ports %}
-        {% type_form port %}
+    {% type_form port forloop.counter id %}
   {% endfor %}
 </div>

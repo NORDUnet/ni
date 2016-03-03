@@ -3,7 +3,11 @@
   <div class="control-group error">
   {% endif %}
   <label for="{{name}}" class="control-label">{{label}}: </label>
-  <input id="{{name}}" type="text" name="{{name}}" value="{{val}}" />
+  <select id="{{name}}" name="{{name}}">
+    {% for key,name in options %}
+      <option value="{{key}}"{% if key == val %} selected{% endif %}>{{name}}</option>
+    {% endfor %}
+  </select>
   {% if errors %}
       <div class="help-inline">{{errors}}</div>
     </div>

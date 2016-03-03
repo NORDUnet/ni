@@ -4,14 +4,27 @@
     {{ block.super }}
     <h2>Import into {{parent.node_type}}: {{parent.node_name}}</h2>
 
-      {% for item in data %}
-        {% type_form item %}
-      {% endfor %}
+    {% if errors %}
+      <div class="alert alert-block alert-error">
+        {% if errors|length == 1 %}
+          There is one error please fix it.
+        {% else %}
+          There are {{errors|length}} errors please fix them.
+        {% endif %}
+        {% if errors.global %}
+          {{errors.global}}
+        {% endif %}
+      </div>
+      {{errors}}
+    {% endif %}
       <form method="POST">
         {% csrf_token %}
-        <input id="json_data_field" type="hidden" name="import_data" />
+        {% for item in data %}
+          {% type_form item forloop.counter %}
+        {% endfor %}
+        <input type="hidden" name="import" value="true" />
         <button class="btn btn-primary">Import</button>
-        <a href=".." class="btn">Cancel</a>
+        <a href="." class="btn">Cancel</a>
       </form>
 
 {% endblock %}
