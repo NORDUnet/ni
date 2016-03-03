@@ -4,7 +4,7 @@ from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
-from apps.noclook.models import NodeHandle, UniqueIdGenerator
+from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType
 from .. import unique_ids
 import norduniclient as nc
 
@@ -299,6 +299,7 @@ class EditOpticalNodeForm(forms.Form):
         self.fields['operational_state'].choices = OPERATIONAL_STATES
 
     name = forms.CharField()
+    type = forms.ModelChoiceField(required=False, queryset=OpticalNodeType.objects.all(), to_field_name='name')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     sites = get_node_type_tuples('Site')
@@ -774,6 +775,7 @@ class EditOpticalPathForm(forms.Form):
 class OpticalNodeForm(forms.Form):
     name = forms.CharField()
     #TODO: change to db field
-    type = forms.ChoiceField(required=False, choices=[('','-----'),('ciena6500', 'ciena6500')], initial='ciena6500')
+    type = forms.ModelChoiceField(required=False, queryset=OpticalNodeType.objects.all(), to_field_name='name')
+    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, initial='In service')
 
 

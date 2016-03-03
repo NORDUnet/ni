@@ -14,7 +14,7 @@
             <tr>
                 <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
             </tr>
-            {% if node.type %}
+            {% if node.data.type %}
             <tr>
                 <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.data.type }}/">{{ node.data.type }}</a></td>
             </tr>

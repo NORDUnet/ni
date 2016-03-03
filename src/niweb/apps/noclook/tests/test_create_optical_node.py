@@ -10,6 +10,7 @@ class CreateOpticalNodeTest(NeoTestCase):
         self.data = {
             'name': 'test optical node',
             'type': 'cienna6500',
+            'operational_state': 'In service',
         }
 
     def test_plain_creation(self):
@@ -20,6 +21,8 @@ class CreateOpticalNodeTest(NeoTestCase):
         node_data = node.data
         self.assertRedirects(resp, self.get_full_url(nh))
         self.assertEqual("test optical node", node_data['name'])
+        self.assertEquals('cienna6500', node_data['type'])
+        self.assertEquals('In service', node_data['operational_state'])
 
     def test_with_ports(self):
         self.data['port_name'] = [

@@ -456,6 +456,8 @@ def edit_optical_link(request, handle_id):
     if request.POST:
         form = forms.EditOpticalLinkForm(request.POST)
         if form.is_valid():
+            if form.cleaned_data['type']:
+              form.cleaned_data['type'] = form.cleaned_data['type'].name
             # Generic node update
             helpers.form_update_node(request.user, link.handle_id, form)
             # Optical Link node updates

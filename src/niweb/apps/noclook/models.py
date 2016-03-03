@@ -193,6 +193,10 @@ class NordunetUniqueId(UniqueId):
     def __unicode__(self):
         return unicode('NORDUnet: %s' % self.unique_id)
 
+class OpticalNodeType(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    def __unicode__(self):
+        return unicode(self.name)
 
 ## Signals
 @receiver(comment_was_posted, dispatch_uid="apps.noclook.models")

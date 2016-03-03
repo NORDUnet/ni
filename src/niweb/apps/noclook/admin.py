@@ -4,7 +4,7 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId
+from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -78,3 +78,4 @@ admin.site.unregister(User)
 admin.site.register(User, UserModelAdmin)
 admin.site.register(UniqueIdGenerator, UniqueIdGeneratorAdmin)
 admin.site.register(NordunetUniqueId, UniqueIdAdmin)
+admin.site.register(OpticalNodeType)

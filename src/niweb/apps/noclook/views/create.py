@@ -477,7 +477,7 @@ def new_optical_node(request, slug=None):
             try: 
                 name = form.cleaned_data['name']
                 nh = helpers.get_unique_node_handle(request.user, name, 'optical-node', 'Logical')
-                helpers.dict_update_node(request.user, nh.handle_id, {'type': form.cleaned_data['type']}) 
+                helpers.dict_update_node(request.user, nh.handle_id, {'type': form.cleaned_data['type'].name, 'operational_state': form.cleaned_data['operational_state']}) 
 
                 # create ports if needed
                 if bulk_ports.is_valid() and not bulk_ports.cleaned_data['no_ports']:
