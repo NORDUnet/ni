@@ -92,7 +92,6 @@ class ExportSiteTest(NeoTestCase):
         self.assertDictContainsSubset({'name': 'A.01', 'type': 'Rack'}, rack_result)
         rack_equip = rack_result['children']
         # Decommissioned equipment should be gone
-        print rack_equip
         self.assertEquals(1, len(rack_equip))
         self.assertDictContainsSubset({'type': 'ODF', 'name': 'NI-TEST-ODF-01'}, rack_equip[0])
         self.assertEquals(2, len(rack_equip[0]['children']))
