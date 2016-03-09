@@ -44,23 +44,23 @@ class ExportSiteTest(NeoTestCase):
         
         # verify data
         self.assertEquals(2, len(result))
-        self.assertDictContainsSubset({'name': 'A.01', 'type': 'Rack'}, result[0])
-        self.assertDictContainsSubset({'type': 'ODF', 'name': 'NI-TEST-ODF-02'}, result[1])
+        self.assertDictContainsSubset({'name': 'A.01', 'node_type': 'Rack'}, result[0])
+        self.assertDictContainsSubset({'node_type': 'ODF', 'name': 'NI-TEST-ODF-02'}, result[1])
         # Check racked equipment
         rack_equp = result[0]['children']
         self.assertEquals(2, len(rack_equp))
         odf1_result = rack_equp[0]
-        self.assertDictContainsSubset({'type': 'ODF', 'name': 'NI-TEST-ODF-01', 'max_ports': 24}, odf1_result)
+        self.assertDictContainsSubset({'node_type': 'ODF', 'name': 'NI-TEST-ODF-01', 'max_ports': 24}, odf1_result)
         # Check ODF ports
         odf1_ports = odf1_result['children']
         self.assertEquals(3, len(odf1_ports))
-        self.assertDictContainsSubset({'type': 'Port', 'name': '1', 'port_type': ''}, odf1_ports[0])
-        self.assertDictContainsSubset({'type': 'Port', 'name': '2', 'description': ''}, odf1_ports[1])
-        self.assertDictContainsSubset({'type': 'Port', 'name': '3'}, odf1_ports[2])
+        self.assertDictContainsSubset({'node_type': 'Port', 'name': '1', 'port_type': ''}, odf1_ports[0])
+        self.assertDictContainsSubset({'node_type': 'Port', 'name': '2', 'description': ''}, odf1_ports[1])
+        self.assertDictContainsSubset({'node_type': 'Port', 'name': '3'}, odf1_ports[2])
 
         # Check router
         router = rack_equp[1]
-        self.assertDictContainsSubset({'type': 'Router', 'name': 'ni-test.routers.nordu.net'}, router)
+        self.assertDictContainsSubset({'node_type': 'Router', 'name': 'ni-test.routers.nordu.net'}, router)
 
     def test_decommissioned_equipment(self):
         # Setup test data
@@ -89,9 +89,30 @@ class ExportSiteTest(NeoTestCase):
         # verify data
         self.assertEquals(1, len(result))
         rack_result =  result[0]
-        self.assertDictContainsSubset({'name': 'A.01', 'type': 'Rack'}, rack_result)
+        self.assertDictContainsSubset({'name': 'A.01', 'node_type': 'Rack'}, rack_result)
         rack_equip = rack_result['children']
         # Decommissioned equipment should be gone
         self.assertEquals(1, len(rack_equip))
-        self.assertDictContainsSubset({'type': 'ODF', 'name': 'NI-TEST-ODF-01'}, rack_equip[0])
+        self.assertDictContainsSubset({'node_type': 'ODF', 'name': 'NI-TEST-ODF-01'}, rack_equip[0])
         self.assertEquals(2, len(rack_equip[0]['children']))
+
+
+    def test_export_optical_node(self):
+        # Setup test data
+        site = helpers.get_unique_node_handle(self.user, "Test site", "site", "Location")
+
+        optical_node = helpers.get_unique_node_handle(self.user, "NI-TEST-ROADM", "optical-node", "Physical")
+        on_node = optical_node.get_node()
+        helpers.set_location(self.user, on_node, site.handle_id)
+        helpers.dict_update_node(self.user, optical_node.handle_id, {"operational_state": "In service", "rack_units": "2", "type": "ciena6500"})
+        #start testing
+        resp = self.client.get(self.get_full_url(site)+"export")
+        self.assertEquals('application/json', resp['Content-Type'])
+        result = json.loads(resp.content)
+        
+        # verify data
+        self.assertEquals(1, len(result))
+        on_result =  result[0]
+        self.assertEqual({u'name': u'NI-TEST-ROADM', u'node_type': u'Optical Node', u'type': u'ciena6500', u'rack_units': u'2', u'children': [], u'operational_state': u'In service'}, on_result)
+        
+

@@ -101,9 +101,9 @@ class ImportNodesView(View):
     def validate(self, data, parent_id=None):
         errors_out = {}
         for i, item in enumerate(data):
-            form = VALIDATION_FORMS.get(item['type'])
+            form = VALIDATION_FORMS.get(item['node_type'])
             # Create item id
-            item_id = u'{}{}'.format(item['type'], i+1)
+            item_id = u'{}{}'.format(item['node_type'], i+1)
             if parent_id:
                 item_id = u'{}.{}'.format(parent_id, item_id)
 
@@ -112,7 +112,7 @@ class ImportNodesView(View):
                 for field, errors in f.errors.items():
                     idx = u"{}.{}".format(item_id, field)
                     errors_out[idx] = errors
-            if item['type'] not in GENERIC_TYPES:
+            if item['node_type'] not in GENERIC_TYPES:
                 idx = u'{}.{}'.format(item_id, 'name')
                 unique_error = self.validate_unique(item)
                 if unique_error:
@@ -125,7 +125,7 @@ class ImportNodesView(View):
     def validate_unique(self, item):
          error = None
          if item['name']:
-             slug = slugify(item['type'])
+             slug = slugify(item['node_type'])
              node_type = helpers.slug_to_node_type(slug, create=True)
              try:
                  NodeHandle.objects.get(node_name=item['name'], node_type=node_type)
@@ -159,20 +159,20 @@ class ImportNodesView(View):
 
     def create_node(self, item, parent_nh, user):
         errors = []
-        slug = slugify(item['type']).replace("_","-")
-        meta_type = META_TYPES.get(item['type'], 'Physical')
+        slug = slugify(item['node_type']).replace("_","-")
+        meta_type = META_TYPES.get(item['node_type'], 'Physical')
         nh = None
-        if item['type'] in GENERIC_TYPES:
+        if item['node_type'] in GENERIC_TYPES:
             nh = helpers.get_generic_node_handle(user, item['name'], slug, meta_type)
         else:
             try:
                 nh = helpers.get_unique_node_handle(user, item['name'], slug, meta_type)
             except UniqueNodeError:
                 # Should have been validated, but hey race conditions
-                errors.append(u"Could not create a {} named '{}', since one already exist".format(item['type'], item['name']))
+                errors.append(u"Could not create a {} named '{}', since one already exist".format(item['node_type'], item['name']))
         if nh:
-            helpers.dict_update_node(user, nh.handle_id, item, filtered_keys=['type','children','ports'])
-            if item['type'] in HAS_RELATION:
+            helpers.dict_update_node(user, nh.handle_id, item, filtered_keys=['node_type','children','ports'])
+            if item['node_type'] in HAS_RELATION:
                 helpers.set_has(user, parent_nh.get_node(), nh.handle_id)
             else:
                 helpers.set_location(user, nh.get_node(), parent_nh.handle_id)
@@ -223,7 +223,7 @@ class ExportNodesView(View):
             node = self.export_node(result)
             # Filter out unwanted nodes
             # TODO: Skip, should be handled by cypher
-            if node['type'] not in EXPORT_FILTER:
+            if node['node_type'] not in EXPORT_FILTER:
                 tmp[handle_id] = node
                 depth = len(result['nodes'])
                 if len(result['nodes']) == 1:
@@ -241,7 +241,7 @@ class ExportNodesView(View):
         node_type = data['labels'][-1]
 
         #Extra fields
-        node['type'] = node_type.replace("_"," ")
+        node['node_type'] = node_type.replace("_"," ")
         node['children'] = []
         form = VALIDATION_FORMS.get(node_type)
         template = node

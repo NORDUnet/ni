@@ -525,6 +525,8 @@ def edit_optical_node(request, handle_id):
     if request.POST:
         form = forms.EditOpticalNodeForm(request.POST)
         if form.is_valid():
+            if "type" in form.cleaned_data and form.cleaned_data["type"]:
+                form.cleaned_data['type'] = form.cleaned_data['type'].name
             # Generic node update
             helpers.form_update_node(request.user, optical_node.handle_id, form)
             # Optical Node specific updates

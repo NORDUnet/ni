@@ -139,6 +139,14 @@ RESPONSIBLE_GROUPS = [
     ('NOC', 'NOC'),
 ]
 
+def optical_node_types():
+    """
+    Returns a list of tuples available for optical node types.
+    """
+    types = [("","-------")]
+    types.extend([(x.name, x.name) for x in OpticalNodeType.objects.all()])
+    return types
+
 def get_node_type_tuples(node_type):
     """
     Returns a list of tuple of node.handle_id and node['name'] of label node_type.

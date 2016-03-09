@@ -2,16 +2,18 @@
 from django import template
 import string
 import random
+from django.utils.functional import lazy
 from apps.noclook import forms
 
 register = template.Library()
- 
+
 OPTIONS_MAP = {
   'operational_state': forms.OPERATIONAL_STATES,
   'port_type': forms.PORT_TYPES,
   'responsible_group': forms.RESPONSIBLE_GROUPS,
   'support_group': forms.RESPONSIBLE_GROUPS,
-  'security_class': forms.SECURITY_CLASSES
+  'security_class': forms.SECURITY_CLASSES,
+  'type': lazy(forms.optical_node_types, list)
 }
 
 def generate_id(length=5):
@@ -19,7 +21,7 @@ def generate_id(length=5):
 
 @register.inclusion_tag('noclook/import/type_form.html', takes_context=True)
 def type_form(context, item, idx=None, parent_id=None):
-    id = u"{}{}".format(item["type"], idx)
+    id = u"{}{}".format(item["node_type"], idx)
     if parent_id:
       id = u"{}.{}".format(parent_id,id)
     return {'item': item, 'id': id, 'errors': context.get('errors', {})}

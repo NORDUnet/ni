@@ -1,10 +1,11 @@
 {% load import_tags %}
 <div class="well well-compact well-opaque form-horizontal-flex" data-removable >
-  <h3 class="compact title">{{item.type}}</h3>
-  <input type="hidden" name="{{id}}.type" value="{{item.type}}" />
+  <h3 class="compact title">{{item.node_type}}</h3>
+  <input type="hidden" name="{{id}}.node_type" value="{{item.node_type}}" />
   {% field_if item 'name' id %}
   {% field_if item 'description' id  %}
   {% select_if item 'port_type' id %}
+  {% select_if item 'type' id %}
   {% select_if item 'operational_state' id %}
   {% field_if item 'max_number_of_ports' id  %}
   {% field_if item 'height' id  %}

@@ -17,16 +17,16 @@ class ImportSiteTest(NeoTestCase):
     def test_import_form(self):
         resp,site = self.import_to_site({
           "import": True,
-          "Rack1.type": "Rack",
+          "Rack1.node_type": "Rack",
           "Rack1.name": "Sweet rack1",
           "Rack1.height": "",
           "Rack1.width": "",
           "Rack1.depth": "",
           "Rack1.rack_units": "48",
-          "Rack1.ODF1.type": "ODF",
+          "Rack1.ODF1.node_type": "ODF",
           "Rack1.ODF1.name": "TEST-ODF-01",
           "Rack1.ODF1.rack_units": "2",
-          "Rack1.ODF1.Port1.type": "Port",
+          "Rack1.ODF1.Port1.node_type": "Port",
           "Rack1.ODF1.Port1.name": "1+2",
           "Rack1.ODF1.Port1.port_type": "E2000",
         })
@@ -58,7 +58,7 @@ class ImportSiteTest(NeoTestCase):
         resp,site = self.import_to_site({
             "import": True,
             "Rack1.name": "",
-            "Rack1.type": "Rack",
+            "Rack1.node_type": "Rack",
         })
 
         #Make sure we got an error page
@@ -69,9 +69,9 @@ class ImportSiteTest(NeoTestCase):
         resp,site = self.import_to_site({
             "import": True,
             "Rack1.name": "",
-            "Rack1.type": "Rack",
+            "Rack1.node_type": "Rack",
             "Rack2.name": "",
-            "Rack2.type": "Rack",
+            "Rack2.node_type": "Rack",
         })
 
         #Make sure we got an error page
@@ -92,13 +92,13 @@ class ImportSiteTest(NeoTestCase):
                 "width": "",
                 "depth": "",
                 "rack_units": "",
-                "type": "Rack",
+                "node_type": "Rack",
                 "children": [
                     {
                       "name": "TEST-ODF-01",
                       "max_number_of_ports": "",
                       "rack_units": "",
-                      "type": "ODF"
+                      "node_type": "ODF"
                     }]
               }]'''
         resp, site = self.import_to_site({
@@ -107,17 +107,29 @@ class ImportSiteTest(NeoTestCase):
         self.assertEquals(200, resp.status_code)
         site_data = site.get_node().data
         self.assertIn("Import into Site: "+site_data['name'], resp.content)
-        self.assertIn('name="Rack1.type" value="Rack"', resp.content)
+        self.assertIn('name="Rack1.node_type" value="Rack"', resp.content)
         self.assertIn('name="Rack1.name" value="RC/P01"', resp.content)
         self.assertIn('name="Rack1.width" value=""', resp.content)
         self.assertIn('name="Rack1.depth" value=""', resp.content)
         self.assertIn('name="Rack1.height" value=""', resp.content)
         self.assertIn('name="Rack1.rack_units" value=""', resp.content)
-        self.assertIn('name="Rack1.ODF1.type" value="ODF"', resp.content)
+        self.assertIn('name="Rack1.ODF1.node_type" value="ODF"', resp.content)
         self.assertIn('name="Rack1.ODF1.name" value="TEST-ODF-01"', resp.content)
         self.assertIn('name="Rack1.ODF1.rack_units" value=""', resp.content)
         self.assertIn('name="Rack1.ODF1.max_number_of_ports" value=""', resp.content)
         
+
+    def test_import_optical_node_new_type(self):
+        resp, site = self.import_to_site({
+            "import": True,
+            "Optical Node1.node_type": "Optical Node",
+            "Optical Node1.name": "TestROADAM",
+            "Optical Node1.type": "SpecialROADM",
+            "Optical Node1.operational_state": "In service",
+            "Optical Node1.rack_units": "2",
+        })
+        # We should get an error page with unknown type
+        self.assertEquals(200, resp.status_code)
 
     def import_to_site(self,data):
         site = self.create_site()
