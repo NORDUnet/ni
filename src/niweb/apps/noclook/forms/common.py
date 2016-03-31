@@ -304,12 +304,13 @@ class EditOpticalNodeForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(EditOpticalNodeForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['sites'].choices = get_node_type_tuples('Site')
 
     name = forms.CharField()
     type = forms.ModelChoiceField(required=False, queryset=OpticalNodeType.objects.all(), to_field_name='name')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    sites = get_node_type_tuples('Site')
+    sites = forms.ChoiceField(widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
                                               
