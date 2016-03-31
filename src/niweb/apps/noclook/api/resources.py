@@ -73,7 +73,7 @@ def resource_uri2id(resource_uri):
         node_name = resolve(resource_uri).kwargs.get('node_name')
         nh = NodeHandle.objects.get(node_name=node_name)
         pk = nh.handle_id
-    return pk
+    return int(pk)
 
 
 def raise_not_acceptable_error(message):
@@ -380,8 +380,11 @@ class RelationshipResource(Resource):
     def obj_create(self, bundle, **kwargs):
         start_pk = resource_uri2id(bundle.data['start'])
         end_pk = resource_uri2id(bundle.data['end'])
-        rel = nc.create_relationship(nc.neo4jdb, start_pk, end_pk, bundle.data['type'])
-        nc.set_relationship_properties(nc.neo4jdb, rel.id, bundle.data['properties'])
+        rel_id = nc.create_relationship(nc.neo4jdb, start_pk, end_pk, bundle.data['type'])
+        rel = nc.get_relationship_model(nc.neo4jdb, rel_id)
+        props = bundle.data.get('properties')
+        if props:
+            nc.set_relationship_properties(nc.neo4jdb, rel.id, props)
         bundle.obj = self._new_obj(rel)
         return bundle
 
