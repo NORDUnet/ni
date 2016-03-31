@@ -35,35 +35,35 @@ class CableResourceTest(ResourceTestCase):
         )
 
         # Set up initial data
-        router_node_type = NodeType.objects.create(type='Router', slug="router")
-        port_node_type = NodeType.objects.create(type='Port', slug="port")
-        cable_node_type = NodeType.objects.create(type='Cable', slug="cable")
+        self.router_node_type = NodeType.objects.create(type='Router', slug="router")
+        self.port_node_type = NodeType.objects.create(type='Port', slug="port")
+        self.cable_node_type = NodeType.objects.create(type='Cable', slug="cable")
         # Have to create a service type as services can't be created without it.
-        service_node_type = NodeType.objects.create(type='Service', slug="service")
+        self.service_node_type = NodeType.objects.create(type='Service', slug="service")
         self.router1 = NodeHandle.objects.create(
             node_name='Test Router 1',
-            node_type=router_node_type,
+            node_type=self.router_node_type,
             node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.router2 = NodeHandle.objects.create(
             node_name='Test Router 2',
-            node_type=router_node_type,
+            node_type=self.router_node_type,
             node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.port1 = NodeHandle.objects.create(
             node_name='Test Port 1',
-            node_type=port_node_type,
+            node_type=self.port_node_type,
             node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
         )
         self.port2 = NodeHandle.objects.create(
             node_name='Test Port 2',
-            node_type=port_node_type,
+            node_type=self.port_node_type,
             node_meta_type='Physical',
             creator=self.user,
             modifier=self.user,
@@ -231,3 +231,26 @@ class CableResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/nordunet-cable/', format='json', data=data,
                                     authentication=self.get_credentials())
         self.assertHttpConflict(resp)
+
+    def test_create_explicit_relationship(self):
+        nh = NodeHandle.objects.create(
+            node_name='12345678',
+            node_type=self.cable_node_type,
+            node_meta_type='Physical',
+            creator=self.user,
+            modifier=self.user,
+        )
+        nh.get_node()
+        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
+        data = {
+            "start": "/api/v1/cable/{}/".format(nh.node_name),
+            "end": "/api/v1/port/{}/".format(self.port1.handle_id),
+            "type": "Connected_to"
+        }
+        resp = self.api_client.post('/api/v1/relationship/', format='json', data=data,
+                                    authentication=self.get_credentials())
+        self.assertHttpCreated(resp)
+        cable_node = nh.get_node()
+        self.assertIsNotNone(cable_node.data.get('name', None))
+        connections = cable_node.get_connected_equipment()
+        self.assertEqual(len(connections), 1)

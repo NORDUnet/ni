@@ -68,7 +68,12 @@ def resource_uri2id(resource_uri):
     """
     Takes a resource uri and returns the id.
     """
-    return resolve(resource_uri).kwargs.get('pk', None)
+    pk = resolve(resource_uri).kwargs.get('pk', None)
+    if not pk:
+        node_name = resolve(resource_uri).kwargs.get('node_name')
+        nh = NodeHandle.objects.get(node_name=node_name)
+        pk = nh.handle_id
+    return pk
 
 
 def raise_not_acceptable_error(message):
@@ -374,19 +379,15 @@ class RelationshipResource(Resource):
 
     def obj_create(self, bundle, **kwargs):
         start_pk = resource_uri2id(bundle.data['start'])
-        start_nh = NodeHandle.objects.get(pk=start_pk)
-        start_node = start_nh.get_node()
         end_pk = resource_uri2id(bundle.data['end'])
-        end_nh = NodeHandle.objects.get(pk=end_pk)
-        end_node = end_nh.get_node()
-        rel = nc.create_relationship(nc.neo4jdb, start_node, end_node, bundle.data['type'])
-        nc.set_relationship_properties(nc.neo4jdb, rel, bundle.data['properties'])
+        rel = nc.create_relationship(nc.neo4jdb, start_pk, end_pk, bundle.data['type'])
+        nc.set_relationship_properties(nc.neo4jdb, rel.id, bundle.data['properties'])
         bundle.obj = self._new_obj(rel)
         return bundle
 
     def obj_update(self, bundle, **kwargs):
         helpers.dict_update_relationship(nc.neo4jdb, kwargs['pk'], bundle.data['properties'],
-                                   bundle.data['properties'].keys())
+                                         bundle.data['properties'].keys())
         updated_rel = nc.get_relationship_model(nc.neo4jdb, kwargs['pk'])
         bundle.obj = self._new_obj(updated_rel)
         return bundle
