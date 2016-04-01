@@ -189,6 +189,10 @@ class NodeHandleResource(ModelResource):
         }
 
     def obj_create(self, bundle, **kwargs):
+        bundle.data.update({
+            'creator': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
+            'modifier': '/api/%s/user/%d/' % (self._meta.api_name, bundle.request.user.pk),
+        })
         bundle = super(NodeHandleResource, self).obj_create(bundle, **kwargs)
         return self.hydrate_node(bundle)
 

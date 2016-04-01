@@ -9,3 +9,4 @@ from test_l2vpnresource import *
 from test_uniqueidgeneration import *
 from test_cableresource import *
 from test_createforms import *
+from test_api import *
