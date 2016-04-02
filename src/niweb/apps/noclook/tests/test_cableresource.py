@@ -38,6 +38,7 @@ class CableResourceTest(ResourceTestCase):
         self.router_node_type = NodeType.objects.create(type='Router', slug="router")
         self.port_node_type = NodeType.objects.create(type='Port', slug="port")
         self.cable_node_type = NodeType.objects.create(type='Cable', slug="cable")
+        self.optical_node_node_type = NodeType.objects.create(type='Optical Node', slug="optical-node")
         # Have to create a service type as services can't be created without it.
         self.service_node_type = NodeType.objects.create(type='Service', slug="service")
         self.router1 = NodeHandle.objects.create(
@@ -68,19 +69,12 @@ class CableResourceTest(ResourceTestCase):
             creator=self.user,
             modifier=self.user,
         )
-        self.DEFAULT_HANDLE_IDS = [
-            self.router1.handle_id,
-            self.router2.handle_id,
-            self.port1.handle_id,
-            self.port2.handle_id
-        ]
 
         helpers.set_has(self.user, self.router1.get_node(), self.port1.handle_id)
         helpers.set_has(self.user, self.router2.get_node(), self.port2.handle_id)
 
     def tearDown(self):
-        for handle_id in self.DEFAULT_HANDLE_IDS:
-            nh = NodeHandle.objects.get(pk=handle_id)
+        for nh in NodeHandle.objects.all():
             nh.delete()
         with nc.neo4jdb.transaction as t:
             t.execute("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r").fetchall()
@@ -120,7 +114,6 @@ class CableResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/cable/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
         nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
-        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         cable_node = nh.get_node()
         self.assertEqual(nh.node_name, data['node_name'])
         #sys.stderr.writelines('stderr: ' + str(cable_node))
@@ -148,7 +141,6 @@ class CableResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/cable/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
         nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
-        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         cable_node = nh.get_node()
         self.assertEqual(cable_node.data['name'], data['node_name'])
         connections = cable_node.get_connected_equipment()
@@ -174,7 +166,6 @@ class CableResourceTest(ResourceTestCase):
                                     authentication=self.get_credentials())
         self.assertHttpCreated(resp)
         nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
-        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         cable_node = nh.get_node()
         self.assertIsNotNone(cable_node.data.get('name', None))
         connections = cable_node.get_connected_equipment()
@@ -200,7 +191,6 @@ class CableResourceTest(ResourceTestCase):
                                     authentication=self.get_credentials())
         self.assertHttpCreated(resp)
         nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
-        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         cable_node = nh.get_node()
         self.assertIsNotNone(cable_node.data.get('name', None))
         connections = cable_node.get_connected_equipment()
@@ -213,8 +203,6 @@ class CableResourceTest(ResourceTestCase):
         }
         resp = self.api_client.post('/api/v1/cable/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpCreated(resp)
-        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
-        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         resp = self.api_client.post('/api/v1/cable/', format='json', data=data, authentication=self.get_credentials())
         self.assertHttpConflict(resp)
 
@@ -226,9 +214,30 @@ class CableResourceTest(ResourceTestCase):
         resp = self.api_client.post('/api/v1/nordunet-cable/', format='json', data=data,
                                     authentication=self.get_credentials())
         self.assertHttpCreated(resp)
-        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
-        self.DEFAULT_HANDLE_IDS.append(nh.handle_id)
         resp = self.api_client.post('/api/v1/nordunet-cable/', format='json', data=data,
                                     authentication=self.get_credentials())
         self.assertHttpConflict(resp)
+
+    def test_optical_node_cable_bug(self):
+        optical_node = NodeHandle.objects.create(
+            node_name='NIK-ILA1-1',
+            node_type=self.optical_node_node_type,
+            node_meta_type='Physical',
+            creator=self.user,
+            modifier=self.user,
+        )
+        data = {
+            "node_name": "NIK-02",
+            "cable_type": "Patch",
+            "end_points": [
+                {"device": "NIK-ILA1-1", "device_type": "Optical Node", "port": "01-NW"}
+            ]
+        }
+        resp = self.api_client.put('/api/v1/cable/NIK-02/', format='json', data=data,
+                                   authentication=self.get_credentials())
+        self.assertHttpCreated(resp)
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        cable_node = nh.get_node()
+        connections = cable_node.get_connected_equipment()
+        self.assertEqual(len(connections), 1)
 

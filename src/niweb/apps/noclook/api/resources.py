@@ -497,7 +497,7 @@ class CableResource(NodeHandleResource):
 
     def get_port(self, bundle, device_name, device_type, port_name):
         node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
-        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.type)
+        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.get_label())
         if not parent_node:
             raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
         result = parent_node.get_port(port_name).get('Has', [])
@@ -952,7 +952,7 @@ class ServiceL2VPNResource(ServiceResource):
 
     def get_port(self, bundle, device_name, device_type, port_name):
         node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
-        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.type)
+        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.get_label())
         if not parent_node:
             raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
         result = parent_node.get_port(port_name).get('Has', [])
