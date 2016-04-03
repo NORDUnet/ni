@@ -472,7 +472,7 @@ class CableResource(NodeHandleResource):
         end_point_nodes = self.get_end_point_nodes(bundle)
         node = bundle.obj.get_node()
         if end_point_nodes:
-            for result in node.relations.get('Connected_to', []):
+            for result in node.relationships.get('Connected_to', []):
                 helpers.delete_relationship(bundle.request.user, result['relationship_id'])
             for end_point in end_point_nodes:
                 helpers.set_connected_to(bundle.request.user, node, end_point.handle_id)

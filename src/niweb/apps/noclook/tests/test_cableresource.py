@@ -241,3 +241,42 @@ class CableResourceTest(ResourceTestCase):
         connections = cable_node.get_connected_equipment()
         self.assertEqual(len(connections), 1)
 
+    def test_optical_node_cable_bug2(self):
+        optical_node = NodeHandle.objects.create(
+            node_name='NIK-ILA1-1',
+            node_type=self.optical_node_node_type,
+            node_meta_type='Physical',
+            creator=self.user,
+            modifier=self.user,
+        )
+        data = {
+            "node_name": "NIK-02",
+            "cable_type": "Patch",
+            "end_points": [
+                {"device": "NIK-ILA1-1", "device_type": "Optical Node", "port": "01-NW"}
+            ]
+        }
+        resp = self.api_client.put('/api/v1/cable/NIK-02/', format='json', data=data,
+                                   authentication=self.get_credentials())
+        self.assertHttpCreated(resp)
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        cable_node = nh.get_node()
+        connections = cable_node.get_connected_equipment()
+
+        self.assertEqual(len(connections), 1)
+        data = {
+            "node_name": "NIK-02",
+            "cable_type": "Patch",
+            "end_points": [
+                {"device": "NIK-ILA1-1", "device_type": "Optical Node", "port": "01-NW"},
+                {"device": "NIK-ILA1-1", "device_type": "Optical Node", "port": "02-NW"}
+            ]
+        }
+        resp = self.api_client.put('/api/v1/cable/NIK-02/', format='json', data=data,
+                                   authentication=self.get_credentials())
+        self.assertHttpOK(resp)
+        nh = NodeHandle.objects.get(handle_id=self.deserialize(resp)['handle_id'])
+        cable_node = nh.get_node()
+        connections = cable_node.get_connected_equipment()
+        self.assertEqual(len(connections), 2)
+
