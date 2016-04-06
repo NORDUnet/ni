@@ -232,6 +232,23 @@ def odf_detail(request, handle_id):
                                'history': True, 'urls': urls},
                               context_instance=RequestContext(request))
 
+@login_required
+def optical_filter_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    ofilter = nh.get_node()
+    last_seen, expired = helpers.neo4j_data_age(ofilter.data)
+    # Get ports in ODF
+    connections = ofilter.get_connections()
+    # Get location
+    location_path = ofilter.get_location_path()
+    
+    urls = helpers.get_node_urls(ofilter, connections, location_path)
+    return render_to_response('noclook/detail/optical_filter_detail.html',
+                              {'node': ofilter, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
+                               'connections': connections, 'location_path': location_path, 
+                               'history': True, 'urls': urls},
+                              context_instance=RequestContext(request))
 
 @login_required
 def optical_link_detail(request, handle_id):

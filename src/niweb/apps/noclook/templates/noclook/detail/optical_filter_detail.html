@@ -1,0 +1,31 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block content %}
+{{ block.super }}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            {% if node.data.max_number_of_ports %}
+                <tr>
+                    <th>Max ports:</th><td>{{ node.data.max_number_of_ports }}</td>
+                </tr>
+            {% endif %}
+            {% if node.data.rack_units %}
+                <tr>
+                    <th>Height (u):</th><td>{{ node.data.rack_units }}</td>
+                </tr>
+            {% endif %}
+        </table>
+    </div>
+    <div class="span3">
+        {% include "noclook/detail/includes/last_changed.html" %}
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+
+{% include "noclook/detail/includes/connections.html" with connections=connections urls=urls only %}
+{% endblock %}

@@ -8,8 +8,9 @@ Node manipulation views.
 """
 from operator import itemgetter
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse, HttpResponseForbidden
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response, get_object_or_404, render
 from django.template import RequestContext
 import json
 from apps.noclook.models import NodeHandle
@@ -444,6 +445,15 @@ def edit_odf(request, handle_id):
                               {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports},
                               context_instance=RequestContext(request))
 
+@staff_member_required
+def edit_optical_fillter(request, handle_id):
+    nh, of = helpers.get_nh_node(handle_id)
+    location = of.get_location()
+    ports = of.get_ports()
+    form = forms.EditOpticalFilterForm(request.POST or None)
+
+    return render(request, 'noclook/edit/edit_optical_filter.html', {'node_handle': nh, 'node': of, 'form': form, 'location': location, 'ports': ports})
+
 
 @login_required
 def edit_optical_link(request, handle_id):
@@ -546,7 +556,6 @@ def edit_optical_node(request, handle_id):
                               {'node_handle': nh, 'node': optical_node, 'form': form, 'location': location,
                                'ports': ports},
                               context_instance=RequestContext(request))
-
 
 @login_required
 def edit_optical_path(request, handle_id):
@@ -900,6 +909,7 @@ EDIT_FUNC = {
     'service': edit_service,
     'host': edit_host,
     'odf': edit_odf,
+    'optical-filter': edit_optical_fillter,
     'optical-node': edit_optical_node,
     'optical-link': edit_optical_link,
     'optical-multiplex-section': edit_optical_multiplex_section,

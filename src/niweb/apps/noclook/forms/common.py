@@ -428,6 +428,12 @@ class EditOdfForm(forms.Form):
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
+class NewOpticalFilter(NewOdfForm):
+    pass
+
+class EditOpticalFilterForm(EditOdfForm):
+    pass
+
 
 class NewExternalEquipmentForm(forms.Form):
     name = forms.CharField()

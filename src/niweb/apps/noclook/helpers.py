@@ -526,6 +526,24 @@ def create_port(parent_node, port_name, creator):
     set_has(creator, parent_node, nh.handle_id)
     return nh.get_node()
 
+def bulk_create_ports(parent_node, num_ports, creator,port_type='', offset=1, prefix='', bundled=False, no_ports=False):
+    offset = int(offset or 1)
+    num_ports = int(num_ports or 0)
+    end_port = num_ports+offset
+    if bundled:
+        step=2
+    else:
+        step=1
+    for p in range(offset, end_port, step):
+        if bundled:
+            node_name = u'{}{}+{}'.format(prefix,p,p+1)
+        else:
+            node_name = u'{}{}'.format(prefix,p)
+        port_handle = get_generic_node_handle(creator, node_name, 'port', 'Physical')
+        dict_update_node(creator, port_handle.handle_id, {'port_type': port_type})
+        #set parent relation
+        set_has(creator, parent_node, port_handle.handle_id)
+
 
 def logical_to_physical(user, handle_id):
     """
