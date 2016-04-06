@@ -450,7 +450,21 @@ def edit_optical_fillter(request, handle_id):
     nh, of = helpers.get_nh_node(handle_id)
     location = of.get_location()
     ports = of.get_ports()
-    form = forms.EditOpticalFilterForm(request.POST or None)
+    form = forms.EditOpticalFilterForm(request.POST or of.data)
+    if request.POST and form.is_valid():
+        # Generic node update
+        helpers.form_update_node(request.user, of.handle_id, form)
+        # ODF specific updates
+        if form.cleaned_data['relationship_location']:
+            location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+            helpers.set_location(request.user, of, location_nh.handle_id)
+        if form.cleaned_data['relationship_ports']:
+            for port_name in form.cleaned_data['relationship_ports']:
+                helpers.create_port(of, port_name, request.user)
+        if 'saveanddone' in request.POST:
+            return HttpResponseRedirect(nh.get_absolute_url())
+        else:
+            return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
 
     return render(request, 'noclook/edit/edit_optical_filter.html', {'node_handle': nh, 'node': of, 'form': form, 'location': location, 'ports': ports})
 
