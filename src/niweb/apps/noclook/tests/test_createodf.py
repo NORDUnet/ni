@@ -1,20 +1,13 @@
 from .neo4j_base import NeoTestCase
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
-from dynamic_preferences import global_preferences_registry
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
-from apps.noclook import forms, helpers
 
-# We instanciate a manager for our global preferences
-global_preferences = global_preferences_registry.manager()
 
 
 class CreateODFCase(NeoTestCase):
     def setUp(self):
         super(CreateODFCase, self).setUp()
-        # Load the default forms
-        global_preferences['general__data_domain'] = 'common'
-        reload(forms)
         self.node_type = 'ODF'
         self.data = {
             'name': 'test odf',
@@ -27,7 +20,7 @@ class CreateODFCase(NeoTestCase):
         nh,node = self.get_node(self.data['name'])
         odf_data = node.data
 
-        self.assertRedirects(resp, self.get_full_url(nh.get_absolute_url()))
+        self.assertRedirects(resp, self.get_full_url(nh))
         self.assertEqual(u'test odf', odf_data['name'])
         self.assertEqual(u'48', odf_data['max_number_of_ports'])
         ports = self.get_ports(node)
