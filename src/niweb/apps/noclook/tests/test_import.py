@@ -128,8 +128,8 @@ class ImportSiteTest(NeoTestCase):
             "Optical Node1.operational_state": "In service",
             "Optical Node1.rack_units": "2",
         })
-        # We should get an error page with unknown type
-        self.assertEquals(200, resp.status_code)
+        # Maybe we should have an error page instad?
+        self.assertRedirects(resp, self.get_full_url(site))
 
     def import_to_site(self,data):
         site = self.create_site()
