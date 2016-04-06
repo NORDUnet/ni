@@ -832,6 +832,8 @@ class ExternalEquipmentModel(EquipmentModel):
 class ODFModel(EquipmentModel):
     pass
 
+class OpticalFilterModel(EquipmentModel):
+    pass
 
 class SwitchModel(EquipmentModel, HostModel):
     pass
