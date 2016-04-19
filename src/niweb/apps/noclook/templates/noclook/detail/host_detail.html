@@ -37,6 +37,11 @@
                     <th>Nagios:</th><td>{{ node.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
                 </tr>
             {% endif %}
+            {% if node.data.managed_by %}
+                <tr>
+                    <th>Managed by:</th><td>{{ node.data.managed_by }}</td>
+                </tr>
+            {% endif %}
             {% if node.data.hostnames %}
                 <tr>
                     <th>Hostnames:</th>
