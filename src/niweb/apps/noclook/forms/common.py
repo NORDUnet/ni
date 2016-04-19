@@ -139,6 +139,12 @@ RESPONSIBLE_GROUPS = [
     ('NOC', 'NOC'),
 ]
 
+HOST_MANAGEMENT_SW = [
+    ('', ''),
+    ('Puppet', 'Puppet'),
+]
+
+
 def optical_node_types():
     """
     Returns a list of tuples available for optical node types.
@@ -146,6 +152,7 @@ def optical_node_types():
     types = [("","-------")]
     types.extend([(x.name, x.name) for x in OpticalNodeType.objects.all()])
     return types
+
 
 def get_node_type_tuples(node_type):
     """
@@ -348,6 +355,7 @@ class EditHostForm(forms.Form):
         self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
         self.fields['support_group'].choices = RESPONSIBLE_GROUPS
         self.fields['security_class'].choices = SECURITY_CLASSES
+        self.fields['managed_by'].choices = HOST_MANAGEMENT_SW
 
     name = forms.CharField()
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
@@ -355,6 +363,7 @@ class EditHostForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
+    managed_by = forms.ChoiceField(widget=forms.widgets.Select)
     #responsible_persons = JSONField(required=False, widget=JSONInput,
     #                                help_text='Name of the person responsible for the host.')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -413,6 +422,7 @@ class NewOdfForm(forms.Form):
     name = forms.CharField()
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
+
 class BulkPortsForm(forms.Form):
     no_ports = forms.BooleanField(required=False, help_text='Do not create any ports')
     bundled = forms.BooleanField(required=False, help_text='Bundle the ports e.g 1+2, 2+3 (half the ports)')
@@ -428,8 +438,10 @@ class EditOdfForm(forms.Form):
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
+
 class NewOpticalFilter(NewOdfForm):
     pass
+
 
 class EditOpticalFilterForm(EditOdfForm):
     pass

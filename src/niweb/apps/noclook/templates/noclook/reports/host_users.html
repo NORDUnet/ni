@@ -53,6 +53,7 @@
                     <th>Backup</th>
                     <th>Syslog</th>
                     <th>Nagios</th>
+                    <th>Managed by</th>
                     <th>Operational State</th>
                     <th>Security Class</th>
                     <th>Last seen</th>
@@ -84,6 +85,7 @@
                         <td>{{ host.data.backup }}</td>
                         <td>{{ host.data.syslog|yesno:"Yes,No,Not set" }}</td>
                         <td>{{ host.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
+                        <td>{{ host.data.managed_by|default:"" }}</td>
                         <td>{{ host.data.operational_state|default:"Not set" }}</td>
                         <td>{{ host.data.security_class }}</td>
                         {% noclook_last_seen_as_td host.data.noclook_last_seen %}

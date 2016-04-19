@@ -147,6 +147,12 @@ RESPONSIBLE_GROUPS = [
     ('WAYF', 'WAYF'),
 ]
 
+HOST_MANAGEMENT_SW = [
+    ('', ''),
+    ('CFEngine', 'CFEngine'),
+    ('Puppet', 'Puppet'),
+]
+
 
 class NewCableForm(common.NewCableForm):
     def __init__(self, *args, **kwargs):
@@ -206,6 +212,7 @@ class EditHostForm(common.EditHostForm):
         super(EditHostForm, self).__init__(*args, **kwargs)
         self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
         self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['managed_by'].choices = HOST_MANAGEMENT_SW
 
 
 class NewServiceForm(common.NewServiceForm):
