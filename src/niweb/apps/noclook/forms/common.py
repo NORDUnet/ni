@@ -363,7 +363,8 @@ class EditHostForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    managed_by = forms.ChoiceField(widget=forms.widgets.Select)
+    managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
+                                   help_text='Name of the management software that manages the host')
     #responsible_persons = JSONField(required=False, widget=JSONInput,
     #                                help_text='Name of the person responsible for the host.')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
