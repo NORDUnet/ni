@@ -141,6 +141,7 @@ RESPONSIBLE_GROUPS = [
 
 HOST_MANAGEMENT_SW = [
     ('', ''),
+    ('Manual', 'Manual'),
     ('Puppet', 'Puppet'),
 ]
 

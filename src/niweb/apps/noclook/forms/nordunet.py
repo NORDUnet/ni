@@ -150,6 +150,7 @@ RESPONSIBLE_GROUPS = [
 HOST_MANAGEMENT_SW = [
     ('', ''),
     ('CFEngine', 'CFEngine'),
+    ('Manual', 'Manual'),
     ('Puppet', 'Puppet'),
 ]
 
