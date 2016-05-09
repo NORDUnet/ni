@@ -42,6 +42,15 @@
                 </tr>
             {% endif %}
         </table>
+        {% if node.data.description %}
+            <div>
+                <table class="table">
+                    <tr>
+                        <th>Description:</th><td>{{ node.data.description }}</td>
+                    </tr>
+                </table>
+            </div>
+        {% endif %}
     </div>
     <div class="span3">
         {% include "noclook/detail/includes/last_changed.html" %}
