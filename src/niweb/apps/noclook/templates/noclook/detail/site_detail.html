@@ -90,7 +90,7 @@
                     {% if node.url %}
                         <a href="{{ node.data.url }}" target="_blank">Link</a>
                     {% else %}
-                        <a href="https://portal.nordu.net/display/nordunetops/{{ node.data.name }}" target="_blank">To Portal</a>
+                        <a href="{% more_info_url node.data.name %}" target="_blank">To Portal</a>
                     {% endif %}
                 </td>
             </tr>

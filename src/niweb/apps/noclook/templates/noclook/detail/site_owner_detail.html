@@ -10,7 +10,7 @@
                 {% if node.data.url %}
                     <th>More information:</th><td><a href="{{ node.data.url }}">Information link</a></td>
                 {% else %}
-                    <th>More information:</th><td><a href="https://portal.nordu.net/display/nordunetops/{{ node.data.name }}">To Portal</a></td>
+                    <th>More information:</th><td><a href="{% more_info_url node.data.name %}">To Portal</a></td>
                 {% endif %}
             </tr>
         </table>

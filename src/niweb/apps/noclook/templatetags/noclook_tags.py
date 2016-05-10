@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from django import template
 import json
 from django.utils.html import escape
+from dynamic_preferences import global_preferences_registry
 
 
 register = template.Library()
@@ -227,3 +228,10 @@ def dynamic_ports(context,bulk_ports, *args, **kwargs):
     export.update({"bulk_ports": bulk_ports, "ports": ports})
     export.update(kwargs)
     return export
+
+
+@register.simple_tag
+def more_info_url(name):
+    global_preferences = global_preferences_registry.manager()
+    base_url = global_preferences['general__more_info_link']
+    return u'{}{}'.format(base_url, name)

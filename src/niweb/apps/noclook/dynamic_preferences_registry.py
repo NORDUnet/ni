@@ -12,6 +12,13 @@ class DataDomain(StringPreference):
     default = 'common'
     help_text = 'Used for dynamic loading of forms (restart required)'
 
+@global_preferences_registry.register
+class MoreInfoLink(StringPreference):
+    section = 'general'
+    name = 'more_info_link'
+    default = 'https://portal.nordu.net/display/nordunetops/'
+    help_text = 'Base url for more information links on detail pages'
+
 
 @global_preferences_registry.register
 class PageFlashMessage(StringPreference):
