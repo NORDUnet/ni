@@ -223,7 +223,7 @@ class CommonQueries(BaseNodeModel):
 
     def get_dependent_as_types(self):
         q = """
-            MATCH (node {handle_id: {handle_id}})<-[:Depends_on]-(d)
+            MATCH (node:Node {handle_id: {handle_id}})<-[:Depends_on]-(d)
             WITH node, collect(DISTINCT d) as direct
             MATCH (node)<-[:Depends_on*1..20]-(dep)
             WITH direct, collect(DISTINCT dep) as deps
@@ -237,7 +237,7 @@ class CommonQueries(BaseNodeModel):
 
     def get_dependencies_as_types(self):
         q = """
-            MATCH (node {handle_id: {handle_id}})-[:Depends_on]->(d)
+            MATCH (node:Node {handle_id: {handle_id}})-[:Depends_on]->(d)
             WITH node, collect(DISTINCT d) as direct
             MATCH node-[:Depends_on*1..20]->dep
             WITH node, direct, collect(DISTINCT dep) as deps
@@ -253,7 +253,7 @@ class CommonQueries(BaseNodeModel):
 
     def get_ports(self):
         q = """
-            MATCH (node {handle_id: {handle_id}})-[r:Connected_to|Depends_on]-(port:Port)
+            MATCH (node:Node {handle_id: {handle_id}})-[r:Connected_to|Depends_on]-(port:Port)
             WITH port, r
             OPTIONAL MATCH p=port<-[:Has*1..]-parent
             RETURN port, r as relationship, LAST(nodes(p)) as parent
@@ -504,7 +504,7 @@ class EquipmentModel(PhysicalModel):
 
     def get_dependent_as_types(self):
         q = """
-            MATCH (node {handle_id: {handle_id}})
+            MATCH (node:Node {handle_id: {handle_id}})
             OPTIONAL MATCH (node)<-[:Depends_on]-(d)
             WITH node, collect(DISTINCT d) as direct
             OPTIONAL MATCH (node)-[:Has*1..20]->()<-[:Part_of|Depends_on*1..20]-(dep)
@@ -574,7 +574,7 @@ class HostModel(CommonQueries):
 
     def get_dependent_as_types(self):  # Does not return Host_Service as a direct dependent
         q = """
-            MATCH (node {handle_id: {handle_id}})<-[:Depends_on]-(d)
+            MATCH (node:Node {handle_id: {handle_id}})<-[:Depends_on]-(d)
             WITH node, filter(n in collect(DISTINCT d) WHERE NOT(n:Host_Service)) as direct
             MATCH (node)<-[:Depends_on*1..20]-(dep)
             WITH direct, collect(DISTINCT dep) as deps
@@ -588,7 +588,7 @@ class HostModel(CommonQueries):
 
     def get_host_services(self):
         q = """
-            MATCH (host {handle_id: {handle_id}})<-[r:Depends_on]-(service:Host_Service)
+            MATCH (host:Node {handle_id: {handle_id}})<-[r:Depends_on]-(service:Host_Service)
             RETURN type(r), id(r), r, service.handle_id
             """
         return self._basic_read_query_to_dict(q)
@@ -684,7 +684,7 @@ class PeeringPartnerModel(RelationModel):
 
     def get_peering_groups(self):
         q = """
-            MATCH (host {handle_id: {handle_id}})-[r:Uses]->(group:Peering_Group)
+            MATCH (host:Node {handle_id: {handle_id}})-[r:Uses]->(group:Peering_Group)
             RETURN type(r), id(r), r, group.handle_id
             """
         return self._basic_read_query_to_dict(q)

@@ -154,7 +154,7 @@ def noclook_has_rogue_ports(handle_id):
     :return: Boolean
     """
     q = """
-        MATCH (host {handle_id: {handle_id}})<-[r:Depends_on]-()
+        MATCH (host:Node {handle_id: {handle_id}})<-[r:Depends_on]-()
         RETURN count(r.rogue_port)
         """
     with nc.neo4jdb.read as r:
