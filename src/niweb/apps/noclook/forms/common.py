@@ -283,6 +283,7 @@ class NewCableForm(forms.Form):
 
     name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
+    description = forms.CharField(required=False)
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
@@ -294,6 +295,7 @@ class EditCableForm(forms.Form):
 
     name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
+    description = forms.CharField(required=False)
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
