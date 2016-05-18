@@ -198,6 +198,18 @@ class OpticalNodeType(models.Model):
     def __unicode__(self):
         return unicode(self.name)
 
+class ServiceClass(models.Model):
+    name = models.CharField(unique=True, max_length=255)
+    def __unicode__(self):
+        return u"{}".format(self.name)
+
+class ServiceType(models.Model):
+    name = models.CharField(unique=True, max_length=255)
+    service_class = models.ForeignKey(ServiceClass)
+    def __unicode__(self):
+        return u"{}".format(self.name)
+
+
 ## Signals
 @receiver(comment_was_posted, dispatch_uid="apps.noclook.models")
 def comment_posted_handler(sender, comment, request, **kwargs):

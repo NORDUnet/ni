@@ -4,7 +4,7 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType
+from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -70,6 +70,8 @@ class UniqueIdAdmin(admin.ModelAdmin):
     readonly_fields=('unique_id',)
     search_fields = ['unique_id']
 
+class ServiceTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'service_class')
 
 admin.site.register(NodeHandle, NodeHandleAdmin)
 admin.site.register(NodeType, NodeTypeAdmin)
@@ -79,3 +81,5 @@ admin.site.register(User, UserModelAdmin)
 admin.site.register(UniqueIdGenerator, UniqueIdGeneratorAdmin)
 admin.site.register(NordunetUniqueId, UniqueIdAdmin)
 admin.site.register(OpticalNodeType)
+admin.site.register(ServiceType, ServiceTypeAdmin)
+admin.site.register(ServiceClass)
