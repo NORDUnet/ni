@@ -225,7 +225,6 @@ class NewServiceForm(common.NewServiceForm):
     project_end_date = forms.DateField(required=False)
 
     class Meta(common.NewServiceForm.Meta):
-        id_generator_name = 'nordunet_service_id'
         id_collection = NordunetUniqueId
 
     def clean(self):

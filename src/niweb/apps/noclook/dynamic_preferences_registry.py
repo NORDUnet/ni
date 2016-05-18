@@ -3,7 +3,7 @@ __author__ = 'lundberg'
 
 from dynamic_preferences.types import BooleanPreference, StringPreference
 from dynamic_preferences import user_preferences_registry, global_preferences_registry
-
+from models import UniqueIdGenerator
 
 @global_preferences_registry.register
 class DataDomain(StringPreference):
@@ -34,3 +34,12 @@ class PageFlashMessageLevel(StringPreference):
     name = 'page_flash_message_level'
     default = 'info'
     help_text = 'info|warning|danger'
+
+#class ServiceIdGenerator(ModelChoicePreference):
+@global_preferences_registry.register
+class ServiceIdGenerator(StringPreference):
+    section = 'id_generators'
+    name = 'services'
+    default =''
+    help_text = 'Which id generator to use for services'
+    model = UniqueIdGenerator

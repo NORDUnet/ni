@@ -7,6 +7,7 @@ import json
 from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType
 from .. import unique_ids
 import norduniclient as nc
+from dynamic_preferences import global_preferences_registry
 
 # We should move this kind of data to the SQL database.
 COUNTRY_CODES = [
@@ -549,8 +550,8 @@ class NewServiceForm(forms.Form):
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     class Meta:
-        id_generator_name = None                # UniqueIdGenerator instance name
         id_collection = None                    # Subclass of UniqueId
+        id_generator_property = 'id_generators__services'
         manually_named_services = ['External']  # service_type of manually named services
 
     def clean(self):
@@ -567,13 +568,15 @@ class NewServiceForm(forms.Form):
         service_type = cleaned_data.get("service_type")
         if self.is_valid():
             if not name and service_type not in self.Meta.manually_named_services:
-                if not self.Meta.id_generator_name or not self.Meta.id_collection:
-                    raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
                 try:
-                    id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                    global_preferences = global_preferences_registry.manager()
+                    id_generator_name = global_preferences[self.Meta.id_generator_property]
+                    id_generator = UniqueIdGenerator.objects.get(name=id_generator_name)
+                    # id_collection is always the same so we do not need config
                     cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
                 except UniqueIdGenerator.DoesNotExist as e:
-                    raise e
+                    msg = u'UniqueIdGenerator with the name "{}" does not exist'.format(id_generator_name)
+                    raise UniqueIdGenerator.DoesNotExist(msg)
             elif not name:
                 self._errors = ErrorDict()
                 self._errors['name'] = ErrorList()
