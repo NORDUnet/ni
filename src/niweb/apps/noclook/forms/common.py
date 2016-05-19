@@ -625,9 +625,7 @@ class EditServiceForm(forms.Form):
         cleaned_data['service_class'] = service_type_.service_class.name
         # Check that project_end_date is filled in for Project service type
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
-            self._errors = ErrorDict()
-            self._errors['project_end_date'] = ErrorList()
-            self._errors['project_end_date'].append('Missing project end date.')
+            self.add_error('project_end_date', 'Missing project end date.')
         if cleaned_data.get('operational_state', None):
             # Check that decommissioned_date is filled in for operational state Decommissioned
             if cleaned_data['operational_state'] == 'Decommissioned':
