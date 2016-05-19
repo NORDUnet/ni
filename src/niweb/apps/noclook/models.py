@@ -206,6 +206,10 @@ class ServiceClass(models.Model):
 class ServiceType(models.Model):
     name = models.CharField(unique=True, max_length=255)
     service_class = models.ForeignKey(ServiceClass)
+
+    def as_choice(self):
+        return (self.name, u'{} - {}'.format(self.service_class.name, self.name))
+
     def __unicode__(self):
         return u"{}".format(self.name)
 

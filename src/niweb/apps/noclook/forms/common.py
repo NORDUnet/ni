@@ -4,7 +4,7 @@ from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType
+from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences import global_preferences_registry
@@ -526,15 +526,11 @@ class EditProviderForm(forms.Form):
     url = forms.URLField(required=False, help_text='Link to more information.')
 
 
-class NewServiceForm(forms.Form):
+class ServiceTypeField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return u'{} - {}'.format(obj.service_class.name, obj.name)
 
-    def __init__(self, *args, **kwargs):
-        super(NewServiceForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-        self.fields['service_type'].choices = SERVICE_TYPES
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
-        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+class NewServiceForm(forms.Form):
 
     name = forms.CharField(required=False, help_text='Name will only be available for manually named service types.')
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
@@ -549,6 +545,16 @@ class NewServiceForm(forms.Form):
                                       help_text='Name of the support group.')
     relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
+    def __init__(self, *args, **kwargs):
+        super(NewServiceForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+        service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name','name')
+        self.fields['service_type'].choices = [t.as_choice() for t in service_types]
+
+
     class Meta:
         id_collection = None                    # Subclass of UniqueId
         id_generator_property = 'id_generators__services'
@@ -562,7 +568,8 @@ class NewServiceForm(forms.Form):
         """
         cleaned_data = super(NewServiceForm, self).clean()
         # Set service_class depending on service_type.
-        cleaned_data['service_class'] = SERVICE_CLASS_MAP.get(cleaned_data.get("service_type"), None)
+        service_type_ = ServiceType.objects.get(name=cleaned_data.get('service_type'))
+        cleaned_data['service_class'] = service_type_.service_class.name
         # Set name to a generated id if the service is not a manually named service.
         name = cleaned_data.get("name")
         service_type = cleaned_data.get("service_type")
@@ -588,10 +595,11 @@ class EditServiceForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(EditServiceForm, self).__init__(*args, **kwargs)
-        self.fields['service_type'].choices = SERVICE_TYPES
         self.fields['operational_state'].choices = OPERATIONAL_STATES
         self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
         self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+        service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name','name')
+        self.fields['service_type'].choices = [t.as_choice() for t in service_types]
 
     name = forms.CharField(required=False)
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
@@ -619,7 +627,9 @@ class EditServiceForm(forms.Form):
     def clean(self):
         cleaned_data = super(EditServiceForm, self).clean()
         # Set service_class depending on service_type.
-        cleaned_data['service_class'] = SERVICE_CLASS_MAP.get(self.cleaned_data['service_type'], None)
+        #TODO: Handle when service type does not exist?
+        service_type_ = ServiceType.objects.get(name=cleaned_data.get('service_type'))
+        cleaned_data['service_class'] = service_type_.service_class.name
         # Check that project_end_date is filled in for Project service type
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
             self._errors = ErrorDict()

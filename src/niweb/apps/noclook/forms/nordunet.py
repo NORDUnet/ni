@@ -220,7 +220,7 @@ class NewServiceForm(common.NewServiceForm):
     def __init__(self, *args, **kwargs):
         super(NewServiceForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
-        self.fields['service_type'].choices = SERVICE_TYPES
+#self.fields['service_type'].choices = SERVICE_TYPES
 
     project_end_date = forms.DateField(required=False)
 
@@ -232,7 +232,6 @@ class NewServiceForm(common.NewServiceForm):
         Checks that project_end_date was not omitted if service is of type project.
         """
         cleaned_data = super(NewServiceForm, self).clean()
-        cleaned_data['service_class'] = SERVICE_CLASS_MAP[cleaned_data.get("service_type")]
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
             self._errors = ErrorDict()
             self._errors['project_end_date'] = ErrorList()
@@ -255,14 +254,11 @@ class NewL2vpnServiceForm(NewServiceForm):
 class EditServiceForm(common.EditServiceForm):
     def __init__(self, *args, **kwargs):
         super(EditServiceForm, self).__init__(*args, **kwargs)
-        self.fields['service_type'].choices = SERVICE_TYPES
         self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
         self.fields['support_group'].choices = RESPONSIBLE_GROUPS
 
     def clean(self):
         cleaned_data = super(EditServiceForm, self).clean()
-        # Set service_class depending on service_type.
-        cleaned_data['service_class'] = SERVICE_CLASS_MAP[self.cleaned_data['service_type']]
 
 
 class NewOpticalLinkForm(common.NewOpticalLinkForm):
