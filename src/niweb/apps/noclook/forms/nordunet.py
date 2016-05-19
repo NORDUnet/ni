@@ -233,9 +233,7 @@ class NewServiceForm(common.NewServiceForm):
         """
         cleaned_data = super(NewServiceForm, self).clean()
         if cleaned_data['service_type'] == 'Project' and not cleaned_data['project_end_date']:
-            self._errors = ErrorDict()
-            self._errors['project_end_date'] = ErrorList()
-            self._errors['project_end_date'].append('Missing project end date.')
+            self.add_error('project_end_date', 'Missing project end date.')
         # Convert  project_end_date to string if set
         if cleaned_data.get('project_end_date', None):
             cleaned_data['project_end_date'] = cleaned_data['project_end_date'].strftime('%Y-%m-%d')
@@ -256,10 +254,6 @@ class EditServiceForm(common.EditServiceForm):
         super(EditServiceForm, self).__init__(*args, **kwargs)
         self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
         self.fields['support_group'].choices = RESPONSIBLE_GROUPS
-
-    def clean(self):
-        cleaned_data = super(EditServiceForm, self).clean()
-
 
 class NewOpticalLinkForm(common.NewOpticalLinkForm):
     def __init__(self, *args, **kwargs):

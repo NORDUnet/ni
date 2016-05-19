@@ -525,11 +525,6 @@ class EditProviderForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
 
-
-class ServiceTypeField(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        return u'{} - {}'.format(obj.service_class.name, obj.name)
-
 class NewServiceForm(forms.Form):
 
     name = forms.CharField(required=False, help_text='Name will only be available for manually named service types.')
@@ -585,9 +580,7 @@ class NewServiceForm(forms.Form):
                     msg = u'UniqueIdGenerator with the name "{}" does not exist'.format(id_generator_name)
                     raise UniqueIdGenerator.DoesNotExist(msg)
             elif not name:
-                self._errors = ErrorDict()
-                self._errors['name'] = ErrorList()
-                self._errors['name'].append('Missing name for %s service.' % service_type)
+                self.add_error('name', 'Missing name for {} service.'.format(service_type))
         return cleaned_data
 
 
