@@ -634,9 +634,7 @@ class EditServiceForm(forms.Form):
             else:
                 cleaned_data['decommissioned_date'] = None
         else:
-            self._errors = ErrorDict()
-            self._errors['operational_state'] = ErrorList()
-            self._errors['operational_state'].append('Missing operational state.')
+            self.add_error('operational_state', 'Missing operational state.')
         # Convert  project_end_date to string if set
         if cleaned_data.get('project_end_date', None):
             cleaned_data['project_end_date'] = cleaned_data['project_end_date'].strftime('%Y-%m-%d')
