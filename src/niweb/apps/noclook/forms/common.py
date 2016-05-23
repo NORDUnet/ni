@@ -85,17 +85,6 @@ PORT_TYPES = [
     ('Schuko', 'Schuko'),
 ]
 
-SERVICE_TYPES = [
-    ('', ''),
-    ('Internal', 'Internal'),
-    ('External', 'External'),
-]
-
-SERVICE_CLASS_MAP = {
-    'Internal': 'Internal',
-    'External': 'External',
-}
-
 OPERATIONAL_STATES = [
     ('', ''),
     ('In service', 'In service'),

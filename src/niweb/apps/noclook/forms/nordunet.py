@@ -18,89 +18,6 @@ SITE_TYPES = [
     ('Passive ODF', 'Passive ODF')
 ]
 
-SERVICE_TYPES = [
-    ('', ''),
-    ('Alien wavelenght', 'DWDM - Alien wavelenght'),
-    ('Ethernet', 'DWDM - Ethernet'),
-    ('SDH', 'DWDM - SDH'),
-    ('Interface Switch', 'Ethernet - Interface Switch'),
-    ('External', 'External Service'),
-    ('Hosting', 'Hosting'),
-    ('CFG Management', 'Internal - CFG Management'),
-    ('Mail', 'Internal - Mail'),
-    ('NDN CoreInfra', 'Internal - NDN CoreInfra'),
-    ('NDN IDM', 'Internal - NDN IDM'),
-    ('NDN Instrumentation', 'Internal - NDN Instrumentation'),
-    ('NDN Tools', 'Internal - NDN Tools'),
-    ('NDN Tor', 'Internal - NDN Tor'),
-    ('CMS', 'IAAS - CMS'),
-    ('EDUID', 'IAAS - EDUID'),
-    ('HSM', 'IAAS - HSM'),
-    ('Social2SAML', 'IAAS - Social2SAML'),
-    ('Storage', 'IAAS - Storage'),
-    ('TCS', 'IAAS - TCS'),
-    ('VConf', 'IAAS - VConf'),
-    ('VMWare', 'IAAS - VMWare'),
-    ('Backbone', 'IP - Backbone'),
-    ('Customer Connection', 'IP - Customer Connection'),
-    ('Internet Exchange', 'IP - Internet Exchange'),
-    ('Private Interconnect', 'IP - Private Interconnect'),
-    ('Private Interconnection', 'IP - Private Interconnection'),
-    ('Project', 'IP - Project'),
-    ('Transit', 'IP - Transit'),
-    ('L2VPN', 'MPLS - L2VPN'),
-    ('L3VPN', 'MPLS - L3VPN'),
-    ('VPLS', 'MPLS - VPLS'),
-    ('CanIt', 'SAAS - CanIt'),
-    ('Connect', 'SAAS - Connect'),
-    ('Confluence', 'SAAS - Confluence'),
-    ('JIRA', 'SAAS - JIRA'),
-    ('Kaltura', 'SAAS - Kaltura'),
-    ('Survey', 'SAAS - Survey'),
-    ('Box', 'SAAS - Box'),
-]
-
-SERVICE_CLASS_MAP = {
-    'Alien wavelenght': 'DWDM',
-    'Backbone': 'IP',
-    'Box': 'SAAS',
-    'CanIt': 'SAAS',
-    'CFG Management': 'Internal',
-    'CMS': 'IAAS',
-    'Connect': 'SAAS',
-    'Confluence': 'SAAS',
-    'Customer Connection': 'IP',
-    'EDUID': 'IAAS',
-    'HSM': 'IAAS',
-    'Ethernet': 'DWDM',
-    'External': 'External',
-    'Hosting': 'Hosting',
-    'Interface Switch': 'Ethernet',
-    'Internal': 'Internal',
-    'Internet Exchange': 'IP',
-    'JIRA': 'SAAS',
-    'Kaltura': 'SAAS',
-    'L2VPN': 'MPLS',
-    'L3VPN': 'MPLS',
-    'Mail': 'Internal',
-    'NDN CoreInfra': 'Internal',
-    'NDN IDM': 'Internal',
-    'NDN Instrumentation': 'Internal',
-    'NDN Tor': 'Internal',
-    'NDN Tools': 'Internal',
-    'Private Interconnect': 'IP',
-    'Private Interconnection': 'IP',
-    'Project': 'IP',
-    'SDH': 'DWDM',
-    'Social2SAML': 'IAAS',
-    'Storage': 'IAAS',
-    'Survey': 'SAAS',
-    'TCS': 'IAAS',
-    'Transit': 'IP',
-    'VConf': 'IAAS',
-    'VPLS': 'MPLS',
-    'VMWare': 'IAAS',
-}
 
 OPTICAL_LINK_TYPES = [
     ('', ''),
@@ -220,7 +137,6 @@ class NewServiceForm(common.NewServiceForm):
     def __init__(self, *args, **kwargs):
         super(NewServiceForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
-#self.fields['service_type'].choices = SERVICE_TYPES
 
     project_end_date = forms.DateField(required=False)
 
