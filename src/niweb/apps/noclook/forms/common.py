@@ -4,7 +4,7 @@ from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType
+from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType, NordunetUniqueId
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences import global_preferences_registry
@@ -540,7 +540,6 @@ class NewServiceForm(forms.Form):
 
 
     class Meta:
-        id_collection = None                    # Subclass of UniqueId
         id_generator_property = 'id_generators__services'
         manually_named_services = ['External']  # service_type of manually named services
 
@@ -564,7 +563,7 @@ class NewServiceForm(forms.Form):
                     id_generator_name = global_preferences[self.Meta.id_generator_property]
                     id_generator = UniqueIdGenerator.objects.get(name=id_generator_name)
                     # id_collection is always the same so we do not need config
-                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, NordunetUniqueId)
                 except UniqueIdGenerator.DoesNotExist as e:
                     msg = u'UniqueIdGenerator with the name "{}" does not exist'.format(id_generator_name)
                     raise UniqueIdGenerator.DoesNotExist(msg)

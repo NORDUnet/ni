@@ -140,9 +140,6 @@ class NewServiceForm(common.NewServiceForm):
 
     project_end_date = forms.DateField(required=False)
 
-    class Meta(common.NewServiceForm.Meta):
-        id_collection = NordunetUniqueId
-
     def clean(self):
         """
         Checks that project_end_date was not omitted if service is of type project.
