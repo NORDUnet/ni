@@ -10,6 +10,9 @@ from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, find_recursive, neo4j_data_age
 import norduniclient as nc
 
+def is_expired(node):
+    last_seen, expired = neo4j_data_age(node)
+    return expired
 
 @login_required
 def list_by_type(request, slug):
@@ -26,14 +29,12 @@ def list_by_type(request, slug):
     for wrapped_node in node_list:
         node = wrapped_node.get("node")
         row = TableRow(node)
-        last_seen, expired = neo4j_data_age(node)
-        if expired:
+        if is_expired(node):
             row.classes = "expired"
         table.add_row(row)
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': node_type, 'urls': urls})
-
+            {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
 
 @login_required
 def list_cables(request):
@@ -44,9 +45,17 @@ def list_cables(request):
         """
     cable_list = nc.query_to_list(nc.neo4jdb, q)
     urls = get_node_urls(cable_list)
-    return render_to_response('noclook/list/list_cables.html',
-                              {'cable_list': cable_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+
+    table = Table('Name', 'Cable type')
+    for wrapped_cable in cable_list:
+        cable = wrapped_cable.get('cable')
+        row = TableRow(cable, cable.get('cable_type'))
+        if is_expired(cable):
+            row.classes = 'expired'
+        table.add_row(row)
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Cables', 'urls': urls})
 
 
 @login_required

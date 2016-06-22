@@ -5,7 +5,9 @@ register = template.Library()
 
 @register.simple_tag(takes_context=True)
 def table_column(context,item):
-    if "handle_id" in item:
+    if not item:
+        result = ''
+    elif "handle_id" in item:
         # item is a node
         result = noclook_node_to_link(context, item)
     elif type(item) is list:
