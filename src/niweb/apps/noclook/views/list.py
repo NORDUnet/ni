@@ -22,9 +22,17 @@ def list_by_type(request, slug):
     node_list = nc.query_to_list(nc.neo4jdb, q)
     #Since all is the same type... we could use a defaultdict with type/id return
     urls = get_node_urls(node_list)
-    return render_to_response('noclook/list/list_by_type.html',
-                              {'node_list': node_list, 'node_type': node_type, 'urls': urls},
-                              context_instance=RequestContext(request))
+    table = Table("Name")
+    for wrapped_node in node_list:
+        node = wrapped_node.get("node")
+        row = TableRow(node)
+        last_seen, expired = neo4j_data_age(node)
+        if expired:
+            row.classes = "expired"
+        table.add_row(row)
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': node_type, 'urls': urls})
 
 
 @login_required
