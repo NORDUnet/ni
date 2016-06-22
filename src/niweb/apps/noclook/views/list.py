@@ -54,6 +54,19 @@ def list_hosts(request):
     return render_to_response('noclook/list/list_hosts.html', {'host_list': host_list, 'urls': urls},
                               context_instance=RequestContext(request))
 
+@login_required
+def list_switches(request):
+    q = """
+        MATCH (switch:Switch)
+        OPTIONAL MATCH (switch)<-[:Owns|Uses]-(user)
+        RETURN switch, collect(user) as users
+        ORDER BY switch.name
+        """
+    with nc.neo4jdb.read as r:
+        switch_list = r.execute(q).fetchall()
+    urls = get_node_urls(switch_list)
+    return render_to_response('noclook/list/list_switches.html', {'switch_list': switch_list, 'urls': urls},
+                              context_instance=RequestContext(request))
 
 @login_required
 def list_odfs(request):

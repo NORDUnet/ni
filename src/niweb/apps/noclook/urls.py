@@ -94,6 +94,7 @@ urlpatterns += patterns('apps.noclook.views.list',
     (r'^rack/$', 'list_racks'),
     (r'^odf/$', 'list_odfs'),
     (r'^cable/$', 'list_cables'),
+    (r'^switch/$', 'list_switches'),
     # Generic list
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
 )

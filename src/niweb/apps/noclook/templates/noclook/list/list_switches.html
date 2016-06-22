@@ -1,0 +1,48 @@
+{% extends "noclook/table_view.html" %}
+
+{% block title %}{{ block.super }} Switches list{% endblock %}
+
+{% block before_table %}
+    <h1>Switches</h1>
+{% endblock %}
+{% block table_head %}
+    <th>Switch</th><th>Address</th><th>User</th>
+{% endblock %}
+{% block table_body %}
+            {% load noclook_tags %}
+            {% for switch, users in switch_list %}
+                {% if switch.ip_addresses %}
+                    {% for address in switch.ip_addresses %}
+                        {% noclook_has_expired switch as expired %}
+                        {% if expired %}
+                            <tr class="expired">
+                        {% else %}
+                            <tr>
+                        {% endif %}
+                            <td><a class="handle" href="{% noclook_node_to_url switch.handle_id %}">{{ switch.name }}</a></td>
+                            <td>{{ address }}</td>
+                            <td>
+                                {% for user in users %}
+                                    <a href="{% noclook_node_to_url user.handle_id %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    {% noclook_has_expired switch as expired %}
+                    {% if expired %}
+                        <tr class="expired">
+                            {% else %}
+                        <tr>
+                    {% endif %}
+                        <td><a class="handle" href="{% noclook_node_to_url switch.handle_id  %}">{{ switch.name }}</a></td>
+                        <td>No address</td>
+                        <td>
+                            {% for user in users %}
+                                <a href="{% noclook_node_to_url user.handle_id %}">{{ user.name }}</a>{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+{% endblock %}
