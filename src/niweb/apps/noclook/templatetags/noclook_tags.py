@@ -40,6 +40,15 @@ def noclook_node_to_url(context,handle_id):
       #except ObjectDoesNotExist:
       #  return ''
 
+@register.simple_tag(takes_context=True)
+def noclook_node_to_link(context, node):
+    if "handle_id" in node:
+        url = noclook_node_to_url(context, node.get("handle_id"))
+        result = '<a class="handle" href="{}">{}</a>'.format(url, node.get("name"))
+    else:
+        result = None
+    return result
+
 @register.assignment_tag
 def noclook_node_to_node_handle(node):
     """

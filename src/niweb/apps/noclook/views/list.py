@@ -2,11 +2,12 @@
 __author__ = 'lundberg'
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response, get_object_or_404, render
 from django.template import RequestContext
 
 from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook.helpers import get_node_urls, find_recursive
+from apps.noclook.views.helpers import Table, TableRow
+from apps.noclook.helpers import get_node_urls, find_recursive, neo4j_data_age
 import norduniclient as nc
 
 
@@ -65,8 +66,18 @@ def list_switches(request):
     with nc.neo4jdb.read as r:
         switch_list = r.execute(q).fetchall()
     urls = get_node_urls(switch_list)
-    return render_to_response('noclook/list/list_switches.html', {'switch_list': switch_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+
+    table = Table("Switch", "Address", "User")
+    for switch, users in switch_list:
+        ip_addresses = switch.get("ip_addresses",["No address"])
+        row =  TableRow(switch, ip_addresses, users)
+        last_seen, expired = neo4j_data_age(switch)
+        if expired:
+            row.classes = "expired"
+        table.add_row(row)
+
+    return render(request,'noclook/list/list_generic.html', 
+                    {'name': 'Switches', 'table': table, 'urls': urls})
 
 @login_required
 def list_odfs(request):

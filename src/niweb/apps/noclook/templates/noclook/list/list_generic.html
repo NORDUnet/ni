@@ -1,0 +1,22 @@
+{% extends "noclook/table_view.html" %}
+{% load table_tags %}
+
+{% block title %}{{ block.super }} {{name}} list{% endblock %}
+
+{% block before_table %}
+    <h1>{{name}}</h1>
+{% endblock %}
+{% block table_head %}
+    {% for header in table.headers %}
+      <th>{{ header }}</th>
+    {% endfor %}
+{% endblock %}
+{% block table_body %}
+            {% for row in table.rows %}
+              <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
+                {% for col in row.cols %}
+                  <td>{% table_column col %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+{% endblock %}
