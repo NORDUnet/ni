@@ -7,7 +7,7 @@ register = template.Library()
 def table_column(context,item):
     if not item:
         result = ''
-    elif "handle_id" in item:
+    elif type(item) is dict and  "handle_id" in item:
         # item is a node
         result = noclook_node_to_link(context, item)
     elif type(item) is list:

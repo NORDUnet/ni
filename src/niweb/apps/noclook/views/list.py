@@ -10,9 +10,27 @@ from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, find_recursive, neo4j_data_age
 import norduniclient as nc
 
+OPERATIONAL_BADGES = [
+        ('badge-info', 'Testing'),
+        ('badge-warning', 'Reserved'),
+        ('badge-important', 'Decommissioned')]
+
 def is_expired(node):
     last_seen, expired = neo4j_data_age(node)
     return expired
+def _set_expired(row, node):
+    if is_expired(node):
+        row.classes = 'expired'
+def _set_operational_state(row, node):
+    if node.get('operational_state'):
+        row.classes = node.get('operational_state').lower()
+
+
+def _type_table(wrapped_node):
+    node = wrapped_node.get('node')
+    row = TableRow(node)
+    _set_expired(row, node)
+    return row
 
 @login_required
 def list_by_type(request, slug):
@@ -25,16 +43,18 @@ def list_by_type(request, slug):
     node_list = nc.query_to_list(nc.neo4jdb, q)
     #Since all is the same type... we could use a defaultdict with type/id return
     urls = get_node_urls(node_list)
-    table = Table("Name")
-    for wrapped_node in node_list:
-        node = wrapped_node.get("node")
-        row = TableRow(node)
-        if is_expired(node):
-            row.classes = "expired"
-        table.add_row(row)
+    table = Table('Name')
+    table.rows = [ _type_table(node) for node in node_list]
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
+
+
+def _cable_table(wrapped_cable):
+    cable = wrapped_cable.get('cable')
+    row = TableRow(cable, cable.get('cable_type'))
+    _set_expired(row,cable)
+    return row
 
 @login_required
 def list_cables(request):
@@ -47,16 +67,18 @@ def list_cables(request):
     urls = get_node_urls(cable_list)
 
     table = Table('Name', 'Cable type')
-    for wrapped_cable in cable_list:
-        cable = wrapped_cable.get('cable')
-        row = TableRow(cable, cable.get('cable_type'))
-        if is_expired(cable):
-            row.classes = 'expired'
-        table.add_row(row)
+    table.rows = [ _cable_table(cable) for cable in cable_list]
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Cables', 'urls': urls})
 
+def _host_table(host, users):
+    ip_addresses = host.get('ip_addresses', ['No address'])
+    os = host.get('os')
+    os_version = host.get('os_version')
+    row = TableRow(host, ip_addresses, os, os_version, users)
+    _set_expired(row, host)
+    return row
 
 @login_required
 def list_hosts(request):
@@ -69,8 +91,17 @@ def list_hosts(request):
     with nc.neo4jdb.read as r:
         host_list = r.execute(q).fetchall()
     urls = get_node_urls(host_list)
-    return render_to_response('noclook/list/list_hosts.html', {'host_list': host_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+
+    table = Table('Host', 'Address', 'OS', 'OS version', 'User')
+    table.rows = [ _host_table(host, users) for host, users in host_list]
+
+    return render(request, 'noclook/list/list_generic.html', {'table': table,'name': 'Hosts', 'urls': urls})
+
+def _switch_table(switch, users):
+    ip_addresses = switch.get('ip_addresses',['No address'])
+    row =  TableRow(switch, ip_addresses, users)
+    _set_expired(row, switch)
+    return row
 
 @login_required
 def list_switches(request):
@@ -84,17 +115,27 @@ def list_switches(request):
         switch_list = r.execute(q).fetchall()
     urls = get_node_urls(switch_list)
 
-    table = Table("Switch", "Address", "User")
-    for switch, users in switch_list:
-        ip_addresses = switch.get("ip_addresses",["No address"])
-        row =  TableRow(switch, ip_addresses, users)
-        last_seen, expired = neo4j_data_age(switch)
-        if expired:
-            row.classes = "expired"
-        table.add_row(row)
+    table = Table('Switch', 'Address', 'User')
+    table.rows = [ _switch_table(switch, users) for switch, users in switch_list]
 
     return render(request,'noclook/list/list_generic.html', 
                     {'name': 'Switches', 'table': table, 'urls': urls})
+
+def _odf_table(item):
+    location = item.get('location')
+    odf = item.get('odf')
+    site = item.get('site')
+    # manipulate location name to include site name
+    location_names = []
+    if site and site.get('name'):
+        location_names.append(site.get('name'))
+    if location:
+        if location.get('name'):
+            location_names.append(location.get('name'))
+        location['name'] = ' '.join(location_names)
+    row = TableRow(location, odf)
+    _set_expired(row, odf)
+    return row
 
 @login_required
 def list_odfs(request):
@@ -107,82 +148,123 @@ def list_odfs(request):
         """
     odf_list = nc.query_to_list(nc.neo4jdb, q)
     urls = get_node_urls(odf_list)
-    return render_to_response('noclook/list/list_odfs.html',
-                              {'odf_list': odf_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+
+    table = Table("Location", "Name")
+    table.rows = [ _odf_table(item) for item in odf_list]
+
+    return render(request,'noclook/list/list_generic.html',
+            {'table': table, 'name': 'ODFs', 'urls': urls})
+
+def _optical_link_table(link, dependencies):
+    for deps in dependencies:
+        node = deps[0]
+        if node and len(deps) > 1:
+            name = [ n.get('name') for n in reversed(deps) if n]
+            node['name'] = u' '.join(name)
+    dependencies = [ deps[0] for deps in dependencies ]
+    row = TableRow(link, link.get('link_type'), link.get('description'), dependencies)
+    _set_operational_state(row, link)
+    return row
 
 @login_required
 def list_optical_links(request):
+    # TODO: returns [None,None] and [node, None]
+    #   tried to use [:Has *0-1] path matching but that gave "duplicate paths"
     q = """
         MATCH (link:Optical_Link) 
-        OPTIONAL MATCH (link)-[r:Depends_on]->(node)
-        RETURN link as data, collect(node) as dependencies
+        OPTIONAL MATCH (link)-[:Depends_on]->(node)
+        OPTIONAL MATCH p=(node)<-[:Has]-(parent)
+        RETURN link as link, collect([node, parent]) as dependencies
         """
     optical_link_list = nc.query_to_list(nc.neo4jdb, q)
+    with nc.neo4jdb.read as r:
+        optical_link_list = r.execute(q).fetchall()
 
-    q = """
-        MATCH (n:Node)<-[:Has]-(parent)
-        WHERE n.handle_id in {handle_ids}            
-        RETURN  n.handle_id, parent
-        """
-    handle_ids = [ hid for link in optical_link_list for hid in find_recursive("handle_id", link.get('dependencies', [])) ]
-    placement_paths_raw = nc.query_to_list(nc.neo4jdb, q, handle_ids=handle_ids)
-    
-    placement_paths = { p.get("n.handle_id"): p.get("parent") for p in placement_paths_raw }
-    
-    for link in optical_link_list:
-      for dependency in link.get("dependencies", []):
-        dependency.update({"placement_path": placement_paths.get(dependency.get("handle_id"))})
+    table = Table('Optical Link', 'Type', 'Description', 'Depends on')
+    table.rows = [ _optical_link_table(link, dependencies) for link, dependencies in optical_link_list]
+    table.badges = OPERATIONAL_BADGES
 
     urls = get_node_urls(optical_link_list)
-    return render_to_response('noclook/list/list_optical_links.html',
-                              {'optical_link_list': optical_link_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Optical Links', 'urls': urls})
+
+
+def _oms_table(oms, dependencies):
+    row = TableRow(oms, oms.get('description'), dependencies)
+    if oms.get('operational_state'):
+        row.classes = oms.get('operational_state').lower()
+    return row
 
 
 @login_required
 def list_optical_multiplex_section(request):
     q = """
         MATCH (oms:Optical_Multiplex_Section)
-        RETURN collect(oms.handle_id) as ids
+        OPTIONAL MATCH (oms)-[r:Depends_on]->(dep)
+        RETURN oms, collect(dep) as dependencies
         """
-    result = nc.query_to_dict(nc.neo4jdb, q)
-    optical_multiplex_section_list = []
-    for handle_id in result['ids']:
-        optical_multiplex_section_list.append(nc.get_node_model(nc.neo4jdb, handle_id))
-    #TODO: template looks up dependencies... is that correct?
-    urls = get_node_urls(optical_multiplex_section_list)
-    return render_to_response('noclook/list/list_optical_multiplex_section.html',
-                              {'optical_multiplex_section_list': optical_multiplex_section_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+    with nc.neo4jdb.read as r:
+        result = r.execute(q).fetchall()
+
+    urls = get_node_urls(result)
+
+    table = Table("Optical Multiplex Section", "Description", "Depends on")
+    table.rows = [ _oms_table(oms, dependencies) for oms, dependencies in result]
+    table.badges = OPERATIONAL_BADGES
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Optical Multiplex Sections', 'urls': urls})
+
+def _optical_nodes_table(node):
+    row = TableRow(node, node.get('type'), node.get('link'), node.get('ots'))
+    _set_operational_state(row, node)
+    return row
 
 @login_required
 def list_optical_nodes(request):
     q = """
         MATCH (node:Optical_Node)
-        RETURN node, node.type as type, node.link as link, node.ots as ots
+        RETURN node
         ORDER BY node.name
         """
-    optical_node_list = nc.query_to_list(nc.neo4jdb, q)
+    with nc.neo4jdb.read as r:
+        optical_node_list = r.execute(q).fetchall()
     urls = get_node_urls(optical_node_list)
-    return render_to_response('noclook/list/list_optical_nodes.html',
-                              {'optical_node_list': optical_node_list, 'urls': urls},
-                              context_instance=RequestContext(request))
 
+    table = Table('Name', 'Type', 'Link', 'OTS')
+    table.rows = [ _optical_nodes_table(node[0]) for node in optical_node_list ]
+    table.badges = OPERATIONAL_BADGES
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Optical Nodes', 'urls': urls})
+
+def _optical_path_table(path):
+    row = TableRow(
+            path, 
+            path.get('framing'), 
+            path.get('capacity'), 
+            path.get('description'),
+            ", ".join(path.get('enrs',[])))
+    _set_operational_state(row, path)
+    return row
 
 @login_required
 def list_optical_paths(request):
     q = """
         MATCH (path:Optical_Path)
-        RETURN path, path.framing as framing, path.capacity as capacity, path.enrs as enrs,
-            path.description as description, path.operational_state as operational_state
+        RETURN path
         ORDER BY path.name
         """
-    optical_path_list = nc.query_to_list(nc.neo4jdb, q)
+    with nc.neo4jdb.read as r:
+        optical_path_list = r.execute(q).fetchall()
     urls = get_node_urls(optical_path_list)
-    return render_to_response('noclook/list/list_optical_paths.html',
-                              {'optical_path_list': optical_path_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+    print optical_path_list
+
+    table = Table('Optical Path', 'Framing', 'Capacity', 'Description', 'ENRs')
+    table.rows = [ _optical_path_table(path[0]) for path in optical_path_list ]
+    table.badges = OPERATIONAL_BADGES
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Optical Paths', 'urls': urls})
 
 
 @login_required

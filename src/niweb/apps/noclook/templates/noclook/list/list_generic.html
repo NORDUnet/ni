@@ -6,6 +6,17 @@
 {% block before_table %}
     <h1>{{name}}</h1>
 {% endblock %}
+
+{% block table_labels %}
+  {% if table.badges %}
+    {% for badge, name in table.badges %}
+        <span class="badge {{badge}}">{{name}}</span>
+    {% endfor %}
+    {% else %}
+      {{block.super}}
+  {% endif %}
+{% endblock %}
+
 {% block table_head %}
     {% for header in table.headers %}
       <th>{{ header }}</th>
