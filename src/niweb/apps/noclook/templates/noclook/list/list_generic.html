@@ -8,7 +8,9 @@
 {% endblock %}
 
 {% block table_labels %}
-  {% if table.badges %}
+  {% if table.no_badges %}
+      {# Nothing to show #}
+  {% elif table.badges %}
     {% for badge, name in table.badges %}
         <span class="badge {{badge}}">{{name}}</span>
     {% endfor %}

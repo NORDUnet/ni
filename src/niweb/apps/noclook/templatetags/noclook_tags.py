@@ -44,7 +44,7 @@ def noclook_node_to_url(context,handle_id):
 def noclook_node_to_link(context, node):
     if "handle_id" in node:
         url = noclook_node_to_url(context, node.get("handle_id"))
-        result = '<a class="handle" href="{}">{}</a>'.format(url, node.get("name"))
+        result = u'<a class="handle" href="{}">{}</a>'.format(url, node.get("name"))
     else:
         result = None
     return result

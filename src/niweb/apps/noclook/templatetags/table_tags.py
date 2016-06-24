@@ -6,12 +6,19 @@ register = template.Library()
 @register.simple_tag(takes_context=True)
 def table_column(context,item):
     if not item:
-        result = ''
-    elif type(item) is dict and  "handle_id" in item:
-        # item is a node
-        result = noclook_node_to_link(context, item)
+        result = u''
+    elif type(item) is dict:
+        if "handle_id" in item:
+            # item is a node
+            result = noclook_node_to_link(context, item)
+        elif "url" in item:
+            # it is a 'link'
+            result = u'<a href="{}">{}</a>'.format(item.get('url',''),item.get('name',''))
+        else:
+            # Nothing to print
+            result = u''
     elif type(item) is list:
-        result = "<br> ".join([table_column(context, i) for i in item])
+        result = u'<br> '.join([table_column(context, i) for i in item])
     else:
         # Just print it
         result = item

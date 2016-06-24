@@ -2,7 +2,7 @@
 __author__ = 'lundberg'
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render_to_response, get_object_or_404, render
+from django.shortcuts import  get_object_or_404, render
 from django.template import RequestContext
 
 from apps.noclook.models import NodeType, NodeHandle
@@ -195,7 +195,6 @@ def _oms_table(oms, dependencies):
         row.classes = oms.get('operational_state').lower()
     return row
 
-
 @login_required
 def list_optical_multiplex_section(request):
     q = """
@@ -214,6 +213,7 @@ def list_optical_multiplex_section(request):
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Optical Multiplex Sections', 'urls': urls})
+
 
 def _optical_nodes_table(node):
     row = TableRow(node, node.get('type'), node.get('link'), node.get('ots'))
@@ -236,6 +236,7 @@ def list_optical_nodes(request):
     table.badges = OPERATIONAL_BADGES
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Optical Nodes', 'urls': urls})
+
 
 def _optical_path_table(path):
     row = TableRow(
@@ -267,6 +268,11 @@ def list_optical_paths(request):
             {'table': table, 'name': 'Optical Paths', 'urls': urls})
 
 
+def _peering_partner_table(peer, peering_groups):
+    row = TableRow(peer, peer.get('as_number'), peering_groups)
+    _set_expired(row, peer)
+    return row
+
 @login_required
 def list_peering_partners(request):
     q = """
@@ -276,11 +282,15 @@ def list_peering_partners(request):
         RETURN peer, collect(peering_group) as peering_groups
         ORDER BY peer.name
         """
-    partner_list = nc.query_to_list(nc.neo4jdb, q)
+    with nc.neo4jdb.read as r:
+        partner_list = r.execute(q).fetchall()
     urls = get_node_urls(partner_list)
-    return render_to_response('noclook/list/list_peering_partners.html', 
-                              {'partner_list': partner_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+
+    table = Table('Peering Partner', 'AS Number', 'Peering Groups')
+    table.rows = [ _peering_partner_table(peer, groups) for peer, groups in partner_list]
+
+    return render(request,'noclook/list/list_generic.html', 
+            {'table': table, 'name': 'Peering Partners', 'urls': urls})
 
 
 @login_required
@@ -291,49 +301,89 @@ def list_racks(request):
         RETURN rack, site
         ORDER BY site.name, rack.name
         """
-    rack_list = nc.query_to_list(nc.neo4jdb, q)
+    with nc.neo4jdb.read as r:
+       rack_list = r.execute(q).fetchall()
     urls = get_node_urls(rack_list)
-    return render_to_response('noclook/list/list_racks.html',
-                              {'rack_list': rack_list, 'urls':urls},
-                              context_instance=RequestContext(request))
+
+    table = Table('Site', 'Name')
+    table.rows = [ TableRow(site, rack) for rack, site in rack_list ]
+    table.no_badges = True
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Racks',  'urls':urls})
 
 
+def _router_table(router):
+    row = TableRow(router, router.get('model'), router.get('version'), router.get('operational_state'))
+    _set_expired(row, router)
+    return row
+    
 @login_required
 def list_routers(request):
     q = """
         MATCH (router:Router)
-        RETURN router, router.model as model, router.version as version, router.operational_state as operational_state
+        RETURN router
         ORDER BY router.name
         """
-    router_list = nc.query_to_list(nc.neo4jdb, q)
+    with nc.neo4jdb.read as r:
+       router_list = r.execute(q).fetchall()
     urls = get_node_urls(router_list)
-    return render_to_response('noclook/list/list_routers.html',
-                              {'router_list': router_list, 'urls':urls},
-                              context_instance=RequestContext(request))
 
+    table = Table('Router', 'Model', 'JUNOS version', 'Operational state')
+    table.rows = [ _router_table(router[0]) for router in router_list ]
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Routers', 'urls':urls})
+
+def _service_table(service, customers, end_users):
+    row = TableRow(service, 
+                service.get('service_class'),
+                service.get('service_type'),
+                service.get('description'),
+                customers,
+                end_users)
+    _set_operational_state(row, service)
+    return row
 
 @login_required
 def list_services(request, service_class=None):
     where_statement = ''
+    name = 'Services'
     if service_class:
         where_statement = 'WHERE service.service_class = "%s"' % service_class
+        name = '{} Services'.format(service_class)
     q = """
         MATCH (service:Service)
         %s
         OPTIONAL MATCH (service)<-[:Uses]-(customer:Customer)
         WITH service, COLLECT(customer) as customers
         OPTIONAL MATCH (service)<-[:Uses]-(end_user:End_User)
-        RETURN service, service.service_class as service_class,
-            service.service_type as service_type, service.description as description,
-            customers, COLLECT(end_user) as end_users
+        RETURN service, customers, COLLECT(end_user) as end_users
         ORDER BY service.name
         """ % where_statement
-    service_list = nc.query_to_list(nc.neo4jdb, q)
+    with nc.neo4jdb.read as r:
+       service_list = r.execute(q).fetchall()
     urls = get_node_urls(service_list)
-    return render_to_response('noclook/list/list_services.html',
-                              {'service_list': service_list, 'service_class': service_class, 'urls': urls},
-                              context_instance=RequestContext(request))
 
+    table = Table('Service',
+                'Service Class', 
+                'Service Type', 
+                'Description', 
+                'Customers', 
+                'End Users')
+    table.rows = [ _service_table(service, customers, end_users) for service, customers, end_users in service_list ]
+    table.badges=OPERATIONAL_BADGES
+
+    return render(request, 'noclook/list/list_generic.html',
+                              {'table': table, 'name': name, 'urls': urls})
+
+def _site_table(site):
+    country_link = {
+            'url': u'/findin/site/country_code/{}/'.format(site.get('country_code')),
+            'name': u'{}'.format(site.get('country', ''))
+            }
+    row = TableRow(country_link, site)
+    return row
 
 @login_required
 def list_sites(request):
@@ -342,10 +392,16 @@ def list_sites(request):
         RETURN site
         ORDER BY site.country_code, site.name
         """
-    site_list = nc.query_to_list(nc.neo4jdb, q)
+    with nc.neo4jdb.read as r:
+       site_list = r.execute(q).fetchall()
     urls = get_node_urls(site_list)
-    return render_to_response('noclook/list/list_sites.html', {'site_list': site_list, 'urls': urls},
-                              context_instance=RequestContext(request))
+
+    table = Table('Country', 'Site name')
+    table.rows = [ _site_table(site[0]) for site in site_list ]
+    table.no_badges=True
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Sites', 'urls': urls})
 
 
 
