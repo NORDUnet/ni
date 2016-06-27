@@ -33,7 +33,7 @@ class Command(BaseCommand):
 
                 This report was generated on %s UTC.
                     ''' % (contract_number, utcnow.strftime('%Y-%m-%d %H:%M'))
-            price_per_host = 120
+            price_per_host = 95
             header = [
                 'Host user',
                 'Host',
