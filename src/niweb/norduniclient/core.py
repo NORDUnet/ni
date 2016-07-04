@@ -276,7 +276,7 @@ def get_nodes_by_value(manager, value, prop=None, node_type=None):
                 WHERE HAS(n.{prop})
                 RETURN n
                 '''.format(label=node_type, prop=prop)
-            pattern = re.compile('.*{0}.*'.format(value), re.IGNORECASE)
+            pattern = re.compile(u'.*{0}.*'.format(value), re.IGNORECASE)
             with manager.read as r:
                 for node, in r.execute(q):
                     if pattern.match(unicode(node.get(prop, None))):
@@ -286,7 +286,7 @@ def get_nodes_by_value(manager, value, prop=None, node_type=None):
             MATCH (n:{label})
             RETURN n
             '''.format(label=node_type)
-        pattern = re.compile('.*{0}.*'.format(value), re.IGNORECASE)
+        pattern = re.compile(u'.*{0}.*'.format(value), re.IGNORECASE)
         with manager.read as r:
             for node, in r.execute(q):
                 for v in node.values():
