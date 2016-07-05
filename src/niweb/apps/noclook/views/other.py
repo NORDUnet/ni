@@ -116,14 +116,16 @@ def search_autocomplete(request):
     response = HttpResponse(content_type='application/json')
     query = request.GET.get('query', None)
     if query:
-        query = re_escape(query)
-        q = Q('name', '*%s*' % query, wildcard=True)
-        suggestions = []
-        for handle_id in nc.legacy_node_index_search(nc.neo4jdb, unicode(q))['result']:
-            node = nc.get_node_model(nc.neo4jdb, handle_id)
-            suggestions.append(node.data['name'])
-        d = {'query': query, 'suggestions': suggestions, 'data': []}
-        json.dump(d, response)
+        try:
+            q = Q('name', '*%s*' % query, wildcard=True)
+            suggestions = []
+            for handle_id in nc.legacy_node_index_search(nc.neo4jdb, unicode(q))['result']:
+                node = nc.get_node_model(nc.neo4jdb, handle_id)
+                suggestions.append(node.data['name'])
+            d = {'query': query, 'suggestions': suggestions, 'data': []}
+            json.dump(d, response)
+        except:
+            pass
         return response
     return False
 
