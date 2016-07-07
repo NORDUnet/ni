@@ -13,8 +13,10 @@ dotenv.read_dotenv(join(SITE_ROOT, '.devenv'))
 
 ########## PROJECT CONFIGURATION
 # Neo4j settings
-NEO4J_RESOURCE_URI = environ.get('NEO4J_RESOURCE_URI', 'http://localhost:7474')
+NEO4J_RESOURCE_URI = environ.get('NEO4J_RESOURCE_URI', 'bolt://localhost:7687')
 NEO4J_MAX_DATA_AGE = environ.get('NEO4J_MAX_DATA_AGE', '24')  # hours
+NEO4J_USERNAME = environ.get('NEO4J_USERNAME', 'neo4j')
+NEO4J_PASSWORD = environ.get('NEO4J_PASSWORD', 'docker')
 
 # To be able to use the report mailing functionality you need to set a to address and a key.
 REPORTS_TO = environ['REPORTS_TO'].split()
