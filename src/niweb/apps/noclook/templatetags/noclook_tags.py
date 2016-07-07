@@ -40,6 +40,7 @@ def noclook_node_to_url(context,handle_id):
       #except ObjectDoesNotExist:
       #  return ''
 
+
 @register.simple_tag(takes_context=True)
 def noclook_node_to_link(context, node):
     if "handle_id" in node:
@@ -48,6 +49,7 @@ def noclook_node_to_link(context, node):
     else:
         result = None
     return result
+
 
 @register.assignment_tag
 def noclook_node_to_node_handle(node):
@@ -73,6 +75,7 @@ def noclook_last_seen_to_dt(noclook_last_seen):
     except ValueError:
         dt = None
     return dt
+
 
 @register.inclusion_tag('noclook/table_date_column.html')
 def noclook_last_seen_as_td(date):
@@ -164,22 +167,26 @@ def noclook_has_rogue_ports(handle_id):
     """
     q = """
         MATCH (host:Node {handle_id: {handle_id}})<-[r:Depends_on]-()
-        RETURN count(r.rogue_port)
+        RETURN count(r.rogue_port) as count
         """
-    with nc.neo4jdb.read as r:
-        count, = r.execute(q, handle_id=handle_id).fetchall()[0]
-    if count:
+    d = nc.query_to_dict(nc.neo4jdb, q)
+    if d['count']:
         return True
     return False
 
+
 class BlockVar(template.Node):
+
     def __init__(self, nodelist, context_var):
-       self.nodelist = nodelist
-       self.context_var = context_var
+        self.nodelist = nodelist
+        self.context_var = context_var
+
     def render(self, context):
-       output = self.nodelist.render(context)
-       context[self.context_var] = output
-       return '' 
+        output = self.nodelist.render(context)
+        context[self.context_var] = output
+        return ''
+
+
 @register.tag
 def blockvar(parser, token):
     tagname, args= token.contents.split(None, 1)
@@ -187,18 +194,25 @@ def blockvar(parser, token):
     nodelist = parser.parse("endblockvar",)
     parser.delete_first_token()
     return BlockVar(nodelist, out_var)
+
+
 @register.inclusion_tag("noclook/table.html")
 def table(th, tbody, *args, **kwargs):
     context = {'th': th, 'tbody': tbody}
     context.update(kwargs)
     return context
+
+
 @register.inclusion_tag("noclook/table_search.html")
 def table_search(target=None, field_id=None):
     return {"target": target, "field_id":field_id}
 
+
 @register.filter
 def as_json(value):
     return json.dumps(value, indent=4, sort_keys=True)
+
+
 @register.simple_tag
 def hardware_module(module, level=0):
     result = ""
@@ -220,9 +234,11 @@ def hardware_module(module, level=0):
     
     return result
 
+
 @register.simple_tag
 def scan_data(host_node):
     return escape(json.dumps({"target": host_node.data.get("hostnames", ["unknown"])[0], "ipv4s": host_node.data.get("ip_addresses",[])}))
+
 
 @register.inclusion_tag("noclook/dynamic_ports.html", takes_context=True)
 def dynamic_ports(context,bulk_ports, *args, **kwargs):

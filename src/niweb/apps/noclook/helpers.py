@@ -19,6 +19,7 @@ import codecs
 import cStringIO
 import xlwt
 import re
+from neo4j.v1.types import Node
 
 from .models import NodeHandle, NodeType
 from . import activitylog
@@ -814,8 +815,10 @@ def find_recursive(key, target):
         for d in target:
             for result in find_recursive(key, d):
                 yield result
-    elif isinstance(target, dict):
-        for k, v in target.iteritems():
+    elif isinstance(target, dict) or isinstance(target, Node):
+        if isinstance(target, Node):
+            target = target.properties
+        for k, v in target.items():
             if k == key:
                 yield v
             else:
@@ -847,6 +850,7 @@ def paginate(full_list, page=None, per_page=250):
         # If page is out of range (e.g. 9999), deliver last page of results.
         paginated_list = paginator.page(paginator.num_pages)
     return paginated_list
+
 
 def app_enabled(appname):
     return appname in django_settings.INSTALLED_APPS

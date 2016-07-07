@@ -155,8 +155,8 @@ def get_node_type_tuples(node_type):
         RETURN n.handle_id, n.name
         ORDER BY n.name
         """.format(node_type=node_type.replace(' ', '_'))
-    with nc.neo4jdb.read as r:
-        choices.extend(r.execute(q).fetchall())
+    l = nc.query_to_list(nc.neo4jdb, q)
+    choices.extend([tuple(item.values()) for item in l])
     return choices
 
 

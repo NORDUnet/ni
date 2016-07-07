@@ -87,23 +87,23 @@ def nodes_to_json():
     json_list = []
     q = """
         MATCH (n:Node)
-        RETURN labels(n),n
+        RETURN n
         """
-    with nc.neo4jdb.read as r:
-        for node in r.execute(q):
-            labels, data = node
-            json_list.append(
-                {'host': {
-                    'name': 'node_%d' % data['handle_id'],
-                    'version': 1,
-                    'noclook_producer': {
-                        'handle_id': data['handle_id'],
-                        'meta_type': labels_to_meta_type(labels),
-                        'node_type': labels_to_node_type(labels),
-                        'labels': labels,
-                        'properties': data
-                    }
-                }})
+    for item in nc.query_to_iterator(nc.neo4jdb, q):
+        labels = list(item['n'].labels)
+        data = item['n'].properties
+        json_list.append(
+            {'host': {
+                'name': 'node_%d' % data['handle_id'],
+                'version': 1,
+                'noclook_producer': {
+                    'handle_id': data['handle_id'],
+                    'meta_type': labels_to_meta_type(labels),
+                    'node_type': labels_to_node_type(labels),
+                    'labels': labels,
+                    'properties': data
+                }
+            }})
     return json_list
 
 
@@ -111,24 +111,25 @@ def relationships_to_json():
     json_list = []
     q = """
         START r=relationship(*)
-        RETURN  type(r), id(r), r, startNode(r).handle_id, endNode(r).handle_id
+        RETURN r, startNode(r).handle_id as start, endNode(r).handle_id as end
         """
 
-    with nc.neo4jdb.read as r:
-        for relationship in r.execute(q):
-            t, i, data, start, end = relationship
-            json_list.append(
-                {'host': {
-                    'name': 'relationship_%d' % i,
-                    'version': 1,
-                    'noclook_producer': {
-                        'id': i,
-                        'type': t,
-                        'start': start,
-                        'end': end,
-                        'properties': data
-                    }
-                }})
+    for item in nc.query_to_iterator(nc.neo4jdb, q):
+        relationship = item['r']
+        start = item['start']
+        end = item['end']
+        json_list.append(
+            {'host': {
+                'name': 'relationship_{!s}'.format(relationship.id),
+                'version': 1,
+                'noclook_producer': {
+                    'id': relationship.id,
+                    'type': relationship.type,
+                    'start': start,
+                    'end': end,
+                    'properties': relationship.properties
+                }
+            }})
     return json_list
 
 
