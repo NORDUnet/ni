@@ -5,6 +5,7 @@ from django_comments.signals import comment_was_posted, comment_was_flagged
 from django.dispatch import receiver
 from django_comments.models import Comment
 from actstream import action
+from neo4j.v1.exceptions import CypherError
 
 import norduniclient as nc
 
@@ -89,7 +90,7 @@ class NodeHandle(models.Model):
         super(NodeHandle, self).save(*args, **kwargs)
         try:
             nc.create_node(nc.neo4jdb, self.node_name, self.node_meta_type, self.node_type.get_label(), self.handle_id)
-        except nc.exceptions.IntegrityError:
+        except CypherError:
             #  A node associated with this handle_id already exists
             pass
         return self

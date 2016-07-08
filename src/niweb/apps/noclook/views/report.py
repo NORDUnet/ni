@@ -56,7 +56,7 @@ def host_users(request, host_user_name=None):
             RETURN collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
           '''.replace("{where}", form.to_where(additional="NOT (host)<-[:Uses|Owns]-()"))
         hosts = nc.query_to_list(nc.neo4jdb, q)
-    elif host_user_name == 'All' or host_user_name == None:
+    elif host_user_name == 'All' or host_user_name is None:
         q = '''
             MATCH (host_user:Host_User)-[:Uses|Owns]->(host:Host) 
             {where}
@@ -78,9 +78,9 @@ def host_users(request, host_user_name=None):
 def host_security_class(request, status=None, form=None):
     where_statement = ''
     if status == 'classified':
-        where_statement = 'and (has(host.security_class) or has(host.security_comment))'
+        where_statement = 'and (exists(host.security_class) or exists(host.security_comment))'
     elif status == 'not-classified':
-        where_statement = 'and (not(has(host.security_class)) and not(has(host.security_comment)))'
+        where_statement = 'and (not(exists(host.security_class)) and not(exists(host.security_comment)))'
     q = '''
             MATCH (host:Host)
             WHERE not(host.operational_state = "Decommissioned") %s
@@ -101,8 +101,8 @@ def host_services(request, status=None):
         if status == 'unauthorized-ports':
             q = """
                 MATCH (host:Host)
-                MATCH host<-[r:Depends_on]-()
-                WHERE not(host.operational_state = "Decommissioned") and has(r.rogue_port)
+                MATCH (host)<-[r:Depends_on]-()
+                WHERE host.operational_state <> "Decommissioned" and exists(r.rogue_port)
                 RETURN host, collect(r) as ports
                 ORDER BY host.noclook_last_seen DESC
                 """
@@ -113,8 +113,8 @@ def host_services(request, status=None):
         elif status == 'public':
             q = """
                 MATCH (host:Host)
-                MATCH host<-[r:Depends_on]-()
-                WHERE not(host.operational_state = "Decommissioned") and r.public
+                MATCH (host)<-[r:Depends_on]-()
+                WHERE host.operational_state <> "Decommissioned" and r.public
                 RETURN host, collect({data: r, id: id(r)}) as ports
                 ORDER BY host.noclook_last_seen DESC
                 """
@@ -124,14 +124,14 @@ def host_services(request, status=None):
                                       context_instance=RequestContext(request))
         else:
             if status == 'locked':
-                where_statement = 'and (has(host.services_locked) and host.services_locked)'
+                where_statement = 'and (exists(host.services_locked) and host.services_locked)'
             elif status == 'not-locked':
-                where_statement = 'and (not(has(host.services_locked)) or not host.services_locked)'
+                where_statement = 'and (not(exists(host.services_locked)) or not host.services_locked)'
             else:
                 raise Http404()
             q = """
                 MATCH (host:Host)
-                WHERE not(host.operational_state = "Decommissioned") %s
+                WHERE host.operational_state <> "Decommissioned" %s
                 RETURN host
                 ORDER BY host.noclook_last_seen DESC
                 """ % where_statement

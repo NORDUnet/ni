@@ -152,11 +152,11 @@ def get_node_type_tuples(node_type):
     choices = [('', '')]
     q = """
         MATCH (n:{node_type})
-        RETURN n.handle_id, n.name
+        RETURN n.handle_id as handle_id, n.name as name
         ORDER BY n.name
         """.format(node_type=node_type.replace(' ', '_'))
     l = nc.query_to_list(nc.neo4jdb, q)
-    choices.extend([tuple(item.values()) for item in l])
+    choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
     return choices
 
 

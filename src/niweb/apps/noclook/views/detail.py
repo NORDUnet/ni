@@ -495,7 +495,7 @@ def _zip_modules(chain, out):
         out_part = next((p for p in out if p['name'] == name), None)
         if not out_part:
             out_part = part
-            out_part['modules'] = []
+            out_part.properties['modules'] = []
             out.append(out_part)
         # process rest of chain
         _zip_modules(chain[1:], out_part['modules'])
@@ -513,7 +513,7 @@ def router_detail(request, handle_id):
     dependent = router.get_dependent_as_types()
     q = """
         MATCH p=(n:Router {handle_id: {handle_id}})-[r:Has*1..4]->(part) 
-        WHERE has(part.hardware_description)
+        WHERE exists(part.hardware_description)
         RETURN tail(nodes(p)) as hardware
         """
     result = nc.query_to_list(nc.neo4jdb, q, handle_id=router.handle_id)

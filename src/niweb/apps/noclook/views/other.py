@@ -248,12 +248,12 @@ def gmaps_optical_nodes(request):
     q = """
         MATCH (cable:Cable)
         WHERE cable.cable_type = "Dark Fiber"
-        MATCH (cable)-[Connected_to]->port
+        MATCH (cable)-[Connected_to]->(port)
         WITH cable, port
-        MATCH port<-[:Has*0..]-equipment
+        MATCH (port)<-[:Has*0..]-(equipment)
         WHERE (equipment:Optical_Node) AND NOT equipment.type =~ "(?i).*tss.*"
         WITH cable, port, equipment
-        MATCH p2=equipment-[:Located_in]->()<-[:Has*0..]-loc
+        MATCH p2=(equipment)-[:Located_in]->()<-[:Has*0..]-(loc)
         WHERE (loc:Site)
         RETURN cable, equipment, loc
         """

@@ -11,6 +11,7 @@ from dynamic_preferences import global_preferences_registry
 
 register = template.Library()
 
+
 @register.inclusion_tag('type_menu.html')
 def type_menu():
     """
@@ -97,7 +98,7 @@ def timestamp_to_td(seconds):
     """
     try:
         td = timedelta(seconds=float(seconds))
-    except (AttributeError, ValueError):
+    except (AttributeError, ValueError, TypeError):
         td = None
     return td
 
@@ -169,7 +170,7 @@ def noclook_has_rogue_ports(handle_id):
         MATCH (host:Node {handle_id: {handle_id}})<-[r:Depends_on]-()
         RETURN count(r.rogue_port) as count
         """
-    d = nc.query_to_dict(nc.neo4jdb, q)
+    d = nc.query_to_dict(nc.neo4jdb, q, handle_id=handle_id)
     if d['count']:
         return True
     return False

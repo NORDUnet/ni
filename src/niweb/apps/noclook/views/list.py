@@ -54,13 +54,12 @@ def list_by_type(request, slug):
     table.rows = [ _type_table(node) for node in node_list]
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
+                  {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
 
 
-def _cable_table(wrapped_cable):
-    cable = wrapped_cable.get('cable')
+def _cable_table(cable):
     row = TableRow(cable, cable.get('cable_type'))
-    _set_expired(row,cable)
+    _set_expired(row, cable)
     return row
 
 
@@ -75,10 +74,10 @@ def list_cables(request):
     urls = get_node_urls(cable_list)
 
     table = Table('Name', 'Cable type')
-    table.rows = [ _cable_table(cable) for cable in cable_list]
+    table.rows = [_cable_table(item['cable']) for item in cable_list]
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Cables', 'urls': urls})
+                  {'table': table, 'name': 'Cables', 'urls': urls})
 
 
 def _host_table(host, users):
@@ -128,7 +127,7 @@ def list_switches(request):
     urls = get_node_urls(switch_list)
 
     table = Table('Switch', 'Address', 'User')
-    table.rows = [ _switch_table(switch, users) for switch, users in switch_list]
+    table.rows = [ _switch_table(item['switch'], item['users']) for item in switch_list]
 
     return render(request,'noclook/list/list_generic.html', 
                     {'name': 'Switches', 'table': table, 'urls': urls})
@@ -175,7 +174,7 @@ def _optical_link_table(link, dependencies):
         node = deps[0]
         if node and len(deps) > 1:
             name = [n.get('name') for n in reversed(deps) if n]
-            node['name'] = u' '.join(name)
+            node.properties['name'] = u' '.join(name)
     dependencies = [deps[0] for deps in dependencies]
     row = TableRow(link, link.get('link_type'), link.get('description'), dependencies)
     _set_operational_state(row, link)
@@ -195,7 +194,7 @@ def list_optical_links(request):
 
     optical_link_list = nc.query_to_list(nc.neo4jdb, q)
     table = Table('Optical Link', 'Type', 'Description', 'Depends on')
-    table.rows = [_optical_link_table(link, dependencies) for link, dependencies in optical_link_list]
+    table.rows = [_optical_link_table(item['link'], item['dependencies']) for item in optical_link_list]
     table.badges = OPERATIONAL_BADGES
 
     urls = get_node_urls(optical_link_list)
@@ -244,11 +243,11 @@ def list_optical_nodes(request):
         ORDER BY node.name
         """
 
-    optical_node_list = nc.query_to_dict(nc.neo4jdb, q)
+    optical_node_list = nc.query_to_list(nc.neo4jdb, q)
     urls = get_node_urls(optical_node_list)
 
     table = Table('Name', 'Type', 'Link', 'OTS')
-    table.rows = [_optical_nodes_table(node[0]) for node in optical_node_list]
+    table.rows = [_optical_nodes_table(item['node']) for item in optical_node_list]
     table.badges = OPERATIONAL_BADGES
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Optical Nodes', 'urls': urls})
@@ -294,7 +293,7 @@ def _peering_partner_table(peer, peering_groups):
 def list_peering_partners(request):
     q = """
         MATCH (peer:Peering_Partner)
-        OPTIONAL MATCH peer-[:Uses]->peering_group
+        OPTIONAL MATCH (peer)-[:Uses]->(peering_group)
         WITH distinct peer, peering_group
         RETURN peer, collect(peering_group) as peering_groups
         ORDER BY peer.name
@@ -304,7 +303,7 @@ def list_peering_partners(request):
     urls = get_node_urls(partner_list)
 
     table = Table('Peering Partner', 'AS Number', 'Peering Groups')
-    table.rows = [_peering_partner_table(item['peer'], item['groups']) for item in partner_list]
+    table.rows = [_peering_partner_table(item['peer'], item['peering_groups']) for item in partner_list]
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Peering Partners', 'urls': urls})
@@ -314,7 +313,7 @@ def list_peering_partners(request):
 def list_racks(request):
     q = """
         MATCH (rack:Rack)
-        OPTIONAL MATCH rack<-[:Has]-site
+        OPTIONAL MATCH (rack)<-[:Has]-(site)
         RETURN rack, site
         ORDER BY site.name, rack.name
         """

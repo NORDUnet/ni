@@ -248,7 +248,7 @@ def consume_noclook(json_list):
     """
     tot_items = len(json_list)
     tot_nodes = 0
-    print 'Adding {!s} items.'.format(tot_items)
+    print('Adding {!s} items.'.format(tot_items))
     # Loop through all files starting with node
     for i in json_list:
         if i['host']['name'].startswith('node'):
@@ -263,31 +263,36 @@ def consume_noclook(json_list):
             nc.set_node_properties(nc.neo4jdb, nh.handle_id, properties)
             logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
             tot_nodes += 1
-    print 'Added {!s} nodes.'.format(tot_nodes)
+    print('Added {!s} nodes.'.format(tot_nodes))
 
     # Loop through all files starting with relationship
     x = 0
-    with nc.neo4jdb.write as w:
+    with nc.neo4jdb.transaction as t:
         for i in json_list:
             if i['host']['name'].startswith('relationship'):
                 item = i['host']['noclook_producer']
                 properties = item.get('properties')
 
-                props = {'props': properties}
                 q = """
                     MATCH (start:Node { handle_id:{start_id} }),(end:Node {handle_id: {end_id} })
                     CREATE UNIQUE (start)-[r:%s { props } ]->(end)
                     """ % item.get('type')
 
-                w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props).fetchall()
+                query_data = {
+                    'props': properties,
+                    'start_id': item.get('start'),
+                    'end_id': item.get('end')
+                }
+
+                t.run(q, query_data)
                 logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
                                                                  end=item.get('end')))
                 x += 1
                 if x >= 1000:
-                    w.connection.commit()
-                x = 0
+                    t.commit()
+                    x = 0
     tot_rels = tot_items - tot_nodes
-    print 'Added {!s} relationships.'.format(tot_rels)
+    print('Added {!s} relationships.'.format(tot_rels))
 
 
 def run_consume(config_file):
