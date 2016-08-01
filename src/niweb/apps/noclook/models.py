@@ -194,28 +194,33 @@ class NordunetUniqueId(UniqueId):
     def __unicode__(self):
         return unicode('NORDUnet: %s' % self.unique_id)
 
+
 class OpticalNodeType(models.Model):
     name = models.CharField(max_length=255, unique=True)
+
     def __unicode__(self):
         return unicode(self.name)
 
+
 class ServiceClass(models.Model):
     name = models.CharField(unique=True, max_length=255)
+
     def __unicode__(self):
         return u"{}".format(self.name)
+
 
 class ServiceType(models.Model):
     name = models.CharField(unique=True, max_length=255)
     service_class = models.ForeignKey(ServiceClass)
 
     def as_choice(self):
-        return (self.name, u'{} - {}'.format(self.service_class.name, self.name))
+        return self.name, u'{} - {}'.format(self.service_class.name, self.name)
 
     def __unicode__(self):
         return u"{}".format(self.name)
 
 
-## Signals
+# Signals
 @receiver(comment_was_posted, dispatch_uid="apps.noclook.models")
 def comment_posted_handler(sender, comment, request, **kwargs):
     action.send(
