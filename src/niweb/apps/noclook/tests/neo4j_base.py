@@ -1,15 +1,13 @@
-import norduniclient as nc
 
-# Use test instance of the neo4j db
-nc.neo4jdb = nc.init_db('http://localhost:7475')
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeHandle
 from dynamic_preferences import global_preferences_registry
 from apps.noclook import forms, helpers
 from django.template.defaultfilters import slugify
+from apps.noclook.tests.testing import nc
 
-# We instanciate a manager for our global preferences
+# We instantiate a manager for our global preferences
 global_preferences = global_preferences_registry.manager()
 
 class NeoTestCase(TestCase):

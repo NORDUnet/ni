@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
-__author__ = 'lundberg'
 
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
 from dynamic_preferences import global_preferences_registry
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
+from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, ServiceType, ServiceClass
 from apps.noclook import forms, helpers
-import norduniclient as nc
+from apps.noclook.tests.testing import nc
 
-# Use test instance of the neo4j db
-nc.neo4jdb = nc.init_db('http://localhost:7475')
+__author__ = 'lundberg'
 
-# We instanciate a manager for our global preferences
+# We instantiate a manager for our global preferences
 global_preferences = global_preferences_registry.manager()
 
 
@@ -28,6 +26,11 @@ class FormTestCase(TestCase):
         self.client = Client()
         self.client.login(username='test user', password='test')
         # Set up initial data
+        testing_service_class, created = ServiceClass.objects.get_or_create(name='Testing')
+        external_service_type, created = ServiceType.objects.get_or_create(name='External',
+                                                                           service_class=testing_service_class)
+        external_service_type, created = ServiceType.objects.get_or_create(name='Private Interconnect',
+                                                                           service_class=testing_service_class)
         provider_node_type, created = NodeType.objects.get_or_create(type='Provider', slug="provider")
         site_node_type, created = NodeType.objects.get_or_create(type='Site', slug="site")
         optical_node_node_type, created = NodeType.objects.get_or_create(type='Optical Node', slug="optical-node")
@@ -54,8 +57,8 @@ class FormTestCase(TestCase):
         )
 
     def tearDown(self):
-        with nc.neo4jdb.transaction as t:
-            t.execute("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r").fetchall()
+        with nc.neo4jdb.session as s:
+            s.run("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r")
         super(FormTestCase, self).tearDown()
 
     def get_full_url(self, path):
@@ -256,6 +259,7 @@ class NordunetNewForms(FormTestCase):
         super(NordunetNewForms, self).setUp()
         # Load the default forms
         global_preferences['general__data_domain'] = 'nordunet'
+        global_preferences['id_generators__services'] = 'nordunet_service_id'
         reload(forms)
         # Set up a NORDUnet relation
         provider_node_type, created = NodeType.objects.get_or_create(type='Provider', slug="provider")

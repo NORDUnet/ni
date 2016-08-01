@@ -5,12 +5,9 @@ from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
 from apps.noclook import helpers
-import norduniclient as nc
+from apps.noclook.tests.testing import nc
 
 __author__ = 'lundberg'
-
-# Use test instance of the neo4j db
-nc.neo4jdb = nc.init_db('http://localhost:7475')
 
 
 class ApiTest(ResourceTestCase):
@@ -32,8 +29,8 @@ class ApiTest(ResourceTestCase):
     def tearDown(self):
         for nh in NodeHandle.objects.all():
             nh.delete()
-        with nc.neo4jdb.transaction as t:
-            t.execute("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r").fetchall()
+        with nc.neo4jdb.session as s:
+            s.run("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r")
         super(ApiTest, self).tearDown()
 
     def get_credentials(self):

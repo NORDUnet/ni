@@ -8,12 +8,14 @@ Created on 2014-06-26 1:28 PM
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
+from dynamic_preferences import global_preferences_registry
+from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, ServiceClass, ServiceType
 from apps.noclook import helpers
-import norduniclient as nc
+from apps.noclook.tests.testing import nc
 
-# Use test instance of the neo4j db
-nc.neo4jdb = nc.init_db('http://localhost:7475')
+
+# We instantiate a manager for our global preferences
+global_preferences = global_preferences_registry.manager()
 
 
 class ServiceL2VPNResourceTest(ResourceTestCase):
@@ -44,11 +46,17 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             prefix='NU-S',
             creator=self.user
         )
+        global_preferences['id_generators__services'] = 'nordunet_service_id'
 
         # Set up initial data
         router_node_type = NodeType.objects.create(type='Router', slug="router")
         port_node_type = NodeType.objects.create(type='Port', slug="port")
         unit_node_type = NodeType.objects.create(type='Unit', slug="unit")
+        testing_service_class, created = ServiceClass.objects.get_or_create(name='Testing')
+        l2vpn_service_type, created = ServiceType.objects.get_or_create(name='L2VPN',
+                                                                        service_class=testing_service_class)
+        if_switch_service_type, created = ServiceType.objects.get_or_create(name='Interface Switch',
+                                                                            service_class=testing_service_class)
         # Have to create a service type as services can't be created without it.
         service_node_type = NodeType.objects.create(type='Service', slug="service")
         self.router1 = NodeHandle.objects.create(
@@ -112,8 +120,8 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         for handle_id in self.DEFAULT_HANDLE_IDS:
             nh = NodeHandle.objects.get(pk=handle_id)
             nh.delete()
-        with nc.neo4jdb.transaction as t:
-            t.execute("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r").fetchall()
+        with nc.neo4jdb.session as s:
+            s.run("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r")
         super(ServiceL2VPNResourceTest, self).tearDown()
 
     def get_credentials(self):
