@@ -19,16 +19,14 @@
 #       along with this program; if not, write to the Free Software
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
+
 from datetime import datetime
-from lucenequerybuilder import Q
-from ipaddr import IPAddress
 import logging
-
-
 import norduniclient as nc
 import noclook_consumer as nt
 from apps.noclook import activitylog
 from apps.noclook import helpers
+from apps.nerds.lib.consumer_util import address_is_a
 
 logger = logging.getLogger('noclook_consumer.nmap')
 
@@ -83,24 +81,7 @@ def is_host(addresses):
     :param addresses: List of IP addresses
     :return: True if the addresses belongs to a host or does not belong to anything
     """
-    ip_addresses = [IPAddress(item) for item in addresses]
-    for address in addresses:
-        q1 = Q('ip_address', '%s*' % address, wildcard=True)
-        q2 = Q('ip_addresses', '%s*' % address, wildcard=True)
-        lucene_query = unicode(q1 | q2)
-        for handle_id in nc.legacy_node_index_search(nc.neo4jdb, lucene_query)['result']:
-            node = nc.get_node_model(nc.neo4jdb, handle_id)
-            node_addresses = node.data.get('ip_addresses', None) or node.data.get('ip_address', None)
-            for addr in node_addresses:
-                try:
-                    node_address = IPAddress(addr.split('/')[0])
-                except ValueError:
-                    continue
-                if node_address in ip_addresses:
-                        if not [l for l in node.labels if l.replace(' ', '_') in ALLOWED_NODE_TYPE_SET]:
-                            helpers.update_noclook_auto_manage(node)
-                            return False
-    return True
+    return address_is_a(addresses, ALLOWED_NODE_TYPE_SET)
 
 
 def set_not_public(host):

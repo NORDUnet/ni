@@ -2,8 +2,8 @@ from django.contrib.auth.models import User
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook import helpers, activitylog
 from ipaddr import IPAddress
-from lucenequerybuilder import Q
 import norduniclient as nc
+
 
 def get_user(username='noclook'):
     try:
@@ -12,6 +12,7 @@ def get_user(username='noclook'):
         passwd = User.objects.make_random_password(length=30)
         user = User.objects.create_user(username, '', passwd)
     return user
+
 
 def get_node_type(type_name):
     """
@@ -26,6 +27,7 @@ def get_node_type(type_name):
         node_type = NodeType(type=type_name, slug=slugify(type_name))
         node_type.save()
     return node_type
+
 
 def get_unique_node_handle(node_name, node_type_name, node_meta_type, allowed_node_types=None):
     """
@@ -57,8 +59,10 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type, allowed_no
         logger.error("Assumed unique node not unique: {0}".format(node_name))
     return node_handle
 
+
 def get_relationship_model(relationship_id):
     return nc.get_relationship_model(nc.neo4jdb, relationship_id)
+
 
 def set_all_services_to_not_public(host):
     """
@@ -75,26 +79,34 @@ def set_all_services_to_not_public(host):
     with nc.neo4jdb.transaction as t:
         t.execute(q, handle_id=host.handle_id).fetchall()
 
+
 def address_is_a(addresses, node_types):
     """
     :param addresses: List of IP addresses
+    :param node_types: List of acceptable node types
     :return: True if the addresses belongs to a host or does not belong to anything
     """
     ip_addresses = [IPAddress(item) for item in addresses]
     for address in addresses:
-        q1 = Q('ip_address', '%s*' % address, wildcard=True)
-        q2 = Q('ip_addresses', '%s*' % address, wildcard=True)
-        lucene_query = unicode(q1 | q2)
-        for handle_id in nc.legacy_node_index_search(nc.neo4jdb, lucene_query)['result']:
-            node = nc.get_node_model(nc.neo4jdb, handle_id)
-            node_addresses = node.data.get('ip_addresses', None) or node.data.get('ip_address', None)
+        q = '''
+            MATCH (n:Node)
+            USING SCAN n:Node
+            WHERE any(x IN n.ip_addresses WHERE x =~ {address}) OR n.ip_address =~ {address}
+            RETURN distinct n
+            '''
+        address = '{!s}{!s}'.format(address, '.*')  # Match addresses with / network notation
+        for hit in nc.query_to_list(nc.neo4jdb, q, address=address):
+            node = nc.get_node_model(nc.neo4jdb, node=hit['n'])
+            node_addresses = node.data.get('ip_addresses', [])
+            if not node_addresses and node.data.get('ip_address', None):
+                node_addresses = [node.data['ip_address']]
             for addr in node_addresses:
                 try:
                     node_address = IPAddress(addr.split('/')[0])
                 except ValueError:
                     continue
                 if node_address in ip_addresses:
-                        if not [l for l in node.labels if l.replace(' ', '_') in node_types]:
-                            helpers.update_noclook_auto_manage(node)
-                            return False
+                    if not [l for l in node.labels if l.replace(' ', '_') in node_types]:
+                        helpers.update_noclook_auto_manage(node)
+                        return False
     return True

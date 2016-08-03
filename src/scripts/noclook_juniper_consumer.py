@@ -199,18 +199,18 @@ def get_peering_partner(peering):
         peer_properties['name'] = peering.get('description')
     if peering.get('as_number'):
         peer_properties['as_number'] = peering.get('as_number')
-    hits = nc.legacy_node_index_search(nc.neo4jdb, 'as_number: {as_number}'.format(
-        as_number=peer_properties.get('as_number')))
-    if len(hits['result']) > 1:
-        logger.error('Found more then one Peering Partner with AS number {as_number}'.format(
-            peer_properties['as_number']))
-        logger.error('The following handle ids where found : {ids}'.format(ids=hits['result']))
-    for handle_id in hits['result']:
-        peer_node = nc.get_node_model(nc.neo4jdb, handle_id)
-        helpers.set_noclook_auto_manage(peer_node, True)
-        if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
-            helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
-        logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
+        hits = nc.get_nodes_by_value(nc.neo4jdb, prop='as_number', value=peer_properties['as_number'])
+        found = 0
+        for node in hits:
+            peer_node = nc.get_node_model(nc.neo4jdb, node['handle_id'])
+            helpers.set_noclook_auto_manage(peer_node, True)
+            if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
+                helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
+            logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
+            found += 1
+        if found > 1:
+            logger.error('Found more then one Peering Partner with AS number {!s}'.format(peer_properties['as_number']))
+
     if not peer_node:
         node_handle = nt.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
         peer_node = node_handle.get_node()
@@ -226,38 +226,43 @@ def match_remote_ip_address(remote_address):
     Matches a remote address to a local interface.
     Returns a Unit node if match found or else None.
     """
-    q = """
-        START n=node:node_auto_index({lucene_query})
-        RETURN n.handle_id as handle_id, n.ip_addresses as ip_addresses
-        """
     # Check cache
     for local_network in REMOTE_IP_MATCH_CACHE.keys():
         if remote_address in local_network:
             cache_hit = REMOTE_IP_MATCH_CACHE[local_network]
             return cache_hit['local_network_node'], cache_hit['address']
+
     # No cache hit
+    mask = None
     for prefix in [3, 2, 1]:
         if remote_address.version == 4:
             mask = '.'.join(str(remote_address).split('.')[0:prefix])
         elif remote_address.version == 6:
             mask = ':'.join(str(remote_address).split(':')[0:prefix])
-        lucene_q = unicode(Q('ip_addresses', '%s*' % mask, wildcard=True))
-        for hit in nc.query_to_list(nc.neo4jdb, q, lucene_query=lucene_q):
-            for address in hit['ip_addresses']:
+        if mask:
+            mask = '{!s}{!s}'.format(mask, '.*')
+        q = '''
+            MATCH (n:Unit)
+            USING SCAN n:Unit
+            WHERE any(x IN n.ip_addresses WHERE x =~ {mask})
+            RETURN distinct n
+            '''
+        for hit in nc.query_to_list(nc.neo4jdb, q, mask=mask):
+            for address in hit['n']['ip_addresses']:
                 try:
                     local_network = ipaddr.IPNetwork(address)
                 except ValueError:
                     continue  # ISO address
                 if remote_address in local_network:
                     # add local_network, address and node to cache
-                    local_network_node = nc.get_node_model(nc.neo4jdb, hit['handle_id'])
+                    local_network_node = nc.get_node_model(nc.neo4jdb, hit['n']['handle_id'])
                     REMOTE_IP_MATCH_CACHE[local_network] = {
                         'address': address, 'local_network_node': local_network_node
                     }
                     logger.info('Remote IP matched: {name} {ip_address} done.'.format(
                         name=local_network_node.data['name'], ip_address=address))
                     return local_network_node, address
-    logger.info('No local IP address matched for {remote_address}.'.format(remote_address=remote_address))
+    logger.error('No local IP address matched for {remote_address}.'.format(remote_address=remote_address))
     return None, None
 
 

@@ -92,12 +92,14 @@ def get_host(ip_address):
     :param ip_address: string
     :return: neo4j node or None
     """
-    q = Q('ip_addresses', '%s' % ip_address)
-    search = nc.legacy_node_index_search(nc.neo4jdb, unicode(q))
-    for handle_id in search['result']:
-        node = nc.get_node_model(nc.neo4jdb, handle_id)
-        if 'Host' in node.labels:
-            return node
+    q = '''
+        MATCH (n:Host)
+        USING SCAN n:Host
+        WHERE any(x IN n.ip_addresses WHERE x =~ {address})
+        RETURN distinct n
+        '''
+    for hit in nc.query_to_list(nc.neo4jdb, q, address=ip_address):
+        return nc.get_node_model(nc.neo4jdb, node=hit['n'])
 
 
 def set_nagios_checks(host, checks):
