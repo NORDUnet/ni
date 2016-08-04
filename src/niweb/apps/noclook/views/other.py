@@ -87,7 +87,7 @@ def search(request, value='', form=None):
         posted = True
     if value:
         query = re_escape(value)
-        nodes = nc.get_nodes_by_value(nc.neo4jdb, query)
+        nodes = nc.search_nodes_by_value(nc.neo4jdb, query)
         if form == 'csv':
             return helpers.dicts_to_csv_response(list(nodes))
         elif form == 'xls':
@@ -148,7 +148,7 @@ def find_all(request, slug=None, key=None, value=None, form=None):
                                        'node_meta_type': None},
                                       context_instance=RequestContext(request))
     if value:
-        nodes = nc.get_nodes_by_value(nc.neo4jdb, value, key, label)
+        nodes = nc.search_nodes_by_value(nc.neo4jdb, value, key, label)
     else:
         nodes = nc.get_nodes_by_type(nc.neo4jdb, label)
     if form == 'csv':
