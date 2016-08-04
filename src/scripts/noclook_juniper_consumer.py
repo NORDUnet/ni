@@ -262,7 +262,7 @@ def match_remote_ip_address(remote_address):
                     logger.info('Remote IP matched: {name} {ip_address} done.'.format(
                         name=local_network_node.data['name'], ip_address=address))
                     return local_network_node, address
-    logger.error('No local IP address matched for {remote_address}.'.format(remote_address=remote_address))
+    logger.info('No local IP address matched for {remote_address}.'.format(remote_address=remote_address))
     return None, None
 
 
@@ -327,6 +327,7 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         elif peering_type == 'external':
             insert_external_bgp_peering(peering, peering_group_node)
 
+
 def _get_or_create_node(name, parent, meta_type_label, labels):
     user = nt.get_user()
     q = """
@@ -343,6 +344,8 @@ def _get_or_create_node(name, parent, meta_type_label, labels):
         node = node_handle.get_node()
         helpers.set_has(user, parent, node.handle_id)
     return node
+
+
 def _module(module, parent):
     user = nt.get_user()
     name = module['name']
@@ -360,7 +363,8 @@ def _module(module, parent):
     helpers.set_noclook_auto_manage(node, True)
     return node
 
-def insert_juniper_hardware_interfaces(router, fpc, pic, modules):   
+
+def insert_juniper_hardware_interfaces(router, fpc, pic, modules):
     user = nt.get_user()
     fpc_name = fpc.data['name']
     pic_name = pic.data['name']
@@ -402,6 +406,7 @@ def insert_juniper_hardware_interfaces(router, fpc, pic, modules):
         except AttributeError:
             logger.error("Unable to extract name from port: {0} of {1} - {2} on {3}".format(module['name'], pic_name, fpc_name, router['data']['name']))
 
+
 def insert_juniper_submodules(parent, modules, router):
     for module in modules:
         node = _module(module, parent)
@@ -410,12 +415,14 @@ def insert_juniper_submodules(parent, modules, router):
         elif module['sub_modules']:
             insert_juniper_submodules(node, module['sub_modules'], router)
 
+
 def insert_juniper_hardware(router_node, hardware):
     if hardware:
         for module in hardware.get('modules',[]):
             node = _module(module, router_node)
             if module['sub_modules']:
                 insert_juniper_submodules(node, module['sub_modules'], router_node)
+
 
 def consume_juniper_conf(json_list):
     """
