@@ -9,7 +9,7 @@ import json
 from common import *
 
 # Read .env from project root
-dotenv.read_dotenv(join(SITE_ROOT, '.devenv'))
+dotenv.read_dotenv(join(SITE_ROOT, '.env'))
 
 ########## PROJECT CONFIGURATION
 # Neo4j settings
