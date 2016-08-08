@@ -17,14 +17,7 @@ RUN apt-get update && \
       libpq-dev \
       libffi-dev \
       python-dev \
-      python-gunicorn \
     && apt-get clean
-
-RUN mkdir -p /var/opt/norduni
-RUN mkdir -p /var/log/norduni
-RUN mkdir -p /var/opt/src
-
-VOLUME ["/var/opt/norduni", "/var/log/norduni", "/var/opt/src"]
 
 ADD setup.sh /setup.sh
 RUN /setup.sh
@@ -33,6 +26,8 @@ ADD start.sh /start.sh
 
 # Add Dockerfile to the container as documentation
 ADD Dockerfile /Dockerfile
+
+VOLUME ["/var/opt/norduni", "/var/log/norduni", "/var/opt/source"]
 
 WORKDIR /
 

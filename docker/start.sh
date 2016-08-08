@@ -3,29 +3,37 @@
 set -e
 set -x
 
-. /opt/eduid/bin/activate
+. /var/opt/norduni_environment/bin/activate
 
 # These could be set from Puppet if multiple instances are deployed
 base_dir=${base_dir-"/var/opt/norduni"}
+name=${name-"noclook"}
 # These *can* be set from Puppet, but are less expected to...
-cfg_dir=${cfg_dir-"${base_dir}/etc"}
+project_dir=${project_dir-"${base_dir}/norduni/src/niweb"}
 log_dir=${log_dir-'/var/log/norduni'}
 state_dir=${state_dir-"${base_dir}/run"}
-cfg=${cfg-"${cfg_dir}/.env"}
+workers=${workers-1}
+worker_class=${worker_class-sync}
+worker_threads=${worker_threads-1}
+worker_timeout=${worker_timeout-30}
+gunicorn_args="--bind 0.0.0.0:8080 -w ${workers} -k ${worker_class} --threads ${worker_threads} -t ${worker_timeout} niweb.wsgi"
 
 chown ni: "${log_dir}" "${state_dir}"
 
-# || true to not fail on read-only cfg_dir
-chgrp ni "${cfg}" || true
-chmod 640 "${cfg}" || true
+# set PYTHONPATH if it is not already set using Docker environment
+export PYTHONPATH=${PYTHONPATH-${project_dir}}
 
 dev_args=""
-if [ -f "/var/opt/norduni/src/norduni/README" ]; then
+if [ -f "/var/opt/norduni/source/norduni/README" ]; then
     # developer mode, restart on code changes
     dev_args=""
 fi
 
 # nice to have in docker run output, to check what
 # version of something is actually running.
-/opt/eduid/bin/pip freeze
+/var/opt/norduni_environment/bin/pip freeze
 
+start-stop-daemon --start -c ni:ni --exec \
+     /var/opt/norduni_environment/bin/gunicorn \
+     --pidfile "${state_dir}/${name}.pid" \
+     --user=ni --group=ni -- $gunicorn_args
