@@ -132,30 +132,6 @@ STATICFILES_FINDERS = (
 ########## END STATIC FILE CONFIGURATION
 
 
-########## SECRET CONFIGURATION
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
-
-# Absolute filesystem path to the secret file which holds this project's
-# SECRET_KEY. Will be auto-generated the first time this file is interpreted.
-SECRET_FILE = normpath(join(SITE_ROOT, 'SECRET'))
-
-# Try to load the SECRET_KEY from our SECRET_FILE. If that fails, then generate
-# a random SECRET_KEY and save it into our SECRET_FILE for future loading. If
-# everything fails, then just raise an exception.
-try:
-    SECRET_KEY = open(SECRET_FILE).read().strip()
-except IOError:
-    try:
-        with open(SECRET_FILE, 'w') as f:
-            import random
-            choice = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-            SECRET_KEY = ''.join([random.SystemRandom().choice(choice) for i in range(50)])
-            f.write(SECRET_KEY)
-    except IOError:
-        raise Exception('Cannot open file `%s` for writing.' % SECRET_FILE)
-########## END SECRET CONFIGURATION
-
-
 ########## FIXTURE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS
 FIXTURE_DIRS = (
