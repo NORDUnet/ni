@@ -68,6 +68,7 @@ CACHES = {
 # See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
 INSTALLED_APPS += (
     'debug_toolbar',
+    'django_nose'
 )
 
 # See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
@@ -84,3 +85,7 @@ DEBUG_TOOLBAR_CONFIG = {}
 ########## SECRET CONFIGURATION
 SECRET_KEY = environ['SECRET_KEY']
 ########## END SECRET CONFIGURATION
+
+########## TESTING
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+########## END TESTING

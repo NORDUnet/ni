@@ -24,9 +24,9 @@ chown ni: "${log_dir}" "${state_dir}"
 export PYTHONPATH=${PYTHONPATH-${project_dir}}
 
 dev_args=""
-if [ -f "/var/opt/norduni/source/norduni/README" ]; then
+if [ -f "/var/opt/source/norduni/README" ]; then
     # developer mode, restart on code changes
-    dev_args=""
+    dev_args="--reload"
 fi
 
 # nice to have in docker run output, to check what
@@ -36,4 +36,4 @@ fi
 start-stop-daemon --start -c ni:ni --exec \
      /var/opt/norduni_environment/bin/gunicorn \
      --pidfile "${state_dir}/${name}.pid" \
-     --user=ni --group=ni -- $gunicorn_args
+     --user=ni --group=ni -- $gunicorn_args $dev_args

@@ -4,8 +4,7 @@ django-activity-stream<0.7
 django-jsonfield==0.9.13
 django-tastypie<0.13
 ipaddr==2.1.11
-lucene-querybuilder==0.2
-norduniclient==1.0.3
+norduniclient<1.1.0
 psycopg2==2.5.3
 python-dateutil==2.2
 python-mimeparse==0.1.4

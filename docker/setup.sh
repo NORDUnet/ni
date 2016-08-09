@@ -29,5 +29,7 @@ cd norduni
 git checkout bolt
 
 /var/opt/norduni_environment/bin/pip install -r requirements/prod.txt
+/var/opt/norduni_environment/bin/pip install -r requirements/dev.txt
+/var/opt/norduni_environment/bin/pip install -r requirements/testing.txt
 
 /var/opt/norduni_environment/bin/pip freeze

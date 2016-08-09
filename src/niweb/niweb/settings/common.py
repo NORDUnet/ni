@@ -222,7 +222,7 @@ THIRD_PARTY_APPS = (
 
 LOCAL_APPS = (
     'apps.userprofile',
-    'apps.noclook'
+    'apps.noclook',
 )
 
 OPTIONAL_APPS = environ.get('OPTIONAL_APPS', '').split()
