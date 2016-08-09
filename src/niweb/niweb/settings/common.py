@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+
+from os.path import abspath, basename, dirname, join, normpath
+from os import environ
+from sys import path
+import dotenv
+
 __author__ = 'lundberg'
 
 """
@@ -7,15 +13,15 @@ Common settings and globals.
 Based on https://github.com/rdegges/django-skel/.
 """
 
-from os.path import abspath, basename, dirname, join, normpath
-from sys import path
-
 ########## PATH CONFIGURATION
 # Absolute filesystem path to the Django project directory:
 DJANGO_ROOT = dirname(dirname(abspath(__file__)))
 
 # Absolute filesystem path to the top-level project folder:
 SITE_ROOT = dirname(DJANGO_ROOT)
+
+# Read .env from project root
+dotenv.read_dotenv(join(SITE_ROOT, '.env'))
 
 # Site name:
 SITE_NAME = basename(DJANGO_ROOT)
@@ -216,10 +222,10 @@ THIRD_PARTY_APPS = (
 
 LOCAL_APPS = (
     'apps.userprofile',
-    'apps.noclook',
-#    'apps.scan',
-#    'apps.nerds',
+    'apps.noclook'
 )
+
+OPTIONAL_APPS = environ.get('OPTIONAL_APPS', '').split()
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -236,6 +242,8 @@ ACTSTREAM_SETTINGS = {
 
 ########## LOGGING CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#logging
+LOG_PATH = environ.get('LOG_PATH', '{!s}/logs'.format(SITE_ROOT))
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -262,7 +270,7 @@ LOGGING = {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '%s/logs/django_debug.log' % SITE_ROOT,
+            'filename': '{!s}/django_debug.log'.format(LOG_PATH),
             'maxBytes': 1024*1024*5,  # 5 MB
             'backupCount': 5,
             'formatter': 'verbose',
@@ -271,7 +279,7 @@ LOGGING = {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '%s/logs/django_error.log' % SITE_ROOT,
+            'filename': '{!s}/django_error.log'.format(LOG_PATH),
             'maxBytes': 1024*1024*5,  # 5 MB
             'backupCount': 5,
             'formatter': 'verbose',

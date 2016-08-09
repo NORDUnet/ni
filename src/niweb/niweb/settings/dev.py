@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-__author__ = 'lundberg'
-
-"""Development settings and globals."""
 
 from os import environ
-import dotenv
 import json
 from common import *
 
-# Read .env from project root
-dotenv.read_dotenv(join(SITE_ROOT, '.env'))
+__author__ = 'lundberg'
+
+"""Development settings and globals."""
 
 ########## PROJECT CONFIGURATION
 # Neo4j settings
