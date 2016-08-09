@@ -96,14 +96,11 @@ def get_node_type(request, slug):
     node name, node id tuples.
     """
     node_type = helpers.slug_to_node_type(slug)
-    q = '''                   
-        MATCH (node:{node_type})
-        RETURN node.handle_id, node.name
-        ORDER BY node.name
-        '''.format(node_type=node_type.type.replace(' ', '_'))
-    with nc.neo4jdb.transaction as r:
-        type_list = r.execute(q).fetchall()
-    return JsonResponse(type_list, safe=False)
+    label = node_type.type.replace(' ', '_')
+    result_list = []
+    for node in nc.get_node_by_type(nc.neo4jdb, label):
+        result_list.append([node['name'], node['handle_id']])
+    return JsonResponse(result_list, safe=False)
 
 
 @login_required
@@ -119,9 +116,12 @@ def get_unlocated_node_type(request, slug):
         RETURN node.handle_id, node.name
         ORDER BY node.name
         '''.format(node_type=node_type.type.replace(' ', '_'))
-    with nc.neo4jdb.transaction as r:
-        type_list = r.execute(q).fetchall()
-    return JsonResponse(type_list, safe=False)
+    result_list = []
+    with nc.neo4jdb.session as s:
+        result = s.run(q)
+        for record in result:
+            result_list.append([record['n'].properties['name'], record['n'].properties['handle_id']])
+    return JsonResponse(result_list, safe=False)
 
 
 @login_required

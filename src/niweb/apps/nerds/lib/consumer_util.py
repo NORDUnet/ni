@@ -76,8 +76,8 @@ def set_all_services_to_not_public(host):
         WHERE has(r.public)
         SET r.public = false
         '''
-    with nc.neo4jdb.transaction as t:
-        t.execute(q, handle_id=host.handle_id).fetchall()
+    with nc.neo4jdb.session as s:
+        s.run(q, {'handle_id': host.handle_id})
 
 
 def address_is_a(addresses, node_types):
