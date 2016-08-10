@@ -20,8 +20,9 @@ DJANGO_ROOT = dirname(dirname(abspath(__file__)))
 # Absolute filesystem path to the top-level project folder:
 SITE_ROOT = dirname(DJANGO_ROOT)
 
-# Read .env from project root
-dotenv.read_dotenv(join(SITE_ROOT, '.env'))
+# Read .env for settings
+config_file = environ.get('CONFIG_FILE', join(SITE_ROOT, '.env'))
+dotenv.read_dotenv(config_file)
 
 # Site name:
 SITE_NAME = basename(DJANGO_ROOT)
@@ -111,24 +112,26 @@ TIME_FORMAT = "H:i"
 
 ########## MEDIA CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#media-root
-MEDIA_ROOT = normpath(join(DJANGO_ROOT, 'media'))
+MEDIA_ROOT = environ.get('MEDIA_ROOT', normpath(join(DJANGO_ROOT, 'media')))
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#media-url
-MEDIA_URL = '/media/'
+MEDIA_URL = environ.get('MEDIA_URL', '/media/')
 ########## END MEDIA CONFIGURATION
 
 
 ########## STATIC FILE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-root
-STATIC_ROOT = normpath(join(DJANGO_ROOT, 'static'))
+STATIC_ROOT = environ.get('STATIC_ROOT', normpath(join(DJANGO_ROOT, 'static')))
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
-STATIC_URL = '/static/'
+STATIC_URL = environ.get('STATIC_URL', '/static/')
 
 # See: https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
-STATICFILES_DIRS = (
-    normpath(join(DJANGO_ROOT, 'assets')),
-)
+STATICFILES_DIRS = environ.get('STATICFILES_DIRS', '').split()
+if not STATICFILES_DIRS:
+    STATICFILES_DIRS = (
+        normpath(join(DJANGO_ROOT, 'assets')),
+    )
 
 # See: https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
 STATICFILES_FINDERS = (

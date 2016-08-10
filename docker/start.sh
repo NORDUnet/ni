@@ -33,6 +33,11 @@ fi
 # version of something is actually running.
 /var/opt/norduni_environment/bin/pip freeze
 
+# Wait for neo4j container accept connections
+sleep 5
+
+/var/opt/norduni_environment/bin/django-admin collectstatic --noinput
+
 start-stop-daemon --start -c ni:ni --exec \
      /var/opt/norduni_environment/bin/gunicorn \
      --pidfile "${state_dir}/${name}.pid" \

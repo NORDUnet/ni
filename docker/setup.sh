@@ -21,6 +21,9 @@ chown ni:ni /var/opt/norduni
 mkdir -p /var/opt/norduni/run
 chown ni:ni /var/opt/norduni/run
 
+mkdir -p /var/opt/norduni/staticfiles
+chown ni:ni /var/opt/norduni/staticfiles
+
 mkdir -p /var/opt/source
 
 cd /var/opt/norduni
