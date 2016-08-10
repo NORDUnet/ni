@@ -9,7 +9,6 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from re import escape as re_escape
 import json
-from lucenequerybuilder import Q
 
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph

@@ -24,7 +24,6 @@ import os
 import sys
 import argparse
 from datetime import datetime, timedelta
-from lucenequerybuilder import Q
 import re
 import logging
 

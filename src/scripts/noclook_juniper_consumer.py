@@ -25,7 +25,6 @@ import sys
 import re
 import argparse
 import ipaddr
-from lucenequerybuilder import Q
 import logging
 
 ## Need to change this path depending on where the Django project is

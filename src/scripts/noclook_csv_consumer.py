@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-__author__ = 'lundberg'
 
 import os
 import sys
-import re
 import argparse
-import ipaddr
-from lucenequerybuilder import Q
 import logging
+
+__author__ = 'lundberg'
 
 ## Need to change this path depending on where the Django project is
 ## located.
