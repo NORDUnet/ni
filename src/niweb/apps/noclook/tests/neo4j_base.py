@@ -38,12 +38,12 @@ class NeoTestCase(TestCase):
         return 'http://testserver{}'.format(path)
 
     def get_ports(self, node):
-        return node.get_ports().get("Has",[])
+        return node.get_ports().get("Has", [])
 
     def get_node(self, name):
         nh = NodeHandle.objects.filter(node_type__type=self.node_type).get(node_name=name)
         node = nh.get_node()
-        return nh,node
+        return nh, node
 
     def create(self,data):
         url = '/new/{}/'.format(slugify(self.node_type))

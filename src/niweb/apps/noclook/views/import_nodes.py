@@ -97,7 +97,6 @@ class ImportNodesView(View):
             self.convert_children(child)
         data['children'] = tmp
 
-
     def validate(self, data, parent_id=None):
         errors_out = {}
         for i, item in enumerate(data):
@@ -123,17 +122,16 @@ class ImportNodesView(View):
         return errors_out
 
     def validate_unique(self, item):
-         error = None
-         if item['name']:
-             slug = slugify(item['node_type'])
-             node_type = helpers.slug_to_node_type(slug, create=True)
-             try:
-                 NodeHandle.objects.get(node_name=item['name'], node_type=node_type)
-                 error  = "Must be unique."
-             except NodeHandle.DoesNotExist:
-                 pass
-         return error
-
+        error = None
+        if item['name']:
+            slug = slugify(item['node_type'])
+            node_type = helpers.slug_to_node_type(slug, create=True)
+            try:
+                NodeHandle.objects.get(node_name=item['name'], node_type=node_type)
+                error = "Must be unique."
+            except NodeHandle.DoesNotExist:
+                pass
+        return error
 
     def file(self, request, parent):
         data = json.load(request.FILES['file'])
@@ -145,6 +143,7 @@ class ImportNodesView(View):
 
     def edit(self, request, parent, data, errors=None):
         return render(request, 'noclook/import/edit.html', {'parent': parent, 'data': data, 'errors': errors})
+
     def create(self, request, parent, data):
         user = request.user
         errors = []
@@ -186,12 +185,13 @@ class ImportNodesView(View):
         return super(ImportNodesView, self).dispatch(*args, **kwargs)
     # TODO: based on slug decide allowed node types
 
+
 class ExportNodesView(View):
     def get(self, request, slug, handle_id):
         nh = get_object_or_404(NodeHandle, handle_id=handle_id)
         q = """
             MATCH p=(n:Node {handle_id: {handle_id}})-[r:Has|:Located_in*1..3]-(x) 
-            WHERE (not has(x.operational_state) or x.operational_state <> 'Decommissioned')
+            WHERE (not exists(x.operational_state) or x.operational_state <> 'Decommissioned')
             RETURN tail(nodes(p)) as nodes, labels(x) as labels
         """
         results = nc.query_to_list(nc.neo4jdb, q, handle_id=nh.handle_id)

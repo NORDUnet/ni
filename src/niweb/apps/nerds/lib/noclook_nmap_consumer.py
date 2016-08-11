@@ -93,7 +93,7 @@ def set_not_public(host):
     """
     q = '''
         MATCH (host {handle_id:{handle_id}})<-[r:Depends_on]-(host_service)
-        WHERE has(r.public)
+        WHERE exists(r.public)
         SET r.public = false
         '''
     with nc.neo4jdb.session as s:

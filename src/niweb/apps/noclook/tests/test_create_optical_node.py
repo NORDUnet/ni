@@ -1,12 +1,12 @@
 from .neo4j_base import NeoTestCase
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
-from apps.noclook import forms, helpers
+from operator import itemgetter
+
 
 class CreateOpticalNodeTest(NeoTestCase):
     def setUp(self):
         super(CreateOpticalNodeTest, self).setUp()
 
-        self.node_type='Optical Node'
+        self.node_type = 'Optical Node'
         self.data = {
             'name': 'test optical node',
             'type': 'ciena6500',
@@ -17,7 +17,7 @@ class CreateOpticalNodeTest(NeoTestCase):
         self.data['no_ports'] = True
         resp = self.create(self.data)
 
-        nh,node = self.get_node(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         node_data = node.data
         self.assertRedirects(resp, self.get_full_url(nh))
         self.assertEqual("test optical node", node_data['name'])
@@ -41,10 +41,11 @@ class CreateOpticalNodeTest(NeoTestCase):
         ]
         resp = self.create(self.data)
 
-        nh,node = self.get_node(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         self.assertRedirects(resp, self.get_full_url(nh))
 
         ports = self.get_ports(node)
+        ports = sorted(ports, key=itemgetter('node'))
         # Missing name should not create a port
         self.assertEqual(4, len(ports))
         
@@ -73,7 +74,6 @@ class CreateOpticalNodeTest(NeoTestCase):
         self.data['type'] = "NotAType"
         resp =  self.create(self.data)
         self.assertEquals(1, len(resp.context['form'].errors))
-
 
     def check_port(self, port, name, port_type):
         pdata = port.get('node').data

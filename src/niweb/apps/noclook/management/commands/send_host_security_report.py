@@ -16,13 +16,13 @@ class Command(BaseCommand):
         unauthorized_q = """
             MATCH (host:Host)
             MATCH host<-[r:Depends_on]-()
-            WHERE not(host.operational_state = "Decommissioned") and has(r.rogue_port)
+            WHERE not(host.operational_state = "Decommissioned") and exists(r.rogue_port)
             RETURN count(DISTINCT host) as unauthorized_host_count, count(r) as unauthorized_port_count
             """
         public_q = """
             MATCH (host:Host)
             MATCH host<-[r:Depends_on]-()
-            WHERE not(host.operational_state = "Decommissioned") and r.public and (not(r.public_service) or not(has(r.public_service)))
+            WHERE not(host.operational_state = "Decommissioned") and r.public and (not(r.public_service) or not(exists(r.public_service)))
             RETURN count(DISTINCT host) as public_host_count, count(r) as public_port_count
             """
         results = nc.query_to_dict(nc.neo4jdb, unauthorized_q)

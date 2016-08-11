@@ -29,7 +29,7 @@ class HostReportForm(forms.Form):
                 no_state = None
                 if "Not set" in data['operational_state']:
                     data['operational_state'].remove("Not set")
-                    no_state = "NOT HAS({host}.operational_state)".format(host=host)
+                    no_state = "NOT exists({host}.operational_state)".format(host=host)
                 q_state = "{host}.operational_state=".format(host=host)+"'{state}'"
                 states = _append_not_empty([q_state.format(state=state) for state in data['operational_state']], no_state)
                 conditions.append(" or ".join(states))

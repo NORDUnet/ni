@@ -127,11 +127,9 @@ STATIC_ROOT = environ.get('STATIC_ROOT', normpath(join(DJANGO_ROOT, 'static')))
 STATIC_URL = environ.get('STATIC_URL', '/static/')
 
 # See: https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
-STATICFILES_DIRS = environ.get('STATICFILES_DIRS', '').split()
-if not STATICFILES_DIRS:
-    STATICFILES_DIRS = (
-        normpath(join(DJANGO_ROOT, 'assets')),
-    )
+STATICFILES_DIRS = (
+    normpath(join(DJANGO_ROOT, 'assets')),
+)
 
 # See: https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
 STATICFILES_FINDERS = (

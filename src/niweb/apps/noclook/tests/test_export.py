@@ -88,7 +88,7 @@ class ExportSiteTest(NeoTestCase):
         
         # verify data
         self.assertEquals(1, len(result))
-        rack_result =  result[0]
+        rack_result = result[0]
         self.assertDictContainsSubset({'name': 'A.01', 'node_type': 'Rack'}, rack_result)
         rack_equip = rack_result['children']
         # Decommissioned equipment should be gone

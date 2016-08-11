@@ -1,9 +1,5 @@
 from .neo4j_base import NeoTestCase
-from django.contrib.auth.models import User
-from django.template.defaultfilters import slugify
-from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
-
-
+from operator import itemgetter
 
 class CreateODFCase(NeoTestCase):
     def setUp(self):
@@ -26,14 +22,15 @@ class CreateODFCase(NeoTestCase):
         ports = self.get_ports(node)
         self.assertEqual(0, len(ports))
 
-
     def test_ODF_port_creation(self):
         self.data['port_type'] = 'LC'
-        resp=self.create(self.data)
-        nh,node = self.get_node(self.data['name'])
+        resp = self.create(self.data)
+        nh, node = self.get_node(self.data['name'])
         
         ports = self.get_ports(node)
         self.assertEqual(48, len(ports))
+
+        ports = sorted(ports, key=itemgetter('node'))
 
         port = ports[0].get('node').data
         self.assertEqual('LC', port['port_type'])
@@ -48,14 +45,16 @@ class CreateODFCase(NeoTestCase):
         self.assertEqual('48', port48['name'])
 
     def test_ODF_port_bundle(self):
-        self.data['bundled']=True
-        self.data['max_number_of_ports']=12
+        self.data['bundled'] = True
+        self.data['max_number_of_ports'] = 12
         self.create(self.data)
 
-        nh,node = self.get_node(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
         
         self.assertEqual(6, len(ports))
+
+        ports = sorted(ports, key=itemgetter('node'))
 
         port = ports[0].get('node').data
         self.assertEqual('1+2', port['name'])
@@ -71,6 +70,8 @@ class CreateODFCase(NeoTestCase):
         nh, node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
         self.assertEqual(12, len(ports))
+
+        ports = sorted(ports, key=itemgetter('node'))
         
         port = ports[0].get('node').data
         self.assertEqual('13', port['name'])
@@ -86,13 +87,14 @@ class CreateODFCase(NeoTestCase):
         nh, node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
         self.assertEqual(12, len(ports))
+
+        ports = sorted(ports, key=itemgetter('node'))
         
         port = ports[0].get('node').data
         self.assertEqual('ge-1/0/1', port['name'])
 
         port = ports[-1].get('node').data
         self.assertEqual('ge-1/0/12', port['name'])
-
 
     def test_ODF_port_all(self):
         self.data['prefix'] = 'ge-1/0/'
@@ -104,7 +106,9 @@ class CreateODFCase(NeoTestCase):
         nh, node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
         self.assertEqual(6, len(ports))
-        
+
+        ports = sorted(ports, key=itemgetter('node'))
+
         port = ports[0].get('node').data
         self.assertEqual('ge-1/0/2+3', port['name'])
 

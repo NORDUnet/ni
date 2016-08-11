@@ -9,7 +9,10 @@
             {% if item.parent %}
                 <a href="{% noclook_node_to_url item.parent.handle_id %}">{{ item.parent.name }}</a>
             {% endif %}
-            <a href="{% noclook_node_to_url item.part.handle_id %}">{{ item.part.cable_type }} {{ item.part.name }}</a>
+            <a href="{% noclook_node_to_url item.part.handle_id %}">{{ item.part.name }}</a>
+            {% if item.part.cable_type %}
+                ({{ item.part.cable_type }})
+            {% endif %}
             {% if item.part.port_type %}
                 ({{ item.part.port_type }})
             {% endif %}

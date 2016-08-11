@@ -800,7 +800,7 @@ def remove_rogue_service_marker(user, handle_id):
     """
     q = """
         MATCH (host:Node {handle_id:{handle_id}})<-[r:Depends_on]-(host_service:Host_Service)
-        WHERE HAS(r.rogue_port)
+        WHERE exists(r.rogue_port)
         RETURN collect(id(r)) as ids
         """
     result = nc.query_to_dict(nc.neo4jdb, q, handle_id=handle_id)
