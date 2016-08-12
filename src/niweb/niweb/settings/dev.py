@@ -16,12 +16,12 @@ NEO4J_USERNAME = environ.get('NEO4J_USERNAME', 'neo4j')
 NEO4J_PASSWORD = environ.get('NEO4J_PASSWORD', 'docker')
 
 # To be able to use the report mailing functionality you need to set a to address and a key.
-REPORTS_TO = environ['REPORTS_TO'].split()
+REPORTS_TO = environ.get('REPORTS_TO', '').split()
 REPORTS_CC = environ.get('REPORTS_CC', '').split()     # Optional
 REPORTS_BCC = environ.get('REPORTS_BCC', '').split()   # Optional
 # EXTRA_REPORT_TO = {'ID': ['address', ]}
 EXTRA_REPORT_TO = json.loads(environ.get('EXTRA_REPORT_TO', '{}'))  # Optional
-SECURITY_REPORTS_TO = environ['SECURITY_REPORTS_TO'].split()
+SECURITY_REPORTS_TO = environ.get('SECURITY_REPORTS_TO', '').split()
 SECURITY_REPORTS_CC = environ.get('SECURITY_REPORTS_CC', '').split()     # Optional
 SECURITY_REPORTS_BCC = environ.get('SECURITY_REPORTS_BCC', '').split()   # Optional
 ########## END PROJECT CONFIGURATION
@@ -83,7 +83,7 @@ DEBUG_TOOLBAR_CONFIG = {}
 ########## END TOOLBAR CONFIGURATION
 
 ########## SECRET CONFIGURATION
-SECRET_KEY = environ['SECRET_KEY']
+SECRET_KEY = environ.get('SECRET_KEY', 'development')
 ########## END SECRET CONFIGURATION
 
 ########## TESTING
