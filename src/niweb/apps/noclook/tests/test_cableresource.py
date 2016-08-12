@@ -8,9 +8,13 @@ Created on 2014-06-26 1:28 PM
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCase
 from tastypie.models import ApiKey
+from dynamic_preferences import global_preferences_registry
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
-from apps.noclook import helpers
+from apps.noclook import helpers, forms
 from apps.noclook.tests.testing import nc
+
+# We instantiate a manager for our global preferences
+global_preferences = global_preferences_registry.manager()
 
 
 class CableResourceTest(ResourceTestCase):
@@ -145,6 +149,11 @@ class CableResourceTest(ResourceTestCase):
         self.assertEqual(len(connections), 2)
 
     def test_create_nordunet_cable_existing_end_points(self):
+        # Load the NORDUnet forms
+        global_preferences['general__data_domain'] = 'nordunet'
+        global_preferences['id_generators__services'] = 'nordunet_cable_id'
+        reload(forms)
+
         data = {
             "end_points": [
                 {
@@ -170,6 +179,11 @@ class CableResourceTest(ResourceTestCase):
         self.assertEqual(len(connections), 2)
 
     def test_create_nordunet_cable_new_end_points(self):
+        # Load the NORDUnet forms
+        global_preferences['general__data_domain'] = 'nordunet'
+        global_preferences['id_generators__services'] = 'nordunet_cable_id'
+        reload(forms)
+
         data = {
             "end_points": [
                 {
@@ -205,6 +219,11 @@ class CableResourceTest(ResourceTestCase):
         self.assertHttpConflict(resp)
 
     def test_create_nordunet_cable_name_conflict(self):
+        # Load the NORDUnet forms
+        global_preferences['general__data_domain'] = 'nordunet'
+        global_preferences['id_generators__services'] = 'nordunet_cable_id'
+        reload(forms)
+
         data = {
             "node_name": "NU-00000001",
             "cable_type": "Patch",
