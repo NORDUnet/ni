@@ -382,7 +382,7 @@ def _site_table(site):
             'url': u'/findin/site/country_code/{}/'.format(site.get('country_code')),
             'name': u'{}'.format(site.get('country', ''))
             }
-    area = site.get('area') or ite.get('postarea')
+    area = site.get('area') or site.get('postarea')
     row = TableRow(country_link, site, area)
     return row
 
