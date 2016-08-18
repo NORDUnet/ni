@@ -18,7 +18,8 @@ def table_column(context,item):
             # it is a 'link'
             result = u'<a href="{}">{}</a>'.format(item.get('url',''),item.get('name',''))
         else:
-            result = u''
+            # could be str
+            result =item
     else:
         # Just print it
         result = item
