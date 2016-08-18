@@ -382,7 +382,8 @@ def _site_table(site):
             'url': u'/findin/site/country_code/{}/'.format(site.get('country_code')),
             'name': u'{}'.format(site.get('country', ''))
             }
-    row = TableRow(country_link, site)
+    area = site.get('postarea', '')
+    row = TableRow(country_link, site, area)
     return row
 
 @login_required
@@ -396,9 +397,10 @@ def list_sites(request):
        site_list = r.execute(q).fetchall()
     urls = get_node_urls(site_list)
 
-    table = Table('Country', 'Site name')
+    table = Table('Country', 'Site name', 'Area')
     table.rows = [ _site_table(site[0]) for site in site_list ]
     table.no_badges=True
+
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Sites', 'urls': urls})
