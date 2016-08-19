@@ -70,7 +70,7 @@ def list_cables(request):
         MATCH (cable:Cable)
         OPTIONAL MATCH (cable)-[r:Connected_to]->(port:Port)
         OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
-        WHERE NOT(end<-[:Has]-())
+        WHERE NOT((end)<-[:Has]-())
         RETURN cable, collect(end) as end order by cable.name
         """
     cable_list = nc.query_to_list(nc.neo4jdb, q)
