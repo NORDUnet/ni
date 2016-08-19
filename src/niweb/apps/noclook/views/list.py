@@ -57,8 +57,9 @@ def list_by_type(request, slug):
                   {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
 
 
-def _cable_table(cable):
-    row = TableRow(cable, cable.get('cable_type'))
+def _cable_table(wrapped_cable):
+    cable = wrapped_cable.get('cable')
+    row = TableRow(cable, cable.get('cable_type'), wrapped_cable.get('end'))
     _set_expired(row, cable)
     return row
 
@@ -67,14 +68,16 @@ def _cable_table(cable):
 def list_cables(request):
     q = """
         MATCH (cable:Cable)
-        RETURN cable
-        ORDER BY cable.name
+        OPTIONAL MATCH (cable)-[r:Connected_to]->(port:Port)
+        OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
+        WHERE NOT(end<-[:Has]-())
+        RETURN cable, collect(end) as end order by cable.name
         """
     cable_list = nc.query_to_list(nc.neo4jdb, q)
     urls = get_node_urls(cable_list)
 
-    table = Table('Name', 'Cable type')
-    table.rows = [_cable_table(item['cable']) for item in cable_list]
+    table = Table('Name', 'Cable type', 'End equipment')
+    table.rows = [_cable_table(item) for item in cable_list]
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Cables', 'urls': urls})
@@ -402,7 +405,8 @@ def _site_table(site):
             'url': u'/findin/site/country_code/{}/'.format(site.get('country_code')),
             'name': u'{}'.format(site.get('country', ''))
             }
-    row = TableRow(country_link, site)
+    area = site.get('area') or site.get('postarea')
+    row = TableRow(country_link, site, area)
     return row
 
 
@@ -417,9 +421,10 @@ def list_sites(request):
     site_list = nc.query_to_list(nc.neo4jdb, q)
     urls = get_node_urls(site_list)
 
-    table = Table('Country', 'Site name')
+    table = Table('Country', 'Site name', 'Area')
     table.rows = [_site_table(item['site']) for item in site_list]
     table.no_badges = True
+
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Sites', 'urls': urls})
