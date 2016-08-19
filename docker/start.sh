@@ -18,7 +18,7 @@ worker_threads=${worker_threads-1}
 worker_timeout=${worker_timeout-30}
 gunicorn_args="--bind 0.0.0.0:8080 -w ${workers} -k ${worker_class} --threads ${worker_threads} -t ${worker_timeout} niweb.wsgi"
 
-chown ni: "${log_dir}" "${state_dir}"
+chown -R ni: "${log_dir}" "${state_dir}"
 
 # set PYTHONPATH if it is not already set using Docker environment
 export PYTHONPATH=${PYTHONPATH-${project_dir}}
