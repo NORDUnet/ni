@@ -364,6 +364,7 @@ class EditHostForm(forms.Form):
                                           help_text='Name of the group responsible for the host.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
+    backup = forms.CharField(required=False, help_text='Which backup solution is used? e.g. TSM, IP nett?')
     os = forms.CharField(required=False,
                          help_text='What operating system is running on the host?')
     os_version = forms.CharField(required=False,
