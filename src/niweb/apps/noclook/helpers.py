@@ -101,7 +101,6 @@ def delete_node(user, handle_id):
             elif node.meta_type == 'Location':
                 for has_child in node.get_has().get('Has', []):
                     delete_node(user, has_child.handle_id)
-            node.delete()
             activitylog.delete_node(user, nh)
         except (NodeNotFound, AttributeError):
             pass

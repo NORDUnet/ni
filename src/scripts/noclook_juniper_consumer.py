@@ -34,12 +34,17 @@ base_path = '../niweb/'
 sys.path.append(os.path.abspath(base_path))
 niweb_path = os.path.join(base_path, 'niweb')
 sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.dev")
 
 import noclook_consumer as nt
 from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
+# File upload
+from django.core.files.uploadedfile import SimpleUploadedFile
+from apps.noclook.models import NodeHandle
+from attachments.models import Attachment
+from django.contrib.contenttypes.models import ContentType
 
 logger = logging.getLogger('noclook_consumer.juniper')
 
@@ -138,6 +143,37 @@ def insert_interface_unit(iface_node, unit):
     property_keys = ['description', 'ip_addresses', 'vlanid']
     helpers.dict_update_node(user, unit_node.handle_id, unit, property_keys)
 
+def cleanup_hardware_v1(router_node, user):
+    p = "^\d+/\d+/\d+$"
+    bad_interfaces = re.compile(p)
+
+    # Cleanup ni hardware info v1...
+    # Get all ports that are not directly on router
+    q = """
+        MATCH (n:Router {handle_id: {handle_id}})-[:Has*1..3]->(:Node)-[r:Has]->(port:Port)
+        RETURN port.handle_id as handle_id, port.name as name, id(r) as rel_id
+        """
+    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
+    for port in ports:
+        if bad_interfaces.match(port['name']):
+            # delete it!
+            helpers.delete_node(user, port['handle_id'])
+        else:
+            # move it to router
+            helpers.set_has(user, router_node, port['handle_id'])
+            # Remove from hardware info (pic)
+            helpers.delete_relationship(user, port['rel_id'])
+            # Scrub interface properties..?
+    # Remove hardware info
+    q = """
+        MATCH (n:Router {handle_id: {handle_id}})-[:Has*]->(hw:Node)
+        WHERE NOT hw:Port
+        return hw.handle_id as handle_id, hw.name as name
+        """
+    old_hardware = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
+    for hw in old_hardware:
+        helpers.delete_node(user, hw['handle_id'])
+
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
@@ -151,18 +187,16 @@ def insert_juniper_interfaces(router_node, interfaces):
         """
     not_interesting_interfaces = re.compile(p, re.VERBOSE)
     user = nt.get_user()
-    q = """
-        MATCH (n:Router {handle_id: {handle_id}})-[:Has*1..4]->(port:Port)
-        RETURN port.handle_id as handle_id, port.name as name
-        """
-    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
+
+    cleanup_hardware_v1(router_node.handle_id, user)
+
     for interface in interfaces:
         port_name = interface['name']
         if port_name and not not_interesting_interfaces.match(port_name):
-            #XXX: Currently we check if port_name ends with node name for backwards compat
-            result = [ p['handle_id'] for p in ports if port_name.endswith(p['name']) ]
-            if result:
-                port_node = nc.get_node_model(nc.neo4jdb, result[0])
+            result = router_node.get_port(port_name)
+            if 'Has' in  result:
+                #port_node = nc.get_node_model(nc.neo4jdb, result[0])
+                port_name = result.get('Has')[0].get('node')
             else:
                 node_handle = nt.create_node_handle(port_name, 'Port', 'Physical')
                 port_node = node_handle.get_node()
@@ -322,95 +356,33 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         elif peering_type == 'external':
             insert_external_bgp_peering(peering, peering_group_node)
 
-def _get_or_create_node(name, parent, meta_type_label, labels):
-    user = nt.get_user()
-    q = """
-        MATCH (p:Node {handle_id: {handle_id}})-[:Has]->(n:Node {name: {name}})
-        RETURN n.handle_id as handle_id
-        """
-    result = nc.query_to_list(nc.neo4jdb, q, handle_id=parent.handle_id, name=name)
-    if not isinstance(labels, str):
-        labels = ':'.join(labels)
-    if result:
-        node = nc.get_node_model(nc.neo4jdb,result[0]['handle_id'])
-    else:
-        node_handle = nt.create_node_handle(name, meta_type_label, labels)
-        node = node_handle.get_node()
-        helpers.set_has(user, parent, node.handle_id)
-    return node
-def _module(module, parent):
-    user = nt.get_user()
-    name = module['name']
-    if name.startswith("PIC "):
-        node = _get_or_create_node(name, parent, 'PIC', 'Physical')
-    elif name.startswith("FPC "):
-        node = _get_or_create_node(name, parent, 'FPC', 'Physical')
-    else:
-        node = _get_or_create_node(name, parent, 'Module', 'Physical')
-    node_dict = module.copy()
-    del node_dict['sub_modules']
-    node_dict['hardware_description'] = node_dict['description']
-    del node_dict['description']
-    helpers.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
-    helpers.set_noclook_auto_manage(node, True)
-    return node
+def attach_as_file(handle_id, name, content, user, overwrite=False):
+    nh = NodeHandle.objects.get(pk=handle_id)
+    _file = SimpleUploadedFile(name, bytes(content), content_type="text/plain")
+    if overwrite:
+        attachment = Attachment.objects.filter(object_id=handle_id, attachment_file__endswith=name).first()
+        if attachment:
+            attachment.attachment_file.delete()
+    if not attachment:
+        attachment = Attachment()
+    attachment.content_type = ContentType.objects.get_for_model(nh)
+    attachment.object_id = handle_id
+    attachment.creator = user
+    attachment.attachment_file = _file
+    return attachment.save()
 
-def insert_juniper_hardware_interfaces(router, fpc, pic, modules):   
-    user = nt.get_user()
-    fpc_name = fpc.data['name']
-    pic_name = pic.data['name']
-    q = """
-        MATCH (n:Router {handle_id: {handle_id}})-[r:Has*1..4]->(port:Port) 
-        RETURN extract(rel IN r |id(rel)) as relationships, 
-               port.handle_id as port_id, 
-               port.name as name
-        """
-    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router.handle_id)
-    fpcN = re.search("(\d+)$", fpc_name).group()
-    picN = re.search("(\d+)$", pic_name).group()
-    for module in modules:
-        try:
-            ifN = re.search("(\d+)$", module['name']).group()
-            ifname = "{0}/{1}/{2}".format(fpcN, picN, ifN)
-            port = [(p['port_id'], p['relationships']) for p in ports if p['name'].endswith(ifname)]
-            if port:
-                port_id, rel_ids = port[0]
-                if len(rel_ids) == 1:
-                    #move it
-                    helpers.set_has(user, pic, port_id)
-                    #remove old
-                    nc.delete_relationship(nc.neo4jdb, rel_ids[0])
-                port = nc.get_node_model(nc.neo4jdb,port_id)
-            else:
-                #chicken and egg... Haven't got the full real name yet
-                node_handle = nt.create_node_handle(ifname, 'Port', 'Physical')
-                port = node_handle.get_node()
-                helpers.set_has(user, pic, port.handle_id)
-            node_dict = module.copy()
-            del node_dict['sub_modules']
-            del node_dict['name']
-            node_dict['hardware_description'] = node_dict['description']
-            del node_dict['description']
-            helpers.dict_update_node(user, port.handle_id, node_dict)
-            helpers.set_noclook_auto_manage(port, True)
-            
-        except AttributeError:
-            logger.error("Unable to extract name from port: {0} of {1} - {2} on {3}".format(module['name'], pic_name, fpc_name, router['data']['name']))
 
-def insert_juniper_submodules(parent, modules, router):
-    for module in modules:
-        node = _module(module, parent)
-        if module['name'].startswith("PIC "):
-            insert_juniper_hardware_interfaces(router, parent, node, module['sub_modules'])
-        elif module['sub_modules']:
-            insert_juniper_submodules(node, module['sub_modules'], router)
+
 
 def insert_juniper_hardware(router_node, hardware):
     if hardware:
-        for module in hardware.get('modules',[]):
-            node = _module(module, router_node)
-            if module['sub_modules']:
-                insert_juniper_submodules(node, module['sub_modules'], router_node)
+        # Upload hardware info as json file.
+        hw_str = JSON.dumps(hardware)
+        name = "{}-hardware.json".format(router_node.data.get('name','router'))
+        user = nt.get_user()
+        # Store it! (or overwrite)
+        attach_as_file(router_node.handle_id, name, hw_str, user, overwrite=True)
+
 
 def consume_juniper_conf(json_list):
     """

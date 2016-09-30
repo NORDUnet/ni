@@ -236,6 +236,7 @@ THIRD_PARTY_APPS = (
     'django_comments',
     'crispy_forms',
     'dynamic_preferences',
+    'attachments',
 )
 
 LOCAL_APPS = (
