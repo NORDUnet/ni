@@ -19,12 +19,17 @@ import codecs
 import cStringIO
 import xlwt
 import re
+import os
 
 from .models import NodeHandle, NodeType
 from . import activitylog
 import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 
+# File upload
+from django.core.files.uploadedfile import SimpleUploadedFile
+from attachments.models import Attachment
+from django.contrib.contenttypes.models import ContentType
 
 class UnicodeWriter:
     """
@@ -859,3 +864,42 @@ def sort_nicely(l, key=None):
         l.sort(key=lambda x: alphanum_key(x.get(key)))
     else:
         l.sort(key=alphanum_key)
+
+def attach_as_file(handle_id, name, content, user, overwrite=False):
+    """
+        Attach a file to a handle_id.
+        - handle_id the id of the node to attach a file to.
+        - name the name of the file
+        - content the content of the file (e.g. a string)
+        - user the user doing the attach
+        - overwrite should the file be overwritten if it exists. (Default: False)
+
+        All files are stored in {root}/niweb/media/attachments, and the metadata is attached in the django db.
+    """
+    nh = NodeHandle.objects.get(pk=handle_id)
+    _file = SimpleUploadedFile(name, bytes(content), content_type="text/plain")
+    if overwrite:
+        attachment = Attachment.objects.filter(object_id=handle_id, attachment_file__endswith=name).first()
+        if attachment:
+            attachment.attachment_file.delete()
+    if not attachment:
+        attachment = Attachment()
+    attachment.content_type = ContentType.objects.get_for_model(nh)
+    attachment.object_id = handle_id
+    attachment.creator = user
+    attachment.attachment_file = _file
+    return attachment.save()
+
+def find_attachments(handle_id, name=None):
+    attachments = Attachment.objects.filter(object_id=handle_id)
+    if name:
+        attachments.filter(attachment_file__endswith=name)
+    return attachments
+
+def attachment_content(attachment):
+    if not attachment:
+        return ""
+    file_name = os.path.join(django_settings.MEDIA_ROOT, attachment.attachment_file.name)
+    with open(file_name, 'rb') as f:
+        content = f.read()
+    return content
