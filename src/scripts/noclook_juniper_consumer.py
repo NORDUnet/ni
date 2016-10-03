@@ -27,6 +27,7 @@ import argparse
 import ipaddr
 from lucenequerybuilder import Q
 import logging
+import json
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -40,11 +41,6 @@ import noclook_consumer as nt
 from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
-# File upload
-from django.core.files.uploadedfile import SimpleUploadedFile
-from apps.noclook.models import NodeHandle
-from attachments.models import Attachment
-from django.contrib.contenttypes.models import ContentType
 
 logger = logging.getLogger('noclook_consumer.juniper')
 
@@ -188,15 +184,14 @@ def insert_juniper_interfaces(router_node, interfaces):
     not_interesting_interfaces = re.compile(p, re.VERBOSE)
     user = nt.get_user()
 
-    cleanup_hardware_v1(router_node.handle_id, user)
+    cleanup_hardware_v1(router_node, user)
 
     for interface in interfaces:
         port_name = interface['name']
         if port_name and not not_interesting_interfaces.match(port_name):
             result = router_node.get_port(port_name)
             if 'Has' in  result:
-                #port_node = nc.get_node_model(nc.neo4jdb, result[0])
-                port_name = result.get('Has')[0].get('node')
+                port_node = result.get('Has')[0].get('node')
             else:
                 node_handle = nt.create_node_handle(port_name, 'Port', 'Physical')
                 port_node = node_handle.get_node()
@@ -356,32 +351,15 @@ def insert_juniper_bgp_peerings(bgp_peerings):
         elif peering_type == 'external':
             insert_external_bgp_peering(peering, peering_group_node)
 
-def attach_as_file(handle_id, name, content, user, overwrite=False):
-    nh = NodeHandle.objects.get(pk=handle_id)
-    _file = SimpleUploadedFile(name, bytes(content), content_type="text/plain")
-    if overwrite:
-        attachment = Attachment.objects.filter(object_id=handle_id, attachment_file__endswith=name).first()
-        if attachment:
-            attachment.attachment_file.delete()
-    if not attachment:
-        attachment = Attachment()
-    attachment.content_type = ContentType.objects.get_for_model(nh)
-    attachment.object_id = handle_id
-    attachment.creator = user
-    attachment.attachment_file = _file
-    return attachment.save()
-
-
-
 
 def insert_juniper_hardware(router_node, hardware):
     if hardware:
         # Upload hardware info as json file.
-        hw_str = JSON.dumps(hardware)
+        hw_str = json.dumps(hardware)
         name = "{}-hardware.json".format(router_node.data.get('name','router'))
         user = nt.get_user()
         # Store it! (or overwrite)
-        attach_as_file(router_node.handle_id, name, hw_str, user, overwrite=True)
+        helpers.attach_as_file(router_node.handle_id, name, hw_str, user, overwrite=True)
 
 
 def consume_juniper_conf(json_list):
