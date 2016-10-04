@@ -772,6 +772,7 @@ def get_host_backup(host):
     if backup == 'No':
         q = """
             MATCH (:Node {handle_id: {handle_id}})<-[r:Depends_on]-(:Node {name: "vnetd"})
+            WHERE r.state IN ['open', 'open|filtered']
             RETURN r
             """
         for hit in nc.query_to_list(nc.neo4jdb, q, handle_id=host.handle_id):

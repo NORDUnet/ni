@@ -159,6 +159,10 @@ def insert_services(service_dict, host_node, external_check=False):
         }
     }
     """
+    # Guard
+    if service_dict.get('state') not in ['open', 'open|filtered']:
+        return
+
     user = nt.get_user()
     node_type = "Host Service"
     meta_type = 'Logical'
