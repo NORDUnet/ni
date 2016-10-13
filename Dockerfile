@@ -19,10 +19,12 @@ RUN apt-get update && \
       python-dev \
     && apt-get clean
 
-ADD setup.sh /setup.sh
+ADD . /var/opt/norduni/norduni
+
+ADD docker/setup.sh /setup.sh
 RUN /setup.sh
 
-ADD start.sh /start.sh
+ADD docker/start.sh /start.sh
 
 # Add Dockerfile to the container as documentation
 ADD Dockerfile /Dockerfile
