@@ -159,9 +159,6 @@ def insert_services(service_dict, host_node, external_check=False):
         }
     }
     """
-    # Guard
-    if service_dict.get('state') not in ['open', 'open|filtered']:
-        return
 
     user = nt.get_user()
     node_type = "Host Service"
@@ -181,7 +178,7 @@ def insert_services(service_dict, host_node, external_check=False):
         for protocol in service_dict[address].keys():
             for port in service_dict[address][protocol].keys():
                 service = service_dict[address][protocol][port]
-                if service['state'] != 'closed':
+                if service['state'] in ['open' , 'open|filtered']:
                     service_name = service['name']
                     if not service_name:  # Blank
                         service_name = 'unknown'
