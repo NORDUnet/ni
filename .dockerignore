@@ -10,10 +10,11 @@ __pycache__
 .*.swo
 *~
 *#
+sloccount.sc
 build/
 dist/
 sessions/
-venv/
+venv*
 env/
 nosetests.xml
 coverage.xml
