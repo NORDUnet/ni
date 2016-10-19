@@ -14,8 +14,12 @@
     {% for badge, name in table.badges %}
         <span class="badge {{badge}}">{{name}}</span>
     {% endfor %}
-    {% else %}
-      {{block.super}}
+  {% elif table.filters %}
+    {% for badge, name, link, active in table.filters %}
+        <a href="{{link}}"><span class="badge {{badge}}">{% if active %}<i class="icon-white icon-ok"></i> {% endif %}{{name}}</span></a>
+    {% endfor %}
+  {% else %}
+    {{block.super}}
   {% endif %}
 {% endblock %}
 
