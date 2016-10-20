@@ -25,14 +25,31 @@ def _set_operational_state(row, node):
     if node.get('operational_state'):
         row.classes = node.get('operational_state').lower()
 
+def _set_filters_expired(table, request):
+    table.add_filter('', 'Current', 'hide_current', request.GET.copy())
+    table.add_filter('badge-important', 'Expired', 'show_expired', request.GET.copy())
+
+def _set_filters_operational_state(table, request):
+    table.add_filter('', 'In service', 'hide_in_service', request.GET.copy())
+    table.add_filter('badge-info', 'Testing', 'show_testing', request.GET.copy())
+    table.add_filter('badge-warning', 'Reserved', 'show_reserved', request.GET.copy())
+    table.add_filter('badge-important', 'Decommissioned', 'show_decommissioned', request.GET.copy())
+
 def _first(n):
     return n[0]
 
+def any_filter(filters,n):
+    return any([ f(n) for f in filters ])
+def all_filters(filter,n):
+    return all( [f(n) for f in filters ])
+
 def _filter_expired(nodes, request, select=lambda n:n):
+    filters = []
     if 'show_expired' in request.GET:
-        return nodes
-    else:
-        return [ n for n in nodes if not is_expired(select(n)) ]
+        filters.append(lambda n: is_expired(n))
+    if 'hide_current' not in request.GET:
+        filters.append(lambda n: not is_expired(n))
+    return [ n for n in nodes if any_filter(filters,select(n)) ]
 
 def _filter_operational_state(nodes, request, select=lambda n:n):
     exclude = []
@@ -42,6 +59,8 @@ def _filter_operational_state(nodes, request, select=lambda n:n):
         exclude.append('reserved')
     if 'show_decommissioned' not in request.GET:
         exclude.append('decommissioned')
+    if 'hide_in_service' in request.GET:
+        exclude.append('in service')
     return  [ n for n in nodes if select(n).get('operational_state','').lower() not in exclude ] 
 
 def _type_table(wrapped_node):
@@ -64,7 +83,7 @@ def list_by_type(request, slug):
     urls = get_node_urls(node_list)
     table = Table('Name')
     table.rows = [ _type_table(node) for node in node_list]
-    table.add_filter('badge-important', 'Expired', 'show_expired', request.GET.copy())
+    _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
@@ -90,7 +109,7 @@ def list_cables(request):
 
     table = Table('Name', 'Cable type', 'End equipment')
     table.rows = [ _cable_table(cable) for cable in cable_list]
-    table.add_filter('badge-important', 'Expired', 'show_expired', request.GET.copy())
+    _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Cables', 'urls': urls})
@@ -120,7 +139,7 @@ def list_hosts(request):
 
     table = Table('Host', 'Address', 'OS', 'OS version', 'User')
     table.rows = [ _host_table(host, users) for host, users in host_list]
-    table.add_filter('badge-important', "Expired", "show_expired", request.GET.copy())
+    _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table,
@@ -148,7 +167,7 @@ def list_switches(request):
 
     table = Table('Switch', 'Address', 'User')
     table.rows = [ _switch_table(switch, users) for switch, users in switch_list]
-    table.add_filter('badge-important', 'Expired', 'show_expired', request.GET.copy())
+    _set_filters_expired(table, request)
 
     return render(request,'noclook/list/list_generic.html', 
                     {'name': 'Switches', 'table': table, 'urls': urls})
@@ -214,9 +233,7 @@ def list_optical_links(request):
 
     table = Table('Optical Link', 'Type', 'Description', 'Depends on')
     table.rows = [ _optical_link_table(link, dependencies) for link, dependencies in optical_link_list]
-    table.add_filter('badge-info', 'Testing', 'show_testing', request.GET.copy())
-    table.add_filter('badge-warning', 'Reserved', 'show_reserved', request.GET.copy())
-    table.add_filter('badge-important', 'Decommissioned', 'show_decommissioned', request.GET.copy())
+    _set_filters_operational_state(table, request)
 
     urls = get_node_urls(optical_link_list)
     return render(request, 'noclook/list/list_generic.html',
@@ -244,9 +261,7 @@ def list_optical_multiplex_section(request):
 
     table = Table("Optical Multiplex Section", "Description", "Depends on")
     table.rows = [ _oms_table(oms, dependencies) for oms, dependencies in result]
-    table.add_filter('badge-info', 'Testing', 'show_testing', request.GET.copy())
-    table.add_filter('badge-warning', 'Reserved', 'show_reserved', request.GET.copy())
-    table.add_filter('badge-important', 'Decommissioned', 'show_decommissioned', request.GET.copy())
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Optical Multiplex Sections', 'urls': urls})
@@ -271,9 +286,7 @@ def list_optical_nodes(request):
 
     table = Table('Name', 'Type', 'Link', 'OTS')
     table.rows = [ _optical_nodes_table(node[0]) for node in optical_node_list ]
-    table.add_filter('badge-info', 'Testing', 'show_testing', request.GET.copy())
-    table.add_filter('badge-warning', 'Reserved', 'show_reserved', request.GET.copy())
-    table.add_filter('badge-important', 'Decommissioned', 'show_decommissioned', request.GET.copy())
+    _set_filters_operational_state(table, request)
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Optical Nodes', 'urls': urls})
 
@@ -302,9 +315,7 @@ def list_optical_paths(request):
 
     table = Table('Optical Path', 'Framing', 'Capacity', 'Description', 'ENRs')
     table.rows = [ _optical_path_table(path[0]) for path in optical_path_list ]
-    table.add_filter('badge-info', 'Testing', 'show_testing', request.GET.copy())
-    table.add_filter('badge-warning', 'Reserved', 'show_reserved', request.GET.copy())
-    table.add_filter('badge-important', 'Decommissioned', 'show_decommissioned', request.GET.copy())
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Optical Paths', 'urls': urls})
@@ -331,7 +342,7 @@ def list_peering_partners(request):
 
     table = Table('Peering Partner', 'AS Number', 'Peering Groups')
     table.rows = [ _peering_partner_table(peer, groups) for peer, groups in partner_list]
-    table.add_filter('badge-important', 'Expired', 'show_expired', request.GET.copy())
+    _set_filters_expired(table, request)
 
     return render(request,'noclook/list/list_generic.html', 
             {'table': table, 'name': 'Peering Partners', 'urls': urls})
@@ -376,7 +387,7 @@ def list_routers(request):
 
     table = Table('Router', 'Model', 'JUNOS version', 'Operational state')
     table.rows = [ _router_table(router[0]) for router in router_list ]
-    table.add_filter('badge-important', 'Expired', 'show_expired', request.GET.copy())
+    _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Routers', 'urls':urls})
@@ -420,9 +431,7 @@ def list_services(request, service_class=None):
                 'End Users')
     table.rows = [ _service_table(service, customers, end_users) for service, customers, end_users in service_list ]
 
-    table.add_filter('badge-info', 'Testing', 'show_testing', request.GET.copy())
-    table.add_filter('badge-warning', 'Reserved', 'show_reserved', request.GET.copy())
-    table.add_filter('badge-important', 'Decommissioned', 'show_decommissioned', request.GET.copy())
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
                               {'table': table, 'name': name, 'urls': urls})
