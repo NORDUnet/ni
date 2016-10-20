@@ -652,7 +652,7 @@ def edit_pdu(request, handle_id):
             else:
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
     else:
-        form = forms.EditSwitchForm(pdu.data)
+        form = forms.EditPDUForm(pdu.data)
     return render_to_response('noclook/edit/edit_pdu.html',
                               {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
                                'relations': relations, 'depends_on': depends_on, 'ports': ports,
