@@ -7,6 +7,7 @@ from django_comments.models import Comment
 from actstream import action
 
 import norduniclient as nc
+import re
 
 
 NODE_META_TYPE_CHOICES = zip(nc.META_TYPES, nc.META_TYPES)
@@ -148,6 +149,13 @@ class UniqueIdGenerator(models.Model):
         self.base_id += 1
         self.save()
         return unique_id
+
+    def get_regex(self):
+        prefix = suffix = ''
+        if self.prefix: prefix = self.prefix
+        if self.suffix: suffix = self.suffix
+        # TODO: handle zerofill?
+        return re.compile('({}\d+{})'.format(prefix, suffix))
 
     def save(self, *args, **kwargs):
         """

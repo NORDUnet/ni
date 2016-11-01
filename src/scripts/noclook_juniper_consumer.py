@@ -41,6 +41,8 @@ import noclook_consumer as nt
 from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
+from dynamic_preferences import global_preferences_registry
+from apps.noclook.models import UniqueIdGenerator
 
 logger = logging.getLogger('noclook_consumer.juniper')
 
@@ -170,6 +172,48 @@ def cleanup_hardware_v1(router_node, user):
     for hw in old_hardware:
         helpers.delete_node(user, hw['handle_id'])
 
+def service_id_generator():
+    global_preferences = global_preferences_registry.manager()
+    service_id_generator_name = global_preferences.get('id_generators__services')
+    id_generator = None
+    if service_id_generator_name:
+        try:
+            id_generator = UniqueIdGenerator.objects.get(name=service_id_generator_name)
+        except UniqueIdGenerator.DoesNotExist as e:
+            pass
+    return id_generator
+
+def _find_service(service_id):
+    # Consider using cypher...
+    service = None
+    try:
+        service = nc.get_unique_node_by_name(nc.neo4jdb, service_id, 'Service')
+    except:
+        pass
+    return service
+
+
+def auto_depend_services(handle_id, description):
+    """
+        Using interface description to depend one or more services.
+    """
+    if not description:
+        return
+    id_generator = service_id_generator()
+    if id_generator:
+        regex = id_generator.get_regex()
+        for service_id in  regex.findall(description):
+            service = _find_service(service_id)
+            if service:
+                if service.data.get('operational_state') == 'Decommissioned':
+                    logger.warning('Port {} description mentions decommissioned service {}'.format(handle_id, service_id))
+                else:
+                    #Add it
+                    #logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
+                    helpers.set_depends_on(nt.get_user(), service, handle_id)
+            else:
+                logger.warning('Port {} description mentions unknown service {}'.format(handle_id, service_id))
+
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
@@ -202,6 +246,8 @@ def insert_juniper_interfaces(router_node, interfaces):
             # Update interface units
             for unit in interface['units']:
                 insert_interface_unit(port_node, unit)
+            # Auto depend services
+            auto_depend_services(port_node.handle_id, interface.get('description', ''))
             logger.info('{router} {interface} done.'.format(router=router_node.data['name'], interface=port_name))
         else:
             logger.info('Interface {name} ignored.'.format(name=port_name))
@@ -468,10 +514,11 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    logger.setLevel(logging.WARNING)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
+    if not len(logger.handlers):
+        logger.setLevel(logging.WARNING)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
     main()
