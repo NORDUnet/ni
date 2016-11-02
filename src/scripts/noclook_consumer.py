@@ -47,13 +47,6 @@ from django.contrib.auth.models import User
 import norduniclient as nc
 
 logger = logging.getLogger('noclook_consumer')
-logger.propagate = False
-logger.setLevel(logging.WARNING)
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
 django.setup()
 
 import noclook_juniper_consumer
@@ -371,4 +364,11 @@ def main():
     return 0
 
 if __name__ == '__main__':
+    logger.propagate = False
+    logger.setLevel(logging.WARNING)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
     main()
