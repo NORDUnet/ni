@@ -201,7 +201,9 @@ def auto_depend_services(handle_id, description, service_id_regex):
     if not description or not service_id_regex:
         return
 
-    for service_id in  service_id_regex.findall(description):
+    desc_services = service_id_regex.findall(description)
+
+    for service_id in  desc_services:
         service = _find_service(service_id)
         if service:
             if service.data.get('operational_state') == 'Decommissioned':
@@ -212,7 +214,17 @@ def auto_depend_services(handle_id, description, service_id_regex):
                 helpers.set_depends_on(nt.get_user(), service, handle_id)
         else:
             logger.info('Port {} description mentions unknown service {}'.format(handle_id, service_id))
-
+    # check if "other services are dependent"
+    q = """
+        MATCH (n:Node {handle_id: {handle_id}})<-[:Depends_on]-(s:Service)
+        WHERE s.operational_state <> 'Decommissioned' and  NOT(s.name in [{desc_services}])
+        RETURN collect(s) as unregistered
+        """
+    result = nc.query_to_dict(nc.neo4jdb, q, handle_id=handle_id, desc_services=','.join(desc_services)).get('unregistered', [])
+    unregistered_services = [ u"{}({})".format(s['name'],s['handle_id']) for s in result ]
+    
+    if unregistered_services:
+        logger.warning(u"Port {} has services depending on it that is not in description: {}".format(handle_id, ','.join(unregistered_services)))
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
@@ -515,6 +527,7 @@ def main():
 
 if __name__ == '__main__':
     if not len(logger.handlers):
+        logger.propagate = False
         logger.setLevel(logging.WARNING)
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logging.DEBUG)
