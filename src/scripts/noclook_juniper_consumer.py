@@ -172,16 +172,17 @@ def cleanup_hardware_v1(router_node, user):
     for hw in old_hardware:
         helpers.delete_node(user, hw['handle_id'])
 
-def service_id_generator():
+def _service_id_regex():
     global_preferences = global_preferences_registry.manager()
     service_id_generator_name = global_preferences.get('id_generators__services')
-    id_generator = None
+    regex = None
     if service_id_generator_name:
         try:
             id_generator = UniqueIdGenerator.objects.get(name=service_id_generator_name)
+            regex = id_generator.get_regex()
         except UniqueIdGenerator.DoesNotExist as e:
             pass
-    return id_generator
+    return regex
 
 def _find_service(service_id):
     # Consider using cypher...
@@ -193,26 +194,24 @@ def _find_service(service_id):
     return service
 
 
-def auto_depend_services(handle_id, description):
+def auto_depend_services(handle_id, description, service_id_regex):
     """
         Using interface description to depend one or more services.
     """
-    if not description:
+    if not description or not service_id_regex:
         return
-    id_generator = service_id_generator()
-    if id_generator:
-        regex = id_generator.get_regex()
-        for service_id in  regex.findall(description):
-            service = _find_service(service_id)
-            if service:
-                if service.data.get('operational_state') == 'Decommissioned':
-                    logger.warning('Port {} description mentions decommissioned service {}'.format(handle_id, service_id))
-                else:
-                    #Add it
-                    #logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
-                    helpers.set_depends_on(nt.get_user(), service, handle_id)
+
+    for service_id in  service_id_regex.findall(description):
+        service = _find_service(service_id)
+        if service:
+            if service.data.get('operational_state') == 'Decommissioned':
+                logger.warning('Port {} description mentions decommissioned service {}'.format(handle_id, service_id))
             else:
-                logger.warning('Port {} description mentions unknown service {}'.format(handle_id, service_id))
+                #Add it
+                #logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
+                helpers.set_depends_on(nt.get_user(), service, handle_id)
+        else:
+            logger.info('Port {} description mentions unknown service {}'.format(handle_id, service_id))
 
 
 def insert_juniper_interfaces(router_node, interfaces):
@@ -229,6 +228,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     user = nt.get_user()
 
     cleanup_hardware_v1(router_node, user)
+    service_id_regex = _service_id_regex()
 
     for interface in interfaces:
         port_name = interface['name']
@@ -247,7 +247,7 @@ def insert_juniper_interfaces(router_node, interfaces):
             for unit in interface['units']:
                 insert_interface_unit(port_node, unit)
             # Auto depend services
-            auto_depend_services(port_node.handle_id, interface.get('description', ''))
+            auto_depend_services(port_node.handle_id, interface.get('description', ''), service_id_regex)
             logger.info('{router} {interface} done.'.format(router=router_node.data['name'], interface=port_name))
         else:
             logger.info('Interface {name} ignored.'.format(name=port_name))
