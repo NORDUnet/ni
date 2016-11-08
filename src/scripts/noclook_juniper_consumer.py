@@ -120,7 +120,7 @@ def insert_juniper_router(name, model, version, hardware=None):
     return node
 
 
-def insert_interface_unit(iface_node, unit):
+def insert_interface_unit(iface_node, unit, service_id_regex):
     """
     Creates or updates logical interface units.
     """
@@ -140,6 +140,8 @@ def insert_interface_unit(iface_node, unit):
     unit['ip_addresses'] = [address.lower() for address in unit.get('address', '')]
     property_keys = ['description', 'ip_addresses', 'vlanid']
     helpers.dict_update_node(user, unit_node.handle_id, unit, property_keys)
+    # Auto depend service on unit
+    auto_depend_services(unit_node.handle_id, unit.get('description', ''), service_id_regex, 'Unit')
 
 def cleanup_hardware_v1(router_node, user):
     p = "^\d+/\d+/\d+$"
@@ -194,12 +196,14 @@ def _find_service(service_id):
     return service
 
 
-def auto_depend_services(handle_id, description, service_id_regex):
+def auto_depend_services(handle_id, description, service_id_regex, _type="Port"):
     """
         Using interface description to depend one or more services.
     """
-    if not description or not service_id_regex:
+    if not service_id_regex:
         return
+    if not description:
+        description=""
 
     desc_services = service_id_regex.findall(description)
 
@@ -207,13 +211,13 @@ def auto_depend_services(handle_id, description, service_id_regex):
         service = _find_service(service_id)
         if service:
             if service.data.get('operational_state') == 'Decommissioned':
-                logger.warning('Port {} description mentions decommissioned service {}'.format(handle_id, service_id))
+                logger.warning('{} {} description mentions decommissioned service {}'.format(_type,handle_id, service_id))
             else:
                 #Add it
                 #logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
                 helpers.set_depends_on(nt.get_user(), service, handle_id)
         else:
-            logger.info('Port {} description mentions unknown service {}'.format(handle_id, service_id))
+            logger.info('{} {} description mentions unknown service {}'.format(_type, handle_id, service_id))
     # check if "other services are dependent"
     q = """
         MATCH (n:Node {handle_id: {handle_id}})<-[:Depends_on]-(s:Service)
@@ -224,7 +228,7 @@ def auto_depend_services(handle_id, description, service_id_regex):
     unregistered_services = [ u"{}({})".format(s['name'],s['handle_id']) for s in result ]
     
     if unregistered_services:
-        logger.warning(u"Port {} has services depending on it that is not in description: {}".format(handle_id, ','.join(unregistered_services)))
+        logger.warning(u"{} {} has services depending on it that is not in description: {}".format(_type, handle_id, ','.join(unregistered_services)))
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
@@ -257,7 +261,7 @@ def insert_juniper_interfaces(router_node, interfaces):
             helpers.dict_update_node(user, port_node.handle_id, interface, property_keys)
             # Update interface units
             for unit in interface['units']:
-                insert_interface_unit(port_node, unit)
+                insert_interface_unit(port_node, unit, service_id_regex)
             # Auto depend services
             auto_depend_services(port_node.handle_id, interface.get('description', ''), service_id_regex)
             logger.info('{router} {interface} done.'.format(router=router_node.data['name'], interface=port_name))
