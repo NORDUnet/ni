@@ -158,6 +158,10 @@ def form_update_node(user, handle_id, form, property_keys=None):
             pre_value = node.data.get(key, '')
             if pre_value != form.cleaned_data[key]:
                 node.data[key] = form.cleaned_data[key]
+                # Handle dates
+                if hasattr(form.cleaned_data[key], 'isoformat'):
+                    node.data[key] = form.cleaned_data[key].isoformat()
+
                 if key == 'name':
                     nh.node_name = form.cleaned_data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])

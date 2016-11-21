@@ -8,25 +8,14 @@
 <script type="text/javascript">
     $(document).ready(
         function(){
-            $("#slider").slider({
-                value:1,
-                min: 1,
-                max: 1000,
-                step: 1,
-                slide: function(event, ui) {
-                    //Its setting the slider value to the element with id "amount"
-                    $( "#id_amount" ).val(ui.value);
-                }
-            });
-            // Modal reserve confirm
-            $("#dialog-reserve-confirm").dialog({
-                modal: true,
-                bgiframe: true,
-                width: 500,
-                height: 200,
-                autoOpen: false
-            });
+            //slider
+            $("#amount_range").val($("#amount_range").val());
+            $("#id_amount").on("input", function(e) { $("#amount_range").val(e.target.value)});
 
+            // Modal reserve confirm
+            $("#reserve-confirm-ok").click(function(e) {
+              $("#reserve-form").submit();
+            });
             $("#reserve-confirm").click(function(e) {
                 e.preventDefault();
                 var amount = $("#id_amount").val()
@@ -34,16 +23,8 @@
                     $("#reserve-form").submit()
                 } else {
                     var reserve_confirmation = "You want to reserve " + amount + " IDs. Are you sure?";
-                    $("#reserve-confirmation").text(reserve_confirmation);
-                    $("#dialog-reserve-confirm").dialog('option', 'buttons', {
-                        "Confirm" : function() {
-                            $("#reserve-form").submit()
-                        },
-                        "Cancel" : function() {
-                            $(this).dialog("close");
-                        }
-                    });
-                    $("#dialog-reserve-confirm").dialog("open");
+                    $("#reserve-confirmation-text").text(reserve_confirmation);
+                    $("#dialog-reserve-confirm").modal("show");
                 }
             });
         });
@@ -51,9 +32,19 @@
 {% endblock %}
 
 {% block content %}
-    <div id="dialog-reserve-confirm" title="Reserve confirmation">
-        <p id="reserve-confirmation"><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span></p>
+  <div id="dialog-reserve-confirm" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="reserveModalLabel" aria-hidden="true">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+      <h3 id="reserveModalLabel">Reserve confirmation</h3>
     </div>
+    <div class="modal-body">
+      <p id=reserve-confirmation-text></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      <button id="reserve-confirm-ok"  class="btn btn-primary">Confirm</button>
+    </div>
+  </div>
     {% if not slug %}
         <h1>Reserve IDs</h1>
         <ul class="menu">
@@ -67,7 +58,8 @@
                      <div class="span5">
                          <h3>Amount of IDs</h3>
                         {{ form.amount | as_crispy_field }}
-                        <div id="slider"></div>
+                        <input id="amount_range" type="range" min="1" max="1000" oninput="$('#id_amount').val(this.value)" value="1" />
+
                      </div>
                      <div class="span5">
                         {{ form.reserve_message | as_crispy_field }} 
