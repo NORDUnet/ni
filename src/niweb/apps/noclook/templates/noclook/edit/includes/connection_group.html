@@ -1,66 +1,55 @@
-<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/typeahead.bundle.js"></script>
 <script type="text/javascript">
 $(document).ready(
     function(){
-        // End A //
-        // Populate first level combo box
-        $.getJSON('/formdata/site/', function(data) {
-            $('#connection_level0A').append($('<option>').val("0").text("-- Please Select --"));
-            $.each(data, function(key, tuple) {
-                $('#connection_level0A').append($('<option>').val(tuple[0]).text(tuple[1]));
-            });
+
+        //Typeahed.js
+          var ports = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            remote: {
+                url: '/search/typeahead/ports?query=%Q',
+                wildcard: '%Q'
+            }
+          });
+          ports.initialize();
+
+        $("[data-typeahead]").typeahead({
+            minLength: 3,
+            highlight: true
+          },{
+          name: 'ports',
+          displayKey: 'name',
+          source: ports.ttAdapter(),
+          limit: 10
+        }).on('click', function (e){
+          e.preventDefault()
+        }).on('typeahead:open', function() {
+            $(this).closest('.accordion-body').css('overflow','visible');
+        }).on('typeahead:close', function() {
+            $(this).closest('.accordion-body').css('overflow','hidden');
         });
-        // Hook lower level combo boxes up to their parent
-        $("#connection_level1A").jCombo("/formdata/{id}/children/", {
-                        parent: "#connection_level0A",
-                        end_value_field: "#id_relationship_end_a"
-                    });
-        $("#connection_level2A").jCombo("/formdata/{id}/children/", {
-                        parent: "#connection_level1A",
-                        end_value_field: "#id_relationship_end_a"
-                    });
-        $("#connection_level3A").jCombo("/formdata/{id}/children/", {
-                        parent: "#connection_level2A",
-                        end_value_field: "#id_relationship_end_a"
-                    });
-        $("#connection_level4A").jCombo("/formdata/{id}/children/", {
-                        parent: "#connection_level3A",
-                        end_value_field: "#id_relationship_end_a"
-                    });
-        // End B //
-        // Populate first level combo box
-        $.getJSON('/formdata/site/', function(data) {
-            $('#connection_level0B').append($('<option>').val("0").text("-- Please Select --"));
-            $.each(data, function(key, tuple) {
-                $('#connection_level0B').append($('<option>').val(tuple[0]).text(tuple[1]));
-            });
+
+        $("#typeahead_relationship_end_a").on('typeahead:selected', function(event, data){
+          $("#id_relationship_end_a").val(data.handle_id);
+          $("#parent_relationship_end_a").val(data.parent_id);
         });
-        // Hook lower level combo boxes up to their parent
-        $("#connection_level1B").jCombo("/formdata/{id}/children/", {
-                        parent: "#connection_level0B",
-                        end_value_field: "#id_relationship_end_b"
-                    });
-        $("#connection_level2B").jCombo("/formdata/{id}/children/", {
-                        parent: "#connection_level1B",
-                        end_value_field: "#id_relationship_end_b"
-                    });
-        $("#connection_level3B").jCombo("/formdata/{id}/children/", {
-                        parent: "#connection_level2B",
-                        end_value_field: "#id_relationship_end_b"
-                    });
-        $("#connection_level4B").jCombo("/formdata/{id}/children/", {
-                        parent: "#connection_level3B",
-                        end_value_field: "#id_relationship_end_b"
-                    });
+        $("#typeahead_relationship_end_b").on('typeahead:selected', function(event, data){
+          $("#id_relationship_end_b").val(data.handle_id);
+          $("#parent_relationship_end_b").val(data.parent_id);
+        });
+
+
+       $("[data-add-port]").on("click", function(e) {
+          e.preventDefault()
+          var target = $(this).data("target");
+          var parent_id = $("#"+target).val()
+          if (parent_id) {
+            window.open("/new/port/parent/" + parent_id + "/");
+          }
+          ports.clearRemoteCache();
+        });
     });
-    function add_port_a() {
-        var parent_id = $('#id_relationship_end_a').val();
-        window.open("/new/port/parent/" + parent_id + "/");
-    }
-    function add_port_b() {
-        var parent_id = $('#id_relationship_end_b').val();
-        window.open("/new/port/parent/" + parent_id + "/");
-    }
 </script>
 
 <div class="accordion-group">
@@ -90,23 +79,17 @@ $(document).ready(
             <div class="row">
                 <div class="span4">
                     {{ form.relationship_end_a }}
-                    <select class="stacked" name="connection_level0A" id="connection_level0A"></select>
-                    <select class="stacked" name="connection_level1A" id="connection_level1A"></select>
-                    <select class="stacked" name="connection_level2A" id="connection_level2A"></select>
-                    <select class="stacked" name="connection_level3A" id="connection_level3A"></select>
-                    <select class="stacked" name="connection_level4A" id="connection_level4A"></select>
+                    <input type="text" data-typeahead id="typeahead_relationship_end_a" placeholder="uk odf 1+2" />
                     <span class="help-block">Choose end A</span>
-                    <a class="btn btn-mini" href="javascript:add_port_a()">Add port</a>
+                    <input type="hidden" id="parent_relationship_end_a" />
+                    <button class="btn btn-mini" data-add-port data-target="parent_relationship_end_a">Add port</button>
                 </div>
                 <div class="span4">
                     {{ form.relationship_end_b }}
-                    <select class="stacked" name="connection_level0B" id="connection_level0B"></select>
-                    <select class="stacked" name="connection_level1B" id="connection_level1B"></select>
-                    <select class="stacked" name="connection_level2B" id="connection_level2B"></select>
-                    <select class="stacked" name="connection_level3B" id="connection_level3B"></select>
-                    <select class="stacked" name="connection_level4B" id="connection_level4B"></select>
+                    <input type="text" data-typeahead id="typeahead_relationship_end_b" placeholder="uk odf 1+2" />
                     <span class="help-block">Choose end B</span>
-                    <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
+                    <input type="hidden" id="parent_relationship_end_b" />
+                    <button class="btn btn-mini" data-add-port data-target="parent_relationship_end_b">Add port</a>
                 </div>
             </div>
         </div>

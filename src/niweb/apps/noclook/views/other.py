@@ -129,6 +129,66 @@ def search_autocomplete(request):
         return response
     return False
 
+@login_required
+def search_typeahead(request):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    if to_find:
+        # split for search
+        match_q = to_find.split()
+        try:
+            q = """
+                MATCH (port:Port)<-[:Has]-(n:Node)
+                OPTIONAL MATCH n-[:Located_in]->(n2:Node)
+                OPTIONAL MATCH n2<-[:Has]-(s:Site)
+                WITH port.handle_id as handle_id, 
+                CASE WHEN n2 IS null THEN
+                  ""
+                WHEN s IS null THEN
+                    n2.name + " "
+                ELSE
+                    s.name + " " + n2.name + " "
+                END + n.name+" "+port.name as name
+                WHERE name =~ '(?i).*{}.*'
+                RETURN name, handle_id
+                """.format(".*".join(match_q))
+
+            result =  nc.query_to_list(nc.neo4jdb, q)
+            json.dump(result, response)
+        except:
+            pass
+
+    return response
+
+@login_required
+def search_port_typeahead(request):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    if to_find:
+        # split for search
+        match_q = to_find.split()
+        try:
+            q = """
+                MATCH (port:Port)<-[:Has]-(n:Node)
+                OPTIONAL MATCH n-[:Located_in]->(n2:Node)
+                OPTIONAL MATCH n2<-[:Has]-(s:Site)
+                WITH port.handle_id as handle_id, 
+                n.handle_id as parent_id,
+                CASE WHEN n2 IS null THEN
+                  ""
+                WHEN s IS null THEN
+                    n2.name + " "
+                ELSE
+                    s.name + " " + n2.name + " "
+                END + n.name+" "+port.name as name
+                WHERE name =~ '(?i).*{}.*'
+                RETURN name, handle_id, parent_id
+                """.format(".*".join(match_q))
+            result =  nc.query_to_list(nc.neo4jdb, q)
+            json.dump(result, response)
+        except: 
+            pass
+    return response
 
 @login_required
 def find_all(request, slug=None, key=None, value=None, form=None):
