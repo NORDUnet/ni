@@ -129,13 +129,23 @@ def search_autocomplete(request):
         return response
     return False
 
+
+def neo4j_escape(_in):
+    result = _in
+    if type(_in) is list:
+        result = map(neo4j_escape, _in)
+    else:
+        result = re_escape(_in).replace('\\','\\\\')
+    return result
+
 @login_required
 def search_port_typeahead(request):
     response = HttpResponse(content_type='application/json')
     to_find = request.GET.get('query', None)
+    result = []
     if to_find:
         # split for search
-        match_q = to_find.split()
+        match_q = neo4j_escape(to_find.split())
         try:
             q = """
                 MATCH (port:Port)<-[:Has]-(n:Node)
@@ -154,9 +164,9 @@ def search_port_typeahead(request):
                 RETURN name, handle_id, parent_id
                 """.format(".*".join(match_q))
             result =  nc.query_to_list(nc.neo4jdb, q)
-            json.dump(result, response)
         except: 
             pass
+    json.dump(result, response)
     return response
 
 @login_required
