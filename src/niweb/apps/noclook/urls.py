@@ -28,7 +28,6 @@ urlpatterns += patterns('apps.noclook.views.other',
     # Search
     (r'^search/$', 'search'),
     (r'^search/autocomplete$', 'search_autocomplete'),
-    (r'^search/typeahead$', 'search_typeahead'),
     (r'^search/typeahead/ports$', 'search_port_typeahead'),
     (r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', 'search'),
     # QR lookup
