@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import  get_object_or_404, render
-from django.template import RequestContext
+from django.shortcuts import get_object_or_404, render
 
-from apps.noclook.models import NodeType, NodeHandle
+from apps.noclook.models import NodeType
 from apps.noclook.views.helpers import Table, TableRow
-from apps.noclook.helpers import get_node_urls, find_recursive, neo4j_data_age
+from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
 
 __author__ = 'lundberg'
@@ -31,9 +30,11 @@ def _set_operational_state(row, node):
     if node.get('operational_state'):
         row.classes = node.get('operational_state').lower()
 
+
 def _set_filters_expired(table, request):
     table.add_filter('', 'Current', 'hide_current', request.GET.copy())
     table.add_filter('badge-important', 'Expired', 'show_expired', request.GET.copy())
+
 
 def _set_filters_operational_state(table, request):
     table.add_filter('', 'In service', 'hide_in_service', request.GET.copy())
@@ -41,23 +42,25 @@ def _set_filters_operational_state(table, request):
     table.add_filter('badge-warning', 'Reserved', 'show_reserved', request.GET.copy())
     table.add_filter('badge-important', 'Decommissioned', 'show_decommissioned', request.GET.copy())
 
-def _first(n):
-    return n[0]
 
-def any_filter(filters,n):
-    return any([ f(n) for f in filters ])
-def all_filters(filter,n):
-    return all( [f(n) for f in filters ])
+def any_filter(filters, n):
+    return any([f(n) for f in filters])
 
-def _filter_expired(nodes, request, select=lambda n:n):
+
+def all_filters(filters, n):
+    return all([f(n) for f in filters])
+
+
+def _filter_expired(nodes, request, select=lambda n: n):
     filters = []
     if 'show_expired' in request.GET:
         filters.append(lambda n: is_expired(n))
     if 'hide_current' not in request.GET:
         filters.append(lambda n: not is_expired(n))
-    return [ n for n in nodes if any_filter(filters,select(n)) ]
+    return [n for n in nodes if any_filter(filters, select(n))]
 
-def _filter_operational_state(nodes, request, select=lambda n:n):
+
+def _filter_operational_state(nodes, request, select=lambda n: n):
     exclude = []
     if 'show_testing' not in request.GET:
         exclude.append('testing')
@@ -67,7 +70,8 @@ def _filter_operational_state(nodes, request, select=lambda n:n):
         exclude.append('decommissioned')
     if 'hide_in_service' in request.GET:
         exclude.append('in service')
-    return  [ n for n in nodes if select(n).get('operational_state','').lower() not in exclude ] 
+    return [n for n in nodes if select(n).get('operational_state', '').lower() not in exclude]
+
 
 def _type_table(wrapped_node):
     node = wrapped_node.get('node')
@@ -86,20 +90,20 @@ def list_by_type(request, slug):
         """ % {'nodetype': node_type.get_label()}
     node_list = nc.query_to_list(nc.neo4jdb, q)
     node_list = _filter_expired(node_list, request, select=lambda n: n.get('node'))
-    #Since all is the same type... we could use a defaultdict with type/id return
+    # Since all is the same type... we could use a defaultdict with type/id return
     urls = get_node_urls(node_list)
     table = Table('Name')
-    table.rows = [ _type_table(node) for node in node_list]
+    table.rows = [_type_table(node) for node in node_list]
     _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
+                  {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
 
 
 def _cable_table(wrapped_cable):
     cable = wrapped_cable.get('cable')
     row = TableRow(cable, cable.get('cable_type'), wrapped_cable.get('end'))
-    _set_expired(row,cable)
+    _set_expired(row, cable)
     return row
 
 
@@ -121,7 +125,7 @@ def list_cables(request):
     _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Cables', 'urls': urls})
+                  {'table': table, 'name': 'Cables', 'urls': urls})
 
 
 def _host_table(host, users):
@@ -143,7 +147,7 @@ def list_hosts(request):
         """
 
     host_list = nc.query_to_list(nc.neo4jdb, q)
-    host_list = _filter_expired(host_list, request, select=_first)
+    host_list = _filter_expired(host_list, request, select=lambda n: n.get('host'))
     urls = get_node_urls(host_list)
 
     table = Table('Host', 'Address', 'OS', 'OS version', 'User')
@@ -151,15 +155,13 @@ def list_hosts(request):
     _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table,
-            'name': 'Hosts',
-            'urls': urls})
+            {'table': table, 'name': 'Hosts', 'urls': urls})
 
 
 def _switch_table(switch, users):
-    ip_addresses = switch.get('ip_addresses',['No address'])
+    ip_addresses = switch.get('ip_addresses', ['No address'])
     model = switch.get('model')
-    row =  TableRow(switch, model, ip_addresses, users)
+    row = TableRow(switch, model, ip_addresses, users)
     _set_expired(row, switch)
     return row
 
@@ -174,15 +176,15 @@ def list_switches(request):
         """
 
     switch_list = nc.query_to_list(nc.neo4jdb, q)
-    switch_list = _filter_expired(switch_list, request, select=_first)
+    switch_list = _filter_expired(switch_list, request, select=lambda n: n.get('switch'))
     urls = get_node_urls(switch_list)
 
     table = Table('Switch', 'Model', 'Address', 'User')
-    table.rows = [ _switch_table(item['switch'], item['users']) for item in switch_list]
+    table.rows = [_switch_table(item['switch'], item['users']) for item in switch_list]
     _set_filters_expired(table, request)
 
-    return render(request,'noclook/list/list_generic.html', 
-                    {'name': 'Switches', 'table': table, 'urls': urls})
+    return render(request, 'noclook/list/list_generic.html',
+                  {'name': 'Switches', 'table': table, 'urls': urls})
 
 
 def _odf_table(item):
@@ -215,19 +217,19 @@ def list_odfs(request):
     urls = get_node_urls(odf_list)
 
     table = Table("Location", "Name")
-    table.rows = [ _odf_table(item) for item in odf_list]
+    table.rows = [_odf_table(item) for item in odf_list]
 
-    return render(request,'noclook/list/list_generic.html',
-            {'table': table, 'name': 'ODFs', 'urls': urls})
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'ODFs', 'urls': urls})
 
 
 def _optical_link_table(link, dependencies):
     for deps in dependencies:
         node = deps[0]
         if node and len(deps) > 1:
-            name = [ n.get('name') for n in reversed(deps) if n]
+            name = [n.get('name') for n in reversed(deps) if n]
             node.properties['name'] = u' '.join(name)
-    dependencies = [ deps[0] for deps in dependencies ]
+    dependencies = [deps[0] for deps in dependencies]
     row = TableRow(link, link.get('link_type'), link.get('description'), dependencies)
     _set_operational_state(row, link)
     return row
@@ -243,7 +245,8 @@ def list_optical_links(request):
         OPTIONAL MATCH p=(node)<-[:Has]-(parent)
         RETURN link as link, collect([node, parent]) as dependencies
         """
-    optical_link_list = _filter_operational_state(optical_link_list, request, select=_first)
+    optical_link_list = nc.query_to_list(nc.neo4jdb, q)
+    optical_link_list = _filter_operational_state(optical_link_list, request, select=lambda n: n.get('link'))
     table = Table('Optical Link', 'Type', 'Description', 'Depends on')
     table.rows = [_optical_link_table(item['link'], item['dependencies']) for item in optical_link_list]
     _set_filters_operational_state(table, request)
@@ -269,7 +272,7 @@ def list_optical_multiplex_section(request):
         """
 
     oms_list = nc.query_to_list(nc.neo4jdb, q)
-    oms_list = _filter_operational_state(oms_list, request, select=_first)
+    oms_list = _filter_operational_state(oms_list, request, select=lambda n: n.get('oms'))
 
     urls = get_node_urls(oms_list)
 
@@ -278,7 +281,7 @@ def list_optical_multiplex_section(request):
     _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Optical Multiplex Sections', 'urls': urls})
+                  {'table': table, 'name': 'Optical Multiplex Sections', 'urls': urls})
 
 
 def _optical_nodes_table(node):
@@ -296,14 +299,14 @@ def list_optical_nodes(request):
         """
 
     optical_node_list = nc.query_to_list(nc.neo4jdb, q)
-    optical_node_list = _filter_operational_state(optical_node_list, request, select=_first)
+    optical_node_list = _filter_operational_state(optical_node_list, request, select=lambda n: n.get('node'))
     urls = get_node_urls(optical_node_list)
 
     table = Table('Name', 'Type', 'Link', 'OTS')
     table.rows = [_optical_nodes_table(item['node']) for item in optical_node_list]
     _set_filters_operational_state(table, request)
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Optical Nodes', 'urls': urls})
+                  {'table': table, 'name': 'Optical Nodes', 'urls': urls})
 
 
 def _optical_path_table(path):
@@ -326,7 +329,7 @@ def list_optical_paths(request):
         """
 
     optical_path_list = nc.query_to_list(nc.neo4jdb, q)
-    optical_path_list = _filter_operational_state(optical_path_list, request, select=_first)
+    optical_path_list = _filter_operational_state(optical_path_list, request, select=lambda n: n.get('path'))
     urls = get_node_urls(optical_path_list)
 
     table = Table('Optical Path', 'Framing', 'Capacity', 'Description', 'ENRs')
@@ -334,7 +337,7 @@ def list_optical_paths(request):
     _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Optical Paths', 'urls': urls})
+                  {'table': table, 'name': 'Optical Paths', 'urls': urls})
 
 
 def _peering_partner_table(peer, peering_groups):
@@ -354,15 +357,15 @@ def list_peering_partners(request):
         """
 
     partner_list = nc.query_to_list(nc.neo4jdb, q)
-    partner_list = _filter_expired(partner_list, request, select=_first)
+    partner_list = _filter_expired(partner_list, request, select=lambda n: n.get('peer'))
     urls = get_node_urls(partner_list)
 
     table = Table('Peering Partner', 'AS Number', 'Peering Groups')
     table.rows = [_peering_partner_table(item['peer'], item['peering_groups']) for item in partner_list]
     _set_filters_expired(table, request)
 
-    return render(request,'noclook/list/list_generic.html', 
-            {'table': table, 'name': 'Peering Partners', 'urls': urls})
+    return render(request,'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'Peering Partners', 'urls': urls})
 
 
 @login_required
@@ -382,7 +385,7 @@ def list_racks(request):
     table.no_badges = True
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Racks',  'urls':urls})
+                  {'table': table, 'name': 'Racks',  'urls':urls})
 
 
 def _router_table(router):
@@ -400,7 +403,7 @@ def list_routers(request):
         """
 
     router_list = nc.query_to_list(nc.neo4jdb, q)
-    router_list = _filter_expired(router_list, request, select=_first)
+    router_list = _filter_expired(router_list, request, select=lambda n: n.get('router'))
     urls = get_node_urls(router_list)
 
     table = Table('Router', 'Model', 'JUNOS version', 'Operational state')
@@ -408,12 +411,12 @@ def list_routers(request):
     _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Routers', 'urls':urls})
+                  {'table': table, 'name': 'Routers', 'urls': urls})
 
 
 def _service_table(service, customers, end_users):
-    row = TableRow(service, 
-                service.get('service_class'),
+    row = TableRow(service,
+                   service.get('service_class'),
                 service.get('service_type'),
                 service.get('description'),
                 customers,
@@ -440,21 +443,21 @@ def list_services(request, service_class=None):
         """ % where_statement
 
     service_list = nc.query_to_list(nc.neo4jdb, q)
-    service_list = _filter_operational_state(service_list, request, select=_first)
+    service_list = _filter_operational_state(service_list, request, select=lambda n: n.get('service'))
     urls = get_node_urls(service_list)
 
     table = Table('Service',
-                'Service Class', 
-                'Service Type', 
-                'Description', 
-                'Customers', 
-                'End Users')
+                  'Service Class',
+                  'Service Type',
+                  'Description',
+                  'Customers',
+                  'End Users')
     table.rows = [_service_table(item['service'], item['customers'], item['end_users']) for item in service_list]
 
     _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
-                              {'table': table, 'name': name, 'urls': urls})
+                  {'table': table, 'name': name, 'urls': urls})
 
 
 def _site_table(site):
@@ -482,14 +485,5 @@ def list_sites(request):
     table.rows = [_site_table(item['site']) for item in site_list]
     table.no_badges=True
 
-
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Sites', 'urls': urls})
-
-
-
-
-
-
-
-
+                  {'table': table, 'name': 'Sites', 'urls': urls})
