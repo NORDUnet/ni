@@ -293,10 +293,10 @@ def get_peering_partner(peering):
         found = 0
         for node in hits:
             peer_node = nc.get_node_model(nc.neo4jdb, node['handle_id'])
-        helpers.set_noclook_auto_manage(peer_node, True)
-        if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
-                helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
-        logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
+            helpers.set_noclook_auto_manage(peer_node, True)
+            if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
+                    helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
+            logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
             found += 1
         if found > 1:
             logger.error('Found more then one Peering Partner with AS number {!s}'.format(peer_properties['as_number']))
