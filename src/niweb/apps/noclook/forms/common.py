@@ -364,6 +364,7 @@ class EditHostForm(forms.Form):
                                           help_text='Name of the group responsible for the host.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
+    backup = forms.CharField(required=False, help_text='Which backup solution is used? e.g. TSM, IP nett?')
     os = forms.CharField(required=False,
                          help_text='What operating system is running on the host?')
     os_version = forms.CharField(required=False,
@@ -402,6 +403,7 @@ class EditRouterForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
     
     
 class NewOdfForm(forms.Form):

@@ -1,39 +1,39 @@
 name,service_class
-Alien wavelenght, DWDM
-Ethernet, DWDM
-SDH, DWDM
-Interface Switch, Ethernet
-External, External
-Hosting, Hosting
-CFG Management, Internal
-Mail, Internal
-NDN CoreInfra, Internal
-NDN IDM, Internal
-NDN Instrumentation, Internal
-NDN Tools, Internal
-NDN Tor, Internal
-CMS, IAAS
-EDUID, IAAS
-HSM, IAAS
-Social2SAML, IAAS
-Storage, IAAS
-TCS, IAAS
-VConf, IAAS
-VMWare, IAAS
-Backbone, IP
-Customer Connection, IP
-Internet Exchange, IP
-Private Interconnect, IP
-Private Interconnection, IP
-Project, IP
-Transit, IP
-L2VPN, MPLS
-L3VPN, MPLS
-VPLS, MPLS
-CanIt, SAAS
-Connect, SAAS
-Confluence, SAAS
-JIRA, SAAS
-Kaltura, SAAS
-Survey, SAAS
-Box, SAAS
+Alien wavelenght,DWDM
+Ethernet,DWDM
+SDH,DWDM
+Interface Switch,Ethernet
+External,External
+Hosting,Hosting
+CFG Management,Internal
+Mail,Internal
+NDN CoreInfra,Internal
+NDN IDM,Internal
+NDN Instrumentation,Internal
+NDN Tools,Internal
+NDN Tor,Internal
+CMS,IAAS
+EDUID,IAAS
+HSM,IAAS
+Social2SAML,IAAS
+Storage,IAAS
+TCS,IAAS
+VConf,IAAS
+VMWare,IAAS
+Backbone,IP
+Customer Connection,IP
+Internet Exchange,IP
+Private Interconnect,IP
+Private Interconnection,IP
+Project,IP
+Transit,IP
+L2VPN,MPLS
+L3VPN,MPLS
+VPLS,MPLS
+CanIt,SAAS
+Connect,SAAS
+Confluence,SAAS
+JIRA,SAAS
+Kaltura,SAAS
+Survey,SAAS
+Box,SAAS

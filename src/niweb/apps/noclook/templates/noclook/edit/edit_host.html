@@ -26,6 +26,7 @@ $(document).ready(
         userCategories = [
             ['host-user', 'Host User']
         ];
+        $( "#id_end_support" ).datepicker({ format: "yyyy-mm-dd" });
     }
 );
 </script>
@@ -53,6 +54,9 @@ $(document).ready(
             <label><strong>Managed by</strong></label>
             {{ form.managed_by }}
             <span class="help-block">{{ form.managed_by.help_text }}</span>
+            <label><strong>Backup</strong></label>
+            {{ form.backup }}
+            <span class="help-block">{{ form.backup.help_text }}</span>
             <label><strong>Security Class</strong></label>
             {{ form.security_class }}
             <label><strong>Security Comment</strong></label>
@@ -88,11 +92,6 @@ $(document).ready(
                         <label>End of support</label>
                         {{ form.end_support }}
                         <span class="help-block">{{ form.end_support.help_text }}</span>
-                        <script>
-                            $(function() {
-                                $( "#id_end_support" ).datepicker({ dateFormat: "yy-mm-dd" });
-                            });
-                        </script>
                     {% endif %}
                     <label>Contract number</label>
                     {{ form.contract_number }}

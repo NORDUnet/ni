@@ -4,47 +4,19 @@
 
 {% block js %}
 {{ block.super }}
+<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-datepicker.min.css" type="text/css" />
+<script type="text/javascript" src="{{ STATIC_URL }}js/jquery/bootstrap-datepicker.min.js"></script>
 <script type="text/javascript">
     $(document).ready(
         function(){
-            // Modal delete object confirm
-            $("#dialog-object-confirm").dialog({
-              modal: true,
-                    bgiframe: true,
-                    width: 500,
-                    height: 200,
-              autoOpen: false
-              });
-
-            $("#object-confirm").click(function(e) {
-                e.preventDefault();
-                var theHREF = $(this).attr("href");
-                var modalDialog = $("#dialog-object-confirm");
-                modalDialog.dialog('option', 'buttons', {
-                        "Confirm" : function() {
-                            window.location.href = theHREF;
-                            },
-                        "Cancel" : function() {
-                            $(this).dialog("close");
-                            }
-                        });
-                modalDialog.dialog("open");
-            });
             // Modal delete relationship confirm
-            $("#dialog-relationship-confirm").dialog({
-                modal: true,
-                bgiframe: true,
-                width: 500,
-                height: 200,
-                autoOpen: false
-            });
-
             $("a.relationship-confirm").click(function(e) {
                 e.preventDefault();
                 var theHREF = $(this).attr("href");
                 var modalDialog = $("#dialog-relationship-confirm");
-                modalDialog.dialog('option', 'buttons', {
-                    "Confirm" : function() {
+                // non jquery to avoid event handling
+                var btn_confirm = document.getElementById("relationship-confirm");
+                btn_confirm.onclick = function() {
                         var jqxhr = $.post(theHREF, {}, function(response) {})
                                 .done(function(response) {
                                     if (response.success === true) {
@@ -54,13 +26,9 @@
                                 .fail(function(response) {
                                     $(e.target).text('Server failure');
                                 });
-                        $(this).dialog("close");
-                    },
-                    "Cancel" : function() {
-                        $(this).dialog("close");
-                    }
-                });
-                modalDialog.dialog("open");
+                  modalDialog.modal("hide");
+                }
+                modalDialog.modal("toggle");
             });
 
             $("a.relationship-toggle").click(function(e) {
@@ -90,6 +58,7 @@
                         });
             });
 
+            // Unused?
             $("a.relationship-update").click(function(e) {
                 e.preventDefault();
                 var theHREF = $(this).attr("href");
@@ -108,19 +77,41 @@
                             target.text('Server failure');
                         });
             });
-        }
-    );
+    });
 </script>
 {% endblock %}
 
 {% block content %}
-    <div id="dialog-object-confirm" title="Delete {{ node_handle.node_type }} {{ node_handle.node_name }}?">
-        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The {{ node_handle.node_type|lower }} will be permanently deleted and cannot be recovered. Are you sure?</p>
+  <!-- Modal -->
+  <div id="dialog-object-confirm" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+      <h3 id="myModalLabel">Delete {{ node_handle.node_type }} {{ node_handle.node_name }}?</h3>
     </div>
-    <div id="dialog-relationship-confirm" title="Remove relationship?">
-        <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"></span>The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
+    <div class="modal-body">
+      <p><i class="icon-warning-sign"></i> The {{ node_handle.node_type|lower }} will be permanently deleted and cannot be recovered. Are you sure?</p>
     </div>
-    <form action="" method="post">{% csrf_token %}
+    <div class="modal-footer">
+      <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      <a href="delete" rel="nofollow" class="btn btn-primary">Confirm</a>
+    </div>
+  </div>
+
+  <div id="dialog-relationship-confirm" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+      <h3 id="myModalLabel">Remove relationship?</h3>
+    </div>
+    <div class="modal-body">
+      <p><i class="icon-warning-sign"></i> The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      <button id="relationship-confirm"  class="btn btn-primary">Confirm</button>
+    </div>
+  </div>
+
+  <form action="" method="post">{% csrf_token %}
         <h1>Edit {{ node_handle.node_type|lower }} <a href="{{ node_handle.get_absolute_url }}">{{ node_handle.node_name }}</a></h1>
         {% if form.errors %}
             <div class="alert alert-error">
@@ -151,7 +142,7 @@
             <div class="span1">
                 <div class="btn-toolbar">
                     <div class="btn-group">
-                        <a href="delete" class="btn btn-danger" id="object-confirm">Delete</a>
+                        <a href="#dialog-object-confirm" class="btn btn-danger" role="button" data-toggle="modal">Delete</a>
                     </div>
                 </div>
             </div>

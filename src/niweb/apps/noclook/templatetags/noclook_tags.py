@@ -228,9 +228,10 @@ def hardware_module(module, level=0):
             "clei_code"]
     if module:
         result += "\n".join([u"{0}{1}: {2}".format(indent,key,module[key]) for key in keys if key in module ])
-        if 'modules' in module and module['modules']:
+        if module.get('modules') or module.get('sub_modules'):
             result += "\n{0}Modules:\n\n".format(indent)
-            result += "\n".join([ hardware_module(mod, level+1) for mod in module['modules'] ])
+            result += "\n".join([ hardware_module(mod, level+1) for mod in module.get('modules',[]) ])
+            result += "\n".join([ hardware_module(mod, level+1) for mod in module.get('sub_modules',[]) ])
         result += "\n{0}{1}\n".format(indent,"-"*8)
     
     return result

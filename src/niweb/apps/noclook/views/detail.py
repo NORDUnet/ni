@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 import ipaddr
+import json
 
 from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
@@ -511,16 +512,14 @@ def router_detail(request, handle_id):
     # Get all the Ports and what depends on the port.
     connections = router.get_connections()
     dependent = router.get_dependent_as_types()
-    q = """
-        MATCH p=(n:Router {handle_id: {handle_id}})-[r:Has*1..4]->(part) 
-        WHERE exists(part.hardware_description)
-        RETURN tail(nodes(p)) as hardware
-        """
-    result = nc.query_to_list(nc.neo4jdb, q, handle_id=router.handle_id)
-    hardware_modules = []
-    for chain in result:
-        _zip_modules(chain['hardware'],hardware_modules)
-    hardware_modules.sort(key=lambda mod: mod['name'])
+
+    hw_name = "{}-hardware.json".format(router.data.get('name', 'router'))
+    hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
+    if hw_attachment:
+        hw_content = helpers.attachment_content(hw_attachment)
+        hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
+    else:
+        hardware_modules = []
     
     #TODO: generally very inefficient lookups in view... 
     urls = helpers.get_node_urls(router, location_path, dependent, connections, hardware_modules)

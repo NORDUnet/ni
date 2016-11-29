@@ -386,18 +386,22 @@ def edit_host(request, handle_id):
             helpers.form_update_node(request.user, host.handle_id, form)
             # Host specific updates
             if form.cleaned_data['relationship_user']:
-                user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
-                helpers.set_user(request.user, host, user_nh.handle_id)
+                    user_nh = _nh_safe_get(form.cleaned_data['relationship_user'])
+                    if user_nh:
+                        helpers.set_user(request.user, host, user_nh.handle_id)
             if form.cleaned_data['relationship_owner']:
-                owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
-                helpers.set_owner(request.user, host, owner_nh.handle_id)
+                owner_nh = _nh_safe_get(form.cleaned_data['relationship_owner'])
+                if owner_nh:
+                    helpers.set_owner(request.user, host, owner_nh.handle_id)
             # You can not set location and depends on at the same time
             if form.cleaned_data['relationship_depends_on']:
-                depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                helpers.set_depends_on(request.user, host, depends_on_nh.handle_id)
+                depends_on_nh = _nh_safe_get(form.cleaned_data['relationship_depends_on'])
+                if depends_on_nh:
+                    helpers.set_depends_on(request.user, host, depends_on_nh.handle_id)
             elif form.cleaned_data['relationship_location']:
-                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                helpers.set_location(request.user, host, location_nh.handle_id)
+                location_nh = _nh_safe_get(form.cleaned_data['relationship_location'])
+                if location_nh:
+                    helpers.set_location(request.user, host, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, host.handle_id)
             if form.cleaned_data['relationship_ports']:
@@ -413,7 +417,12 @@ def edit_host(request, handle_id):
                               {'node_handle': nh, 'node': host, 'form': form, 'location': location,
                                'relations': relations, 'depends_on': depends_on, 'ports': ports,
                                'host_services': host_services}, context_instance=RequestContext(request))
-
+def _nh_safe_get(pk):
+    try:
+        nh = NodeHandle.objects.get(pk=pk)
+    except:
+        nh = None
+    return nh
 
 @login_required
 def edit_odf(request, handle_id):
@@ -643,7 +652,7 @@ def edit_pdu(request, handle_id):
             else:
                 return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
     else:
-        form = forms.EditSwitchForm(pdu.data)
+        form = forms.EditPDUForm(pdu.data)
     return render_to_response('noclook/edit/edit_pdu.html',
                               {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
                                'relations': relations, 'depends_on': depends_on, 'ports': ports,
@@ -772,6 +781,9 @@ def edit_router(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, router, location_nh.handle_id)
+            if form.cleaned_data['relationship_ports']:
+                for port_name in form.cleaned_data['relationship_ports']:
+                    helpers.create_port(router, port_name, request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:

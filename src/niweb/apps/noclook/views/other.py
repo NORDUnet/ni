@@ -127,6 +127,45 @@ def search_autocomplete(request):
     return False
 
 
+def neo4j_escape(_in):
+    result = _in
+    if type(_in) is list:
+        result = map(neo4j_escape, _in)
+    else:
+        result = re_escape(_in).replace('\\','\\\\')
+    return result
+
+@login_required
+def search_port_typeahead(request):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        match_q = neo4j_escape(to_find.split())
+        try:
+            q = """
+                MATCH (port:Port)<-[:Has]-(n:Node)
+                OPTIONAL MATCH n-[:Located_in]->(n2:Node)
+                OPTIONAL MATCH n2<-[:Has]-(s:Site)
+                WITH port.handle_id as handle_id, 
+                n.handle_id as parent_id,
+                CASE WHEN n2 IS null THEN
+                  ""
+                WHEN s IS null THEN
+                    n2.name + " "
+                ELSE
+                    s.name + " " + n2.name + " "
+                END + n.name+" "+port.name as name
+                WHERE name =~ '(?i).*{}.*'
+                RETURN name, handle_id, parent_id
+                """.format(".*".join(match_q))
+            result =  nc.query_to_list(nc.neo4jdb, q)
+        except: 
+            pass
+    json.dump(result, response)
+    return response
+
 @login_required
 def find_all(request, slug=None, key=None, value=None, form=None):
     """

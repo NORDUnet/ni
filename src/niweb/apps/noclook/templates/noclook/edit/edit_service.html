@@ -68,8 +68,8 @@
                         $('#id_decommissioned_date').val("");
                     }
                 })
-                $("#id_project_end_date").datepicker({ dateFormat: "yy-mm-dd" });
-                $("#id_decommissioned_date").datepicker({ dateFormat: "yy-mm-dd" });
+                $("#id_project_end_date").datepicker({ format: "yyyy-mm-dd" });
+                $("#id_decommissioned_date").datepicker({ format: "yyyy-mm-dd", todayBtn: "linked", todayHighlight: true });
             }
         );
     </script>

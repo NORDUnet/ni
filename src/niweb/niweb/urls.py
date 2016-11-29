@@ -88,6 +88,7 @@ urlpatterns = patterns('',
     # Scan
     if_installed('apps.scan', r'^scan/', include('apps.scan.urls', namespace="scan")),
 
+    (r'^attachments/', include('attachments.urls', namespace='attachments')),
     # NOCLook URLs
     (r'', include('apps.noclook.urls')),
 )

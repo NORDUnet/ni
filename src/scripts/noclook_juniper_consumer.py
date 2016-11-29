@@ -26,6 +26,7 @@ import re
 import argparse
 import ipaddr
 import logging
+import json
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -39,6 +40,8 @@ import noclook_consumer as nt
 from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
+from dynamic_preferences import global_preferences_registry
+from apps.noclook.models import UniqueIdGenerator
 
 logger = logging.getLogger('noclook_consumer.juniper')
 
@@ -116,7 +119,7 @@ def insert_juniper_router(name, model, version, hardware=None):
     return node
 
 
-def insert_interface_unit(iface_node, unit):
+def insert_interface_unit(iface_node, unit, service_id_regex):
     """
     Creates or updates logical interface units.
     """
@@ -136,7 +139,95 @@ def insert_interface_unit(iface_node, unit):
     unit['ip_addresses'] = [address.lower() for address in unit.get('address', '')]
     property_keys = ['description', 'ip_addresses', 'vlanid']
     helpers.dict_update_node(user, unit_node.handle_id, unit, property_keys)
+    # Auto depend service on unit
+    auto_depend_services(unit_node.handle_id, unit.get('description', ''), service_id_regex, 'Unit')
 
+def cleanup_hardware_v1(router_node, user):
+    p = "^\d+/\d+/\d+$"
+    bad_interfaces = re.compile(p)
+
+    # Cleanup ni hardware info v1...
+    # Get all ports that are not directly on router
+    q = """
+        MATCH (n:Router {handle_id: {handle_id}})-[:Has*1..3]->(:Node)-[r:Has]->(port:Port)
+        RETURN port.handle_id as handle_id, port.name as name, id(r) as rel_id
+        """
+    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
+    for port in ports:
+        if bad_interfaces.match(port['name']):
+            # delete it!
+            helpers.delete_node(user, port['handle_id'])
+        else:
+            # move it to router
+            helpers.set_has(user, router_node, port['handle_id'])
+            # Remove from hardware info (pic)
+            helpers.delete_relationship(user, port['rel_id'])
+            # Scrub interface properties..?
+    # Remove hardware info
+    q = """
+        MATCH (n:Router {handle_id: {handle_id}})-[:Has*]->(hw:Node)
+        WHERE NOT hw:Port
+        return hw.handle_id as handle_id, hw.name as name
+        """
+    old_hardware = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
+    for hw in old_hardware:
+        helpers.delete_node(user, hw['handle_id'])
+
+def _service_id_regex():
+    global_preferences = global_preferences_registry.manager()
+    service_id_generator_name = global_preferences.get('id_generators__services')
+    regex = None
+    if service_id_generator_name:
+        try:
+            id_generator = UniqueIdGenerator.objects.get(name=service_id_generator_name)
+            regex = id_generator.get_regex()
+        except UniqueIdGenerator.DoesNotExist as e:
+            pass
+    return regex
+
+def _find_service(service_id):
+    # Consider using cypher...
+    service = None
+    try:
+        service = nc.get_unique_node_by_name(nc.neo4jdb, service_id, 'Service')
+    except:
+        pass
+    return service
+
+
+def auto_depend_services(handle_id, description, service_id_regex, _type="Port"):
+    """
+        Using interface description to depend one or more services.
+    """
+    if not service_id_regex:
+        return
+    if not description:
+        description=""
+
+    desc_services = service_id_regex.findall(description)
+
+    for service_id in  desc_services:
+        service = _find_service(service_id)
+        if service:
+            if service.data.get('operational_state') == 'Decommissioned':
+                logger.warning('{} {} description mentions decommissioned service {}'.format(_type,handle_id, service_id))
+            else:
+                #Add it
+                #logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
+                helpers.set_depends_on(nt.get_user(), service, handle_id)
+        else:
+            logger.info('{} {} description mentions unknown service {}'.format(_type, handle_id, service_id))
+    # check if "other services are dependent"
+    q = """
+        MATCH (n:Node {handle_id: {handle_id}})<-[:Depends_on]-(s:Service)
+        WHERE s.operational_state <> 'Decommissioned' and  NOT(s.name in [{desc_services}])
+        RETURN collect(s) as unregistered
+        """
+    result = nc.query_to_dict(nc.neo4jdb, q, handle_id=handle_id, desc_services=','.join(desc_services)).get('unregistered', [])
+    unregistered_services = [ u"{}({})".format(s['name'],s['handle_id']) for s in result ]
+    
+    if unregistered_services:
+        logger.warning(u"{} {} has services depending on it that is not in description: {}".format(_type, handle_id, ','.join(unregistered_services)))
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
@@ -150,18 +241,16 @@ def insert_juniper_interfaces(router_node, interfaces):
         """
     not_interesting_interfaces = re.compile(p, re.VERBOSE)
     user = nt.get_user()
-    q = """
-        MATCH (n:Router {handle_id: {handle_id}})-[:Has*1..4]->(port:Port)
-        RETURN port.handle_id as handle_id, port.name as name
-        """
-    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
+
+    cleanup_hardware_v1(router_node, user)
+    service_id_regex = _service_id_regex()
+
     for interface in interfaces:
         port_name = interface['name']
         if port_name and not not_interesting_interfaces.match(port_name):
-            #XXX: Currently we check if port_name ends with node name for backwards compat
-            result = [ p['handle_id'] for p in ports if port_name.endswith(p['name']) ]
-            if result:
-                port_node = nc.get_node_model(nc.neo4jdb, result[0])
+            result = router_node.get_port(port_name)
+            if 'Has' in  result:
+                port_node = result.get('Has')[0].get('node')
             else:
                 node_handle = nt.create_node_handle(port_name, 'Port', 'Physical')
                 port_node = node_handle.get_node()
@@ -171,7 +260,9 @@ def insert_juniper_interfaces(router_node, interfaces):
             helpers.dict_update_node(user, port_node.handle_id, interface, property_keys)
             # Update interface units
             for unit in interface['units']:
-                insert_interface_unit(port_node, unit)
+                insert_interface_unit(port_node, unit, service_id_regex)
+            # Auto depend services
+            auto_depend_services(port_node.handle_id, interface.get('description', ''), service_id_regex)
             logger.info('{router} {interface} done.'.format(router=router_node.data['name'], interface=port_name))
         else:
             logger.info('Interface {name} ignored.'.format(name=port_name))
@@ -202,10 +293,10 @@ def get_peering_partner(peering):
         found = 0
         for node in hits:
             peer_node = nc.get_node_model(nc.neo4jdb, node['handle_id'])
-            helpers.set_noclook_auto_manage(peer_node, True)
-            if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
+        helpers.set_noclook_auto_manage(peer_node, True)
+        if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
                 helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
-            logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
+        logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
             found += 1
         if found > 1:
             logger.error('Found more then one Peering Partner with AS number {!s}'.format(peer_properties['as_number']))
@@ -327,100 +418,14 @@ def insert_juniper_bgp_peerings(bgp_peerings):
             insert_external_bgp_peering(peering, peering_group_node)
 
 
-def _get_or_create_node(name, parent, meta_type_label, labels):
-    user = nt.get_user()
-    q = """
-        MATCH (p:Node {handle_id: {handle_id}})-[:Has]->(n:Node {name: {name}})
-        RETURN n.handle_id as handle_id
-        """
-    result = nc.query_to_list(nc.neo4jdb, q, handle_id=parent.handle_id, name=name)
-    if not isinstance(labels, str):
-        labels = ':'.join(labels)
-    if result:
-        node = nc.get_node_model(nc.neo4jdb,result[0]['handle_id'])
-    else:
-        node_handle = nt.create_node_handle(name, meta_type_label, labels)
-        node = node_handle.get_node()
-        helpers.set_has(user, parent, node.handle_id)
-    return node
-
-
-def _module(module, parent):
-    user = nt.get_user()
-    name = module['name']
-    if name.startswith("PIC "):
-        node = _get_or_create_node(name, parent, 'PIC', 'Physical')
-    elif name.startswith("FPC "):
-        node = _get_or_create_node(name, parent, 'FPC', 'Physical')
-    else:
-        node = _get_or_create_node(name, parent, 'Module', 'Physical')
-    node_dict = module.copy()
-    del node_dict['sub_modules']
-    node_dict['hardware_description'] = node_dict['description']
-    del node_dict['description']
-    helpers.dict_update_node(user, node.handle_id, node_dict, node_dict.keys())
-    helpers.set_noclook_auto_manage(node, True)
-    return node
-
-
-def insert_juniper_hardware_interfaces(router, fpc, pic, modules):
-    user = nt.get_user()
-    fpc_name = fpc.data['name']
-    pic_name = pic.data['name']
-    q = """
-        MATCH (n:Router {handle_id: {handle_id}})-[r:Has*1..4]->(port:Port) 
-        RETURN extract(rel IN r |id(rel)) as relationships, 
-               port.handle_id as port_id, 
-               port.name as name
-        """
-    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router.handle_id)
-    fpcN = re.search("(\d+)$", fpc_name).group()
-    picN = re.search("(\d+)$", pic_name).group()
-    for module in modules:
-        try:
-            ifN = re.search("(\d+)$", module['name']).group()
-            ifname = "{0}/{1}/{2}".format(fpcN, picN, ifN)
-            port = [(p['port_id'], p['relationships']) for p in ports if p['name'].endswith(ifname)]
-            if port:
-                port_id, rel_ids = port[0]
-                if len(rel_ids) == 1:
-                    #move it
-                    helpers.set_has(user, pic, port_id)
-                    #remove old
-                    nc.delete_relationship(nc.neo4jdb, rel_ids[0])
-                port = nc.get_node_model(nc.neo4jdb,port_id)
-            else:
-                #chicken and egg... Haven't got the full real name yet
-                node_handle = nt.create_node_handle(ifname, 'Port', 'Physical')
-                port = node_handle.get_node()
-                helpers.set_has(user, pic, port.handle_id)
-            node_dict = module.copy()
-            del node_dict['sub_modules']
-            del node_dict['name']
-            node_dict['hardware_description'] = node_dict['description']
-            del node_dict['description']
-            helpers.dict_update_node(user, port.handle_id, node_dict)
-            helpers.set_noclook_auto_manage(port, True)
-            
-        except AttributeError:
-            logger.error("Unable to extract name from port: {0} of {1} - {2} on {3}".format(module['name'], pic_name, fpc_name, router['data']['name']))
-
-
-def insert_juniper_submodules(parent, modules, router):
-    for module in modules:
-        node = _module(module, parent)
-        if module['name'].startswith("PIC "):
-            insert_juniper_hardware_interfaces(router, parent, node, module['sub_modules'])
-        elif module['sub_modules']:
-            insert_juniper_submodules(node, module['sub_modules'], router)
-
-
 def insert_juniper_hardware(router_node, hardware):
     if hardware:
-        for module in hardware.get('modules',[]):
-            node = _module(module, router_node)
-            if module['sub_modules']:
-                insert_juniper_submodules(node, module['sub_modules'], router_node)
+        # Upload hardware info as json file.
+        hw_str = json.dumps(hardware)
+        name = "{}-hardware.json".format(router_node.data.get('name','router'))
+        user = nt.get_user()
+        # Store it! (or overwrite)
+        helpers.attach_as_file(router_node.handle_id, name, hw_str, user, overwrite=True)
 
 
 def consume_juniper_conf(json_list):
@@ -529,10 +534,12 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    logger.setLevel(logging.WARNING)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
+    if not len(logger.handlers):
+        logger.propagate = False
+        logger.setLevel(logging.WARNING)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
     main()
