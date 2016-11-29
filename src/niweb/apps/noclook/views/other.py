@@ -128,12 +128,10 @@ def search_autocomplete(request):
 
 
 def neo4j_escape(_in):
-    result = _in
     if type(_in) is list:
-        result = map(neo4j_escape, _in)
-    else:
-        result = re_escape(_in).replace('\\','\\\\')
-    return result
+        return map(neo4j_escape, _in)
+    return re_escape(_in).replace('\\', '\\\\')
+
 
 @login_required
 def search_port_typeahead(request):
