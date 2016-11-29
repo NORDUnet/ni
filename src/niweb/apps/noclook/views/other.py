@@ -158,11 +158,12 @@ def search_port_typeahead(request):
                 WHERE name =~ '(?i).*{}.*'
                 RETURN name, handle_id, parent_id
                 """.format(".*".join(match_q))
-            result =  nc.query_to_list(nc.neo4jdb, q)
-        except: 
-            pass
+            result = nc.query_to_list(nc.neo4jdb, q)
+        except Exception as e:
+            raise e
     json.dump(result, response)
     return response
+
 
 @login_required
 def find_all(request, slug=None, key=None, value=None, form=None):
