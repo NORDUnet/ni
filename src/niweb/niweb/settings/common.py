@@ -55,6 +55,10 @@ DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 ########## END DEBUG CONFIGURATION
 
+########## ALLOWED HOSTS CONFIGURATION
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = environ.get('ALLOWED_HOSTS', '').split()
+########## END ALLOWED HOST CONFIGURATION
 
 ########## MANAGER CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#admins
