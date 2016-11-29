@@ -144,8 +144,8 @@ def search_port_typeahead(request):
         try:
             q = """
                 MATCH (port:Port)<-[:Has]-(n:Node)
-                OPTIONAL MATCH n-[:Located_in]->(n2:Node)
-                OPTIONAL MATCH n2<-[:Has]-(s:Site)
+                OPTIONAL MATCH (n)-[:Located_in]->(n2:Node)
+                OPTIONAL MATCH (n2)<-[:Has]-(s:Site)
                 WITH port.handle_id as handle_id, 
                 n.handle_id as parent_id,
                 CASE WHEN n2 IS null THEN
