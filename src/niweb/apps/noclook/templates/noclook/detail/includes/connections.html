@@ -2,6 +2,28 @@
 <div class="section">
         {% load noclook_tags %}
         <div class="pull-right">
+            {% if node_name %}
+            <div>
+              <script type="text/javascript">
+                $(function() {
+                  var $table = $('#connections').DataTable();
+                  var $checkbox = $("#hide_internal_connections");
+                  $checkbox.on("change", function(e) {
+                    if (this.checked) {
+                      //hide internal connections
+                      $table.column(5).search("^(?:(?!{{node_name}}).)*$",true,false).draw();
+                    }else{
+                      //show internal connections
+                      $table.column(5).search("").draw();
+                    }
+                  });
+                });
+              </script>
+              <label class="checkbox">
+              <input type="checkbox" id="hide_internal_connections" />
+              Hide internal connections</label>
+            </div>
+            {% endif %}
             {% table_search "connections" %}
         </div>
     <h3>Connections</h3>
