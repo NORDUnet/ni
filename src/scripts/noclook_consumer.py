@@ -47,7 +47,7 @@ from django.contrib.auth.models import User
 import norduniclient as nc
 
 #django cache hack
-django_settings.CACHES['default']['LOCATION'] = '/tmp/django_cache'
+django_settings.CACHES['default']['LOCATION'] = '/tmp/django_cache_consumer'
 logger = logging.getLogger('noclook_consumer')
 django.setup()
 
