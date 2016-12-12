@@ -10,6 +10,7 @@ SITE_TYPES = [
     ('ILA', 'ILA'),
     ('Roadm', 'Roadm'),
     ('Stam', 'Stam'),
+    ('Customer', 'Customer'),
 ]
 
 RESPONSIBLE_GROUPS = [
