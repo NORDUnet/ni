@@ -203,10 +203,10 @@ class ExportNodesView(View):
             self.sort_data(item)
         json_result = json.dumps(output, indent=4)
 
-        filename = "{}.{}_export.json".format(nh.node_type, nh.node_name)
+        filename = u"{}.{}_export.json".format(nh.node_type, nh.node_name)
 
         resp = HttpResponse(json_result, content_type="application/json")
-        resp['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
+        resp['Content-Disposition'] = u'attachment; filename="{}"'.format(filename)
         return resp
 
     def sort_data(self, data):
