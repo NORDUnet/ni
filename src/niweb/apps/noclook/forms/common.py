@@ -311,6 +311,9 @@ class EditOpticalNodeForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = forms.CharField(required=False,
+                                 widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                 help_text='Short description of the router.')
                                               
 
 class EditPeeringPartnerForm(forms.Form):
@@ -404,6 +407,8 @@ class EditRouterForm(forms.Form):
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_ports = JSONField(required=False, widget=JSONInput)
+    description = forms.CharField(required=False,
+                                 help_text='Short description of the router.')
     
     
 class NewOdfForm(forms.Form):
@@ -490,11 +495,13 @@ class EditPortForm(forms.Form):
 class NewCustomerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
 
 
 class EditCustomerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
 
 
 class NewEndUserForm(forms.Form):

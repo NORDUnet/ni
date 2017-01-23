@@ -14,6 +14,11 @@
             <tr>
                 <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
             </tr>
+            {% if node.data.description %}
+            <tr>
+                <th>Description:</th><td>{{ node.data.description }}</td>
+            </tr>
+            {% endif %}
             {% if node.data.type %}
             <tr>
                 <th>Type:</th><td><a href="/findin/optical-node/type/{{ node.data.type }}/">{{ node.data.type }}</a></td>
