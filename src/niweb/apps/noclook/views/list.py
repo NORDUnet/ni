@@ -114,6 +114,27 @@ def list_cables(request):
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Cables', 'urls': urls})
 
+def _customer_table(wrapped_customer):
+    customer = wrapped_customer.get('customer')
+    return TableRow(customer, customer.get('description'))
+
+@login_required
+def list_customers(request):
+    q = """
+        MATCH (customer:Customer)
+        RETURN customer
+        ORDER BY customer.name
+        """
+    customer_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(customer_list)
+
+    table = Table('Name', 'Description')
+    table.rows = [ _customer_table(customer) for customer in customer_list ]
+    table.no_badges=True
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Customers', 'urls': urls})
+
 def _host_table(host, users):
     ip_addresses = host.get('ip_addresses', ['No address'])
     os = host.get('os')
