@@ -313,7 +313,7 @@ class EditOpticalNodeForm(forms.Form):
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     description = forms.CharField(required=False,
                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                 help_text='Short description of the router.')
+                                 help_text='Short description.')
                                               
 
 class EditPeeringPartnerForm(forms.Form):
