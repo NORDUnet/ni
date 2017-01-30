@@ -17,7 +17,10 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <div class="well">
-      {{ form | crispy }}
+      {{ form.name | as_crispy_field }}
+      {{ form.type | as_crispy_field }}
+      {{ form.operational_state | as_crispy_field }}
+      {{ form.description | as_crispy_field }}
 
     </div>
 
