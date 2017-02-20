@@ -1,4 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
 
 {% block js %}
 {{ block.super }}
@@ -39,24 +40,13 @@ $(document).ready(
     <div id="operation-section">
         <h3>Operational information</h3>
         <div class="well">
-            <label><strong>Name</strong></label>
-            {{ form.name }}
-            <label><strong>Description</strong></label>
-            {{ form.description }}
-            <span class="help-block">{{ form.description.help_text }}</span>
-            <label><strong>Responsible</strong></label>
-            {{ form.responsible_group }}
-            <span class="help-block">{{ form.responsible_group.help_text }}</span>
-            <label><strong>Support</strong></label>
-            {{ form.support_group }}
-            <span class="help-block">{{ form.support_group.help_text }}</span>
-            <label><strong>Operational State</strong></label>
-            {{ form.operational_state }}
-            <span class="help-block">{{ form.operational_state.help_text }}</span>
-            <label><strong>Security Class</strong></label>
-            {{ form.security_class }}
-            <label><strong>Security Comment</strong></label>
-            {{ form.security_comment }}
+            {{ form.name | as_crispy_field }}
+            {{ form.description | as_crispy_field }}
+            {{ form.responsible_group | as_crispy_field }}
+            {{ form.support_group | as_crispy_field }}
+            {{ form.operational_state | as_crispy_field }}
+            {{ form.security_class | as_crispy_field }}
+            {{ form.security_comment | as_crispy_field }}
         </div>
     </div>
 

@@ -27,8 +27,8 @@ def table_column(context,item):
 
 
 @register.simple_tag()
-def info_row(header, item):
+def info_row(header, item, postfix=u'', prefix=u''):
     result = u''
     if item:
-        result = u'<tr><th>{}</th><td>{}</td></tr>'.format(header, item)
+        result = u'<tr><th>{}</th><td>{}{}{}</td></tr>'.format(header, prefix, item, postfix)
     return result

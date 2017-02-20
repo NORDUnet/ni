@@ -1,4 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
 
 {% block js %}
 {{ block.super }}
@@ -29,8 +30,7 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
+        {{ form.name | as_crispy_field}}
     </div>
 
     <div class="accordion" id="edit-accordion">
@@ -42,18 +42,10 @@ $(document).ready(
             </div>
             <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
-                    <label>Height</label>
-                    {{ form.height }}
-                    <span class="help-block">{{ form.height.help_text }}</span>
-                    <label>Depth</label>
-                    {{ form.depth }}
-                    <span class="help-block">{{ form.depth.help_text }}</span>
-                    <label>Width</label>
-                    {{ form.width }}
-                    <span class="help-block">{{ form.width.help_text }}</span>
-                    <label>Rack units</label>
-                    {{ form.rack_units }}
-                    <span class="help-block">{{ form.rack_units.help_text }}</span>
+                    {{ form.height | as_crispy_field }}
+                    {{ form.depth | as_crispy_field }}
+                    {{ form.width | as_crispy_field }}
+                    {{ form.rack_units | as_crispy_field }}
                 </div>
             </div>
         </div>

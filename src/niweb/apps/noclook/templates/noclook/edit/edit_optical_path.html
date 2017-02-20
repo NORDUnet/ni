@@ -1,4 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
 
 {% block js %}
     {{ block.super }}
@@ -33,21 +34,12 @@
 
     <div class="well">
         {% if not form.name in form.hidden_fields %}
-            <h3>Name</h3>
-            {{ form.name }}
+            {{ form.name | as_crispy_field }}
         {% endif %}
-        <h3>Framing</h3>
-        {{ form.framing }}
-        <br><br>
-        <h3>Capacity</h3>
-        {{ form.capacity }}
-        <br><br>
-        <h3>Operational State</h3>
-        {{ form.operational_state }}
-        <br><br>
-        <h3>Description (optional)</h3>
-        {{ form.description }}
-        <span class="help-block">{{ form.description.help_text }}</span>
+        {{ form.framing | as_crispy_field}}
+        {{ form.capacity | as_crispy_field }}
+        {{ form.operational_state | as_crispy_field }}
+        {{ form.description | as_crispy_field }}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/dependency_group.html" %}

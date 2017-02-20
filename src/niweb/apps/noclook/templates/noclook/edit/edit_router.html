@@ -1,4 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
 
 {% block js %}
 {{ block.super }}
@@ -16,8 +17,7 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <div class="well">
-        <h3>Operational State</h3>
-        {{ form.operational_state }}
+        {{ form.operational_state | as_crispy_field }}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/location_group.html" %}

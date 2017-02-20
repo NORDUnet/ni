@@ -1,4 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
 
 {% block js %}
 {{ block.super }}
@@ -14,8 +15,7 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
+        {{ form.name | as_crispy_field}}
     </div>
     <div class="accordion" id="edit-accordion">
         <div class="accordion-group">
@@ -26,8 +26,7 @@ $(document).ready(
             </div>
             <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
                 <div class="accordion-inner">
-                    <label>URL</label>
-                    {{ form.url }}<span class="help-inline">{{ form.url.help_text }}</span>
+                    {{ form.url | as_crispy_field}}
                 </div>
             </div>
         </div>

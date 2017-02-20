@@ -1,4 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
 
 {% block js %}
 {{ block.super }}
@@ -19,10 +20,8 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
-        <h3>Site Type (optional)</h3>
-        {{ form.site_type }}
+        {{ form.name | as_crispy_field}}
+        {{ form.site_type | as_crispy_field}}
     </div>
 
     <div class="accordion" id="edit-accordion">
@@ -36,16 +35,10 @@ $(document).ready(
                 <div class="accordion-inner">
                     <label>Street</label>
                     {{ form.address }}
-                    <label>Floor</label>
-                    {{ form.floor }}
-                    <span class="help-inline">{{ form.floor.help_text }}</span>
-                    <label>Room</label>
-                    {{ form.room }}
-                    <span class="help-inline">{{ form.room.help_text }}</span>
-                    <label>Postcode</label>
-                    {{ form.postcode }}
-                    <label>Postarea</label>
-                    {{ form.postarea }}
+                    {{ form.floor | as_crispy_field}}
+                    {{ form.room | as_crispy_field}}
+                    {{ form.postcode | as_crispy_field}}
+                    {{ form.postarea | as_crispy_field }}
                 </div>
             </div>
         </div>

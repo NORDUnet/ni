@@ -1,4 +1,5 @@
 {% extends "noclook/detail/base_detail.html" %}
+{% load table_tags %}
 
 {% block title %}{{ block.super }} Detail{% endblock %}
 
@@ -8,12 +9,8 @@
     <div class="row">
         <div class="span4">
             <table class="table">
-                <tr>
-                    <th>Name:</th><td>{{ node.data.name }}</td>
-                </tr>
-                <tr>
-                    <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
-                </tr>
+                {% info_row 'Name:' node.data.name %}
+                {% info_row 'Operational State:' node.data.operational_state %}
                 {% if node.operational_state == "Decommissioned" %}
                     <tr>
                         <th>Decommissioned:</th><td>{{ node.data.decommissioned_date }}</td>
@@ -27,36 +24,11 @@
                         <th>Project end date:</th><td>{{ node.data.project_end_date }}</td>
                     </tr>
                 {% endif %}
-                {% if node.data.ncs_service_name %}
-                    <tr>
-                        <th>NCS Service Name:</th>
-                        <td>{{ node.data.ncs_service_name }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.vpn_type %}
-                    <tr>
-                        <th>VPN Type:</th>
-                        <td>{{ node.data.vpn_type }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.vlan %}
-                    <tr>
-                        <th>VLAN:</th>
-                        <td>{{ node.data.vlan }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.vrf_target %}
-                    <tr>
-                        <th>VRF Target:</th>
-                        <td>{{ node.data.vrf_target }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.route_distinguisher %}
-                    <tr>
-                        <th>Route Distinguisher:</th>
-                        <td>{{ node.data.route_distinguisher }}</td>
-                    </tr>
-                {% endif %}
+                {% info_row 'NCS Service Name:' node.data.ncs_service_name %}
+                {% info_row 'VPN Type:' node.data.vpn_type %}
+                {% info_row 'VLAN:' node.data.vlan %}
+                {% info_row 'VRF Target:' node.data.vrf_target %}
+                {% info_row 'Route Distinguisher:' node.data.route_distinguisher %}
                 <tr>
                     <th>Provider:</th>
                     <td>
@@ -87,47 +59,21 @@
                         {% endfor %}
                     </td>
                 </tr>
-                {% if node.data.contract_number %}
-                    <tr>
-                        <th>Contract number:</th><td>{{ node.data.contract_number }}</td>
-                    </tr>
-                {% endif %}
+                {% info_row 'Contract number:' node.data.contract_number %}
             </table>
         </div>
         <div class="span3">
             <table class="table">
-                {% if node.data.netapp_storage_sum %}
-                    <tr>
-                        <th>NetApp storage use:</th><td>{{ node.data.netapp_storage_sum }}GB</td>
-                    </tr>
-                {% endif %}
+                {% info_row 'NetApp storage use:' node.data.netapp_storage_sum postfix=" GB" %}
                 {% include "noclook/detail/includes/last_changed.html" with inline=True %}
             </table>
         </div>
         {% if node.data.description or node.data.responsible_group or node.data.support_group %}
             <div class="span7">
                 <table class="table">
-                    {% if node.data.description %}
-                        <tr>
-                            <th>Description:</th><td>{{ node.data.description }}</td>
-                        </tr>
-                    {% endif %}
-                    {% if node.data.responsible_group %}
-                        <tr>
-                            <th>Responsible group:</th>
-                            <td>
-                                {{ node.data.responsible_group }}
-                            </td>
-                        </tr>
-                    {% endif %}
-                    {% if node.data.support_group %}
-                        <tr>
-                            <th>Support group:</th>
-                            <td>
-                                {{ node.data.support_group }}
-                            </td>
-                        </tr>
-                    {% endif %}
+                    {% info_row 'Description:' node.data.description %}
+                    {% info_row 'Responsible group:' node.data.responsible_group %}
+                    {% info_row 'Support group:' node.data.support_group %}
                 </table>
             </div>
         {% endif %}

@@ -1,4 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
 
 {% block js %}
     {{ block.super }}
@@ -84,47 +85,31 @@
 {% block content %}
     {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
-        <span class="help-block">{{ form.name.help_text }}</span>
+        {{ form.name | as_crispy_field }}
         <div class="row">
             <div class="span3">
-                <h3>Service Type</h3>
-                {{ form.service_type }}
+                {{ form.service_type | as_crispy_field}}
             </div>
             <div class="span3" id="project_end_date" style="display: none;">
-                <h3>Project End Date</h3>
-                {{ form.project_end_date }}
-                <span class="help-block">{{ form.project_end_date.help_text }}</span>
+                {{ form.project_end_date | as_crispy_field}}
             </div>
         </div>
         <div>
-            <h3>Responsible</h3>
-            {{ form.responsible_group }}
-            <span class="help-block">{{ form.responsible_group.help_text }}</span>
+            {{ form.responsible_group | as_crispy_field }}
         </div>
         <div>
-            <h3>Support</h3>
-            {{ form.support_group }}
-            <span class="help-block">{{ form.support_group.help_text }}</span>
+            {{ form.support_group | as_crispy_field }}
         </div>
         <div class="row">
             <div class="span3">
-        <h3>Operational State</h3>
-        {{ form.operational_state }}
+              {{ form.operational_state | as_crispy_field }}
             </div>
             <div class="span3" id="decommissioned_date" style="display: none;">
-                <h3>Decomissioned Date</h3>
-                {{ form.decommissioned_date }}
-                <span class="help-block">{{ form.decommissioned_date.help_text }}</span>
+                {{ form.decommissioned_date | as_crispy_field }}
             </div>
         </div>
-        <h3>Description (optional)</h3>
-        {{ form.description }}
-        <span class="help-block">{{ form.description.help_text }}</span>
-        <h3>Contract number</h3>
-        {{ form.contract_number }}
-        <span class="help-block">{{ form.contract_number.help_text }}</span>
+        {{ form.description | as_crispy_field}}
+        {{ form.contract_number | as_crispy_field}}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/dependency_group.html" %}

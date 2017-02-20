@@ -1,4 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
 
 {% block js %}
 {{ block.super }}
@@ -34,19 +35,15 @@
 {% block content %}
     {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
+        {{ form.name | as_crispy_field}}
         <div class="alert alert-info">
             <strong>Naming of ports</strong><br>
             Juniper port: aeX, ge-X/X/X, so-X/X/X and so on.<br>
             Alcatel-Lucent optical node: rXsrXslX/port#X.<br>
             ODF: 1, 2, or 1+2, 3+4 or use part of Alcatel Lucent naming scheme if applicable, eg. slX/port#X.<br>
         </div>
-        <h3>Port Type</h3>
-        {{ form.port_type }}
-        <h3>Description (optional)</h3>
-        {{ form.description }}
-        <span class="help-block">{{ form.description.help_text }}</span>
+        {{ form.port_type | as_crispy_field}}
+        {{ form.description | as_crispy_field}}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/parent_group.html" %}
