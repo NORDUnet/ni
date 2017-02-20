@@ -285,6 +285,12 @@ def edit_end_user(request, handle_id):
                               context_instance=RequestContext(request))
 
 
+def _handle_ports(parent, clean_ports, user):
+    if clean_ports and isinstance(clean_ports, list):
+        for port_name in clean_ports:
+            helpers.create_port(parent, port_name, user)
+
+
 @login_required
 def edit_external_equipment(request, handle_id):
     if not request.user.is_staff:
@@ -306,9 +312,9 @@ def edit_external_equipment(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, external_equipment, location_nh.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(external_equipment, port_name, request.user)
+            _handle_ports(external_equipment,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -353,9 +359,9 @@ def edit_firewall(request, handle_id):
                 helpers.set_location(request.user, firewall, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, firewall.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(firewall, port_name, request.user)
+            _handle_ports(firewall,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -404,9 +410,9 @@ def edit_host(request, handle_id):
                     helpers.set_location(request.user, host, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, host.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(host, port_name, request.user)
+            _handle_ports(host,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -423,6 +429,7 @@ def _nh_safe_get(pk):
     except:
         nh = None
     return nh
+
 
 @login_required
 def edit_odf(request, handle_id):
@@ -441,9 +448,9 @@ def edit_odf(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, odf, location_nh.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(odf, port_name, request.user)
+            _handle_ports(odf,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -453,6 +460,7 @@ def edit_odf(request, handle_id):
     return render_to_response('noclook/edit/edit_odf.html',
                               {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports},
                               context_instance=RequestContext(request))
+
 
 @staff_member_required
 def edit_optical_fillter(request, handle_id):
@@ -467,9 +475,9 @@ def edit_optical_fillter(request, handle_id):
         if form.cleaned_data['relationship_location']:
             location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
             helpers.set_location(request.user, of, location_nh.handle_id)
-        if form.cleaned_data['relationship_ports']:
-            for port_name in form.cleaned_data['relationship_ports']:
-                helpers.create_port(of, port_name, request.user)
+        _handle_ports(of,
+                      form.cleaned_data['relationship_ports'],
+                      request.user)
         if 'saveanddone' in request.POST:
             return HttpResponseRedirect(nh.get_absolute_url())
         else:
@@ -566,9 +574,9 @@ def edit_optical_node(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, optical_node, location_nh.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(optical_node, port_name, request.user)
+            _handle_ports(optical_node,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -644,9 +652,9 @@ def edit_pdu(request, handle_id):
                 helpers.set_location(request.user, pdu, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, pdu.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(pdu, port_name, request.user)
+            _handle_ports(pdu,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -781,9 +789,9 @@ def edit_router(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, router, location_nh.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(router, port_name, request.user)
+            _handle_ports(router,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -911,9 +919,9 @@ def edit_switch(request, handle_id):
                 helpers.set_location(request.user, switch, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, switch.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(switch, port_name, request.user)
+            _handle_ports(switch,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
