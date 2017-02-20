@@ -24,3 +24,11 @@ def table_column(context,item):
         # Just print it
         result = item
     return result
+
+
+@register.simple_tag()
+def info_row(header, item):
+    result = u''
+    if item:
+        result = u'<tr><th>{}</th><td>{}</td></tr>'.format(header, item)
+    return result

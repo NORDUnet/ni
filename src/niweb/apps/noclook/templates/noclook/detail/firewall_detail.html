@@ -1,4 +1,5 @@
 {% extends "noclook/detail/base_detail.html" %}
+{% load table_tags %}
 
 {% block title %}{{ block.super }}{% endblock %}
 
@@ -8,16 +9,9 @@
 <div class="row">
     <div class="span4">
         <table class="table">
-            {% if node.data.operational_state %}
-                <tr>
-                    <th>Status:</th><td>{{ node.data.operational_state|capfirst }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.nagios_checks %}
-                <tr>
-                    <th>Nagios:</th><td>{{ node.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
-                </tr>
-            {% endif %}
+            
+            {% info_row 'Status:' node.data.operational_state|capfirst %}
+            {% info_row 'Nagios:' node.data.nagios_checks|yesno:"Yes,No,Not set" %}
             {% if node.data.hostnames %}
                 <tr>
                     <th>Hostnames:</th>
@@ -48,36 +42,16 @@
                     </td>
                 </tr>
             {% endif %}
-            {% if node.data.service_tag %}
-                <tr>
-                    <th>Service tag:</th><td>{{ node.data.service_tag }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.end_support %}
-                <tr>
-                    <th>Support ends:</th><td>{{ node.data.end_support }}</td>
-                </tr>
-            {% endif %}
+            {% info_row 'Service tag:' node.data.service_tag %}
+            {% info_row 'Support ends:' node.data.end_support %}
         </table>
     </div>
     <div class="span3">
         <table class="table">
             {% if node.data.vendor or node.data.model or node.data.max_number_of_ports %}
-                {% if node.data.vendor %}
-                    <tr>
-                        <th>Vendor:</th><td>{{node.data.vendor}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.model %}
-                    <tr>
-                        <th>Model:</th><td>{{node.data.model}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.max_number_of_ports %}
-                    <tr>
-                        <th>Max ports:</th><td>{{ node.data.max_number_of_ports }}</td>
-                    </tr>
-                {% endif %}
+                {% info_row 'Vendor:' node.data.vendor %}
+                {% info_row 'Model:' node.data.model %}
+                {% info_row 'Max ports:' node.data.max_number_of_ports %}
             {% endif %}
             {% if node.data.os %}
                 <tr>
@@ -90,27 +64,9 @@
     {% if node.data.description or node.data.responsible_group or node.data.support_group %}
         <div class="span7">
             <table class="table">
-                {% if node.data.description %}
-                    <tr>
-                        <th>Description:</th><td>{{ node.data.description }}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.responsible_group %}
-                    <tr>
-                        <th>Responsible group:</th>
-                        <td>
-                            {{ node.data.responsible_group }}
-                        </td>
-                    </tr>
-                {% endif %}
-                {% if node.data.support_group %}
-                    <tr>
-                        <th>Support group:</th>
-                        <td>
-                            {{ node.data.support_group }}
-                        </td>
-                    </tr>
-                {% endif %}
+                {% info_row 'Description:' node.data.description %}
+                {% info_row 'Responsible group:' node.data.responsible_group %}
+                {% info_row 'Support group:' node.data.support_group %}
             </table>
         </div>
     {% endif %}

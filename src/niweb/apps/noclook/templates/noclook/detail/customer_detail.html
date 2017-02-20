@@ -1,4 +1,5 @@
 {% extends "noclook/detail/base_detail.html" %}
+{% load table_tags %}
 
 {% block content %}
     {{ block.super }}
@@ -13,11 +14,8 @@
                         <th>More information:</th><td><a href="{% more_info_url node.data.name %}">To Portal</a></td>
                     {% endif %}
                 </tr>
-                {% if node.data.description %}
-                <tr>
-                  <th>Description: </th><td>{{node.data.description}}</td>
-                </tr>
-                {% endif %}
+
+                {% info_row 'Description:' node.data.description %}
             </table>
         </div>
         <div class="span3">

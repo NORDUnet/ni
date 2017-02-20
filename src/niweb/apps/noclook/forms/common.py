@@ -265,12 +265,14 @@ class EditSiteForm(forms.Form):
                               
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
+    description = forms.CharField(required=False,
+                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                                  help_text='Short description of the site owner.')
     url = forms.URLField(required=False, help_text='Link to more information.')
 
 
-class EditSiteOwnerForm(forms.Form):
-    name = forms.CharField()
-    url = forms.URLField(required=False, help_text='Link to more information.')
+class EditSiteOwnerForm(NewSiteOwnerForm):
+    pass
 
 
 class NewCableForm(forms.Form):

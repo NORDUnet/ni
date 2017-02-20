@@ -63,9 +63,10 @@ def _filter_operational_state(nodes, request, select=lambda n:n):
         exclude.append('in service')
     return  [ n for n in nodes if select(n).get('operational_state','').lower() not in exclude ] 
 
+
 def _type_table(wrapped_node):
     node = wrapped_node.get('node')
-    row = TableRow(node)
+    row = TableRow(node, node.get('description'))
     _set_expired(row, node)
     return row
 
@@ -79,10 +80,11 @@ def list_by_type(request, slug):
         """ % {'nodetype': node_type.get_label()}
     node_list = nc.query_to_list(nc.neo4jdb, q)
     node_list = _filter_expired(node_list, request, select=lambda n: n.get('node'))
-    #Since all is the same type... we could use a defaultdict with type/id return
+    # Since all is the same type... we could use a defaultdict with type/id return
     urls = get_node_urls(node_list)
-    table = Table('Name')
-    table.rows = [ _type_table(node) for node in node_list]
+
+    table = Table('Name', 'Description')
+    table.rows = [_type_table(node) for node in node_list]
     _set_filters_expired(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
