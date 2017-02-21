@@ -114,10 +114,10 @@ class NewCableForm(common.NewCableForm):
 
 class EditCableForm(common.EditCableForm):
     name = forms.CharField(help_text='Name will be superseded by Telenor Trunk ID if set.')
-    telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.')
-    telenor_trunk_id = forms.CharField(required=False, help_text='Telenor Trunk ID, nnn-nnnn.')
-    global_crossing_circuit_id = forms.CharField(required=False, help_text='Global Crossing circuit ID, nnnnnnnnnn')
-    global_connect_circuit_id = forms.CharField(required=False, help_text='Global Connect circuit ID')
+    telenor_tn1_number = forms.CharField(required=False, help_text='Telenor TN1 number, nnnnn.', label='TN1 Number')
+    telenor_trunk_id = forms.CharField(required=False, help_text='Telenor Trunk ID, nnn-nnnn.', label='Trunk ID')
+    global_crossing_circuit_id = forms.CharField(required=False, help_text='Global Crossing circuit ID, nnnnnnnnnn', label='Circuit ID')
+    global_connect_circuit_id = forms.CharField(required=False, help_text='Global Connect circuit ID', label='Circuit ID')
 
     def clean(self):
         cleaned_data = super(EditCableForm, self).clean()

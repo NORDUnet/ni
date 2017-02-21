@@ -21,6 +21,12 @@ RESPONSIBLE_GROUPS = [
     ('SWAMID', 'SWAMID'),
 ]
 
+TELE2_CABLE_CONTRACTS = [
+    ('', ''),
+    ('Rent', 'Rent'),
+    ('IRU', 'IRU'),
+]
+
 
 class EditHostForm(common.EditHostForm):
 
@@ -40,7 +46,8 @@ class EditServiceForm(common.EditServiceForm):
 class NewSiteForm(common.NewSiteForm):
 
     name = forms.CharField()
-    country_code = forms.CharField(widget=forms.widgets.HiddenInput, initial='SE')
+    country_code = forms.CharField(widget=forms.widgets.HiddenInput,
+                                   initial='SE')
 
     def clean(self):
         cleaned_data = super(NewSiteForm, self).clean()
@@ -53,3 +60,12 @@ class EditSiteForm(common.EditSiteForm):
     def __init__(self, *args, **kwargs):
         super(EditSiteForm, self).__init__(*args, **kwargs)
         self.fields['site_type'].choices = SITE_TYPES
+
+
+class EditCableForm(common.EditCableForm):
+    def __init__(self, *args, **kwargs):
+        super(EditCableForm, self).__init__(*args, **kwargs)
+        self.fields['tele2_cable_contract'].choices = TELE2_CABLE_CONTRACTS
+
+    tele2_cable_contract = forms.ChoiceField(required=False, label='Cable Contract')
+

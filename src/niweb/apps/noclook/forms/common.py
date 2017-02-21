@@ -289,17 +289,7 @@ class NewCableForm(forms.Form):
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
-class EditCableForm(forms.Form):
-
-    def __init__(self, *args, **kwargs):
-        super(EditCableForm, self).__init__(*args, **kwargs)
-        self.fields['cable_type'].choices = CABLE_TYPES
-
-    name = forms.CharField()
-    cable_type = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the cable.')
+class EditCableForm(NewCableForm):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)

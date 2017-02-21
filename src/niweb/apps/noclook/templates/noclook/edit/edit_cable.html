@@ -31,51 +31,63 @@ $(document).ready(
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/connection_group.html" %}
         {% include "noclook/edit/includes/provider_group.html" %}
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
-                    Telenor Information (optional)
-                </a>
-            </div>
-            <div id="collapseTwo" class="accordion-body collapse">
-                <div class="accordion-inner">
-                    <h4>TN1 Number</h4>
-                    {{ form.telenor_tn1_number }}
-                    <span class="help-inline">{{ form.telenor_tn1_number.help_text }}</span>
-                    <h4>Trunk ID</h4>
-                    {{ form.telenor_trunk_id }}
-                    <span class="help-inline">{{ form.telenor_trunk_id.help_text }}</span>
-                </div>
-            </div>
-        </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
-                    Global Crossing Information (optional)
-                </a>
-            </div>
-            <div id="collapseThree" class="accordion-body collapse">
-                <div class="accordion-inner">
-                    <h4>Circuit ID</h4>
-                    {{ form.global_crossing_circuit_id }}
-                    <span class="help-inline">{{ form.global_crossing_circuit_id.help_text }}</span>
-                </div>
-            </div>
-        </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
-                    Global Connect Information (optional)
-                </a>
-            </div>
-            <div id="collapseFour" class="accordion-body collapse">
-                <div class="accordion-inner">
-                    <h4>Circuit ID</h4>
-                    {{ form.global_connect_circuit_id }}
-                    <span class="help-inline">{{ form.global_connect_circuit_id.help_text }}</span>
-                </div>
-            </div>
-        </div>
+        {% if form.telenor_tn1_number %}
+          <div class="accordion-group">
+              <div class="accordion-heading">
+                  <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
+                      Telenor Information (optional)
+                  </a>
+              </div>
+              <div id="collapseTwo" class="accordion-body collapse">
+                  <div class="accordion-inner">
+                      {{ form.telenor_tn1_number  | as_crispy_field}}
+                      {{ form.telenor_trunk_id | as_crispy_field}}
+                  </div>
+              </div>
+          </div>
+        {% endif %}
+        {% if form.global_crossing_circuit_id %}
+          <div class="accordion-group">
+              <div class="accordion-heading">
+                  <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
+                      Global Crossing Information (optional)
+                  </a>
+              </div>
+              <div id="collapseThree" class="accordion-body collapse">
+                  <div class="accordion-inner">
+                      {{ form.global_crossing_circuit_id | as_crispy_field}}
+                  </div>
+              </div>
+          </div>
+        {% endif %}
+        {% if form.global_connect_circuit_id %}
+          <div class="accordion-group">
+              <div class="accordion-heading">
+                  <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
+                      Global Connect Information (optional)
+                  </a>
+              </div>
+              <div id="collapseFour" class="accordion-body collapse">
+                  <div class="accordion-inner">
+                      {{ form.global_connect_circuit_id | as_crispy_field}}
+                  </div>
+              </div>
+          </div>
+        {% endif %}
+        {% if form.tele2_cable_contract %}
+          <div class="accordion-group">
+              <div class="accordion-heading">
+                  <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTele2">
+                      Tele2 Information (optional)
+                  </a>
+              </div>
+              <div id="collapseTele2" class="accordion-body collapse">
+                  <div class="accordion-inner">
+                      {{ form.tele2_cable_contract | as_crispy_field }}
+                  </div>
+              </div>
+          </div>
+        {% endif %}
     </div>
 {% endblock %}
 

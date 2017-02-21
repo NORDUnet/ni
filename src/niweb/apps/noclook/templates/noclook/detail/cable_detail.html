@@ -1,4 +1,5 @@
 {% extends "noclook/detail/base_detail.html" %}
+{% load table_tags %}
 
 {% block title %}{{ block.super }}{% endblock %}
 
@@ -11,26 +12,12 @@
             <tr>
                 <th>Cable type:</th><td>{{ node.data.cable_type|capfirst }}</td>
             </tr>
-            {% if node.data.telenor_trunk_id %}
-            <tr>
-                <th>Trunk ID:</th><td>{{ node.data.telenor_trunk_id }}</td>
-            </tr>
-            {% endif %}
-            {% if node.telenor_tn1_number %}
-            <tr>
-                <th>TN1 number:</th><td>{{ node.data.telenor_tn1_number }}</td>
-            </tr>
-            {% endif %}
-            {% if node.data.global_crossing_circuit_id %}
-                <tr>
-                    <th>Global Crossing Circuit ID:</th><td>{{ node.data.global_crossing_circuit_id }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.global_connect_circuit_id %}
-                <tr>
-                    <th>Global Connect Circuit ID:</th><td>{{ node.data.global_connect_circuit_id }}</td>
-                </tr>
-            {% endif %}
+
+            {% info_row 'Trunk ID:' node.data.telenor_trunk_id %}
+            {% info_row 'TN1 number:' node.data.telenor_tn1_number %}
+            {% info_row 'Global Crossing Circuit ID:' node.data.global_crossing_circuit_id %}
+            {% info_row 'Global Connect Circuit ID:' node.data.global_connect_circuit_id %}
+            {% info_row 'Tele2 Contract:' node.data.tele2_cable_contract %}
             {% if relations.Provides %}
                 <tr>
                     <th>Provider:</th>
