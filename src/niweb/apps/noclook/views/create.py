@@ -463,33 +463,40 @@ def new_site_owner(request, **kwargs):
     return render_to_response('noclook/create/create_site_owner.html', {'form': form},
                               context_instance=RequestContext(request))
 
+
 @staff_member_required
 def new_optical_node(request, slug=None):
     form = forms.OpticalNodeForm(request.POST or None)
-    #TODO: add some ports...
     bulk_ports = forms.BulkPortsForm(request.POST or None)
 
-    if request.POST:
-        if form.is_valid():
-            try: 
-                name = form.cleaned_data['name']
-                nh = helpers.get_unique_node_handle(request.user, name, 'optical-node', 'Logical')
-                helpers.dict_update_node(request.user, nh.handle_id, {'type': form.cleaned_data['type'].name, 'operational_state': form.cleaned_data['operational_state']}) 
+    if request.POST and form.is_valid():
+        try:
+            name = form.cleaned_data['name']
+            nh = helpers.get_unique_node_handle(request.user,
+                                                name,
+                                                'optical-node',
+                                                'Logical')
+            _type = form.cleaned_data['type']
+            if _type:
+                type_name = _type.name
+            else:
+                type_name = ""
+            helpers.dict_update_node(request.user, nh.handle_id, {'type': type_name, 'operational_state': form.cleaned_data['operational_state']}) 
 
-                # create ports if needed
-                if bulk_ports.is_valid() and not bulk_ports.cleaned_data['no_ports']:
-                    user = request.user
-                    #TODO: Injection protection?
-                    port_names = request.POST.getlist('port_name')
-                    port_types = request.POST.getlist('port_type')
-                    for port_name, port_type in zip(port_names, port_types):
-                        if port_name:
-                            node = helpers.create_port(nh.get_node(), port_name, user)
-                            helpers.dict_update_node(user, node.handle_id, {'port_type': port_type})
+            # create ports if needed
+            if bulk_ports.is_valid() and not bulk_ports.cleaned_data['no_ports']:
+                user = request.user
+                # TODO: Injection protection?
+                port_names = request.POST.getlist('port_name')
+                port_types = request.POST.getlist('port_type')
+                for port_name, port_type in zip(port_names, port_types):
+                    if port_name:
+                        node = helpers.create_port(nh.get_node(), port_name, user)
+                        helpers.dict_update_node(user, node.handle_id, {'port_type': port_type})
 
-                return HttpResponseRedirect(nh.get_absolute_url())
-            except UniqueNodeError:
-                form.add_error('name', 'An Optical Node with that name already exists.')
+            return HttpResponseRedirect(nh.get_absolute_url())
+        except UniqueNodeError:
+            form.add_error('name', 'An Optical Node with that name already exists.')
     return render_to_response('noclook/create/create_optical_node.html', {'form': form, 'bulk_ports': bulk_ports}, context_instance=RequestContext(request))
 
 # Reserve Ids
