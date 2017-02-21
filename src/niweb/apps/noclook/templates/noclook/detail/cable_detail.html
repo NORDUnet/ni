@@ -17,7 +17,6 @@
             {% info_row 'TN1 number:' node.data.telenor_tn1_number %}
             {% info_row 'Global Crossing Circuit ID:' node.data.global_crossing_circuit_id %}
             {% info_row 'Global Connect Circuit ID:' node.data.global_connect_circuit_id %}
-            {% info_row 'Tele2 Contract:' node.data.tele2_cable_contract %}
             {% if relations.Provides %}
                 <tr>
                     <th>Provider:</th>
@@ -28,6 +27,7 @@
                     </td>
                 </tr>
             {% endif %}
+            {% info_row 'Tele2 Contract:' node.data.tele2_cable_contract %}
         </table>
         {% if node.data.description %}
             <div>
