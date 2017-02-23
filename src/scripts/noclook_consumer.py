@@ -80,25 +80,24 @@ def normalize_whitespace(text):
     return ' '.join(text.split())
 
 
-def load_json(json_dir):
+def load_json(json_dir, starts_with=''):
     """
     Thinks all files in the supplied dir are text files containing json.
     """
     logger.info('Loading data from {!s}.'.format(json_dir))
-    json_list = []
     try:
         for subdir, dirs, files in os.walk(json_dir):
-            for a_file in files:
+            gen = (_file for _file in files if _file.startswith(starts_with))
+            for a_file in gen:
                 try:
                     f = open(join(json_dir, a_file), 'r')
-                    json_list.append(json.load(f))
+                    yield json.load(f)
                 except ValueError as e:
                     logger.error('Encountered a problem with {f}.'.format(f=a_file))
                     logger.error(e)
     except IOError as e:
         logger.error('Encountered a problem with {d}.'.format(d=json_dir))
         logger.error(e)
-    return json_list
 
 
 def generate_password(n):
@@ -240,51 +239,56 @@ def set_comment(node_handle, comment):
     c.save()
 
 
-def consume_noclook(json_list):
+def _consume_node(item):
+    try:
+        properties = item.get('properties')
+        node_name = properties.get('name')
+        handle_id = item.get('handle_id')
+        node_type = item.get('node_type')
+        meta_type = item.get('meta_type')
+        # Get a node handle
+        nh = restore_node(handle_id, node_name, node_type, meta_type)
+        nc.set_node_properties(nc.neo4jdb, nh.handle_id, properties)
+        logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
+    except Exception as e:
+        ex_type = type(e).__name__
+        logger.error('Could not add node {} (handle_id={}, node_type={}, meta_type={}) got {}: {})'.format(node_name, handle_id, node_type, meta_type, ex_type,  str(e)))
+
+
+def consume_noclook(nodes, relationships):
     """
     Inserts the backup made with NOCLook producer.
     """
-    tot_items = len(json_list)
     tot_nodes = 0
-    print 'Adding {!s} items.'.format(tot_items)
+    tot_rels = 0
     # Loop through all files starting with node
-    for i in json_list:
+    for i in nodes:
+        item = i['host']['noclook_producer']
         if i['host']['name'].startswith('node'):
-            item = i['host']['noclook_producer']
-            properties = item.get('properties')
-            node_name = properties.get('name')
-            handle_id = item.get('handle_id')
-            node_type = item.get('node_type')
-            meta_type = item.get('meta_type')
-            # Get a node handle
-            nh = restore_node(handle_id, node_name, node_type, meta_type)
-            nc.set_node_properties(nc.neo4jdb, nh.handle_id, properties)
-            logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
+            _consume_node(item)
             tot_nodes += 1
     print 'Added {!s} nodes.'.format(tot_nodes)
 
     # Loop through all files starting with relationship
     x = 0
     with nc.neo4jdb.write as w:
-        for i in json_list:
-            if i['host']['name'].startswith('relationship'):
-                item = i['host']['noclook_producer']
-                properties = item.get('properties')
+        for i in relationships:
+            rel = i['host']['noclook_producer']
+            properties = rel.get('properties')
+            props = {'props': properties}
+            q = """
+                MATCH (start:Node { handle_id:{start_id} }),(end:Node {handle_id: {end_id} })
+                CREATE UNIQUE (start)-[r:%s { props } ]->(end)
+                """ % rel.get('type')
 
-                props = {'props': properties}
-                q = """
-                    MATCH (start:Node { handle_id:{start_id} }),(end:Node {handle_id: {end_id} })
-                    CREATE UNIQUE (start)-[r:%s { props } ]->(end)
-                    """ % item.get('type')
-
-                w.execute(q, start_id=item.get('start'), end_id=item.get('end'), **props).fetchall()
-                logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
-                                                                 end=item.get('end')))
-                x += 1
-                if x >= 1000:
-                    w.connection.commit()
-                x = 0
-    tot_rels = tot_items - tot_nodes
+            w.execute(q, start_id=rel.get('start'), end_id=rel.get('end'), **props).fetchall()
+            logger.info('{start}-[{rel_type}]->{end}'.format(start=rel.get('start'), rel_type=rel.get('type'),
+                                                             end=rel.get('end')))
+            x += 1
+            if x >= 1000:
+                w.connection.commit()
+            x = 0
+            tot_rels += 1
     print 'Added {!s} relationships.'.format(tot_rels)
 
 
@@ -319,8 +323,9 @@ def run_consume(config_file):
         data = load_json(cfengine_data)
         noclook_cfengine_consumer.insert(data)
     if noclook_data:
-        data = load_json(noclook_data)
-        consume_noclook(data)
+        nodes = load_json(noclook_data, starts_with="node")
+        relationships = load_json(noclook_data, starts_with="relationship")
+        consume_noclook(nodes, relationships)
     # Clean up expired data
     if remove_expired_juniper_conf:
         noclook_juniper_consumer.remove_juniper_conf(juniper_conf_data_age)
