@@ -123,6 +123,8 @@ def get_user(username='noclook'):
     return user
 
 
+from django.template.defaultfilters import slugify
+
 def get_node_type(type_name):
     """
     Returns or creates and returns the NodeType object with the supplied
@@ -132,7 +134,6 @@ def get_node_type(type_name):
         node_type = NodeType.objects.get(type=type_name)
     except NodeType.DoesNotExist:
         # The NodeType was not found, create one
-        from django.template.defaultfilters import slugify
         node_type = NodeType(type=type_name, slug=slugify(type_name))
         node_type.save()
     return node_type
@@ -223,7 +224,7 @@ def restore_node(handle_id, node_name, node_type_name, node_meta_type):
     node_handle, created = NodeHandle.objects.get_or_create(handle_id=handle_id, defaults=defaults)
     if not created:
         node_handle.node_meta_type = node_meta_type
-    node_handle.save()  # Create a node if it does not already exist
+    node_handle.save()  # Make sure data is saved in neo4j as well.
     return node_handle
 
 
