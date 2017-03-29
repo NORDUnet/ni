@@ -123,7 +123,10 @@ def set_uptime(host, check):
     :return: None
     """
     try:
-        last_check = datetime.utcfromtimestamp(check['last_check'])
+        if '-' in check['last_check']:
+            last_check = datetime.strptime(check['last_check'], "%Y-%m-%d %H:%M:%S")
+        else:
+            last_check = datetime.utcfromtimestamp(check['last_check'])
         uptime = int(check['perf_data'].split('=')[-1]) * 60  # uptime in minutes to uptime in sec
         lastboot = last_check - timedelta(seconds=uptime)
         property_dict = {
@@ -183,6 +186,7 @@ def set_netapp_storage_usage(storage_collection):
     :param storage_collection: list
     :return: None
     """
+    print storage_collection
     for service in storage_collection:
         service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
         property_dict = {'netapp_storage_sum': service['total_storage']}
@@ -224,7 +228,9 @@ def insert(json_list):
 
     # Parse collected Nagios data
     for item in json_list:
-        base = item['host']['checkmk_livestatus']
+        base = item['host'].get('checkmk_livestatus')
+        if not base:
+            base = item['host']['nagiosxi_api']
         host = nc.get_unique_node_by_name(nc.neo4jdb, base['host_name'], 'Host')
         if not host:
             host = get_host(base['host_address'])
@@ -237,6 +243,7 @@ def insert(json_list):
                 if check['check_command'] == 'CHECK_NRPE!check_backup':     # TSM backup process
                     set_backup(host, check)
                 if check['check_command'].startswith('check_netapp_vol'):   # NetApp storage usage
+                    print "Check netapp vol", item['host']['name']
                     netapp_collection = collect_netapp_storage_usage(host, check, netapp_collection)
                 if check['check_command'] == 'CHECK_NRPE!check_openmanage':     # Dell OpenManage info
                     set_dell_service_tag(host, check)
