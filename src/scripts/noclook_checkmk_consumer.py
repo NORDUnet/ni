@@ -186,7 +186,6 @@ def set_netapp_storage_usage(storage_collection):
     :param storage_collection: list
     :return: None
     """
-    print storage_collection
     for service in storage_collection:
         service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
         property_dict = {'netapp_storage_sum': service['total_storage']}
@@ -243,7 +242,6 @@ def insert(json_list):
                 if check['check_command'] == 'CHECK_NRPE!check_backup':     # TSM backup process
                     set_backup(host, check)
                 if check['check_command'].startswith('check_netapp_vol'):   # NetApp storage usage
-                    print "Check netapp vol", item['host']['name']
                     netapp_collection = collect_netapp_storage_usage(host, check, netapp_collection)
                 if check['check_command'] == 'CHECK_NRPE!check_openmanage':     # Dell OpenManage info
                     set_dell_service_tag(host, check)
