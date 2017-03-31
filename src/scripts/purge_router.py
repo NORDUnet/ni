@@ -48,8 +48,11 @@ def delete_node(node, dry_run):
     if not dry_run:
         user = nt.get_user()
         helpers.delete_node(user, node.handle_id)
-    logger.info('Deleted node {handle_id}.'.format(handle_id=node.handle_id))
-    delete_log.append(node.handle_id)
+    name = u"{}<name='{}', handle_id={}>".format(type(node).__name__,
+                                                 node.data.get('name'),
+                                                 node.handle_id)
+    logger.info('Deleted node {}.'.format(name))
+    delete_log.append(name)
 
 
 def remove_router_conf(router_name, data_age, dry_run=False):
@@ -87,7 +90,8 @@ def main():
     if args.verbose:
         logger.setLevel(logging.INFO)
     remove_router_conf(args.router_name, args.age, args.dry_run)
-    logger.info("Nodes deleted: {}".format(delete_log))
+    if delete_log:
+        logger.warning("Deleted %s nodes", len(delete_log))
     return 0
 
 
