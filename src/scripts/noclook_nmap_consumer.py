@@ -250,15 +250,19 @@ def insert_nmap(json_list, external_check=False):
             'hostnames': i['host']['nmap_services_py']['hostnames'],
             'ip_addresses': addresses
         }
-        if 'os' in i['host']['nmap_services_py']:
-            if 'class' in i['host']['nmap_services_py']['os']:
-                properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
-                properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
-            elif 'match' in i['host']['nmap_services_py']['os']:
-                properties['os'] = i['host']['nmap_services_py'].get('os', {}).get('match', {}).get('name')
+        try:
+            if 'os' in i['host']['nmap_services_py']:
+                if 'class' in i['host']['nmap_services_py']['os']:
+                    properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
+                    properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
+                elif 'match' in i['host']['nmap_services_py']['os']:
+                    properties['os'] = i['host']['nmap_services_py'].get('os', {}).get('match', {}).get('name')
+        except:
+            logger.warning(u"Unable to extract os info for {}, nmap info was: {}".format(i['host']['name'], i['host']['nmap_services_py'])) 
         if 'uptime' in i['host']['nmap_services_py']:
             properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
             properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
+
         insert_services(i['host']['nmap_services_py']['services'], node, external_check)
         # Check if the host has backup
         properties['backup'] = helpers.get_host_backup(node)
