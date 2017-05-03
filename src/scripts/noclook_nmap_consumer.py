@@ -255,7 +255,7 @@ def insert_nmap(json_list, external_check=False):
                 properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
                 properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
             elif 'match' in i['host']['nmap_services_py']['os']:
-                properties['os'] = i['host']['nmap_services_py']['os']['match']['name']
+                properties['os'] = i['host']['nmap_services_py']['os'].get('match', {}).get('name')
         if 'uptime' in i['host']['nmap_services_py']:
             properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
             properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
