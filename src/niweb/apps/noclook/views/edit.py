@@ -934,6 +934,18 @@ def edit_switch(request, handle_id):
                                'host_services': host_services}, context_instance=RequestContext(request))
 
 
+@staff_member_required
+def disable_noclook_auto_manage(request, slug, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    node = nh.get_node()
+    if node.data.get('noclook_auto_manage'):
+        node_properties = {
+            'noclook_auto_manage': ''
+        }
+        helpers.dict_update_node(request.user, node.handle_id, node_properties, node_properties.keys())
+    return HttpResponseRedirect(nh.get_absolute_url())
+
+
 EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
