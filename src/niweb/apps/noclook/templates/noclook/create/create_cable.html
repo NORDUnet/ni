@@ -20,4 +20,16 @@
             <a href="/new/" class="btn">Cancel</a>
         </form>
     </div>
+
+    {% load noclook_tags %}
+    <div class="accordion">
+    {% accordion 'CSV cable entry' 'csv_cables' %}
+      <form action="/new/cable_csv/" method="post">
+        {% csrf_token %}
+        {{ csv_form | crispy }}
+        <input type="submit" value="Save" class="btn btn-primary" />
+        <a href="/new/" class="btn">Cancel</a>
+      </form>
+    {% endaccordion %}
+    </div>
 {% endblock %}

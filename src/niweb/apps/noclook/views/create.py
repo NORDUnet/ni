@@ -7,11 +7,11 @@ Created on 2012-11-07 4:43 PM
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
 from django.http import HttpResponseRedirect, Http404, HttpResponseForbidden
-from django.shortcuts import render_to_response, render
+from django.shortcuts import render_to_response, render, redirect
 from django.template import RequestContext
 from django.forms.utils import ErrorDict, ErrorList
-from django.forms import formset_factory
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
 from apps.noclook.models import NodeHandle
@@ -41,6 +41,7 @@ TYPES = [
 ]
 if helpers.app_enabled("apps.scan"):
     TYPES.append(("/scan/queue", "Host scan"))
+
 
 # Create functions
 @login_required
@@ -153,11 +154,8 @@ def new_external_equipment(request, **kwargs):
                               context_instance=RequestContext(request))
 
 
-@login_required
+@staff_member_required
 def new_cable(request, **kwargs):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
-
     if request.POST:
         form = forms.NewCableForm(request.POST)
         if form.is_valid():
@@ -180,8 +178,85 @@ def new_cable(request, **kwargs):
         name = kwargs.get('name', None)
         initial = {'name': name}
         form = forms.NewCableForm(initial=initial)
-    return render_to_response('noclook/create/create_cable.html', {'form': form},
-                              context_instance=RequestContext(request))
+    csv_form = forms.CsvForm(['name, cable_type, description'], request.POST or None)
+    return render(request, 'noclook/create/create_cable.html', {'form': form, 'csv_form': csv_form})
+
+
+def _csv_to_cable_form(data):
+    data['cable_type'] = data.get('cable_type', '').strip().title()
+    if data.get('name'):
+        data['name'] = data['name'].strip()
+    return forms.NewCableForm(data)
+
+
+def _form_to_csv(form, headers):
+    cleaned = form.cleaned_data
+    raw = form.data
+    return u",".join([cleaned.get(h) or raw.get(h, '') for h in headers])
+
+
+def _forms_to_csv(forms, headers):
+    csv_lines = [_form_to_csv(f, headers) for f in forms]
+    return u'\n'.join(csv_lines)
+
+
+def _create_cables(request, cables):
+    error_cables = []
+    for cable in cables:
+        try:
+            nh = helpers.form_to_unique_node_handle(request,
+                                                    cable,
+                                                    'cable',
+                                                    'Physical')
+        except UniqueNodeError:
+            cable.add_error('name', 'A cable with this name already exists')
+            error_cables.append(cable)
+            continue
+        helpers.form_update_node(request.user, nh.handle_id, cable)
+    return error_cables
+
+
+@staff_member_required
+def new_cable_csv(request):
+    csv_headers = ['name', 'cable_type', 'description']
+    cable_types = [types[1] for types in forms.CABLE_TYPES]
+    form = forms.CsvForm(csv_headers, request.POST or None)
+
+    form.is_valid()
+    csv_data = form.cleaned_data['csv_data']
+    show_view = {}
+    errors = False
+
+    if csv_data:
+        # check errors
+        cables = form.csv_parse(_csv_to_cable_form)
+        for cable in cables:
+            if not cable.is_valid():
+                errors = True
+
+        if not errors and form.cleaned_data['reviewed']:
+            # Time to save data!
+            error_cables = _create_cables(request, cables)
+            if error_cables:
+                show_view = {'cables': error_cables}
+            else:
+                msg = 'Successfully added {} cables'.format(len(cables))
+                messages.success(request, msg)
+        else:
+            show_view = {'reviewed': True, 'cables': cables}
+
+    if show_view:
+        new_csv = _forms_to_csv(show_view.get('cables'), csv_headers)
+        form = forms.CsvForm(csv_headers,
+                             {'csv_data': new_csv,
+                              'reviewed': show_view.get('reviewed', False)})
+        return render(request, 'noclook/create/create_cable_csv.html',
+                      {'form': form,
+                       'cables': show_view.get('cables'),
+                       'cable_types': cable_types})
+    else:
+        # TODO: stop using hardcoded urls :(
+        return redirect('/cable/')
 
 
 @login_required
@@ -195,10 +270,7 @@ def new_optical_link(request, **kwargs):
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'optical-link', 'Logical')
             except UniqueNodeError:
-                form = forms.NewOpticalLinkForm(request.POST)
-                form._errors = ErrorDict()
-                form._errors['name'] = ErrorList()
-                form._errors['name'].append('An Optical Link with that name already exists.')
+                form.add_error('name','An Optical Link with that name already exists.')
                 return render_to_response('noclook/create/create_link.html', {'form': form},
                                           context_instance=RequestContext(request))
             helpers.form_update_node(request.user, nh.handle_id, form)
@@ -533,6 +605,7 @@ def reserve_id_sequence(request, slug=None):
 
 NEW_FUNC = {
     'cable': new_cable,
+    'cable_csv': new_cable_csv,
     'customer': new_customer,
     'end-user': new_end_user,
     'external-equipment': new_external_equipment,

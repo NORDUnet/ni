@@ -4,7 +4,7 @@ __author__ = 'lundberg'
 from django import forms
 from django.forms.utils import ErrorDict, ErrorList
 from django.db import IntegrityError
-from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId
+from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId, NodeHandle
 from apps.noclook.helpers import get_provider_id
 from .. import unique_ids
 from . import common
@@ -106,9 +106,8 @@ class NewCableForm(common.NewCableForm):
                 try:
                     unique_ids.register_unique_id(self.Meta.id_collection, name)
                 except IntegrityError as e:
-                    self._errors = ErrorDict()
-                    self._errors['name'] = ErrorList()
-                    self._errors['name'].append(e.message)
+                    if NodeHandle.objects.filter(node_name=name):
+                        self.add_error('name', e.message)
         return cleaned_data
 
 

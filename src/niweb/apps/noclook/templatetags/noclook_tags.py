@@ -5,6 +5,7 @@ import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
 import json
+import re
 from django.utils.html import escape
 from dynamic_preferences import global_preferences_registry
 
@@ -245,3 +246,44 @@ def more_info_url(name):
     global_preferences = global_preferences_registry.manager()
     base_url = global_preferences['general__more_info_link']
     return u'{}{}'.format(base_url, name)
+
+
+
+@register.tag
+def accordion(parser, token):
+    tagname, title,  _id = token.split_contents()
+    nodelist = parser.parse("endaccordion",)
+    parser.delete_first_token()
+    return AccordionNode(_id, title, nodelist)
+
+
+def is_quoted(what):
+    return re.match(r'^[\'"].*[\'"]$', what)
+
+
+def resolve_arg(arg, context):
+    if is_quoted(arg):
+        result = arg[1:-1]
+    else:
+        result = template.Variable(arg).resolve(context)
+    return result
+
+
+class AccordionNode(template.Node):
+    def __init__(self, _id, title, nodelist, template='noclook/accordion_tag.html'):
+        self.nodelist = nodelist
+        self.id = _id
+        self.title = title
+        self.template = template
+
+    def render(self, context):
+        t = context.render_context.get(self)
+        if t is None:
+            t = context.template.engine.get_template(self.template)
+            context.render_context[self] = t
+        new_context = context.new({
+            'accordion_id': resolve_arg(self.id, context),
+            'accordion_title': resolve_arg(self.title, context),
+            'csrf_token': context.get('csrf_token'),
+            'body': self.nodelist.render(context)})
+        return t.render(new_context)

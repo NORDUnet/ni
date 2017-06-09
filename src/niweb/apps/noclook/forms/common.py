@@ -4,6 +4,7 @@ from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
+import csv
 from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType, NordunetUniqueId
 from .. import unique_ids
 import norduniclient as nc
@@ -20,7 +21,7 @@ COUNTRY_CODES = [
     ('IS', 'IS'),
     ('NL', 'NL'),
     ('NO', 'NO'),
-    ('SE', 'SE'),    
+    ('SE', 'SE'),
     ('UK', 'UK'),
     ('US', 'US')
 ]
@@ -800,3 +801,39 @@ class OpticalNodeForm(forms.Form):
     type = forms.ModelChoiceField(required=False, queryset=OpticalNodeType.objects.all(), to_field_name='name')
     operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, initial='In service')
 
+
+class CsvForm(forms.Form):
+    def __init__(self, csv_headers, *args, **kwargs):
+        super(CsvForm, self).__init__(*args, **kwargs)
+        self.csv_headers = csv_headers
+        if not isinstance(csv_headers, str):
+            placeholder = ", ".join(csv_headers)
+        self.fields['csv_data'].widget.attrs['placeholder'] = placeholder
+        help_text = u'CSV formatted data: "{}"'.format(placeholder)
+        self.fields['csv_data'].help_text = help_text
+
+    csv_data = forms.CharField(required=False,
+                               widget=forms.Textarea(
+                                   attrs={'rows': '5', 
+                                          'class': 'input-xxlarge'}))
+    reviewed = forms.BooleanField(required=False)
+
+    def csv_parse(self, func, validate=False):
+        # Make sure cleaned_data is populated
+        self.is_valid()
+        lines = self.cleaned_data['csv_data'].splitlines()
+        reader = csv.DictReader(self._utf8_enc(lines),
+                                fieldnames=self.csv_headers)
+        return [func(line) for line in self._unicode(reader)]
+
+    def _utf8_enc(self, csv_lines):
+        return (line.encode('utf-8') for line in csv_lines)
+
+    def _unicode(self, dict_reader):
+        for row in dict_reader:
+            yield {key: unicode(row[key], 'utf-8') for key in row.keys()}
+
+    def form_to_csv(form, headers):
+        cleaned = form.cleaned_data
+        raw = form.data
+        return u",".join([cleaned.get(h) or raw.get(h, '') for h in headers])
