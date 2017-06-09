@@ -338,19 +338,18 @@ class EditRackForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_located_in = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-                
-                
-class EditHostForm(forms.Form):
+     
 
+class NewHostForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        super(EditHostForm, self).__init__(*args, **kwargs)
+        super(NewHostForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = OPERATIONAL_STATES
         self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
         self.fields['support_group'].choices = RESPONSIBLE_GROUPS
         self.fields['security_class'].choices = SECURITY_CLASSES
         self.fields['managed_by'].choices = HOST_MANAGEMENT_SW
 
-    name = forms.CharField()
+    name = forms.CharField(help_text="The hostname")
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
@@ -358,13 +357,14 @@ class EditHostForm(forms.Form):
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                    help_text='Name of the management software that manages the host')
-    #responsible_persons = JSONField(required=False, widget=JSONInput,
-    #                                help_text='Name of the person responsible for the host.')
+
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the host.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
     backup = forms.CharField(required=False, help_text='Which backup solution is used? e.g. TSM, IP nett?')
+    security_class = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
     os = forms.CharField(required=False,
                          help_text='What operating system is running on the host?')
     os_version = forms.CharField(required=False,
@@ -376,13 +376,27 @@ class EditHostForm(forms.Form):
     service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the host?')
     end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
+    # External relations
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+class HostLikeForm(NewHostForm):
+    def __init__(self, *args, **kwargs):
+        super(HostLikeForm, self).__init__(*args, **kwargs)
+        self.fields['type'].choices = [
+                                        ('Host', 'Host'),
+                                        ('Firewall', 'Firewall'),
+                                        ('Switch', 'Switch'),
+                                        ('PDU', 'PDU'),
+                                      ]
+
+    type = forms.ChoiceField()
+
+class EditHostForm(NewHostForm):
+    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    security_class = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
+
     services_locked = forms.BooleanField(required=False)
     services_checked = forms.BooleanField(required=False)
 

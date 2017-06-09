@@ -26,6 +26,7 @@ TYPES = [
     ("end-user", "End User"),
     ("external-cable", "External Cable"),
     ("external-equipment", "External Equipment"),
+    ("host", "Host"),
     ("optical-link", "Optical Link"),
     ("optical-path", "Optical Path"),
     ("service", "Service"),
@@ -257,6 +258,14 @@ def new_cable_csv(request):
     else:
         # TODO: stop using hardcoded urls :(
         return redirect('/cable/')
+
+
+@staff_member_required
+def new_host(request):
+    form = forms.NewHostForm(request.POST or None)
+    return render(request, 
+                  'noclook/create/create_host.html',
+                  {'form': form})
 
 
 @login_required
@@ -610,6 +619,7 @@ NEW_FUNC = {
     'end-user': new_end_user,
     'external-equipment': new_external_equipment,
     'external-cable': new_external_cable,
+    'host': new_host,
     'odf': new_odf,
     'optical-filter': new_optical_filter,
     'optical-link': new_optical_link,
