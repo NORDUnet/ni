@@ -187,6 +187,12 @@ class NodeChoiceField(forms.ModelChoiceField):
         return node.node_name
 
 
+class DatePickerField(forms.DateField):
+    def __init__(self, *args, **kwargs):
+        super(DatePickerField, self).__init__(*args, **kwargs)
+        self.widget = forms.TextInput(attrs={'data-provide': 'datepicker', 'data-date-format': 'yyyy-mm-dd'})
+
+
 class ReserveIdForm(forms.Form):
     amount = forms.IntegerField(min_value=1, initial=1)
     site = NodeChoiceField(
@@ -374,23 +380,12 @@ class NewHostForm(forms.Form):
     vendor = forms.CharField(required=False,
                              help_text='Name of the vendor that should be contacted for hardware support?')
     service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the host?')
-    end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
+    end_support = DatePickerField(required=False, help_text='When does the hardware support end?')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
     # External relations
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
-class HostLikeForm(NewHostForm):
-    def __init__(self, *args, **kwargs):
-        super(HostLikeForm, self).__init__(*args, **kwargs)
-        self.fields['type'].choices = [
-                                        ('Host', 'Host'),
-                                        ('Firewall', 'Firewall'),
-                                        ('Switch', 'Switch'),
-                                        ('PDU', 'PDU'),
-                                      ]
-
-    type = forms.ChoiceField()
 
 class EditHostForm(NewHostForm):
     relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)

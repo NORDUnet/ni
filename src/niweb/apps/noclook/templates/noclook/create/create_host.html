@@ -1,9 +1,16 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/bootstrap-datepicker.min.js' %}"></script>
+{% endblock %}
 
 {% block content %}
     <h1>Create new host</h1>
+    <p>To create a physical host you need to set Location or Host owner</p>
     <form action="" method="post">
       <div class="well">
             {% csrf_token %}
@@ -13,7 +20,6 @@
             {{ form.managed_by | as_crispy_field }}
             {{ form.responsible_group | as_crispy_field }}
             {{ form.support_group | as_crispy_field }}
-            {{ form.managed_by | as_crispy_field }}
             {{ form.backup | as_crispy_field }}
             {{ form.security_class | as_crispy_field }}
             {{ form.security_comment | as_crispy_field }}
