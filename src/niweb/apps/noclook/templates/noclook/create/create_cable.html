@@ -27,6 +27,7 @@
       <form action="/new/cable_csv/" method="post">
         {% csrf_token %}
         {{ csv_form | crispy }}
+        <p>Available cable types: {{cable_types}}</p>
         <input type="submit" value="Save" class="btn btn-primary" />
         <a href="/new/" class="btn">Cancel</a>
       </form>

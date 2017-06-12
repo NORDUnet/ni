@@ -157,6 +157,7 @@ def new_external_equipment(request, **kwargs):
 
 @staff_member_required
 def new_cable(request, **kwargs):
+    cable_types = [types[1] for types in forms.CABLE_TYPES]
     if request.POST:
         form = forms.NewCableForm(request.POST)
         if form.is_valid():
@@ -180,7 +181,7 @@ def new_cable(request, **kwargs):
         initial = {'name': name}
         form = forms.NewCableForm(initial=initial)
     csv_form = forms.CsvForm(['name, cable_type, description'], request.POST or None)
-    return render(request, 'noclook/create/create_cable.html', {'form': form, 'csv_form': csv_form})
+    return render(request, 'noclook/create/create_cable.html', {'form': form, 'csv_form': csv_form, 'cable_types': cable_types})
 
 
 def _csv_to_cable_form(data):
