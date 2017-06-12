@@ -287,3 +287,24 @@ class AccordionNode(template.Node):
             'csrf_token': context.get('csrf_token'),
             'body': self.nodelist.render(context)})
         return t.render(new_context)
+
+
+@register.inclusion_tag('noclook/tags/json_combo.html')
+def json_combo(form_field, urls, initial=None):
+    urls = [url.strip() for url in urls.split(",")]
+    first_url = None
+
+    if initial:
+        choices = [u"['{}',' {}']".format(val, val.title().replace("-", " ")) for val in initial.split(',')]
+        initial = u",\n".join(choices)
+    else: 
+        first_url = urls[0]
+        if len(urls) > 1:
+            urls = urls[1:]
+    return {
+                'first_url': first_url,
+                'initial': initial,
+                'urls': urls,
+                'field': form_field,
+            }
+
