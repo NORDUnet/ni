@@ -1,5 +1,3 @@
-{% load static %}
-<script language="javascript" type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(
     function(){
@@ -17,13 +15,13 @@ $(document).ready(
         // Populate first level combo box
         $.getJSON('{{ first_url }}', function(data) {
           $('#{{ field.id_for_label }}_level0').append($('<option>').val("0").text("-- Please Select --"));
-                $.each(data, function(key, tuple) {
-                  $('#{{ field.id_for_label }}_level0').append($('<option>').val(tuple[0]).text(tuple[1]));
-                });
-            });
+          $.each(data, function(key, tuple) {
+            $('#{{ field.id_for_label }}_level0').append($('<option>').val(tuple[0]).text(tuple[1]));
+          });
+        });
         $('#{{ field.id_for_label }}_level0').click(function() {
                 $("#{{ field.id_for_label }}").val($(this).val());
-            });
+        });
     {% endif %}
         // Hook lower level combo boxes up to their parent
         {% for url in urls %}

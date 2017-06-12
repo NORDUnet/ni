@@ -356,7 +356,9 @@ class NewHostForm(forms.Form):
         self.fields['managed_by'].choices = HOST_MANAGEMENT_SW
 
     name = forms.CharField(help_text="The hostname")
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_units = forms.IntegerField(required=False,
+                                    label='Equipment height',
+                                    help_text='Height in rack units (u).')
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
@@ -372,15 +374,20 @@ class NewHostForm(forms.Form):
     security_class = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
     os = forms.CharField(required=False,
+                         label='Operating system',
                          help_text='What operating system is running on the host?')
     os_version = forms.CharField(required=False,
+                                 label='Operating system version',
                                  help_text='Which version of the operating system is running on the host?')
     model = forms.CharField(required=False,
+                            label='Hardware model',
                             help_text='What is the hosts hardware model name?')
     vendor = forms.CharField(required=False,
                              help_text='Name of the vendor that should be contacted for hardware support?')
     service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the host?')
-    end_support = DatePickerField(required=False, help_text='When does the hardware support end?')
+    end_support = DatePickerField(required=False,
+                                  label='End of support',
+                                  help_text='When does the hardware support end?')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
     # External relations
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)

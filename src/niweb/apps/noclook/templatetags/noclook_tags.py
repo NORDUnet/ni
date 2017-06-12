@@ -248,13 +248,18 @@ def more_info_url(name):
     return u'{}{}'.format(base_url, name)
 
 
-
 @register.tag
 def accordion(parser, token):
-    tagname, title,  _id = token.split_contents()
+    tokens = token.split_contents()
+    title = tokens[1]
+    _id = tokens[2]
+    try:
+        parent_id = tokens[3]
+    except IndexError:
+        parent_id = None
     nodelist = parser.parse("endaccordion",)
     parser.delete_first_token()
-    return AccordionNode(_id, title, nodelist)
+    return AccordionNode(_id, title, nodelist, parent_id)
 
 
 def is_quoted(what):
@@ -262,7 +267,9 @@ def is_quoted(what):
 
 
 def resolve_arg(arg, context):
-    if is_quoted(arg):
+    if not arg:
+        result = arg
+    elif is_quoted(arg):
         result = arg[1:-1]
     else:
         result = template.Variable(arg).resolve(context)
@@ -270,11 +277,12 @@ def resolve_arg(arg, context):
 
 
 class AccordionNode(template.Node):
-    def __init__(self, _id, title, nodelist, template='noclook/accordion_tag.html'):
+    def __init__(self, _id, title, nodelist, parent_id=None, template='noclook/tags/accordion_tag.html'):
         self.nodelist = nodelist
         self.id = _id
         self.title = title
         self.template = template
+        self.parent_id = parent_id
 
     def render(self, context):
         t = context.render_context.get(self)
@@ -283,6 +291,7 @@ class AccordionNode(template.Node):
             context.render_context[self] = t
         new_context = context.new({
             'accordion_id': resolve_arg(self.id, context),
+            'accordion_parent_id': resolve_arg(self.parent_id, context),
             'accordion_title': resolve_arg(self.title, context),
             'csrf_token': context.get('csrf_token'),
             'body': self.nodelist.render(context)})

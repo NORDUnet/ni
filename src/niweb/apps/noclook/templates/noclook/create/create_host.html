@@ -6,6 +6,7 @@
 {% block js %}
   {{ block.super }}
   <script type="text/javascript" src="{% static 'js/jquery/bootstrap-datepicker.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -24,8 +25,8 @@
             {{ form.security_class | as_crispy_field }}
             {{ form.security_comment | as_crispy_field }}
       </div>
-      <div class="accordion">
-        {% accordion 'Operational information (optional)' 'operational' %}
+      <div class="accordion" id="create-accordion">
+        {% accordion 'Operational information (optional)' 'operational' '#create-accordion' %}
           {{ form.os | as_crispy_field }}
           {{ form.os_version | as_crispy_field }}
           {{ form.vendor | as_crispy_field }}
@@ -35,12 +36,18 @@
           {{ form.contract_number | as_crispy_field }}
         {% endaccordion %}
 
-        {% accordion 'Host owner (optional)' 'host_owner' %}
+        {% accordion 'Host owner (optional)' 'host_owner' '#create-accordion' %}
+          <div class="alert alert-warning">
+            If you set a host owner this host will become a physical host.
+          </div>
           {% json_combo form.relationship_owner '/formdata/{id}/' 'customer,end-user,host-user,provider' %}
 
         {% endaccordion %}
 
-        {% accordion 'Location (optional)' 'location' %}
+        {% accordion 'Location (optional)' 'location' '#create-accordion' %}
+          <div class="alert alert-warning">
+            If you set a location this host will become a physical host.
+          </div>
             {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' %}
             {{ form.rack_units | as_crispy_field }}
         {% endaccordion %}
