@@ -5,7 +5,7 @@ from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
 import csv
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType, NordunetUniqueId
+from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences import global_preferences_registry
@@ -63,13 +63,6 @@ SITE_TYPES = [
     ('', ''),
     ('POP', 'POP'),
     ('Passive ODF', 'Passive ODF')
-]
-
-CABLE_TYPES = [
-    ('', ''),
-    ('Dark Fiber', 'Dark Fiber'),
-    ('Patch', 'Patch'),
-    ('Power Cable', 'Power Cable')
 ]
 
 PORT_TYPES = [
@@ -286,7 +279,7 @@ class NewCableForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewCableForm, self).__init__(*args, **kwargs)
-        self.fields['cable_type'].choices = CABLE_TYPES
+        self.fields['cable_type'].choices = Dropdown.get('cable_types').as_choices()
 
     name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)

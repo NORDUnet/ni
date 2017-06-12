@@ -8,6 +8,9 @@ from actstream import action
 
 import norduniclient as nc
 import re
+import logging
+
+logger = logging.getLogger('noclook.models')
 
 
 NODE_META_TYPE_CHOICES = zip(nc.META_TYPES, nc.META_TYPES)
@@ -220,6 +223,61 @@ class ServiceType(models.Model):
 
     def __unicode__(self):
         return u"{}".format(self.name)
+
+
+class DummyDropdown(object):
+    def __init__(self, name):
+        self.name = name
+
+    def as_choices(self, empty=True):
+        if empty:
+            return [('', '')]
+        return []
+
+    def as_values(self, empty=True):
+        if empty:
+            return ['']
+        return []
+
+
+class Dropdown(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def as_choices(self, empty=True):
+        choices = [choice.as_choice() for choice in self.choice_set.order_by('name')]
+        if empty:
+            choices = [('', '')] + choices
+        return choices
+
+    def as_values(self, empty=True):
+        values = [choice.value for choice in self.choice_set.order_by('name')]
+        if empty:
+            values = [''] + values
+        return values
+
+    def __unicode__(self):
+        return u"{}".format(self.name)
+
+    @staticmethod
+    def get(name):
+        result = Dropdown.objects.filter(name=name)
+        if result:
+            return result[0]
+        else:
+            logger.error(u'Could not find dropdown with name "{}". Please create it using /admin/'.format(name))
+            return DummyDropdown(name)
+
+
+class Choice(models.Model):
+    dropdown = models.ForeignKey(Dropdown, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
+
+    def as_choice(self):
+        return (self.value, self.name)
+
+    def __unicode__(self):
+        return u"{} ({})".format(self.name, self.dropdown.name)
 
 
 ## Signals

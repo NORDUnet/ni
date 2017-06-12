@@ -14,7 +14,7 @@ from django.template import RequestContext
 from django.forms.utils import ErrorDict, ErrorList
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, Dropdown
 from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
@@ -157,7 +157,7 @@ def new_external_equipment(request, **kwargs):
 
 @staff_member_required
 def new_cable(request, **kwargs):
-    cable_types = [types[1] for types in forms.CABLE_TYPES]
+    cable_types = u', '.join([u'"{}"'.format(val) for val in Dropdown.get('cable_types').as_values()])
     if request.POST:
         form = forms.NewCableForm(request.POST)
         if form.is_valid():
@@ -221,7 +221,7 @@ def _create_cables(request, cables):
 @staff_member_required
 def new_cable_csv(request):
     csv_headers = ['name', 'cable_type', 'description']
-    cable_types = [types[1] for types in forms.CABLE_TYPES]
+    cable_types = u', '.join([u'"{}"'.format(val) for val in Dropdown.get('cable_types').as_values()])
     form = forms.CsvForm(csv_headers, request.POST or None)
 
     form.is_valid()
@@ -400,6 +400,8 @@ def new_odf(request, **kwargs):
         ports_form = forms.BulkPortsForm({'port_type': 'LC'})
     return render_to_response('noclook/create/create_odf.html', {'form': form, 'ports_form': ports_form},
                               context_instance=RequestContext(request))
+
+
 @staff_member_required
 def new_optical_filter(request, **kwargs):
     form = forms.NewOpticalFilter(request.POST or None)
@@ -475,8 +477,9 @@ def new_port(request, **kwargs):
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewPortForm()
-    return render_to_response('noclook/create/create_port.html', {'form': form},
-                                  context_instance=RequestContext(request))
+    return render(request,
+                  'noclook/create/create_port.html',
+                  {'form': form})
 
 
 @login_required
@@ -589,7 +592,7 @@ def new_optical_node(request, slug=None):
                 type_name = _type.name
             else:
                 type_name = ""
-            helpers.dict_update_node(request.user, nh.handle_id, {'type': type_name, 'operational_state': form.cleaned_data['operational_state']}) 
+            helpers.dict_update_node(request.user, nh.handle_id, {'type': type_name, 'operational_state': form.cleaned_data['operational_state']})
 
             # create ports if needed
             if bulk_ports.is_valid() and not bulk_ports.cleaned_data['no_ports']:
@@ -606,6 +609,7 @@ def new_optical_node(request, slug=None):
         except UniqueNodeError:
             form.add_error('name', 'An Optical Node with that name already exists.')
     return render_to_response('noclook/create/create_optical_node.html', {'form': form, 'bulk_ports': bulk_ports}, context_instance=RequestContext(request))
+
 
 # Reserve Ids
 @login_required
@@ -627,7 +631,7 @@ def reserve_id_sequence(request, slug=None):
                 unique_id_collection,
                 form.cleaned_data['reserve_message'],
                 request.user,
-                form.cleaned_data['site'] 
+                form.cleaned_data['site']
             )
             return render_to_response('noclook/edit/reserve_id.html', {'reserved_list': reserved_list, 'slug': slug},
                                       context_instance=RequestContext(request))
@@ -638,6 +642,7 @@ def reserve_id_sequence(request, slug=None):
         form = forms.ReserveIdForm()
         return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},
                                   context_instance=RequestContext(request))
+
 
 NEW_FUNC = {
     'cable': new_cable,
