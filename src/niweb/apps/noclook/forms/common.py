@@ -10,54 +10,24 @@ from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences import global_preferences_registry
 
+
 # We should move this kind of data to the SQL database.
-COUNTRY_CODES = [
-    ('BE', 'BE'),
-    ('CH', 'CH'),
-    ('DE', 'DE'),
-    ('DK', 'DK'),
-    ('FI', 'FI'),
-    ('FR', 'FR'),
-    ('IS', 'IS'),
-    ('NL', 'NL'),
-    ('NO', 'NO'),
-    ('SE', 'SE'),
-    ('UK', 'UK'),
-    ('US', 'US')
-]
+def country_codes():
+    codes = Dropdown.get('countries').as_values()
+    return zip(codes, codes)
 
-COUNTRIES = [
-    ('', ''),
-    ('Belgium', 'Belgium'),
-    ('Denmark', 'Denmark'),
-    ('Germany', 'Germany'),
-    ('Finland', 'Finland'),
-    ('France', 'France'),
-    ('Iceland', 'Iceland'),
-    ('Netherlands', 'Netherlands'),
-    ('Norway', 'Norway'),
-    ('Sweden', 'Sweden'),
-    ('Switzerland', 'Switzerland'),
-    ('United Kingdom', 'United Kingdom'),
-    ('USA', 'USA'),
-]
 
-COUNTRY_MAP = {
-    'BE': 'Belgium',
-    'CH': 'Switzerland',
-    'DE': 'Germany',
-    'DK': 'Denmark',
-    'FI': 'Finland',
-    'FR': 'France',
-    'IS': 'Iceland',
-    'NL': 'Netherlands',
-    'NO': 'Norway',
-    'SE': 'Sweden',
-    'UK': 'United Kingdom',
-    'US': 'USA'
-}
+def countries():
+    codes, countries = Dropdown.get('countries').as_choices()
+    return zip(countries)
 
-COUNTRY_CODE_MAP = dict((COUNTRY_MAP[key], key) for key in COUNTRY_MAP)
+
+def country_map(country_code):
+    return dict(Dropdown.get('countries').as_choices(False)).get(country_code, '')
+
+
+def country_code_map(country):
+    return {k: v for v, k in Dropdown.get('countries').as_choices(False)}.get(country, '')
 
 
 def optical_node_types():
@@ -145,7 +115,7 @@ class NewSiteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewSiteForm, self).__init__(*args, **kwargs)
-        self.fields['country_code'].choices = COUNTRY_CODES
+        self.fields['country_code'].choices = country_codes()
 
     name = forms.CharField()
     country_code = forms.ChoiceField(widget=forms.widgets.Select)
@@ -156,7 +126,7 @@ class NewSiteForm(forms.Form):
     
     def clean(self):
         cleaned_data = super(NewSiteForm, self).clean()
-        cleaned_data['country'] = COUNTRY_MAP[cleaned_data['country_code']]
+        cleaned_data['country'] = country_map(cleaned_data['country_code'])
         return cleaned_data
     
     
@@ -164,8 +134,8 @@ class EditSiteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(EditSiteForm, self).__init__(*args, **kwargs)
-        self.fields['country_code'].choices = COUNTRY_CODES
-        self.fields['country'].choices = COUNTRIES
+        self.fields['country_code'].choices = country_codes()
+        self.fields['country'].choices = countries()
         self.fields['site_type'].choices = Dropdown.get('site_types').as_choices()
 
     name = forms.CharField()
@@ -189,7 +159,7 @@ class EditSiteForm(forms.Form):
     def clean(self):
         cleaned_data = super(EditSiteForm, self).clean()
         cleaned_data['name'] = cleaned_data['name']
-        cleaned_data['country_code'] = COUNTRY_CODE_MAP[cleaned_data['country']]
+        cleaned_data['country_code'] = country_code_map(cleaned_data['country'])
         return cleaned_data
                               
                               

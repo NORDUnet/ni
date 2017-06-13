@@ -14,7 +14,7 @@ class NewSiteForm(common.NewSiteForm):
 
     def clean(self):
         cleaned_data = super(NewSiteForm, self).clean()
-        cleaned_data['country'] = common.COUNTRY_MAP[cleaned_data['country_code']]
+        cleaned_data['country'] = common.country_map(cleaned_data['country_code'])
         return cleaned_data
 
 
@@ -24,4 +24,3 @@ class EditCableForm(common.EditCableForm):
         self.fields['tele2_cable_contract'].choices = Dropdown.get('tele2_cable_contracts').as_choices()
 
     tele2_cable_contract = forms.ChoiceField(required=False, label='Cable Contract')
-

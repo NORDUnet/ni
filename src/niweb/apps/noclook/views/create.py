@@ -527,29 +527,21 @@ def new_rack(request, **kwargs):
                               context_instance=RequestContext(request))
 
 
-@login_required
+@staff_member_required
 def new_site(request, **kwargs):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
-
     if request.POST:
         form = forms.NewSiteForm(request.POST)
         if form.is_valid():
             try:
                 nh = helpers.form_to_unique_node_handle(request, form, 'site', 'Location')
             except UniqueNodeError:
-                form = forms.NewSiteForm(request.POST)
-                form._errors = ErrorDict()
-                form._errors['name'] = ErrorList()
-                form._errors['name'].append('A Site with that name already exists.')
-                return render_to_response('noclook/create/create_site.html', {'form': form},
-                                          context_instance=RequestContext(request))
+                form.add_error('name', 'A Site with that name already exists.')
+                return render(request, 'noclook/create/create_site.html', {'form': form})
             helpers.form_update_node(request.user, nh.handle_id, form)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            return redirect(nh.get_absolute_url())
     else:
         form = forms.NewSiteForm()
-    return render_to_response('noclook/create/create_site.html', {'form': form},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/create/create_site.html', {'form': form})
 
 
 @login_required
