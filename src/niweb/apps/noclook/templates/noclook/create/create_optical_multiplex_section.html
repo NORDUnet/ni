@@ -1,4 +1,11 @@
 {% extends "base.html" %}
+{% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+{% endblock %}
 
 {% block content %}
     <h1>Create new Optical Multiplex Section</h1>
@@ -20,7 +27,7 @@
             {{ form.description }}
             <span class="help-block">{{ form.description.help_text }}</span>
             <h3>Provider (optional)</h3>
-            {{ form.relationship_provider }}
+            {% json_combo form.relationship_provider '/formdata/{id}/' 'provider' %}
             <br />
             <br />
             <input type="submit" value="Save" class="btn btn-primary" />

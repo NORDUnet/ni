@@ -18,8 +18,9 @@ def country_codes():
 
 
 def countries():
-    codes, countries = Dropdown.get('countries').as_choices()
-    return zip(countries)
+    choices = Dropdown.get('countries').as_choices()
+    codes, countries = zip(*choices)
+    return zip(countries, countries)
 
 
 def country_map(country_code):
