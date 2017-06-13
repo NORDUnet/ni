@@ -3,44 +3,7 @@ __author__ = 'lundberg'
 
 from django import forms
 from . import common
-
-
-SITE_TYPES = [
-    ('', ''),
-    ('ILA', 'ILA'),
-    ('Roadm', 'Roadm'),
-    ('Stam', 'Stam'),
-    ('Customer', 'Customer'),
-]
-
-RESPONSIBLE_GROUPS = [
-    ('', ''),
-    ('DEV', 'DEV'),
-    ('NOC', 'NOC'),
-    ('NPE', 'NPE'),
-    ('SWAMID', 'SWAMID'),
-]
-
-TELE2_CABLE_CONTRACTS = [
-    ('', ''),
-    ('Rent', 'Rent'),
-    ('IRU', 'IRU'),
-]
-
-
-class EditHostForm(common.EditHostForm):
-
-    def __init__(self, *args, **kwargs):
-        super(EditHostForm, self).__init__(*args, **kwargs)
-        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
-
-
-class EditServiceForm(common.EditServiceForm):
-    def __init__(self, *args, **kwargs):
-        super(EditServiceForm, self).__init__(*args, **kwargs)
-        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+from apps.noclook.models import Dropdown
 
 
 class NewSiteForm(common.NewSiteForm):
@@ -55,17 +18,10 @@ class NewSiteForm(common.NewSiteForm):
         return cleaned_data
 
 
-class EditSiteForm(common.EditSiteForm):
-
-    def __init__(self, *args, **kwargs):
-        super(EditSiteForm, self).__init__(*args, **kwargs)
-        self.fields['site_type'].choices = SITE_TYPES
-
-
 class EditCableForm(common.EditCableForm):
     def __init__(self, *args, **kwargs):
         super(EditCableForm, self).__init__(*args, **kwargs)
-        self.fields['tele2_cable_contract'].choices = TELE2_CABLE_CONTRACTS
+        self.fields['tele2_cable_contract'].choices = Dropdown.get('tele2_cable_contracts').as_choices()
 
     tele2_cable_contract = forms.ChoiceField(required=False, label='Cable Contract')
 

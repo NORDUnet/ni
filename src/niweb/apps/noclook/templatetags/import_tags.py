@@ -3,16 +3,23 @@ from django import template
 import string
 import random
 from django.utils.functional import lazy
-from apps.noclook import forms
+from apps.noclook import forms, models
 
 register = template.Library()
 
+
+def choices(name):
+    def f():
+        return models.Dropdown.get(name).as_choices()
+    return lazy(f, list)
+
+
 OPTIONS_MAP = {
-  'operational_state': forms.OPERATIONAL_STATES,
-  'port_type': forms.PORT_TYPES,
-  'responsible_group': forms.RESPONSIBLE_GROUPS,
-  'support_group': forms.RESPONSIBLE_GROUPS,
-  'security_class': forms.SECURITY_CLASSES,
+  'operational_state': choices('operational_states'),
+  'port_type': choices('port_type'),
+  'responsible_group': choices('responsible_groups'),
+  'support_group': choices('responsible_groups'),
+  'security_class': choices('security_classes'),
   'type': lazy(forms.optical_node_types, list)
 }
 

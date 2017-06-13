@@ -2,76 +2,11 @@
 __author__ = 'lundberg'
 
 from django import forms
-from django.forms.utils import ErrorDict, ErrorList
 from django.db import IntegrityError
 from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId, NodeHandle
 from apps.noclook.helpers import get_provider_id
 from .. import unique_ids
 from . import common
-
-
-SITE_TYPES = [
-    ('', ''),
-    ('POP', 'POP'),
-    ('Regenerator', 'Regenerator'),
-    ('Optical Amplifier', 'Optical Amplifier'),
-    ('Passive ODF', 'Passive ODF')
-]
-
-
-OPTICAL_LINK_TYPES = [
-    ('', ''),
-    ('OTS', 'OTS'),
-    ('OPS', 'OPS'),
-]
-
-OPTICAL_PATH_FRAMING = [
-    ('', ''),
-    ('OTN(CBR)', 'OTN(CBR)'),
-    ('OTN(Ethernet)', 'OTN(Ethernet)'),
-    ('WDM', 'WDM'),
-    ('WDM(Ethernet)', 'WDM(Ethernet)'),
-    ('WDM(CBR)', 'WDM(CBR)'),
-    ('WDM(OTN)', 'WDM(OTN)'),
-]
-
-OPTICAL_PATH_CAPACITY = [
-    ('', ''),
-    ('10Gb', '10Gb'),
-    ('100Gb', '100Gb'),
-    ('CBR', 'CBR'),
-    ('cbr 10Gb', 'cbr 10Gb'),
-]
-
-OPTICAL_LINK_INTERFACE_TYPE = [
-    ('', ''),
-    ('WDM', 'WDM'),
-]
-
-RESPONSIBLE_GROUPS = [
-    ('', ''),
-    ('ADMIN', 'ADMIN'),
-    ('DEV', 'DEV'),
-    ('EDUIX', 'EDUIX'),
-    ('FUNET', 'FUNET'),
-    ('MEDIA', 'Media Services'),
-    ('NDGF', 'NDGF'),
-    ('NOC', 'NOC'),
-    ('NPE', 'NPE'),
-    ('RHNET', 'RHNET'),
-    ('SEI', 'SEI'),
-    ('SUNET', 'SUNET'),
-    ('SWAMID', 'SWAMID'),
-    ('UNINETT', 'UNINETT'),
-    ('WAYF', 'WAYF'),
-]
-
-HOST_MANAGEMENT_SW = [
-    ('', ''),
-    ('CFEngine', 'CFEngine'),
-    ('Manual', 'Manual'),
-    ('Puppet', 'Puppet'),
-]
 
 
 class NewCableForm(common.NewCableForm):
@@ -125,15 +60,6 @@ class EditCableForm(common.EditCableForm):
         return cleaned_data
 
 
-class EditHostForm(common.EditHostForm):
-
-    def __init__(self, *args, **kwargs):
-        super(EditHostForm, self).__init__(*args, **kwargs)
-        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['managed_by'].choices = HOST_MANAGEMENT_SW
-
-
 class NewServiceForm(common.NewServiceForm):
     def __init__(self, *args, **kwargs):
         super(NewServiceForm, self).__init__(*args, **kwargs)
@@ -163,19 +89,10 @@ class NewL2vpnServiceForm(NewServiceForm):
     route_distinguisher = forms.CharField(required=False, help_text='')
 
 
-class EditServiceForm(common.EditServiceForm):
-    def __init__(self, *args, **kwargs):
-        super(EditServiceForm, self).__init__(*args, **kwargs)
-        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
-
 class NewOpticalLinkForm(common.NewOpticalLinkForm):
     def __init__(self, *args, **kwargs):
         super(NewOpticalLinkForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
-        self.fields['link_type'].choices = OPTICAL_LINK_TYPES
-        self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
-        self.fields['interface_type'].initial = 'WDM'
 
     class Meta(common.NewOpticalLinkForm.Meta):
         id_generator_name = 'nordunet_optical_link_id'
@@ -189,12 +106,6 @@ class NewOpticalLinkForm(common.NewOpticalLinkForm):
 
 
 class EditOpticalLinkForm(common.EditOpticalLinkForm):
-
-    def __init__(self, *args, **kwargs):
-        super(EditOpticalLinkForm, self).__init__(*args, **kwargs)
-        self.fields['link_type'].choices = OPTICAL_LINK_TYPES
-        self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
-
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
 
 
@@ -205,11 +116,6 @@ class NewOpticalMultiplexSectionForm(common.NewOpticalMultiplexSectionForm):
 
 
 class NewOpticalPathForm(common.NewOpticalPathForm):
-    def __init__(self, *args, **kwargs):
-        super(NewOpticalPathForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
-        self.fields['framing'].choices = OPTICAL_PATH_FRAMING
-        self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
 
     class Meta(common.NewOpticalLinkForm.Meta):
         id_generator_name = 'nordunet_optical_path_id'
@@ -223,12 +129,6 @@ class NewOpticalPathForm(common.NewOpticalPathForm):
 
 
 class EditOpticalPathForm(common.EditOpticalPathForm):
-
-    def __init__(self, *args, **kwargs):
-        super(EditOpticalPathForm, self).__init__(*args, **kwargs)
-        self.fields['framing'].choices = OPTICAL_PATH_FRAMING
-        self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
-
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
 
 
@@ -241,10 +141,3 @@ class NewSiteForm(common.NewSiteForm):
         cleaned_data = super(NewSiteForm, self).clean()
         cleaned_data['name'] = '%s-%s' % (cleaned_data['country_code'], cleaned_data['name'].upper())
         return cleaned_data
-
-
-class EditSiteForm(common.EditSiteForm):
-
-    def __init__(self, *args, **kwargs):
-        super(EditSiteForm, self).__init__(*args, **kwargs)
-        self.fields['site_type'].choices = SITE_TYPES
