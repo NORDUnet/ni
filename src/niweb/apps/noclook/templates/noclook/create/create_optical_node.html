@@ -1,22 +1,37 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+{% endblock %}
 
 {% block content %}
     <h1>Create new Optical Node</h1>
 
-    <div class="well">
-        <form action="" method="post">
+    <form action="" method="post">
+      <div class="well">
             {% csrf_token %}
-            {{ form | crispy }}
+            {{ form.name | as_crispy_field }}
+            {{ form.type | as_crispy_field }}
+            {{ form.operational_state | as_crispy_field }}
+            {{ form.description | as_crispy_field }}
+            <div class="controls">
+              <h3>Location</h3>
+            </div>
+            {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' %}
+            {{ form.rack_units | as_crispy_field }}
+
             <div class="controls">
                 <h3>Ports</h3>
             </div>
-            
             {% dynamic_ports bulk_ports %}
+
             <input type="submit" value="Save" class="btn btn-primary" />
             <a href="/new/" class="btn">Cancel</a>
-        </form>
-    </div>
+      </div>
+    </form>
 
 {% endblock %}

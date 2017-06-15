@@ -578,17 +578,17 @@ def new_optical_node(request, slug=None):
             nh = helpers.get_unique_node_handle(request.user,
                                                 name,
                                                 'optical-node',
-                                                'Logical')
-            _type = form.cleaned_data['type']
-            if _type:
-                type_name = _type.name
-            else:
-                type_name = ""
-            helpers.dict_update_node(request.user, nh.handle_id, {'type': type_name, 'operational_state': form.cleaned_data['operational_state']})
+                                                'Physical')
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            node = nh.get_node()
+            user = request.user
+            if form.cleaned_data['relationship_location']:
+                location = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+                helpers.set_location(user, node, location.handle_id)
 
             # create ports if needed
             if bulk_ports.is_valid() and not bulk_ports.cleaned_data['no_ports']:
-                user = request.user
+
                 # TODO: Injection protection?
                 port_names = request.POST.getlist('port_name')
                 port_types = request.POST.getlist('port_type')
@@ -600,7 +600,7 @@ def new_optical_node(request, slug=None):
             return HttpResponseRedirect(nh.get_absolute_url())
         except UniqueNodeError:
             form.add_error('name', 'An Optical Node with that name already exists.')
-    return render_to_response('noclook/create/create_optical_node.html', {'form': form, 'bulk_ports': bulk_ports}, context_instance=RequestContext(request))
+    return render(request, 'noclook/create/create_optical_node.html', {'form': form, 'bulk_ports': bulk_ports})
 
 
 # Reserve Ids
