@@ -534,7 +534,7 @@ def create_port(parent_node, port_name, creator):
     set_has(creator, parent_node, nh.handle_id)
     return nh.get_node()
 
-def bulk_create_ports(parent_node, num_ports, creator,port_type='', offset=1, prefix='', bundled=False, no_ports=False):
+def bulk_create_ports(parent_node, creator, num_ports=0, port_type='', offset=1, prefix='', bundled=False, no_ports=False):
     offset = int(offset or 1)
     num_ports = int(num_ports or 0)
     end_port = num_ports+offset

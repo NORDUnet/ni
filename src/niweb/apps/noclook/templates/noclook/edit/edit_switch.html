@@ -1,5 +1,6 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
+{% load noclook_tags %}
 
 {% block js %}
 {{ block.super }}
@@ -91,6 +92,9 @@ $(document).ready(
             {% include "noclook/edit/includes/owner_group.html" %}
         {% endif %}
         {% include "noclook/edit/includes/port_group.html" %}
+        {% accordion 'Bulk ports' 'bulk_ports' '#edit-accordion' %}
+          {{ ports_form | crispy }}
+        {% endaccordion %}
         {% include "noclook/edit/includes/host_service_group.html" %}
         {% include "noclook/edit/includes/disable_noclook_auto_manage.html" %}
     </div>

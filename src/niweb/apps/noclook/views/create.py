@@ -397,12 +397,12 @@ def new_odf(request, **kwargs):
             helpers.form_update_node(request.user, nh.handle_id, form)
             if not ports_form.cleaned_data['no_ports']:
                 data = ports_form.cleaned_data
-                helpers.bulk_create_ports(nh.get_node(), form.cleaned_data['max_number_of_ports'], request.user, **data)
+                helpers.bulk_create_ports(nh.get_node(), request.user, **data)
 
             return HttpResponseRedirect(nh.get_absolute_url())
     else:
         form = forms.NewOdfForm()
-        ports_form = forms.BulkPortsForm({'port_type': 'LC'})
+        ports_form = forms.BulkPortsForm({'port_type': 'LC', 'offset': 1, 'num_ports': '0'})
     return render_to_response('noclook/create/create_odf.html', {'form': form, 'ports_form': ports_form},
                               context_instance=RequestContext(request))
 
@@ -418,7 +418,7 @@ def new_optical_filter(request, **kwargs):
             helpers.form_update_node(request.user, nh.handle_id, form)
             if not ports_form.cleaned_data['no_ports']:
                 data = ports_form.cleaned_data
-                helpers.bulk_create_ports(nh.get_node(), form.cleaned_data['max_number_of_ports'], request.user, **data)
+                helpers.bulk_create_ports(nh.get_node(), request.user, **data)
 
             return HttpResponseRedirect(nh.get_absolute_url())
 

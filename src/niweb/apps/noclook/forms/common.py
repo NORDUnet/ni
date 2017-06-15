@@ -351,6 +351,7 @@ class BulkPortsForm(forms.Form):
     port_type = forms.ChoiceField(required=False)
     prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0')
     offset = forms.IntegerField(required=False, min_value=0, initial=1)
+    num_ports = forms.IntegerField(required=False, min_value=0, initial=1)
 
 
 class EditOdfForm(forms.Form):

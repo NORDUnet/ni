@@ -898,9 +898,10 @@ def edit_switch(request, handle_id):
     depends_on = switch.get_dependencies()
     host_services = switch.get_host_services()
     ports = switch.get_ports()
+    ports_form = forms.BulkPortsForm(request.POST or None)
     if request.POST:
         form = forms.EditSwitchForm(request.POST)
-        if form.is_valid():
+        if form.is_valid() and ports_form.is_valid():
             # Generic node update
             helpers.form_update_node(request.user, switch.handle_id, form)
             # Host specific updates
@@ -922,6 +923,10 @@ def edit_switch(request, handle_id):
             _handle_ports(switch,
                           form.cleaned_data['relationship_ports'],
                           request.user)
+
+            if not ports_form.cleaned_data['no_ports']:
+                data = ports_form.cleaned_data
+                helpers.bulk_create_ports(switch, request.user, **data)
             if 'saveanddone' in request.POST:
                 return HttpResponseRedirect(nh.get_absolute_url())
             else:
@@ -931,7 +936,7 @@ def edit_switch(request, handle_id):
     return render_to_response('noclook/edit/edit_switch.html',
                               {'node_handle': nh, 'node': switch, 'form': form, 'location': location,
                                'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services}, context_instance=RequestContext(request))
+                               'host_services': host_services, 'ports_form': ports_form}, context_instance=RequestContext(request))
 
 
 @staff_member_required
