@@ -1,12 +1,5 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
-{% load noclook_tags %}
-{% load static %}
-
-{% block js %}
-  {{ block.super }}
-  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
-{% endblock %}
 
 {% block content %}
     <h1>Create new Optical Link</h1>
@@ -19,7 +12,7 @@
             {{ form.interface_type | as_crispy_field}}
             {{ form.operational_state | as_crispy_field }}
             {{ form.description | as_crispy_field}}
-            {% json_combo form.relationship_provider '/formdata/{id}/' 'provider' %}
+            {{ form.relationship_provider | as_crispy_field }}
             <input type="submit" value="Save" class="btn btn-primary" />
             <a href="/new/" class="btn">Cancel</a>
         </form>

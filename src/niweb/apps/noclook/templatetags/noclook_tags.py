@@ -310,6 +310,8 @@ def json_combo(form_field, urls, initial=None):
         first_url = urls[0]
         if len(urls) > 1:
             urls = urls[1:]
+        else:
+            urls = []
     return {
                 'first_url': first_url,
                 'initial': initial,

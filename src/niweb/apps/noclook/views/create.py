@@ -285,8 +285,7 @@ def new_optical_link(request, **kwargs):
                 nh = helpers.form_to_unique_node_handle(request, form, 'optical-link', 'Logical')
             except UniqueNodeError:
                 form.add_error('name', 'An Optical Link with that name already exists.')
-                return render_to_response('noclook/create/create_link.html', {'form': form},
-                                          context_instance=RequestContext(request))
+                return render(request, 'noclook/create/create_optical_link.html', {'form': form})
             helpers.form_update_node(request.user, nh.handle_id, form)
             if form.cleaned_data['relationship_provider']:
                 node = nh.get_node()
@@ -295,8 +294,7 @@ def new_optical_link(request, **kwargs):
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewOpticalLinkForm()
-    return render_to_response('noclook/create/create_optical_link.html', {'form': form},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/create/create_optical_link.html', {'form': form})
 
 
 @staff_member_required

@@ -65,7 +65,7 @@ class NewServiceForm(common.NewServiceForm):
         super(NewServiceForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].initial = get_provider_id('NORDUnet')
 
-    project_end_date = forms.DateField(required=False)
+    project_end_date = common.DatePickerField(required=False)
 
     def clean(self):
         """

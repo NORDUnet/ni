@@ -84,11 +84,14 @@ def description_field(name):
                            help_text=u'Short description of the {}.'.format(name))
 
 
-def relationship_field(name):
+def relationship_field(name, select=False):
     labels = {
     }
     label = labels.get(name, name.title())
-    return forms.IntegerField(required=False, label=label, widget=forms.widgets.HiddenInput)
+    if select:
+        return forms.ChoiceField(required=False, label=label, widget=forms.widgets.Select)
+    else:
+        return forms.IntegerField(required=False, label=label, widget=forms.widgets.HiddenInput)
 
 
 class ReserveIdForm(forms.Form):
@@ -159,7 +162,7 @@ class EditSiteForm(forms.Form):
     owner_id = forms.CharField(required=False)
     owner_site_name = forms.CharField(required=False)
     url = forms.URLField(required=False, help_text='An URL to more information about the site.')
-    relationship_responsible_for = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_responsible_for = relationship_field('responsible')
 
     def clean(self):
         cleaned_data = super(EditSiteForm, self).clean()
@@ -191,13 +194,13 @@ class NewCableForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the cable.')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_provider = relationship_field('provider')
 
 
 class EditCableForm(NewCableForm):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_provider = relationship_field('provider')
 
 
 class OpticalNodeForm(forms.Form):
@@ -212,7 +215,7 @@ class OpticalNodeForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_location = relationship_field('location')
 
 
 class EditOpticalNodeForm(OpticalNodeForm):
@@ -229,8 +232,7 @@ class NewRackForm(forms.Form):
         self.fields['relationship_location'].choices = get_node_type_tuples('Site')
 
     name = forms.CharField(help_text='Name should be the grid location.')
-    relationship_location = forms.ChoiceField(required=False,
-                                              widget=forms.widgets.Select)
+    relationship_location = relationship_field('location', True)
 
 
 class EditRackForm(forms.Form):
@@ -242,8 +244,8 @@ class EditRackForm(forms.Form):
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_located_in = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_parent = relationship_field('parent')
+    relationship_located_in = relationship_field('located in')
 
 
 class NewHostForm(forms.Form):
@@ -259,9 +261,7 @@ class NewHostForm(forms.Form):
     rack_units = forms.IntegerField(required=False,
                                     label='Equipment height',
                                     help_text='Height in rack units (u).')
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of what the machine is used for.')
+    description = description_field('what the machine is used for')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                    help_text='Name of the management software that manages the host')
@@ -290,13 +290,13 @@ class NewHostForm(forms.Form):
                                   help_text='When does the hardware support end?')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
     # External relations
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_location = relationship_field('location')
+    relationship_owner = relationship_field('owner')
 
 
 class EditHostForm(NewHostForm):
-    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_user = relationship_field('user')
+    relationship_depends_on = relationship_field('depends on')
     relationship_ports = JSONField(required=False, widget=JSONInput)
 
     services_locked = forms.BooleanField(required=False)
@@ -322,12 +322,11 @@ class EditRouterForm(forms.Form):
 
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_location = relationship_field('location')
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    description = forms.CharField(required=False,
-                                 help_text='Short description of the router.')
-    
-    
+    description = description_field('router')
+
+
 class NewOdfForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
@@ -359,7 +358,7 @@ class EditOdfForm(forms.Form):
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_location = relationship_field('location')
 
 
 class NewOpticalFilter(NewOdfForm):
@@ -376,8 +375,8 @@ class NewExternalEquipmentForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_owner = relationship_field('owner')
+    relationship_location = relationship_field('location')
 
 
 class EditExternalEquipmentForm(NewExternalEquipmentForm):
@@ -395,11 +394,11 @@ class NewPortForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Notes regarding port usage.')
-    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_parent = relationship_field('parent')
 
 
 class EditPortForm(NewPortForm):
-    relationship_connected_to = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_connected_to = relationship_field('connected to')
 
 
 class NewCustomerForm(forms.Form):
@@ -440,14 +439,12 @@ class NewServiceForm(forms.Form):
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the service.')
+    description = description_field('service')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = relationship_field('provider', True)
 
     def __init__(self, *args, **kwargs):
         super(NewServiceForm, self).__init__(*args, **kwargs)
@@ -520,9 +517,9 @@ class EditServiceForm(forms.Form):
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this service?')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_provider = relationship_field('provider')
+    relationship_user = relationship_field('user')
+    relationship_depends_on = relationship_field('depends on')
 
     def clean(self):
         cleaned_data = super(EditServiceForm, self).clean()
@@ -558,13 +555,14 @@ class NewOpticalLinkForm(forms.Form):
         self.fields['link_type'].choices = Dropdown.get('optical_link_types').as_choices()
         self.fields['interface_type'].choices = Dropdown.get('optical_link_interface_type').as_choices()
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(required=True)
     link_type = forms.ChoiceField(widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical link')
-    relationship_provider = relationship_field('provider')
+    relationship_provider = relationship_field('provider', True)
 
     class Meta:
         id_generator_name = None    # UniqueIdGenerator instance name
@@ -606,8 +604,8 @@ class EditOpticalLinkForm(forms.Form):
     link_type = forms.ChoiceField(widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = description_field('optical link') 
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('optical link')
+    relationship_provider = relationship_field('provider', True)
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
@@ -615,14 +613,13 @@ class EditOpticalLinkForm(forms.Form):
 class NewOpticalMultiplexSectionForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
 
     name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical link.')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('optical link')
+    relationship_provider = relationship_field('provider', True)
 
 
 class EditOpticalMultiplexSectionForm(forms.Form):
@@ -634,10 +631,8 @@ class EditOpticalMultiplexSectionForm(forms.Form):
 
     name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical path.')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('optical path')
+    relationship_provider = relationship_field('provider', True)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
@@ -653,10 +648,8 @@ class NewOpticalPathForm(forms.Form):
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical path.')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    description = description_field('optical path')
+    relationship_provider = relationship_field('provider', True)
 
     class Meta:
         id_generator_name = None    # UniqueIdGenerator instance name
@@ -703,7 +696,7 @@ class EditOpticalPathForm(forms.Form):
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of the optical path.')
     enrs = JSONField(required=False, widget=JSONInput)
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_provider = relationship_field('provider')
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
