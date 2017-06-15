@@ -18,20 +18,20 @@
             {{ form.type | as_crispy_field }}
             {{ form.operational_state | as_crispy_field }}
             {{ form.description | as_crispy_field }}
-            <div class="controls">
-              <h3>Location</h3>
-            </div>
+
+      </div>
+      <div class="accordion" id="create-accordion">
+          {% accordion 'Location' 'location' '#create-accordion' %}
             {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' %}
             {{ form.rack_units | as_crispy_field }}
-
-            <div class="controls">
-                <h3>Ports</h3>
-            </div>
+          {% endaccordion %}
+          {% accordion 'Ports' 'ports' '#create-accordion' %}
             {% dynamic_ports bulk_ports %}
+          {% endaccordion %}
 
-            <input type="submit" value="Save" class="btn btn-primary" />
-            <a href="/new/" class="btn">Cancel</a>
       </div>
+      <input type="submit" value="Save" class="btn btn-primary" />
+      <a href="/new/" class="btn">Cancel</a>
     </form>
 
 {% endblock %}

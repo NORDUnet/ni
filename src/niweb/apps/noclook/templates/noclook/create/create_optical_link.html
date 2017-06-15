@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
 {% load noclook_tags %}
 {% load static %}
 
@@ -9,29 +10,15 @@
 
 {% block content %}
     <h1>Create new Optical Link</h1>
-    {% if form.errors %}
-        <div class="alert alert-error">
-            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
-            Please resubmit the form after making the following changes:
-            {{ form.errors }}
-        </div>
-    {% endif %}
     <div class="well">
         <form action="" method="post">{% csrf_token %}
             {% if not form.name in form.hidden_fields %}
-                <h3>Name</h3>
-                {{ form.name }}
+                {{ form.name | as_crispy_field }}
             {% endif %}
-            <h3>Link Type</h3>
-            {{ form.link_type }}
-            <h3>Interface Type</h3>
-            {{ form.interface_type }}
-            <h3>Operational State</h3>
-            {{ form.operational_state }}
-            <h3>Description (optional)</h3>
-            {{ form.description }}
-            <span class="help-block">{{ form.description.help_text }}</span>
-            <h3>Provider (optional)</h3>
+            {{ form.link_type | as_crispy_field }}
+            {{ form.interface_type | as_crispy_field}}
+            {{ form.operational_state | as_crispy_field }}
+            {{ form.description | as_crispy_field}}
             {% json_combo form.relationship_provider '/formdata/{id}/' 'provider' %}
             <input type="submit" value="Save" class="btn btn-primary" />
             <a href="/new/" class="btn">Cancel</a>

@@ -78,6 +78,19 @@ class DatePickerField(forms.DateField):
         self.widget = forms.TextInput(attrs={'data-provide': 'datepicker', 'data-date-format': 'yyyy-mm-dd'})
 
 
+def description_field(name):
+    return forms.CharField(required=False,
+                           widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                           help_text=u'Short description of the {}.'.format(name))
+
+
+def relationship_field(name):
+    labels = {
+    }
+    label = labels.get(name, name.title())
+    return forms.IntegerField(required=False, label=label, widget=forms.widgets.HiddenInput)
+
+
 class ReserveIdForm(forms.Form):
     amount = forms.IntegerField(min_value=1, initial=1)
     site = NodeChoiceField(
@@ -249,7 +262,7 @@ class NewHostForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
-    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                    help_text='Name of the management software that manages the host')
 
@@ -361,17 +374,13 @@ class NewExternalEquipmentForm(forms.Form):
     description = forms.CharField(required=False,
                                   widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
                                   help_text='Short description of what the machine is used for.')
-
-
-class EditExternalEquipmentForm(forms.Form):
-    name = forms.CharField()
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of what the machine is used for.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+
+class EditExternalEquipmentForm(NewExternalEquipmentForm):
+    relationship_ports = JSONField(required=False, widget=JSONInput)
 
 
 class NewPortForm(forms.Form):
@@ -553,10 +562,8 @@ class NewOpticalLinkForm(forms.Form):
     link_type = forms.ChoiceField(widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical link.')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('optical link')
+    relationship_provider = relationship_field('provider')
 
     class Meta:
         id_generator_name = None    # UniqueIdGenerator instance name
@@ -581,9 +588,7 @@ class NewOpticalLinkForm(forms.Form):
             try:
                 unique_ids.register_unique_id(self.Meta.id_collection, name)
             except IntegrityError as e:
-                self._errors = ErrorDict()
-                self._errors['name'] = ErrorList()
-                self._errors['name'].append(e.message)
+                self.add_error('name', e.message)
         return cleaned_data
 
 
@@ -600,9 +605,7 @@ class EditOpticalLinkForm(forms.Form):
     link_type = forms.ChoiceField(widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical link.')
+    description = description_field('optical link') 
     relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)

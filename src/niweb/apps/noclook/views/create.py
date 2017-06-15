@@ -138,17 +138,22 @@ def new_end_user(request, **kwargs):
                               context_instance=RequestContext(request))
 
 
-@login_required
+@staff_member_required
 def new_external_equipment(request, **kwargs):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
-
     if request.POST:
         form = forms.NewExternalEquipmentForm(request.POST)
         if form.is_valid():
             nh = helpers.form_to_generic_node_handle(request, form, 'external-equipment', 'Physical')
             helpers.form_update_node(request.user, nh.handle_id, form)
-            return HttpResponseRedirect(nh.get_absolute_url())
+            data = form.cleaned_data
+            node = nh.get_node()
+            if data['relationship_location']:
+                location = NodeHandle.objects.get(pk=data['relationship_location'])
+                helpers.set_location(request.user, node, location.handle_id)
+            if data['relationship_owner']:
+                owner = NodeHandle.objects.get(pk=data['relationship_owner'])
+                helpers.set_owner(request.user, node, owner.handle_id)
+            return redirect(nh.get_absolute_url())
     else:
         form = forms.NewExternalEquipmentForm()
     return render_to_response('noclook/create/create_external_equipment.html', {'form': form},
