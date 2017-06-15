@@ -1,0 +1,35 @@
+dropdown,value,name
+site_types,POP
+site_types,Regenerator
+site_types,Optical Amplifier
+site_types,Passive ODF
+optical_link_types,OTS
+optical_link_types,OPS
+optical_path_framing,OTN(CBR)
+optical_path_framing,OTN(Ethernet)
+optical_path_framing,WDM
+optical_path_framing,WDM(Ethernet)
+optical_path_framing,WDM(CBR)
+optical_path_framing,WDM(OTN)
+optical_path_capacity,10Gb
+optical_path_capacity,100Gb
+optical_path_capacity,CBR
+optical_path_capacity,cbr 10Gb
+optical_link_interface_type,WDM
+responsible_groups,ADMIN
+responsible_groups,DEV
+responsible_groups,EDUIX
+responsible_groups,FUNET
+responsible_groups,MEDIA,Media Services
+responsible_groups,NDGF
+responsible_groups,NOC
+responsible_groups,NPE
+responsible_groups,RHNET
+responsible_groups,SEI
+responsible_groups,SUNET
+responsible_groups,SWAMID
+responsible_groups,UNINETT
+responsible_groups,WAYF
+host_management_sw,CFEngine
+host_management_sw,Manual
+host_management_sw,Puppet

@@ -1,0 +1,11 @@
+dropdown,value,name
+site_types,ILA
+site_types,Roadam
+site_types,Stam
+site_types,Customer
+responsible_groups,DEV
+responsible_groups,NOC
+responsible_groups,NPE
+responsible_groups,SWAMID
+tele2_cable_contracts,Rent
+tele2_cable_contracts,IRU
