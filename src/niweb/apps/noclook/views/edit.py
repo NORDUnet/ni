@@ -9,9 +9,8 @@ Node manipulation views.
 from operator import itemgetter
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse, HttpResponseForbidden
-from django.shortcuts import render_to_response, get_object_or_404, render
-from django.template import RequestContext
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, render, redirect
 import json
 from apps.noclook.models import NodeHandle
 from apps.noclook import forms
@@ -26,17 +25,17 @@ def delete_node(request, slug, handle_id):
     """
     Removes the node and all its relationships.
     """
-    redirect = '/{}'.format(slug)
+    redirect_url = '/{}'.format(slug)
     nh, node = helpers.get_nh_node(handle_id)
     try:
         # Redirect to parent if deleted node was a child node
         parent = node.get_parent().get('Has', [])
         if parent:
-            redirect = helpers.get_node_url(parent[0]['node'].handle_id)
+            redirect_url = helpers.get_node_url(parent[0]['node'].handle_id)
     except AttributeError:
         pass
     helpers.delete_node(request.user, node.handle_id)
-    return HttpResponseRedirect(redirect)
+    return redirect(redirect_url)
 
 
 @staff_member_required
@@ -90,7 +89,7 @@ def get_node_type(request, slug):
     node name, node id tuples.
     """
     node_type = helpers.slug_to_node_type(slug)
-    q = '''                   
+    q = '''
         MATCH (node:{node_type})
         RETURN node.handle_id, node.name
         ORDER BY node.name
@@ -182,14 +181,14 @@ def convert_host(request, handle_id, slug):
             'backup': ''
         }
         helpers.dict_update_node(request.user, node.handle_id, node_properties, node_properties.keys())
-    return HttpResponseRedirect(nh.get_absolute_url())
+    return redirect(nh.get_absolute_url())
 
 
 # Edit functions
 @staff_member_required
 def edit_node(request, slug, handle_id):
     """
-    Generic edit function that redirects calls to node type sensitive edit 
+    Generic edit function that redirects calls to node type sensitive edit
     functions.
     """
     try:
@@ -220,15 +219,14 @@ def edit_cable(request, handle_id):
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, cable, owner_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditCableForm(cable.data)
-    return render_to_response('noclook/edit/edit_cable.html',
-                              {'node_handle': nh, 'form': form, 'node': cable, 'connections': connections,
-                               'relations': relations},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_cable.html',
+                  {'node_handle': nh, 'form': form, 'node': cable, 'connections': connections,
+                   'relations': relations})
 
 
 @staff_member_required
@@ -241,13 +239,12 @@ def edit_customer(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, customer.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditCustomerForm(customer.data)
-    return render_to_response('noclook/edit/edit_customer.html', {'node_handle': nh, 'form': form, 'node': customer},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_customer.html', {'node_handle': nh, 'form': form, 'node': customer})
 
 
 @staff_member_required
@@ -260,13 +257,12 @@ def edit_end_user(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, end_user.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditEndUserForm(end_user.data)
-    return render_to_response('noclook/edit/edit_end_user.html', {'node_handle': nh, 'form': form, 'node': end_user},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_end_user.html', {'node_handle': nh, 'form': form, 'node': end_user})
 
 
 def _handle_ports(parent, clean_ports, user):
@@ -298,15 +294,14 @@ def edit_external_equipment(request, handle_id):
                           form.cleaned_data['relationship_ports'],
                           request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditExternalEquipmentForm(external_equipment.data)
-    return render_to_response('noclook/edit/edit_external_equipment.html',
-                              {'node_handle': nh, 'node': external_equipment, 'form': form, 'relations': relations,
-                               'location': location, 'ports': ports},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_external_equipment.html',
+                  {'node_handle': nh, 'node': external_equipment, 'form': form, 'relations': relations,
+                   'location': location, 'ports': ports})
 
 
 @staff_member_required
@@ -343,15 +338,15 @@ def edit_firewall(request, handle_id):
                           form.cleaned_data['relationship_ports'],
                           request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditFirewallForm(firewall.data)
-    return render_to_response('noclook/edit/edit_firewall.html',
-                              {'node_handle': nh, 'node': firewall, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services}, context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_firewall.html',
+                  {'node_handle': nh, 'node': firewall, 'form': form, 'location': location,
+                   'relations': relations, 'depends_on': depends_on, 'ports': ports,
+                   'host_services': host_services})
 
 
 @staff_member_required
@@ -392,15 +387,19 @@ def edit_host(request, handle_id):
                           form.cleaned_data['relationship_ports'],
                           request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditHostForm(host.data)
-    return render_to_response('noclook/edit/edit_host.html',
-                              {'node_handle': nh, 'node': host, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services}, context_instance=RequestContext(request))
+    context = {
+        'node_handle': nh, 'node': host, 'form': form, 'location': location,
+        'relations': relations, 'depends_on': depends_on, 'ports': ports,
+        'host_services': host_services
+    }
+    return render(request, 'noclook/edit/edit_host.html', context)
+
+
 def _nh_safe_get(pk):
     try:
         nh = NodeHandle.objects.get(pk=pk)
@@ -428,14 +427,13 @@ def edit_odf(request, handle_id):
                           form.cleaned_data['relationship_ports'],
                           request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOdfForm(odf.data)
-    return render_to_response('noclook/edit/edit_odf.html',
-                              {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_odf.html',
+                  {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports})
 
 
 @staff_member_required
@@ -455,9 +453,9 @@ def edit_optical_fillter(request, handle_id):
                       form.cleaned_data['relationship_ports'],
                       request.user)
         if 'saveanddone' in request.POST:
-            return HttpResponseRedirect(nh.get_absolute_url())
+            return redirect(nh.get_absolute_url())
         else:
-            return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+            return redirect('%sedit' % nh.get_absolute_url())
 
     return render(request, 'noclook/edit/edit_optical_filter.html', {'node_handle': nh, 'node': of, 'form': form, 'location': location, 'ports': ports})
 
@@ -486,15 +484,14 @@ def edit_optical_link(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_b'])
                 helpers.set_depends_on(request.user, link, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOpticalLinkForm(link.data)
-    return render_to_response('noclook/edit/edit_optical_link.html',
-                              {'node_handle': nh, 'form': form, 'node': link, 'relations': relations,
-                               'depends_on': depends_on},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_optical_link.html',
+                  {'node_handle': nh, 'form': form, 'node': link, 'relations': relations,
+                   'depends_on': depends_on})
 
 
 @staff_member_required
@@ -516,15 +513,14 @@ def edit_optical_multiplex_section(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
                 helpers.set_depends_on(request.user, oms, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOpticalMultiplexSectionForm(oms.data)
-    return render_to_response('noclook/edit/edit_optical_multiplex_section.html',
-                              {'node_handle': nh, 'form': form, 'node': oms, 'relations': relations,
-                               'depends_on': depends_on},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_optical_multiplex_section.html',
+                  {'node_handle': nh, 'form': form, 'node': oms, 'relations': relations,
+                   'depends_on': depends_on})
 
 
 @staff_member_required
@@ -548,15 +544,14 @@ def edit_optical_node(request, handle_id):
                           form.cleaned_data['relationship_ports'],
                           request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOpticalNodeForm(optical_node.data)
-    return render_to_response('noclook/edit/edit_optical_node.html',
-                              {'node_handle': nh, 'node': optical_node, 'form': form, 'location': location,
-                               'ports': ports},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_optical_node.html',
+                  {'node_handle': nh, 'node': optical_node, 'form': form, 'location': location,
+                   'ports': ports})
 
 
 @staff_member_required
@@ -578,15 +573,14 @@ def edit_optical_path(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
                 helpers.set_depends_on(request.user, path, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOpticalPathForm(path.data)
-    return render_to_response('noclook/edit/edit_optical_path.html',
-                              {'node_handle': nh, 'form': form, 'node': path, 'relations': relations,
-                               'depends_on': depends_on},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_optical_path.html',
+                  {'node_handle': nh, 'form': form, 'node': path, 'relations': relations,
+                   'depends_on': depends_on})
 
 
 @staff_member_required
@@ -623,15 +617,15 @@ def edit_pdu(request, handle_id):
                           form.cleaned_data['relationship_ports'],
                           request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditPDUForm(pdu.data)
-    return render_to_response('noclook/edit/edit_pdu.html',
-                              {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services}, context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_pdu.html',
+                  {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
+                   'relations': relations, 'depends_on': depends_on, 'ports': ports,
+                   'host_services': host_services})
 
 
 @staff_member_required
@@ -644,14 +638,13 @@ def edit_peering_partner(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, peering_partner.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditPeeringPartnerForm(peering_partner.data)
-    return render_to_response('noclook/edit/edit_peering_partner.html',
-                              {'node_handle': nh, 'node': peering_partner, 'form': form},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_peering_partner.html',
+                  {'node_handle': nh, 'node': peering_partner, 'form': form})
 
 
 @staff_member_required
@@ -672,14 +665,14 @@ def edit_port(request, handle_id):
                 cable_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_connected_to'])
                 helpers.set_connected_to(request.user, cable_nh.get_node(), port.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditPortForm(port.data)
-    return render_to_response('noclook/edit/edit_port.html',
-                              {'node_handle': nh, 'form': form, 'node': port, 'parent': parent,
-                               'connected_to': connected_to}, context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_port.html',
+                  {'node_handle': nh, 'form': form, 'node': port, 'parent': parent,
+                   'connected_to': connected_to})
 
 
 @staff_member_required
@@ -692,14 +685,13 @@ def edit_provider(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, provider.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditProviderForm(provider.data)
-    return render_to_response('noclook/edit/edit_provider.html',
-                              {'node_handle': nh, 'form': form, 'node': provider},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_provider.html',
+                  {'node_handle': nh, 'form': form, 'node': provider})
 
 
 @staff_member_required
@@ -721,15 +713,14 @@ def edit_rack(request, handle_id):
                 equipment = NodeHandle.objects.get(pk=form.cleaned_data['relationship_located_in'])
                 helpers.set_location(request.user, equipment.get_node(), rack.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditRackForm(rack.data)
-    return render_to_response('noclook/edit/edit_rack.html',
-                              {'node_handle': nh, 'form': form, 'parent': parent, 'node': rack,
-                               'located_in': located_in},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_rack.html',
+                  {'node_handle': nh, 'form': form, 'parent': parent, 'node': rack,
+                   'located_in': located_in})
 
 
 @staff_member_required
@@ -750,14 +741,13 @@ def edit_router(request, handle_id):
                           form.cleaned_data['relationship_ports'],
                           request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditRouterForm(router.data)
-        return render_to_response('noclook/edit/edit_router.html',
-                                  {'node_handle': nh, 'node': router, 'form': form, 'location': location},
-                                  context_instance=RequestContext(request))
+        return render(request, 'noclook/edit/edit_router.html',
+                      {'node_handle': nh, 'node': router, 'form': form, 'location': location})
 
 
 @staff_member_required
@@ -782,15 +772,14 @@ def edit_service(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
                 helpers.set_depends_on(request.user, service, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditServiceForm(service.data)
-    return render_to_response('noclook/edit/edit_service.html',
-                              {'node_handle': nh, 'form': form, 'node': service, 'relations': relations,
-                               'depends_on': depends_on},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_service.html',
+                  {'node_handle': nh, 'form': form, 'node': service, 'relations': relations,
+                   'depends_on': depends_on})
 
 
 @staff_member_required
@@ -808,14 +797,13 @@ def edit_site(request, handle_id):
                 responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_responsible_for'])
                 helpers.set_responsible_for(request.user, site, responsible_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditSiteForm(site.data)
-    return render_to_response('noclook/edit/edit_site.html',
-                              {'node_handle': nh, 'form': form, 'relations': relations, 'node': site},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_site.html',
+                  {'node_handle': nh, 'form': form, 'relations': relations, 'node': site})
 
 
 @staff_member_required
@@ -828,14 +816,13 @@ def edit_site_owner(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, site_owner.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditSiteOwnerForm(site_owner.data)
-    return render_to_response('noclook/edit/edit_site_owner.html',
-                              {'node_handle': nh, 'form': form, 'node': site_owner},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_site_owner.html',
+                  {'node_handle': nh, 'form': form, 'node': site_owner})
 
 
 @staff_member_required
@@ -877,15 +864,15 @@ def edit_switch(request, handle_id):
                 data = ports_form.cleaned_data
                 helpers.bulk_create_ports(switch, request.user, **data)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditSwitchForm(switch.data)
-    return render_to_response('noclook/edit/edit_switch.html',
-                              {'node_handle': nh, 'node': switch, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services, 'ports_form': ports_form}, context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_switch.html',
+                  {'node_handle': nh, 'node': switch, 'form': form, 'location': location,
+                   'relations': relations, 'depends_on': depends_on, 'ports': ports,
+                   'host_services': host_services, 'ports_form': ports_form})
 
 
 @staff_member_required
@@ -897,7 +884,7 @@ def disable_noclook_auto_manage(request, slug, handle_id):
             'noclook_auto_manage': ''
         }
         helpers.dict_update_node(request.user, node.handle_id, node_properties, node_properties.keys())
-    return HttpResponseRedirect(nh.get_absolute_url())
+    return redirect(nh.get_absolute_url())
 
 
 EDIT_FUNC = {
