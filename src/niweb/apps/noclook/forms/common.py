@@ -173,9 +173,7 @@ class EditSiteForm(forms.Form):
                               
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the site owner.')
+    description = description_field('site owner')
     url = forms.URLField(required=False, help_text='Link to more information.')
 
 
@@ -191,9 +189,7 @@ class NewCableForm(forms.Form):
 
     name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the cable.')
+    description = description_field('cable')
     relationship_provider = relationship_field('provider')
 
 
@@ -211,9 +207,7 @@ class OpticalNodeForm(forms.Form):
     name = forms.CharField()
     type = forms.ChoiceField()
     operational_state = forms.ChoiceField(initial='In service')
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description.')
+    description = description_field('optical node')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_location = relationship_field('location')
 
@@ -261,7 +255,7 @@ class NewHostForm(forms.Form):
     rack_units = forms.IntegerField(required=False,
                                     label='Equipment height',
                                     help_text='Height in rack units (u).')
-    description = description_field('what the machine is used for')
+    description = description_field('machine and what it is used for')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                    help_text='Name of the management software that manages the host')
@@ -371,9 +365,8 @@ class EditOpticalFilterForm(EditOdfForm):
 
 class NewExternalEquipmentForm(forms.Form):
     name = forms.CharField()
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of what the machine is used for.')
+
+    description = description_field('external equipment')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_owner = relationship_field('owner')
     relationship_location = relationship_field('location')
@@ -391,9 +384,7 @@ class NewPortForm(forms.Form):
 
     name = forms.CharField()
     port_type = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Notes regarding port usage.')
+    description = description_field('port usage')
     relationship_parent = relationship_field('parent')
 
 
@@ -504,9 +495,7 @@ class EditServiceForm(forms.Form):
     project_end_date = forms.DateField(required=False)
     decommissioned_date = forms.DateField(required=False)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the service.')
+    description = description_field('service')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -692,9 +681,7 @@ class EditOpticalPathForm(forms.Form):
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical path.')
+    description = description_field('optical path')
     enrs = JSONField(required=False, widget=JSONInput)
     relationship_provider = relationship_field('provider')
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
