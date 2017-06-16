@@ -1,13 +1,12 @@
 {% load noclook_tags %}
 {% blockvar dependency_title %}
-  {{ node_handle.node_type }} depends on on (optional)
+  {{ node_handle.node_type }} depends on (optional)
 {% endblockvar %}
 {% accordion dependency_title 'depends_on' '#edit-accordion' %}
   {% if node.meta_type == 'Physical' %}
       <div class="alert alert-danger">Setting dependencies will make this {{ node_handle.node_type }} physical and  remove any location set.</div>
   {% endif %}
   {% if depends_on.Depends_on %}
-      {% load noclook_tags %}
       <h4>Remove depends on relationship</h4>
       {% for item in depends_on.Depends_on %}
           <div class="row">
@@ -23,7 +22,7 @@
   {% endif %}
   <h4>Add depends on relationship</h4>
   <div class="span4">
-    {% json_combo form.relationship_depends_on '/formdata/{id}/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/' 'service,host' %}
+    {% json_combo form.relationship_depends_on '/formdata/{id}/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/' dependency_categories %}
     <span class="help-block">Choose a dependency</span>
   </div>
 {% endaccordion %}

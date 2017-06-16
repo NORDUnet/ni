@@ -1,34 +1,6 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
 
-{% block js %}
-    {{ block.super }}
-    {% load noclook_tags %}
-    <script type="text/javascript">
-        $(document).ready(
-            function(){
-                // Accordion
-                $(".edit-accordion").collapse();
-                // Provider
-                // Populate first level combo box
-                providerCategories = [
-                    ['provider', 'Provider']
-                ];
-                // Depends on //
-                // Populate first level single dependency combo box
-                dependencyCategories = [
-                    ['odf', 'ODFs'],
-                    ['optical-link', 'Optical Links'],
-                    ['optical-multiplex-section', 'Optical Multiplex Sections'],
-                    ['optical-node', 'Optical Nodes'],
-                    ['optical-path', 'Optical Paths'],
-                    ['router', 'Routers']
-                ];
-            }
-        );
-    </script>
-{% endblock %}
-
 {% block content %}
     {{ block.super }}
 

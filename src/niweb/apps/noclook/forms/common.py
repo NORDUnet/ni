@@ -595,8 +595,8 @@ class EditOpticalLinkForm(forms.Form):
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical link')
     relationship_provider = relationship_field('provider', True)
-    relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_end_a = relationship_field('Choose end A')
+    relationship_end_b = relationship_field('Choose end B')
 
 
 class NewOpticalMultiplexSectionForm(forms.Form):
@@ -676,6 +676,7 @@ class EditOpticalPathForm(forms.Form):
         self.fields['framing'].choices = Dropdown.get('optical_path_framing').as_choices()
         self.fields['capacity'].choices = Dropdown.get('optical_path_capacity').as_choices()
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
@@ -683,7 +684,7 @@ class EditOpticalPathForm(forms.Form):
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
     enrs = JSONField(required=False, widget=JSONInput)
-    relationship_provider = relationship_field('provider')
+    relationship_provider = relationship_field('provider', True)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 

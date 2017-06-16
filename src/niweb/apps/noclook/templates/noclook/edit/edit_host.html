@@ -20,17 +20,7 @@
     </div>
 
     <div class="accordion" id="edit-accordion">
-      {% accordion 'Operational information (optional)' 'operational' '#edit-accordion' %}
-          {{ form.os | as_crispy_field }}
-          {{ form.os_version | as_crispy_field }}
-          {% if node.meta_type == 'Physical' %}
-            {{ form.vendor | as_crispy_field }}
-            {{ form.model| as_crispy_field }}
-            {{ form.service_tag | as_crispy_field }}
-            {{ form.end_support | as_crispy_field }}
-          {% endif %}
-          {{ form.contract_number | as_crispy_field }}
-      {% endaccordion %}
+        {% include "noclook/edit/includes/operational_info.html" %}
         {% include "noclook/edit/includes/location_group.html" %}
         {% include "noclook/edit/includes/dependency_group.html" %}
         {% if node.meta_type == 'Logical' %}

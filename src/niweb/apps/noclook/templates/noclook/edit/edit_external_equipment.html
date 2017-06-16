@@ -1,26 +1,6 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
-
-{% block js %}
-{{ block.super }}
 {% load noclook_tags %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Accordion
-        $(".edit-accordion").collapse();
-        // Owner
-        // Populate first level combo box
-        ownerCategories = [
-            ['customer', 'Customer'],
-            ['end-user', 'End User'],
-            ['host-user', 'Host User'],
-            ['provider', 'Provider']
-        ];
-    }
-);
-</script>
-{% endblock %}
 
 {% block content %}
 {{ block.super }}

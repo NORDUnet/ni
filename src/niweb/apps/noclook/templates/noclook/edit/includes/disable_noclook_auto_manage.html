@@ -1,17 +1,9 @@
+{% load noclook_tags %}
 {% if node.data.noclook_auto_manage %}
-<div class="accordion-group">
-    <div class="accordion-heading">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseAutoManage">
-            Disable noclook auto managed
-        </a>
+  {% accordion 'Disable noclook auto managed' 'automanage-edit' '#edit-accordion' %}
+    <div class="alert alert-warning">
+        This will be reverted if noclook ever do a scan of this again.
     </div>
-    <div id="collapseAutoManage" class="accordion-body collapse" style="height: 0px; ">
-        <div class="accordion-inner">
-            <div class="alert alert-warning">
-                This will be reverted if noclook ever do a scan of this again.
-            </div>
-            <a class="btn btn-warning" href="edit/disable-noclook-auto-manage/"><i class="icon-exclamation-sign icon-white"></i> Disable noclook auto managed</a>
-        </div>
-    </div>
-</div>
+    <a class="btn btn-warning" href="edit/disable-noclook-auto-manage/"><i class="icon-exclamation-sign icon-white"></i> Disable noclook auto managed</a>
+  {% endaccordion %}
 {% endif %}

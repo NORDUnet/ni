@@ -310,7 +310,6 @@ def edit_firewall(request, handle_id):
     nh, firewall = helpers.get_nh_node(handle_id)
     location = firewall.get_location()
     relations = firewall.get_relations()
-    depends_on = firewall.get_dependencies()
     host_services = firewall.get_host_services()
     ports = firewall.get_ports()
     if request.POST:
@@ -325,11 +324,7 @@ def edit_firewall(request, handle_id):
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
                 helpers.set_owner(request.user, firewall, owner_nh.handle_id)
-            # You can not set location and depends on at the same time
-            if form.cleaned_data['relationship_depends_on']:
-                depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                helpers.set_depends_on(request.user, firewall, depends_on_nh.handle_id)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, firewall, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
@@ -345,7 +340,7 @@ def edit_firewall(request, handle_id):
         form = forms.EditFirewallForm(firewall.data)
     return render(request, 'noclook/edit/edit_firewall.html',
                   {'node_handle': nh, 'node': firewall, 'form': form, 'location': location,
-                   'relations': relations, 'depends_on': depends_on, 'ports': ports,
+                   'relations': relations, 'ports': ports,
                    'host_services': host_services})
 
 
@@ -358,6 +353,7 @@ def edit_host(request, handle_id):
     depends_on = host.get_dependencies()
     host_services = host.get_host_services()
     ports = host.get_ports()
+    dependency_categories = 'service,host'
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
@@ -395,7 +391,7 @@ def edit_host(request, handle_id):
     context = {
         'node_handle': nh, 'node': host, 'form': form, 'location': location,
         'relations': relations, 'depends_on': depends_on, 'ports': ports,
-        'host_services': host_services
+        'host_services': host_services, 'dependency_categories': dependency_categories
     }
     return render(request, 'noclook/edit/edit_host.html', context)
 
@@ -500,6 +496,7 @@ def edit_optical_multiplex_section(request, handle_id):
     nh, oms = helpers.get_nh_node(handle_id)
     relations = oms.get_relations()
     depends_on = oms.get_dependencies()
+    dependency_categories = 'optical-link'
     if request.POST:
         form = forms.EditOpticalMultiplexSectionForm(request.POST)
         if form.is_valid():
@@ -520,7 +517,7 @@ def edit_optical_multiplex_section(request, handle_id):
         form = forms.EditOpticalMultiplexSectionForm(oms.data)
     return render(request, 'noclook/edit/edit_optical_multiplex_section.html',
                   {'node_handle': nh, 'form': form, 'node': oms, 'relations': relations,
-                   'depends_on': depends_on})
+                      'depends_on': depends_on, 'dependency_categories': dependency_categories})
 
 
 @staff_member_required
@@ -560,6 +557,7 @@ def edit_optical_path(request, handle_id):
     nh, path = helpers.get_nh_node(handle_id)
     relations = path.get_relations()
     depends_on = path.get_dependencies()
+    dependency_categories = 'odf,optical-link,optical-multiplex-section,optical-node,router'
     if request.POST:
         form = forms.EditOpticalPathForm(request.POST)
         if form.is_valid():
@@ -580,7 +578,7 @@ def edit_optical_path(request, handle_id):
         form = forms.EditOpticalPathForm(path.data)
     return render(request, 'noclook/edit/edit_optical_path.html',
                   {'node_handle': nh, 'form': form, 'node': path, 'relations': relations,
-                   'depends_on': depends_on})
+                   'depends_on': depends_on, 'dependency_categories': dependency_categories})
 
 
 @staff_member_required

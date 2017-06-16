@@ -1,24 +1,6 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
-
-{% block js %}
-{{ block.super }}
 {% load noclook_tags %}
-<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.jCombo.js"></script>
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Accordion
-        $(".edit-accordion").collapse();
-        // Provider
-        // Populate first level combo box
-        providerCategories = [
-            ['provider', 'Provider']
-        ];
-    }
-);
-</script>
-{% endblock %}
 
 {% block content %}
 {{ block.super }}
@@ -32,61 +14,25 @@ $(document).ready(
         {% include "noclook/edit/includes/connection_group.html" %}
         {% include "noclook/edit/includes/provider_group.html" %}
         {% if form.telenor_tn1_number %}
-          <div class="accordion-group">
-              <div class="accordion-heading">
-                  <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
-                      Telenor Information (optional)
-                  </a>
-              </div>
-              <div id="collapseTwo" class="accordion-body collapse">
-                  <div class="accordion-inner">
-                      {{ form.telenor_tn1_number  | as_crispy_field}}
-                      {{ form.telenor_trunk_id | as_crispy_field}}
-                  </div>
-              </div>
-          </div>
+          {% accordion 'Telenor Information (optional)' 'telenor-edit' '#edit-accordion' %}
+            {{ form.telenor_tn1_number  | as_crispy_field}}
+            {{ form.telenor_trunk_id | as_crispy_field}}
+          {% endaccordion %}
         {% endif %}
         {% if form.global_crossing_circuit_id %}
-          <div class="accordion-group">
-              <div class="accordion-heading">
-                  <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseThree">
-                      Global Crossing Information (optional)
-                  </a>
-              </div>
-              <div id="collapseThree" class="accordion-body collapse">
-                  <div class="accordion-inner">
-                      {{ form.global_crossing_circuit_id | as_crispy_field}}
-                  </div>
-              </div>
-          </div>
+          {% accordion 'Global Crossing Information (optional)' 'global-crossing-edit' '#edit-accordion' %}
+             {{ form.global_crossing_circuit_id | as_crispy_field}}
+          {% endaccordion %}
         {% endif %}
         {% if form.global_connect_circuit_id %}
-          <div class="accordion-group">
-              <div class="accordion-heading">
-                  <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
-                      Global Connect Information (optional)
-                  </a>
-              </div>
-              <div id="collapseFour" class="accordion-body collapse">
-                  <div class="accordion-inner">
-                      {{ form.global_connect_circuit_id | as_crispy_field}}
-                  </div>
-              </div>
-          </div>
+          {% accordion 'Global Connect Information (optional)' 'global-connect-edit' '#edit-accordion' %}
+            {{ form.global_connect_circuit_id | as_crispy_field}}
+          {% endaccordion %}
         {% endif %}
         {% if form.tele2_cable_contract %}
-          <div class="accordion-group">
-              <div class="accordion-heading">
-                  <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTele2">
-                      Tele2 Information (optional)
-                  </a>
-              </div>
-              <div id="collapseTele2" class="accordion-body collapse">
-                  <div class="accordion-inner">
-                      {{ form.tele2_cable_contract | as_crispy_field }}
-                  </div>
-              </div>
-          </div>
+          {% accordion 'Tele2 Information (optional)' 'tele2-edit' '#edit-accordion' %}
+             {{ form.tele2_cable_contract | as_crispy_field }}
+          {% endaccordion %}
         {% endif %}
     </div>
 {% endblock %}

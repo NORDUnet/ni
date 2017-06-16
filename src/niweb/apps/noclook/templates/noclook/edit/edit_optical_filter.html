@@ -1,19 +1,6 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
 
-{% block js %}
-{{ block.super }}
-{% load noclook_tags %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Accordion
-        $(".edit-accordion").collapse();
-    }
-);
-</script>
-{% endblock %}
-
 {% block content %}
 {{ block.super }}
     <div class="well">
