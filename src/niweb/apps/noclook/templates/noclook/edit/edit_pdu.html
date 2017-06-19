@@ -1,36 +1,6 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
-
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Accordion
-        $(".edit-accordion").collapse();
-        // Depends on //
-        // Populate first level single dependency combo box
-        dependencyCategories = [
-            ['service', 'Services']
-        ];
-        // Owner
-        // Populate first level combo box
-        ownerCategories = [
-            ['customer', 'Customer'],
-            ['end-user', 'End User'],
-            ['host-user', 'Host User'],
-            ['provider', 'Provider']
-        ];
-        // User
-        // Populate first level combo box
-        userCategories = [
-            ['host-user', 'Host User']
-        ];
-        $( "#id_end_support" ).datepicker({ format: "yyyy-mm-dd" });
-    }
-);
-</script>
-{% endblock %}
+{% load noclook_tags %}
 
 {% block content %}
 {{ block.super }}
@@ -48,40 +18,7 @@ $(document).ready(
     </div>
 
     <div class="accordion" id="edit-accordion">
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
-                    Operational information (optional)
-                </a>
-            </div>
-            <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <label>Operating system</label>
-                    {{ form.os }}
-                    <span class="help-block">{{ form.os.help_text }}</span>
-                    <label>Operating system version</label>
-                    {{ form.os_version }}
-                    <span class="help-block">{{ form.os_version.help_text }}</span>
-                    {% if node.meta_type == 'Physical' %}
-                        <label>Vendor</label>
-                        {{ form.vendor }}
-                        <span class="help-block">{{ form.vendor.help_text }}</span>
-                        <label>Hardware model</label>
-                        {{ form.model }}
-                        <span class="help-block">{{ form.model.help_text }}</span>
-                        <label>Service tag</label>
-                        {{ form.service_tag }}
-                        <span class="help-block">{{ form.service_tag.help_text }}</span>
-                        <label>End of support</label>
-                        {{ form.end_support }}
-                        <span class="help-block">{{ form.end_support.help_text }}</span>
-                    {% endif %}
-                    <label>Contract number</label>
-                    {{ form.contract_number }}
-                    <span class="help-block">{{ form.contract_number.help_text }}</span>
-                </div>
-            </div>
-        </div>
+        {% include "noclook/edit/includes/operational_info.html" %}
         {% include "noclook/edit/includes/location_group.html" %}
         {% include "noclook/edit/includes/dependency_group.html" %}
         {% if node.meta_type == 'Logical' %}

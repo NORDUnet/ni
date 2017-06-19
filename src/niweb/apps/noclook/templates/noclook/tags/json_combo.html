@@ -1,42 +1,47 @@
-<script type="text/javascript">
-$(document).ready(
-    function(){
-    {% if initial %}
-        var choices = [
-          {{ initial | safe }}
-        ];
-
-
-        $('#{{ field.id_for_label }}_level0').append($('<option>').val("0").text("-- Please Select --"));
-        $.each(choices, function(key, tuple) {
-            $('#{{ field.id_for_label }}_level0').append($('<option>').val(tuple[0]).text(tuple[1]));
-        });
-    {% else %}
-        // Populate first level combo box
-        $.getJSON('{{ first_url }}', function(data) {
+{% if field.is_hidden %}
+  <script type="text/javascript">
+  $(document).ready(
+      function(){
+      {% if initial %}
+          var choices = [
+            {{ initial | safe }}
+          ];
+  
+  
           $('#{{ field.id_for_label }}_level0').append($('<option>').val("0").text("-- Please Select --"));
-          $.each(data, function(key, tuple) {
-            $('#{{ field.id_for_label }}_level0').append($('<option>').val(tuple[0]).text(tuple[1]));
+          $.each(choices, function(key, tuple) {
+              $('#{{ field.id_for_label }}_level0').append($('<option>').val(tuple[0]).text(tuple[1]));
           });
-        });
-        $('#{{ field.id_for_label }}_level0').click(function() {
-                $("#{{ field.id_for_label }}").val($(this).val());
-        });
-    {% endif %}
-        // Hook lower level combo boxes up to their parent
-        {% for url in urls %}
-        $("#{{ field.id_for_label }}_level{{ forloop.counter }}").jCombo("{{url}}", {
-            parent: "#{{ field.id_for_label }}_level{{ forloop.counter0 }}",
-            end_value_field: "#{{ field.id_for_label }}"
+      {% else %}
+          // Populate first level combo box
+          $.getJSON('{{ first_url }}', function(data) {
+            $('#{{ field.id_for_label }}_level0').append($('<option>').val("0").text("-- Please Select --"));
+            $.each(data, function(key, tuple) {
+              $('#{{ field.id_for_label }}_level0').append($('<option>').val(tuple[0]).text(tuple[1]));
             });
-        {% endfor %}
-    });
-</script>
-
-{{ field.label }}
-{{ field }}
-
-<select class="stacked" name="{{ field.auto_id }}_level0" id="{{ field.auto_id }}_level0"></select>
-{% for url in urls %}
-<select class="stacked" name="{{ field.auto_id }}_level{{forloop.counter}}" id="{{ field.auto_id }}_level{{forloop.counter}}"></select>
-{% endfor %}
+          });
+          $('#{{ field.id_for_label }}_level0').click(function() {
+                  $("#{{ field.id_for_label }}").val($(this).val());
+          });
+      {% endif %}
+          // Hook lower level combo boxes up to their parent
+          {% for url in urls %}
+          $("#{{ field.id_for_label }}_level{{ forloop.counter }}").jCombo("{{url}}", {
+              parent: "#{{ field.id_for_label }}_level{{ forloop.counter0 }}",
+              end_value_field: "#{{ field.id_for_label }}"
+              });
+          {% endfor %}
+      });
+  </script>
+  
+  {{ field.label }}
+  {{ field }}
+  
+  <select class="stacked" name="{{ field.auto_id }}_level0" id="{{ field.auto_id }}_level0"></select>
+  {% for url in urls %}
+  <select class="stacked" name="{{ field.auto_id }}_level{{forloop.counter}}" id="{{ field.auto_id }}_level{{forloop.counter}}"></select>
+  {% endfor %}
+{% else %}
+  {% load crispy_forms_tags %}
+  {{ field | as_crispy_field }}
+{% endif %}

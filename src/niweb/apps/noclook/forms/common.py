@@ -74,8 +74,12 @@ class NodeChoiceField(forms.ModelChoiceField):
 
 class DatePickerField(forms.DateField):
     def __init__(self, *args, **kwargs):
+        attrs = {'data-provide': 'datepicker', 'data-date-format': 'yyyy-mm-dd', 'data-date-today-highlight': 'true'}
+        if kwargs.get('today'):
+            attrs['data-date-today-btn'] = 'linked'
+            del kwargs['today']
         super(DatePickerField, self).__init__(*args, **kwargs)
-        self.widget = forms.TextInput(attrs={'data-provide': 'datepicker', 'data-date-format': 'yyyy-mm-dd'})
+        self.widget = forms.TextInput(attrs=attrs)
 
 
 def description_field(name):
@@ -145,12 +149,13 @@ class EditSiteForm(forms.Form):
         self.fields['country_code'].choices = country_codes()
         self.fields['country'].choices = countries()
         self.fields['site_type'].choices = Dropdown.get('site_types').as_choices()
+        self.fields['relationship_responsible_for'].choices = get_node_type_tuples('Site_Owner')
 
     name = forms.CharField()
     country_code = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     site_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
-    address = forms.CharField(required=False)
+    address = forms.CharField(required=False, label='Street')
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     room = forms.CharField(required=False, help_text='Room identifier in building if applicable.')
     postarea = forms.CharField(required=False)
@@ -158,11 +163,11 @@ class EditSiteForm(forms.Form):
     area = forms.CharField(required=False, help_text='State, county or similar.')
     longitude = forms.FloatField(required=False, help_text='Decimal Degrees')
     latitude = forms.FloatField(required=False, help_text='Decimal Degrees')
-    telenor_subscription_id = forms.CharField(required=False)
-    owner_id = forms.CharField(required=False)
+    telenor_subscription_id = forms.CharField(required=False, label='Telenor subscription ID')
+    owner_id = forms.CharField(required=False, label='Owner site ID')
     owner_site_name = forms.CharField(required=False)
-    url = forms.URLField(required=False, help_text='An URL to more information about the site.')
-    relationship_responsible_for = relationship_field('responsible')
+    url = forms.URLField(required=False, help_text='An URL to more information about the site.', label='Information URL')
+    relationship_responsible_for = relationship_field('responsible', True)
 
     def clean(self):
         cleaned_data = super(EditSiteForm, self).clean()
@@ -186,17 +191,17 @@ class NewCableForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewCableForm, self).__init__(*args, **kwargs)
         self.fields['cable_type'].choices = Dropdown.get('cable_types').as_choices()
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('cable')
-    relationship_provider = relationship_field('provider')
+    relationship_provider = relationship_field('provider', True)
 
 
 class EditCableForm(NewCableForm):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_provider = relationship_field('provider')
 
 
 class OpticalNodeForm(forms.Form):
@@ -488,12 +493,13 @@ class EditServiceForm(forms.Form):
         self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
         service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name','name')
         self.fields['service_type'].choices = [t.as_choice() for t in service_types]
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(required=False)
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
-    project_end_date = forms.DateField(required=False)
-    decommissioned_date = forms.DateField(required=False)
+    project_end_date = DatePickerField(required=False)
+    decommissioned_date = DatePickerField(required=False, today=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('service')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -506,7 +512,7 @@ class EditServiceForm(forms.Form):
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this service?')
-    relationship_provider = relationship_field('provider')
+    relationship_provider = relationship_field('provider', True)
     relationship_user = relationship_field('user')
     relationship_depends_on = relationship_field('depends on')
 
@@ -622,7 +628,7 @@ class EditOpticalMultiplexSectionForm(forms.Form):
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
     relationship_provider = relationship_field('provider', True)
-    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput, label='Depends on')
 
 
 class NewOpticalPathForm(forms.Form):

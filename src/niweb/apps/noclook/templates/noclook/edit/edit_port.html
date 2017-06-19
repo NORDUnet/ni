@@ -1,37 +1,5 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
-
-{% block js %}
-{{ block.super }}
-{% load noclook_tags %}
-<script type="text/javascript">
-    $(document).ready(
-        function(){
-            // Accordion
-            $(".edit-accordion").collapse();
-            // Parent
-            // Populate first level has relationship combo box
-            parentCategories = [
-                ['external-equipment', 'External Equipment'],
-                ['firewall', 'Firewalls'],
-                ['host', 'Hosts'],
-                ['odf', 'ODFs'],
-                ['optical-node', 'Optical Nodes'],
-                ['router', 'Routers'],
-                ['switch', 'Switchs']
-            ];
-            // Connected to //
-            // Populate first level combo box
-            cableTypes = [
-                ['Dark Fiber', 'Dark Fibers'],
-                ['Patch', 'Patches'],
-                ['Power Cable', 'Power Cables']
-            ];
-        }
-    );
-</script>
-{% endblock %}
-
 {% block content %}
     {{ block.super }}
     <div class="well">

@@ -12,7 +12,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, Dropdown
 from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
@@ -590,6 +590,7 @@ def edit_pdu(request, handle_id):
     depends_on = pdu.get_dependencies()
     host_services = pdu.get_host_services()
     ports = pdu.get_ports()
+    dependency_categories = 'service'
     if request.POST:
         form = forms.EditPDUForm(request.POST)
         if form.is_valid():
@@ -623,7 +624,7 @@ def edit_pdu(request, handle_id):
     return render(request, 'noclook/edit/edit_pdu.html',
                   {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
                    'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                   'host_services': host_services})
+                   'host_services': host_services, 'dependency_categories': dependency_categories})
 
 
 @staff_member_required
@@ -650,6 +651,14 @@ def edit_port(request, handle_id):
     nh, port = helpers.get_nh_node(handle_id)
     parent = port.get_parent()
     connected_to = port.get_connected_to()
+    parent_categories = ['external-equipment',
+                         'firewall',
+                         'host',
+                         'odf',
+                         'optical-node',
+                         'router',
+                         'switch']
+    connections_categories = Dropdown.get('cable_types').as_values(False)
     if request.POST:
         form = forms.EditPortForm(request.POST)
         if form.is_valid():
@@ -670,7 +679,7 @@ def edit_port(request, handle_id):
         form = forms.EditPortForm(port.data)
     return render(request, 'noclook/edit/edit_port.html',
                   {'node_handle': nh, 'form': form, 'node': port, 'parent': parent,
-                   'connected_to': connected_to})
+                      'connected_to': connected_to, 'parent_categories': parent_categories, 'connections_categories': connections_categories})
 
 
 @staff_member_required
@@ -698,6 +707,7 @@ def edit_rack(request, handle_id):
     nh, rack = helpers.get_nh_node(handle_id)
     parent = rack.get_parent()
     located_in = rack.get_located_in()
+    located_in_categories = ['host', 'odf', 'optical-node', 'router']
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():
@@ -718,7 +728,7 @@ def edit_rack(request, handle_id):
         form = forms.EditRackForm(rack.data)
     return render(request, 'noclook/edit/edit_rack.html',
                   {'node_handle': nh, 'form': form, 'parent': parent, 'node': rack,
-                   'located_in': located_in})
+                      'located_in': located_in, 'parent_categories': 'site', 'located_in_categories': located_in_categories})
 
 
 @staff_member_required
@@ -754,6 +764,15 @@ def edit_service(request, handle_id):
     nh, service = helpers.get_nh_node(handle_id)
     relations = service.get_relations()
     depends_on = service.get_dependencies()
+    dependency_categories = ['host',
+                             'firewall',
+                             'odf',
+                             'optical-node',
+                             'optical-path',
+                             'router',
+                             'service',
+                             'switch']
+    user_categories = ['customer', 'end-user']
     if request.POST:
         form = forms.EditServiceForm(request.POST)
         if form.is_valid():
@@ -777,7 +796,8 @@ def edit_service(request, handle_id):
         form = forms.EditServiceForm(service.data)
     return render(request, 'noclook/edit/edit_service.html',
                   {'node_handle': nh, 'form': form, 'node': service, 'relations': relations,
-                   'depends_on': depends_on})
+                   'depends_on': depends_on, 'dependency_categories': dependency_categories,
+                   'user_categories': user_categories})
 
 
 @staff_member_required
@@ -839,17 +859,11 @@ def edit_switch(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, switch.handle_id, form)
             # Host specific updates
-            if form.cleaned_data['relationship_user']:
-                user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
-                helpers.set_user(request.user, switch, user_nh.handle_id)
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
                 helpers.set_owner(request.user, switch, owner_nh.handle_id)
             # You can not set location and depends on at the same time
-            if form.cleaned_data['relationship_depends_on']:
-                depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                helpers.set_depends_on(request.user, switch, depends_on_nh.handle_id)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, switch, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:

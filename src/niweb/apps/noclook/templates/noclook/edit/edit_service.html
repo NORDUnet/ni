@@ -1,37 +1,12 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
+{% load noclook_tags %}
 
 {% block js %}
     {{ block.super }}
-    {% load noclook_tags %}
     <script type="text/javascript">
         $(document).ready(
             function(){
-                // Provider
-                // Populate first level combo box
-                providerCategories = [
-                    ['provider', 'Provider']
-                ];
-                // Uses //
-                // Populate first level combo box
-                userCategories = [
-                    ['customer', 'Customers'],
-                    ['end-user', 'End Users']
-                ];
-                // Depends on //
-                // Populate first level combo box
-                dependencyCategories = [
-                    ['host', 'Hosts'],
-                    ['firewall', 'Firewalls'],
-                    ['odf', 'ODF'],
-                    ['optical-node', 'Optical Nodes'],
-                    ['optical-path', 'Optical Paths'],
-                    ['router', 'Routers'],
-                    ['service', 'Services'],
-                    ['switch', 'Switches']
-                ];
-                // Accordion
-                $(".edit-accordion").collapse();
                 // Service specific
                 var name_field = $('#id_name');
                 var project_end_date = $('#project_end_date');
@@ -69,12 +44,9 @@
                         $('#id_decommissioned_date').val("");
                     }
                 })
-                $("#id_project_end_date").datepicker({ format: "yyyy-mm-dd" });
-                $("#id_decommissioned_date").datepicker({ format: "yyyy-mm-dd", todayBtn: "linked", todayHighlight: true });
             }
         );
-    </script>
-    <script type="text/javascript">
+
         function add_depends_on_port() {
             var parent_id = $('#id_relationship_depends_on').val();
             window.open("/new/port/parent/" + parent_id + "/");

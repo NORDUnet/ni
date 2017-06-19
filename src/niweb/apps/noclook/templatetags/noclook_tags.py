@@ -304,7 +304,9 @@ def json_combo(form_field, urls, initial=None):
     first_url = None
 
     if initial:
-        choices = [u"['{}',' {}']".format(val, val.title().replace("-", " ")) for val in initial.split(',')]
+        if isinstance(initial, str) or isinstance(initial, unicode):
+            initial = initial.split(',')
+        choices = [u"['{}',' {}']".format(val, val.title().replace("-", " ")) for val in initial]
         initial = u",\n".join(choices)
     else: 
         first_url = urls[0]
