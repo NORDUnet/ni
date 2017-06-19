@@ -506,7 +506,7 @@ def new_optical_node(request, slug=None):
     form = forms.OpticalNodeForm(request.POST or None)
     bulk_ports = forms.BulkPortsForm(request.POST or None)
 
-    if request.POST and form.is_valid():
+    if request.POST and form.is_valid() and bulk_ports.is_valid():
         try:
             name = form.cleaned_data['name']
             nh = helpers.get_unique_node_handle(request.user,
@@ -521,16 +521,9 @@ def new_optical_node(request, slug=None):
                 helpers.set_location(user, node, location.handle_id)
 
             # create ports if needed
-            if bulk_ports.is_valid() and not bulk_ports.cleaned_data['no_ports']:
-
-                # TODO: Injection protection?
-                port_names = request.POST.getlist('port_name')
-                port_types = request.POST.getlist('port_type')
-                for port_name, port_type in zip(port_names, port_types):
-                    if port_name:
-                        node = helpers.create_port(nh.get_node(), port_name, user)
-                        helpers.dict_update_node(user, node.handle_id, {'port_type': port_type})
-
+            if not bulk_ports.cleaned_data['no_ports']:
+                data = bulk_ports.cleaned_data
+                helpers.bulk_create_ports(nh.get_node(), request.user, **data)
             return redirect(nh.get_absolute_url())
         except UniqueNodeError:
             form.add_error('name', 'An Optical Node with that name already exists.')

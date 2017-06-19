@@ -26,9 +26,8 @@
             {{ form.rack_units | as_crispy_field }}
           {% endaccordion %}
           {% accordion 'Ports' 'ports' '#create-accordion' %}
-            {% dynamic_ports bulk_ports %}
+            {{ bulk_ports | crispy }}
           {% endaccordion %}
-
       </div>
       <input type="submit" value="Save" class="btn btn-primary" />
       <a href="/new/" class="btn">Cancel</a>

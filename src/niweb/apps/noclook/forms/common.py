@@ -332,7 +332,7 @@ class NewOdfForm(forms.Form):
         super(NewOdfForm, self).__init__(*args, **kwargs)
         # Set max number of ports to choose from
         max_num_of_ports = 48
-        choices = [(x, x) for x in range(1, max_num_of_ports+1) if x]
+        choices = [(x, x) for x in range(1, max_num_of_ports + 1) if x]
         self.fields['max_number_of_ports'].choices = choices
 
     name = forms.CharField()
@@ -349,7 +349,7 @@ class BulkPortsForm(forms.Form):
     port_type = forms.ChoiceField(required=False)
     prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0')
     offset = forms.IntegerField(required=False, min_value=0, initial=1)
-    num_ports = forms.IntegerField(required=False, min_value=0, initial=1)
+    num_ports = forms.IntegerField(required=False, min_value=0, initial=0)
 
 
 class EditOdfForm(forms.Form):
