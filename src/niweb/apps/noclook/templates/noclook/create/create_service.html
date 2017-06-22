@@ -46,7 +46,9 @@ $(document).ready(
                     {{ form.service_type | as_crispy_field }}
                 </div>
                 <div class="span3" id="project_end_date" style="display: none;">
+                  {% if form.project_end_date %}
                     {{ form.project_end_date | as_crispy_field }}
+                  {% endif %}
                 </div>
             </div>
             {{ form.name | as_crispy_field }}
