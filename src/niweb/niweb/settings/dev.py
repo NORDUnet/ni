@@ -89,3 +89,5 @@ SECRET_KEY = environ.get('SECRET_KEY', 'development')
 ########## TESTING
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 ########## END TESTING
+
+GOOGLE_MAPS_API_KEY = environ.get('GOOGLE_MAPS_API_KEY', 'no-apikey')

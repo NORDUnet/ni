@@ -23,7 +23,7 @@ from django.core.urlresolvers import reverse, resolve, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
-from apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId
+from apps.noclook.models import NodeHandle, NodeType, NordunetUniqueId, Dropdown
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
 from apps.noclook import helpers
@@ -410,10 +410,12 @@ class RelationshipResource(Resource):
 
 
 class CableResource(NodeHandleResource):
+    def __init__(self, *args, **kwargs):
+        super(CableResource, self).__init__(*args, **kwargs)
+        self.fields['cable_type'].help_text = u'Choices {}'.format(Dropdown.get('cable_types').as_values())
 
     node_name = fields.CharField(attribute='node_name')
-    cable_type = fields.CharField(attribute='cable_type', help_text='Choices {choices}'.format(
-        choices=[choice[0] for choice in forms.CABLE_TYPES]), blank=True, null=True)
+    cable_type = fields.CharField(attribute='cable_type', blank=True, null=True)
     end_points = fields.ListField(help_text='[{"device": "", "device_type": "", "port": ""},]', blank=True, null=True)
     
     class Meta:

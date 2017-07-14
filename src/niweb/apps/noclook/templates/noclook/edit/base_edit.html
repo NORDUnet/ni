@@ -1,11 +1,13 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ block.super }} Edit {{ node.node_type|lower }} {{ node.name }}  {% endblock %}
 
 {% block js %}
 {{ block.super }}
-<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-datepicker.min.css" type="text/css" />
-<script type="text/javascript" src="{{ STATIC_URL }}js/jquery/bootstrap-datepicker.min.js"></script>
+<link rel="stylesheet" href="{% static 'css/bootstrap-datepicker.min.css' %}" type="text/css" />
+<script type="text/javascript" src="{% static 'js/jquery/bootstrap-datepicker.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
 <script type="text/javascript">
     $(document).ready(
         function(){

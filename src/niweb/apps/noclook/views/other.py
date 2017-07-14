@@ -5,8 +5,9 @@ __author__ = 'lundberg'
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response, get_object_or_404, render
 from django.template import RequestContext
+from django.conf import settings
 from re import escape as re_escape
 import json
 
@@ -205,7 +206,8 @@ def find_all(request, slug=None, key=None, value=None, form=None):
 # Google maps views
 @login_required
 def gmaps(request, slug):
-    return render_to_response('noclook/google_maps.html', {'slug': slug}, context_instance=RequestContext(request))
+    api_key = settings.GOOGLE_MAPS_API_KEY
+    return render(request, 'noclook/google_maps.html', {'slug': slug, 'maps_api_key': api_key})
 
 
 @login_required

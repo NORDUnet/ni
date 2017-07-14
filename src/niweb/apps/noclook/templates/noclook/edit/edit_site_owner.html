@@ -1,36 +1,17 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
 
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Accordion
-        $(".edit-accordion").collapse()
-    }
-);
-</script>
-{% endblock %}
 {% block content %}
 {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
+        {{ form.name | as_crispy_field }}
+        {{ form.description | as_crispy_field }}
     </div>
     <div class="accordion" id="edit-accordion">
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
-                    Information URL (optional)
-                </a>
-            </div>
-            <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <label>URL</label>
-                    {{ form.url }}<span class="help-inline">{{ form.url.help_text }}</span>
-                </div>
-            </div>
-        </div>
+      {% accordion 'Information URL (optional)' 'infourl' '#edit-accordion' %}
+        {{ form.url | as_crispy_field}}
+      {% endaccordion %}
     </div>
 {% endblock %}
 

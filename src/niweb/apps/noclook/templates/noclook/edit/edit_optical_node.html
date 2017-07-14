@@ -1,27 +1,14 @@
 {% extends "noclook/edit/base_edit.html" %}
-
-{% block js %}
-{{ block.super }}
-{% load noclook_tags %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Accordion
-        $(".edit-accordion").collapse();
-    }
-);
-</script>
-{% endblock %}
+{% load crispy_forms_tags %}
 
 {% block content %}
 {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
-        <h3>Type</h3>
-        {{ form.type }}
-        <h3>Operational State</h3>
-        {{ form.operational_state }}
+      {{ form.name | as_crispy_field }}
+      {{ form.type | as_crispy_field }}
+      {{ form.operational_state | as_crispy_field }}
+      {{ form.description | as_crispy_field }}
+
     </div>
 
     <div class="accordion" id="edit-accordion">

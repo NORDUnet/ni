@@ -1,0 +1,14 @@
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+
+{% accordion 'Operational information (optional)' 'operational' '#edit-accordion' %}
+    {{ form.os | as_crispy_field }}
+    {{ form.os_version | as_crispy_field }}
+    {% if node.meta_type == 'Physical' %}
+      {{ form.vendor | as_crispy_field }}
+      {{ form.model| as_crispy_field }}
+      {{ form.service_tag | as_crispy_field }}
+      {{ form.end_support | as_crispy_field }}
+    {% endif %}
+    {{ form.contract_number | as_crispy_field }}
+{% endaccordion %}

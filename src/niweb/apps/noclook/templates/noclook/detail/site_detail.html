@@ -87,7 +87,7 @@
             <tr>
                 <th>More information:</th>
                 <td>
-                    {% if node.url %}
+                    {% if node.data.url %}
                         <a href="{{ node.data.url }}" target="_blank">Link</a>
                     {% else %}
                         <a href="{% more_info_url node.data.name %}" target="_blank">To Portal</a>

@@ -1,0 +1,46 @@
+dropdown,value,name
+site_types
+optical_node_types,ciena6500
+cable_types,Dark Fiber
+cable_types,Patch
+cable_types,Power Cable
+port_types,C13 / C14
+port_types,C19 / C20
+port_types,CEE
+port_types,E2000
+port_types,Fixed
+port_types,LC
+port_types,MU
+port_types,RJ45
+port_types,SC
+port_types,Schuko
+operational_states,In service
+operational_states,Reserved
+operational_states,Decommissioned
+operational_states,Testing
+optical_link_types,OTS
+optical_link_types,OPS
+optical_path_framing,WDM
+optical_path_capacity,10Gb
+optical_path_capacity,100Gb
+optical_link_interface_type,WDM
+security_classes,1
+security_classes,2
+security_classes,3
+security_classes,4
+responsible_groups,DEV
+responsible_groups,NOC
+host_management_sw,Manual
+host_management_sw,Puppet
+countries,BE,Belgium
+countries,CH,Switzerland
+countries,DE,Germany
+countries,DK,Denmark
+countries,FI,Finland
+countries,FR,France
+countries,IS,Iceland
+countries,NL,Netherlands
+countries,NO,Norway
+countries,SE,Sweden
+countries,UK,United Kingdom
+countries,US,USA

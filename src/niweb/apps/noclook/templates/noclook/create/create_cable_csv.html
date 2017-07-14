@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<h1>Create new cables using CSV</h1>
+
+
+<form action="/new/cable_csv/" method="post">
+  {% csrf_token %}
+  {{ form | crispy }}
+  <p>Available cable types: {{cable_types}}</p>
+  {% if cables %}
+  <table class="table table-condensed">
+    <thead>
+      <tr>
+        <th>Line</th>
+        <th>Name</th>
+        <th>Type*</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for cable in cables %}
+    <tr{% if cable.errors %} class="error"{% endif %}>
+      <td>
+        {{ forloop.counter }}
+      </td>
+      <td>
+        {{cable.cleaned_data.name}}
+        {{cable.errors.name}}
+      </td>
+      <td>
+        {{cable.cleaned_data.cable_type}}
+        {{cable.errors.cable_type}}
+      </td>
+      <td>
+        {{cable.cleaned_data.description}}
+        {{cable.errors.description}}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+ {% endif %}
+   <input type="submit" value="Save" class="btn btn-primary" />
+   <a href="/new/" class="btn">Cancel</a>
+ </form>
+
+{% endblock %}

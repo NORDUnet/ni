@@ -124,7 +124,10 @@ def set_uptime(host, check):
     :return: None
     """
     try:
-        last_check = datetime.utcfromtimestamp(check['last_check'])
+        if '-' in check['last_check']:
+            last_check = datetime.strptime(check['last_check'], "%Y-%m-%d %H:%M:%S")
+        else:
+            last_check = datetime.utcfromtimestamp(check['last_check'])
         uptime = int(check['perf_data'].split('=')[-1]) * 60  # uptime in minutes to uptime in sec
         lastboot = last_check - timedelta(seconds=uptime)
         property_dict = {
@@ -225,7 +228,9 @@ def insert(json_list):
 
     # Parse collected Nagios data
     for item in json_list:
-        base = item['host']['checkmk_livestatus']
+        base = item['host'].get('checkmk_livestatus')
+        if not base:
+            base = item['host']['nagiosxi_api']
         host = nc.get_unique_node_by_name(nc.neo4jdb, base['host_name'], 'Host')
         if not host:
             host = get_host(base['host_address'])

@@ -1,25 +1,35 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+{% endblock %}
 
 {% block content %}
     <h1>Create new External Equipment</h1>
-    {% if form.errors %}
-        <div class="alert alert-error">
-            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
-            Please resubmit the form after making the following changes:
-            {{ form.errors }}
+    <form action="" method="post">{% csrf_token %}
+      <div class="well">
+              {{ form.name | as_crispy_field}}
+              {{ form.description | as_crispy_field }}
+      </div>
+      <div class="accordion" id="create-accordion">
+        {% accordion 'Owner (optional)' 'owner' '#create-accordion' %}
+              {% json_combo form.relationship_owner '/formdata/{id}/' 'customer,end-user,host,provider' %}
+        {% endaccordion %}
+        {% accordion 'Location (optional)' 'location' '#create-accordion' %}
+              {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' %}
+              {{ form.rack_units | as_crispy_field }}
+        {% endaccordion %}
+      </div>
+      <div class="control-group">
+        <div class="controls">
+          <input type="submit" value="Save" class="btn btn-primary" />
+          <a href="/new/" class="btn">Cancel</a>
         </div>
-    {% endif %}
-    <div class="well">
-        <form action="" method="post">{% csrf_token %}
-            <h3>Name</h3>
-            {{ form.name }}
-            <h3>Description</h3>
-            {{ form.description }}
-            <span class="help-block">{{ form.description.help_text }}</span>
-            <br><br>
-            <input type="submit" value="Save" class="btn btn-primary" />
-            <a href="/new/" class="btn">Cancel</a>
-        </form>
-    </div>
+      </div>
+    </form>
 {% endblock %}
 

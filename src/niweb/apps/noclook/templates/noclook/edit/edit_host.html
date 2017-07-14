@@ -1,104 +1,26 @@
 {% extends "noclook/edit/base_edit.html" %}
-
-{% block js %}
-{{ block.super }}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Accordion
-        $(".edit-accordion").collapse();
-        // Depends on //
-        // Populate first level single dependency combo box
-        dependencyCategories = [
-            ['service', 'Services'],
-            ['host', 'Hosts']
-        ];
-        // Owner
-        // Populate first level combo box
-        ownerCategories = [
-            ['customer', 'Customer'],
-            ['end-user', 'End User'],
-            ['host-user', 'Host User'],
-            ['provider', 'Provider']
-        ];
-        // User
-        // Populate first level combo box
-        userCategories = [
-            ['host-user', 'Host User']
-        ];
-        $( "#id_end_support" ).datepicker({ format: "yyyy-mm-dd" });
-    }
-);
-</script>
-{% endblock %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
 
 {% block content %}
 {{ block.super }}
     <div id="operation-section">
         <h3>Operational information</h3>
         <div class="well">
-            <label><strong>Name</strong></label>
-            {{ form.name }}
-            <label><strong>Description</strong></label>
-            {{ form.description }}
-            <span class="help-block">{{ form.description.help_text }}</span>
-            <label><strong>Responsible</strong></label>
-            {{ form.responsible_group }}
-            <span class="help-block">{{ form.responsible_group.help_text }}</span>
-            <label><strong>Support</strong></label>
-            {{ form.support_group }}
-            <span class="help-block">{{ form.support_group.help_text }}</span>
-            <label><strong>Operational State</strong></label>
-            {{ form.operational_state }}
-            <span class="help-block">{{ form.operational_state.help_text }}</span>
-            <label><strong>Managed by</strong></label>
-            {{ form.managed_by }}
-            <span class="help-block">{{ form.managed_by.help_text }}</span>
-            <label><strong>Backup</strong></label>
-            {{ form.backup }}
-            <span class="help-block">{{ form.backup.help_text }}</span>
-            <label><strong>Security Class</strong></label>
-            {{ form.security_class }}
-            <label><strong>Security Comment</strong></label>
-            {{ form.security_comment }}
+            {{ form.name | as_crispy_field }}
+            {{ form.description | as_crispy_field }}
+            {{ form.responsible_group | as_crispy_field }}
+            {{ form.support_group | as_crispy_field }}
+            {{ form.operational_state | as_crispy_field }}
+            {{ form.managed_by | as_crispy_field }}
+            {{ form.backup | as_crispy_field }}
+            {{ form.security_class | as_crispy_field }}
+            {{ form.security_comment | as_crispy_field }}
         </div>
     </div>
 
     <div class="accordion" id="edit-accordion">
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
-                    Operational information (optional)
-                </a>
-            </div>
-            <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <label>Operating system</label>
-                    {{ form.os }}
-                    <span class="help-block">{{ form.os.help_text }}</span>
-                    <label>Operating system version</label>
-                    {{ form.os_version }}
-                    <span class="help-block">{{ form.os_version.help_text }}</span>
-                    {% if node.meta_type == 'Physical' %}
-                        <label>Vendor</label>
-                        {{ form.vendor }}
-                        <span class="help-block">{{ form.vendor.help_text }}</span>
-                        <label>Hardware model</label>
-                        {{ form.model }}
-                        <span class="help-block">{{ form.model.help_text }}</span>
-                        <label>Service tag</label>
-                        {{ form.service_tag }}
-                        <span class="help-block">{{ form.service_tag.help_text }}</span>
-                        <label>End of support</label>
-                        {{ form.end_support }}
-                        <span class="help-block">{{ form.end_support.help_text }}</span>
-                    {% endif %}
-                    <label>Contract number</label>
-                    {{ form.contract_number }}
-                    <span class="help-block">{{ form.contract_number.help_text }}</span>
-                </div>
-            </div>
-        </div>
+        {% include "noclook/edit/includes/operational_info.html" %}
         {% include "noclook/edit/includes/location_group.html" %}
         {% include "noclook/edit/includes/dependency_group.html" %}
         {% if node.meta_type == 'Logical' %}
@@ -109,22 +31,13 @@ $(document).ready(
             {% include "noclook/edit/includes/port_group.html" %}
         {% endif %}
         {% include "noclook/edit/includes/host_service_group.html" %}
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseSix">
-                    Convert host
-                </a>
-            </div>
-            <div id="collapseSix" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <div class="alert alert-danger">
-                        Warning. This action is not reversible.
-                    </div>
-                    <a class="btn btn-danger" href="edit/convert-to/switch/"><i class="icon-exclamation-sign icon-white"></i> Convert to switch</a>
-                    <a class="btn btn-danger" href="edit/convert-to/firewall/"><i class="icon-exclamation-sign icon-white"></i> Convert to firewall</a>
-                    <a class="btn btn-danger" href="edit/convert-to/pdu/"><i class="icon-exclamation-sign icon-white"></i> Convert to PDU</a>
-                </div>
-            </div>
+      {% accordion 'Convert host' 'conver_host' '#edit-accordion' %}
+        <div class="alert alert-danger">
+            Warning. This action is not reversible.
         </div>
+        <a class="btn btn-danger" href="edit/convert-to/switch/"><i class="icon-exclamation-sign icon-white"></i> Convert to switch</a>
+        <a class="btn btn-danger" href="edit/convert-to/firewall/"><i class="icon-exclamation-sign icon-white"></i> Convert to firewall</a>
+        <a class="btn btn-danger" href="edit/convert-to/pdu/"><i class="icon-exclamation-sign icon-white"></i> Convert to PDU</a>
+      {% endaccordion %}
     </div>
 {% endblock %}

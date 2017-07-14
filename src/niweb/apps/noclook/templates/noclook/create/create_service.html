@@ -1,10 +1,10 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
 
 {% block js %}
-{{ block.super }}
-
-<link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-datepicker.min.css" type="text/css" />
-<script type="text/javascript" src="{{ STATIC_URL }}js/jquery/bootstrap-datepicker.min.js"></script>
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/bootstrap-datepicker.min.js' %}"></script>
 
 <script type="text/javascript">
 $(document).ready(
@@ -32,7 +32,6 @@ $(document).ready(
                 project_end_date.val("");
             }
         });
-        $("#id_project_end_date").datepicker({ format: "yyyy-mm-dd" });
     }
 );
 </script>
@@ -40,36 +39,22 @@ $(document).ready(
 
 {% block content %}
     <h1>Create new service</h1>
-    {% if form.errors %}
-         <div class="alert alert-error">
-            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
-            Please resubmit the form after making the following changes:
-            {{ form.errors }}
-        </div>
-    {% endif %}
     <div class="well">
         <form action="" method="post">{% csrf_token %}
             <div class="row">
                 <div class="span3">
-                    <h3>Service Type</h3>
-                    {{ form.service_type }}
+                    {{ form.service_type | as_crispy_field }}
                 </div>
                 <div class="span3" id="project_end_date" style="display: none;">
-                    <h3>Project End Date</h3>
-                    {{ form.project_end_date }}
-                    <span class="help-block">{{ form.project_end_date.help_text }}</span>
+                  {% if form.project_end_date %}
+                    {{ form.project_end_date | as_crispy_field }}
+                  {% endif %}
                 </div>
             </div>
-            <h3>Name</h3>
-            {{ form.name }}
-            <span class="help-block">{{ form.name.help_text }}</span>
-            <h3>Operational State</h3>
-            {{ form.operational_state }}
-            <h3>Description (optional)</h3>
-            {{ form.description }}
-            <span class="help-block">{{ form.description.help_text }}</span>
-            <h3>Provider (optional)</h3>
-            {{ form.relationship_provider }}
+            {{ form.name | as_crispy_field }}
+            {{ form.operational_state | as_crispy_field }}
+            {{ form.description | as_crispy_field }}
+            {{ form.relationship_provider | as_crispy_field }}
             <br />
             <br />
             <input type="submit" value="Save" class="btn btn-primary" />

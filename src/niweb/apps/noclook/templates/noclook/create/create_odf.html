@@ -1,25 +1,20 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
+{% load noclook_tags %}
 
 {% block content %}
     <h1>Create new ODF</h1>
-    {% if form.errors %}
-        <div class="alert alert-error">
-            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
-            Please resubmit the form after making the following changes:
-            {{ form.errors }}
-        </div>
-    {% endif %}
-    <div class="well">
-        <form action="" method="post" class="form-horizontal">{% csrf_token %}
+    <form action="" method="post" class="form-horizontal">{% csrf_token %}
+      <div class="well">
             {{ form | crispy }}
-            <div class="controls">
-                <h3>Create ports</h3>
-            </div>
+      </div>
+      <div class="accordion" id="create-accordion">
+          {% accordion 'Ports' 'ports' '#create-accordion' %}
             {{ ports_form | crispy }}
-            <input type="submit" value="Save" class="btn btn-primary" />
-            <a href="/new/" class="btn">Cancel</a>
-        </form>
-    </div>
+          {% endaccordion %}
+      </div>
+      <input type="submit" value="Save" class="btn btn-primary" />
+      <a href="/new/" class="btn">Cancel</a>
+    </form>
 {% endblock %}
 

@@ -5,6 +5,7 @@ import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
 import json
+import re
 from django.utils.html import escape
 from dynamic_preferences import global_preferences_registry
 
@@ -262,3 +263,78 @@ def more_info_url(name):
     global_preferences = global_preferences_registry.manager()
     base_url = global_preferences['general__more_info_link']
     return u'{}{}'.format(base_url, name)
+
+
+@register.tag
+def accordion(parser, token):
+    tokens = token.split_contents()
+    title = tokens[1]
+    _id = tokens[2]
+    try:
+        parent_id = tokens[3]
+    except IndexError:
+        parent_id = None
+    nodelist = parser.parse("endaccordion",)
+    parser.delete_first_token()
+    return AccordionNode(_id, title, nodelist, parent_id)
+
+
+def is_quoted(what):
+    return re.match(r'^[\'"].*[\'"]$', what)
+
+
+def resolve_arg(arg, context):
+    if not arg:
+        result = arg
+    elif is_quoted(arg):
+        result = arg[1:-1]
+    else:
+        result = template.Variable(arg).resolve(context)
+    return result
+
+
+class AccordionNode(template.Node):
+    def __init__(self, _id, title, nodelist, parent_id=None, template='noclook/tags/accordion_tag.html'):
+        self.nodelist = nodelist
+        self.id = _id
+        self.title = title
+        self.template = template
+        self.parent_id = parent_id
+
+    def render(self, context):
+        t = context.render_context.get(self)
+        if t is None:
+            t = context.template.engine.get_template(self.template)
+            context.render_context[self] = t
+        new_context = context.new({
+            'accordion_id': resolve_arg(self.id, context),
+            'accordion_parent_id': resolve_arg(self.parent_id, context),
+            'accordion_title': resolve_arg(self.title, context),
+            'csrf_token': context.get('csrf_token'),
+            'body': self.nodelist.render(context)})
+        return t.render(new_context)
+
+
+@register.inclusion_tag('noclook/tags/json_combo.html')
+def json_combo(form_field, urls, initial=None):
+    urls = [url.strip() for url in urls.split(",")]
+    first_url = None
+
+    if initial:
+        if isinstance(initial, str) or isinstance(initial, unicode):
+            initial = initial.split(',')
+        choices = [u"['{}',' {}']".format(val, val.title().replace("-", " ")) for val in initial]
+        initial = u",\n".join(choices)
+    else: 
+        first_url = urls[0]
+        if len(urls) > 1:
+            urls = urls[1:]
+        else:
+            urls = []
+    return {
+                'first_url': first_url,
+                'initial': initial,
+                'urls': urls,
+                'field': form_field,
+            }
+

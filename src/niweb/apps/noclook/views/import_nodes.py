@@ -54,6 +54,7 @@ EXPORT_FILTER = [
   'PIC',
 ]
 
+
 class ImportNodesView(View):
     def get(self, request, slug, handle_id):
         parent = get_object_or_404(NodeHandle, handle_id=handle_id)
@@ -61,7 +62,7 @@ class ImportNodesView(View):
 
     def post(self, request, slug, handle_id):
         parent = get_object_or_404(NodeHandle, handle_id=handle_id)
-        if 'file' in  request.FILES:
+        if 'file' in request.FILES:
             return self.file(request, parent)
         if 'import' in request.POST:
             # Recreate data table
@@ -90,9 +91,9 @@ class ImportNodesView(View):
         self.convert_children(data)
         return data['children']
 
-    def convert_children(self,data):
+    def convert_children(self, data):
         if 'children' in data:
-            tmp = [v for k,v in sorted(data['children'].iteritems())]
+            tmp = [v for k, v in sorted(data['children'].iteritems())]
         for child in tmp:
             self.convert_children(child)
         data['children'] = tmp
@@ -127,7 +128,10 @@ class ImportNodesView(View):
             slug = slugify(item['node_type'])
             node_type = helpers.slug_to_node_type(slug, create=True)
             try:
-                NodeHandle.objects.get(node_name=item['name'], node_type=node_type)
+                NodeHandle.objects.get(node_name=item['name'],
+                                       node_type=node_type)
+                error = "Must be unique."
+            except NodeHandle.MultipleObjectsReturned:
                 error = "Must be unique."
             except NodeHandle.DoesNotExist:
                 pass
@@ -142,7 +146,8 @@ class ImportNodesView(View):
             return self.edit(request, parent, data, errors)
 
     def edit(self, request, parent, data, errors=None):
-        return render(request, 'noclook/import/edit.html', {'parent': parent, 'data': data, 'errors': errors})
+        return render(request, 'noclook/import/edit.html',
+                      {'parent': parent, 'data': data, 'errors': errors})
 
     def create(self, request, parent, data):
         user = request.user
@@ -158,19 +163,31 @@ class ImportNodesView(View):
 
     def create_node(self, item, parent_nh, user):
         errors = []
-        slug = slugify(item['node_type']).replace("_","-")
+        slug = slugify(item['node_type']).replace("_", "-")
         meta_type = META_TYPES.get(item['node_type'], 'Physical')
         nh = None
         if item['node_type'] in GENERIC_TYPES:
-            nh = helpers.get_generic_node_handle(user, item['name'], slug, meta_type)
+            nh = helpers.get_generic_node_handle(user,
+                                                 item['name'],
+                                                 slug,
+                                                 meta_type)
         else:
             try:
-                nh = helpers.get_unique_node_handle(user, item['name'], slug, meta_type)
+                nh = helpers.get_unique_node_handle(user,
+                                                    item['name'],
+                                                    slug,
+                                                    meta_type)
             except UniqueNodeError:
                 # Should have been validated, but hey race conditions
                 errors.append(u"Could not create a {} named '{}', since one already exist".format(item['node_type'], item['name']))
+
         if nh:
-            helpers.dict_update_node(user, nh.handle_id, item, filtered_keys=['node_type','children','ports'])
+            helpers.dict_update_node(user,
+                                     nh.handle_id,
+                                     item,
+                                     filtered_keys=['node_type',
+                                                    'children',
+                                                    'ports'])
             if item['node_type'] in HAS_RELATION:
                 helpers.set_has(user, parent_nh.get_node(), nh.handle_id)
             else:
@@ -190,7 +207,7 @@ class ExportNodesView(View):
     def get(self, request, slug, handle_id):
         nh = get_object_or_404(NodeHandle, handle_id=handle_id)
         q = """
-            MATCH p=(n:Node {handle_id: {handle_id}})-[r:Has|:Located_in*1..3]-(x) 
+            MATCH p=(n:Node {handle_id: {handle_id}})-[r:Has|:Located_in*1..3]-(x)
             WHERE (not exists(x.operational_state) or x.operational_state <> 'Decommissioned')
             RETURN tail(nodes(p)) as nodes, labels(x) as labels
         """
@@ -203,10 +220,10 @@ class ExportNodesView(View):
             self.sort_data(item)
         json_result = json.dumps(output, indent=4)
 
-        filename = "{}.{}_export.json".format(nh.node_type, nh.node_name)
+        filename = u"{}.{}_export.json".format(nh.node_type, nh.node_name)
 
         resp = HttpResponse(json_result, content_type="application/json")
-        resp['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
+        resp['Content-Disposition'] = u'attachment; filename="{}"'.format(filename)
         return resp
 
     def sort_data(self, data):
@@ -230,26 +247,27 @@ class ExportNodesView(View):
                     output.append(node)
                 else:
                     for parent in reversed(result['nodes'][:-1]):
-                        # Attach to nearest parent that was not in EXPORT_FILTER
+                        # Attach to nearest parent that not in EXPORT_FILTER
                         if parent['handle_id'] in tmp:
                             tmp[parent['handle_id']]['children'].append(node)
                             break
         return output
 
     def export_node(self, data, parent=None):
-        node = {k: v for k,v in data['nodes'][-1].items() if k not in ['noclook_last_seen', 'noclook_auto_manage', 'handle_id']}
+        node = {k: v for k, v in data['nodes'][-1].items() if k not in
+                ['noclook_last_seen', 'noclook_auto_manage', 'handle_id']}
         node_type = data['labels'][-1]
 
-        #Extra fields
-        node['node_type'] = node_type.replace("_"," ")
+        # Extra fields
+        node['node_type'] = node_type.replace("_", " ")
         node['children'] = []
         form = VALIDATION_FORMS.get(node_type)
         template = node
         if form:
-            template = {k: '' for k in form().fields.keys() if not k.startswith("relationship_")}
+            template = {k: '' for k in form().fields.keys() if
+                        not k.startswith("relationship_")}
             template.update(node)
         return template
-
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):

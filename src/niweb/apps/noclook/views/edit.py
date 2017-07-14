@@ -9,11 +9,10 @@ Node manipulation views.
 from operator import itemgetter
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse, HttpResponseForbidden
-from django.shortcuts import render_to_response, get_object_or_404, render
-from django.template import RequestContext
+from django.http import Http404, JsonResponse
+from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, Dropdown
 from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
@@ -21,34 +20,30 @@ import norduniclient as nc
 
 
 # Helper functions
-@login_required
+@staff_member_required
 def delete_node(request, slug, handle_id):
     """
     Removes the node and all its relationships.
     """
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
-    redirect = '/{}'.format(slug)
+    redirect_url = '/{}'.format(slug)
     nh, node = helpers.get_nh_node(handle_id)
     try:
         # Redirect to parent if deleted node was a child node
         parent = node.get_parent().get('Has', [])
         if parent:
-            redirect = helpers.get_node_url(parent[0]['node'].handle_id)
+            redirect_url = helpers.get_node_url(parent[0]['node'].handle_id)
     except AttributeError:
         pass
     helpers.delete_node(request.user, node.handle_id)
-    return HttpResponseRedirect(redirect)
+    return redirect(redirect_url)
 
 
-@login_required
+@staff_member_required
 def delete_relationship(request, slug, handle_id, rel_id):
     """
     Removes the relationship if the node has a relationship matching the
     supplied id.
     """
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     success = False
     if request.method == 'POST':
         nh, node = helpers.get_nh_node(handle_id)
@@ -63,14 +58,12 @@ def delete_relationship(request, slug, handle_id, rel_id):
     return JsonResponse({'success': success, 'relationship_id': '{}'.format(rel_id)})
 
 
-@login_required
+@staff_member_required
 def update_relationship(request, slug, handle_id, rel_id):
     """
     Removes the relationship if the node has a relationship matching the
     supplied id.
     """
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     success = False
     properties = {}
     if request.POST:
@@ -171,13 +164,11 @@ def get_subtype_form_data(request, slug, key, value):
     return JsonResponse(subtype_list, safe=False)
 
 
-@login_required
+@staff_member_required
 def convert_host(request, handle_id, slug):
     """
     Convert a Host to Firewall or Switch.
     """
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     allowed_types = ['firewall', 'switch', 'pdu']  # Types that can be added as Hosts by nmap
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     if slug in allowed_types and nh.node_type.type == 'Host':
@@ -190,18 +181,16 @@ def convert_host(request, handle_id, slug):
             'backup': ''
         }
         helpers.dict_update_node(request.user, node.handle_id, node_properties, node_properties.keys())
-    return HttpResponseRedirect(nh.get_absolute_url())
+    return redirect(nh.get_absolute_url())
 
 
 # Edit functions
-@login_required
+@staff_member_required
 def edit_node(request, slug, handle_id):
     """
-    Generic edit function that redirects calls to node type sensitive edit 
+    Generic edit function that redirects calls to node type sensitive edit
     functions.
     """
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     try:
         func = EDIT_FUNC[slug]
     except KeyError:
@@ -209,10 +198,8 @@ def edit_node(request, slug, handle_id):
     return func(request, handle_id)
 
 
-@login_required
+@staff_member_required
 def edit_cable(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, cable = helpers.get_nh_node(handle_id)
     connections = cable.get_connected_equipment()
@@ -232,21 +219,18 @@ def edit_cable(request, handle_id):
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
                 helpers.set_provider(request.user, cable, owner_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditCableForm(cable.data)
-    return render_to_response('noclook/edit/edit_cable.html',
-                              {'node_handle': nh, 'form': form, 'node': cable, 'connections': connections,
-                               'relations': relations},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_cable.html',
+                  {'node_handle': nh, 'form': form, 'node': cable, 'connections': connections,
+                   'relations': relations})
 
 
-@login_required
+@staff_member_required
 def edit_customer(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, customer = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -255,19 +239,16 @@ def edit_customer(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, customer.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditCustomerForm(customer.data)
-    return render_to_response('noclook/edit/edit_customer.html', {'node_handle': nh, 'form': form, 'node': customer},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_customer.html', {'node_handle': nh, 'form': form, 'node': customer})
 
 
-@login_required
+@staff_member_required
 def edit_end_user(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, end_user = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -276,19 +257,22 @@ def edit_end_user(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, end_user.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditEndUserForm(end_user.data)
-    return render_to_response('noclook/edit/edit_end_user.html', {'node_handle': nh, 'form': form, 'node': end_user},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_end_user.html', {'node_handle': nh, 'form': form, 'node': end_user})
 
 
-@login_required
+def _handle_ports(parent, clean_ports, user):
+    if clean_ports and isinstance(clean_ports, list):
+        for port_name in clean_ports:
+            helpers.create_port(parent, port_name, user)
+
+
+@staff_member_required
 def edit_external_equipment(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, external_equipment = helpers.get_nh_node(handle_id)
     relations = external_equipment.get_relations()
@@ -306,30 +290,26 @@ def edit_external_equipment(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, external_equipment, location_nh.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(external_equipment, port_name, request.user)
+            _handle_ports(external_equipment,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditExternalEquipmentForm(external_equipment.data)
-    return render_to_response('noclook/edit/edit_external_equipment.html',
-                              {'node_handle': nh, 'node': external_equipment, 'form': form, 'relations': relations,
-                               'location': location, 'ports': ports},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_external_equipment.html',
+                  {'node_handle': nh, 'node': external_equipment, 'form': form, 'relations': relations,
+                   'location': location, 'ports': ports})
 
 
-@login_required
+@staff_member_required
 def edit_firewall(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, firewall = helpers.get_nh_node(handle_id)
     location = firewall.get_location()
     relations = firewall.get_relations()
-    depends_on = firewall.get_dependencies()
     host_services = firewall.get_host_services()
     ports = firewall.get_ports()
     if request.POST:
@@ -344,34 +324,28 @@ def edit_firewall(request, handle_id):
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
                 helpers.set_owner(request.user, firewall, owner_nh.handle_id)
-            # You can not set location and depends on at the same time
-            if form.cleaned_data['relationship_depends_on']:
-                depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                helpers.set_depends_on(request.user, firewall, depends_on_nh.handle_id)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, firewall, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, firewall.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(firewall, port_name, request.user)
+            _handle_ports(firewall,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditFirewallForm(firewall.data)
-    return render_to_response('noclook/edit/edit_firewall.html',
-                              {'node_handle': nh, 'node': firewall, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services}, context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_firewall.html',
+                  {'node_handle': nh, 'node': firewall, 'form': form, 'location': location,
+                   'relations': relations, 'ports': ports,
+                   'host_services': host_services})
 
 
-@login_required
+@staff_member_required
 def edit_host(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, host = helpers.get_nh_node(handle_id)
     location = host.get_location()
@@ -379,6 +353,7 @@ def edit_host(request, handle_id):
     depends_on = host.get_dependencies()
     host_services = host.get_host_services()
     ports = host.get_ports()
+    dependency_categories = 'service,host'
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
@@ -404,19 +379,23 @@ def edit_host(request, handle_id):
                     helpers.set_location(request.user, host, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, host.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(host, port_name, request.user)
+            _handle_ports(host,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditHostForm(host.data)
-    return render_to_response('noclook/edit/edit_host.html',
-                              {'node_handle': nh, 'node': host, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services}, context_instance=RequestContext(request))
+    context = {
+        'node_handle': nh, 'node': host, 'form': form, 'location': location,
+        'relations': relations, 'depends_on': depends_on, 'ports': ports,
+        'host_services': host_services, 'dependency_categories': dependency_categories
+    }
+    return render(request, 'noclook/edit/edit_host.html', context)
+
+
 def _nh_safe_get(pk):
     try:
         nh = NodeHandle.objects.get(pk=pk)
@@ -424,10 +403,9 @@ def _nh_safe_get(pk):
         nh = None
     return nh
 
-@login_required
+
+@staff_member_required
 def edit_odf(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, odf = helpers.get_nh_node(handle_id)
     location = odf.get_location()
@@ -441,18 +419,18 @@ def edit_odf(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, odf, location_nh.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(odf, port_name, request.user)
+            _handle_ports(odf,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOdfForm(odf.data)
-    return render_to_response('noclook/edit/edit_odf.html',
-                              {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_odf.html',
+                  {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports})
+
 
 @staff_member_required
 def edit_optical_fillter(request, handle_id):
@@ -467,21 +445,19 @@ def edit_optical_fillter(request, handle_id):
         if form.cleaned_data['relationship_location']:
             location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
             helpers.set_location(request.user, of, location_nh.handle_id)
-        if form.cleaned_data['relationship_ports']:
-            for port_name in form.cleaned_data['relationship_ports']:
-                helpers.create_port(of, port_name, request.user)
+        _handle_ports(of,
+                      form.cleaned_data['relationship_ports'],
+                      request.user)
         if 'saveanddone' in request.POST:
-            return HttpResponseRedirect(nh.get_absolute_url())
+            return redirect(nh.get_absolute_url())
         else:
-            return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+            return redirect('%sedit' % nh.get_absolute_url())
 
     return render(request, 'noclook/edit/edit_optical_filter.html', {'node_handle': nh, 'node': of, 'form': form, 'location': location, 'ports': ports})
 
 
-@login_required
+@staff_member_required
 def edit_optical_link(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, link = helpers.get_nh_node(handle_id)
     relations = link.get_relations()
@@ -490,7 +466,7 @@ def edit_optical_link(request, handle_id):
         form = forms.EditOpticalLinkForm(request.POST)
         if form.is_valid():
             if 'type' in form.cleaned_data:
-              form.cleaned_data['type'] = form.cleaned_data['type'].name
+                form.cleaned_data['type'] = form.cleaned_data['type'].name
             # Generic node update
             helpers.form_update_node(request.user, link.handle_id, form)
             # Optical Link node updates
@@ -504,25 +480,23 @@ def edit_optical_link(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_b'])
                 helpers.set_depends_on(request.user, link, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOpticalLinkForm(link.data)
-    return render_to_response('noclook/edit/edit_optical_link.html',
-                              {'node_handle': nh, 'form': form, 'node': link, 'relations': relations,
-                               'depends_on': depends_on},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_optical_link.html',
+                  {'node_handle': nh, 'form': form, 'node': link, 'relations': relations,
+                   'depends_on': depends_on})
 
 
-@login_required
+@staff_member_required
 def edit_optical_multiplex_section(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, oms = helpers.get_nh_node(handle_id)
     relations = oms.get_relations()
     depends_on = oms.get_dependencies()
+    dependency_categories = 'optical-link'
     if request.POST:
         form = forms.EditOpticalMultiplexSectionForm(request.POST)
         if form.is_valid():
@@ -536,21 +510,18 @@ def edit_optical_multiplex_section(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
                 helpers.set_depends_on(request.user, oms, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOpticalMultiplexSectionForm(oms.data)
-    return render_to_response('noclook/edit/edit_optical_multiplex_section.html',
-                              {'node_handle': nh, 'form': form, 'node': oms, 'relations': relations,
-                               'depends_on': depends_on},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_optical_multiplex_section.html',
+                  {'node_handle': nh, 'form': form, 'node': oms, 'relations': relations,
+                      'depends_on': depends_on, 'dependency_categories': dependency_categories})
 
 
-@login_required
+@staff_member_required
 def edit_optical_node(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, optical_node = helpers.get_nh_node(handle_id)
     location = optical_node.get_location()
@@ -566,28 +537,27 @@ def edit_optical_node(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, optical_node, location_nh.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(optical_node, port_name, request.user)
+            _handle_ports(optical_node,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOpticalNodeForm(optical_node.data)
-    return render_to_response('noclook/edit/edit_optical_node.html',
-                              {'node_handle': nh, 'node': optical_node, 'form': form, 'location': location,
-                               'ports': ports},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_optical_node.html',
+                  {'node_handle': nh, 'node': optical_node, 'form': form, 'location': location,
+                   'ports': ports})
 
-@login_required
+
+@staff_member_required
 def edit_optical_path(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, path = helpers.get_nh_node(handle_id)
     relations = path.get_relations()
     depends_on = path.get_dependencies()
+    dependency_categories = 'odf,optical-link,optical-multiplex-section,optical-node,router'
     if request.POST:
         form = forms.EditOpticalPathForm(request.POST)
         if form.is_valid():
@@ -601,21 +571,18 @@ def edit_optical_path(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
                 helpers.set_depends_on(request.user, path, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditOpticalPathForm(path.data)
-    return render_to_response('noclook/edit/edit_optical_path.html',
-                              {'node_handle': nh, 'form': form, 'node': path, 'relations': relations,
-                               'depends_on': depends_on},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_optical_path.html',
+                  {'node_handle': nh, 'form': form, 'node': path, 'relations': relations,
+                   'depends_on': depends_on, 'dependency_categories': dependency_categories})
 
 
-@login_required
+@staff_member_required
 def edit_pdu(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, pdu = helpers.get_nh_node(handle_id)
     location = pdu.get_location()
@@ -623,6 +590,7 @@ def edit_pdu(request, handle_id):
     depends_on = pdu.get_dependencies()
     host_services = pdu.get_host_services()
     ports = pdu.get_ports()
+    dependency_categories = 'service'
     if request.POST:
         form = forms.EditPDUForm(request.POST)
         if form.is_valid():
@@ -644,25 +612,23 @@ def edit_pdu(request, handle_id):
                 helpers.set_location(request.user, pdu, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, pdu.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(pdu, port_name, request.user)
+            _handle_ports(pdu,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditPDUForm(pdu.data)
-    return render_to_response('noclook/edit/edit_pdu.html',
-                              {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services}, context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_pdu.html',
+                  {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
+                   'relations': relations, 'depends_on': depends_on, 'ports': ports,
+                   'host_services': host_services, 'dependency_categories': dependency_categories})
 
 
-@login_required
+@staff_member_required
 def edit_peering_partner(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, peering_partner = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -671,23 +637,28 @@ def edit_peering_partner(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, peering_partner.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditPeeringPartnerForm(peering_partner.data)
-    return render_to_response('noclook/edit/edit_peering_partner.html',
-                              {'node_handle': nh, 'node': peering_partner, 'form': form},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_peering_partner.html',
+                  {'node_handle': nh, 'node': peering_partner, 'form': form})
 
 
-@login_required
+@staff_member_required
 def edit_port(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     nh, port = helpers.get_nh_node(handle_id)
     parent = port.get_parent()
     connected_to = port.get_connected_to()
+    parent_categories = ['external-equipment',
+                         'firewall',
+                         'host',
+                         'odf',
+                         'optical-node',
+                         'router',
+                         'switch']
+    connections_categories = Dropdown.get('cable_types').as_values(False)
     if request.POST:
         form = forms.EditPortForm(request.POST)
         if form.is_valid():
@@ -701,20 +672,18 @@ def edit_port(request, handle_id):
                 cable_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_connected_to'])
                 helpers.set_connected_to(request.user, cable_nh.get_node(), port.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditPortForm(port.data)
-    return render_to_response('noclook/edit/edit_port.html',
-                              {'node_handle': nh, 'form': form, 'node': port, 'parent': parent,
-                               'connected_to': connected_to}, context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_port.html',
+                  {'node_handle': nh, 'form': form, 'node': port, 'parent': parent,
+                      'connected_to': connected_to, 'parent_categories': parent_categories, 'connections_categories': connections_categories})
 
 
-@login_required
+@staff_member_required
 def edit_provider(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, provider = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -723,24 +692,22 @@ def edit_provider(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, provider.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditProviderForm(provider.data)
-    return render_to_response('noclook/edit/edit_provider.html',
-                              {'node_handle': nh, 'form': form, 'node': provider},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_provider.html',
+                  {'node_handle': nh, 'form': form, 'node': provider})
 
 
-@login_required
+@staff_member_required
 def edit_rack(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, rack = helpers.get_nh_node(handle_id)
     parent = rack.get_parent()
     located_in = rack.get_located_in()
+    located_in_categories = ['host', 'odf', 'optical-node', 'router']
     if request.POST:
         form = forms.EditRackForm(request.POST)
         if form.is_valid():
@@ -754,21 +721,18 @@ def edit_rack(request, handle_id):
                 equipment = NodeHandle.objects.get(pk=form.cleaned_data['relationship_located_in'])
                 helpers.set_location(request.user, equipment.get_node(), rack.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditRackForm(rack.data)
-    return render_to_response('noclook/edit/edit_rack.html',
-                              {'node_handle': nh, 'form': form, 'parent': parent, 'node': rack,
-                               'located_in': located_in},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_rack.html',
+                  {'node_handle': nh, 'form': form, 'parent': parent, 'node': rack,
+                      'located_in': located_in, 'parent_categories': 'site', 'located_in_categories': located_in_categories})
 
 
-@login_required
+@staff_member_required
 def edit_router(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, router = helpers.get_nh_node(handle_id)
     location = router.get_location()
@@ -781,28 +745,34 @@ def edit_router(request, handle_id):
             if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, router, location_nh.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(router, port_name, request.user)
+            _handle_ports(router,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditRouterForm(router.data)
-        return render_to_response('noclook/edit/edit_router.html',
-                                  {'node_handle': nh, 'node': router, 'form': form, 'location': location},
-                                  context_instance=RequestContext(request))
+        return render(request, 'noclook/edit/edit_router.html',
+                      {'node_handle': nh, 'node': router, 'form': form, 'location': location})
 
 
-@login_required
+@staff_member_required
 def edit_service(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, service = helpers.get_nh_node(handle_id)
     relations = service.get_relations()
     depends_on = service.get_dependencies()
+    dependency_categories = ['host',
+                             'firewall',
+                             'odf',
+                             'optical-node',
+                             'optical-path',
+                             'router',
+                             'service',
+                             'switch']
+    user_categories = ['customer', 'end-user']
     if request.POST:
         form = forms.EditServiceForm(request.POST)
         if form.is_valid():
@@ -819,21 +789,19 @@ def edit_service(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
                 helpers.set_depends_on(request.user, service, depends_on_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditServiceForm(service.data)
-    return render_to_response('noclook/edit/edit_service.html',
-                              {'node_handle': nh, 'form': form, 'node': service, 'relations': relations,
-                               'depends_on': depends_on},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_service.html',
+                  {'node_handle': nh, 'form': form, 'node': service, 'relations': relations,
+                   'depends_on': depends_on, 'dependency_categories': dependency_categories,
+                   'user_categories': user_categories})
 
 
-@login_required
+@staff_member_required
 def edit_site(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, site = helpers.get_nh_node(handle_id)
     relations = site.get_relations()
@@ -847,20 +815,17 @@ def edit_site(request, handle_id):
                 responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_responsible_for'])
                 helpers.set_responsible_for(request.user, site, responsible_nh.handle_id)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditSiteForm(site.data)
-    return render_to_response('noclook/edit/edit_site.html',
-                              {'node_handle': nh, 'form': form, 'relations': relations, 'node': site},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_site.html',
+                  {'node_handle': nh, 'form': form, 'relations': relations, 'node': site})
 
 
-@login_required
+@staff_member_required
 def edit_site_owner(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, site_owner = helpers.get_nh_node(handle_id)
     if request.POST:
@@ -869,20 +834,17 @@ def edit_site_owner(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, site_owner.handle_id, form)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditSiteOwnerForm(site_owner.data)
-    return render_to_response('noclook/edit/edit_site_owner.html',
-                              {'node_handle': nh, 'form': form, 'node': site_owner},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_site_owner.html',
+                  {'node_handle': nh, 'form': form, 'node': site_owner})
 
 
-@login_required
+@staff_member_required
 def edit_switch(request, handle_id):
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
     # Get needed data from node
     nh, switch = helpers.get_nh_node(handle_id)
     location = switch.get_location()
@@ -890,40 +852,51 @@ def edit_switch(request, handle_id):
     depends_on = switch.get_dependencies()
     host_services = switch.get_host_services()
     ports = switch.get_ports()
+    ports_form = forms.BulkPortsForm(request.POST or None)
     if request.POST:
         form = forms.EditSwitchForm(request.POST)
-        if form.is_valid():
+        if form.is_valid() and ports_form.is_valid():
             # Generic node update
             helpers.form_update_node(request.user, switch.handle_id, form)
             # Host specific updates
-            if form.cleaned_data['relationship_user']:
-                user_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_user'])
-                helpers.set_user(request.user, switch, user_nh.handle_id)
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
                 helpers.set_owner(request.user, switch, owner_nh.handle_id)
             # You can not set location and depends on at the same time
-            if form.cleaned_data['relationship_depends_on']:
-                depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
-                helpers.set_depends_on(request.user, switch, depends_on_nh.handle_id)
-            elif form.cleaned_data['relationship_location']:
+            if form.cleaned_data['relationship_location']:
                 location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
                 helpers.set_location(request.user, switch, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, switch.handle_id)
-            if form.cleaned_data['relationship_ports']:
-                for port_name in form.cleaned_data['relationship_ports']:
-                    helpers.create_port(switch, port_name, request.user)
+            _handle_ports(switch,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
+
+            if not ports_form.cleaned_data['no_ports']:
+                data = ports_form.cleaned_data
+                helpers.bulk_create_ports(switch, request.user, **data)
             if 'saveanddone' in request.POST:
-                return HttpResponseRedirect(nh.get_absolute_url())
+                return redirect(nh.get_absolute_url())
             else:
-                return HttpResponseRedirect('%sedit' % nh.get_absolute_url())
+                return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditSwitchForm(switch.data)
-    return render_to_response('noclook/edit/edit_switch.html',
-                              {'node_handle': nh, 'node': switch, 'form': form, 'location': location,
-                               'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                               'host_services': host_services}, context_instance=RequestContext(request))
+    return render(request, 'noclook/edit/edit_switch.html',
+                  {'node_handle': nh, 'node': switch, 'form': form, 'location': location,
+                   'relations': relations, 'depends_on': depends_on, 'ports': ports,
+                   'host_services': host_services, 'ports_form': ports_form})
+
+
+@staff_member_required
+def disable_noclook_auto_manage(request, slug, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    node = nh.get_node()
+    if node.data.get('noclook_auto_manage'):
+        node_properties = {
+            'noclook_auto_manage': ''
+        }
+        helpers.dict_update_node(request.user, node.handle_id, node_properties, node_properties.keys())
+    return redirect(nh.get_absolute_url())
 
 
 EDIT_FUNC = {

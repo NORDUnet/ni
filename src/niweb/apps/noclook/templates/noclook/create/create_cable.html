@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load crispy_forms_tags %}
 
 {% block content %}
     <h1>Create new cable</h1>
@@ -11,21 +12,25 @@
     {% endif %}
     <div class="well">
         <form action="" method="post">{% csrf_token %}
-            <h3>Name</h3>
-            {{ form.name }}
-            <span class="help-block">{{ form.name.help_text }}</span>
-            <br><br>
-            <h3>Cable Type</h3>
-            {{ form.cable_type }}
-            <br />
-            <br />
-            <h3>Description</h3>
-            {{ form.description }}
-            <br />
-            <br />
-            {{ form.relationship_provider }}
+            {{ form.name | as_crispy_field }}
+            {{ form.cable_type | as_crispy_field }}
+            {{ form.description | as_crispy_field }}
+            {{ form.relationship_provider | as_crispy_field}}
             <input type="submit" value="Save" class="btn btn-primary" />
             <a href="/new/" class="btn">Cancel</a>
         </form>
+    </div>
+
+    {% load noclook_tags %}
+    <div class="accordion">
+    {% accordion 'CSV cable entry' 'csv_cables' %}
+      <form action="/new/cable_csv/" method="post">
+        {% csrf_token %}
+        {{ csv_form | crispy }}
+        <p>Available cable types: {{cable_types}}</p>
+        <input type="submit" value="Save" class="btn btn-primary" />
+        <a href="/new/" class="btn">Cancel</a>
+      </form>
+    {% endaccordion %}
     </div>
 {% endblock %}

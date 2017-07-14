@@ -1,50 +1,26 @@
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        $('#located_in_categoryA').append($('<option>').val("0").text("-- Please Select --"));
-        $.each(locatedInCategories, function(key, tuple) {
-            $('#located_in_categoryA').append($('<option>').val(tuple[0]).text(tuple[1]));
-        });
-        // Hook lower level combo boxes up to their parent
-        $("#located_in_level0A").jCombo("/formdata/unlocated/{id}/", {
-            parent: "#located_in_categoryA",
-            end_value_field: "#id_relationship_located_in"
-        });
-    }
-);
-</script>
-
-<div class="accordion-group">
-    <div class="accordion-heading">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseLocatedIn">
-            Located in {{ node_handle.node_type|lower }} (optional)
-        </a>
-    </div>
-    <div id="collapseLocatedIn" class="accordion-body collapse">
-        <div class="accordion-inner">
-            {% if located_in.Located_in %}
-                {% load noclook_tags %}
-                <h4>Located in rack</h4>
-                {% for item in located_in.Located_in %}
-                    <div class="row">
-                        <div class="span5">
-                             <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
-                        </div>
-                        <div class="span1">
-                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
-                        </div>
-                    </div>
-                {% endfor %}
-                <hr>
-            {% endif %}
-            <h4>Add to rack</h4>
-            <div class="row">
-                <div class="span4">
-                    {{ form.relationship_located_in }}
-                    <select class="stacked" name="located_in_categoryA" id="located_in_categoryA"></select>
-                    <select class="stacked" name="located_in_level0A" id="located_in_level0A"></select>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% load noclook_tags %}
+{% blockvar located_in_title %}
+  Located in {{ node_handle.node_type|lower }} (optional)
+{% endblockvar %}
+{% accordion located_in_title 'located-in-edit' '#edit-accordion' %}
+  {% if located_in.Located_in %}
+      <h4>Located in rack</h4>
+      {% for item in located_in.Located_in %}
+          <div class="row">
+              <div class="span5">
+                   <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+              </div>
+              <div class="span1">
+                  <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+              </div>
+          </div>
+      {% endfor %}
+      <hr>
+  {% endif %}
+  <h4>Add to rack</h4>
+  <div class="row">
+      <div class="span4">
+        {% json_combo form.relationship_located_in '/formdata/unlocated/{id}/' located_in_categories %}
+      </div>
+  </div>
+{% endaccordion %}

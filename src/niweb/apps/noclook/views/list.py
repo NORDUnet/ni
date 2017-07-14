@@ -73,9 +73,10 @@ def _filter_operational_state(nodes, request, select=lambda n: n):
     return [n for n in nodes if select(n).get('operational_state', '').lower() not in exclude]
 
 
+
 def _type_table(wrapped_node):
     node = wrapped_node.get('node')
-    row = TableRow(node)
+    row = TableRow(node, node.get('description'))
     _set_expired(row, node)
     return row
 
@@ -92,7 +93,8 @@ def list_by_type(request, slug):
     node_list = _filter_expired(node_list, request, select=lambda n: n.get('node'))
     # Since all is the same type... we could use a defaultdict with type/id return
     urls = get_node_urls(node_list)
-    table = Table('Name')
+
+    table = Table('Name', 'Description')
     table.rows = [_type_table(node) for node in node_list]
     _set_filters_expired(table, request)
 
@@ -127,6 +129,27 @@ def list_cables(request):
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Cables', 'urls': urls})
 
+
+def _customer_table(wrapped_customer):
+    customer = wrapped_customer.get('customer')
+    return TableRow(customer, customer.get('description'))
+
+@login_required
+def list_customers(request):
+    q = """
+        MATCH (customer:Customer)
+        RETURN customer
+        ORDER BY customer.name
+        """
+    customer_list = nc.query_to_list(nc.neo4jdb, q)
+    urls = get_node_urls(customer_list)
+
+    table = Table('Name', 'Description')
+    table.rows = [ _customer_table(customer) for customer in customer_list ]
+    table.no_badges=True
+
+    return render(request, 'noclook/list/list_generic.html',
+            {'table': table, 'name': 'Customers', 'urls': urls})
 
 def _host_table(host, users):
     ip_addresses = host.get('ip_addresses', ['No address'])

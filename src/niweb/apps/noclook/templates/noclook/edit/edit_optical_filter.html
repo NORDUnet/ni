@@ -1,26 +1,11 @@
 {% extends "noclook/edit/base_edit.html" %}
-
-{% block js %}
-{{ block.super }}
-{% load noclook_tags %}
-<script type="text/javascript">
-$(document).ready(
-    function(){
-        // Accordion
-        $(".edit-accordion").collapse();
-    }
-);
-</script>
-{% endblock %}
+{% load crispy_forms_tags %}
 
 {% block content %}
 {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
-        <h3>Max ports</h3>
-        {{ form.max_number_of_ports }}
-        <span class="help-block">{{ form.max_number_of_ports.help_text }}</span>
+        {{ form.name | as_crispy_field}}
+        {{ form.max_number_of_ports | as_crispy_field}}
     </div>
 
     <div class="accordion" id="edit-accordion">

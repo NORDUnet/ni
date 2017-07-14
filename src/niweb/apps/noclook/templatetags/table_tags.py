@@ -10,18 +10,30 @@ register = template.Library()
 @register.simple_tag(takes_context=True)
 def table_column(context, item):
     if not item:
-        return u''
-    elif isinstance(item, basestring) or isinstance(item, int) or isinstance(item, bool):
-        return item
-    elif isinstance(item, list):
-        return u'<br> '.join([table_column(context, i) for i in item])
-    elif isinstance(item, dict) or isinstance(item, Node):
+        result = u''
+    elif type(item) is list:
+        result = u'<br> '.join([table_column(context, i) for i in item])
+    elif type(item) in (str, unicode):
+        result = item
+    elif isinstance(item, collections.Iterable):
         if "handle_id" in item:
             # item is a node
-            return noclook_node_to_link(context, item)
+            result = noclook_node_to_link(context, item)
         elif "url" in item:
             # it is a 'link'
-            return u'<a href="{}">{}</a>'.format(item.get('url', ''), item.get('name', ''))
+            result = u'<a href="{}">{}</a>'.format(item.get('url', ''), item.get('name', ''))
+        else:
+            # fallback to default
+            result = item
     else:
-        raise(Exception('Unhandled table column data: {!s} of type {!s}'.format(item, type(item))))
+        # Just print it
+        result = item
+    return result
 
+
+@register.simple_tag()
+def info_row(header, item, postfix=u'', prefix=u''):
+    result = u''
+    if item:
+        result = u'<tr><th>{}</th><td>{}{}{}</td></tr>'.format(header, prefix, item, postfix)
+    return result

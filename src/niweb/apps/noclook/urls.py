@@ -50,6 +50,7 @@ urlpatterns += patterns('apps.noclook.views.create',
 
 urlpatterns += patterns('apps.noclook.views.edit',
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', 'edit_node'),
+    (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit/disable-noclook-auto-manage/$', 'disable_noclook_auto_manage'),
     (r'^host/(?P<handle_id>\d+)/edit/convert-to/(?P<slug>[-\w]+)/$', 'convert_host'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/delete$', 'delete_node'),
     (r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/delete$', 'delete_relationship'),
@@ -96,6 +97,7 @@ urlpatterns += patterns('apps.noclook.views.list',
     (r'^odf/$', 'list_odfs'),
     (r'^cable/$', 'list_cables'),
     (r'^switch/$', 'list_switches'),
+    (r'^customer/$', 'list_customers'),
     # Generic list
     (r'^(?P<slug>[-\w]+)/$', 'list_by_type'),
 )

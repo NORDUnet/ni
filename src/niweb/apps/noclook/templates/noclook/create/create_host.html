@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/bootstrap-datepicker.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <h1>Create new host</h1>
+    <p>To create a physical host you need to set Location or Host owner</p>
+    <form action="" method="post">
+      <div class="well">
+            {% csrf_token %}
+            {{ form.name | as_crispy_field}}
+            {{ form.operational_state | as_crispy_field }}
+            {{ form.description | as_crispy_field }}
+            {{ form.managed_by | as_crispy_field }}
+            {{ form.responsible_group | as_crispy_field }}
+            {{ form.support_group | as_crispy_field }}
+            {{ form.backup | as_crispy_field }}
+            {{ form.security_class | as_crispy_field }}
+            {{ form.security_comment | as_crispy_field }}
+      </div>
+      <div class="accordion" id="create-accordion">
+        {% accordion 'Operational information (optional)' 'operational' '#create-accordion' %}
+          {{ form.os | as_crispy_field }}
+          {{ form.os_version | as_crispy_field }}
+          {{ form.vendor | as_crispy_field }}
+          {{ form.model| as_crispy_field }}
+          {{ form.service_tag | as_crispy_field }}
+          {{ form.end_support | as_crispy_field }}
+          {{ form.contract_number | as_crispy_field }}
+        {% endaccordion %}
+
+        {% accordion 'Host owner (optional)' 'host_owner' '#create-accordion' %}
+          <div class="alert alert-warning">
+            If you set a host owner this host will become a physical host.
+          </div>
+          {% json_combo form.relationship_owner '/formdata/{id}/' 'customer,end-user,host-user,provider' %}
+
+        {% endaccordion %}
+
+        {% accordion 'Location (optional)' 'location' '#create-accordion' %}
+          <div class="alert alert-warning">
+            If you set a location this host will become a physical host.
+          </div>
+            {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' %}
+            {{ form.rack_units | as_crispy_field }}
+        {% endaccordion %}
+      </div>
+      <input type="submit" value="Save" class="btn btn-primary" />
+      <a href="/new/" class="btn">Cancel</a>
+    </form>
+{% endblock %}

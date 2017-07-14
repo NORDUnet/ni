@@ -1,42 +1,16 @@
 {% extends "noclook/edit/base_edit.html" %}
-
-{% block js %}
-    {{ block.super }}
-    {% load noclook_tags %}
-    <script type="text/javascript">
-        $(document).ready(
-            function(){
-                // Accordion
-                $(".edit-accordion").collapse();
-                // Provider
-                // Populate first level combo box
-                providerCategories = [
-                    ['provider', 'Provider']
-                ];
-            }
-        );
-    </script>
-{% endblock %}
+{% load crispy_forms_tags %}
 
 {% block content %}
     {{ block.super }}
     <div class="well">
         {% if not form.name in form.hidden_fields %}
-            <h3>Name</h3>
-            {{ form.name }}
+            {{ form.name | as_crispy_field }}
         {% endif %}
-        <h3>Link Type</h3>
-        {{ form.link_type }}
-        <br><br>
-        <h3>Interface Type</h3>
-        {{ form.interface_type }}
-        <br><br>
-        <h3>Operational State</h3>
-        {{ form.operational_state }}
-        <br><br>
-        <h3>Description (optional)</h3>
-        {{ form.description }}
-        <span class="help-block">{{ form.description.help_text }}</span>
+        {{ form.link_type | as_crispy_field }}
+        {{ form.interface_type | as_crispy_field}}
+        {{ form.operational_state | as_crispy_field }}
+        {{ form.description | as_crispy_field }}
     </div>
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/physical_dependency_group.html" %}

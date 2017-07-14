@@ -61,43 +61,35 @@ $(document).ready(
     });
 </script>
 
-<div class="accordion-group">
-    <div class="accordion-heading">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapsePort">
-            Ports
-        </a>
-    </div>
-    <div id="collapsePort" class="accordion-body collapse" style="height: 0; ">
-        <div class="accordion-inner">
-            {% if ports.Has %}
-                <label>Current ports</label>
-                {% load noclook_tags %}
-                {% for item in ports.Has %}
-                    <div class="row">
-                        <div class="span3">
-                            <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
-                        </div>
-                        <div class="span1">
-                            <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% endif %}
-            <hr>
-            <label>Add ports</label>
-            {{ form.relationship_ports }}
-            <div id="new-ports"></div>
-            <br><br>
-            <div class="input-append">
-                <input class="input-large" type="text" name="addport" placeholder="Port name"/>
-                <a id="add" class="btn" type="button"><i class="icon-plus"></i></a>
-            </div>
-            <div class="alert alert-info">
-                <strong>Naming of ports</strong><br>
-                ODF: 1, 2 or 1+2, 3+4 <br>
-                Ciena: 1-2-3 or 1-2-(3+4)<br>
-                Host: ethX<br>
-            </div>
-        </div>
-    </div>
-</div>
+{% load noclook_tags %}
+{% accordion 'Ports' 'ports_choose' '#edit-accordion' %}
+  {% if ports.Has %}
+      <label>Current ports</label>
+      {% load noclook_tags %}
+      {% for item in ports.Has %}
+          <div class="row">
+              <div class="span3">
+                  <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+              </div>
+              <div class="span1">
+                  <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+              </div>
+          </div>
+      {% endfor %}
+    <hr>
+  {% endif %}
+  <label>Add ports</label>
+  {{ form.relationship_ports }}
+  <div id="new-ports"></div>
+  <br><br>
+  <div class="input-append">
+      <input class="input-large" type="text" name="addport" placeholder="Port name"/>
+      <a id="add" class="btn" type="button"><i class="icon-plus"></i></a>
+  </div>
+  <div class="alert alert-info">
+      <strong>Naming of ports</strong><br>
+      ODF: 1, 2 or 1+2, 3+4 <br>
+      Ciena: 1-2-3 or 1-2-(3+4)<br>
+      Host: ethX<br>
+  </div>
+{% endaccordion %}

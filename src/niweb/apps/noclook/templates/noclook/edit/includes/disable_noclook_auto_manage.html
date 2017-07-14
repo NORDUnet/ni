@@ -1,0 +1,9 @@
+{% load noclook_tags %}
+{% if node.data.noclook_auto_manage %}
+  {% accordion 'Disable noclook auto managed' 'automanage-edit' '#edit-accordion' %}
+    <div class="alert alert-warning">
+        This will be reverted if noclook ever do a scan of this again.
+    </div>
+    <a class="btn btn-warning" href="edit/disable-noclook-auto-manage/"><i class="icon-exclamation-sign icon-white"></i> Disable noclook auto managed</a>
+  {% endaccordion %}
+{% endif %}

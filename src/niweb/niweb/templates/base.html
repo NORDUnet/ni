@@ -181,6 +181,12 @@
                     <div id="page_flash" class="alert alert-{{ page_flash.level }}">{{ page_flash.message }}</div>
                 {% endif %}
 
+                {% if messages %}
+                  {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                  {% endfor %}
+                {% endif %}
+
                 {% block content %}{% endblock %}
 
                 {% block content_footer %}{% endblock %}

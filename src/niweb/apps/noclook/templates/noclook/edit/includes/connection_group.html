@@ -1,4 +1,6 @@
-<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/typeahead.bundle.js"></script>
+{% load static %}
+{% load noclook_tags %}
+<script language="javascript" type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(
     function(){
@@ -52,46 +54,37 @@ $(document).ready(
     });
 </script>
 
-<div class="accordion-group">
-    <div class="accordion-heading">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseConnection">
-            Connections (optional)
-        </a>
-    </div>
-    <div id="collapseConnection" class="accordion-body in collapse" style="height: auto; ">
-        <div class="accordion-inner">
-            {% if connections %}
-                {% load noclook_tags %}
-                <h4>Remove Connection</h4>
-                {% for item in connections %}
-                    <div class="row">
-                        <div class="span5">
-                            Connected to <a href="{% noclook_node_to_url item.end.handle_id %}">{{ item.end.name }}</a> <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.port.name }}</a>
-                        </div>
-                        <div class="span1">
-                            <a href="relationship/{{ item.rel_id }}/delete" class="label label-important relationship-confirm">Delete</a>
-                        </div>
-                    </div>
-                {% endfor %}
-            <hr>
-            {% endif %}
-            <h4>Add Connection</h4>
-            <div class="row">
-                <div class="span4">
-                    {{ form.relationship_end_a }}
-                    <input type="text" data-typeahead id="typeahead_relationship_end_a" placeholder="uk odf 1+2" />
-                    <span class="help-block">Choose end A</span>
-                    <input type="hidden" id="parent_relationship_end_a" />
-                    <button class="btn btn-mini" data-add-port data-target="parent_relationship_end_a">Add port</button>
-                </div>
-                <div class="span4">
-                    {{ form.relationship_end_b }}
-                    <input type="text" data-typeahead id="typeahead_relationship_end_b" placeholder="uk odf 1+2" />
-                    <span class="help-block">Choose end B</span>
-                    <input type="hidden" id="parent_relationship_end_b" />
-                    <button class="btn btn-mini" data-add-port data-target="parent_relationship_end_b">Add port</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% accordion 'Connections (optional)' 'connections-edit' '#edit-accordion' %}
+  {% if connections %}
+      {% load noclook_tags %}
+      <h4>Remove Connection</h4>
+      {% for item in connections %}
+          <div class="row">
+              <div class="span5">
+                  Connected to <a href="{% noclook_node_to_url item.end.handle_id %}">{{ item.end.name }}</a> <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.port.name }}</a>
+              </div>
+              <div class="span1">
+                  <a href="relationship/{{ item.rel_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+              </div>
+          </div>
+      {% endfor %}
+  <hr>
+  {% endif %}
+  <h4>Add Connection</h4>
+  <div class="row">
+      <div class="span4">
+          {{ form.relationship_end_a }}
+          <input type="text" data-typeahead id="typeahead_relationship_end_a" placeholder="uk odf 1+2" />
+          <span class="help-block">Choose end A</span>
+          <input type="hidden" id="parent_relationship_end_a" />
+          <button class="btn btn-mini" data-add-port data-target="parent_relationship_end_a">Add port</button>
+      </div>
+      <div class="span4">
+          {{ form.relationship_end_b }}
+          <input type="text" data-typeahead id="typeahead_relationship_end_b" placeholder="uk odf 1+2" />
+          <span class="help-block">Choose end B</span>
+          <input type="hidden" id="parent_relationship_end_b" />
+          <button class="btn btn-mini" data-add-port data-target="parent_relationship_end_b">Add port</a>
+      </div>
+  </div>
+{% endaccordion %}

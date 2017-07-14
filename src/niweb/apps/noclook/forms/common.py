@@ -4,145 +4,31 @@ from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType, NordunetUniqueId
+import csv
+from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences import global_preferences_registry
 
+
 # We should move this kind of data to the SQL database.
-COUNTRY_CODES = [
-    ('BE', 'BE'),
-    ('CH', 'CH'),
-    ('DE', 'DE'),
-    ('DK', 'DK'),
-    ('FI', 'FI'),
-    ('FR', 'FR'),
-    ('IS', 'IS'),
-    ('NL', 'NL'),
-    ('NO', 'NO'),
-    ('SE', 'SE'),    
-    ('UK', 'UK'),
-    ('US', 'US')
-]
-
-COUNTRIES = [
-    ('', ''),
-    ('Belgium', 'Belgium'),
-    ('Denmark', 'Denmark'),
-    ('Germany', 'Germany'),
-    ('Finland', 'Finland'),
-    ('France', 'France'),
-    ('Iceland', 'Iceland'),
-    ('Netherlands', 'Netherlands'),
-    ('Norway', 'Norway'),
-    ('Sweden', 'Sweden'),
-    ('Switzerland', 'Switzerland'),
-    ('United Kingdom', 'United Kingdom'),
-    ('USA', 'USA'),
-]
-
-COUNTRY_MAP = {
-    'BE': 'Belgium',
-    'CH': 'Switzerland',
-    'DE': 'Germany',
-    'DK': 'Denmark',
-    'FI': 'Finland',
-    'FR': 'France',
-    'IS': 'Iceland',
-    'NL': 'Netherlands',
-    'NO': 'Norway',
-    'SE': 'Sweden',
-    'UK': 'United Kingdom',
-    'US': 'USA'
-}
-
-COUNTRY_CODE_MAP = dict((COUNTRY_MAP[key], key) for key in COUNTRY_MAP)
-
-SITE_TYPES = [
-    ('', ''),
-    ('POP', 'POP'),
-    ('Passive ODF', 'Passive ODF')
-]
-
-CABLE_TYPES = [
-    ('', ''),
-    ('Dark Fiber', 'Dark Fiber'),
-    ('Patch', 'Patch'),
-    ('Power Cable', 'Power Cable')
-]
-
-PORT_TYPES = [
-    ('', ''),
-    ('C13 / C14', 'C13 / C14'),
-    ('C19 / C20', 'C19 / C20'),
-    ('CEE', 'CEE'),
-    ('E2000', 'E2000'),
-    ('Fixed', 'Fixed'),
-    ('LC', 'LC'),
-    ('MU', 'MU'),
-    ('RJ45', 'RJ45'),
-    ('SC', 'SC'),
-    ('Schuko', 'Schuko'),
-]
-
-OPERATIONAL_STATES = [
-    ('', ''),
-    ('In service', 'In service'),
-    ('Reserved', 'Reserved'),
-    ('Decommissioned', 'Decommissioned'),
-    ('Testing', 'Testing'),
-]
-
-OPTICAL_LINK_TYPES = [
-    ('', ''),
-    ('OTS', 'OTS'),
-    ('OPS', 'OPS'),
-]
-
-OPTICAL_PATH_FRAMING = [
-    ('', ''),
-    ('WDM', 'WDM'),
-]
-
-OPTICAL_PATH_CAPACITY = [
-    ('', ''),
-    ('10Gb', '10Gb'),
-    ('100Gb', '100Gb'),
-]
-
-OPTICAL_LINK_INTERFACE_TYPE = [
-    ('', ''),
-    ('WDM', 'WDM'),
-]
-
-SECURITY_CLASSES = [
-    ('', ''),
-    (1, 1),
-    (2, 2),
-    (3, 3),
-    (4, 4),
-]
-
-RESPONSIBLE_GROUPS = [
-    ('', ''),
-    ('DEV', 'DEV'),
-    ('NOC', 'NOC'),
-]
-
-HOST_MANAGEMENT_SW = [
-    ('', ''),
-    ('Manual', 'Manual'),
-    ('Puppet', 'Puppet'),
-]
+def country_codes():
+    codes = Dropdown.get('countries').as_values()
+    return zip(codes, codes)
 
 
-def optical_node_types():
-    """
-    Returns a list of tuples available for optical node types.
-    """
-    types = [("","-------")]
-    types.extend([(x.name, x.name) for x in OpticalNodeType.objects.all()])
-    return types
+def countries():
+    choices = Dropdown.get('countries').as_choices()
+    codes, countries = zip(*choices)
+    return zip(countries, countries)
+
+
+def country_map(country_code):
+    return dict(Dropdown.get('countries').as_choices(False)).get(country_code, '')
+
+
+def country_code_map(country):
+    return {k: v for v, k in Dropdown.get('countries').as_choices(False)}.get(country, '')
 
 
 def get_node_type_tuples(node_type):
@@ -186,18 +72,44 @@ class NodeChoiceField(forms.ModelChoiceField):
         return node.node_name
 
 
+class DatePickerField(forms.DateField):
+    def __init__(self, *args, **kwargs):
+        attrs = {'data-provide': 'datepicker', 'data-date-format': 'yyyy-mm-dd', 'data-date-today-highlight': 'true'}
+        if kwargs.get('today'):
+            attrs['data-date-today-btn'] = 'linked'
+            del kwargs['today']
+        super(DatePickerField, self).__init__(*args, **kwargs)
+        self.widget = forms.TextInput(attrs=attrs)
+
+
+def description_field(name):
+    return forms.CharField(required=False,
+                           widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
+                           help_text=u'Short description of the {}.'.format(name))
+
+
+def relationship_field(name, select=False):
+    labels = {
+    }
+    label = labels.get(name, name.title())
+    if select:
+        return forms.ChoiceField(required=False, label=label, widget=forms.widgets.Select)
+    else:
+        return forms.IntegerField(required=False, label=label, widget=forms.widgets.HiddenInput)
+
+
 class ReserveIdForm(forms.Form):
     amount = forms.IntegerField(min_value=1, initial=1)
     site = NodeChoiceField(
-            queryset=NodeHandle.objects.filter(node_type__type='Site').order_by('node_name'),
-            required=False, 
-            help_text='If applicable choose a site')
+        queryset=NodeHandle.objects.filter(node_type__type='Site').order_by('node_name'),
+        required=False,
+        help_text='If applicable choose a site')
     reserve_message = forms.CharField(help_text='A message to help understand what the reservation was for.', widget=forms.TextInput(attrs={'class': 'input-xxlarge'}))
 
 
 class SearchIdForm(forms.Form):
     reserved = forms.NullBooleanField(help_text='Choosing "yes" shows avaliable (not in use) IDs', required=False)
-    id_type = forms.ChoiceField( required=False)
+    id_type = forms.ChoiceField(required=False)
     site = NodeChoiceField(required=False,
                            queryset=NodeHandle.objects.filter(node_type__type='Site').order_by('node_name'))
     reserve_message = forms.CharField(help_text='Search by message', required=False)
@@ -205,17 +117,17 @@ class SearchIdForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(SearchIdForm, self).__init__(*args, **kwargs)
         generators = UniqueIdGenerator.objects.all()
-        categories = [('','')]
+        categories = [('', '')]
         if generators:
             categories.extend([(g.prefix, g.name.replace("_", " ").title()) for g in generators if g.prefix != ""])
-        self.fields['id_type'].choices= categories
+        self.fields['id_type'].choices = categories
 
 
 class NewSiteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewSiteForm, self).__init__(*args, **kwargs)
-        self.fields['country_code'].choices = COUNTRY_CODES
+        self.fields['country_code'].choices = country_codes()
 
     name = forms.CharField()
     country_code = forms.ChoiceField(widget=forms.widgets.Select)
@@ -226,7 +138,7 @@ class NewSiteForm(forms.Form):
     
     def clean(self):
         cleaned_data = super(NewSiteForm, self).clean()
-        cleaned_data['country'] = COUNTRY_MAP[cleaned_data['country_code']]
+        cleaned_data['country'] = country_map(cleaned_data['country_code'])
         return cleaned_data
     
     
@@ -234,15 +146,16 @@ class EditSiteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(EditSiteForm, self).__init__(*args, **kwargs)
-        self.fields['country_code'].choices = COUNTRY_CODES
-        self.fields['country'].choices = COUNTRIES
-        self.fields['site_type'].choices = SITE_TYPES
+        self.fields['country_code'].choices = country_codes()
+        self.fields['country'].choices = countries()
+        self.fields['site_type'].choices = Dropdown.get('site_types').as_choices()
+        self.fields['relationship_responsible_for'].choices = get_node_type_tuples('Site_Owner')
 
     name = forms.CharField()
     country_code = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     site_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
-    address = forms.CharField(required=False)
+    address = forms.CharField(required=False, label='Street')
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     room = forms.CharField(required=False, help_text='Room identifier in building if applicable.')
     postarea = forms.CharField(required=False)
@@ -250,68 +163,63 @@ class EditSiteForm(forms.Form):
     area = forms.CharField(required=False, help_text='State, county or similar.')
     longitude = forms.FloatField(required=False, help_text='Decimal Degrees')
     latitude = forms.FloatField(required=False, help_text='Decimal Degrees')
-    telenor_subscription_id = forms.CharField(required=False)
-    owner_id = forms.CharField(required=False)
+    telenor_subscription_id = forms.CharField(required=False, label='Telenor subscription ID')
+    owner_id = forms.CharField(required=False, label='Owner site ID')
     owner_site_name = forms.CharField(required=False)
-    url = forms.URLField(required=False, help_text='An URL to more information about the site.')
-    relationship_responsible_for = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    url = forms.URLField(required=False, help_text='An URL to more information about the site.', label='Information URL')
+    relationship_responsible_for = relationship_field('responsible', True)
 
     def clean(self):
         cleaned_data = super(EditSiteForm, self).clean()
         cleaned_data['name'] = cleaned_data['name']
-        cleaned_data['country_code'] = COUNTRY_CODE_MAP[cleaned_data['country']]
+        cleaned_data['country_code'] = country_code_map(cleaned_data['country'])
         return cleaned_data
                               
                               
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
+    description = description_field('site owner')
     url = forms.URLField(required=False, help_text='Link to more information.')
 
 
-class EditSiteOwnerForm(forms.Form):
-    name = forms.CharField()
-    url = forms.URLField(required=False, help_text='Link to more information.')
+class EditSiteOwnerForm(NewSiteOwnerForm):
+    pass
 
 
 class NewCableForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewCableForm, self).__init__(*args, **kwargs)
-        self.fields['cable_type'].choices = CABLE_TYPES
+        self.fields['cable_type'].choices = Dropdown.get('cable_types').as_choices()
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField()
     cable_type = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False)
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('cable')
+    relationship_provider = relationship_field('provider', True)
 
 
-class EditCableForm(forms.Form):
-
-    def __init__(self, *args, **kwargs):
-        super(EditCableForm, self).__init__(*args, **kwargs)
-        self.fields['cable_type'].choices = CABLE_TYPES
-
-    name = forms.CharField()
-    cable_type = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False)
+class EditCableForm(NewCableForm):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
-class EditOpticalNodeForm(forms.Form):
-
+class OpticalNodeForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        super(EditOpticalNodeForm, self).__init__(*args, **kwargs)
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
-
+        super(OpticalNodeForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['type'].choices = Dropdown.get('optical_node_types').as_choices()
     name = forms.CharField()
-    type = forms.ModelChoiceField(required=False, queryset=OpticalNodeType.objects.all(), to_field_name='name')
-    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
+    type = forms.ChoiceField()
+    operational_state = forms.ChoiceField(initial='In service')
+    description = description_field('optical node')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    relationship_location = relationship_field('location')
+
+
+class EditOpticalNodeForm(OpticalNodeForm):
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-                                              
+
 
 class EditPeeringPartnerForm(forms.Form):
     name = forms.CharField()
@@ -321,68 +229,75 @@ class NewRackForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewRackForm, self).__init__(*args, **kwargs)
         self.fields['relationship_location'].choices = get_node_type_tuples('Site')
-    
+
     name = forms.CharField(help_text='Name should be the grid location.')
-    relationship_location = forms.ChoiceField(required=False,
-                                              widget=forms.widgets.Select)
-                                              
-                                        
+    relationship_location = relationship_field('location', True)
+
+
 class EditRackForm(forms.Form):
     name = forms.CharField(help_text='Name should be the site grid location.')
-    height = forms.IntegerField(required=False, 
+    height = forms.IntegerField(required=False,
                                 help_text='Height in millimeters (mm).')
     depth = forms.IntegerField(required=False,
                                help_text='Depth in millimeters (mm).')
     width = forms.IntegerField(required=False,
                                help_text='Width in millimeters (mm).')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_located_in = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-                
-                
-class EditHostForm(forms.Form):
+    relationship_parent = relationship_field('parent')
+    relationship_located_in = relationship_field('located in')
 
+
+class NewHostForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        super(EditHostForm, self).__init__(*args, **kwargs)
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
-        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['security_class'].choices = SECURITY_CLASSES
-        self.fields['managed_by'].choices = HOST_MANAGEMENT_SW
+        super(NewHostForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
+        self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
+        self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
+        self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
 
-    name = forms.CharField()
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of what the machine is used for.')
-    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
+    name = forms.CharField(help_text="The hostname")
+    rack_units = forms.IntegerField(required=False,
+                                    label='Equipment height',
+                                    help_text='Height in rack units (u).')
+    description = description_field('machine and what it is used for')
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                    help_text='Name of the management software that manages the host')
-    #responsible_persons = JSONField(required=False, widget=JSONInput,
-    #                                help_text='Name of the person responsible for the host.')
+
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the host.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
     backup = forms.CharField(required=False, help_text='Which backup solution is used? e.g. TSM, IP nett?')
+    security_class = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
     os = forms.CharField(required=False,
+                         label='Operating system',
                          help_text='What operating system is running on the host?')
     os_version = forms.CharField(required=False,
+                                 label='Operating system version',
                                  help_text='Which version of the operating system is running on the host?')
     model = forms.CharField(required=False,
+                            label='Hardware model',
                             help_text='What is the hosts hardware model name?')
     vendor = forms.CharField(required=False,
                              help_text='Name of the vendor that should be contacted for hardware support?')
     service_tag = forms.CharField(required=False, help_text='What is the vendors service tag for the host?')
-    end_support = forms.DateField(required=False, help_text='When does the hardware support end?')
+    end_support = DatePickerField(required=False,
+                                  label='End of support',
+                                  help_text='When does the hardware support end?')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    # External relations
+    relationship_location = relationship_field('location')
+    relationship_owner = relationship_field('owner')
+
+
+class EditHostForm(NewHostForm):
+    relationship_user = relationship_field('user')
+    relationship_depends_on = relationship_field('depends on')
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    security_class = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    security_comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
+
     services_locked = forms.BooleanField(required=False)
     services_checked = forms.BooleanField(required=False)
 
@@ -400,19 +315,24 @@ class EditPDUForm(EditHostForm):
 
 
 class EditRouterForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditRouterForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
+    relationship_location = relationship_field('location')
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    
-    
+    description = description_field('router')
+
+
 class NewOdfForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewOdfForm, self).__init__(*args, **kwargs)
         # Set max number of ports to choose from
         max_num_of_ports = 48
-        choices = [(x, x) for x in range(1, max_num_of_ports+1) if x]
+        choices = [(x, x) for x in range(1, max_num_of_ports + 1) if x]
         self.fields['max_number_of_ports'].choices = choices
 
     name = forms.CharField()
@@ -420,19 +340,24 @@ class NewOdfForm(forms.Form):
 
 
 class BulkPortsForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(BulkPortsForm, self).__init__(*args, **kwargs)
+        self.fields['port_type'].choices = Dropdown.get('port_types').as_choices()
+
     no_ports = forms.BooleanField(required=False, help_text='Do not create any ports')
     bundled = forms.BooleanField(required=False, help_text='Bundle the ports e.g 1+2, 2+3 (half the ports)')
-    port_type = forms.ChoiceField(choices=PORT_TYPES, required=False)
+    port_type = forms.ChoiceField(required=False)
     prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0')
     offset = forms.IntegerField(required=False, min_value=0, initial=1)
+    num_ports = forms.IntegerField(required=False, min_value=0, initial=0)
 
 
 class EditOdfForm(forms.Form):
     name = forms.CharField()
-    max_number_of_ports = forms.IntegerField(required=False,help_text='Max number of ports.')
+    max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_location = relationship_field('location')
 
 
 class NewOpticalFilter(NewOdfForm):
@@ -445,66 +370,53 @@ class EditOpticalFilterForm(EditOdfForm):
 
 class NewExternalEquipmentForm(forms.Form):
     name = forms.CharField()
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of what the machine is used for.')
 
-
-class EditExternalEquipmentForm(forms.Form):
-    name = forms.CharField()
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of what the machine is used for.')
+    description = description_field('external equipment')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    relationship_owner = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_owner = relationship_field('owner')
+    relationship_location = relationship_field('location')
+
+
+class EditExternalEquipmentForm(NewExternalEquipmentForm):
     relationship_ports = JSONField(required=False, widget=JSONInput)
-    relationship_location = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 class NewPortForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewPortForm, self).__init__(*args, **kwargs)
-        self.fields['port_type'].choices = PORT_TYPES
+        self.fields['port_type'].choices = Dropdown.get('port_types').as_choices()
 
     name = forms.CharField()
     port_type = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('port usage')
+    relationship_parent = relationship_field('parent')
 
 
-class EditPortForm(forms.Form):
-
-    def __init__(self, *args, **kwargs):
-        super(EditPortForm, self).__init__(*args, **kwargs)
-        self.fields['port_type'].choices = PORT_TYPES
-
-    name = forms.CharField()
-    port_type = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Notes regarding port usage.')
-    relationship_parent = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_connected_to = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+class EditPortForm(NewPortForm):
+    relationship_connected_to = relationship_field('connected to')
 
 
 class NewCustomerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
 
 
 class EditCustomerForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
 
 
 class NewEndUserForm(forms.Form):
     name = forms.CharField()
+    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
     url = forms.URLField(required=False, help_text='Link to more information.')
 
 
-class EditEndUserForm(forms.Form):
-    name = forms.CharField()
-    url = forms.URLField(required=False, help_text='Link to more information.')
+class EditEndUserForm(NewEndUserForm):
+    pass
 
 
 class NewProviderForm(forms.Form):
@@ -516,30 +428,28 @@ class EditProviderForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
 
+
 class NewServiceForm(forms.Form):
 
     name = forms.CharField(required=False, help_text='Name will only be available for manually named service types.')
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the service.')
+    description = description_field('service')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                       help_text='Name of the support group.')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_provider = relationship_field('provider', True)
 
     def __init__(self, *args, **kwargs):
         super(NewServiceForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
-        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
-        service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name','name')
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
+        self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
+        service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name', 'name')
         self.fields['service_type'].choices = [t.as_choice() for t in service_types]
-
 
     class Meta:
         id_generator_property = 'id_generators__services'
@@ -566,7 +476,7 @@ class NewServiceForm(forms.Form):
                     id_generator = UniqueIdGenerator.objects.get(name=id_generator_name)
                     # id_collection is always the same so we do not need config
                     cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, NordunetUniqueId)
-                except UniqueIdGenerator.DoesNotExist as e:
+                except UniqueIdGenerator.DoesNotExist:
                     msg = u'UniqueIdGenerator with the name "{}" does not exist'.format(id_generator_name)
                     raise UniqueIdGenerator.DoesNotExist(msg)
             elif not name:
@@ -578,21 +488,20 @@ class EditServiceForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(EditServiceForm, self).__init__(*args, **kwargs)
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
-        self.fields['responsible_group'].choices = RESPONSIBLE_GROUPS
-        self.fields['support_group'].choices = RESPONSIBLE_GROUPS
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
+        self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
         service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name','name')
         self.fields['service_type'].choices = [t.as_choice() for t in service_types]
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(required=False)
     service_class = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     service_type = forms.ChoiceField(widget=forms.widgets.Select)
-    project_end_date = forms.DateField(required=False)
-    decommissioned_date = forms.DateField(required=False)
+    project_end_date = DatePickerField(required=False)
+    decommissioned_date = DatePickerField(required=False, today=True)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the service.')
+    description = description_field('service')
     responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
                                           help_text='Name of the group responsible for the service.')
     support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -603,9 +512,9 @@ class EditServiceForm(forms.Form):
     vrf_target = forms.CharField(required=False, help_text='')
     route_distinguisher = forms.CharField(required=False, help_text='')
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this service?')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_user = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_provider = relationship_field('provider', True)
+    relationship_user = relationship_field('user')
+    relationship_depends_on = relationship_field('depends on')
 
     def clean(self):
         cleaned_data = super(EditServiceForm, self).clean()
@@ -638,18 +547,17 @@ class NewOpticalLinkForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewOpticalLinkForm, self).__init__(*args, **kwargs)
-        self.fields['link_type'].choices = OPTICAL_LINK_TYPES
-        self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['link_type'].choices = Dropdown.get('optical_link_types').as_choices()
+        self.fields['interface_type'].choices = Dropdown.get('optical_link_interface_type').as_choices()
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(required=True)
     link_type = forms.ChoiceField(widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical link.')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('optical link')
+    relationship_provider = relationship_field('provider', True)
 
     class Meta:
         id_generator_name = None    # UniqueIdGenerator instance name
@@ -674,9 +582,7 @@ class NewOpticalLinkForm(forms.Form):
             try:
                 unique_ids.register_unique_id(self.Meta.id_collection, name)
             except IntegrityError as e:
-                self._errors = ErrorDict()
-                self._errors['name'] = ErrorList()
-                self._errors['name'].append(e.message)
+                self.add_error('name', e.message)
         return cleaned_data
 
 
@@ -685,29 +591,30 @@ class EditOpticalLinkForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(EditOpticalLinkForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-        self.fields['link_type'].choices = OPTICAL_LINK_TYPES
-        self.fields['interface_type'].choices = OPTICAL_LINK_INTERFACE_TYPE
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['link_type'].choices = Dropdown.get('optical_link_types').as_choices()
+        self.fields['interface_type'].choices = Dropdown.get('optical_link_interface_type').as_choices()
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
 
     name = forms.CharField(required=True)
     link_type = forms.ChoiceField(widget=forms.widgets.Select)
     interface_type = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical link.')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('optical link')
+    relationship_provider = relationship_field('provider', True)
+    relationship_end_a = relationship_field('Choose end A')
+    relationship_end_b = relationship_field('Choose end B')
 
 
 class NewOpticalMultiplexSectionForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
     name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical link.')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    operational_state = forms.ChoiceField(widget=forms.widgets.Select)
+    description = description_field('optical link')
+    relationship_provider = relationship_field('provider', True)
 
 
 class EditOpticalMultiplexSectionForm(forms.Form):
@@ -715,33 +622,29 @@ class EditOpticalMultiplexSectionForm(forms.Form):
         super(EditOpticalMultiplexSectionForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
         self.fields['relationship_depends_on'].choices = get_node_type_tuples('Optical Link')
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
 
     name = forms.CharField(help_text='Naming should be derived from the end equipment names, equipment1-equipment2.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical path.')
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    description = description_field('optical path')
+    relationship_provider = relationship_field('provider', True)
+    relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput, label='Depends on')
 
 
 class NewOpticalPathForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewOpticalPathForm, self).__init__(*args, **kwargs)
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-        self.fields['framing'].choices = OPTICAL_PATH_FRAMING
-        self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['framing'].choices = Dropdown.get('optical_path_framing').as_choices()
+        self.fields['capacity'].choices = Dropdown.get('optical_path_capacity').as_choices()
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
 
     name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical path.')
-    relationship_provider = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    description = description_field('optical path')
+    relationship_provider = relationship_field('provider', True)
 
     class Meta:
         id_generator_name = None    # UniqueIdGenerator instance name
@@ -776,24 +679,53 @@ class EditOpticalPathForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(EditOpticalPathForm, self).__init__(*args, **kwargs)
-        self.fields['framing'].choices = OPTICAL_PATH_FRAMING
-        self.fields['capacity'].choices = OPTICAL_PATH_CAPACITY
-        self.fields['operational_state'].choices = OPERATIONAL_STATES
+        self.fields['framing'].choices = Dropdown.get('optical_path_framing').as_choices()
+        self.fields['capacity'].choices = Dropdown.get('optical_path_capacity').as_choices()
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    description = forms.CharField(required=False,
-                                  widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}),
-                                  help_text='Short description of the optical path.')
+    description = description_field('optical path')
     enrs = JSONField(required=False, widget=JSONInput)
-    relationship_provider = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+    relationship_provider = relationship_field('provider', True)
     relationship_depends_on = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
-class OpticalNodeForm(forms.Form):
-    name = forms.CharField()
-    type = forms.ModelChoiceField(required=False, queryset=OpticalNodeType.objects.all(), to_field_name='name')
-    operational_state = forms.ChoiceField(choices=OPERATIONAL_STATES, initial='In service')
+class CsvForm(forms.Form):
+    def __init__(self, csv_headers, *args, **kwargs):
+        super(CsvForm, self).__init__(*args, **kwargs)
+        self.csv_headers = csv_headers
+        if not isinstance(csv_headers, str):
+            placeholder = ", ".join(csv_headers)
+        self.fields['csv_data'].widget.attrs['placeholder'] = placeholder
+        help_text = u'CSV formatted data: "{}"'.format(placeholder)
+        self.fields['csv_data'].help_text = help_text
 
+    csv_data = forms.CharField(required=False,
+                               widget=forms.Textarea(
+                                   attrs={'rows': '5', 
+                                          'class': 'input-xxlarge'}))
+    reviewed = forms.BooleanField(required=False)
+
+    def csv_parse(self, func, validate=False):
+        # Make sure cleaned_data is populated
+        self.is_valid()
+        lines = self.cleaned_data['csv_data'].splitlines()
+        reader = csv.DictReader(self._utf8_enc(lines),
+                                fieldnames=self.csv_headers)
+        return [func(line) for line in self._unicode(reader)]
+
+    def _utf8_enc(self, csv_lines):
+        return (line.encode('utf-8') for line in csv_lines)
+
+    def _unicode(self, dict_reader):
+        for row in dict_reader:
+            yield {key: unicode(row[key] or '', 'utf-8') for key in row.keys()}
+
+    def form_to_csv(form, headers):
+        cleaned = form.cleaned_data
+        raw = form.data
+        return u",".join([cleaned.get(h) or raw.get(h, '') for h in headers])

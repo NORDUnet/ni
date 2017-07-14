@@ -1,60 +1,52 @@
 {% load noclook_tags %}
-<div class="accordion-group">
-    <div class="accordion-heading">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseHostService">
-            Host Services
-        </a>
-    </div>
-    <div id="collapseHostService" class="accordion-body collapse" style="height: 0px; ">
-        <div class="accordion-inner">
-            <label class="checkbox">
-                {{ form.services_locked }}
-                Services locked
-            </label>
+{% load crispy_forms_tags %}
+{% accordion 'Host Services' 'host_services_accordion' '#edit-accordion' %}
+  <label class="checkbox">
+      {{ form.services_locked }}
+      Services locked
+  </label>
 
-            <label class="checkbox">
-                {{ form.services_checked }}
-                All services below have been checked
-            </label>
-            <div class="pull-right">
-                {% table_search "services" %}
-            </div>
-            {% blockvar th %}
-                <th>Service</th>
-                <th>Address</th>
-                <th>Protocol</th>
-                <th>Port</th>
-                <th>Public service</th>
-                <th>Expired</th>
-                <th>Delete</th>
-            {% endblockvar %}
-            {% blockvar tbody %}
-            {% for item in host_services.Depends_on %}
-                <tr>
-                    <td>
-                        {% if item.relationship.rogue_port %}
-                            <i class="icon-exclamation-sign"></i>
-                        {% endif %}
-                        <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
-                    </td>
-                    <td>{{ item.relationship.ip_address }}</td>
-                    <td>{{ item.relationship.protocol }}</td>
-                    <td>{{ item.relationship.port }}</td>
-                    <td>
-                        <a href="relationship/{{ item.relationship_id }}/update" class="relationship-toggle" data-true-text="Yes" data-false-text="No"
-                           data-properties='{"public_service": {{ item.relationship.public_service|default:False|lower }}}'>{{ item.relationship.public_service|yesno:"Yes,No" }}</a>
-                    </td>
-                    <td>
-                        {% noclook_has_expired item.relationship as expired %}
-                        {{ expired|yesno:"Yes,No,Unknown" }}
-                    </td>
-                    <td>
-                        <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
-                    </td>
-                </tr>
-            {% endfor %}
-            {% endblockvar %}
-            {% table th tbody id="services" %}
-        </div>
-    </div>
-</div>
+  <label class="checkbox">
+      {{ form.services_checked }}
+      All services below have been checked
+  </label>
+  <div class="pull-right">
+      {% table_search "services" %}
+  </div>
+  {% blockvar th %}
+      <th>Service</th>
+      <th>Address</th>
+      <th>Protocol</th>
+      <th>Port</th>
+      <th>Public service</th>
+      <th>Expired</th>
+      <th>Delete</th>
+  {% endblockvar %}
+  {% blockvar tbody %}
+  {% for item in host_services.Depends_on %}
+      <tr>
+          <td>
+              {% if item.relationship.rogue_port %}
+                  <i class="icon-exclamation-sign"></i>
+              {% endif %}
+              <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+          </td>
+          <td>{{ item.relationship.ip_address }}</td>
+          <td>{{ item.relationship.protocol }}</td>
+          <td>{{ item.relationship.port }}</td>
+          <td>
+              <a href="relationship/{{ item.relationship_id }}/update" class="relationship-toggle" data-true-text="Yes" data-false-text="No"
+                 data-properties='{"public_service": {{ item.relationship.public_service|default:False|lower }}}'>{{ item.relationship.public_service|yesno:"Yes,No" }}</a>
+          </td>
+          <td>
+              {% noclook_has_expired item.relationship as expired %}
+              {{ expired|yesno:"Yes,No,Unknown" }}
+          </td>
+          <td>
+              <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+          </td>
+      </tr>
+  {% endfor %}
+  {% endblockvar %}
+  {% table th tbody id="services" %}
+{% endaccordion %}

@@ -1,4 +1,6 @@
 {% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
 
 {% block js %}
 {{ block.super }}
@@ -10,8 +12,6 @@ $(document).ready(
         responsibleCategories = [
             ['site-owner', 'Site Owners']
         ];
-        // Accordion
-        $(".edit-accordion").collapse()
     }
 );
 </script>
@@ -19,79 +19,32 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <div class="well">
-        <h3>Name</h3>
-        {{ form.name }}
-        <h3>Site Type (optional)</h3>
-        {{ form.site_type }}
+        {{ form.name | as_crispy_field}}
+        {{ form.site_type | as_crispy_field}}
     </div>
 
     <div class="accordion" id="edit-accordion">
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseOne">
-                    Address (optional)
-                </a>
-            </div>
-            <div id="collapseOne" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <label>Street</label>
-                    {{ form.address }}
-                    <label>Floor</label>
-                    {{ form.floor }}
-                    <span class="help-inline">{{ form.floor.help_text }}</span>
-                    <label>Room</label>
-                    {{ form.room }}
-                    <span class="help-inline">{{ form.room.help_text }}</span>
-                    <label>Postcode</label>
-                    {{ form.postcode }}
-                    <label>Postarea</label>
-                    {{ form.postarea }}
-                </div>
-            </div>
+      {% accordion 'Address (optional)' 'address-edit' '#edit-accordion' %}
+        {{ form.address | as_crispy_field}}
+        {{ form.floor | as_crispy_field}}
+        {{ form.room | as_crispy_field}}
+        {{ form.postcode | as_crispy_field}}
+        {{ form.postarea | as_crispy_field }}
+      {% endaccordion %}
+      {% accordion 'Location (optional)' 'location-edit' '#edit-accordion' %}
+        {{ form.country | as_crispy_field}}
+        {{ form.area | as_crispy_field}}
+        {{ form.longitude | as_crispy_field}}
+        {{ form.latitude | as_crispy_field}}
+      {% endaccordion %}
+      {% include "noclook/edit/includes/responsible_for_group.html" %}
+      {% accordion 'Other IDs and information (optional)' 'other-edit' '#edit-accordion' %}
+        <div class="accordion-inner">
+            {{ form.owner_id | as_crispy_field }}
+            {{ form.owner_site_name | as_crispy_field }}
+            {{ form.telenor_subscription_id | as_crispy_field }}
+            {{ form.url | as_crispy_field}}
         </div>
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseTwo">
-                    Location (optional)
-                </a>
-            </div>
-            <div id="collapseTwo" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <label>Country</label>
-                    <span class="input-large">{{ form.country }}</span>
-                    <label>Area</label>
-                    {{ form.area }}
-                    <span class="help-inline">{{ form.area.help_text }}</span>
-                    <label>Longitude</label>
-                    {{ form.longitude }}
-                    <span class="help-inline">{{ form.longitude.help_text }}</span>
-                    <label>Latitude</label>
-                    {{ form.latitude }}
-                    <span class="help-inline">{{ form.longitude.help_text }}</span>
-                </div>
-            </div>
-        </div>
-        {% include "noclook/edit/includes/responsible_for_group.html" %}
-        <div class="accordion-group">
-            <div class="accordion-heading">
-                <a class="accordion-toggle" data-toggle="collapse" data-parent="#edit-accordion" href="#collapseFour">
-                    Other IDs and information (optional)
-                </a>
-            </div>
-            <div id="collapseFour" class="accordion-body collapse" style="height: 0px; ">
-                <div class="accordion-inner">
-                    <label>Owner Site ID</label>
-                    {{ form.owner_id }}
-                    <label>Owner Site Name</label>
-                    {{ form.owner_site_name }}
-                    <label>Telenor Subscription ID</label>
-                    {{ form.telenor_subscription_id }}
-                    <label>Information URL</label>
-                    {{ form.url }}
-                    <span class="help-inline">{{ form.url.help_text }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
+      {% endaccordion %}
 {% endblock %}
 
