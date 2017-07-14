@@ -271,28 +271,27 @@ def consume_noclook(nodes, relationships):
     print('Added {!s} nodes.'.format(tot_nodes))
 
     # Loop through all files starting with relationship
-    x = 0
+    tot_rels = 0
     with nc.neo4jdb.transaction as t:
         for i in relationships:
             rel = i['host']['noclook_producer']
             properties = rel.get('properties')
 
-                q = """
-                    MATCH (start:Node { handle_id:{start_id} }),(end:Node {handle_id: {end_id} })
-                    CREATE UNIQUE (start)-[r:%s { props } ]->(end)
-                    """ % rel.get('type')
+            q = """
+                 MATCH (start:Node { handle_id:{start_id} }),(end:Node {handle_id: {end_id} })
+                 CREATE UNIQUE (start)-[r:%s { props } ]->(end)
+                 """ % rel.get('type')
 
-                query_data = {
-                    'props': properties,
-                    'start_id': rel.get('start'),
-                    'end_id': rel.get('end')
-                }
+            query_data = {
+                'props': properties,
+                'start_id': rel.get('start'),
+                'end_id': rel.get('end')
+            }
 
-                t.run(q, query_data)
-                logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
-                                                                 end=item.get('end')))
-                x += 1
-                tot_rels += 1
+            t.run(q, query_data)
+            logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
+                                                             end=item.get('end')))
+            tot_rels += 1
     print 'Added {!s} relationships.'.format(tot_rels)
 
 
