@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import collections
 
 from django import template
 from apps.noclook.templatetags.noclook_tags import noclook_node_to_link

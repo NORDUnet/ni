@@ -1,4 +1,3 @@
--i https://pypi.nordu.net/simple
 Django<1.9
 django-activity-stream<0.7
 django-jsonfield==0.9.13
