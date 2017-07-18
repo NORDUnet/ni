@@ -48,21 +48,21 @@ def host_users(request, host_user_name=None):
             {where}
             RETURN host_user, collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
             '''.replace("{where}", form.to_where())
-        hosts = nc.query_to_list(nc.neo4jdb, q, handle_id=host_user_id)
+        hosts = nc.query_to_list(nc.graphdb.manager, q, handle_id=host_user_id)
     elif host_user_name == 'Missing':
         q = '''
             MATCH (host:Host)
             {where}
             RETURN collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
           '''.replace("{where}", form.to_where(additional="NOT (host)<-[:Uses|Owns]-()"))
-        hosts = nc.query_to_list(nc.neo4jdb, q)
+        hosts = nc.query_to_list(nc.graphdb.manager, q)
     elif host_user_name == 'All' or host_user_name is None:
         q = '''
             MATCH (host_user:Host_User)-[:Uses|Owns]->(host:Host) 
             {where}
             RETURN host_user, collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
             '''.replace("{where}", form.to_where())
-        hosts = nc.query_to_list(nc.neo4jdb, q)
+        hosts = nc.query_to_list(nc.graphdb.manager, q)
     num_of_hosts = 0
     for item in hosts:
         num_of_hosts += len(item['hosts'])
@@ -87,7 +87,7 @@ def host_security_class(request, status=None, form=None):
             RETURN host
             ORDER BY host.noclook_last_seen DESC
             ''' % where_statement
-    hosts = nc.query_to_list(nc.neo4jdb, q)
+    hosts = nc.query_to_list(nc.graphdb.manager, q)
     urls = helpers.get_node_urls(hosts)
     return render_to_response('noclook/reports/host_security_class.html',
                               {'status': status, 'hosts': hosts, 'urls': urls},
@@ -106,7 +106,7 @@ def host_services(request, status=None):
                 RETURN host, collect(r) as ports
                 ORDER BY host.noclook_last_seen DESC
                 """
-            hosts = nc.query_to_list(nc.neo4jdb, q)
+            hosts = nc.query_to_list(nc.graphdb.manager, q)
             return render_to_response('noclook/reports/host_unauthorized_ports.html',
                                       {'status': status, 'hosts': hosts},
                                       context_instance=RequestContext(request))
@@ -118,7 +118,7 @@ def host_services(request, status=None):
                 RETURN host, collect({data: r, id: id(r)}) as ports
                 ORDER BY host.noclook_last_seen DESC
                 """
-            hosts = nc.query_to_list(nc.neo4jdb, q)
+            hosts = nc.query_to_list(nc.graphdb.manager, q)
             return render_to_response('noclook/reports/host_public_ports.html',
                                       {'status': status, 'hosts': hosts},
                                       context_instance=RequestContext(request))
@@ -135,7 +135,7 @@ def host_services(request, status=None):
                 RETURN host
                 ORDER BY host.noclook_last_seen DESC
                 """ % where_statement
-        hosts = nc.query_to_list(nc.neo4jdb, q)
+        hosts = nc.query_to_list(nc.graphdb.manager, q)
     return render_to_response('noclook/reports/host_services.html',
                               {'status': status, 'hosts': hosts},
                               context_instance=RequestContext(request))

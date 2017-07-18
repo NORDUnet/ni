@@ -41,7 +41,7 @@ def get_node_type_tuples(node_type):
         RETURN n.handle_id as handle_id, n.name as name
         ORDER BY n.name
         """.format(node_type=node_type.replace(' ', '_'))
-    l = nc.query_to_list(nc.neo4jdb, q)
+    l = nc.query_to_list(nc.graphdb.manager, q)
     choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
     return choices
 

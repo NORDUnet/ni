@@ -48,7 +48,7 @@ def delete_relationship(request, slug, handle_id, rel_id):
     if request.method == 'POST':
         nh, node = helpers.get_nh_node(handle_id)
         try:
-            relationship = nc.get_relationship_model(nc.neo4jdb, rel_id)
+            relationship = nc.get_relationship_model(nc.graphdb.manager, rel_id)
             if node.handle_id == relationship.start or node.handle_id == relationship.end:
                 activitylog.delete_relationship(request.user, relationship)
                 relationship.delete()
@@ -71,7 +71,7 @@ def update_relationship(request, slug, handle_id, rel_id):
         try:
             for key, value in request.POST.iteritems():
                 properties[key] = json.loads(value)
-            relationship = nc.get_relationship_model(nc.neo4jdb, rel_id)
+            relationship = nc.get_relationship_model(nc.graphdb.manager, rel_id)
             if node.handle_id == relationship.start or node.handle_id == relationship.end:
                 success = helpers.dict_update_relationship(request.user, relationship.id, properties)
         except nc.exceptions.RelationshipNotFound:
@@ -91,7 +91,7 @@ def get_node_type(request, slug):
     node_type = helpers.slug_to_node_type(slug)
     label = node_type.type.replace(' ', '_')
     result_list = []
-    for node in nc.get_node_by_type(nc.neo4jdb, label):
+    for node in nc.get_node_by_type(nc.graphdb.manager, label):
         result_list.append([node['name'], node['handle_id']])
     return JsonResponse(result_list, safe=False)
 
@@ -110,7 +110,7 @@ def get_unlocated_node_type(request, slug):
         ORDER BY node.name
         '''.format(node_type=node_type.type.replace(' ', '_'))
     result_list = []
-    with nc.neo4jdb.session as s:
+    with nc.graphdb.manager.session as s:
         result = s.run(q)
         for record in result:
             result_list.append([record['n'].properties['name'], record['n'].properties['handle_id']])
@@ -155,7 +155,7 @@ def get_subtype_form_data(request, slug, key, value):
         ORDER BY n.name
         """.format(node_type=node_type, key=key, value=value)
     subtype_list = []
-    for subtype in nc.query_to_list(nc.neo4jdb, q):
+    for subtype in nc.query_to_list(nc.graphdb.manager, q):
         name = subtype['name']
         if subtype.get('description', None):
             name = u'{} ({})'.format(name, subtype['description'])

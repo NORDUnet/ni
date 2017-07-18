@@ -40,7 +40,7 @@ def visualize_json(request, handle_id):
     """
     # Get the node
     nh = NodeHandle.objects.get(pk=handle_id)
-    root_node = nc.get_node_model(nc.neo4jdb, nh.handle_id)
+    root_node = nc.get_node_model(nc.graphdb.manager, nh.handle_id)
     if root_node:
         # Create the data JSON structure needed
         graph_dict = arborgraph.create_generic_graph(root_node)
@@ -87,7 +87,7 @@ def search(request, value='', form=None):
         posted = True
     if value:
         query = re_escape(value)
-        nodes = nc.search_nodes_by_value(nc.neo4jdb, query)
+        nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
         if form == 'csv':
             return helpers.dicts_to_csv_response(list(nodes))
         elif form == 'xls':
@@ -118,7 +118,7 @@ def search_autocomplete(request):
     if query:
         try:
             suggestions = []
-            for node in nc.get_indexed_node(nc.neo4jdb, 'name', query):
+            for node in nc.get_indexed_node(nc.graphdb.manager, 'name', query):
                 suggestions.append(node['name'])
             d = {'query': query, 'suggestions': suggestions, 'data': []}
             json.dump(d, response)
@@ -159,7 +159,7 @@ def search_port_typeahead(request):
                 WHERE name =~ '(?i).*{}.*'
                 RETURN name, handle_id, parent_id
                 """.format(".*".join(match_q))
-            result = nc.query_to_list(nc.neo4jdb, q)
+            result = nc.query_to_list(nc.graphdb.manager, q)
         except Exception as e:
             raise e
     json.dump(result, response)
@@ -186,9 +186,9 @@ def find_all(request, slug=None, key=None, value=None, form=None):
                                        'node_meta_type': None},
                                       context_instance=RequestContext(request))
     if value:
-        nodes = nc.search_nodes_by_value(nc.neo4jdb, value, key, label)
+        nodes = nc.search_nodes_by_value(nc.graphdb.manager, value, key, label)
     else:
-        nodes = nc.get_nodes_by_type(nc.neo4jdb, label)
+        nodes = nc.get_nodes_by_type(nc.graphdb.manager, label)
     if form == 'csv':
         return helpers.dicts_to_csv_response(list(nodes))
     elif form == 'xls':
@@ -241,7 +241,7 @@ def gmaps_sites(request):
         edges: []
     }
     """
-    sites = nc.get_nodes_by_type(nc.neo4jdb, 'Site')
+    sites = nc.get_nodes_by_type(nc.graphdb.manager, 'Site')
     site_list = []
     for site in sites:
         try:
@@ -294,7 +294,7 @@ def gmaps_optical_nodes(request):
         WHERE (loc:Site)
         RETURN cable, equipment, loc
         """
-    result = nc.query_to_list(nc.neo4jdb, q)
+    result = nc.query_to_list(nc.graphdb.manager, q)
     nodes = {}
     edges = {}
     for item in result:
@@ -325,7 +325,7 @@ def gmaps_optical_nodes(request):
 
 @login_required
 def qr_lookup(request, name):
-    hits = list(nc.get_nodes_by_name(nc.neo4jdb, name))
+    hits = list(nc.get_nodes_by_name(nc.graphdb.manager, name))
     if len(hits) == 1:
         nh = get_object_or_404(NodeHandle, pk=hits[0]['handle_id'])
         return HttpResponseRedirect(nh.get_absolute_url())

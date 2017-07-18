@@ -80,7 +80,7 @@ class NodeHandle(models.Model):
         """
         Returns the NodeHandles node.
         """
-        return nc.get_node_model(nc.neo4jdb, self.handle_id)
+        return nc.get_node_model(nc.graphdb.manager, self.handle_id)
 
     @models.permalink
     def get_absolute_url(self):
@@ -93,7 +93,7 @@ class NodeHandle(models.Model):
         """
         super(NodeHandle, self).save(*args, **kwargs)
         try:
-            nc.create_node(nc.neo4jdb, self.node_name, self.node_meta_type, self.node_type.get_label(), self.handle_id)
+            nc.create_node(nc.graphdb.manager, self.node_name, self.node_meta_type, self.node_type.get_label(), self.handle_id)
         except CypherError:
             #  A node associated with this handle_id already exists
             pass

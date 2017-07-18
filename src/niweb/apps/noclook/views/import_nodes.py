@@ -211,7 +211,7 @@ class ExportNodesView(View):
             WHERE (not exists(x.operational_state) or x.operational_state <> 'Decommissioned')
             RETURN tail(nodes(p)) as nodes, labels(x) as labels
         """
-        results = nc.query_to_list(nc.neo4jdb, q, handle_id=nh.handle_id)
+        results = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
         output = self.extract_results(results)
 
         # Sorting output...

@@ -120,7 +120,7 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
         for handle_id in self.DEFAULT_HANDLE_IDS:
             nh = NodeHandle.objects.get(pk=handle_id)
             nh.delete()
-        with nc.neo4jdb.session as s:
+        with nc.graphdb.manager.session as s:
             s.run("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r")
         super(ServiceL2VPNResourceTest, self).tearDown()
 

@@ -131,7 +131,7 @@ def firewall_detail(request, handle_id):
 def host_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
-    host = nc.get_node_model(nc.neo4jdb, nh.handle_id)
+    host = nc.get_node_model(nc.graphdb.manager, nh.handle_id)
     last_seen, expired = helpers.neo4j_data_age(host.data)
     location_path = host.get_location_path()
     # Handle relationships
@@ -205,7 +205,7 @@ def host_user_detail(request, handle_id):
         u.noclook_last_seen as noclook_last_seen,
         u.noclook_auto_manage as noclook_auto_manage
         """
-    host_relationships = nc.query_to_list(nc.neo4jdb, q, handle_id=host_user.handle_id)
+    host_relationships = nc.query_to_list(nc.graphdb.manager, q, handle_id=host_user.handle_id)
     
     urls = helpers.get_node_urls(host_user, same_name_relations, host_relationships)
     return render_to_response('noclook/detail/host_user_detail.html',

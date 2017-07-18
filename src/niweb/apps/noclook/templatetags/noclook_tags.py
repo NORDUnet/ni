@@ -120,7 +120,7 @@ def noclook_get_model(handle_id):
     :return: Node model
     """
     try:
-        return nc.get_node_model(nc.neo4jdb, handle_id)
+        return nc.get_node_model(nc.graphdb.manager, handle_id)
     except nc.exceptions.NodeNotFound:
         return ''
 
@@ -141,12 +141,12 @@ def noclook_get_ports(handle_id):
     :param handle_id: unique id
     :return: list
     """
-    return nc.get_node_model(nc.neo4jdb, handle_id).get_ports()
+    return nc.get_node_model(nc.graphdb.manager, handle_id).get_ports()
 
 
 @register.assignment_tag
 def noclook_get_location(handle_id):
-    return nc.get_node_model(nc.neo4jdb, handle_id).get_location()
+    return nc.get_node_model(nc.graphdb.manager, handle_id).get_location()
 
 
 @register.assignment_tag
@@ -171,7 +171,7 @@ def noclook_has_rogue_ports(handle_id):
         MATCH (host:Node {handle_id: {handle_id}})<-[r:Depends_on]-()
         RETURN count(r.rogue_port) as count
         """
-    d = nc.query_to_dict(nc.neo4jdb, q, handle_id=handle_id)
+    d = nc.query_to_dict(nc.graphdb.manager, q, handle_id=handle_id)
     if d['count']:
         return True
     return False

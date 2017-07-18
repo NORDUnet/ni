@@ -112,12 +112,12 @@ def create_generic_graph(root_node, graph_dict=None):
     relationships = root_node.relationships
     for rel_type in relationships:
         for item in relationships[rel_type]:
-            relationship = nc.get_relationship_model(nc.neo4jdb, item['relationship_id'])
+            relationship = nc.get_relationship_model(nc.graphdb.manager, item['relationship_id'])
             if relationship.start == root_node.handle_id:
-                end_node = nc.get_node_model(nc.neo4jdb, relationship.end)
+                end_node = nc.get_node_model(nc.graphdb.manager, relationship.end)
                 arbor_node = get_arbor_node(end_node)
             else:
-                start_node = nc.get_node_model(nc.neo4jdb, relationship.start)
+                start_node = nc.get_node_model(nc.graphdb.manager, relationship.start)
                 arbor_node = get_arbor_node(start_node)
             graph_dict['nodes'].update(arbor_node)
             arbor_edge = get_directed_adjacency(relationship)

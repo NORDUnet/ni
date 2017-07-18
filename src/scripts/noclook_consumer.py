@@ -249,7 +249,7 @@ def _consume_node(item):
         meta_type = item.get('meta_type')
         # Get a node handle
         nh = restore_node(handle_id, node_name, node_type, meta_type)
-        nc.set_node_properties(nc.neo4jdb, nh.handle_id, properties)
+        nc.set_node_properties(nc.graphdb.manager, nh.handle_id, properties)
         logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
     except Exception as e:
         ex_type = type(e).__name__
@@ -272,7 +272,7 @@ def consume_noclook(nodes, relationships):
 
     # Loop through all files starting with relationship
     tot_rels = 0
-    with nc.neo4jdb.transaction as t:
+    with nc.graphdb.manager.transaction as t:
         for i in relationships:
             rel = i['host']['noclook_producer']
             properties = rel.get('properties')

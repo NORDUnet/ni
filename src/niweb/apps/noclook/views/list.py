@@ -89,7 +89,7 @@ def list_by_type(request, slug):
         RETURN node
         ORDER BY node.name
         """ % {'nodetype': node_type.get_label()}
-    node_list = nc.query_to_list(nc.neo4jdb, q)
+    node_list = nc.query_to_list(nc.graphdb.manager, q)
     node_list = _filter_expired(node_list, request, select=lambda n: n.get('node'))
     # Since all is the same type... we could use a defaultdict with type/id return
     urls = get_node_urls(node_list)
@@ -118,7 +118,7 @@ def list_cables(request):
         WHERE NOT((end)<-[:Has]-())
         RETURN cable, collect(end) as end order by cable.name
         """
-    cable_list = nc.query_to_list(nc.neo4jdb, q)
+    cable_list = nc.query_to_list(nc.graphdb.manager, q)
     cable_list = _filter_expired(cable_list, request, select=lambda n: n.get('cable'))
     urls = get_node_urls(cable_list)
 
@@ -141,7 +141,7 @@ def list_customers(request):
         RETURN customer
         ORDER BY customer.name
         """
-    customer_list = nc.query_to_list(nc.neo4jdb, q)
+    customer_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(customer_list)
 
     table = Table('Name', 'Description')
@@ -169,7 +169,7 @@ def list_hosts(request):
         ORDER BY host.name
         """
 
-    host_list = nc.query_to_list(nc.neo4jdb, q)
+    host_list = nc.query_to_list(nc.graphdb.manager, q)
     host_list = _filter_expired(host_list, request, select=lambda n: n.get('host'))
     urls = get_node_urls(host_list)
 
@@ -198,7 +198,7 @@ def list_switches(request):
         ORDER BY switch.name
         """
 
-    switch_list = nc.query_to_list(nc.neo4jdb, q)
+    switch_list = nc.query_to_list(nc.graphdb.manager, q)
     switch_list = _filter_expired(switch_list, request, select=lambda n: n.get('switch'))
     urls = get_node_urls(switch_list)
 
@@ -236,7 +236,7 @@ def list_odfs(request):
         RETURN odf, location, site
         ORDER BY site.name, location.name, odf.name
         """
-    odf_list = nc.query_to_list(nc.neo4jdb, q)
+    odf_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(odf_list)
 
     table = Table("Location", "Name")
@@ -268,7 +268,7 @@ def list_optical_links(request):
         OPTIONAL MATCH p=(node)<-[:Has]-(parent)
         RETURN link as link, collect([node, parent]) as dependencies
         """
-    optical_link_list = nc.query_to_list(nc.neo4jdb, q)
+    optical_link_list = nc.query_to_list(nc.graphdb.manager, q)
     optical_link_list = _filter_operational_state(optical_link_list, request, select=lambda n: n.get('link'))
     table = Table('Optical Link', 'Type', 'Description', 'Depends on')
     table.rows = [_optical_link_table(item['link'], item['dependencies']) for item in optical_link_list]
@@ -294,7 +294,7 @@ def list_optical_multiplex_section(request):
         RETURN oms, collect(dep) as dependencies
         """
 
-    oms_list = nc.query_to_list(nc.neo4jdb, q)
+    oms_list = nc.query_to_list(nc.graphdb.manager, q)
     oms_list = _filter_operational_state(oms_list, request, select=lambda n: n.get('oms'))
 
     urls = get_node_urls(oms_list)
@@ -321,7 +321,7 @@ def list_optical_nodes(request):
         ORDER BY node.name
         """
 
-    optical_node_list = nc.query_to_list(nc.neo4jdb, q)
+    optical_node_list = nc.query_to_list(nc.graphdb.manager, q)
     optical_node_list = _filter_operational_state(optical_node_list, request, select=lambda n: n.get('node'))
     urls = get_node_urls(optical_node_list)
 
@@ -351,7 +351,7 @@ def list_optical_paths(request):
         ORDER BY path.name
         """
 
-    optical_path_list = nc.query_to_list(nc.neo4jdb, q)
+    optical_path_list = nc.query_to_list(nc.graphdb.manager, q)
     optical_path_list = _filter_operational_state(optical_path_list, request, select=lambda n: n.get('path'))
     urls = get_node_urls(optical_path_list)
 
@@ -379,7 +379,7 @@ def list_peering_partners(request):
         ORDER BY peer.name
         """
 
-    partner_list = nc.query_to_list(nc.neo4jdb, q)
+    partner_list = nc.query_to_list(nc.graphdb.manager, q)
     partner_list = _filter_expired(partner_list, request, select=lambda n: n.get('peer'))
     urls = get_node_urls(partner_list)
 
@@ -400,7 +400,7 @@ def list_racks(request):
         ORDER BY site.name, rack.name
         """
 
-    rack_list = nc.query_to_list(nc.neo4jdb, q)
+    rack_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(rack_list)
 
     table = Table('Site', 'Name')
@@ -425,7 +425,7 @@ def list_routers(request):
         ORDER BY router.name
         """
 
-    router_list = nc.query_to_list(nc.neo4jdb, q)
+    router_list = nc.query_to_list(nc.graphdb.manager, q)
     router_list = _filter_expired(router_list, request, select=lambda n: n.get('router'))
     urls = get_node_urls(router_list)
 
@@ -465,7 +465,7 @@ def list_services(request, service_class=None):
         ORDER BY service.name
         """ % where_statement
 
-    service_list = nc.query_to_list(nc.neo4jdb, q)
+    service_list = nc.query_to_list(nc.graphdb.manager, q)
     service_list = _filter_operational_state(service_list, request, select=lambda n: n.get('service'))
     urls = get_node_urls(service_list)
 
@@ -501,7 +501,7 @@ def list_sites(request):
         ORDER BY site.country_code, site.name
         """
 
-    site_list = nc.query_to_list(nc.neo4jdb, q)
+    site_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(site_list)
 
     table = Table('Country', 'Site name', 'Area')

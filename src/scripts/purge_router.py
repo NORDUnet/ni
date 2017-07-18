@@ -63,15 +63,15 @@ def remove_router_conf(router_name, data_age, dry_run=False):
         WHERE (physical.noclook_auto_manage = true) OR (logical.noclook_auto_manage = true)
         RETURN collect(distinct physical.handle_id) as physical, collect(distinct logical.handle_id) as logical
         """.format(router_name)
-    router_result = nc.query_to_dict(nc.neo4jdb, routerq)
+    router_result = nc.query_to_dict(nc.graphdb.manager, routerq)
     for handle_id in router_result.get('logical', []):
-        logical = nc.get_node_model(nc.neo4jdb, handle_id)
+        logical = nc.get_node_model(nc.graphdb.manager, handle_id)
         if logical:
             last_seen, expired = helpers.neo4j_data_age(logical.data, data_age)
             if expired:
                 delete_node(logical, dry_run)
     for handle_id in router_result.get('physical', []):
-        physical = nc.get_node_model(nc.neo4jdb, handle_id)
+        physical = nc.get_node_model(nc.graphdb.manager, handle_id)
         if physical:
             last_seen, expired = helpers.neo4j_data_age(physical.data, data_age)
             if expired:

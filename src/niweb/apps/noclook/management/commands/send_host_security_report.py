@@ -25,8 +25,8 @@ class Command(BaseCommand):
             WHERE not(host.operational_state = "Decommissioned") and r.public and (not(r.public_service) or not(exists(r.public_service)))
             RETURN count(DISTINCT host) as public_host_count, count(r) as public_port_count
             """
-        results = nc.query_to_dict(nc.neo4jdb, unauthorized_q)
-        results.update(nc.query_to_dict(nc.neo4jdb, public_q))
+        results = nc.query_to_dict(nc.graphdb.manager, unauthorized_q)
+        results.update(nc.query_to_dict(nc.graphdb.manager, public_q))
         results['now'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
         results['domain'] = Site.objects.get_current().domain
 

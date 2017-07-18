@@ -58,8 +58,8 @@ class Command(BaseCommand):
                     RETURN host_user.name as host_user_name, host.name, host.handle_id as host_handle_id
                     ORDER BY host_user.name, host.name
                     '''
-            for item in nc.query_to_list(nc.neo4jdb, q, contract_number=contract_number):
-                host = nc.get_node_model(nc.neo4jdb, item['host_handle_id'])
+            for item in nc.query_to_list(nc.graphdb.manager, q, contract_number=contract_number):
+                host = nc.get_node_model(nc.graphdb.manager, item['host_handle_id'])
                 age = helpers.neo4j_report_age(host.data, 15, 30)
                 operational_state = host.data.get('operational_state', 'Not set')
                 host_type = host.meta_type

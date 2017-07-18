@@ -4,7 +4,7 @@ Created on Thu Apr 12 15:56:38 2012
 
 @author: lundberg
 
-For use with python-nc.neo4jdb, norduniclient and neo4j >2.0
+For use with python-nc.graphdb.manager, norduniclient and neo4j >2.0
 """
 
 from tastypie.resources import Resource, ModelResource
@@ -365,7 +365,7 @@ class RelationshipResource(Resource):
                 keys = relationships.keys()
             for key in keys:
                 for item in relationships.get(key, []):
-                    relationship = nc.get_relationship_model(nc.neo4jdb, item['relationship_id'])
+                    relationship = nc.get_relationship_model(nc.graphdb.manager, item['relationship_id'])
                     results.append(self._new_obj(relationship))
             return results
         else:
@@ -377,25 +377,25 @@ class RelationshipResource(Resource):
     def obj_get(self, request=None, **kwargs):
         pk = int(kwargs['pk'])
         try:
-            return self._new_obj(nc.get_relationship_model(nc.neo4jdb, pk))
+            return self._new_obj(nc.get_relationship_model(nc.graphdb.manager, pk))
         except KeyError:
             raise NotFound("Object not found")
 
     def obj_create(self, bundle, **kwargs):
         start_pk = resource_uri2id(bundle.data['start'])
         end_pk = resource_uri2id(bundle.data['end'])
-        rel_id = nc.create_relationship(nc.neo4jdb, start_pk, end_pk, bundle.data['type'])
-        rel = nc.get_relationship_model(nc.neo4jdb, rel_id)
+        rel_id = nc.create_relationship(nc.graphdb.manager, start_pk, end_pk, bundle.data['type'])
+        rel = nc.get_relationship_model(nc.graphdb.manager, rel_id)
         props = bundle.data.get('properties')
         if props:
-            nc.set_relationship_properties(nc.neo4jdb, rel.id, props)
+            nc.set_relationship_properties(nc.graphdb.manager, rel.id, props)
         bundle.obj = self._new_obj(rel)
         return bundle
 
     def obj_update(self, bundle, **kwargs):
-        helpers.dict_update_relationship(nc.neo4jdb, kwargs['pk'], bundle.data['properties'],
+        helpers.dict_update_relationship(nc.graphdb.manager, kwargs['pk'], bundle.data['properties'],
                                          bundle.data['properties'].keys())
-        updated_rel = nc.get_relationship_model(nc.neo4jdb, kwargs['pk'])
+        updated_rel = nc.get_relationship_model(nc.graphdb.manager, kwargs['pk'])
         bundle.obj = self._new_obj(updated_rel)
         return bundle
 
@@ -499,7 +499,7 @@ class CableResource(NodeHandleResource):
 
     def get_port(self, bundle, device_name, device_type, port_name):
         node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
-        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.get_label())
+        parent_node = nc.get_unique_node_by_name(nc.graphdb.manager, device_name, node_type.get_label())
         if not parent_node:
             raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
         result = parent_node.get_port(port_name).get('Has', [])
@@ -946,7 +946,7 @@ class ServiceL2VPNResource(ServiceResource):
             WHERE node.service_type = "L2VPN" OR node.service_type = "Interface Switch"
             RETURN collect(node.handle_id) as handle_ids
             """
-        hits = nc.query_to_dict(nc.neo4jdb, q)
+        hits = nc.query_to_dict(nc.graphdb.manager, q)
         return NodeHandle.objects.filter(pk__in=hits['handle_ids'])
 
     def obj_get_list(self, request=None, **kwargs):
@@ -954,7 +954,7 @@ class ServiceL2VPNResource(ServiceResource):
 
     def get_port(self, bundle, device_name, device_type, port_name):
         node_type = helpers.slug_to_node_type(slugify(device_type), create=True)
-        parent_node = nc.get_unique_node_by_name(nc.neo4jdb, device_name, node_type.get_label())
+        parent_node = nc.get_unique_node_by_name(nc.graphdb.manager, device_name, node_type.get_label())
         if not parent_node:
             raise_not_acceptable_error("End point {0} {1} not found.".format(device_type, device_name))
         result = parent_node.get_port(port_name).get('Has', [])

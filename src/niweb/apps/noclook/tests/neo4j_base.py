@@ -26,7 +26,7 @@ class NeoTestCase(TestCase):
         reload(forms)
 
     def tearDown(self):
-        with nc.neo4jdb.session as s:
+        with nc.graphdb.manager.session as s:
             s.run("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r")
         super(NeoTestCase, self).tearDown()
 

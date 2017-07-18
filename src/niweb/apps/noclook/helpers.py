@@ -90,7 +90,7 @@ def get_nh_node(handle_id):
     Takes a node handle id and returns the node handle and the node model.
     """
     node_handle = get_object_or_404(NodeHandle, pk=handle_id)
-    node_model = nc.get_node_model(nc.neo4jdb, node_handle.handle_id)
+    node_model = nc.get_node_model(nc.graphdb.manager, node_handle.handle_id)
     return node_handle, node_model
 
 
@@ -117,7 +117,7 @@ def delete_node(user, handle_id):
 
 
 def delete_relationship(user, relationship_id):
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     activitylog.delete_relationship(user, relationship)
     relationship.delete()
     return True
@@ -129,7 +129,7 @@ def get_provider_id(provider_name):
     :provider_name String Provider name
     :return String Provider node id or empty string
     """
-    providers = nc.get_nodes_by_value(nc.neo4jdb, provider_name, 'name', 'Provider')
+    providers = nc.get_nodes_by_value(nc.graphdb.manager, provider_name, 'name', 'Provider')
     try:
         provider_id = str(providers.next().get('handle_id', ''))
     except StopIteration:
@@ -171,7 +171,7 @@ def form_update_node(user, handle_id, form, property_keys=None):
                 pre_value = node.data.get(key, '')
                 del node.data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, form.cleaned_data[key])
-    nc.set_node_properties(nc.neo4jdb, node.handle_id, node.data)
+    nc.set_node_properties(nc.graphdb.manager, node.handle_id, node.data)
     return True
 
 
@@ -196,12 +196,12 @@ def dict_update_node(user, handle_id, properties, keys=None, filtered_keys=list(
                 pre_value = node.data.get(key, '')
                 del node.data[key]
                 activitylog.update_node_property(user, nh, key, pre_value, properties[key])
-    nc.set_node_properties(nc.neo4jdb, handle_id, node.data)
+    nc.set_node_properties(nc.graphdb.manager, handle_id, node.data)
     return True
 
 
 def dict_update_relationship(user, relationship_id, properties, keys=None):
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     if not keys:
         keys = properties.keys()
     for key in keys:
@@ -213,7 +213,7 @@ def dict_update_relationship(user, relationship_id, properties, keys=None):
         elif properties.get(key, None) == '' and key in relationship.data.keys():
             del relationship.data[key]
             activitylog.update_relationship_property(user, relationship, key, pre_value, properties[key])
-    nc.set_relationship_properties(nc.neo4jdb, relationship_id, relationship.data)
+    nc.set_relationship_properties(nc.graphdb.manager, relationship_id, relationship.data)
     return True
 
 
@@ -263,13 +263,13 @@ def set_noclook_auto_manage(item, auto_manage):
         'noclook_last_seen': datetime.now().isoformat()
     }
     if isinstance(item, nc.models.BaseNodeModel):
-        node = nc.get_node_model(nc.neo4jdb, item.handle_id)
+        node = nc.get_node_model(nc.graphdb.manager, item.handle_id)
         node.data.update(auto_manage_data)
-        nc.set_node_properties(nc.neo4jdb, node.handle_id, node.data)
+        nc.set_node_properties(nc.graphdb.manager, node.handle_id, node.data)
     elif isinstance(item, nc.models.BaseRelationshipModel):
-        relationship = nc.get_relationship_model(nc.neo4jdb, item.id)
+        relationship = nc.get_relationship_model(nc.graphdb.manager, item.id)
         relationship.data.update(auto_manage_data)
-        nc.set_relationship_properties(nc.neo4jdb, relationship.id, relationship.data)
+        nc.set_relationship_properties(nc.graphdb.manager, relationship.id, relationship.data)
     
 
 def update_noclook_auto_manage(item):
@@ -286,13 +286,13 @@ def update_noclook_auto_manage(item):
         auto_manage_data['noclook_auto_manage'] = True
         auto_manage_data['noclook_last_seen'] = datetime.now().isoformat()
         if isinstance(item, nc.models.BaseNodeModel):
-            node = nc.get_node_model(nc.neo4jdb, item.handle_id)
+            node = nc.get_node_model(nc.graphdb.manager, item.handle_id)
             node.data.update(auto_manage_data)
-            nc.set_node_properties(nc.neo4jdb, node.handle_id, node.data)
+            nc.set_node_properties(nc.graphdb.manager, node.handle_id, node.data)
         elif isinstance(item, nc.models.BaseRelationshipModel):
-            relationship = nc.get_relationship_model(nc.neo4jdb, item.id)
+            relationship = nc.get_relationship_model(nc.graphdb.manager, item.id)
             relationship.data.update(auto_manage_data)
-            nc.set_relationship_properties(nc.neo4jdb, relationship.id, relationship.data)
+            nc.set_relationship_properties(nc.graphdb.manager, relationship.id, relationship.data)
 
 
 def isots_to_dt(data):
@@ -453,7 +453,7 @@ def create_email(subject, body, to, cc=None, bcc=None, attachement=None, filenam
 
 
 def get_node_type(handle_id):
-    model = nc.get_node_model(nc.neo4jdb, handle_id)
+    model = nc.get_node_model(nc.graphdb.manager, handle_id)
     for t in model.labels:
         try:
             return NodeType.objects.get(type=t.replace('_', ' ')).type
@@ -569,14 +569,14 @@ def logical_to_physical(user, handle_id):
     # Convert Uses relationships to Owns.
     relations = physical_node.get_relations()
     for item in relations.get('Uses', []):
-        relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
+        relationship = nc.get_relationship_model(nc.graphdb.manager, item.get('relationship_id'))
         set_owner(user, physical_node, relationship.start)
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
     # Remove Depends_on relationships
     logical = physical_node.get_dependencies()
     for item in logical.get('Depends_on', []):
-        relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
+        relationship = nc.get_relationship_model(nc.graphdb.manager, item.get('relationship_id'))
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
     return nh, physical_node
@@ -599,7 +599,7 @@ def physical_to_logical(user, handle_id):
     # Convert Owns relationships to Uses.
     relations = logical_node.get_relations()
     for item in relations.get('Owns', []):
-        relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
+        relationship = nc.get_relationship_model(nc.graphdb.manager, item.get('relationship_id'))
         set_user(user, logical_node, relationship.start)
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
@@ -618,7 +618,7 @@ def set_location(user, node, location_id):
         nh, node = logical_to_physical(user, node.handle_id)
     result = node.set_location(location_id)
     relationship_id = result.get('Located_in')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Located_in')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -629,7 +629,7 @@ def remove_locations(user, node):
     # Remove Located_in relationships
     location = node.get_location()
     for item in location.get('Located_in', []):
-        relationship = nc.get_relationship_model(nc.neo4jdb, item.get('relationship_id'))
+        relationship = nc.get_relationship_model(nc.graphdb.manager, item.get('relationship_id'))
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
 
@@ -643,7 +643,7 @@ def set_owner(user, node, owner_id):
     """
     result = node.set_owner(owner_id)
     relationship_id = result.get('Owns')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Owns')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -659,7 +659,7 @@ def set_user(user, node, user_id):
     """
     result = node.set_user(user_id)
     relationship_id = result.get('Uses')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     activitylog.create_relationship(user, relationship)
     created = result.get('Uses')[0].get('created')
     if created:
@@ -676,7 +676,7 @@ def set_provider(user, node, provider_id):
     """
     result = node.set_provider(provider_id)
     relationship_id = result.get('Provides')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Provides')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -695,7 +695,7 @@ def set_depends_on(user, node, dependency_id):
         nh, node = physical_to_logical(user, node.handle_id)
     result = node.set_dependency(dependency_id)
     relationship_id = result.get('Depends_on')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Depends_on')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -711,7 +711,7 @@ def set_responsible_for(user, node, responsible_for_id):
     """
     result = node.set_responsible_for(responsible_for_id)
     relationship_id = result.get('Responsible_for')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Responsible_for')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -727,7 +727,7 @@ def set_part_of(user, node, part_id):
     """
     result = node.set_part_of(part_id)
     relationship_id = result.get('Part_of')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Part_of')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -743,7 +743,7 @@ def set_has(user, node, has_id):
     """
     result = node.set_has(has_id)
     relationship_id = result.get('Has')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Has')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -759,7 +759,7 @@ def set_connected_to(user, node, has_id):
     """
     result = node.set_connected_to(has_id)
     relationship_id = result.get('Connected_to')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Connected_to')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -780,7 +780,7 @@ def get_host_backup(host):
             WHERE r.state IN ['open', 'open|filtered']
             RETURN r
             """
-        for hit in nc.query_to_list(nc.neo4jdb, q, handle_id=host.handle_id):
+        for hit in nc.query_to_list(nc.graphdb.manager, q, handle_id=host.handle_id):
             last_seen, expired = neo4j_data_age(hit)
             if not expired:
                 backup = 'netbackup'
@@ -812,7 +812,7 @@ def remove_rogue_service_marker(user, handle_id):
         WHERE exists(r.rogue_port)
         RETURN collect(id(r)) as ids
         """
-    result = nc.query_to_dict(nc.neo4jdb, q, handle_id=handle_id)
+    result = nc.query_to_dict(nc.graphdb.manager, q, handle_id=handle_id)
     properties = {'rogue_port': ''}
     for relationship_id in result['ids']:
         dict_update_relationship(user, relationship_id, properties, properties.keys())

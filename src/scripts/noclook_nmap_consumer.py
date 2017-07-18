@@ -108,7 +108,7 @@ def set_not_public(host):
         WHERE exists(r.public)
         SET r.public = false
         '''
-    with nc.neo4jdb.session as s:
+    with nc.graphdb.manager.session as s:
         s.run(q, {'handle_id': host.handle_id})
 
 
@@ -176,7 +176,7 @@ def insert_services(service_dict, host_node, external_check=False):
                     if not result.get('Depends_on'):
                         result = host_node.set_host_service(service_node.handle_id, **relationship_properties)
                     relationship_id = result.get('Depends_on')[0].get('relationship_id')
-                    relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+                    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
                     created = result.get('Depends_on')[0].get('created')
                     # Set or update relationship properties
                     relationship_properties.update(service)

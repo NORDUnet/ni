@@ -97,8 +97,8 @@ def get_host(ip_address):
         WHERE any(x IN n.ip_addresses WHERE x =~ {address})
         RETURN distinct n
         '''
-    for hit in nc.query_to_list(nc.neo4jdb, q, address=ip_address):
-        return nc.get_node_model(nc.neo4jdb, node=hit['n'])
+    for hit in nc.query_to_list(nc.graphdb.manager, q, address=ip_address):
+        return nc.get_node_model(nc.graphdb.manager, node=hit['n'])
 
 
 def set_nagios_checks(host, checks):
@@ -188,7 +188,7 @@ def set_netapp_storage_usage(storage_collection):
     :return: None
     """
     for service in storage_collection:
-        service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
+        service_node = nc.get_unique_node_by_name(nc.graphdb.manager, service['service_id'], 'Service')
         property_dict = {'netapp_storage_sum': service['total_storage']}
         helpers.dict_update_node(nt.get_user(), service_node.handle_id, property_dict, property_dict.keys())
         service['total_storage'] = 0.0
@@ -231,7 +231,7 @@ def insert(json_list):
         base = item['host'].get('checkmk_livestatus')
         if not base:
             base = item['host']['nagiosxi_api']
-        host = nc.get_unique_node_by_name(nc.neo4jdb, base['host_name'], 'Host')
+        host = nc.get_unique_node_by_name(nc.graphdb.manager, base['host_name'], 'Host')
         if not host:
             host = get_host(base['host_address'])
         if host:

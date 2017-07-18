@@ -34,7 +34,7 @@ class Command(BaseCommand):
         services = getattr(django_settings, 'NETAPP_REPORT_SETTINGS', [])
         for service in services:
             report_data = []
-            service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
+            service_node = nc.get_unique_node_by_name(nc.graphdb.manager, service['service_id'], 'Service')
             customers = [item['node'].data.get('name', '') for item in
                          service_node.get_customers().get('customers', [])]
             customers = ', '.join(customers)

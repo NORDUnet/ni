@@ -19,7 +19,7 @@ class Command(BaseCommand):
         last_month = utcnow - relativedelta(months=1)
         services = getattr(django_settings, 'NETAPP_REPORT_SETTINGS', [])
         for service in services:
-            service_node = nc.get_unique_node_by_name(nc.neo4jdb, service['service_id'], 'Service')
+            service_node = nc.get_unique_node_by_name(nc.graphdb.manager, service['service_id'], 'Service')
             monthly_dict = json.loads(service_node.data.get('netapp_storage_monthly', '{}'))
             monthly_dict.setdefault(str(last_month.year), {})[str(last_month.month)] = \
                 service_node.data.get('netapp_storage_sum', 0.0)

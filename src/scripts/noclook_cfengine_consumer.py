@@ -86,7 +86,7 @@ def insert(json_list):
         name = i['host']['name']
         promises = i['host']['cfengine_report']
         try:
-            node = nc.get_unique_node_by_name(nc.neo4jdb, name, 'Host')
+            node = nc.get_unique_node_by_name(nc.graphdb.manager, name, 'Host')
         except MultipleNodesReturned as e:
             logger.error(e)
         if node:

@@ -61,7 +61,7 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type, allowed_no
 
 
 def get_relationship_model(relationship_id):
-    return nc.get_relationship_model(nc.neo4jdb, relationship_id)
+    return nc.get_relationship_model(nc.graphdb.manager, relationship_id)
 
 
 def set_all_services_to_not_public(host):
@@ -76,7 +76,7 @@ def set_all_services_to_not_public(host):
         WHERE exists(r.public)
         SET r.public = false
         '''
-    with nc.neo4jdb.session as s:
+    with nc.graphdb.manager.session as s:
         s.run(q, {'handle_id': host.handle_id})
 
 
@@ -95,8 +95,8 @@ def address_is_a(addresses, node_types):
             RETURN distinct n
             '''
         address = '{!s}{!s}'.format(address, '.*')  # Match addresses with / network notation
-        for hit in nc.query_to_list(nc.neo4jdb, q, address=address):
-            node = nc.get_node_model(nc.neo4jdb, node=hit['n'])
+        for hit in nc.query_to_list(nc.graphdb.manager, q, address=address):
+            node = nc.get_node_model(nc.graphdb.manager, node=hit['n'])
             node_addresses = node.data.get('ip_addresses', [])
             if not node_addresses and node.data.get('ip_address', None):
                 node_addresses = [node.data['ip_address']]

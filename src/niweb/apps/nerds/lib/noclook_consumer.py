@@ -260,14 +260,14 @@ def consume_noclook(json_list):
             meta_type = item.get('meta_type')
             # Get a node handle
             nh = restore_node(handle_id, node_name, node_type, meta_type)
-            nc.set_node_properties(nc.neo4jdb, nh.handle_id, properties)
+            nc.set_node_properties(nc.graphdb.manager, nh.handle_id, properties)
             logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
             tot_nodes += 1
     print('Added {!s} nodes.'.format(tot_nodes))
 
     # Loop through all files starting with relationship
     x = 0
-    with nc.neo4jdb.transaction as t:
+    with nc.graphdb.manager.transaction as t:
         for i in json_list:
             if i['host']['name'].startswith('relationship'):
                 item = i['host']['noclook_producer']

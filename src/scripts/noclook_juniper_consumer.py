@@ -152,7 +152,7 @@ def cleanup_hardware_v1(router_node, user):
         MATCH (n:Router {handle_id: {handle_id}})-[:Has*1..3]->(:Node)-[r:Has]->(port:Port)
         RETURN port.handle_id as handle_id, port.name as name, id(r) as rel_id
         """
-    ports = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
+    ports = nc.query_to_list(nc.graphdb.manager, q, handle_id=router_node.handle_id)
     for port in ports:
         if bad_interfaces.match(port['name']):
             # delete it!
@@ -169,7 +169,7 @@ def cleanup_hardware_v1(router_node, user):
         WHERE NOT hw:Port
         return hw.handle_id as handle_id, hw.name as name
         """
-    old_hardware = nc.query_to_list(nc.neo4jdb, q, handle_id=router_node.handle_id)
+    old_hardware = nc.query_to_list(nc.graphdb.manager, q, handle_id=router_node.handle_id)
     for hw in old_hardware:
         helpers.delete_node(user, hw['handle_id'])
 
@@ -189,7 +189,7 @@ def _find_service(service_id):
     # Consider using cypher...
     service = None
     try:
-        service = nc.get_unique_node_by_name(nc.neo4jdb, service_id, 'Service')
+        service = nc.get_unique_node_by_name(nc.graphdb.manager, service_id, 'Service')
     except:
         pass
     return service
@@ -223,7 +223,7 @@ def auto_depend_services(handle_id, description, service_id_regex, _type="Port")
         WHERE s.operational_state <> 'Decommissioned' and  NOT(s.name in [{desc_services}])
         RETURN collect(s) as unregistered
         """
-    result = nc.query_to_dict(nc.neo4jdb, q, handle_id=handle_id, desc_services=','.join(desc_services)).get('unregistered', [])
+    result = nc.query_to_dict(nc.graphdb.manager, q, handle_id=handle_id, desc_services=','.join(desc_services)).get('unregistered', [])
     unregistered_services = [ u"{}({})".format(s['name'],s['handle_id']) for s in result ]
     
     if unregistered_services:
@@ -289,10 +289,10 @@ def get_peering_partner(peering):
         peer_properties['name'] = peering.get('description')
     if peering.get('as_number'):
         peer_properties['as_number'] = peering.get('as_number')
-        hits = nc.get_nodes_by_value(nc.neo4jdb, prop='as_number', value=peer_properties['as_number'])
+        hits = nc.get_nodes_by_value(nc.graphdb.manager, prop='as_number', value=peer_properties['as_number'])
         found = 0
         for node in hits:
-            peer_node = nc.get_node_model(nc.neo4jdb, node['handle_id'])
+            peer_node = nc.get_node_model(nc.graphdb.manager, node['handle_id'])
             helpers.set_noclook_auto_manage(peer_node, True)
             if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
                     helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
@@ -337,7 +337,7 @@ def match_remote_ip_address(remote_address):
             WHERE any(x IN n.ip_addresses WHERE x =~ {mask})
             RETURN distinct n
             '''
-        for hit in nc.query_to_list(nc.neo4jdb, q, mask=mask):
+        for hit in nc.query_to_list(nc.graphdb.manager, q, mask=mask):
             for address in hit['n']['ip_addresses']:
                 try:
                     local_network = ipaddr.IPNetwork(address)
@@ -345,7 +345,7 @@ def match_remote_ip_address(remote_address):
                     continue  # ISO address
                 if remote_address in local_network:
                     # add local_network, address and node to cache
-                    local_network_node = nc.get_node_model(nc.neo4jdb, hit['n']['handle_id'])
+                    local_network_node = nc.get_node_model(nc.graphdb.manager, hit['n']['handle_id'])
                     REMOTE_IP_MATCH_CACHE[local_network] = {
                         'address': address, 'local_network_node': local_network_node
                     }
@@ -382,7 +382,7 @@ def insert_external_bgp_peering(peering, peering_group):
         if not result.get('Uses'):
             result = peer_node.set_peering_group(peering_group.handle_id, remote_address)
         relationship_id = result.get('Uses')[0]['relationship_id']
-        relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+        relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
         activitylog.create_relationship(user, relationship)
         helpers.set_noclook_auto_manage(relationship, True)
         if result.get('Uses')[0].get('created', False):
@@ -394,7 +394,7 @@ def insert_external_bgp_peering(peering, peering_group):
             if not result.get('Depends_on'):
                 result = peering_group.set_group_dependency(dependency_node.handle_id, local_address)
             relationship_id = result.get('Depends_on')[0]['relationship_id']
-            relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+            relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
             helpers.set_noclook_auto_manage(relationship, True)
             if result.get('Depends_on')[0].get('created', False):
                 activitylog.create_relationship(user, relationship)
@@ -456,16 +456,16 @@ def remove_router_conf(user, data_age):
         WHERE (physical.noclook_auto_manage = true) OR (logical.noclook_auto_manage = true)
         RETURN collect(distinct physical.handle_id) as physical, collect(distinct logical.handle_id) as logical
         """
-    router_result = nc.query_to_dict(nc.neo4jdb, routerq)
+    router_result = nc.query_to_dict(nc.graphdb.manager, routerq)
     for handle_id in router_result.get('logical', []):
-        logical = nc.get_node_model(nc.neo4jdb, handle_id)
+        logical = nc.get_node_model(nc.graphdb.manager, handle_id)
         if logical:
             last_seen, expired = helpers.neo4j_data_age(logical.data, data_age)
             if expired:
                 helpers.delete_node(user, logical.handle_id)
                 logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
     for handle_id in router_result.get('physical', []):
-        physical = nc.get_node_model(nc.neo4jdb, handle_id)
+        physical = nc.get_node_model(nc.graphdb.manager, handle_id)
         if physical:
             last_seen, expired = helpers.neo4j_data_age(physical.data, data_age)
             if expired:
@@ -480,17 +480,17 @@ def remove_peer_conf(user, data_age):
         WHERE (peer_group.noclook_auto_manage = true) OR (r.noclook_auto_manage = true)
         RETURN collect(distinct peer_group.handle_id) as peer_groups, collect(id(r)) as uses_relationships
         """
-    peer_result = nc.query_to_dict(nc.neo4jdb, peerq)
+    peer_result = nc.query_to_dict(nc.graphdb.manager, peerq)
 
     for relationship_id in peer_result.get('uses_relationships', []):
-        relationship = nc.get_relationship_model(nc.neo4jdb, relationship_id)
+        relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
         if relationship:
             last_seen, expired = helpers.neo4j_data_age(relationship.data, data_age)
             if expired:
                 helpers.delete_relationship(user, relationship.id)
                 logger.info('Deleted relationship {relationship_id}'.format(relationship_id=relationship_id))
     for handle_id in peer_result.get('peer_groups', []):
-        peer_group = nc.get_node_model(nc.neo4jdb, handle_id)
+        peer_group = nc.get_node_model(nc.graphdb.manager, handle_id)
         if peer_group:
             last_seen, expired = helpers.neo4j_data_age(peer_group.data, data_age)
             if expired:

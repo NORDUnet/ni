@@ -89,7 +89,7 @@ def nodes_to_json():
         MATCH (n:Node)
         RETURN n
         """
-    for item in nc.query_to_iterator(nc.neo4jdb, q):
+    for item in nc.query_to_iterator(nc.graphdb.manager, q):
         labels = list(item['n'].labels)
         data = item['n'].properties
         json_list.append(
@@ -114,7 +114,7 @@ def relationships_to_json():
         RETURN r, startNode(r).handle_id as start, endNode(r).handle_id as end
         """
 
-    for item in nc.query_to_iterator(nc.neo4jdb, q):
+    for item in nc.query_to_iterator(nc.graphdb.manager, q):
         relationship = item['r']
         start = item['start']
         end = item['end']
