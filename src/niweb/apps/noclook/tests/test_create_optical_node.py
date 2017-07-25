@@ -25,20 +25,9 @@ class CreateOpticalNodeTest(NeoTestCase):
         self.assertEquals('In service', node_data['operational_state'])
 
     def test_with_ports(self):
-        self.data['port_name'] = [
-            "Port-1",
-            "Port-2",
-            "Port-3",
-            "Port-4",
-            ""
-        ]
-        self.data['port_type'] = [
-            "Fixed",
-            "LC",
-            "RJ45",
-            "E2000",
-            "LC"
-        ]
+        self.data['prefix'] = 'Port-'
+        self.data['port_type'] = 'LC'
+        self.data['num_ports'] = '4'
         resp = self.create(self.data)
 
         nh, node = self.get_node(self.data['name'])
@@ -48,23 +37,21 @@ class CreateOpticalNodeTest(NeoTestCase):
         ports = sorted(ports, key=itemgetter('node'))
         # Missing name should not create a port
         self.assertEqual(4, len(ports))
-        
-        for i in range(4):
-            self.check_port(ports[i], self.data['port_name'][i], self.data['port_type'][i])
+
+        self.assertEqual('Port-1', ports[0]['node'].data['name'])
+        self.assertEqual('LC', ports[0]['node'].data['port_type'])
+        self.assertEqual('Port-2', ports[1]['node'].data['name'])
+        self.assertEqual('Port-3', ports[2]['node'].data['name'])
+        self.assertEqual('Port-4', ports[3]['node'].data['name'])
 
     def test_skip_ports(self):
-        self.data['port_name'] = [
-            "Port-1",
-            "Port-2",
-        ]
-        self.data['port_type'] = [
-            "Fixed",
-            "LC",
-        ]
+        self.data['prefix'] = 'Port-'
+        self.data['port_type'] = 'LC'
+        self.data['num_ports'] = '4'
         self.data['no_ports'] = True
         resp = self.create(self.data)
 
-        nh,node = self.get_node(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         self.assertRedirects(resp, self.get_full_url(nh))
 
         ports = self.get_ports(node)
@@ -72,11 +59,10 @@ class CreateOpticalNodeTest(NeoTestCase):
 
     def test_bad_optical_node_type(self):
         self.data['type'] = "NotAType"
-        resp =  self.create(self.data)
+        resp = self.create(self.data)
         self.assertEquals(1, len(resp.context['form'].errors))
 
     def check_port(self, port, name, port_type):
         pdata = port.get('node').data
         self.assertEqual(name, pdata['name'])
         self.assertEqual(port_type, pdata['port_type'])
-
