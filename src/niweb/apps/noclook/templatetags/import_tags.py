@@ -20,7 +20,7 @@ OPTIONS_MAP = {
   'responsible_group': choices('responsible_groups'),
   'support_group': choices('responsible_groups'),
   'security_class': choices('security_classes'),
-  'type': lazy(forms.optical_node_types, list)
+  'type': choices('optical_node_types')
 }
 
 def generate_id(length=5):
