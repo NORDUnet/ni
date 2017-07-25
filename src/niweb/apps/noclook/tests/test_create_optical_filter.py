@@ -16,7 +16,7 @@ class CreateOpticalfilterCase(NeoTestCase):
         self.data['no_ports'] = True
         resp = self.create(self.data)
 
-        nh,node = self.get_node(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         node_data = node.data
         self.assertRedirects(resp, self.get_full_url(nh))
         self.assertEqual("test optical filter", node_data['name'])
@@ -26,7 +26,7 @@ class CreateOpticalfilterCase(NeoTestCase):
 
     def test_filter_port_creation(self):
         self.data['port_type'] = 'LC'
-        resp = self.create(self.data)
+        self.create(self.data)
         nh, node = self.get_node(self.data['name'])
 
         ports = self.get_ports(node)
