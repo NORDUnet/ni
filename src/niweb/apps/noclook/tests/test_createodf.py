@@ -1,6 +1,7 @@
 from .neo4j_base import NeoTestCase
 from operator import itemgetter
 
+
 class CreateODFCase(NeoTestCase):
     def setUp(self):
         super(CreateODFCase, self).setUp()
@@ -14,7 +15,7 @@ class CreateODFCase(NeoTestCase):
     def test_only_ODF_creation(self):
         self.data['no_ports'] = True
         resp = self.create(self.data)
-        nh,node = self.get_node(self.data['name'])
+        nh, node = self.get_node(self.data['name'])
         odf_data = node.data
 
         self.assertRedirects(resp, self.get_full_url(nh))
@@ -25,9 +26,9 @@ class CreateODFCase(NeoTestCase):
 
     def test_ODF_port_creation(self):
         self.data['port_type'] = 'LC'
-        resp = self.create(self.data)
+        self.create(self.data)
         nh, node = self.get_node(self.data['name'])
-        
+
         ports = self.get_ports(node)
         self.assertEqual(48, len(ports))
 
@@ -52,7 +53,7 @@ class CreateODFCase(NeoTestCase):
 
         nh, node = self.get_node(self.data['name'])
         ports = self.get_ports(node)
-        
+
         self.assertEqual(6, len(ports))
 
         ports = sorted(ports, key=itemgetter('node'))
@@ -73,7 +74,7 @@ class CreateODFCase(NeoTestCase):
         self.assertEqual(12, len(ports))
 
         ports = sorted(ports, key=itemgetter('node'))
-        
+
         port = ports[0].get('node').data
         self.assertEqual('13', port['name'])
 
@@ -90,7 +91,7 @@ class CreateODFCase(NeoTestCase):
         self.assertEqual(12, len(ports))
 
         ports = sorted(ports, key=itemgetter('node'))
-        
+
         port = ports[0].get('node').data
         self.assertEqual('ge-1/0/1', port['name'])
 
@@ -99,8 +100,8 @@ class CreateODFCase(NeoTestCase):
 
     def test_ODF_port_all(self):
         self.data['prefix'] = 'ge-1/0/'
-        self.data['bundled']=True
-        self.data['offset']=2
+        self.data['bundled'] = True
+        self.data['offset'] = 2
         self.data['num_ports'] = 12
         self.create(self.data)
 
@@ -115,4 +116,3 @@ class CreateODFCase(NeoTestCase):
 
         port = ports[-1].get('node').data
         self.assertEqual('ge-1/0/12+13', port['name'])
-
