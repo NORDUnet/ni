@@ -9,6 +9,7 @@ class CreateOpticalfilterCase(NeoTestCase):
         self.data = {
             'name': 'test optical filter',
             'max_number_of_ports': '12',
+            'num_ports': 12,
         }
 
     def test_only_filter_creation(self):
