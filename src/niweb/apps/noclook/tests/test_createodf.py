@@ -8,6 +8,7 @@ class CreateODFCase(NeoTestCase):
         self.data = {
             'name': 'test odf',
             'max_number_of_ports': '48',
+            'num_ports': '48',
         }
 
     def test_only_ODF_creation(self):
@@ -46,7 +47,7 @@ class CreateODFCase(NeoTestCase):
 
     def test_ODF_port_bundle(self):
         self.data['bundled'] = True
-        self.data['max_number_of_ports'] = 12
+        self.data['num_ports'] = 12
         self.create(self.data)
 
         nh, node = self.get_node(self.data['name'])
@@ -64,7 +65,7 @@ class CreateODFCase(NeoTestCase):
 
     def test_ODF_port_offset(self):
         self.data['offset'] = 13
-        self.data['max_number_of_ports'] = 12
+        self.data['num_ports'] = 12
         self.create(self.data)
 
         nh, node = self.get_node(self.data['name'])
@@ -81,7 +82,7 @@ class CreateODFCase(NeoTestCase):
 
     def test_ODF_port_prefix(self):
         self.data['prefix'] = 'ge-1/0/'
-        self.data['max_number_of_ports'] = 12
+        self.data['num_ports'] = 12
         self.create(self.data)
 
         nh, node = self.get_node(self.data['name'])
@@ -100,7 +101,7 @@ class CreateODFCase(NeoTestCase):
         self.data['prefix'] = 'ge-1/0/'
         self.data['bundled']=True
         self.data['offset']=2
-        self.data['max_number_of_ports'] = 12
+        self.data['num_ports'] = 12
         self.create(self.data)
 
         nh, node = self.get_node(self.data['name'])
