@@ -1,6 +1,6 @@
 Django<1.9
 django-activity-stream<0.7
-django-jsonfield==0.9.13
+django-jsonfield
 django-jsonfield-compat
 django-tastypie<0.13
 ipaddr==2.1.11
