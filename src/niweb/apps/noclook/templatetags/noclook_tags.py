@@ -7,7 +7,7 @@ from django import template
 import json
 import re
 from django.utils.html import escape
-from dynamic_preferences import global_preferences_registry
+from dynamic_preferences.registries import global_preferences_registry
 
 
 register = template.Library()

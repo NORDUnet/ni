@@ -2,7 +2,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeHandle
-from dynamic_preferences import global_preferences_registry
+from dynamic_preferences.registries import global_preferences_registry
 from apps.noclook import forms, helpers
 from django.template.defaultfilters import slugify
 from apps.noclook.tests.testing import nc

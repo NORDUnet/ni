@@ -8,7 +8,7 @@ import csv
 from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
-from dynamic_preferences import global_preferences_registry
+from dynamic_preferences.registries import global_preferences_registry
 
 
 # We should move this kind of data to the SQL database.

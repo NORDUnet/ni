@@ -3,7 +3,7 @@ __author__ = 'lundberg'
 
 import logging
 from django.db.utils import ProgrammingError
-from dynamic_preferences import global_preferences_registry
+from dynamic_preferences.registries import global_preferences_registry
 from .common import *
 
 logger = logging.getLogger('noclook.forms')

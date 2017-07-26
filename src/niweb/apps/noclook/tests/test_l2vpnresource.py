@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCaseMixin
 from django.test import TestCase
 from tastypie.models import ApiKey
-from dynamic_preferences import global_preferences_registry
+from dynamic_preferences.registries import global_preferences_registry
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, ServiceClass, ServiceType
 from apps.noclook import helpers, forms
 from apps.noclook.tests.testing import nc
