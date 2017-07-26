@@ -37,3 +37,6 @@ EMAIL_HOST=
 
 # Secret key
 SECRET_KEY=
+
+# Google apis key
+GOOGLE_MAPS_API_KEY=
