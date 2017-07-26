@@ -28,7 +28,15 @@ class FormadataApiTest(NeoTestCase):
         resp = self.client.get(self.base_url.format(slug='site'))
         sites = json.loads(resp.content)
 
-        self.assertEquals(self.sites, sites)
+        self.assertIn(self.sites[0], sites)
+        self.assertIn(self.sites[1], sites)
+
+    def test_formdata_sort_order(self):
+        resp = self.client.get(self.base_url.format(slug='site'))
+        site_names = [name for _id, name in json.loads(resp.content)]
+
+        real_site_names = sorted([name for _id, name in self.sites])
+        self.assertEquals(real_site_names[0], site_names[0])
 
     def test_formdata_slug_racks(self):
         resp = self.client.get(self.base_url.format(slug='rack'))

@@ -93,6 +93,7 @@ def get_node_type(request, slug):
     result_list = []
     for node in nc.get_node_by_type(nc.graphdb.manager, label):
         result_list.append([node['handle_id'], node['name']])
+    result_list = sorted(result_list, key=lambda n: n[1].lower())
     return JsonResponse(result_list, safe=False)
 
 
