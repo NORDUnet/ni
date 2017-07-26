@@ -62,7 +62,7 @@ class FormTestCase(TestCase):
         super(FormTestCase, self).tearDown()
 
     def get_full_url(self, path):
-        return 'http://testserver{}'.format(path)
+        return path
 
 
 class CommonNewForms(FormTestCase):

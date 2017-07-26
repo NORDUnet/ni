@@ -4,9 +4,8 @@ __author__ = 'lundberg'
 # -*- coding: utf-8 -*-
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.shortcuts import render_to_response, get_object_or_404, render
-from django.template import RequestContext
+from django.http import HttpResponse, Http404
+from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
 from re import escape as re_escape
 import json
@@ -18,7 +17,7 @@ import norduniclient as nc
 
 
 def index(request):
-    return render_to_response('noclook/index.html', {}, context_instance=RequestContext(request))
+    return render(request, 'noclook/index.html', {})
 
 
 @login_required
@@ -27,7 +26,7 @@ def logout_page(request):
     Log users out and redirects them to the index.
     """
     logout(request)
-    return HttpResponseRedirect('/')
+    return redirect('/')
 
 
 # Visualization views
@@ -57,8 +56,7 @@ def visualize(request, slug, handle_id):
     """
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     node = nh.get_node()
-    return render_to_response('noclook/visualize/visualize.html', {'node_handle': nh, 'node': node, 'slug': slug},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/visualize/visualize.html', {'node_handle': nh, 'node': node, 'slug': slug})
 
 
 @login_required
@@ -68,9 +66,8 @@ def visualize_maximize(request, slug, handle_id):
     """
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     node = nh.get_node()
-    return render_to_response('noclook/visualize/visualize_maximize.html',
-                              {'node_handle': nh, 'node': node, 'slug': slug},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/visualize/visualize_maximize.html',
+                              {'node_handle': nh, 'node': node, 'slug': slug})
 
 
 # Search views
@@ -97,9 +94,8 @@ def search(request, value='', form=None):
             item = {'node': node, 'nh': nh}
             result.append(item)
         if len(result) == 1:
-            return HttpResponseRedirect(result[0]['nh'].get_absolute_url())
-    return render_to_response('noclook/search_result.html', {'value': value, 'result': result, 'posted': posted},
-                              context_instance=RequestContext(request))
+            return redirect(result[0]['nh'].get_absolute_url())
+    return render(request, 'noclook/search_result.html', {'value': value, 'result': result, 'posted': posted})
 
 
 @login_required
@@ -181,10 +177,9 @@ def find_all(request, slug=None, key=None, value=None, form=None):
             node_type = get_object_or_404(NodeType, slug=slug)
             label = node_type.get_label()
         except Http404:
-            return render_to_response('noclook/search_result.html',
+            return render(request, 'noclook/search_result.html',
                                       {'node_type': slug, 'key': key, 'value': value, 'result': None,
-                                       'node_meta_type': None},
-                                      context_instance=RequestContext(request))
+                                       'node_meta_type': None})
     if value:
         nodes = nc.search_nodes_by_value(nc.graphdb.manager, value, key, label)
     else:
@@ -198,9 +193,8 @@ def find_all(request, slug=None, key=None, value=None, form=None):
         nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
         item = {'node': node, 'nh': nh}
         result.append(item)
-    return render_to_response('noclook/search_result.html',
-                              {'node_type': node_type, 'key': key, 'value': value, 'result': result},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/search_result.html',
+                              {'node_type': node_type, 'key': key, 'value': value, 'result': result})
 
 
 # Google maps views
@@ -328,9 +322,8 @@ def qr_lookup(request, name):
     hits = list(nc.get_nodes_by_name(nc.graphdb.manager, name))
     if len(hits) == 1:
         nh = get_object_or_404(NodeHandle, pk=hits[0]['handle_id'])
-        return HttpResponseRedirect(nh.get_absolute_url())
-    return render_to_response('noclook/qr_result.html', {'hits': hits, 'name': name},
-                              context_instance=RequestContext(request))
+        return redirect(nh.get_absolute_url())
+    return render(request, 'noclook/qr_result.html', {'hits': hits, 'name': name})
 
 
 @login_required

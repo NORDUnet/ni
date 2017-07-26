@@ -6,33 +6,20 @@ Created on 2012-06-11 5:48 PM
 """
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render_to_response, render
-from django.template import RequestContext
-from django.http import Http404, HttpResponse
-from django.template.defaultfilters import yesno, date
-from django.views.decorators.cache import cache_page
-from django.conf import settings as django_settings
-from django.contrib.auth.models import User
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.shortcuts import render
+from django.http import Http404
 
-import tempfile
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
-import json
-from decimal import Decimal, ROUND_DOWN
 
 from apps.noclook.forms import get_node_type_tuples, SearchIdForm
 from apps.noclook.forms.reports import HostReportForm
 from apps.noclook.models import NordunetUniqueId
-from apps.noclook.templatetags.noclook_tags import timestamp_to_td
 from apps.noclook import helpers
 import norduniclient as nc
 
 
 @login_required
 def host_reports(request):
-    return render_to_response('noclook/reports/host_reports.html', {},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/reports/host_reports.html', {})
 
 
 @login_required
@@ -68,10 +55,9 @@ def host_users(request, host_user_name=None):
         num_of_hosts += len(item['hosts'])
 
     urls = helpers.get_node_urls(hosts)
-    return render_to_response('noclook/reports/host_users.html',
+    return render(request, 'noclook/reports/host_users.html',
                               {'host_user_name': host_user_name, 'host_users': users, 'hosts': hosts,
-                               'num_of_hosts': num_of_hosts, 'urls': urls, 'form': form},
-                              context_instance=RequestContext(request))
+                               'num_of_hosts': num_of_hosts, 'urls': urls, 'form': form})
 
 
 @login_required
@@ -89,9 +75,8 @@ def host_security_class(request, status=None, form=None):
             ''' % where_statement
     hosts = nc.query_to_list(nc.graphdb.manager, q)
     urls = helpers.get_node_urls(hosts)
-    return render_to_response('noclook/reports/host_security_class.html',
-                              {'status': status, 'hosts': hosts, 'urls': urls},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/reports/host_security_class.html',
+                              {'status': status, 'hosts': hosts, 'urls': urls})
 
 
 @login_required
@@ -107,9 +92,8 @@ def host_services(request, status=None):
                 ORDER BY host.noclook_last_seen DESC
                 """
             hosts = nc.query_to_list(nc.graphdb.manager, q)
-            return render_to_response('noclook/reports/host_unauthorized_ports.html',
-                                      {'status': status, 'hosts': hosts},
-                                      context_instance=RequestContext(request))
+            return render(request, 'noclook/reports/host_unauthorized_ports.html',
+                                      {'status': status, 'hosts': hosts})
         elif status == 'public':
             q = """
                 MATCH (host:Host)
@@ -119,9 +103,8 @@ def host_services(request, status=None):
                 ORDER BY host.noclook_last_seen DESC
                 """
             hosts = nc.query_to_list(nc.graphdb.manager, q)
-            return render_to_response('noclook/reports/host_public_ports.html',
-                                      {'status': status, 'hosts': hosts},
-                                      context_instance=RequestContext(request))
+            return render(request, 'noclook/reports/host_public_ports.html',
+                                      {'status': status, 'hosts': hosts})
         else:
             if status == 'locked':
                 where_statement = 'and (exists(host.services_locked) and host.services_locked)'
@@ -136,25 +119,22 @@ def host_services(request, status=None):
                 ORDER BY host.noclook_last_seen DESC
                 """ % where_statement
         hosts = nc.query_to_list(nc.graphdb.manager, q)
-    return render_to_response('noclook/reports/host_services.html',
-                              {'status': status, 'hosts': hosts},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/reports/host_services.html',
+                              {'status': status, 'hosts': hosts})
 
 
 @login_required
 def unique_ids(request, organisation=None):
     if not organisation:
-        return render_to_response('noclook/reports/unique_ids/choose_organization.html', {},
-                                  context_instance=RequestContext(request))
+        return render(request, 'noclook/reports/unique_ids/choose_organization.html', {})
     if organisation == 'NORDUnet':
         id_list = get_id_list(request.GET or None)
         id_list = helpers.paginate(id_list, request.GET.get('page'))
     else:
         raise Http404
     search_form = SearchIdForm(request.GET or None)
-    return render_to_response('noclook/reports/unique_ids/list.html',
-        {'id_list': id_list, 'organisation': organisation, 'search_form': search_form},
-        context_instance=RequestContext(request))
+    return render(request, 'noclook/reports/unique_ids/list.html',
+        {'id_list': id_list, 'organisation': organisation, 'search_form': search_form})
 
 
 @login_required

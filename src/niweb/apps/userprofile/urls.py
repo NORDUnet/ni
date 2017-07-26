@@ -5,12 +5,13 @@ Created on 2012-11-22 3:50 PM
 @author: lundberg
 """
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import url
+from . import views
 
 from django.contrib import admin
 admin.autodiscover()
 
-urlpatterns = patterns('apps.userprofile.views',
-    url(r'^$', 'list_userprofiles'),
-    url(r'^(?P<userprofile_id>\d+)/$', 'userprofile_detail'),
-)
+urlpatterns = [
+    url(r'^$', views.list_userprofiles),
+    url(r'^(?P<userprofile_id>\d+)/$', views.userprofile_detail),
+]

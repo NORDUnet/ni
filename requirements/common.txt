@@ -1,4 +1,4 @@
-Django<1.9
+Django<1.12
 django-activity-stream<0.7
 django-jsonfield
 django-jsonfield-compat

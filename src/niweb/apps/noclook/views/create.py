@@ -9,8 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.http import Http404
-from django.shortcuts import render_to_response, render, redirect
-from django.template import RequestContext
+from django.shortcuts import render, redirect
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
 from apps.noclook.models import NodeHandle, Dropdown
@@ -52,7 +51,7 @@ def new_node(request, slug=None, **kwargs):
     """
     if not slug:
         types = sorted(TYPES, key=lambda x: x[1])
-        return render_to_response('noclook/create/new_node.html', {"types": types}, context_instance=RequestContext(request))
+        return render(request, 'noclook/create/new_node.html', {"types": types})
     try:
         func = NEW_FUNC[slug]
     except KeyError:
@@ -135,8 +134,7 @@ def new_external_equipment(request, **kwargs):
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewExternalEquipmentForm()
-    return render_to_response('noclook/create/create_external_equipment.html', {'form': form},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/create/create_external_equipment.html', {'form': form})
 
 
 @staff_member_required
@@ -357,8 +355,7 @@ def new_odf(request, **kwargs):
     else:
         form = forms.NewOdfForm()
         ports_form = forms.BulkPortsForm({'port_type': 'LC', 'offset': 1, 'num_ports': '0'})
-    return render_to_response('noclook/create/create_odf.html', {'form': form, 'ports_form': ports_form},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/create/create_odf.html', {'form': form, 'ports_form': ports_form})
 
 
 @staff_member_required
@@ -491,14 +488,12 @@ def new_site_owner(request, **kwargs):
             except UniqueNodeError:
                 form = forms.NewSiteOwnerForm(request.POST)
                 form.add_error('name', 'A Site Owner with that name already exists.')
-                return render_to_response('noclook/create/create_site_owner.html', {'form': form},
-                                          context_instance=RequestContext(request))
+                return render(request, 'noclook/create/create_site_owner.html', {'form': form})
             helpers.form_update_node(request.user, nh.handle_id, form)
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewSiteOwnerForm()
-    return render_to_response('noclook/create/create_site_owner.html', {'form': form},
-                              context_instance=RequestContext(request))
+    return render(request, 'noclook/create/create_site_owner.html', {'form': form})
 
 
 @staff_member_required
@@ -534,7 +529,7 @@ def new_optical_node(request, slug=None):
 @staff_member_required
 def reserve_id_sequence(request, slug=None):
     if not slug:
-        return render_to_response('noclook/edit/reserve_id.html', {}, context_instance=RequestContext(request))
+        return render(request, 'noclook/edit/reserve_id.html', {})
     if request.POST:
         form = forms.ReserveIdForm(request.POST)
         if form.is_valid():
@@ -549,15 +544,12 @@ def reserve_id_sequence(request, slug=None):
                 request.user,
                 form.cleaned_data['site']
             )
-            return render_to_response('noclook/edit/reserve_id.html', {'reserved_list': reserved_list, 'slug': slug},
-                                      context_instance=RequestContext(request))
+            return render(request, 'noclook/edit/reserve_id.html', {'reserved_list': reserved_list, 'slug': slug})
         else:
-            return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},
-                                      context_instance=RequestContext(request))
+            return render(request, 'noclook/edit/reserve_id.html', {'form': form, 'slug': slug})
     else:
         form = forms.ReserveIdForm()
-        return render_to_response('noclook/edit/reserve_id.html', {'form': form, 'slug': slug},
-                                  context_instance=RequestContext(request))
+        return render(request, 'noclook/edit/reserve_id.html', {'form': form, 'slug': slug})
 
 
 NEW_FUNC = {
