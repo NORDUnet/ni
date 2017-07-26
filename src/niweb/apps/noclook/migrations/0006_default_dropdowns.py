@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 from django.db import migrations
 from os.path import dirname, abspath, join
 import csv
-from sets import Set
 
 BASE_DIR = dirname(abspath(__file__))
 
@@ -27,7 +26,7 @@ def add_default_dropdowns(apps, schema_editor):
 def remove_default_dropdowns(apps, schema_editor):
     Dropdown = apps.get_model('noclook', 'Dropdown')
     with open(join(BASE_DIR, 'common_dropdowns.csv')) as f:
-        unique_dropdowns = Set([l['dropdown'] for l in csv.DictReader(f)])
+        unique_dropdowns = set([l['dropdown'] for l in csv.DictReader(f)])
         for dropdown in unique_dropdowns:
             Dropdown.objects.filter(name=dropdown).delete()
 
