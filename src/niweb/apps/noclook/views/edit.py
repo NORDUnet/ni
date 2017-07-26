@@ -92,7 +92,7 @@ def get_node_type(request, slug):
     label = node_type.type.replace(' ', '_')
     result_list = []
     for node in nc.get_node_by_type(nc.graphdb.manager, label):
-        result_list.append([node['name'], node['handle_id']])
+        result_list.append([node['handle_id'], node['name']])
     return JsonResponse(result_list, safe=False)
 
 
