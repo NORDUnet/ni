@@ -1,4 +1,4 @@
 -r common.txt
-ipython==3.2.1
+ipython
 django-debug-toolbar
 django-nose<1.5
