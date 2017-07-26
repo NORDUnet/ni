@@ -6,11 +6,12 @@ Created on 2014-06-26 1:28 PM
 """
 
 from django.contrib.auth.models import User
-from tastypie.test import ResourceTestCase
+from tastypie.test import ResourceTestCaseMixin
+from django.test import TestCase
 from tastypie.models import ApiKey
 from dynamic_preferences import global_preferences_registry
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, ServiceClass, ServiceType
-from apps.noclook import helpers
+from apps.noclook import helpers, forms
 from apps.noclook.tests.testing import nc
 
 
@@ -18,7 +19,7 @@ from apps.noclook.tests.testing import nc
 global_preferences = global_preferences_registry.manager()
 
 
-class ServiceL2VPNResourceTest(ResourceTestCase):
+class ServiceL2VPNResourceTest(ResourceTestCaseMixin, TestCase):
 
     # TODO: Write tests for this.
     # vpn creation:
@@ -46,7 +47,10 @@ class ServiceL2VPNResourceTest(ResourceTestCase):
             prefix='NU-S',
             creator=self.user
         )
+        # Load the default forms
+        global_preferences['general__data_domain'] = 'nordunet'
         global_preferences['id_generators__services'] = 'nordunet_service_id'
+        reload(forms)
 
         # Set up initial data
         router_node_type = NodeType.objects.create(type='Router', slug="router")

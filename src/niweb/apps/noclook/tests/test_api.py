@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib.auth.models import User
-from tastypie.test import ResourceTestCase
+from tastypie.test import ResourceTestCaseMixin
+from django.test import TestCase
 from tastypie.models import ApiKey
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
 from apps.noclook import helpers
@@ -10,7 +11,7 @@ from apps.noclook.tests.testing import nc
 __author__ = 'lundberg'
 
 
-class ApiTest(ResourceTestCase):
+class ApiTest(ResourceTestCaseMixin, TestCase):
 
     def setUp(self):
         super(ApiTest, self).setUp()

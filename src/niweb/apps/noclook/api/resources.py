@@ -150,6 +150,9 @@ class NodeTypeResource(ModelResource):
         resource_name = 'node_type'
         authentication = ApiKeyAuthentication()
         authorization = Authorization() 
+        filtering = {
+            'slug': ALL,
+        }
 
     def prepend_urls(self):
         return [

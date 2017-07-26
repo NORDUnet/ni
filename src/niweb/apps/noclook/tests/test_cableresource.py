@@ -6,7 +6,8 @@ Created on 2014-06-26 1:28 PM
 """
 
 from django.contrib.auth.models import User
-from tastypie.test import ResourceTestCase
+from tastypie.test import ResourceTestCaseMixin
+from django.test import TestCase
 from tastypie.models import ApiKey
 from dynamic_preferences import global_preferences_registry
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
@@ -17,7 +18,7 @@ from apps.noclook.tests.testing import nc
 global_preferences = global_preferences_registry.manager()
 
 
-class CableResourceTest(ResourceTestCase):
+class CableResourceTest(ResourceTestCaseMixin, TestCase):
 
     def setUp(self):
         super(CableResourceTest, self).setUp()
