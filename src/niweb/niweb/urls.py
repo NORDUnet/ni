@@ -61,7 +61,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
     # Django Generic Login
-    url(r'^accounts/login/$', auth_views.login),
+    url(r'^accounts/login/$', auth_views.LoginView.as_view(), name='django_login'),
 
     # Federated login
     #url(r'^saml2/', djangosaml2.urls),

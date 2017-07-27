@@ -4,7 +4,7 @@ from django.contrib.auth import views as auth_views
 from .views import other, create, edit, import_nodes, report, detail, redirect, debug, list as _list
 
 urlpatterns = [
-    url(r'^login/$', auth_views.login),
+    url(r'^login/$', auth_views.LoginView.as_view()),
     url(r'^$', other.index),
     # Log out
     url(r'^logout/$', other.logout_page),
@@ -126,10 +126,10 @@ urlpatterns = [
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/history$', detail.generic_history),
 
     # -- redirect
-    #wins only because of no /
+    # wins only because of no /
     url(r'^nodes/(?P<handle_id>\d+)$', redirect.node_redirect),
     url(r'^slow-nodes/(?P<handle_id>\d+)$', redirect.node_slow_redirect),
-  
+
     # -- debug view
     url(r'^nodes/(?P<handle_id>\d+)/debug$', debug.generic_debug),
 ]

@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django_comments.signals import comment_was_posted, comment_was_flagged
 from django.dispatch import receiver
 from django_comments.models import Comment
+from django.urls import reverse
 from actstream import action
 from neo4j.v1.exceptions import CypherError
 
@@ -32,22 +33,24 @@ class NodeType(models.Model):
     def get_label(self):
         return self.type.replace(' ', '_')
 
-    @models.permalink
     def get_absolute_url(self):
-        return('generic_list', (), {
-            'slug': self.slug})
-            
+        return self.url()
+
+    def url(self):
+        return reverse('generic_list', args=[self.slug])
+
     def delete(self, **kwargs):
         """
         Delete the NodeType object with all associated NodeHandles.
         """
         for nh in NodeHandle.objects.filter(node_type=self.pk):
-            nh.delete() 
+            nh.delete()
         super(NodeType, self).delete()
         return True
     delete.alters_data = True
 
-#XXX: Does not handle slug renaming
+
+# XXX: Does not handle slug renaming
 slug_cache = {}
 
 
@@ -65,8 +68,7 @@ class NodeHandle(models.Model):
     # Data shared with the node
     node_name = models.CharField(max_length=200)
     node_type = models.ForeignKey(NodeType)
-    node_meta_type = models.CharField(max_length=255,
-        choices=NODE_META_TYPE_CHOICES)
+    node_meta_type = models.CharField(max_length=255, choices=NODE_META_TYPE_CHOICES)
     # Meta information
     creator = models.ForeignKey(User, related_name='creator')
     created = models.DateTimeField(auto_now_add=True)
@@ -75,17 +77,18 @@ class NodeHandle(models.Model):
 
     def __unicode__(self):
         return '%s %s' % (self.node_type, self.node_name)
-        
+
     def get_node(self):
         """
         Returns the NodeHandles node.
         """
         return nc.get_node_model(nc.graphdb.manager, self.handle_id)
 
-    @models.permalink
     def get_absolute_url(self):
-        return('generic_detail', (),
-               {'slug': get_slug(self.node_type_id), 'handle_id': self.handle_id})
+        return self.url()
+
+    def url(self):
+        return reverse('generic_detail', args=[get_slug(self.node_type_id), self.handle_id])
 
     def save(self, *args, **kwargs):
         """
@@ -98,7 +101,7 @@ class NodeHandle(models.Model):
             #  A node associated with this handle_id already exists
             pass
         return self
-    
+
     save.alters_data = True
 
     def delete(self, **kwargs):
@@ -111,7 +114,7 @@ class NodeHandle(models.Model):
             pass
         Comment.objects.filter(object_pk=self.pk).delete()
         super(NodeHandle, self).delete()
-        
+
     delete.alters_data = True
 
 
@@ -146,8 +149,10 @@ class UniqueIdGenerator(models.Model):
         if self.zfill:
             base_id = str(self.base_id).zfill(self.base_id_length)
         prefix = suffix = ''
-        if self.prefix: prefix = self.prefix
-        if self.suffix: suffix = self.suffix
+        if self.prefix:
+            prefix = self.prefix
+        if self.suffix:
+            suffix = self.suffix
         unique_id = '%s%s%s' % (prefix, base_id, suffix)
         self.last_id = unique_id
         self.base_id += 1
@@ -156,8 +161,10 @@ class UniqueIdGenerator(models.Model):
 
     def get_regex(self):
         prefix = suffix = ''
-        if self.prefix: prefix = self.prefix
-        if self.suffix: suffix = self.suffix
+        if self.prefix:
+            prefix = self.prefix
+        if self.suffix:
+            suffix = self.suffix
         # TODO: handle zerofill?
         return re.compile('({}\d+{})'.format(prefix, suffix))
 
@@ -169,8 +176,10 @@ class UniqueIdGenerator(models.Model):
         if self.zfill:
             base_id = str(self.base_id).zfill(self.base_id_length)
         prefix = suffix = ''
-        if self.prefix: prefix = self.prefix
-        if self.suffix: suffix = self.suffix
+        if self.prefix:
+            prefix = self.prefix
+        if self.suffix:
+            suffix = self.suffix
         self.next_id = '%s%s%s' % (prefix, base_id, suffix)
         super(UniqueIdGenerator, self).save(*args, **kwargs)
 
@@ -287,7 +296,7 @@ class Choice(models.Model):
         return u"{} ({})".format(self.name, self.dropdown.name)
 
 
-## Signals
+# -- Signals
 @receiver(comment_was_posted, dispatch_uid="apps.noclook.models")
 def comment_posted_handler(sender, comment, request, **kwargs):
     action.send(
