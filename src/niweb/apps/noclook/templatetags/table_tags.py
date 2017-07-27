@@ -3,7 +3,8 @@ import collections
 
 from django import template
 from apps.noclook.templatetags.noclook_tags import noclook_node_to_link
-from django.utils.safestring import mark_safe, escape
+from django.utils.safestring import mark_safe
+from django.utils.html import format_html, format_html_join
 
 register = template.Library()
 
@@ -13,7 +14,8 @@ def table_column(context, item):
     if not item:
         result = u''
     elif type(item) is list:
-        result = mark_safe(u'<br> '.join([table_column(context, i) for i in item]))
+        result = format_html_join(mark_safe(u'\n<br>'),
+                                  u'{}', ([table_column(context, i)] for i in item))
     elif type(item) in (str, unicode):
         result = item
     elif isinstance(item, collections.Iterable):
@@ -22,7 +24,7 @@ def table_column(context, item):
             result = noclook_node_to_link(context, item)
         elif "url" in item:
             # it is a 'link'
-            result = mark_safe(u'<a href="{}">{}</a>'.format(escape(item.get('url', '')), escape(item.get('name', ''))))
+            result = format_html(u'<a href="{}">{}</a>', item.get('url', ''), item.get('name', ''))
         else:
             # fallback to default
             result = item
@@ -36,5 +38,5 @@ def table_column(context, item):
 def info_row(header, item, postfix=u'', prefix=u''):
     result = u''
     if item:
-        result = mark_safe(u'<tr><th>{}</th><td>{}{}{}</td></tr>'.format(escape(header), escape(prefix), escape(item), escape(postfix)))
+        result = format_html(u'<tr><th>{}</th><td>{}{}{}</td></tr>', header, prefix, item, postfix)
     return result

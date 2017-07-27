@@ -1,14 +1,12 @@
-from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook.helpers import get_node_url, neo4j_data_age, neo4j_report_age, get_node_type
+from apps.noclook.helpers import neo4j_data_age, neo4j_report_age, get_node_type
 import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
 import json
 import re
-from django.utils.html import escape
+from django.utils.html import escape, format_html
 from dynamic_preferences.registries import global_preferences_registry
-from django.utils.safestring import mark_safe, escape
 
 
 register = template.Library()
@@ -27,7 +25,7 @@ def type_menu():
 
 @register.simple_tag(takes_context=True)
 def noclook_node_to_url(context,handle_id):
-    """
+    """G
     Takes a node id as a string and returns the absolute url for a node.
     """
     #handle fallback
@@ -48,7 +46,7 @@ def noclook_node_to_url(context,handle_id):
 def noclook_node_to_link(context, node):
     if "handle_id" in node:
         url = noclook_node_to_url(context, node.get("handle_id"))
-        result = mark_safe(u'<a class="handle" href="{}">{}</a>'.format(escape(url), escape(node.get("name"))))
+        result = format_html(u'<a class="handle" href="{}">{}</a>', url, node.get("name"))
     else:
         result = None
     return result
