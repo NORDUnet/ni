@@ -8,7 +8,7 @@ import json
 import re
 from django.utils.html import escape
 from dynamic_preferences.registries import global_preferences_registry
-from django.utils.safestring import mark_safe
+from django.utils.safestring import mark_safe, escape
 
 
 register = template.Library()
@@ -48,7 +48,7 @@ def noclook_node_to_url(context,handle_id):
 def noclook_node_to_link(context, node):
     if "handle_id" in node:
         url = noclook_node_to_url(context, node.get("handle_id"))
-        result = mark_safe(u'<a class="handle" href="{}">{}</a>'.format(url, node.get("name")))
+        result = mark_safe(u'<a class="handle" href="{}">{}</a>'.format(escape(url), escape(node.get("name"))))
     else:
         result = None
     return result
