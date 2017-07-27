@@ -1,16 +1,16 @@
 from apps.userprofile.models import UserProfile
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.shortcuts import render_to_response, get_object_or_404
-from django.template import RequestContext
+from django.shortcuts import render, get_object_or_404
 from actstream.models import actor_stream
+
 
 @login_required
 def list_userprofiles(request):
     profile_list = UserProfile.objects.all()
-    return render_to_response('userprofile/list_userprofiles.html',
-                              {'profile_list': profile_list},
-                              context_instance=RequestContext(request))
+    return render(request, 'userprofile/list_userprofiles.html',
+                  {'profile_list': profile_list})
+
 
 @login_required
 def userprofile_detail(request, userprofile_id):
@@ -26,6 +26,5 @@ def userprofile_detail(request, userprofile_id):
     except EmptyPage:
         # If page is out of range (e.g. 9999), deliver last page of results.
         activities = paginator.page(paginator.num_pages)
-    return render_to_response('userprofile/userprofile_detail.html',
-                              {'profile': profile, 'activities': activities},
-                              context_instance=RequestContext(request))
+    return render(request, 'userprofile/userprofile_detail.html',
+                  {'profile': profile, 'activities': activities})
