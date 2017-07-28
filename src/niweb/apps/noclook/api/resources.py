@@ -415,7 +415,11 @@ class RelationshipResource(Resource):
 class CableResource(NodeHandleResource):
     def __init__(self, *args, **kwargs):
         super(CableResource, self).__init__(*args, **kwargs)
-        self.fields['cable_type'].help_text = u'Choices {}'.format(Dropdown.get('cable_types').as_values())
+        try:
+            self.fields['cable_type'].help_text = u'Choices {}'.format(Dropdown.get('cable_types').as_values())
+        except:
+            # Fails during creatin also will not update when cabletypes are added.
+            pass
 
     node_name = fields.CharField(attribute='node_name')
     cable_type = fields.CharField(attribute='cable_type', blank=True, null=True)
