@@ -11,7 +11,7 @@ urlpatterns = [
     # Visualize views
     url(r'^visualize/(?P<handle_id>\d+)\.json$', other.visualize_json),
     url(r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', other.visualize_maximize),
-    url(r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', other.visualize),
+    url(r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', other.visualize, name='visualize'),
     # Google maps views
     url(r'^gmaps/(?P<slug>[-\w]+)\.json$', other.gmaps_json),
     url(r'^gmaps/(?P<slug>[-\w]+)/$', other.gmaps),
@@ -38,7 +38,7 @@ urlpatterns = [
 
     # -- create views
     url(r'^new/$', create.new_node),
-    url(r'^new/(?P<slug>[-\w]+)/$', create.new_node),
+    url(r'^new/(?P<slug>[-\w]+)/$', create.new_node, name='create_node'),
     url(r'^new/(?P<slug>[-\w]+)/parent/(?P<parent_id>\d+)/$', create.new_node),
     url(r'^new/(?P<slug>[-\w]+)/name/(?P<name>[-\w]+)/$', create.new_node),
     # Reserve IDs
@@ -46,7 +46,7 @@ urlpatterns = [
     url(r'^reserve-id/(?P<slug>[-\w]+)/$', create.reserve_id_sequence),
 
     # -- edit views
-    url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', edit.edit_node),
+    url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', edit.edit_node, name='generic_edit'),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit/disable-noclook-auto-manage/$', edit.disable_noclook_auto_manage),
     url(r'^host/(?P<handle_id>\d+)/edit/convert-to/(?P<slug>[-\w]+)/$', edit.convert_host),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/delete$', edit.delete_node),
@@ -63,9 +63,9 @@ urlpatterns = [
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/export$', import_nodes.ExportNodesView.as_view(), name='import_nodes'),
 
     # -- report views
-    url(r'^reports/hosts/$', report.host_reports),
-    url(r'^reports/hosts/host-users/$', report.host_users),
-    url(r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/$', report.host_users),
+    url(r'^reports/hosts/$', report.host_reports, name='host_report'),
+    url(r'^reports/hosts/host-users/$', report.host_users, name='host_users_report'),
+    url(r'^reports/hosts/host-users/(?P<host_user_name>[-\w]+)/$', report.host_users, name='host_user_report'),
     url(r'^reports/hosts/host-security-class/$', report.host_security_class),
     url(r'^reports/hosts/host-security-class/(?P<status>[-\w]+)/$', report.host_security_class),
     url(r'^reports/hosts/host-services/$', report.host_services),
@@ -99,7 +99,7 @@ urlpatterns = [
     url(r'^peering-group/(?P<handle_id>\d+)/$', detail.peering_group_detail),
     url(r'^optical-node/(?P<handle_id>\d+)/$', detail.optical_node_detail),
     url(r'^cable/(?P<handle_id>\d+)/$', detail.cable_detail),
-    url(r'^host/(?P<handle_id>\d+)/$', detail.host_detail),
+    url(r'^host/(?P<handle_id>\d+)/$', detail.host_detail, name='detail_host'),
     url(r'^host-service/(?P<handle_id>\d+)/$', detail.host_service_detail),
     url(r'^host-provider/(?P<handle_id>\d+)/$', detail.host_provider_detail),
     url(r'^host-user/(?P<handle_id>\d+)/$', detail.host_user_detail),
@@ -127,9 +127,9 @@ urlpatterns = [
 
     # -- redirect
     # wins only because of no /
-    url(r'^nodes/(?P<handle_id>\d+)$', redirect.node_redirect),
+    url(r'^nodes/(?P<handle_id>\d+)$', redirect.node_redirect, name='node_redirect'),
     url(r'^slow-nodes/(?P<handle_id>\d+)$', redirect.node_slow_redirect),
 
     # -- debug view
-    url(r'^nodes/(?P<handle_id>\d+)/debug$', debug.generic_debug),
+    url(r'^nodes/(?P<handle_id>\d+)/debug$', debug.generic_debug, name='debug'),
 ]
