@@ -3,7 +3,7 @@ __author__ = 'lundberg'
 
 from dynamic_preferences.types import StringPreference, Section
 from dynamic_preferences.registries import global_preferences_registry
-from models import UniqueIdGenerator
+from .models import UniqueIdGenerator
 
 general = Section('general')
 announcements = Section('announcements')

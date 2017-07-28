@@ -3,7 +3,7 @@
 from os import environ
 import json
 from apps.saml2auth import config
-from common import *
+from .common import *
 
 __author__ = 'lundberg'
 

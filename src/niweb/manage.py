@@ -11,5 +11,5 @@ if __name__ == "__main__":
     try:
         execute_from_command_line(sys.argv)
     except ImproperlyConfigured as e:
-        print e
-        print 'Maybe you forgot to use manage.py [command] --settings=niweb.settings.dev|prod'
+        print(e)
+        print('Maybe you forgot to use manage.py [command] --settings=niweb.settings.dev|prod')

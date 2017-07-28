@@ -2,7 +2,7 @@
 
 from os import environ
 import json
-from common import *
+from .common import *
 
 __author__ = 'lundberg'
 
