@@ -1,11 +1,30 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from django.core.management import call_command
+from os.path import dirname, abspath, join
+import csv
 
 from django.db import models, migrations
 
-def load_host_user_map(apps, schema_editor):
-    call_command('loaddata', 'initial_host_user_map.json')
+MIGRATION_DIR = dirname(abspath(__file__))
+
+
+def add_host_user_map(apps, schema_editor):
+    HostUserMap = apps.get_model('nerds', 'HostUserMap')
+
+    with open(join(MIGRATION_DIR, 'host_user_map.csv')) as f:
+        for line in csv.DictReader(f):
+            if line['domain'] and line['host_user']:
+                HostUserMap.objects.get_or_create(domain=line['domain'],
+                                                  host_user=line['host_user'])
+
+
+def remove_host_user_map(apps, schema_editor):
+    HostUserMap = apps.get_model('nerds', 'HostUserMap')
+
+    with open(join(MIGRATION_DIR, 'host_user_map.csv')) as f:
+        unique_domains = set([l['domain'] for l in csv.DictReader(f)])
+        for domain in unique_domains:
+            HostUserMap.objects.filter(domain=domain).delete()
 
 
 class Migration(migrations.Migration):
@@ -14,5 +33,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_host_user_map),
+        migrations.RunPython(add_host_user_map, remove_host_user_map),
     ]
