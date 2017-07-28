@@ -50,7 +50,6 @@ def host_users(request, host_user_name=None):
             RETURN host_user, collect(DISTINCT {data: host, type: filter(x in labels(host) where not x in ['Node', 'Host'])}) as hosts
             '''.replace("{where}", form.to_where())
         hosts = nc.query_to_list(nc.graphdb.manager, q)
-        print hosts
     num_of_hosts = 0
     for item in hosts:
         num_of_hosts += len(item['hosts'])
