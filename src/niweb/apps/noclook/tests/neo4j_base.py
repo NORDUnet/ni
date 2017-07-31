@@ -10,6 +10,7 @@ from apps.noclook.tests.testing import nc
 # We instantiate a manager for our global preferences
 global_preferences = global_preferences_registry.manager()
 
+
 class NeoTestCase(TestCase):
 
     def setUp(self):
@@ -45,6 +46,16 @@ class NeoTestCase(TestCase):
         node = nh.get_node()
         return nh, node
 
-    def create(self,data):
+    def create(self, data):
         url = '/new/{}/'.format(slugify(self.node_type))
         return self.client.post(url, data)
+
+    def create_node(self, name, _type, meta='Physical'):
+        nt = helpers.slug_to_node_type(_type, True)
+        return NodeHandle.objects.create(
+            node_name=name,
+            node_type=nt,
+            node_meta_type=meta,
+            creator=self.user,
+            modifier=self.user,
+        )

@@ -95,8 +95,8 @@ urlpatterns = [
 
     # -- detail views
     url(r'^router/(?P<handle_id>\d+)/$', detail.router_detail),
-    url(r'^peering-partner/(?P<handle_id>\d+)/$', detail.peering_partner_detail),
-    url(r'^peering-group/(?P<handle_id>\d+)/$', detail.peering_group_detail),
+    url(r'^peering-partner/(?P<handle_id>\d+)/$', detail.peering_partner_detail, name='peering_partner_detail'),
+    url(r'^peering-group/(?P<handle_id>\d+)/$', detail.peering_group_detail, name='peering_group_detail'),
     url(r'^optical-node/(?P<handle_id>\d+)/$', detail.optical_node_detail),
     url(r'^cable/(?P<handle_id>\d+)/$', detail.cable_detail),
     url(r'^host/(?P<handle_id>\d+)/$', detail.host_detail, name='detail_host'),

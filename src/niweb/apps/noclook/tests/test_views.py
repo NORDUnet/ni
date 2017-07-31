@@ -1,6 +1,5 @@
 from .neo4j_base import NeoTestCase
-from apps.noclook.models import NodeHandle
-from apps.noclook.helpers import slug_to_node_type, set_user, set_noclook_auto_manage
+from apps.noclook.helpers import set_user, set_noclook_auto_manage
 from apps.noclook import forms
 from django.urls import reverse
 
@@ -76,12 +75,3 @@ class ViewTest(NeoTestCase):
 
     # import nodes? it is tested seperatly
 
-    def create_node(self, name, _type, meta='Physical'):
-        nt = slug_to_node_type(_type, True)
-        return NodeHandle.objects.create(
-            node_name=name,
-            node_type=nt,
-            node_meta_type=meta,
-            creator=self.user,
-            modifier=self.user,
-        )
