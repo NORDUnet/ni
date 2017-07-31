@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
-import ipaddr
+import ipaddress
 import json
 
 from apps.noclook.models import NodeHandle
@@ -344,7 +344,7 @@ def peering_group_detail(request, handle_id):
     users = peering_group.get_relations().get('Uses', [])
 
     for item in dependencies.get('Depends_on', []):
-        network_address = ipaddr.IPNetwork(item['relationship']['ip_address'])
+        network_address = ipaddress.ip_network(item['relationship']['ip_address'])
         interface = {
             'unit': item['node'],
             # calls neo4j but there are almost no dependencies normally
@@ -353,7 +353,7 @@ def peering_group_detail(request, handle_id):
             'users': []
         }
         for user in users:
-            user_address = ipaddr.IPAddress(user['relationship']['ip_address'])
+            user_address = ipaddress.ip_address(user['relationship']['ip_address'])
             if user_address in network_address:
                 interface['users'].append({
                     'user': user['node'],
@@ -392,13 +392,13 @@ def peering_partner_detail(request, handle_id):
             group_dependencies[gnode_id] = gnode.get_dependencies().get('Depends_on', [])
 
     for group in peering_groups:
-        user_address = ipaddr.IPAddress(group['relationship']['ip_address'])
+        user_address = ipaddress.ip_address(group['relationship']['ip_address'])
         peering_group = {
             'peering_group': group['node'],
             'user_address': unicode(user_address),
         }
         for unit in group_dependencies[group['node'].handle_id]:
-            network_address = ipaddr.IPNetwork(unit['relationship']['ip_address'])
+            network_address = ipaddress.ip_network(unit['relationship']['ip_address'])
             if user_address in network_address:
                 peering_group.update({
                     # TODO: warn: unit.get.placement_path called from view

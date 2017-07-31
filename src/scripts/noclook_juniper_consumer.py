@@ -24,7 +24,7 @@ import os
 import sys
 import re
 import argparse
-import ipaddr
+import ipaddress
 import logging
 import json
 
@@ -340,7 +340,7 @@ def match_remote_ip_address(remote_address):
         for hit in nc.query_to_list(nc.graphdb.manager, q, mask=mask):
             for address in hit['n']['ip_addresses']:
                 try:
-                    local_network = ipaddr.IPNetwork(address)
+                    local_network = ipaddress.ip_network(address)
                 except ValueError:
                     continue  # ISO address
                 if remote_address in local_network:
@@ -388,7 +388,7 @@ def insert_external_bgp_peering(peering, peering_group):
         if result.get('Uses')[0].get('created', False):
             activitylog.create_relationship(user, relationship)
         # Match the remote address against a local network
-        dependency_node, local_address = match_remote_ip_address(ipaddr.IPAddress(remote_address))
+        dependency_node, local_address = match_remote_ip_address(ipaddress.ip_address(remote_address))
         if dependency_node and local_address:
             result = peering_group.get_group_dependency(dependency_node.handle_id, local_address)
             if not result.get('Depends_on'):
