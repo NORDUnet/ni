@@ -3,9 +3,9 @@ django-activity-stream<0.7
 django-jsonfield
 django-jsonfield-compat
 django-tastypie<0.15
-ipaddr==2.1.11
 norduniclient<1.1.0
 psycopg2<2.8
+py2-ipaddress
 python-dateutil<2.7
 xlwt<1.3
 django-crispy-forms<1.7
