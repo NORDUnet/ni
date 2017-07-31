@@ -84,5 +84,3 @@ class PeeringPartnerDetailTest(NeoTestCase):
         self.assertContains(resp, '172.17.0.13')
         self.assertContains(resp, 'fd00::/8')
         self.assertContains(resp, 'fd17:1234:abcd:1::1')
-
-        
