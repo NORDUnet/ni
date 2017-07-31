@@ -3,15 +3,17 @@ from django.contrib.auth.models import User
 from django.dispatch.dispatcher import receiver
 from django.db.models.signals import post_save
 from django.urls import reverse
+from django.utils.encoding import python_2_unicode_compatible
 
 
+@python_2_unicode_compatible
 class UserProfile(models.Model):
     user = models.OneToOneField(User, related_name='profile')
     display_name = models.CharField(max_length=255, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s [%s]" % (self.user.username, self.display_name)
 
     def get_absolute_url(self):

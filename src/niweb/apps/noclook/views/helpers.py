@@ -1,4 +1,4 @@
-import urllib
+from django.utils.http import urlencode
 
 class Table(object):
     def __init__(self, *args):
@@ -47,7 +47,7 @@ def create_filter(badge,  name, param, params):
         del params[param]
     else:
         params[param] = ''
-    link = "?{}".format(urllib.urlencode(params))
+    link = "?{}".format(urlencode(params))
     return (badge, name, link, active)
 
     def __repr__(self):

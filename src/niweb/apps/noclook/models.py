@@ -5,6 +5,7 @@ from django_comments.signals import comment_was_posted, comment_was_flagged
 from django.dispatch import receiver
 from django_comments.models import Comment
 from django.urls import reverse
+from django.utils.encoding import python_2_unicode_compatible
 from actstream import action
 from neo4j.v1.exceptions import CypherError
 
@@ -18,13 +19,14 @@ logger = logging.getLogger('noclook.models')
 NODE_META_TYPE_CHOICES = zip(nc.META_TYPES, nc.META_TYPES)
 
 
+@python_2_unicode_compatible
 class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
     slug = models.SlugField(unique=True, help_text='Suggested value \
         #automatically generated from type. Must be unique.')
     hidden = models.BooleanField(default=False, help_text="Hide from menus")
 
-    def __unicode__(self):
+    def __str__(self):
         return self.type
 
     def get_slug(self):
@@ -62,6 +64,7 @@ def get_slug(slug_id):
     return slug_cache[slug_id]
 
 
+@python_2_unicode_compatible
 class NodeHandle(models.Model):
     # Handle <-> Node data
     handle_id = models.AutoField(primary_key=True)
@@ -75,7 +78,7 @@ class NodeHandle(models.Model):
     modifier = models.ForeignKey(User, related_name='modifier')
     modified = models.DateTimeField(auto_now=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s %s' % (self.node_type, self.node_name)
 
     def get_node(self):
@@ -118,6 +121,7 @@ class NodeHandle(models.Model):
     delete.alters_data = True
 
 
+@python_2_unicode_compatible
 class UniqueIdGenerator(models.Model):
     """
     Model that provides a base id counter, prefix, suffix and id length. When a new
@@ -138,7 +142,7 @@ class UniqueIdGenerator(models.Model):
     modifier = models.ForeignKey(User, null=True, blank=True, related_name='unique_id_modifier')
     modified = models.DateTimeField(auto_now=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
     def get_id(self):
@@ -186,6 +190,7 @@ class UniqueIdGenerator(models.Model):
     save.alters_data = True
 
 
+@python_2_unicode_compatible
 class UniqueId(models.Model):
     """
     Table for reserving ids and to help ensuring uniqueness across the
@@ -202,34 +207,38 @@ class UniqueId(models.Model):
     class Meta:
         abstract = True
 
-    def __unicode__(self):
-        return unicode(self.unique_id)
+    def __str__(self):
+        return self.unique_id
 
 
+@python_2_unicode_compatible
 class NordunetUniqueId(UniqueId):
     """
     Collection of all NORDUnet IDs to ensure uniqueness.
     """
 
-    def __unicode__(self):
-        return unicode('NORDUnet: %s' % self.unique_id)
+    def __str__(self):
+        return 'NORDUnet: %s' % self.unique_id
 
 
 # Can be deleted, just here to not mess up migrations
+@python_2_unicode_compatible
 class OpticalNodeType(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
-    def __unicode__(self):
-        return unicode(self.name)
+    def __str__(self):
+        return self.name
 
 
+@python_2_unicode_compatible
 class ServiceClass(models.Model):
     name = models.CharField(unique=True, max_length=255)
 
-    def __unicode__(self):
-        return u"{}".format(self.name)
+    def __str__(self):
+        return "{}".format(self.name)
 
 
+@python_2_unicode_compatible
 class ServiceType(models.Model):
     name = models.CharField(unique=True, max_length=255)
     service_class = models.ForeignKey(ServiceClass)
@@ -237,8 +246,8 @@ class ServiceType(models.Model):
     def as_choice(self):
         return self.name, u'{} - {}'.format(self.service_class.name, self.name)
 
-    def __unicode__(self):
-        return u"{}".format(self.name)
+    def __str__(self):
+        return "{}".format(self.name)
 
 
 class DummyDropdown(object):
@@ -256,6 +265,7 @@ class DummyDropdown(object):
         return []
 
 
+@python_2_unicode_compatible
 class Dropdown(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
@@ -271,8 +281,8 @@ class Dropdown(models.Model):
             values = [''] + values
         return values
 
-    def __unicode__(self):
-        return u"{}".format(self.name)
+    def __str__(self):
+        return "{}".format(self.name)
 
     @staticmethod
     def get(name):
@@ -284,6 +294,7 @@ class Dropdown(models.Model):
             return DummyDropdown(name)
 
 
+@python_2_unicode_compatible
 class Choice(models.Model):
     dropdown = models.ForeignKey(Dropdown, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -292,7 +303,7 @@ class Choice(models.Model):
     def as_choice(self):
         return (self.value, self.name)
 
-    def __unicode__(self):
+    def __str__(self):
         return u"{} ({})".format(self.name, self.dropdown.name)
 
 
