@@ -1,4 +1,4 @@
-from lib.nmap_consumer import nmap_import
+from .lib.nmap_consumer import nmap_import
 import logging
 logger = logging.getLogger(__name__)
 

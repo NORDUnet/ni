@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook import helpers, activitylog
-from ipaddr import IPAddress
+import ipaddress
 import norduniclient as nc
 
 
@@ -86,7 +86,7 @@ def address_is_a(addresses, node_types):
     :param node_types: List of acceptable node types
     :return: True if the addresses belongs to a host or does not belong to anything
     """
-    ip_addresses = [IPAddress(item) for item in addresses]
+    ip_addresses = [ipaddress.ip_address(item) for item in addresses]
     for address in addresses:
         q = '''
             MATCH (n:Node)
@@ -102,7 +102,7 @@ def address_is_a(addresses, node_types):
                 node_addresses = [node.data['ip_address']]
             for addr in node_addresses:
                 try:
-                    node_address = IPAddress(addr.split('/')[0])
+                    node_address = ipaddress.ip_address(addr.split('/')[0])
                 except ValueError:
                     continue
                 if node_address in ip_addresses:
