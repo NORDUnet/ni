@@ -15,8 +15,6 @@ from datetime import datetime, timedelta
 from actstream.models import action_object_stream, target_stream
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import csv
-import codecs
-from io import BytesIO
 import xlwt
 import re
 import os
@@ -31,35 +29,6 @@ from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 from django.core.files.uploadedfile import SimpleUploadedFile
 from attachments.models import Attachment
 from django.contrib.contenttypes.models import ContentType
-
-class UnicodeWriter:
-    """
-    A CSV writer which will write rows to CSV file "f",
-    which is encoded in the given encoding.
-    """
-
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
-        # Redirect output to a queue
-        self.queue = BytesIO()
-        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
-        self.stream = f
-        self.encoder = codecs.getincrementalencoder(encoding)()
-
-    def writerow(self, row):
-        self.writer.writerow([s.encode("utf-8") for s in row])
-        # Fetch UTF-8 output from the queue ...
-        data = self.queue.getvalue()
-        data = data.decode("utf-8")
-        # ... and reencode it into the target encoding
-        data = self.encoder.encode(data)
-        # write to the target stream
-        self.stream.write(data)
-        # empty queue
-        self.queue.truncate(0)
-
-    def writerows(self, rows):
-        for row in rows:
-            self.writerow(row)
 
 
 def normalize_whitespace(s):
@@ -360,7 +329,7 @@ def dicts_to_csv_response(dict_list, header=None):
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename=result.csv; charset=utf-8;'
-    writer = UnicodeWriter(response, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
+    writer = csv.writer(response, dialect=csv.excel, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
     if not header:
         key_set = set()
         for item in dict_list:
