@@ -76,7 +76,7 @@ class ImportNodesView(View):
     # Consider moving to forms?
     def form_parse(self, request):
         data = {'children': {}}
-        for key, val in sorted(request.POST.iteritems()):
+        for key, val in sorted(request.POST.items()):
             names = key.split(".")
             last = data
             if len(names) > 1:
@@ -93,7 +93,7 @@ class ImportNodesView(View):
 
     def convert_children(self, data):
         if 'children' in data:
-            tmp = [v for k, v in sorted(data['children'].iteritems())]
+            tmp = [v for k, v in sorted(data['children'].items())]
         for child in tmp:
             self.convert_children(child)
         data['children'] = tmp
@@ -138,7 +138,9 @@ class ImportNodesView(View):
         return error
 
     def file(self, request, parent):
-        data = json.load(request.FILES['file'])
+        _file = request.FILES['file']
+        string_data = _file.read().decode(_file.charset or 'utf-8')
+        data = json.loads(string_data)
         errors = self.validate(data)
         if 'import' in request.POST and not errors:
             return self.create(request, parent, data)

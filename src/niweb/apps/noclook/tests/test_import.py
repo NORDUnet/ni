@@ -1,6 +1,5 @@
 from .neo4j_base import NeoTestCase
 from apps.noclook import helpers
-import json
 import io
 
 
@@ -63,7 +62,7 @@ class ImportSiteTest(NeoTestCase):
 
         #Make sure we got an error page
         self.assertEquals(200, resp.status_code)
-        self.assertIn("There is one error please fix it.", resp.content)
+        self.assertContains(resp, "There is one error please fix it.")
 
     def test_import_form_with_two_errors(self):
         resp,site = self.import_to_site({
@@ -76,7 +75,7 @@ class ImportSiteTest(NeoTestCase):
 
         #Make sure we got an error page
         self.assertEquals(200, resp.status_code)
-        self.assertIn("There are 2 errors please fix them.", resp.content)
+        self.assertContains(resp, "There are 2 errors please fix them.")
 
     def test_import_direct_empty_file(self):
         resp, site = self.import_to_site({
@@ -106,17 +105,17 @@ class ImportSiteTest(NeoTestCase):
         })
         self.assertEquals(200, resp.status_code)
         site_data = site.get_node().data
-        self.assertIn("Import into Site: "+site_data['name'], resp.content)
-        self.assertIn('name="Rack1.node_type" value="Rack"', resp.content)
-        self.assertIn('name="Rack1.name" value="RC/P01"', resp.content)
-        self.assertIn('name="Rack1.width" value=""', resp.content)
-        self.assertIn('name="Rack1.depth" value=""', resp.content)
-        self.assertIn('name="Rack1.height" value=""', resp.content)
-        self.assertIn('name="Rack1.rack_units" value=""', resp.content)
-        self.assertIn('name="Rack1.ODF1.node_type" value="ODF"', resp.content)
-        self.assertIn('name="Rack1.ODF1.name" value="TEST-ODF-01"', resp.content)
-        self.assertIn('name="Rack1.ODF1.rack_units" value=""', resp.content)
-        self.assertIn('name="Rack1.ODF1.max_number_of_ports" value=""', resp.content)
+        self.assertContains(resp, 'Import into Site: '+site_data['name'])
+        self.assertContains(resp, 'name="Rack1.node_type" value="Rack"')
+        self.assertContains(resp, 'name="Rack1.name" value="RC/P01"')
+        self.assertContains(resp, 'name="Rack1.width" value=""')
+        self.assertContains(resp, 'name="Rack1.depth" value=""')
+        self.assertContains(resp, 'name="Rack1.height" value=""')
+        self.assertContains(resp, 'name="Rack1.rack_units" value=""')
+        self.assertContains(resp, 'name="Rack1.ODF1.node_type" value="ODF"')
+        self.assertContains(resp, 'name="Rack1.ODF1.name" value="TEST-ODF-01"')
+        self.assertContains(resp, 'name="Rack1.ODF1.rack_units" value=""')
+        self.assertContains(resp, 'name="Rack1.ODF1.max_number_of_ports" value=""')
         
 
     def test_import_optical_node_new_type(self):
