@@ -69,21 +69,21 @@ class Command(BaseCommand):
                     uptime = timestamp_to_td(uptime).days
                 if host_type == 'Logical' and age != 'very_old' and operational_state != 'Decommissioned':
                     values = [
-                        unicode(host_user),
-                        unicode(host.data['name']),
-                        unicode(host_type).capitalize(),
+                        u'{}'.format(host_user),
+                        u'{}'.format(host.data['name']),
+                        u'{}'.format(host_type).capitalize(),
                         u', '.join([address for address in host.data['ip_addresses']]),
-                        unicode(host.data['contract_number']),
-                        unicode(host.data.get('description', '')),
-                        unicode(host.data.get('responsible_group', '')),
-                        unicode(host.data.get('backup', 'Not set')),
-                        unicode(yesno(host.data.get('syslog', None), 'Yes,No,Not set')),
-                        unicode(yesno(host.data.get('nagios_checks', False), 'Yes,No,Not set')),
-                        unicode(operational_state),
-                        unicode(host.data.get('security_class', '')),
-                        unicode(''),
-                        unicode(date(helpers.isots_to_dt(host.data), "Y-m-d")),
-                        unicode(uptime),
+                        u'{}'.format(host.data['contract_number']),
+                        u'{}'.format(host.data.get('description', '')),
+                        u'{}'.format(host.data.get('responsible_group', '')),
+                        u'{}'.format(host.data.get('backup', 'Not set')),
+                        u'{}'.format(yesno(host.data.get('syslog', None), 'Yes,No,Not set')),
+                        u'{}'.format(yesno(host.data.get('nagios_checks', False), 'Yes,No,Not set')),
+                        u'{}'.format(operational_state),
+                        u'{}'.format(host.data.get('security_class', '')),
+                        u'{}'.format(''),
+                        u'{}'.format(date(helpers.isots_to_dt(host.data), "Y-m-d")),
+                        u'{}'.format(uptime),
                     ]
                     result.append(dict(zip(header, values)))
             num_hosts = len(result)
