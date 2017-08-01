@@ -61,7 +61,7 @@ def delete_node(user, action_object):
         verb='delete',
         noclook={
             'action_type': 'node',
-            'object_name': unicode(action_object)
+            'object_name': u'{}'.format(action_object)
         }
     )
 
@@ -141,6 +141,6 @@ def delete_relationship(user, relationship):
         noclook={
             'action_type': 'relationship',
             'relationship_type': relationship.type,
-            'object_name': unicode(relationship.data)
+            'object_name': u'{}'.format(relationship.data)
         }
     )
