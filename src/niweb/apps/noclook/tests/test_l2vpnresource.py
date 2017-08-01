@@ -5,7 +5,11 @@ Created on 2014-06-26 1:28 PM
 @author: lundberg
 """
 
-from importlib import reload
+try:
+    reload
+except NameError:
+    # Python 3 has reload in importlib
+    from importlib import reload
 from django.contrib.auth.models import User
 from tastypie.test import ResourceTestCaseMixin
 from django.test import TestCase

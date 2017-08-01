@@ -1,4 +1,10 @@
+# -*- coding: utf-8 -*-
 
+try:
+    reload
+except NameError:
+    # Python 3 has reload in importlib
+    from importlib import reload
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeHandle

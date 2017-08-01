@@ -2,7 +2,6 @@
 
 from .neo4j_base import NeoTestCase
 from apps.noclook import helpers
-import json
 
 
 class FormadataApiTest(NeoTestCase):
@@ -26,21 +25,21 @@ class FormadataApiTest(NeoTestCase):
 
     def test_formdata_slug_sites(self):
         resp = self.client.get(self.base_url.format(slug='site'))
-        sites = json.loads(resp.content)
+        sites = resp.json()
 
         self.assertIn(self.sites[0], sites)
         self.assertIn(self.sites[1], sites)
 
     def test_formdata_sort_order(self):
         resp = self.client.get(self.base_url.format(slug='site'))
-        site_names = [name for _id, name in json.loads(resp.content)]
+        site_names = [name for _id, name in resp.json()]
 
         real_site_names = sorted([name for _id, name in self.sites])
         self.assertEquals(real_site_names[0], site_names[0])
 
     def test_formdata_slug_racks(self):
         resp = self.client.get(self.base_url.format(slug='rack'))
-        racks = json.loads(resp.content)
+        racks = resp.json()
 
         self.assertEquals(self.racks, racks)
 

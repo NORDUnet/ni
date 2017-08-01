@@ -1,6 +1,5 @@
 from .neo4j_base import NeoTestCase
 from apps.noclook import helpers
-import json
 
 
 class ExportSiteTest(NeoTestCase):
@@ -9,10 +8,10 @@ class ExportSiteTest(NeoTestCase):
 
     def test_export_empty_site(self):
         site = helpers.get_unique_node_handle(self.user, "Test site", "site", "Location")
-        resp = self.client.get(self.get_full_url(site)+"export")
+        resp = self.client.get(self.get_full_url(site) + "export")
         self.assertEquals('attachment; filename="Site.Test site_export.json"', resp['Content-Disposition'])
         self.assertEquals('application/json', resp['Content-Type'])
-        self.assertEquals([], json.loads(resp.content))
+        self.assertEquals([], resp.json())
 
     def test_populated_site(self):
         # Setup test data
@@ -38,10 +37,10 @@ class ExportSiteTest(NeoTestCase):
         helpers.set_location(self.user, odf2_node, site.handle_id)
         # Done setting up testdata
 
-        resp = self.client.get(self.get_full_url(site)+"export")
+        resp = self.client.get(self.get_full_url(site) + "export")
         self.assertEquals('application/json', resp['Content-Type'])
-        result = json.loads(resp.content)
-        
+        result = resp.json()
+
         # verify data
         self.assertEquals(2, len(result))
         self.assertDictContainsSubset({'name': 'A.01', 'node_type': 'Rack'}, result[0])
@@ -73,7 +72,7 @@ class ExportSiteTest(NeoTestCase):
         odf_node = odf.get_node()
         helpers.dict_update_node(self.user, odf.handle_id, {"max_ports": 24})
         helpers.set_location(self.user, odf_node, rack.handle_id)
-        
+
         decom_on = helpers.get_unique_node_handle(self.user, "NI-TEST-ON-01", "optical-node", "Physical")
         decom_on_node = decom_on.get_node()
         helpers.dict_update_node(self.user, decom_on.handle_id, {"operational_state": "Decommissioned"})
@@ -83,10 +82,10 @@ class ExportSiteTest(NeoTestCase):
         helpers.create_port(decom_on_node, "2", self.user)
         # End test data
 
-        resp = self.client.get(self.get_full_url(site)+"export")
+        resp = self.client.get(self.get_full_url(site) + "export")
         self.assertEquals('application/json', resp['Content-Type'])
-        result = json.loads(resp.content)
-        
+        result = resp.json()
+
         # verify data
         self.assertEquals(1, len(result))
         rack_result = result[0]
@@ -97,7 +96,6 @@ class ExportSiteTest(NeoTestCase):
         self.assertDictContainsSubset({'node_type': 'ODF', 'name': 'NI-TEST-ODF-01'}, rack_equip[0])
         self.assertEquals(2, len(rack_equip[0]['children']))
 
-
     def test_export_optical_node(self):
         # Setup test data
         site = helpers.get_unique_node_handle(self.user, "Test site", "site", "Location")
@@ -106,14 +104,12 @@ class ExportSiteTest(NeoTestCase):
         on_node = optical_node.get_node()
         helpers.set_location(self.user, on_node, site.handle_id)
         helpers.dict_update_node(self.user, optical_node.handle_id, {"operational_state": "In service", "rack_units": "2", "type": "ciena6500"})
-        #start testing
-        resp = self.client.get(self.get_full_url(site)+"export")
+        # start testing
+        resp = self.client.get(self.get_full_url(site) + "export")
         self.assertEquals('application/json', resp['Content-Type'])
-        result = json.loads(resp.content)
-        
+        result = resp.json()
+
         # verify data
         self.assertEquals(1, len(result))
-        on_result =  result[0]
+        on_result = result[0]
         self.assertEqual({u'name': u'NI-TEST-ROADM', u'node_type': u'Optical Node', u'type': u'ciena6500', u'rack_units': u'2', u'children': [], u'operational_state': u'In service'}, on_result)
-        
-
