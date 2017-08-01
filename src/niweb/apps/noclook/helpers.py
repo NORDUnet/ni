@@ -131,7 +131,7 @@ def get_provider_id(provider_name):
     """
     providers = nc.get_nodes_by_value(nc.graphdb.manager, provider_name, 'name', 'Provider')
     try:
-        provider_id = str(providers.next().get('handle_id', ''))
+        provider_id = str(next(providers).get('handle_id', ''))
     except StopIteration:
         provider_id = ''
     providers.close()
