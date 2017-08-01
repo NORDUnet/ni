@@ -349,7 +349,7 @@ def peering_group_detail(request, handle_id):
             'unit': item['node'],
             # calls neo4j but there are almost no dependencies normally
             'placement': item['node'].get_placement_path(),
-            'network_address': unicode(network_address),
+            'network_address': u'{}'.format(network_address),
             'users': []
         }
         for user in users:
@@ -357,7 +357,7 @@ def peering_group_detail(request, handle_id):
             if user_address in network_address:
                 interface['users'].append({
                     'user': user['node'],
-                    'user_address': unicode(user_address),
+                    'user_address': u'{}'.format(user_address),
                     'relationship': user['relationship']
                 })
         user_dependencies.append(interface)
@@ -395,7 +395,7 @@ def peering_partner_detail(request, handle_id):
         user_address = ipaddress.ip_address(group['relationship']['ip_address'])
         peering_group = {
             'peering_group': group['node'],
-            'user_address': unicode(user_address),
+            'user_address': u'{}'.format(user_address),
         }
         for unit in group_dependencies[group['node'].handle_id]:
             network_address = ipaddress.ip_network(unit['relationship']['ip_address'])
@@ -403,7 +403,7 @@ def peering_partner_detail(request, handle_id):
                 peering_group.update({
                     # TODO: warn: unit.get.placement_path called from view
                     'unit': unit['node'],
-                    'network_address': unicode(network_address),
+                    'network_address': u'{}'.format(network_address),
                     'relationship': unit['relationship']
                 })
                 break
