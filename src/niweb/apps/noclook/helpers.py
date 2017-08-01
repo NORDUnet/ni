@@ -16,7 +16,7 @@ from actstream.models import action_object_stream, target_stream
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import csv
 import codecs
-from io import StringIO
+from io import BytesIO
 import xlwt
 import re
 import os
@@ -40,7 +40,7 @@ class UnicodeWriter:
 
     def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
         # Redirect output to a queue
-        self.queue = StringIO()
+        self.queue = BytesIO()
         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
         self.stream = f
         self.encoder = codecs.getincrementalencoder(encoding)()
