@@ -5,7 +5,7 @@ try:
 except NameError:
     # Python 3 has reload in importlib
     from importlib import reload
-from django.test import TestCase, Client
+from django.test import TestCase, Client, tag
 from django.contrib.auth.models import User
 from apps.noclook.models import NodeHandle
 from dynamic_preferences.registries import global_preferences_registry
@@ -17,6 +17,7 @@ from apps.noclook.tests.testing import nc
 global_preferences = global_preferences_registry.manager()
 
 
+@tag('db', 'neo4j')
 class NeoTestCase(TestCase):
 
     def setUp(self):

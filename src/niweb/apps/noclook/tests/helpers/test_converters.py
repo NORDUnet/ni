@@ -1,8 +1,8 @@
-from django.test import TestCase
+from django.test import SimpleTestCase
 from apps.noclook import helpers
 
 
-class FileExportHelperTest(TestCase):
+class FileExportHelperTest(SimpleTestCase):
     def setUp(self):
         self.dicts = [
             {u'Test': u'hest', u'Foo': u'bar'},

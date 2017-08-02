@@ -369,7 +369,7 @@ def dicts_to_xls(dict_list, header, sheet_name):
             try:
                 ws.write(i+1, j, normalize_whitespace(dict_list[i][header[j]]))
             except KeyError:
-                ws.write(i+1, j, unicode(''))
+                ws.write(i+1, j, u'')
         if i % 1000 == 0:
             ws.flush_row_data()
         if i == 65534:
