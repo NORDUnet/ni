@@ -124,7 +124,7 @@ def insert_interface_unit(iface_node, unit, service_id_regex):
     Creates or updates logical interface units.
     """
     user = nt.get_user()
-    unit_name = unicode(unit['unit'])
+    unit_name = u'{}'.format(unit['unit'])
     # Unit names are unique per interface
     result = iface_node.get_unit(unit_name)
     if result.get('Part_of', None):
