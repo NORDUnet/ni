@@ -51,7 +51,7 @@ urlpatterns = [
     url(r'^host/(?P<handle_id>\d+)/edit/convert-to/(?P<slug>[-\w]+)/$', edit.convert_host),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/delete$', edit.delete_node),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/delete$', edit.delete_relationship),
-    url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/update$', edit.update_relationship),
+    url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/relationship/(?P<rel_id>\d+)/update$', edit.update_relationship, name='relationship_update'),
     url(r'^formdata/(?P<slug>[-\w]+)/$', edit.get_node_type),
     url(r'^formdata/unlocated/(?P<slug>[-\w]+)/$', edit.get_unlocated_node_type),
     url(r'^formdata/(?P<handle_id>\d+)/children/$', edit.get_child_form_data),

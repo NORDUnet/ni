@@ -69,13 +69,14 @@ def update_relationship(request, slug, handle_id, rel_id):
     if request.POST:
         nh, node = helpers.get_nh_node(handle_id)
         try:
-            for key, value in request.POST.iteritems():
+            for key, value in request.POST.items():
                 properties[key] = json.loads(value)
-            relationship = nc.get_relationship_model(nc.graphdb.manager, rel_id)
+            relationship = nc.get_relationship_model(nc.graphdb.manager, int(rel_id))
             if node.handle_id == relationship.start or node.handle_id == relationship.end:
                 success = helpers.dict_update_relationship(request.user, relationship.id, properties)
         except nc.exceptions.RelationshipNotFound:
-            success = True
+            # If the relationship does not exist, then we cannot update
+            success = False
         except ValueError:
             pass
     return JsonResponse({'success': success, 'relationship_id': '{}'.format(rel_id), 'data': properties})

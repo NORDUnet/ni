@@ -87,7 +87,7 @@ def insert_services(services_dict, host_node, external_check=False):
         nlu.set_all_services_to_not_public(host_node)
     for address in services_dict.keys():
         for protocol in services_dict[address].keys():
-            for port, service in services_dict[address][protocol].iteritems():
+            for port, service in services_dict[address][protocol].items():
                 if service['state'] != 'closed':
                     relation_properties = {
                         'ip_address': address,
