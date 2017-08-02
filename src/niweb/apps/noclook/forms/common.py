@@ -729,7 +729,7 @@ class CsvForm(forms.Form):
 
     def _unicode(self, dict_reader):
         for row in dict_reader:
-            yield {key: unicode(row[key] or '', 'utf-8') for key in row.keys()}
+            yield {key: (row[key] or '').decode('utf-8') for key in row.keys()}
 
     def form_to_csv(form, headers):
         cleaned = form.cleaned_data
