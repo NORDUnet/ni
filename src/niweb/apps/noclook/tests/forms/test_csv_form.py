@@ -7,12 +7,12 @@ class CsvFormTest(SimpleTestCase):
 
     def test_utf8_support(self):
         data = {
-            u'csv_data': b'æg,høne\npølse,gris'
+            u'csv_data': u'æg,høne\npølse,gris'.encode('utf-8')
         }
         form = forms.CsvForm(('product', 'animal'), data)
 
         self.assertTrue(form.is_valid(), 'The csv form should always be vaild. Errors: {}'.format(form.errors))
-        rows = form.csv_parse(lambda x: x)
+        rows = list(form.csv_parse(lambda x: x))
         self.assertEqual(u'æg', rows[0].get('product'))
         self.assertEqual(u'høne', rows[0].get('animal'))
 
@@ -25,6 +25,6 @@ class CsvFormTest(SimpleTestCase):
 
         self.assertTrue(form.is_valid(), 'The csv form should always be vaild. Errors: {}'.format(form.errors))
 
-        rows = form.csv_parse(lambda x: x)
+        rows = list(form.csv_parse(lambda x: x))
         self.assertEqual(u'æg', rows[0].get('product'))
         self.assertEqual(u'høne', rows[0].get('animal'))

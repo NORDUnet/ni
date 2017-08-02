@@ -9,6 +9,7 @@ from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, 
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
+from django.utils import six
 
 
 # We should move this kind of data to the SQL database.
@@ -714,9 +715,14 @@ class CsvForm(forms.Form):
         # Make sure cleaned_data is populated
         self.is_valid()
         lines = self.cleaned_data['csv_data'].splitlines()
-        reader = csv.DictReader(self._utf8_enc(lines),
-                                fieldnames=self.csv_headers)
-        return [func(line) for line in self._unicode(reader)]
+        if six.PY3:
+            # Py3 csv uses unicode
+            reader = csv.DictReader(lines, fieldnames=self.csv_headers)
+        else:
+            # Py2.7 uses utf8 byte strings
+            reader = csv.DictReader(self._utf8_enc(lines), fieldnames=self.csv_headers)
+            reader = self._unicode(reader)
+        return (func(line) for line in reader)
 
     def _utf8_enc(self, csv_lines):
         return (line.encode('utf-8') for line in csv_lines)
