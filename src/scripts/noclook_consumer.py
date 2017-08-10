@@ -25,7 +25,7 @@ import os
 from os.path import join
 import json
 import datetime
-import ConfigParser
+from configparser import SafeConfigParser
 import argparse
 import logging
 
@@ -65,11 +65,11 @@ def init_config(p):
     Initializes the configuration file located in the path provided.
     """
     try:
-        config = ConfigParser.SafeConfigParser()
+        config = SafeConfigParser()
         config.read(p)
         return config
-    except IOError as (errno, strerror):
-        logger.error("I/O error({0}): {1}".format(errno, strerror))
+    except IOError as e:
+        logger.error("I/O error({0}): {1}".format(e))
 
 
 def normalize_whitespace(text):
@@ -101,14 +101,8 @@ def load_json(json_dir, starts_with=''):
 
 
 def generate_password(n):
-    """
-    Returns a psudo random string of lenght n.
-    http://code.activestate.com/recipes/576722-pseudo-random-string/
-    """
-    import os
-    import math
-    from base64 import b64encode
-    return b64encode(os.urandom(int(math.ceil(0.75*n))),'-_')[:n]
+    import random
+    return ''.join([random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789@#$%^&*(-_=+)') for i in range(n)])
 
 
 def get_user(username='noclook'):
@@ -252,8 +246,10 @@ def _consume_node(item):
         nc.set_node_properties(nc.graphdb.manager, nh.handle_id, properties)
         logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
     except Exception as e:
+        import traceback
+        traceback.print_exec()
         ex_type = type(e).__name__
-        logger.error('Could not add node {} (handle_id={}, node_type={}, meta_type={}) got {}: {})'.format(node_name, handle_id, node_type, meta_type, ex_type,  str(e)))
+        logger.error('Could not add node {} (handle_id={}, node_type={}, meta_type={}) got {}: {})'.format(node_name, handle_id, node_type, meta_type, ex_type, str(e)))
 
 
 def consume_noclook(nodes, relationships):
@@ -292,7 +288,7 @@ def consume_noclook(nodes, relationships):
             logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
                                                              end=item.get('end')))
             tot_rels += 1
-    print 'Added {!s} relationships.'.format(tot_rels)
+    print('Added {!s} relationships.'.format(tot_rels))
 
 
 def run_consume(config_file):
@@ -350,28 +346,29 @@ def main():
     # Start time
     start = datetime.datetime.now()
     timestamp_start = datetime.datetime.strftime(start, '%b %d %H:%M:%S')
-    print '%s noclook_consumer.py was started.' % timestamp_start
+    print('%s noclook_consumer.py was started.' % timestamp_start)
     # Load the configuration file
     if not args.C:
-        print 'Please provide a configuration file with -C.'
+        print('Please provide a configuration file with -C.')
         sys.exit(1)
     # Purge DB if option -P was used
     if args.P:
-        print 'Purging database...'
+        print('Purging database...')
         purge_db()
     if args.V:
         logger.setLevel(logging.INFO)
     # Insert data from known data sources if option -I was used
     if args.I:
-        print 'Inserting data...'
+        print('Inserting data...')
         run_consume(args.C)
     # end time
     end = datetime.datetime.now()
     timestamp_end = datetime.datetime.strftime(end, '%b %d %H:%M:%S')
-    print '%s noclook_consumer.py ran successfully.' % timestamp_end
+    print('%s noclook_consumer.py ran successfully.' % timestamp_end)
     timedelta = end - start
-    print 'Total time: %s' % timedelta
+    print('Total time: %s' % timedelta)
     return 0
+
 
 if __name__ == '__main__':
     logger.propagate = False

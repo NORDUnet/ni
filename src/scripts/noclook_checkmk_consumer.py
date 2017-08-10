@@ -266,7 +266,7 @@ def main():
         logger.setLevel(logging.INFO)
     # Load the configuration file
     if not args.C:
-        print 'Please provide a configuration file with -C.'
+        print('Please provide a configuration file with -C.')
         sys.exit(1)
     else:
         config = nt.init_config(args.C)

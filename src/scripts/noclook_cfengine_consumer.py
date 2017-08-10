@@ -109,7 +109,7 @@ def main():
     args = parser.parse_args()
     # Load the configuration file
     if not args.C:
-        print 'Please provide a configuration file with -C.'
+        print('Please provide a configuration file with -C.')
         sys.exit(1)
     else:
         if args.verbose:

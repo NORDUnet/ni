@@ -40,7 +40,7 @@ import noclook_consumer as nt
 from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
-from dynamic_preferences import global_preferences_registry
+from dynamic_preferences.registries import global_preferences_registry
 from apps.noclook.models import UniqueIdGenerator
 
 logger = logging.getLogger('noclook_consumer.juniper')
@@ -377,7 +377,7 @@ def insert_external_bgp_peering(peering, peering_group):
         try:
             result = peer_node.get_peering_group(peering_group.handle_id, remote_address)
         except AttributeError:
-            print peer_node
+            print(peer_node)
             sys.exit(1)
         if not result.get('Uses'):
             result = peer_node.set_peering_group(peering_group.handle_id, remote_address)
@@ -521,7 +521,7 @@ def main():
     args = parser.parse_args()
     # Load the configuration file
     if not args.C:
-        print 'Please provide a configuration file with -C.'
+        print('Please provide a configuration file with -C.')
         sys.exit(1)
     else:
         config = nt.init_config(args.C)
