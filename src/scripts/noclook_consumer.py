@@ -37,6 +37,7 @@ niweb_path = os.path.join(base_path, 'niweb')
 sys.path.append(os.path.abspath(niweb_path))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
 import django
+django.setup()
 from django.conf import settings as django_settings
 from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook import helpers  # Shortcircuit circular dependency
@@ -49,7 +50,6 @@ import norduniclient as nc
 #django cache hack
 django_settings.CACHES['default']['LOCATION'] = '/tmp/django_cache_consumer'
 logger = logging.getLogger('noclook_consumer')
-django.setup()
 
 import noclook_juniper_consumer
 import noclook_nmap_consumer
@@ -247,7 +247,7 @@ def _consume_node(item):
         logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
     except Exception as e:
         import traceback
-        traceback.print_exec()
+        traceback.print_exc()
         ex_type = type(e).__name__
         logger.error('Could not add node {} (handle_id={}, node_type={}, meta_type={}) got {}: {})'.format(node_name, handle_id, node_type, meta_type, ex_type, str(e)))
 
