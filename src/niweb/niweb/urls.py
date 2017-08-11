@@ -64,7 +64,7 @@ urlpatterns = [
     url(r'^accounts/login/$', auth_views.LoginView.as_view(), name='django_login'),
 
     # Federated login
-    #url(r'^saml2/', djangosaml2.urls),
+    #url(r'^saml2/', include('djangosaml2.urls')),
 
     # Tastypie URLs
     url(r'^api/', include(v1_api.urls)),
