@@ -73,7 +73,7 @@ class Command(BaseCommand):
                     billable = Decimal(max(storage_month - free_gb, 0))
                     cost_month = billable * price_per_gb
                     total_cost += cost_month
-                    ws.write(row, 1, report_data[i].keys()[0])
+                    ws.write(row, 1, list(report_data[i].keys())[0])
                     ws.write(row, 2, storage_month.quantize(Decimal('.01'), rounding=ROUND_DOWN))
                     ws.write(row, 3, -free_gb.quantize(Decimal('.01'), rounding=ROUND_DOWN))
                     ws.write(row, 4, billable.quantize(Decimal('.01'), rounding=ROUND_DOWN))

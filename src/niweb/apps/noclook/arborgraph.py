@@ -121,7 +121,7 @@ def create_generic_graph(root_node, graph_dict=None):
                 arbor_node = get_arbor_node(start_node)
             graph_dict['nodes'].update(arbor_node)
             arbor_edge = get_directed_adjacency(relationship)
-            key = arbor_edge.keys()[0]  # The only key in arbor_edge
+            key = list(arbor_edge.keys())[0]  # The only key in arbor_edge
             if key in graph_dict['edges']:
                 graph_dict['edges'][key].update(arbor_edge[key])
             else:
