@@ -7,7 +7,12 @@ from django_comments.models import Comment
 from django.urls import reverse
 from django.utils.encoding import python_2_unicode_compatible
 from actstream import action
-from neo4j.v1.exceptions import CypherError
+try:
+    from neo4j.exceptions import CypherError
+except ImportError:
+    # pre neo4j 1.4
+    from neo4j.v1.exceptions import CypherError
+
 
 import norduniclient as nc
 import re
