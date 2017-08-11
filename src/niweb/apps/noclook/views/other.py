@@ -83,7 +83,7 @@ def search(request, value='', form=None):
         value = request.POST.get('q', '')
         posted = True
     if value:
-        query = '(?i).*{}.*'.format(re_escape(value))
+        query = u'(?i).*{}.*'.format(re_escape(value))
         # nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
         # TODO: when search uses the above go back to that
         q = """
