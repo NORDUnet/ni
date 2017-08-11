@@ -9,7 +9,7 @@ urlpatterns = [
     # Log out
     url(r'^logout/$', other.logout_page),
     # Visualize views
-    url(r'^visualize/(?P<handle_id>\d+)\.json$', other.visualize_json),
+    url(r'^visualize/(?P<handle_id>\d+)\.json$', other.visualize_json, name='visualize_json'),
     url(r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', other.visualize_maximize),
     url(r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/$', other.visualize, name='visualize'),
     # Google maps views
