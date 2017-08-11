@@ -1,19 +1,20 @@
 <!DOCTYPE html>
+{% load static %}
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery.dataTables.css" type="text/css" media="screen" title="NORDUnet"/>
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap.min.css" type="text/css" />
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/bootstrap-responsive.min.css" type="text/css" />
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="{% static "css/jquery.dataTables.css" %}" type="text/css" media="screen" title="NORDUnet"/>
+    <link rel="stylesheet" href="{% static "css/bootstrap.min.css" %}" type="text/css" />
+    <link rel="stylesheet" href="{% static "css/bootstrap-responsive.min.css" %}" type="text/css" />
+    <link rel="stylesheet" href="{% static "css/style.css" %}" type="text/css"/>
     <title>NOCLook{% block title %}{% endblock %}</title>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.12.4.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.autocomplete-min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery/dataTables-naturalSort.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap/bootstrap.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/main.js?v=1"></script>
+    <script type="text/javascript" src="{% static "js/jquery/jquery-1.12.4.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery/jquery.autocomplete-min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery/jquery.dataTables.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery/dataTables-naturalSort.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/bootstrap/bootstrap.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/main.js" %}?v=1"></script>
     <script type="text/javascript">
     $(document).ready(function() {
         var options, a, b, c;
@@ -134,7 +135,7 @@
         </div>
         <div class="row">
             <div class="span2 well visible-desktop">
-                <a href="/"><img class="logo" src="{{ STATIC_URL }}img/noclook_logo.png"></a>
+              <a href="/"><img class="logo" src="{% static "img/noclook_logo.png" %}"></a>
                 {% block menu %}
                     {% load noclook_tags %}
                     <ul class="nav nav-list">
@@ -205,7 +206,7 @@
                                 <div id="collapseDebug" class="accordion-body collapse" style="height: 0px; ">
                                     <div class="accordion-inner">
                                         <h2>Debug</h2>
-                                        <img src="{{ STATIC_URL }}img/spinner.gif" alt="loading"> Loading debug info...
+                                        <img src="{% static "img/spinner.gif" %}" alt="loading"> Loading debug info...
                                     </div>
                                 </div>
                             </div>
