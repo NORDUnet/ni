@@ -854,7 +854,7 @@ def attach_as_file(handle_id, name, content, user, overwrite=False):
         All files are stored in {root}/niweb/media/attachments, and the metadata is attached in the django db.
     """
     nh = NodeHandle.objects.get(pk=handle_id)
-    _file = SimpleUploadedFile(name, bytes(content), content_type="text/plain")
+    _file = SimpleUploadedFile(name, content.encode('utf-8'), content_type="text/plain")
     if overwrite:
         attachment = Attachment.objects.filter(object_id=handle_id, attachment_file__endswith=name).first()
         if attachment:
