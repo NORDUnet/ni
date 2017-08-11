@@ -91,9 +91,9 @@ def search(request, value='', form=None):
             """
         nodes = nc.query_to_list(nc.graphdb.manager, q, search=query)
         if form == 'csv':
-            return helpers.dicts_to_csv_response([ n.properties for n in nodes])
+            return helpers.dicts_to_csv_response([n['n'].properties for n in nodes])
         elif form == 'xls':
-            return helpers.dicts_to_xls_response([ n.properties for n in nodes])
+            return helpers.dicts_to_xls_response([n['n'].properties for n in nodes])
         for node in nodes:
             nh = get_object_or_404(NodeHandle, pk=node['n'].properties['handle_id'])
             item = {'node': node['n'].properties, 'nh': nh}
