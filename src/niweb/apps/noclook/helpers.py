@@ -877,6 +877,6 @@ def attachment_content(attachment):
     if not attachment:
         return ""
     file_name = os.path.join(django_settings.MEDIA_ROOT, attachment.attachment_file.name)
-    with open(file_name, 'rb') as f:
+    with open(file_name, 'r') as f:
         content = f.read()
     return content

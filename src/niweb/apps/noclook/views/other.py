@@ -83,15 +83,20 @@ def search(request, value='', form=None):
         value = request.POST.get('q', '')
         posted = True
     if value:
-        query = re_escape(value)
-        nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
+        query = '(?i).*{}.*'.format(re_escape(value))
+        # nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
+        # TODO: when search uses the above go back to that
+        q = """
+            match (n:Node) where any(prop in keys(n) where n[prop] =~ {search}) return n
+            """
+        nodes = nc.query_to_list(nc.graphdb.manager, q, search=query)
         if form == 'csv':
             return helpers.dicts_to_csv_response(list(nodes))
         elif form == 'xls':
             return helpers.dicts_to_xls_response(list(nodes))
         for node in nodes:
-            nh = get_object_or_404(NodeHandle, pk=node['handle_id'])
-            item = {'node': node, 'nh': nh}
+            nh = get_object_or_404(NodeHandle, pk=node['n'].properties['handle_id'])
+            item = {'node': node['n'].properties, 'nh': nh}
             result.append(item)
         if len(result) == 1:
             return redirect(result[0]['nh'].get_absolute_url())
