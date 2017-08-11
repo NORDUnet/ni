@@ -227,7 +227,7 @@ def auto_depend_services(handle_id, description, service_id_regex, _type="Port")
     unregistered_services = [ u"{}({})".format(s['name'],s['handle_id']) for s in result ]
     
     if unregistered_services:
-        logger.warning(u"{} {} has services depending on it that is not in description: {}".format(_type, handle_id, ','.join(unregistered_services)))
+        logger.info(u"{} {} has services depending on it that is not in description: {}".format(_type, handle_id, ','.join(unregistered_services)))
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
