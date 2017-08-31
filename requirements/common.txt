@@ -12,3 +12,4 @@ django-contrib-comments<1.9
 django-dotenv<1.5
 django-dynamic-preferences<1.4
 django-attachments<2.0
+configparser
