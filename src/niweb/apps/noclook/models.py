@@ -10,8 +10,12 @@ from actstream import action
 try:
     from neo4j.exceptions import CypherError
 except ImportError:
-    # pre neo4j 1.4
-    from neo4j.v1.exceptions import CypherError
+    try: 
+        # pre neo4j 1.4
+        from neo4j.v1.exceptions import CypherError
+    except ImportError:
+        # neo4j 1.1 
+        from neo4j.v1.api import CypherError
 
 
 import norduniclient as nc
