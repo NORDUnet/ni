@@ -12,6 +12,7 @@ NEO4J_DIR="/var/opt/neo4j-community"
 DB_NAME="norduni"
 SQL_DUMP="/var/opt/norduni/nistore/producers/noclook/sql"
 NI_PULL_CMD="/usr/local/bin/ni-pull.sh"
+NEO4J_PASSWORD=""
 
 function now (){
   date +"%Y-%m-%d %H:%M:%S"
@@ -26,7 +27,7 @@ $NI_PULL_CMD -r $NISTORE_DIR
 
 
 msg "Removing neo4j data"
-$NEO4J_DIR/bin/neo4j-shell -c "MATCH (n:Node) OPTIONAL MATCH (n)-[r]-() DELETE n,r;"
+cypher-shell -u neo4j -p "$NEO4J_PASSWORD" "MATCH (n:Node) OPTIONAL MATCH (n)-[r]-() DELETE n,r;"
 
 
 msg "Drop DB"
