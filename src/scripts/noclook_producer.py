@@ -32,6 +32,8 @@ sys.path.append(os.path.abspath(base_path))
 niweb_path = os.path.join(base_path, 'niweb')
 sys.path.append(os.path.abspath(niweb_path))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
+import django
+django.setup()
 from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook.models import NodeType
 import norduniclient as nc
