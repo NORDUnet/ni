@@ -321,7 +321,7 @@ def json_combo(form_field, urls, initial=None):
     first_url = None
 
     if initial:
-        if isinstance(initial, six.text_type):
+        if isinstance(initial, six.text_type) or isinstance(initial, str):
             initial = initial.split(',')
         choices = [u"['{}',' {}']".format(val, val.title().replace("-", " ")) for val in initial]
         initial = u",\n".join(choices)
