@@ -340,7 +340,7 @@ def match_remote_ip_address(remote_address):
         for hit in nc.query_to_list(nc.graphdb.manager, q, mask=mask):
             for address in hit['n']['ip_addresses']:
                 try:
-                    local_network = ipaddress.ip_network(address)
+                    local_network = ipaddress.ip_network(address, strict=False)
                 except ValueError:
                     continue  # ISO address
                 if remote_address in local_network:
