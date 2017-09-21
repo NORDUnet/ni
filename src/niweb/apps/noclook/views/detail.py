@@ -344,7 +344,7 @@ def peering_group_detail(request, handle_id):
     users = peering_group.get_relations().get('Uses', [])
 
     for item in dependencies.get('Depends_on', []):
-        network_address = ipaddress.ip_network(item['relationship']['ip_address'])
+        network_address = ipaddress.ip_network(item['relationship']['ip_address'], strict=False)
         interface = {
             'unit': item['node'],
             # calls neo4j but there are almost no dependencies normally
@@ -398,7 +398,7 @@ def peering_partner_detail(request, handle_id):
             'user_address': u'{}'.format(user_address),
         }
         for unit in group_dependencies[group['node'].handle_id]:
-            network_address = ipaddress.ip_network(unit['relationship']['ip_address'])
+            network_address = ipaddress.ip_network(unit['relationship']['ip_address'], strict=False)
             if user_address in network_address:
                 peering_group.update({
                     # TODO: warn: unit.get.placement_path called from view
