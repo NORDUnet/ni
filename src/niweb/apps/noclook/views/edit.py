@@ -613,7 +613,7 @@ def edit_pdu(request, handle_id):
                 helpers.set_location(request.user, pdu, location_nh.handle_id)
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, pdu.handle_id)
-            if not ports_form.cleaned_data['no_ports']:
+            if ports_form.is_valid() and not ports_form.cleaned_data['no_ports']:
                 data = ports_form.cleaned_data
                 helpers.bulk_create_ports(pdu, request.user, **data)
             _handle_ports(pdu,
