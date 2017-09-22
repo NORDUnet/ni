@@ -591,9 +591,9 @@ def edit_pdu(request, handle_id):
     host_services = pdu.get_host_services()
     ports = pdu.get_ports()
     dependency_categories = 'service'
+    ports_form = forms.BulkPortsForm(request.POST or None)
     if request.POST:
         form = forms.EditPDUForm(request.POST)
-        ports_form = forms.BulkPortsForm(request.POST or None)
         if form.is_valid():
             # Generic node update
             helpers.form_update_node(request.user, pdu.handle_id, form)
@@ -628,7 +628,8 @@ def edit_pdu(request, handle_id):
     return render(request, 'noclook/edit/edit_pdu.html',
                   {'node_handle': nh, 'node': pdu, 'form': form, 'location': location,
                    'relations': relations, 'depends_on': depends_on, 'ports': ports,
-                   'host_services': host_services, 'dependency_categories': dependency_categories})
+                   'host_services': host_services, 'dependency_categories': dependency_categories,
+                   'ports_form': ports_form})
 
 
 @staff_member_required
