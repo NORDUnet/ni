@@ -268,14 +268,14 @@ def consume_noclook(nodes, relationships):
 
     # Loop through all files starting with relationship
     tot_rels = 0
-    with nc.graphdb.manager.transaction as t:
+    with nc.graphdb.manager.session as s:
         for i in relationships:
             rel = i['host']['noclook_producer']
             properties = rel.get('properties')
 
             q = """
-                 MATCH (start:Node { handle_id:{start_id} }),(end:Node {handle_id: {end_id} })
-                 CREATE UNIQUE (start)-[r:%s { props } ]->(end)
+                 MATCH (start:Node { handle_id: {start_id} }),(end:Node {handle_id: {end_id} })
+                 CREATE UNIQUE (start)-[r:%s {props} ]->(end)
                  """ % rel.get('type')
 
             query_data = {
@@ -284,9 +284,9 @@ def consume_noclook(nodes, relationships):
                 'end_id': rel.get('end')
             }
 
-            t.run(q, query_data)
-            logger.info('{start}-[{rel_type}]->{end}'.format(start=item.get('start'), rel_type=item.get('type'),
-                                                             end=item.get('end')))
+            s.run(q, query_data)
+            logger.info('{start}-[{rel_type}]->{end}'.format(start=rel.get('start'), rel_type=rel.get('type'),
+                                                             end=rel.get('end')))
             tot_rels += 1
     print('Added {!s} relationships.'.format(tot_rels))
 
