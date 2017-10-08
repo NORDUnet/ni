@@ -1066,3 +1066,63 @@ class UnitResource(NodeHandleResource):
         }
 
 
+class HostScan(object):
+    def __init__(self, result):
+        self.handle_id = result.get('handle_id')
+        self.ip_addresses = result.get('ip_addresses')
+        self.tcp_ports = []
+        self.udp_ports = []
+
+        for port in result.get('ports'):
+            if port.starts_with('tcp'):
+                self.tcp_ports << port.replace('tcp')
+            elif port.starts_with('udp'):
+                self.udp_ports << port.replace('udp')
+
+
+class HostScanResource(Resource):
+
+    handle_id = fields.IntegerField(attribute='handle_id', readonly=True, unique=True)
+    ip_addresses = fields.ListField(attribute='ip_addresses')
+    tcp_ports = fields.ListField(attribute='tcp_ports')
+    udp_ports = fields.ListField(attribute='udp_ports')
+
+    class Meta:
+        resource_name = 'host-scan'
+        authorization = Authorization()
+
+    def detail_uri_kwargs(self, bundle_or_obj):
+        kwargs = {}
+        if isinstance(bundle_or_obj, Bundle):
+            kwargs['pk'] = bundle_or_obj.obj.handle_id
+        else:
+            kwargs['pk'] = bundle_or_obj.handle_id
+
+        return kwargs
+
+    def get_object_list(self, request):
+        q = """
+            MATCH (h:Host)-[r:Depends_on]-(s:Host_Service)
+            WHERE h.operational_state <> 'Decommissioned'
+            RETURN h.handle_id, h.ip_addresses as ip_addresses, collect(r.protocol + r.port) as ports
+            """
+        host_list = nc.query_to_list(nc.graphdb.manager, q)
+        return [ HostScan(h) for h in host_list ]
+
+    def obj_get_list(self, bundle, **kwargs):
+        return self.get_object_list(bundle.request)
+
+    def obj_get(self, bundle, **kwargs):
+        handle_id = kwargs.get('pk')
+        q = """
+            MATCH (h:Host {handle_id: {handle_id}})-[r:Depends_on]-(s:Host_Service)
+            WHERE h.operational_state <> 'Decommissioned'
+            RETURN h.handle_id as handle_id, h.ip_addresses as ip_addresses, collect(r.protocol + r.port) as ports
+            """
+        host_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=handle_id)
+        if len(host_list) == 0:
+            raise NotFound('HostScan object not found with handle_id: {}'.format(handle_id))
+        if len(host_list) > 1:
+            raise HttpMultipleChoices('Found {} HostScan objects with handle_id: {}'.format(len(host_list), handle_id))
+
+        return HostScan(host_list[0])
