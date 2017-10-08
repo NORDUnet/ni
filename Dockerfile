@@ -1,38 +1,47 @@
-FROM ubuntu:15.10
+FROM alpine:latest
 
-MAINTAINER lundberg <lundberg@nordu.net>
+MAINTAINER markus <markus@nordu.net>
 
-ENV DEBIAN_FRONTEND noninteractive
+RUN apk add --no-cache ca-certificates python2 py2-pip libpq
 
-RUN /bin/echo -e "deb http://se.archive.ubuntu.com/ubuntu wily main restricted universe\ndeb http://archive.ubuntu.com/ubuntu wily-updates main restricted universe\ndeb http://security.ubuntu.com/ubuntu wily-security main restricted universe" > /etc/apt/sources.list
+RUN pip install --upgrade pip
+RUN mkdir /app
+WORKDIR /app
 
-RUN apt-get update && \
-    apt-get -y dist-upgrade && \
-    apt-get install -y \
-      git \
-      build-essential \
-      libpython-dev \
-      python-pip \
-      python-virtualenv \
-      libpq-dev \
-      libffi-dev \
-      python-dev \
-    && apt-get clean
+#RUN apt-get update && \
+#    apt-get -y dist-upgrade && \
+#    apt-get install -y \
+#      git \
+#      build-essential \
+#      libpython-dev \
+#      python-pip \
+#      python-virtualenv \
+#      libpq-dev \
+#      libffi-dev \
+#      python-dev \
+#    && apt-get clean
+#
+#ADD . /var/opt/norduni/norduni
+#
+#ADD docker/setup.sh /setup.sh
+#RUN /setup.sh
+#
+#ADD docker/start.sh /start.sh
+#
+## Add Dockerfile to the container as documentation
+#ADD Dockerfile /Dockerfile
+#
+#VOLUME ["/var/opt/norduni", "/var/log/norduni", "/var/opt/source"]
+#
+#WORKDIR /
 
-ADD . /var/opt/norduni/norduni
+ADD src /app
+ADD requirements /app/requirements
+RUN apk add --no-cache --virtual build-dependencies postgresql-dev musl-dev gcc python2-dev && \
+      pip install -r requirements/dev.txt && pip install -r requirements/py2.txt && \
+      apk del build-dependencies
+ADD docker/alpine-start.sh /app/start.sh
 
-ADD docker/setup.sh /setup.sh
-RUN /setup.sh
+EXPOSE 8000
 
-ADD docker/start.sh /start.sh
-
-# Add Dockerfile to the container as documentation
-ADD Dockerfile /Dockerfile
-
-VOLUME ["/var/opt/norduni", "/var/log/norduni", "/var/opt/source"]
-
-WORKDIR /
-
-EXPOSE 8080
-
-CMD ["bash", "/start.sh"]
+ENTRYPOINT ["/app/start.sh"]
