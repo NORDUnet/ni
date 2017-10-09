@@ -1,0 +1,37 @@
+# Neo4j settings
+NEO4J_RESOURCE_URI=http://localhost:7474
+NEO4J_MAX_DATA_AGE=24
+
+# Report settings
+REPORTS_TO=['markus@nordu.net']
+#REPORTS_CC=
+#REPORTS_BCC=
+#EXTRA_REPORT_TO=
+SECURITY_REPORTS_TO=''
+#SECURITY_REPORTS_CC=
+#SECURITY_REPORTS_BCC=
+
+# Database settings
+DB_ENGINE=django.db.backends.postgresql_psycopg2
+DB_NAME=norduni
+DB_USER=ni
+DB_PASSWORD=secret
+DB_HOST=localhost
+DB_PORT=5432
+
+# Cache settings
+CACHE_BACKEND=django.core.cache.backends.filebased.FileBasedCache
+CACHE_LOCATION=/tmp/django_cache
+
+# General settings
+LOGIN_URL=/login/
+ALLOWED_HOSTS='*'
+#SENTRY_DSN=
+DEFAULT_FROM_EMAIL='markus@nordu.net'
+#EMAIL_HOST=
+#EMAIL_HOST_PASSWORD=
+#EMAIL_HOST_USER=
+#EMAIL_PORT=
+
+# Secret key
+SECRET_KEY=asdda2rdbon487hfs80d9jc+cvjkcas9sh8
