@@ -16,7 +16,9 @@ dist/
 sessions/
 venv*
 env/
+**/.env
 nosetests.xml
 coverage.xml
 .idea/
+docker/data
 

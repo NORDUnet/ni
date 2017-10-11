@@ -16,3 +16,4 @@ env
 *.swp
 src/niweb/sitestatic
 tools/nerds
+docker/data

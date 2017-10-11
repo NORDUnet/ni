@@ -1,6 +1,5 @@
 FROM alpine:latest
-
-MAINTAINER markus <markus@nordu.net>
+LABEL authors="Markus Krogh <markus@nordu.net>"
 
 RUN apk add --no-cache ca-certificates python2 py2-pip libpq
 
@@ -40,8 +39,8 @@ ADD requirements /app/requirements
 RUN apk add --no-cache --virtual build-dependencies postgresql-dev musl-dev gcc python2-dev && \
       pip install -r requirements/dev.txt && pip install -r requirements/py2.txt && \
       apk del build-dependencies
-ADD docker/alpine-start.sh /app/start.sh
+ADD docker/alpine-start.sh /start.sh
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/start.sh"]
+ENTRYPOINT ["/start.sh"]

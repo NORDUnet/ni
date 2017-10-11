@@ -1,0 +1,36 @@
+---
+version: '3'
+services:
+  postgres:
+    image: postgres:latest
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=norduni
+    env_file: ./data/dev_env
+  neo4j:
+    image: neo4j:latest
+    volumes:
+      - ./data/neo4j:/data
+    ports:
+      - '127.0.0.1:7474:7474'
+      - '127.0.0.1:7687:7687'
+  norduni:
+    build: ../
+    ports:
+      - '8000:8000'
+    links:
+      - postgres
+      - neo4j
+    depends_on:
+      - postgres
+      - neo4j
+    environment:
+      - NEO4J_RESOURCE_URI=bolt://neo4j:7687
+      - DB_HOST=postgres
+      - DJANGO_SETTINGS_MODULE=niweb.settings.dev
+    env_file: ./data/dev_env
+    volumes:
+      - ../src/niweb:/app/niweb
+    command: ["dev"]
+
