@@ -31,6 +31,7 @@ from apps.noclook import unique_ids
 import norduniclient as nc
 from norduniclient.exceptions import NodeNotFound
 import logging
+from datetime import datetime, timedelta
 
 logger = logging.getLogger('api_resources')
 logger.setLevel(logging.DEBUG)
@@ -1074,10 +1075,10 @@ class HostScan(object):
         self.udp_ports = []
 
         for port in result.get('ports'):
-            if port.starts_with('tcp'):
-                self.tcp_ports << port.replace('tcp')
-            elif port.starts_with('udp'):
-                self.udp_ports << port.replace('udp')
+            if port.startswith('tcp'):
+                self.tcp_ports.append(port[3:])
+            elif port.startswith('udp'):
+                self.udp_ports.append(port[3:])
 
 
 class HostScanResource(Resource):
@@ -1090,6 +1091,7 @@ class HostScanResource(Resource):
     class Meta:
         resource_name = 'host-scan'
         authorization = Authorization()
+        authentication = ApiKeyAuthentication()
 
     def detail_uri_kwargs(self, bundle_or_obj):
         kwargs = {}
@@ -1100,26 +1102,34 @@ class HostScanResource(Resource):
 
         return kwargs
 
+    def last_seen(self, days=7):
+        return (datetime.now() - timedelta(days)).isoformat()
+
+
     def get_object_list(self, request):
         q = """
-            MATCH (h:Host)-[r:Depends_on]-(s:Host_Service)
+            MATCH (h:Host)<-[r:Depends_on]-(s:Host_Service)
             WHERE h.operational_state <> 'Decommissioned'
-            RETURN h.handle_id, h.ip_addresses as ip_addresses, collect(r.protocol + r.port) as ports
+                AND r.state CONTAINS 'open'
+                AND r.noclook_last_seen > {last_seen}
+            RETURN h.handle_id as handle_id, h.ip_addresses as ip_addresses, collect(r.protocol + r.port) as ports
             """
-        host_list = nc.query_to_list(nc.graphdb.manager, q)
+        host_list = nc.query_to_list(nc.graphdb.manager, q, last_seen=self.last_seen())
         return [ HostScan(h) for h in host_list ]
 
     def obj_get_list(self, bundle, **kwargs):
         return self.get_object_list(bundle.request)
 
     def obj_get(self, bundle, **kwargs):
-        handle_id = kwargs.get('pk')
+        handle_id = int(kwargs.get('pk'))
         q = """
-            MATCH (h:Host {handle_id: {handle_id}})-[r:Depends_on]-(s:Host_Service)
+            MATCH (h:Host {handle_id: {handle_id}})<-[r:Depends_on]-(s:Host_Service)
             WHERE h.operational_state <> 'Decommissioned'
+                AND r.state CONTAINS 'open'
+                AND r.noclook_last_seen > {last_seen}
             RETURN h.handle_id as handle_id, h.ip_addresses as ip_addresses, collect(r.protocol + r.port) as ports
             """
-        host_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=handle_id)
+        host_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=handle_id, last_seen=self.last_seen())
         if len(host_list) == 0:
             raise NotFound('HostScan object not found with handle_id: {}'.format(handle_id))
         if len(host_list) > 1:

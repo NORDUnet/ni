@@ -49,6 +49,8 @@ v1_api.register(niapi.SiteResource())
 v1_api.register(niapi.SiteOwnerResource())
 v1_api.register(niapi.SwitchResource())
 v1_api.register(niapi.UnitResource())
+#other
+v1_api.register(niapi.HostScanResource())
 if "apps.scan" in settings.INSTALLED_APPS:
     from apps.scan.api.resources import ScanQueryItemResource
     v1_api.register(ScanQueryItemResource())
