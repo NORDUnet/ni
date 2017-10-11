@@ -31,6 +31,21 @@ class NIApiClient():
         headers.update(kwargs)
         return headers
 
+    def get_host_scan(self, limit=500, headers={}):
+        headers = self.create_headers(**headers)
+        for offset in count(start=0, step=limit):
+            response = self.client.api.v1('host-scan').GET(headers=headers, params={'limit': limit, 'offset': offset})
+            try:
+                batch = response.json()['objects']
+            except ValueError as e:
+                logger.error(e)
+                logger.error('{} {}'.format(response.status_code, response.reason))
+                break
+            if not batch:
+                raise StopIteration
+            for obj in batch:
+                yield obj
+
     def get_type(self, node_type, limit=20, headers={}):
         for offset in count(start=0, step=limit):
             request = self.client.api.v1(node_type).GET(headers=headers, params={'limit': limit, 'offset': offset})

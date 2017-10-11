@@ -13,6 +13,20 @@ BASE_URL = 'http://localhost'
 VERBOSE = False
 
 
+def get_host_scan(output_file):
+    client = NIApiClient(BASE_URL, USER, APIKEY)
+    for host in client.get_host_scan():
+        tcp_ports, udp_ports = '', ''
+        if host.get('tcp_ports', None):
+            tcp_ports = 'T:{},'.format(','.join(host['tcp_ports']))
+        if host.get('udp_ports', None):
+            udp_ports = 'U:{}'.format(','.join(host['udp_ports']))
+        if tcp_ports or udp_ports:
+            for ip_address in host.get('ip_addresses', []):
+                output_file.writelines('{ip} {tcp}{udp}\n'.format(ip=ip_address, tcp=tcp_ports, udp=udp_ports))
+
+
+# Deprecated old version that traverses hostsm nd gets dependencies. Use get_host_scan.
 def get_hosts(output_file):
     client = NIApiClient(BASE_URL, USER, APIKEY)
     for host in client.get_type('host', headers=client.create_headers()):
@@ -46,7 +60,7 @@ def main():
     if args.verbose:
         global VERBOSE
         VERBOSE = True
-    get_hosts(args.output)
+    get_host_scan(args.output)
     args.output.close()
     return 0
 
