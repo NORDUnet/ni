@@ -37,7 +37,7 @@ class NIApiClient():
             response = self.client.api.v1('host-scan').GET(headers=headers, params={'limit': limit, 'offset': offset})
             try:
                 batch = response.json()['objects']
-            except ValueError as e:
+            except (ValueError, KeyError) as e:
                 logger.error(e)
                 logger.error('{} {}'.format(response.status_code, response.reason))
                 break
@@ -51,7 +51,7 @@ class NIApiClient():
             request = self.client.api.v1(node_type).GET(headers=headers, params={'limit': limit, 'offset': offset})
             try:
                 batch = json.loads(request.content)['objects']
-            except ValueError as e:
+            except (ValueError, KeyError) as e:
                 logger.error(e)
                 logger.error('%s %s' % (request.status_code, request.reason))
                 break
