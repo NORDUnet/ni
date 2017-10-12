@@ -97,14 +97,14 @@ PEER_AS_CACHE = {}
 REMOTE_IP_MATCH_CACHE = {}
 
 
-def insert_juniper_router(name, model, version, hardware=None):
+def insert_juniper_node(name, model, version, node_type='Router', hardware=None):
     """
     Inserts a physical meta type node of the type Router.
     Returns the node created.
     """
     logger.info('Processing {name}...'.format(name=name))
     user = nt.get_user()
-    node_handle = nt.get_unique_node_handle(name, 'Router', 'Physical')
+    node_handle = nt.get_unique_node_handle(name, node_type, 'Physical')
     node = node_handle.get_node()
     node_dict = {
         'name': name,
@@ -428,7 +428,7 @@ def insert_juniper_hardware(router_node, hardware):
         helpers.attach_as_file(router_node.handle_id, name, hw_str, user, overwrite=True)
 
 
-def consume_juniper_conf(json_list):
+def consume_juniper_conf(json_list, is_switches):
     """
     Inserts the data loaded from the json files created by the nerds
     producer juniper_conf.
@@ -441,10 +441,14 @@ def consume_juniper_conf(json_list):
         version = jconf.get('version', 'Unknown')
         model = jconf.get('model', 'Unknown')
         hardware = jconf.get('hardware')
-        router_node = insert_juniper_router(name, model, version, hardware)
-        insert_juniper_hardware(router_node, hardware)
+        if is_switches:
+            node_type = 'Switch'
+        else:
+            node_type = 'Router'
+        node = insert_juniper_node(name, model, version, node_type, hardware)
+        insert_juniper_hardware(node, hardware)
         interfaces = jconf['interfaces']
-        insert_juniper_interfaces(router_node, interfaces)
+        insert_juniper_interfaces(node, interfaces)
         bgp_peerings += jconf['bgp_peerings']
     insert_juniper_bgp_peerings(bgp_peerings)
 
@@ -518,18 +522,25 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', nargs='?', help='Path to the configuration file.')
     parser.add_argument('--verbose', '-V', action='store_true', default=False)
+    parser.add_argument('--switches', '-S', action='store_true', default=False, help='Insert as switches rather than routers')
+    parser.add_argument('--data', '-d', required=False, help='Directory to load date from. Trumps config file.')
     args = parser.parse_args()
     # Load the configuration file
-    if not args.C:
-        print('Please provide a configuration file with -C.')
+    if not args.C and not args.data:
+        print('Please provide a configuration file with -C or --data for a data directory.')
         sys.exit(1)
-    else:
+    elif not args.data:
         config = nt.init_config(args.C)
+    else:
+        config = None
+
+    data = args.data or config.get('data', 'juniper_conf')
+
     if args.verbose:
         logger.setLevel(logging.INFO)
-    if config.get('data', 'juniper_conf'):
-        consume_juniper_conf(nt.load_json(config.get('data', 'juniper_conf')))
-    if config.getboolean('delete_data', 'juniper_conf'):
+    if data:
+        consume_juniper_conf(nt.load_json(data), args.switches)
+    if config and config.has_option('delete_data', 'juniper_conf') and config.getboolean('delete_data', 'juniper_conf'):
         remove_juniper_conf(config.get('data_age', 'juniper_conf'))
     return 0
 

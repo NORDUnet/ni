@@ -8,16 +8,9 @@
 <div class="row">
     <div class="span4">
         <table class="table">
-            {% if node.data.operational_state %}
-                <tr>
-                    <th>Status:</th><td>{{ node.data.operational_state|capfirst }}</td>
-                </tr>
-            {% endif %}
-            {% if node.data.nagios_checks %}
-                <tr>
-                    <th>Nagios:</th><td>{{ node.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>
-                </tr>
-            {% endif %}
+            <tr>
+                <th>Name:</th><td>{{ node.data.name }}</td>
+            </tr>
             {% if node.data.hostnames %}
                 <tr>
                     <th>Hostnames:</th>
@@ -26,6 +19,14 @@
                             {{ item }}{% if not forloop.last %},<br>{% endif %}
                         {% endfor %}
                     </td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>Operational State:</th><td>{{ node.data.operational_state|default:'Unknown' }}</td>
+            </tr>
+            {% if node.data.model %}
+                <tr>
+                    <th>Model:</th><td>{{node.data.model}}</td>
                 </tr>
             {% endif %}
             {% if node.data.ip_addresses %}
@@ -53,6 +54,11 @@
                     <th>Service tag:</th><td>{{ node.data.service_tag }}</td>
                 </tr>
             {% endif %}
+            {% if node.data.serial_number %}
+                <tr>
+                    <th>Serial number:</th><td>{{ node.data.serial_number }}</td>
+                </tr>
+            {% endif %}
             {% if node.data.end_support %}
                 <tr>
                     <th>Support ends:</th><td>{{ node.data.end_support }}</td>
@@ -62,15 +68,10 @@
     </div>
     <div class="span3">
         <table class="table">
-            {% if node.data.vendor or node.data.model or node.data.max_number_of_ports %}
+            {% if node.data.vendor or node.data.max_number_of_ports %}
                 {% if node.data.vendor %}
                     <tr>
                         <th>Vendor:</th><td>{{node.data.vendor}}</td>
-                    </tr>
-                {% endif %}
-                {% if node.data.model %}
-                    <tr>
-                        <th>Model:</th><td>{{node.data.model}}</td>
                     </tr>
                 {% endif %}
                 {% if node.data.max_number_of_ports %}
