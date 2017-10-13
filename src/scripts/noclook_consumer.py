@@ -311,7 +311,8 @@ def run_consume(config_file):
     # Consume data
     if juniper_conf_data:
         data = load_json(juniper_conf_data)
-        noclook_juniper_consumer.consume_juniper_conf(data)
+        switches=False
+        noclook_juniper_consumer.consume_juniper_conf(data, switches)
     if nmap_services_py_data:
         data = load_json(nmap_services_py_data)
         noclook_nmap_consumer.insert_nmap(data)
