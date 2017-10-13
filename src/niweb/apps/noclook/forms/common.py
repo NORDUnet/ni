@@ -10,6 +10,8 @@ from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
 from django.utils import six
+from io import StringIO
+import ipaddress
 
 
 # We should move this kind of data to the SQL database.
@@ -45,6 +47,39 @@ def get_node_type_tuples(node_type):
     l = nc.query_to_list(nc.graphdb.manager, q)
     choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
     return choices
+
+class IPAddrField(forms.CharField):
+    def __init__(self, *args, **kwargs):
+        if 'widget' not in kwargs:
+            kwargs['widget'] = forms.Textarea(attrs={'cols': '120', 'rows': '3'})
+        super(IPAddrField, self).__init__(*args, **kwargs)
+
+    def clean(self, value):
+        value = super(IPAddrField, self).clean(value)
+        errors = []
+        result = []
+        for line in StringIO(value):
+            ip = line.replace('\n','').strip()
+            if ip:
+                try:
+                    ipaddress.ip_address(ip)
+                    result.append(ip)
+                except ValueError as e:
+                    errors.append(str(e))
+        if errors:
+            raise ValidationError(errors)
+        return result
+
+    def prepare_value(self, value):
+        if isinstance(value, list):
+            value = u'\n'.join(value)
+        return super(IPAddrField, self).prepare_value(value)
+
+
+    def to_python(self, value):
+        if isinstance(value, list):
+            value = u'\n'.join(value)
+        return super(IPAddrField, self).to_python(value)
 
 
 class JSONField(forms.CharField):
@@ -258,6 +293,7 @@ class NewHostForm(forms.Form):
         self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
 
     name = forms.CharField(help_text="The hostname")
+    ip_addresses = IPAddrField(help_text="One ip per line", required=False)
     rack_units = forms.IntegerField(required=False,
                                     label='Equipment height',
                                     help_text='Height in rack units (u).')

@@ -8,10 +8,11 @@
         <h3>Operational information</h3>
         <div class="well">
             {{ form.name | as_crispy_field }}
+            {{ form.operational_state | as_crispy_field }}
+            {{ form.ip_addresses | as_crispy_field}}
             {{ form.description | as_crispy_field }}
             {{ form.responsible_group | as_crispy_field }}
             {{ form.support_group | as_crispy_field }}
-            {{ form.operational_state | as_crispy_field }}
             {{ form.security_class | as_crispy_field }}
             {{ form.security_comment | as_crispy_field }}
         </div>
