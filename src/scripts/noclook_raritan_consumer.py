@@ -63,7 +63,7 @@ logger = logging.getLogger('noclook_consumer.checkmk')
 def insert(json_list):
     for item in json_list:
         base = item['host'].get('raritan')
-        pdu_handle = nt.get_unique_node_handle_by_name(item['item']['name'], 'PDU', 'Physical', ['Host', 'PDU'])
+        pdu_handle = nt.get_unique_node_handle_by_name(item['host']['name'], 'PDU', 'Physical', ['Host', 'PDU'])
         pdu_node = pdu_handle.get_node()
         helpers.update_noclook_auto_manage(pdu_node)
         # If needed add node update with ip/hostnames
@@ -76,7 +76,7 @@ def insert_ports(ports, pdu_node):
     for port in ports:
         port_name = port.get('name')
         if port_name:
-            port_node = get_or_create_port(port_name, pdu_node)
+            port_node = get_or_create_port(port_name, pdu_node, user)
             helpers.set_noclook_auto_manage(port_node, True)
             property_keys = ['description', 'name']
             helpers.dict_update_node(user, port_node.handle_id, port, property_keys)
@@ -107,7 +107,7 @@ def main():
 
     if config.has_option('data', 'raritan'):
         data_dir = config.get('data', 'raritan')
-        insert(utils.json_dir(data_dir))
+        insert(utils.load_json(data_dir))
 
 
 if __name__ == '__main__':
