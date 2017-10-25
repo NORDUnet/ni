@@ -89,6 +89,7 @@ urlpatterns = [
     url(r'^odf/$', _list.list_odfs),
     url(r'^cable/$', _list.list_cables),
     url(r'^switch/$', _list.list_switches),
+    url(r'^firewall/$', _list.list_firewalls),
     url(r'^customer/$', _list.list_customers),
     # Generic list
     url(r'^(?P<slug>[-\w]+)/$', _list.list_by_type, name='generic_list'),

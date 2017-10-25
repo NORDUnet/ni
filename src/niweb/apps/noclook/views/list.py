@@ -210,6 +210,27 @@ def list_switches(request):
                   {'name': 'Switches', 'table': table, 'urls': urls})
 
 
+@login_required
+def list_firewalls(request):
+    q = """
+        MATCH (firewall:Firewall)
+        OPTIONAL MATCH (firewall)<-[:Owns|Uses]-(user)
+        RETURN firewall, collect(user) as users
+        ORDER BY firewall.name
+        """
+
+    firewall_list = nc.query_to_list(nc.graphdb.manager, q)
+    firewall_list = _filter_expired(firewall_list, request, select=lambda n: n.get('firewall'))
+    urls = get_node_urls(firewall_list)
+
+    table = Table('Firewall', 'Model', 'Address', 'User')
+    table.rows = [_switch_table(item['firewall'], item['users']) for item in firewall_list]
+    _set_filters_expired(table, request)
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'name': 'Firewalls', 'table': table, 'urls': urls})
+
+
 def _odf_table(item):
     location = item.get('location')
     odf = item.get('odf')
