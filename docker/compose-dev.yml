@@ -9,6 +9,8 @@ services:
       - POSTGRES_DB=norduni
       - POSTGRES_USER=ni
       - POSTGRES_PASSWORD=docker
+    networks:
+      - dev
   neo4j:
     image: neo4j:latest
     volumes:
@@ -16,22 +18,41 @@ services:
     ports:
       - '127.0.0.1:7474:7474'
       - '127.0.0.1:7687:7687'
+    networks:
+      - dev
+  neo4j-test:
+    image: neo4j:latest
+    volumes:
+      - ./data/neo4j-test:/data
+    ports:
+      - '127.0.0.1:6464:7474'
+      - '127.0.0.1:6686:7687'
+    networks:
+      - dev
   norduni:
     build: ../
     ports:
       - '8000:8000'
-    links:
-      - postgres
-      - neo4j
+    networks:
+      - dev
     depends_on:
       - postgres
       - neo4j
     environment:
       - NEO4J_RESOURCE_URI=bolt://neo4j:7687
+      - TEST_NEO4J_URI=bolt://neo4j-test:7687
       - DB_HOST=postgres
       - DJANGO_SETTINGS_MODULE=niweb.settings.dev
+      - REPORTS_TO=markus@nordu.net
     volumes:
       - ../src/niweb:/app/niweb
       - ../src/scripts:/app/scripts
     command: ["dev"]
 
+networks:
+  dev:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.21.0/24
