@@ -504,7 +504,7 @@ def new_optical_node(request, slug=None):
     if request.POST and form.is_valid() and bulk_ports.is_valid():
         try:
             name = form.cleaned_data['name']
-            nh = helpers.get_unique_node_handle(request.user,
+            nh = helpers.create_unique_node_handle(request.user,
                                                 name,
                                                 'optical-node',
                                                 'Physical')

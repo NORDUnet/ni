@@ -44,7 +44,7 @@ class FormadataApiTest(NeoTestCase):
         self.assertEquals(self.racks, racks)
 
     def create_site(self, name):
-        return helpers.get_unique_node_handle(self.user, name, "site", "Location")
+        return helpers.create_unique_node_handle(self.user, name, "site", "Location")
 
     def create_rack(self, name):
-        return helpers.get_unique_node_handle(self.user, name, "rack", "Location")
+        return helpers.create_unique_node_handle(self.user, name, "rack", "Location")

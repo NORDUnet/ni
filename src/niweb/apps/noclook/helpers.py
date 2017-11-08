@@ -203,12 +203,12 @@ def get_generic_node_handle(user, node_name, slug, node_meta_type):
 
 def form_to_unique_node_handle(request, form, slug, node_meta_type):
     node_name = form.cleaned_data['name']
-    return get_unique_node_handle(request.user, node_name, slug, node_meta_type)
+    return create_unique_node_handle(request.user, node_name, slug, node_meta_type)
 
-def get_unique_node_handle(user, node_name, slug, node_meta_type):
+def create_unique_node_handle(user, node_name, slug, node_meta_type):
     node_type = slug_to_node_type(slug, create=True)
     try:
-        node_handle = NodeHandle.objects.get(node_name=node_name, node_type=node_type)
+        node_handle = NodeHandle.objects.get(node_name__iexact=node_name, node_type=node_type)
         raise UniqueNodeError(node_name, node_handle.handle_id, node_type)
     except NodeHandle.DoesNotExist:
         node_handle = NodeHandle.objects.create(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,

@@ -7,7 +7,7 @@ class ExportSiteTest(NeoTestCase):
         super(ExportSiteTest, self).setUp()
 
     def test_export_empty_site(self):
-        site = helpers.get_unique_node_handle(self.user, "Test site", "site", "Location")
+        site = helpers.create_unique_node_handle(self.user, "Test site", "site", "Location")
         resp = self.client.get(self.get_full_url(site) + "export")
         self.assertEquals('attachment; filename="Site.Test site_export.json"', resp['Content-Disposition'])
         self.assertEquals('application/json', resp['Content-Type'])
@@ -15,11 +15,11 @@ class ExportSiteTest(NeoTestCase):
 
     def test_populated_site(self):
         # Setup test data
-        site = helpers.get_unique_node_handle(self.user, "Test site", "site", "Location")
+        site = helpers.create_unique_node_handle(self.user, "Test site", "site", "Location")
         site_node = site.get_node()
         rack = helpers.get_generic_node_handle(self.user, "A.01", "rack", "Location")
         helpers.set_has(self.user, site_node, rack.handle_id)
-        odf = helpers.get_unique_node_handle(self.user, "NI-TEST-ODF-01", "odf", "Physical")
+        odf = helpers.create_unique_node_handle(self.user, "NI-TEST-ODF-01", "odf", "Physical")
         odf_node = odf.get_node()
         helpers.dict_update_node(self.user, odf.handle_id, {"max_ports": 24})
         helpers.set_location(self.user, odf_node, rack.handle_id)
@@ -28,7 +28,7 @@ class ExportSiteTest(NeoTestCase):
         helpers.create_port(odf_node, "2", self.user)
         helpers.create_port(odf_node, "3", self.user)
 
-        router = helpers.get_unique_node_handle(self.user, "ni-test.routers.nordu.net", "router", "Physical")
+        router = helpers.create_unique_node_handle(self.user, "ni-test.routers.nordu.net", "router", "Physical")
         router_node = router.get_node()
         helpers.dict_update_node(self.user, router.handle_id, {"operational_state": "Testing", "rack_units": 2})
         helpers.set_location(self.user, router_node, rack.handle_id)
@@ -64,16 +64,16 @@ class ExportSiteTest(NeoTestCase):
     def test_decommissioned_equipment(self):
         self.skipTest('Not working as expected yet.')
         # Setup test data
-        site = helpers.get_unique_node_handle(self.user, "Test site", "site", "Location")
+        site = helpers.create_unique_node_handle(self.user, "Test site", "site", "Location")
         site_node = site.get_node()
         rack = helpers.get_generic_node_handle(self.user, "A.01", "rack", "Location")
         helpers.set_has(self.user, site_node, rack.handle_id)
-        odf = helpers.get_unique_node_handle(self.user, "NI-TEST-ODF-01", "odf", "Physical")
+        odf = helpers.create_unique_node_handle(self.user, "NI-TEST-ODF-01", "odf", "Physical")
         odf_node = odf.get_node()
         helpers.dict_update_node(self.user, odf.handle_id, {"max_ports": 24})
         helpers.set_location(self.user, odf_node, rack.handle_id)
 
-        decom_on = helpers.get_unique_node_handle(self.user, "NI-TEST-ON-01", "optical-node", "Physical")
+        decom_on = helpers.create_unique_node_handle(self.user, "NI-TEST-ON-01", "optical-node", "Physical")
         decom_on_node = decom_on.get_node()
         helpers.dict_update_node(self.user, decom_on.handle_id, {"operational_state": "Decommissioned"})
         helpers.set_location(self.user, decom_on_node, rack.handle_id)
@@ -98,9 +98,9 @@ class ExportSiteTest(NeoTestCase):
 
     def test_export_optical_node(self):
         # Setup test data
-        site = helpers.get_unique_node_handle(self.user, "Test site", "site", "Location")
+        site = helpers.create_unique_node_handle(self.user, "Test site", "site", "Location")
 
-        optical_node = helpers.get_unique_node_handle(self.user, "NI-TEST-ROADM", "optical-node", "Physical")
+        optical_node = helpers.create_unique_node_handle(self.user, "NI-TEST-ROADM", "optical-node", "Physical")
         on_node = optical_node.get_node()
         helpers.set_location(self.user, on_node, site.handle_id)
         helpers.dict_update_node(self.user, optical_node.handle_id, {"operational_state": "In service", "rack_units": "2", "type": "ciena6500"})

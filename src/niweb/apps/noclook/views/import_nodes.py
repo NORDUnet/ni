@@ -175,7 +175,7 @@ class ImportNodesView(View):
                                                  meta_type)
         else:
             try:
-                nh = helpers.get_unique_node_handle(user,
+                nh = helpers.create_unique_node_handle(user,
                                                     item['name'],
                                                     slug,
                                                     meta_type)

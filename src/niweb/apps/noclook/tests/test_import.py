@@ -136,4 +136,4 @@ class ImportSiteTest(NeoTestCase):
         return resp, site
 
     def create_site(self, name="Test site"):
-        return helpers.get_unique_node_handle(self.user, name, "site", "Location")
+        return helpers.create_unique_node_handle(self.user, name, "site", "Location")
