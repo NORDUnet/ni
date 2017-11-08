@@ -1,0 +1,34 @@
+
+- docker-compose -f docker/compose-dev.yml stop neo4j
+- rm -r docker/data/neo4j/databases/
+- docker-compose -f docker/compose-dev.yml start neo4j
+- Only first time
+  ```
+  curl --user neo4j:neo4j -D - -H "Content-Type: application/json" --data '{"password" : "docker"}' http://localhost:7474/user/neo4j/password
+  ```
+
+```
+drop database norduni;
+CREATE DATABASE norduni;
+GRANT ALL PRIVILEGES ON DATABASE norduni to ni;
+ALTER USER ni CREATEDB;
+```
+pbpaste | docker exec -i 7a2e psql postgres postgres
+
+gunzip -c /Users/markus/vagrant/ni/nistore/producers/noclook/sql/postgres.sql.gz | docker exec -i 7a2e psql norduni ni
+
+docker-compose -f docker/compose-dev.yml  run --rm norduni manage migrate
+docker-compose -f docker/compose-dev.yml  run --rm norduni manage createsuperuser
+
+```
+BEGIN;
+SELECT setval(pg_get_serial_sequence('"noclook_nodetype"','id'), coalesce(max("id"), 1), max("id") IS NOT null) FROM "noclook_nodetype";
+SELECT setval(pg_get_serial_sequence('"noclook_nodehandle"','handle_id'), coalesce(max("handle_id"), 1), max("handle_id") IS NOT null) FROM "noclook_nodehandle";
+SELECT setval(pg_get_serial_sequence('"noclook_uniqueidgenerator"','id'), coalesce(max("id"), 1), max("id") IS NOT null) FROM "noclook_uniqueidgenerator";
+SELECT setval(pg_get_serial_sequence('"noclook_nordunetuniqueid"','id'), coalesce(max("id"), 1), max("id") IS NOT null) FROM "noclook_nordunetuniqueid";
+COMMIT;
+```
+pbpaste | docker exec -i 7a2e psql norduni ni
+
+# Consume backup
+cat docker/data/noclook_restore.conf | docker-compose -f docker/compose-dev.yml  run --rm -v ~/vagrant/ni/nistore/producers/noclook/json/:/opt/noclook norduni consume

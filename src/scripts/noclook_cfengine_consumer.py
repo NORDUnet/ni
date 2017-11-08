@@ -83,7 +83,8 @@ def insert(json_list):
     user = nt.get_user()
     for i in json_list:
         node = None
-        name = i['host']['name']
+        name = i['host']['name'].lower()
+        i['host']['name'] = name
         promises = i['host']['cfengine_report']
         try:
             node = nc.get_unique_node_by_name(nc.graphdb.manager, name, 'Host')

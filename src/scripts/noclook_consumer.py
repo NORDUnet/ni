@@ -144,7 +144,7 @@ def get_unique_node(name, node_type, meta_type):
     return node
 
 
-def get_unique_node_handle(node_name, node_type_name, node_meta_type):
+def get_unique_node_handle(node_name, node_type_name, node_meta_type, case_insensitive=True):
     """
     Takes the arguments needed to create a NodeHandle, if there already
     is a NodeHandle with the same name and type it will be considered
@@ -153,13 +153,22 @@ def get_unique_node_handle(node_name, node_type_name, node_meta_type):
     """
     user = get_user()
     node_type = get_node_type(node_type_name)
-    defaults = {
-        'node_meta_type': node_meta_type,
-        'creator': user,
-        'modifier': user
+    query = {
+        'node_type': node_type,
+        'defaults': {
+            'node_meta_type': node_meta_type,
+            'creator': user,
+            'modifier': user,
+            'node_name': node_name
+        }
     }
-    node_handle, created = NodeHandle.objects.get_or_create(node_name=node_name, node_type=node_type, defaults=defaults)
+    if case_insensitive:
+        query['node_name__iexact'] = node_name
+    else:
+        query['node_name'] = node_name
+    node_handle, created = NodeHandle.objects.get_or_create(**query)
     if created:
+        print('Created node: {}'.format(node_name))
         activitylog.create_node(user, node_handle)
     return node_handle
 
@@ -176,7 +185,7 @@ def get_unique_node_handle_by_name(node_name, node_type_name, node_meta_type, al
     try:
         if not allowed_node_types:
             allowed_node_types = [node_type_name]
-        return NodeHandle.objects.filter(node_type__type__in=allowed_node_types).get(node_name=node_name)
+        return NodeHandle.objects.filter(node_type__type__in=allowed_node_types).get(node_name__iexact=node_name)
     except NodeHandle.DoesNotExist:
         return get_unique_node_handle(node_name, node_type_name, node_meta_type)
     except NodeHandle.MultipleObjectsReturned:

@@ -231,6 +231,7 @@ def insert(json_list):
         base = item['host'].get('checkmk_livestatus')
         if not base:
             base = item['host']['nagiosxi_api']
+        base['host_name'] = base['host_name'].lower()
         host = nc.get_unique_node_by_name(nc.graphdb.manager, base['host_name'], 'Host')
         if not host:
             host = get_host(base['host_address'])

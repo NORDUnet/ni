@@ -408,7 +408,7 @@ def insert_juniper_bgp_peerings(bgp_peerings):
     """
     for peering in bgp_peerings:
         peering_group = peering.get('group', 'Unknown Peering Group')
-        peering_group_handle = nt.get_unique_node_handle(peering_group, 'Peering Group', 'Logical')
+        peering_group_handle = nt.get_unique_node_handle(peering_group, 'Peering Group', 'Logical', case_insensitive=False)
         peering_group_node = peering_group_handle.get_node()
         helpers.set_noclook_auto_manage(peering_group_node, True)
         peering_type = peering.get('type')

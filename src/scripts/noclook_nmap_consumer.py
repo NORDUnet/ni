@@ -214,7 +214,8 @@ def insert_nmap(json_list, external_check=False):
     meta_type = 'Logical'
     # Insert the host
     for i in json_list:
-        name = i['host']['name']
+        name = i['host']['name'].lower()
+        i['host']['name'] = name
         logger.info('%s loaded' % name)
         addresses = i['host']['nmap_services_py']['addresses']
         # Check if the ipaddresses matches any non-host node as a router interface for example
