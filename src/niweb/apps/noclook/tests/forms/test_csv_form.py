@@ -12,7 +12,7 @@ class CsvFormTest(SimpleTestCase):
         form = forms.CsvForm(('product', 'animal'), data)
 
         self.assertTrue(form.is_valid(), 'The csv form should always be vaild. Errors: {}'.format(form.errors))
-        rows = list(form.csv_parse(lambda x: x))
+        rows = form.csv_parse_list(lambda x: x)
         self.assertEqual(u'æg', rows[0].get('product'))
         self.assertEqual(u'høne', rows[0].get('animal'))
 
@@ -25,6 +25,6 @@ class CsvFormTest(SimpleTestCase):
 
         self.assertTrue(form.is_valid(), 'The csv form should always be vaild. Errors: {}'.format(form.errors))
 
-        rows = list(form.csv_parse(lambda x: x))
+        rows = form.csv_parse_list(lambda x: x)
         self.assertEqual(u'æg', rows[0].get('product'))
         self.assertEqual(u'høne', rows[0].get('animal'))

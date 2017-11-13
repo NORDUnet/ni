@@ -210,7 +210,7 @@ def new_cable_csv(request):
 
     if csv_data:
         # check errors
-        cables = form.csv_parse(_csv_to_cable_form)
+        cables = form.csv_parse_list(_csv_to_cable_form)
         for cable in cables:
             if not cable.is_valid():
                 errors = True

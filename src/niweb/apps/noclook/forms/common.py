@@ -760,6 +760,9 @@ class CsvForm(forms.Form):
             reader = self._unicode(reader)
         return (func(line) for line in reader)
 
+    def csv_parse_list(self, func, validate=False):
+        return list(self.csv_parse(func, validate))
+
     def _utf8_enc(self, csv_lines):
         return (line.encode('utf-8') for line in csv_lines)
 
