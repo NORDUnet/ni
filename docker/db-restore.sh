@@ -73,11 +73,11 @@ msg "Import DB from $SQL_DUMP"
 gunzip -c $SQL_DUMP | docker exec -i $postgres_id psql -q -o /dev/null norduni ni
 
 msg "Django migrate"
-docker-compose -f docker/compose-dev.yml  run --rm norduni manage migrate
+docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage migrate
 
 
 msg "Import neo4j data from json"
-cat << EOM | docker-compose -f docker/compose-dev.yml  run --rm -v $NI_STORE/producers/noclook/json/:/opt/noclook norduni consume
+cat << EOM | docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm -v $NI_STORE/producers/noclook/json/:/opt/noclook norduni consume
 # Set after how many days data should be considered old.
 [data_age]
 juniper_conf = 30
@@ -112,5 +112,5 @@ echo "> Finished db-restore in $(duration $SECONDS )"
 echo "" 
 
 msg "Create superuser"
-docker-compose -f docker/compose-dev.yml  run --rm norduni manage createsuperuser
+docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage createsuperuser
 
