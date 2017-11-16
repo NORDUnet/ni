@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Really remove this comment?</h1>
     <div class="alert">
-        <h4 class="alert-heading">{{ comment.submit_date|date:"ymd H:i" }} by {{ comment.name|capfirst }}</h4>
+        <h4 class="alert-heading">{{ comment.submit_date|date:"Y-m-d H:i" }} by {{ comment.name|capfirst }}</h4>
         {{ comment.comment }}
     </div>
   <form action="." method="post">{% csrf_token %}
