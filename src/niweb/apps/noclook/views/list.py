@@ -130,6 +130,33 @@ def list_cables(request):
                   {'table': table, 'name': 'Cables', 'urls': urls})
 
 
+def _port_row(wrapped_port):
+    port = wrapped_port.get('port')
+    parent = wrapped_port.get('parent')
+    row = TableRow(port, port.get('description'), parent)
+    _set_expired(row, port)
+    return row
+
+
+@login_required
+def list_ports(request):
+    q = """
+        MATCH (port:Port)
+        OPTIONAL MATCH (port)<-[:Has]-(parent:Node)
+        RETURN port, collect(parent) as parent order by toLower(port.name)
+        """
+    port_list = nc.query_to_list(nc.graphdb.manager, q)
+    port_list = _filter_expired(port_list, request, select=lambda n: n.get('port'))
+    urls = get_node_urls(port_list)
+
+    table = Table('Name', 'Description', 'Equipment')
+    table.rows = [_port_row(item) for item in port_list]
+    _set_filters_expired(table, request)
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'Ports', 'urls': urls})
+
+
 def _customer_table(wrapped_customer):
     customer = wrapped_customer.get('customer')
     return TableRow(customer, customer.get('description'))
