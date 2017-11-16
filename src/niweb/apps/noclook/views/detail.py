@@ -3,10 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 import ipaddress
 import json
+import logging
 
 from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
 import norduniclient as nc
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -495,7 +498,11 @@ def router_detail(request, handle_id):
     hw_name = "{}-hardware.json".format(router.data.get('name', 'router'))
     hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
     if hw_attachment:
-        hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
+        try: 
+            hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
+        except IOError as e:
+            logger.warning('Missing hardware modules json for router %s(%s). Error was: %s', nh.node_name, nh.handle_id, e)
+            hardware_modules = []
     else:
         hardware_modules = []
 
