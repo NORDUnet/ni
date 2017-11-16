@@ -247,7 +247,7 @@ def insert_juniper_interfaces(router_node, interfaces):
 
     for interface in interfaces:
         port_name = interface['name']
-        if port_name and not not_interesting_interfaces.match(port_name):
+        if port_name and not not_interesting_interfaces.match(port_name) and not interface.get('inactive', False):
             result = router_node.get_port(port_name)
             if 'Has' in  result:
                 port_node = result.get('Has')[0].get('node')
@@ -260,7 +260,8 @@ def insert_juniper_interfaces(router_node, interfaces):
             helpers.dict_update_node(user, port_node.handle_id, interface, property_keys)
             # Update interface units
             for unit in interface['units']:
-                insert_interface_unit(port_node, unit, service_id_regex)
+                if not unit.get('inactive', False):
+                    insert_interface_unit(port_node, unit, service_id_regex)
             # Auto depend services
             auto_depend_services(port_node.handle_id, interface.get('description', ''), service_id_regex)
             logger.info('{router} {interface} done.'.format(router=router_node.data['name'], interface=port_name))
