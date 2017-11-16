@@ -316,7 +316,7 @@ class AccordionNode(template.Node):
 
 
 @register.inclusion_tag('noclook/tags/json_combo.html')
-def json_combo(form_field, urls, initial=None):
+def json_combo(form_field, urls, initial=None, skip_field=False):
     urls = [url.strip() for url in urls.split(",")]
     first_url = None
 
@@ -325,16 +325,16 @@ def json_combo(form_field, urls, initial=None):
             initial = initial.split(',')
         choices = [u"['{}',' {}']".format(val, val.title().replace("-", " ")) for val in initial]
         initial = u",\n".join(choices)
-    else: 
+    else:
         first_url = urls[0]
         if len(urls) > 1:
             urls = urls[1:]
         else:
             urls = []
     return {
-                'first_url': first_url,
-                'initial': initial,
-                'urls': urls,
-                'field': form_field,
-            }
-
+        'first_url': first_url,
+        'initial': initial,
+        'urls': urls,
+        'field': form_field,
+        'skip_field': skip_field,
+    }

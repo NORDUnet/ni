@@ -347,6 +347,11 @@ def new_odf(request, **kwargs):
         if form.is_valid() and ports_form.is_valid():
             nh = helpers.form_to_generic_node_handle(request, form, 'odf', 'Physical')
             helpers.form_update_node(request.user, nh.handle_id, form)
+            data = form.cleaned_data
+            node = nh.get_node()
+            if data['relationship_location']:
+                location = NodeHandle.objects.get(pk=data['relationship_location'])
+                helpers.set_location(request.user, node, location.handle_id)
             if not ports_form.cleaned_data['no_ports']:
                 data = ports_form.cleaned_data
                 helpers.bulk_create_ports(nh.get_node(), request.user, **data)

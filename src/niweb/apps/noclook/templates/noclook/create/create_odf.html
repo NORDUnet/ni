@@ -1,12 +1,24 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+{% endblock %}
 
 {% block content %}
     <h1>Create new ODF</h1>
     <form action="" method="post" class="form-horizontal">{% csrf_token %}
       <div class="well">
             {{ form | crispy }}
+            <div class="control-group">
+              <label for="{{form.relationship_location.id_for_label}}_level0" class="control-label">Location</label>
+              <div class="controls">
+                {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' skip_field=True %}
+              </div>
+            </div>
       </div>
       <div class="accordion" id="create-accordion">
           {% accordion 'Ports' 'ports' '#create-accordion' %}

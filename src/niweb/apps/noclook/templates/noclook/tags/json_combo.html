@@ -34,8 +34,10 @@
       });
   </script>
   
-  {{ field.label }}
-  {{ field }}
+  {% if not skip_field %}
+    {{ field.label }}
+    {{ field }}
+  {% endif %}
   
   <select class="stacked" name="{{ field.auto_id }}_level0" id="{{ field.auto_id }}_level0"></select>
   {% for url in urls %}

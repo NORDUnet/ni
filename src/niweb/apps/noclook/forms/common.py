@@ -374,6 +374,8 @@ class NewOdfForm(forms.Form):
 
     name = forms.CharField()
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_location = relationship_field('location')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
 
 
 class BulkPortsForm(forms.Form):
