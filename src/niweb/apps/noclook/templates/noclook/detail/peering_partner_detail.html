@@ -70,9 +70,18 @@ $(document).ready(
                     <td><a href="{% noclook_node_to_url item.peering_group.handle_id %}">{{ item.peering_group.data.name }}</a></td>
                     <td>{{ item.network_address }}</td>
                     <td>{{ item.unit.data.name }}</td>
-                    {% for place in item.unit.get_placement_path.placement_path reversed %}
-                            <td><a href="{% noclook_node_to_url place.handle_id %}">{{ place.name }}</a></td>
-                    {% endfor %}
+                    {% with placement_path=item.unit.get_placement_path.placement_path %}
+                    <td>
+                      {% if placement_path.1 %}
+                        <a href="{% noclook_node_to_url placement_path.1.handle_id %}">{{ placement_path.1.name }}</a></td>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if placement_path.0 %}
+                        <a href="{% noclook_node_to_url placement_path.0.handle_id %}">{{ placement_path.0.name }}</a></td>
+                      {% endif %}
+                    </td>
+                    {% endwith %}
                 </tr>
             {% endfor %}
     {% endblockvar %}
