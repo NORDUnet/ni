@@ -5,14 +5,13 @@ pushd `dirname $0` > /dev/null
 SCRIPT_DIR="$(pwd)"
 popd > /dev/null
 VIRTUAL_ENV="/var/opt/norduni/norduni_environment"
-MANAGE_PY="/var/opt/norduni/norduni/src/niweb"
+ENV_FILE="/var/opt/norduni/norduni/src/niweb/.env"
 NOCLOOK_DIR="/var/opt/norduni/norduni/src/scripts"
 NISTORE_DIR="/var/opt/norduni/nistore"
-NEO4J_DIR="/var/opt/neo4j-community"
-DB_NAME="norduni"
 SQL_DUMP="/var/opt/norduni/nistore/producers/noclook/sql"
 NI_PULL_CMD="/usr/local/bin/ni-pull.sh"
-NEO4J_PASSWORD=""
+DB_NAME=$(grep DB_NAME $ENV_FILE | sed -e 's/^[^=]*=\s*//')
+NEO4J_PASSWORD=$(grep NEO4J_PASSWORD $ENV_FILE | sed -e 's/^[^=]*=\s*//')
 
 function now (){
   date +"%Y-%m-%d %H:%M:%S"
