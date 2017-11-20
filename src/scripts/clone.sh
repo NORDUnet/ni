@@ -35,11 +35,11 @@ createdb $DB_NAME
 
 
 msg "Import SQL DB"
-psql -f $SQL_DUMP/postgres.sql norduni
+gunzip -c $SQL_DUMP/postgres.sql.gz | psql --quiet norduni
 
 
 msg "Reset DB sequences"
-psql -f "$NOCLOOK_DIR/sql/reset-sequences-noclook.sql" norduni
+psql --quiet -f "$NOCLOOK_DIR/sql/reset-sequences-noclook.sql" norduni
 
 
 msg "Importing data from json"
