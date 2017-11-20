@@ -4,12 +4,45 @@ set -e
 pushd `dirname $0` > /dev/null
 SCRIPT_DIR="$(pwd)"
 popd > /dev/null
-VIRTUAL_ENV="/var/opt/norduni/norduni_environment"
-ENV_FILE="/var/opt/norduni/norduni/src/niweb/.env"
-NOCLOOK_DIR="/var/opt/norduni/norduni/src/scripts"
+NORDUNI_DIR="/var/opt/norduni/norduni"
 NISTORE_DIR="/var/opt/norduni/nistore"
-SQL_DUMP="/var/opt/norduni/nistore/producers/noclook/sql"
-NI_PULL_CMD="/usr/local/bin/ni-pull.sh"
+VIRTUAL_ENV="/var/opt/norduni/norduni_environment"
+
+usage="Usage: $0 [-r <nistore>] [-n <norduni>] [-e <virtualenv>]"
+while getopts ":r:n:e:" options; do
+  case $options in
+    r) NISTORE_DIR=$OPTARG;;
+    n) NORDUNI_DIR=$OPTARG;;
+    e) VIRTUAL_ENV=$OPTARG;;
+    *) echo $usage
+        exit 1;;
+  esac
+done
+
+# Pre checks
+if [ ! -d "$NISTORE_DIR/producers" ]; then
+  echo "Error: no nistore repository @ $NISTORE_DIR"
+  ERROR=true
+fi
+
+if [ ! -d "$NORDUNI_DIR/src" ]; then
+  echo "Error: no norduni @ $NORDUNI_DIR"
+  ERROR=true
+fi
+
+if [ ! -d "$VIRTUAL_ENV/bin" ]; then
+  echo "Error: no virtual env @ $VIRTUAL_ENV"
+  ERROR=true
+fi
+
+if [ $ERROR ]; then
+  exit 1
+fi
+
+ENV_FILE="$NORDUNI_DIR/src/niweb/.env"
+NOCLOOK_DIR="$NORDUNI_DIR/src/scripts"
+SQL_DUMP="$NISTORE_DIR/producers/noclook/sql"
+NI_PULL_CMD="$SCRIPT_DIR/git-scripts/ni-pull.sh"
 DB_NAME=$(grep DB_NAME $ENV_FILE | sed -e 's/^[^=]*=\s*//')
 NEO4J_PASSWORD=$(grep NEO4J_PASSWORD $ENV_FILE | sed -e 's/^[^=]*=\s*//')
 
