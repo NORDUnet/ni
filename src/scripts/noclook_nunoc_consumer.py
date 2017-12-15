@@ -6,14 +6,6 @@ import argparse
 import logging
 import utils
 
-# Need to change this path depending on where the Django project is
-# located.
-base_path = '../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
-
 import noclook_consumer as nt
 from apps.noclook import helpers
 from apps.nerds.lib.consumer_util import address_is_a
@@ -58,6 +50,7 @@ def insert_hosts(json_list):
                 helpers.set_user(user, node, sunet_user.handle_id)
             elif node.meta_type == 'Physical':
                 helpers.set_owner(user, node, sunet_user.handle_id)
+        logger.info("%s has been imported", name)
 
 
 def cli():
