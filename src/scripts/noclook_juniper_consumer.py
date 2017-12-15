@@ -27,6 +27,7 @@ import argparse
 import ipaddress
 import logging
 import json
+import utils
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -531,7 +532,7 @@ def main():
         print('Please provide a configuration file with -C or --data for a data directory.')
         sys.exit(1)
     elif not args.data:
-        config = nt.init_config(args.C)
+        config = utils.init_config(args.C)
     else:
         config = None
 
@@ -540,7 +541,7 @@ def main():
     if args.verbose:
         logger.setLevel(logging.INFO)
     if data:
-        consume_juniper_conf(nt.load_json(data), args.switches)
+        consume_juniper_conf(utils.load_json(data), args.switches)
     if config and config.has_option('delete_data', 'juniper_conf') and config.getboolean('delete_data', 'juniper_conf'):
         remove_juniper_conf(config.get('data_age', 'juniper_conf'))
     return 0

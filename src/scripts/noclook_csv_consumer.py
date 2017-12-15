@@ -4,6 +4,7 @@ import os
 import sys
 import argparse
 import logging
+import utils
 
 __author__ = 'lundberg'
 
@@ -65,7 +66,7 @@ def insert_site(site_dict):
 
 
 def run_consume(path):
-    data = nt.load_json(path)
+    data = utils.load_json(path)
     for item in data:
         node_type = item['host']['csv_producer']['node_type']
         if node_type == 'Site':

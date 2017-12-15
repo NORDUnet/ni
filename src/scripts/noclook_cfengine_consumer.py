@@ -24,6 +24,7 @@ import os
 import sys
 import argparse
 import logging
+import utils
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -115,10 +116,10 @@ def main():
     else:
         if args.verbose:
             logger.setLevel(logging.INFO)
-        config = nt.init_config(args.C)
+        config = utils.init_config(args.C)
         cfengine_data = config.get('data', 'cfengine_report')
         if cfengine_data:
-            insert(nt.load_json(cfengine_data))
+            insert(utils.load_json(cfengine_data))
     return 0
 
 if __name__ == '__main__':

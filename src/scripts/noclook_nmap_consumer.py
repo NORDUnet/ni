@@ -25,6 +25,7 @@ import sys
 import argparse
 from datetime import datetime
 import logging
+import utils
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -271,10 +272,10 @@ def main():
     else:
         if args.verbose:
             logger.setLevel(logging.INFO)
-        config = nt.init_config(args.C)
+        config = utils.init_config(args.C)
         nmap_services_data = config.get('data', 'nmap_services_py')
         if nmap_services_data:
-            insert_nmap(nt.load_json(nmap_services_data), args.X)
+            insert_nmap(utils.load_json(nmap_services_data), args.X)
     return 0
 
 if __name__ == '__main__':

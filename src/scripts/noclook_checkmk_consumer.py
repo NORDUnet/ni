@@ -26,6 +26,7 @@ import argparse
 from datetime import datetime, timedelta
 import re
 import logging
+import utils
 
 ## Need to change this path depending on where the Django project is
 ## located.
@@ -270,10 +271,10 @@ def main():
         print('Please provide a configuration file with -C.')
         sys.exit(1)
     else:
-        config = nt.init_config(args.C)
+        config = utils.init_config(args.C)
         nagios_checkmk_data = config.get('data', 'nagios_checkmk')
         if nagios_checkmk_data:
-            insert(nt.load_json(nagios_checkmk_data))
+            insert(utils.load_json(nagios_checkmk_data))
     return 0
 
 if __name__ == '__main__':
