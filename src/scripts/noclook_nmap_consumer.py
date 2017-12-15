@@ -20,23 +20,13 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import os
 import sys
 import argparse
 from datetime import datetime
 import logging
 import utils
 
-## Need to change this path depending on where the Django project is
-## located.
-base_path = '../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
-
 import norduniclient as nc
-import noclook_consumer as nt
 from apps.noclook import activitylog
 from apps.noclook import helpers
 from apps.nerds.lib.consumer_util import address_is_a
@@ -75,12 +65,12 @@ def set_host_user(host):
     """
     Tries to set a Uses or Owns relationship between the Host and a Host User if there are none.
     """
-    user = nt.get_user()
+    user = utils.get_user()
     domain = '.'.join(host.data['name'].split('.')[-2:])
     relations = host.get_relations()
     host_user_name = HOST_USERS_MAP.get(domain, None)
     if host_user_name and not (relations.get('Uses', None) or relations.get('Owns', None)):
-        relation_node_handle = nt.get_unique_node_handle(host_user_name, 'Host User', 'Relation')
+        relation_node_handle = utils.get_unique_node_handle(host_user_name, 'Host User', 'Relation')
         if host.meta_type == 'Logical':
             helpers.set_user(user, host, relation_node_handle.handle_id)
         elif host.meta_type == 'Physical':
@@ -143,7 +133,7 @@ def insert_services(service_dict, host_node, external_check=False):
     }
     """
 
-    user = nt.get_user()
+    user = utils.get_user()
     node_type = "Host Service"
     meta_type = 'Logical'
     services_locked = host_node.data.get('services_locked', False)
@@ -165,7 +155,7 @@ def insert_services(service_dict, host_node, external_check=False):
                     service_name = service['name']
                     if not service_name:  # Blank
                         service_name = 'unknown'
-                    service_node_handle = nt.get_unique_node_handle(service_name, node_type, meta_type)
+                    service_node_handle = utils.get_unique_node_handle(service_name, node_type, meta_type)
                     service_node = service_node_handle.get_node()
                     helpers.update_noclook_auto_manage(service_node)
                     relationship_properties = {
@@ -210,7 +200,7 @@ def insert_nmap(json_list, external_check=False):
     Inserts the data loaded from the json files created by
     the nerds producer nmap_services.
     """
-    user = nt.get_user()
+    user = utils.get_user()
     node_type = "Host"
     meta_type = 'Logical'
     # Insert the host
@@ -224,7 +214,7 @@ def insert_nmap(json_list, external_check=False):
             logger.info('%s does not appear to be a host.' % name)
             continue
         # Get or create the NodeHandle and the Node by name, bail if there are more than one match
-        node_handle = nt.get_unique_node_handle_by_name(name, node_type, meta_type, ALLOWED_NODE_TYPE_SET)
+        node_handle = utils.get_unique_node_handle_by_name(name, node_type, meta_type, ALLOWED_NODE_TYPE_SET)
         if not node_handle or node_handle.node_type.type not in ALLOWED_NODE_TYPE_SET:
             continue
         # Set Node attributes

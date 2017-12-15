@@ -20,23 +20,13 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import os
 import sys
 import argparse
 import logging
 import utils
 
-## Need to change this path depending on where the Django project is
-## located.
-base_path = '../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
-
 import norduniclient as nc
 from norduniclient.exceptions import MultipleNodesReturned
-import noclook_consumer as nt
 from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.cfengine')
@@ -46,13 +36,13 @@ logger = logging.getLogger('noclook_consumer.cfengine')
 
 # If the promise exists for the host and is "kept", "not kept" or "repaired" the
 # property named "property_name" will be set to the value on the node.
-#CFENGINE_MAP = {
-#    'promise_name': {
-#        'kept': {'property_name': True},
-#        'not kept': {'property_name': False},
-#        'repaired': {'property_name': 'something else'},
-#    }
-#}
+# CFENGINE_MAP = {
+#     'promise_name': {
+#         'kept': {'property_name': True},
+#         'not kept': {'property_name': False},
+#         'repaired': {'property_name': 'something else'},
+#     }
+# }
 
 CFENGINE_MAP = {
     'system_administration_methods_syslog_conf': {
@@ -81,7 +71,7 @@ def insert(json_list):
         },
     ]
     """
-    user = nt.get_user()
+    user = utils.get_user()
     for i in json_list:
         node = None
         name = i['host']['name'].lower()
@@ -121,6 +111,7 @@ def main():
         if cfengine_data:
             insert(utils.load_json(cfengine_data))
     return 0
+
 
 if __name__ == '__main__':
     logger.setLevel(logging.WARNING)

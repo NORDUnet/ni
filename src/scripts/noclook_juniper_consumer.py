@@ -20,7 +20,6 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import os
 import sys
 import re
 import argparse
@@ -29,15 +28,6 @@ import logging
 import json
 import utils
 
-## Need to change this path depending on where the Django project is
-## located.
-base_path = '../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
-
-import noclook_consumer as nt
 from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
@@ -104,8 +94,8 @@ def insert_juniper_node(name, model, version, node_type='Router', hardware=None)
     Returns the node created.
     """
     logger.info('Processing {name}...'.format(name=name))
-    user = nt.get_user()
-    node_handle = nt.get_unique_node_handle(name, node_type, 'Physical')
+    user = utils.get_user()
+    node_handle = utils.get_unique_node_handle(name, node_type, 'Physical')
     node = node_handle.get_node()
     node_dict = {
         'name': name,
@@ -124,14 +114,14 @@ def insert_interface_unit(iface_node, unit, service_id_regex):
     """
     Creates or updates logical interface units.
     """
-    user = nt.get_user()
+    user = utils.get_user()
     unit_name = u'{}'.format(unit['unit'])
     # Unit names are unique per interface
     result = iface_node.get_unit(unit_name)
     if result.get('Part_of', None):
         unit_node = result.get('Part_of')[0].get('node')
     else:
-        node_handle = nt.create_node_handle(unit_name, 'Unit', 'Logical')
+        node_handle = utils.create_node_handle(unit_name, 'Unit', 'Logical')
         unit_node = node_handle.get_node()
         helpers.set_part_of(user, iface_node, unit_node.handle_id)
         logger.info('Unit {interface}.{unit} created.'.format(interface=iface_node.data['name'],
@@ -215,7 +205,7 @@ def auto_depend_services(handle_id, description, service_id_regex, _type="Port")
             else:
                 #Add it
                 #logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
-                helpers.set_depends_on(nt.get_user(), service, handle_id)
+                helpers.set_depends_on(utils.get_user(), service, handle_id)
         else:
             logger.info('{} {} description mentions unknown service {}'.format(_type, handle_id, service_id))
     # check if "other services are dependent"
@@ -241,7 +231,7 @@ def insert_juniper_interfaces(router_node, interfaces):
         pp.*|pip.*|irb.*|demux.*|cbp.*|me.*|lo.*
         """
     not_interesting_interfaces = re.compile(p, re.VERBOSE)
-    user = nt.get_user()
+    user = utils.get_user()
 
     cleanup_hardware_v1(router_node, user)
     service_id_regex = _service_id_regex()
@@ -253,7 +243,7 @@ def insert_juniper_interfaces(router_node, interfaces):
             if 'Has' in  result:
                 port_node = result.get('Has')[0].get('node')
             else:
-                node_handle = nt.create_node_handle(port_name, 'Port', 'Physical')
+                node_handle = utils.create_node_handle(port_name, 'Port', 'Physical')
                 port_node = node_handle.get_node()
                 helpers.set_has(user, router_node, port_node.handle_id)
             helpers.set_noclook_auto_manage(port_node, True)
@@ -281,7 +271,7 @@ def get_peering_partner(peering):
     except KeyError:
         logger.info('Peering Partner {name} not in cache.'.format(name=peering.get('description')))
         pass
-    user = nt.get_user()
+    user = utils.get_user()
     peer_node = None
     peer_properties = {
         'name':  'Missing description',
@@ -304,7 +294,7 @@ def get_peering_partner(peering):
             logger.error('Found more then one Peering Partner with AS number {!s}'.format(peer_properties['as_number']))
 
     if not peer_node:
-        node_handle = nt.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
+        node_handle = utils.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
         peer_node = node_handle.get_node()
         helpers.set_noclook_auto_manage(peer_node, True)
         helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
@@ -369,7 +359,7 @@ def insert_external_bgp_peering(peering, peering_group):
     """
     Creates/updates the relationship and nodes needed to express the external peerings.
     """
-    user = nt.get_user()
+    user = utils.get_user()
     # Get or create the peering partner, unique per AS
     peer_node = get_peering_partner(peering)
     # Get all relationships with this ip address, should never be more than one
@@ -410,7 +400,7 @@ def insert_juniper_bgp_peerings(bgp_peerings):
     """
     for peering in bgp_peerings:
         peering_group = peering.get('group', 'Unknown Peering Group')
-        peering_group_handle = nt.get_unique_node_handle(peering_group, 'Peering Group', 'Logical', case_insensitive=False)
+        peering_group_handle = utils.get_unique_node_handle(peering_group, 'Peering Group', 'Logical', case_insensitive=False)
         peering_group_node = peering_group_handle.get_node()
         helpers.set_noclook_auto_manage(peering_group_node, True)
         peering_type = peering.get('type')
@@ -425,7 +415,7 @@ def insert_juniper_hardware(router_node, hardware):
         # Upload hardware info as json file.
         hw_str = json.dumps(hardware)
         name = "{}-hardware.json".format(router_node.data.get('name','router'))
-        user = nt.get_user()
+        user = utils.get_user()
         # Store it! (or overwrite)
         helpers.attach_as_file(router_node.handle_id, name, hw_str, user, overwrite=True)
 
@@ -509,7 +499,7 @@ def remove_juniper_conf(data_age):
     :param data_age: Data older than this many days will be deleted.
     :return: None
     """
-    user = nt.get_user()
+    user = utils.get_user()
     data_age = int(data_age) * 24  # hours in a day
     logger.info('Deleting expired router nodes and sub equipment nodes:')
     remove_router_conf(user, data_age)

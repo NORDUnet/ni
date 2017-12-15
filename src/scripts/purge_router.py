@@ -19,34 +19,22 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import os
-import sys
 import argparse
 import logging
+import utils
 
-## Need to change this path depending on where the Django project is
-## located.
-base_path = '../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
-
-import noclook_consumer as nt
 from apps.noclook import helpers
-from apps.noclook import activitylog
 import norduniclient as nc
-from dynamic_preferences import global_preferences_registry
-from apps.noclook.models import UniqueIdGenerator
 
 logger = logging.getLogger('noclook_purge_router')
 
 
 delete_log = []
 
+
 def delete_node(node, dry_run):
     if not dry_run:
-        user = nt.get_user()
+        user = utils.get_user()
         helpers.delete_node(user, node.handle_id)
     name = u"{}<name='{}', handle_id={}>".format(type(node).__name__,
                                                  node.data.get('name'),

@@ -21,40 +21,23 @@
 #       MA 02110-1301, USA.
 
 import sys
-import os
-from os.path import join
-import json
 import datetime
 import argparse
 import logging
+import utils
 
-## Need to change this path depending on where the Django project is
-## located.
-base_path = join(os.path.dirname(os.path.abspath(__file__)), '..', 'niweb')
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
-import django
+from apps.noclook.models import NodeHandle
 from django.conf import settings as django_settings
-#django cache hack
-django_settings.CACHES['default']['LOCATION'] = '/tmp/django_cache_consumer'
-django.setup()
-from apps.noclook.models import NodeType, NodeHandle
-from apps.noclook import helpers  # Shortcircuit circular dependency
-from apps.noclook import activitylog
 from django_comments.models import Comment
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.models import User
 import norduniclient as nc
-
-logger = logging.getLogger('noclook_consumer')
 
 import noclook_juniper_consumer
 import noclook_nmap_consumer
 import noclook_checkmk_consumer
 import noclook_cfengine_consumer
 
+logger = logging.getLogger('noclook_consumer')
 # This script is used for adding the objects collected with the
 # NERDS producers to the NOCLook database viewer.
 
@@ -72,118 +55,27 @@ def generate_password(n):
     return ''.join([random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789@#$%^&*(-_=+)') for i in range(n)])
 
 
-def get_user(username='noclook'):
-    """
-    Gets or creates a user that can be used to insert data.
-    """
-    try:
-        user = User.objects.get(username=username)
-    except User.DoesNotExist:
-        passwd = generate_password(30)
-        user = User.objects.create_user(username, '', passwd)
-    return user
-
-
-from django.template.defaultfilters import slugify
-
-def get_node_type(type_name):
-    """
-    Returns or creates and returns the NodeType object with the supplied
-    name.
-    """
-    try:
-        node_type = NodeType.objects.get(type=type_name)
-    except NodeType.DoesNotExist:
-        # The NodeType was not found, create one
-        node_type = NodeType(type=type_name, slug=slugify(type_name))
-        node_type.save()
-    return node_type
-
-
 def get_unique_node(name, node_type, meta_type):
     """
     Gets or creates a NodeHandle with the provided name.
     Returns the NodeHandles node.
     """
     name = normalize_whitespace(name)
-    node_handle = get_unique_node_handle(name, node_type, meta_type)
+    node_handle = utils.get_unique_node_handle(name, node_type, meta_type)
     node = node_handle.get_node()
     return node
-
-
-def get_unique_node_handle(node_name, node_type_name, node_meta_type, case_insensitive=True):
-    """
-    Takes the arguments needed to create a NodeHandle, if there already
-    is a NodeHandle with the same name and type it will be considered
-    the same one.
-    Returns a NodeHandle object.
-    """
-    user = get_user()
-    node_type = get_node_type(node_type_name)
-    query = {
-        'node_type': node_type,
-        'defaults': {
-            'node_meta_type': node_meta_type,
-            'creator': user,
-            'modifier': user,
-            'node_name': node_name
-        }
-    }
-    if case_insensitive:
-        query['node_name__iexact'] = node_name
-    else:
-        query['node_name'] = node_name
-    node_handle, created = NodeHandle.objects.get_or_create(**query)
-    if created:
-        print('Created node: {}'.format(node_name))
-        activitylog.create_node(user, node_handle)
-    return node_handle
-
-
-def get_unique_node_handle_by_name(node_name, node_type_name, node_meta_type, allowed_node_types=None):
-    """
-    Takes the arguments needed to create a NodeHandle, if there already
-    is a NodeHandle with the same name considered the same one.
-
-    If the allowed_node_types is set the supplied node types will be used for filtering.
-
-    Returns a NodeHandle object.
-    """
-    try:
-        if not allowed_node_types:
-            allowed_node_types = [node_type_name]
-        return NodeHandle.objects.filter(node_type__type__in=allowed_node_types).get(node_name__iexact=node_name)
-    except NodeHandle.DoesNotExist:
-        return get_unique_node_handle(node_name, node_type_name, node_meta_type)
-    except NodeHandle.MultipleObjectsReturned:
-        logger.error("Assumed unique node not unique: {0}".format(node_name))
-        return None
-
-
-def create_node_handle(node_name, node_type_name, node_meta_type):
-    """
-    Takes the arguments needed to create a NodeHandle.
-    Returns a NodeHandle object.
-    """
-    user = get_user()
-    node_type = get_node_type(node_type_name)
-    node_handle = NodeHandle.objects.create(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
-                                            creator=user, modifier=user)
-    node_handle.save()
-    activitylog.create_node(user, node_handle)
-    return node_handle
 
 
 def restore_node(handle_id, node_name, node_type_name, node_meta_type):
     """
     Tries to get a existing node handle from the SQL database before creating
     a new handle with an old handle id.
-    
+
     When we are setting the handle_id explicitly we need to run django-admin.py
     sqlsequencereset noclook and paste that SQL statements in to the dbhell.
     """
-    user = get_user()
-    node_type = get_node_type(node_type_name)
+    user = utils.get_user()
+    node_type = utils.get_node_type(node_type_name)
     defaults = {
         'node_name': node_name,
         'node_type': node_type,
@@ -204,7 +96,7 @@ def set_comment(node_handle, comment):
     """
     content_type = ContentType.objects.get_for_model(NodeHandle)
     object_pk = node_handle.pk
-    user = get_user()
+    user = utils.get_user()
     site_id = django_settings.SITE_ID
     c = Comment(content_type=content_type, object_pk=object_pk, user=user, site_id=site_id, comment=comment)
     c.save()
@@ -271,7 +163,7 @@ def run_consume(config_file):
     """
     Function to start the consumer from another script.
     """
-    config = init_config(config_file)
+    config = utils.init_config(config_file)
     # juniper_conf
     juniper_conf_data = config.get('data', 'juniper_conf')
     remove_expired_juniper_conf = config.getboolean('delete_data', 'juniper_conf')
@@ -286,21 +178,21 @@ def run_consume(config_file):
     noclook_data = config.get('data', 'noclook')
     # Consume data
     if juniper_conf_data:
-        data = load_json(juniper_conf_data)
-        switches=False
+        data = utils.load_json(juniper_conf_data)
+        switches = False
         noclook_juniper_consumer.consume_juniper_conf(data, switches)
     if nmap_services_py_data:
-        data = load_json(nmap_services_py_data)
+        data = utils.load_json(nmap_services_py_data)
         noclook_nmap_consumer.insert_nmap(data)
     if nagios_checkmk_data:
-        data = load_json(nagios_checkmk_data)
+        data = utils.load_json(nagios_checkmk_data)
         noclook_checkmk_consumer.insert(data)
     if cfengine_data:
-        data = load_json(cfengine_data)
+        data = utils.load_json(cfengine_data)
         noclook_cfengine_consumer.insert(data)
     if noclook_data:
-        nodes = load_json(noclook_data, starts_with="node")
-        relationships = load_json(noclook_data, starts_with="relationship")
+        nodes = utils.load_json(noclook_data, starts_with="node")
+        relationships = utils.load_json(noclook_data, starts_with="relationship")
         consume_noclook(nodes, relationships)
     # Clean up expired data
     if remove_expired_juniper_conf:

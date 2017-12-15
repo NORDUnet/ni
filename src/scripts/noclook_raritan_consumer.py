@@ -1,25 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
-import os
 import logging
 import argparse
 from configparser import SafeConfigParser
 import utils
-
-# Need to change this path depending on where the Django project is
-# located.
-base_path = '../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
-
-
-import norduniclient as nc
-import noclook_consumer as nt
-from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.checkmk')
@@ -63,7 +48,7 @@ logger = logging.getLogger('noclook_consumer.checkmk')
 def insert(json_list):
     for item in json_list:
         base = item['host'].get('raritan')
-        pdu_handle = nt.get_unique_node_handle_by_name(item['host']['name'], 'PDU', 'Physical', ['Host', 'PDU'])
+        pdu_handle = utils.get_unique_node_handle_by_name(item['host']['name'], 'PDU', 'Physical', ['Host', 'PDU'])
         pdu_node = pdu_handle.get_node()
         helpers.update_noclook_auto_manage(pdu_node)
         # If needed add node update with ip/hostnames
@@ -72,7 +57,7 @@ def insert(json_list):
 
 
 def insert_ports(ports, pdu_node):
-    user = nt.get_user()
+    user = utils.get_user()
     for port in ports:
         port_name = port.get('name')
         if port_name:
@@ -87,7 +72,7 @@ def get_or_create_port(port_name, node, user):
     if 'Has' in result:
         port_node = result.get('Has')[0].get('node')
     else:
-        port_handle = nt.create_node_handle(port_name, 'Port', 'Physical')
+        port_handle = utils.create_node_handle(port_name, 'Port', 'Physical')
         port_node = port_handle.get_node()
         helpers.set_has(user, node, port_node.handle_id)
     return port_node
@@ -101,7 +86,7 @@ def main():
     args = parser.parse_args()
 
     if args.verbose:
-        logger.setLevel(logger.INFO)
+        logger.setLevel(logging.INFO)
     config = SafeConfigParser()
     config.read(args.C)
 

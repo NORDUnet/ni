@@ -20,7 +20,6 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import os
 import sys
 import argparse
 from datetime import datetime, timedelta
@@ -28,17 +27,8 @@ import re
 import logging
 import utils
 
-## Need to change this path depending on where the Django project is
-## located.
-base_path = '../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
-
 from django.conf import settings as django_settings
 import norduniclient as nc
-import noclook_consumer as nt
 from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.checkmk')
@@ -113,7 +103,7 @@ def set_nagios_checks(host, checks):
     property_dict = {
         'nagios_checks': checks
     }
-    helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+    helpers.dict_update_node(utils.get_user(), host.handle_id, property_dict, property_dict.keys())
 
 
 def set_uptime(host, check):
@@ -135,7 +125,7 @@ def set_uptime(host, check):
             'lastboot': lastboot.strftime("%a %b %d %H:%M:%S %Y"),
             'uptime': uptime
         }
-        helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+        helpers.dict_update_node(utils.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
         logger.info('{name} uptime check did not match the expected format.'.format(name=host.data['name']))
         logger.info(check)
@@ -155,7 +145,7 @@ def set_backup(host, check):
             property_dict = {
                 'backup': 'tsm'
             }
-            helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+            helpers.dict_update_node(utils.get_user(), host.handle_id, property_dict, property_dict.keys())
     except ValueError as e:
         logger.info('{name} backup check did not match the expected format.'.format(name=host.data['name']))
         logger.info(check)
@@ -191,7 +181,7 @@ def set_netapp_storage_usage(storage_collection):
     for service in storage_collection:
         service_node = nc.get_unique_node_by_name(nc.graphdb.manager, service['service_id'], 'Service')
         property_dict = {'netapp_storage_sum': service['total_storage']}
-        helpers.dict_update_node(nt.get_user(), service_node.handle_id, property_dict, property_dict.keys())
+        helpers.dict_update_node(utils.get_user(), service_node.handle_id, property_dict, property_dict.keys())
         service['total_storage'] = 0.0
 
 
@@ -219,7 +209,7 @@ def set_dell_service_tag(host, check):
         pass
     if tag:
         property_dict = {'service_tag': tag}
-        helpers.dict_update_node(nt.get_user(), host.handle_id, property_dict, property_dict.keys())
+        helpers.dict_update_node(utils.get_user(), host.handle_id, property_dict, property_dict.keys())
 
 
 def insert(json_list):
@@ -276,6 +266,7 @@ def main():
         if nagios_checkmk_data:
             insert(utils.load_json(nagios_checkmk_data))
     return 0
+
 
 if __name__ == '__main__':
     logger.setLevel(logging.WARNING)

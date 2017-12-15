@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 import argparse
 import logging
@@ -8,15 +7,7 @@ import utils
 
 __author__ = 'lundberg'
 
-## Need to change this path depending on where the Django project is
-## located.
-base_path = '../niweb/'
-sys.path.append(os.path.abspath(base_path))
-niweb_path = os.path.join(base_path, 'niweb')
-sys.path.append(os.path.abspath(niweb_path))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "niweb.settings.prod")
 
-import noclook_consumer as nt
 from apps.noclook import helpers
 
 logger = logging.getLogger('noclook_consumer.csv')
@@ -47,19 +38,19 @@ def insert_site(site_dict):
     }
     """
 
-    user = nt.get_user()
+    user = utils.get_user()
     # Remove meta data and relationship data from the site dict
     name = site_dict.pop('name')
     node_type = site_dict.pop('node_type')
     meta_type = site_dict.pop('meta_type')
     site_owner = site_dict.pop('site_owner')
     # Get or create Site
-    site_nh = nt.get_unique_node_handle(name, node_type, meta_type)
+    site_nh = utils.get_unique_node_handle(name, node_type, meta_type)
     # Set or update node properties
     helpers.dict_update_node(user, site_nh.handle_id, site_dict, site_dict.keys())
     if site_owner:
         # Get or create Site owner
-        site_owner_nh = nt.get_unique_node_handle(site_owner, 'Site Owner', 'Relation')
+        site_owner_nh = utils.get_unique_node_handle(site_owner, 'Site Owner', 'Relation')
         # Set relationship to site owner
         helpers.set_responsible_for(user, site_nh.get_node(), site_owner_nh.handle_id)
     logger.info(u'Imported site {}.'.format(name))
@@ -92,6 +83,7 @@ def main():
     run_consume(args.D)
     print 'done.'
     return 0
+
 
 if __name__ == '__main__':
     main()

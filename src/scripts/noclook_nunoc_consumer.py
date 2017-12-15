@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
-import os
-import sys
 import argparse
 import logging
 import utils
 
-import noclook_consumer as nt
 from apps.noclook import helpers
 from apps.nerds.lib.consumer_util import address_is_a
 
@@ -15,12 +12,12 @@ ALLOWED_NODE_TYPE_SET = {'Host'}
 
 
 def insert_hosts(json_list):
-    user = nt.get_user()
+    user = utils.get_user()
 
     node_type = 'Host'
     meta_type = 'Logical'
 
-    sunet_user = nt.get_unique_node_handle('SUNET', 'Host User', 'Relation')
+    sunet_user = utils.get_unique_node_handle('SUNET', 'Host User', 'Relation')
     for item in json_list:
         name = item['host']['name']
         data = item['host'].get('nunoc_cosmos', {})
@@ -28,7 +25,7 @@ def insert_hosts(json_list):
             logger.info('%s had an address that belongs to something that is not a host', name)
             continue
 
-        node_handle = nt.get_unique_node_handle_by_name(name, node_type, meta_type, ALLOWED_NODE_TYPE_SET)
+        node_handle = utils.get_unique_node_handle_by_name(name, node_type, meta_type, ALLOWED_NODE_TYPE_SET)
         if not node_handle or node_handle.node_type.type not in ALLOWED_NODE_TYPE_SET:
             logger.warning("%s is not in %s", name, ALLOWED_NODE_TYPE_SET)
             continue
