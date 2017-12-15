@@ -62,6 +62,11 @@
                     </td>
                 </tr>
             {% endif %}
+            {% if node.data.sunet_iaas %}
+                <tr>
+                    <th>SUNET IAAS:</th><td>{{ node.data.sunet_iaas|yesno:"Yes,No,Not set" }}</td>
+                </tr>
+            {% endif %}
             {% if relations.Uses %}
                 <tr>
                     <th>Users:</th>
