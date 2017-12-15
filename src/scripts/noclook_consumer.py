@@ -30,7 +30,7 @@ import logging
 
 ## Need to change this path depending on where the Django project is
 ## located.
-base_path = '../niweb/'
+base_path = join(os.path.dirname(os.path.abspath(__file__)), '..', 'niweb')
 sys.path.append(os.path.abspath(base_path))
 niweb_path = os.path.join(base_path, 'niweb')
 sys.path.append(os.path.abspath(niweb_path))
@@ -47,7 +47,6 @@ from django_comments.models import Comment
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 import norduniclient as nc
-import utils
 
 logger = logging.getLogger('noclook_consumer')
 
@@ -60,9 +59,6 @@ import noclook_cfengine_consumer
 # NERDS producers to the NOCLook database viewer.
 
 
-def init_config(p):
-    utils.init_config(p)
-
 def normalize_whitespace(text):
     """
     Remove redundant whitespace from a string.
@@ -70,9 +66,6 @@ def normalize_whitespace(text):
     text = text.replace('"', '').replace("'", '')
     return ' '.join(text.split())
 
-
-def load_json(json_dir, starts_with=''):
-    return utils.load_json(json_dir, starts_with)
 
 def generate_password(n):
     import random
