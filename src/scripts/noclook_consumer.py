@@ -36,6 +36,7 @@ import noclook_juniper_consumer
 import noclook_nmap_consumer
 import noclook_checkmk_consumer
 import noclook_cfengine_consumer
+import noclook_nunoc_consumer
 
 logger = logging.getLogger('noclook_consumer')
 # This script is used for adding the objects collected with the
@@ -190,6 +191,9 @@ def run_consume(config_file):
     if cfengine_data:
         data = utils.load_json(cfengine_data)
         noclook_cfengine_consumer.insert(data)
+    if config.has_option('data', 'nunoc_cosmos'):
+        data = utils.load_json(config.get('data', 'nunoc_cosmos'))
+        noclook_nunoc_consumer.insert_hosts(data)
     if noclook_data:
         nodes = utils.load_json(noclook_data, starts_with="node")
         relationships = utils.load_json(noclook_data, starts_with="relationship")
