@@ -2,12 +2,14 @@
 # 2017-10-06
 # markus@nordu.net
 
-usage="Usage: $0 [-h] -r <repository_path> [directories to add]"
+usage="Usage: $0 [-h] [-m <commit_msg>] -r <repository_path> [directories to add]"
 
-while getopts ":r:a:" options; do
+MSG=""
+while getopts ":r:a:m:" options; do
   case $options in
     r) REPO=$OPTARG;;
     h) echo $usage;;
+    m) MSG="${OPTARG} - ";;
     \?) echo $usage
         exit 1;;
     *) echo $usage
@@ -40,7 +42,7 @@ done
 
 # Only try to commit if anything was staged.
 if ! git diff --cached --quiet ; then
-  git commit --quiet -m "$(date)"
+  git commit --quiet -m "${MSG}$(date)"
   git push --quiet origin master
 fi
 ) 201>/tmp/ni-producer-git.lock
