@@ -1,5 +1,6 @@
 {% extends "noclook/edit/base_edit.html" %}
 {% load crispy_forms_tags %}
+{% load noclook_tags %}
 
 {% block content %}
 {{ block.super }}
@@ -9,6 +10,9 @@
     <div class="accordion" id="edit-accordion">
         {% include "noclook/edit/includes/location_group.html" %}
         {% include "noclook/edit/includes/port_group.html" %}
+        {% accordion 'Bulk ports' 'bulk_ports' '#edit-accordion' %}
+          {{ ports_form | crispy }}
+        {% endaccordion %}
         {% include "noclook/edit/includes/disable_noclook_auto_manage.html" %}
     </div>
 {% endblock %}

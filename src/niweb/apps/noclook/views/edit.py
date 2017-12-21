@@ -743,7 +743,8 @@ def edit_router(request, handle_id):
     location = router.get_location()
     if request.POST:
         form = forms.EditRouterForm(request.POST)
-        if form.is_valid():
+        ports_form = forms.BulkPortsForm(request.POST)
+        if form.is_valid() and ports_form.is_valid():
             # Generic node update
             helpers.form_update_node(request.user, router.handle_id, form)
             # Router specific updates
@@ -753,14 +754,18 @@ def edit_router(request, handle_id):
             _handle_ports(router,
                           form.cleaned_data['relationship_ports'],
                           request.user)
+            if not ports_form.cleaned_data['no_ports']:
+                data = ports_form.cleaned_data
+                helpers.bulk_create_ports(nh.get_node(), request.user, **data)
             if 'saveanddone' in request.POST:
                 return redirect(nh.get_absolute_url())
             else:
                 return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditRouterForm(router.data)
+        ports_form = forms.BulkPortsForm({'port_type': 'LC', 'offset': 1, 'num_ports': '0'})
         return render(request, 'noclook/edit/edit_router.html',
-                      {'node_handle': nh, 'node': router, 'form': form, 'location': location})
+                {'node_handle': nh, 'node': router, 'form': form, 'location': location, 'ports_form': ports_form})
 
 
 @staff_member_required
