@@ -29,6 +29,11 @@
                     <th>Model:</th><td>{{node.data.model}}</td>
                 </tr>
             {% endif %}
+            {% if node.data.version %}
+            <tr>
+                <th>JUNOS Version:</th><td>{{ node.data.version }}</td>
+            </tr>
+            {% endif %}
             {% if node.data.ip_addresses %}
                 <tr>
                     <th>Addresses:</th>
@@ -80,11 +85,6 @@
                     </tr>
                 {% endif %}
             {% endif %}
-            {% if node.data.os %}
-                <tr>
-                    <th>OS:</th><td>{{node.data.os}} {% if node.data.os_version %}{{ node.data.os_version }}{% endif %}</td>
-                </tr>
-            {% endif %}
             {% include "noclook/detail/includes/last_changed.html" with inline=True %}
         </table>
     </div>
@@ -130,4 +130,26 @@
 {% include "noclook/detail/includes/depend_include.html" %}
 {% include "noclook/detail/includes/connections.html" with connections=connections only %}
 {% include "noclook/detail/includes/host_services.html" %}
+{% if hardware_modules %}
+<div class="accordion" id="hardware">
+    <div class="accordion-group">
+        <div class="accordion-heading">
+            <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#hardware" href="#showHardware">
+                Hardware information
+            </a>
+        </div>
+        <div id="showHardware" class="accordion-body collapse">
+            <div class="accordion-inner">
+                <dl>
+                    <dt>Model: </dt><dd>{{node.data.model}}</dd>
+                    <dt>Serial number: </dt><dd>{{node.data.serial_number}}</dd>
+                </dl>
+                <pre>{% for module in  hardware_modules %}
+{% hardware_module module %}
+{% endfor %}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

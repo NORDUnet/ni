@@ -602,8 +602,18 @@ def switch_detail(request, handle_id):
 
     urls = helpers.get_node_urls(switch, host_services, connections, dependent, dependencies, relations, location_path)
     scan_enabled = helpers.app_enabled("apps.scan")
+    hw_name = "{}-hardware.json".format(switch.data.get('name', 'switch'))
+    hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
+    if hw_attachment:
+        try: 
+            hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
+        except IOError as e:
+            logger.warning('Missing hardware modules json for router %s(%s). Error was: %s', nh.node_name, nh.handle_id, e)
+            hardware_modules = []
+    else:
+        hardware_modules = []
     return render(request, 'noclook/detail/switch_detail.html',
                   {'node_handle': nh, 'node': switch, 'last_seen': last_seen, 'expired': expired,
                    'host_services': host_services, 'connections': connections, 'dependent': dependent,
                    'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
-                   'history': True, 'urls': urls, 'scan_enabled': scan_enabled})
+                   'history': True, 'urls': urls, 'scan_enabled': scan_enabled, 'hardware_modules': hardware_modules})
