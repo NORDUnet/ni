@@ -38,3 +38,6 @@ curl -s -u "$BACKUPUSER" -T "$BACKUPDIR/ni_data-$TODAY.tar.gz" "$BACKUPURL/"
 # Make latest
 curl -s -X COPY -u "$BACKUPUSER" -H "Destination: $BACKUPURL/postgres.sql.gz" "$BACKUPURL/postgres-$TODAY.sql.gz"
 curl -s -X COPY -u "$BACKUPUSER" -H "Destination: $BACKUPURL/ni_data.tar.gz" "$BACKUPURL/ni_data-$TODAY.tar.gz"
+
+# Cleanup
+find $BACKUPDIR -mtime +8 -exec rm {} \;
