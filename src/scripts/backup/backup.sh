@@ -2,6 +2,9 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TODAY=$(date +"%Y-%m-%d")
 
+# Souce env
+. ${SCRIPT_DIR}/backup-env
+
 if [ -z "$VIRTUALENV" ] || [ -z "$NORDUNIDIR" ] || [ -z "$BACKUPDIR" ] || [ -z "$BACKUPURL" ] || [ -z "$BACKUPUSER" ]; then
   echo "Please create file ${SCRIPT_DIR}/backup-env containing the following variables"
   echo "VIRTUALENV="
@@ -14,8 +17,6 @@ if [ -z "$VIRTUALENV" ] || [ -z "$NORDUNIDIR" ] || [ -z "$BACKUPDIR" ] || [ -z "
 fi
 
 set -e
-# Souce env
-. ${SCRIPT_DIR}/backup-env
 # Activate virtual environment
 . $VIRTUALENV
 
