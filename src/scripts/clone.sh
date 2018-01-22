@@ -95,5 +95,7 @@ msg "Importing data from json"
 cd $NOCLOOK_DIR
 python noclook_consumer.py -C $SCRIPT_DIR/restore.conf -I
 
+msg "Cleanup nibackup"
+rm -r $DATA_DIR/json
 
 msg "Restore done."
