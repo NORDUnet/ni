@@ -26,6 +26,7 @@ set -e
 ## Backup of SQL database
 pg_dump norduni | gzip > $BACKUPDIR/postgres-$TODAY.sql.gz
 # Backup Neo4j data
+mkdir $BACKUPDIR/json
 cd $NORDUNIDIR/src/scripts/
 ./noclook_producer.py -O $BACKUPDIR/json
 cd $BACKUPDIR
