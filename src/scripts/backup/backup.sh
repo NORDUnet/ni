@@ -20,6 +20,9 @@ set -e
 # Activate virtual environment
 . $VIRTUALENV
 
+# Make backup directory if missing
+[ -d $BACKUPDIR ] || mkdir -p $BACKUPDIR
+
 ## Backup of SQL database
 pg_dump norduni | gzip > $BACKUPDIR/postgres-$TODAY.sql.gz
 # Backup Neo4j data
