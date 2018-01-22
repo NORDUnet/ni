@@ -43,6 +43,11 @@ if [ -z "$BACKUPUSER" ]; then
   ERROR=true
 fi
 
+if [ ! -f "$SCRIPT_DIR/restore.conf" ]; then
+  echo "Error: Missing $SCRIPT_DIR/restore.conf file"
+  ERROR=true
+fi
+
 if [ $ERROR ]; then
   exit 1
 fi
@@ -78,7 +83,7 @@ createdb $DB_NAME
 
 
 msg "Import SQL DB"
-gunzip -c $DATA_DIR/postgres.sql.gz | psql --quiet norduni
+gunzip -c $DATA_DIR/postgres.sql.gz | psql --quiet -o /dev/null norduni
 
 
 msg "Reset DB sequences"
