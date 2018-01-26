@@ -95,6 +95,10 @@ msg "Importing data from json"
 cd $NOCLOOK_DIR
 python noclook_consumer.py -C $SCRIPT_DIR/restore.conf -I
 
+msg "Reset last modified"
+psql --quiet -f "$NOCLOOK_DIR/sql/fix-last-modified.sql" norduni
+
+
 msg "Cleanup nibackup"
 rm -r $DATA_DIR/json
 
