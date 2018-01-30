@@ -3,7 +3,7 @@ django-activity-stream<0.7
 django-jsonfield
 django-jsonfield-compat
 django-tastypie<0.15
-norduniclient<1.0.20
+norduniclient<1.0.21
 psycopg2<2.8
 python-dateutil<2.7
 xlwt<1.3
