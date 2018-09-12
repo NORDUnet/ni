@@ -24,7 +24,7 @@ def load_json(json_dir, starts_with=''):
             gen = (_file for _file in files if _file.startswith(starts_with))
             for a_file in gen:
                 try:
-                    f = open(os.path.join(json_dir, a_file), 'r')
+                    f = open(os.path.join(subdir, a_file), 'r')
                     yield json.load(f)
                 except ValueError as e:
                     logger.error('Encountered a problem with {f}.'.format(f=a_file))
