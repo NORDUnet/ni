@@ -220,6 +220,11 @@ def insert_nmap(json_list, external_check=False):
         # Set Node attributes
         node = node_handle.get_node()
         helpers.update_noclook_auto_manage(node)
+
+        # dont replace if addesses are already in current addresses
+        if set(addresses) in set(node.data.get('ipaddresses', [])):
+            addresses = []
+
         properties = {
             'hostnames': i['host']['nmap_services_py']['hostnames'],
             'ip_addresses': addresses
