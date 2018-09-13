@@ -57,10 +57,10 @@ def insert_snap(json_list):
         }
 
         if d.get('network'):
-            ipv4 = [n['ip'] for n in d.get('network', []) if 'ip' in n]
-            ipv4_service = [n['service_ip'] for n in d.get('network', []) if 'service_ip' in n]
-            ipv6 = [n['ipv6'] for n in d.get('network', []) if 'ipv6' in n]
-            ipv6_service = [n['service_ipv6'] for n in d.get('network', []) if 'service_ipv6' in n]
+            ipv4 = [n['ip'].split('/')[0] for n in d.get('network', []) if 'ip' in n]
+            ipv4_service = [n['service_ip'].split('/')[0] for n in d.get('network', []) if 'service_ip' in n]
+            ipv6 = [n['ipv6'].split('/')[0] for n in d.get('network', []) if 'ipv6' in n]
+            ipv6_service = [n['service_ipv6'].split('/')[0] for n in d.get('network', []) if 'service_ipv6' in n]
             properties['ip_addresses'] = ipv4 + ipv4_service + ipv6 + ipv6_service
 
         helpers.dict_update_node(user, node.handle_id, properties, properties.keys())
