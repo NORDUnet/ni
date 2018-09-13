@@ -222,7 +222,7 @@ def insert_nmap(json_list, external_check=False):
         helpers.update_noclook_auto_manage(node)
 
         # dont replace if addesses are already in current addresses
-        if set(addresses) in set(node.data.get('ipaddresses', [])):
+        if set(addresses) in set(node.data.get('ip_addresses', [])):
             addresses = []
 
         properties = {
