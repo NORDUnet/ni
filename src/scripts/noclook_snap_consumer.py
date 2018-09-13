@@ -53,6 +53,7 @@ def insert_snap(json_list):
             'os': d['os'],
             'managed_by': managed_by,
             'responsible_group': responsible,
+            'description': d.get('description')
         }
 
         if d.get('network'):
