@@ -63,6 +63,10 @@ def insert_snap(json_list):
             ipv6_service = [n['service_ipv6'].split('/')[0] for n in d.get('network', []) if 'service_ipv6' in n]
             properties['ip_addresses'] = ipv4 + ipv4_service + ipv6 + ipv6_service
 
+        if d.get('managed'):
+            # Dont default to False
+            properties['syslog'] = True
+
         helpers.dict_update_node(user, node.handle_id, properties, properties.keys())
         logger.info('{} has been imported'.format(name))
 
