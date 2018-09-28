@@ -33,6 +33,7 @@
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
-{% include "noclook/detail/includes/equipment.html" with equipment=physical_relationships.Located_in title="Equipment in rack" %}
+
+{% noclook_rack node physical_relationships.Located_in %}
 {% endblock %}
 

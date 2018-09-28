@@ -5,7 +5,7 @@ from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
 import csv
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, OpticalNodeType, ServiceType, NordunetUniqueId, Dropdown
+from apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
@@ -250,6 +250,7 @@ class OpticalNodeForm(forms.Form):
     operational_state = forms.ChoiceField(initial='In service')
     description = description_field('optical node')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     relationship_location = relationship_field('location')
 
 
@@ -297,6 +298,7 @@ class NewHostForm(forms.Form):
     rack_units = forms.IntegerField(required=False,
                                     label='Equipment height',
                                     help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     description = description_field('machine and what it is used for')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -357,6 +359,7 @@ class EditRouterForm(forms.Form):
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
 
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     relationship_location = relationship_field('location')
     relationship_ports = JSONField(required=False, widget=JSONInput)
@@ -376,6 +379,7 @@ class NewOdfForm(forms.Form):
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_location = relationship_field('location')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
 
 
 class BulkPortsForm(forms.Form):
@@ -395,6 +399,7 @@ class EditOdfForm(forms.Form):
     name = forms.CharField()
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
 
@@ -412,6 +417,7 @@ class NewExternalEquipmentForm(forms.Form):
 
     description = description_field('external equipment')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     relationship_owner = relationship_field('owner')
     relationship_location = relationship_field('location')
 

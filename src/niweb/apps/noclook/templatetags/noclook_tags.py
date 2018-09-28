@@ -338,3 +338,59 @@ def json_combo(form_field, urls, initial=None, skip_field=False):
         'field': form_field,
         'skip_field': skip_field,
     }
+
+
+def _equipment_spacer(units):
+    return {'units': units, 'spacer': True, 'height': "{}px".format(units * 18)}
+
+
+def _rack_sort(item):
+    pos = item.get('node').data.get('rack_position')
+    size = item.get('node').data.get('rack_units', 0) * -1
+
+    return (pos, size)
+
+
+def _equipment(item):
+    data = item.get('node').data
+    units = data.get('rack_units', 1)
+    return {
+        'units': units,
+        'position': data.get('rack_position'),
+        'position_end': units + data.get('rack_position', 1) - 1,
+        'height': "{}px".format(units * 18),
+        'sub_equipment': [],
+        'data': data,
+    }
+
+
+@register.inclusion_tag('noclook/tags/rack.html')
+def noclook_rack(rack, equipment):
+    racked_equipment = []
+    unracked_equipment = []
+
+    equipment.sort(key=_rack_sort)
+    idx = 1
+    last_eq = None
+    for item in equipment:
+        view_data = _equipment(item)
+        ridx = view_data.get('position')
+        if ridx and ridx > 0:
+            spacing = ridx - idx
+            if spacing < 0:
+                # Equipment overlaps with previous
+                last_eq['sub_equipment'].append(view_data)
+            else:
+                if spacing > 0:
+                    racked_equipment.append(_equipment_spacer(spacing))
+                racked_equipment.append(view_data)
+
+                idx = ridx + view_data['units']
+                last_eq = view_data
+        else:
+            unracked_equipment.append(item)
+    return {
+        'rack_size': rack.data.get('rack_units', 42) * 18,
+        'racked_equipment': racked_equipment,
+        'unracked_equipment': unracked_equipment,
+    }

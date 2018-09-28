@@ -358,3 +358,67 @@ h3.compact {
 .gist {
   font-size: 14px;
 }
+
+.rack {
+  width: 240px;
+  background-color: #efefef;
+  padding: 2px;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.equipment {
+  margin: 2px;
+  background-color: #cccccc;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0 4px;
+  position: relative;
+}
+
+.sub-equipment {
+  width: 200px;
+  position: absolute;
+  left: 250px;
+}
+
+.equipment.spacer {
+  background-color: transparent;
+  border: 1px dashed #cccccc;
+}
+
+.equipment .note {
+  position: absolute;
+  font-size: 10px;
+}
+
+.equipment .size {
+  top: 0;
+  right: 3px;
+}
+
+.equipment .position {
+  bottom: 0;
+  right: 242px;
+  text-align: right;
+}
+
+.equipment .position-end {
+  top: 0;
+  right: 242px;
+  text-align: right;
+}
+
+.row-flex {
+  display: flex;
+  flex-flow: row wrap;
+}
+
+.row-flex .rack {
+  margin-right: 200px;
+}
+
+.flex-adjust {
+  flex: 1 2;
+}

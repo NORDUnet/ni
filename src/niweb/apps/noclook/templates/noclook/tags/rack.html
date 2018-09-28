@@ -1,0 +1,46 @@
+{% load noclook_tags %}
+{% load static %}
+
+<div class="row-flex">
+{% if racked_equipment %}
+<div class="rack" style="height: {{rack_size}}px">
+  {% for item in racked_equipment %}
+    {% if item.spacer %}
+      <div class="equipment spacer" style="height: {{item.height}}"></div>
+    {% else %}
+    <div class="equipment" style="height: {{item.height}}">
+        <span class="position note">{{item.position}}</span>
+        {% if item.units > 1 %}
+        <span class="position-end note">{{item.position_end}}</span>
+        {% endif %}
+        <span class="size note">{{item.units}}u</span>
+        {% noclook_node_to_link item.data %}
+        {% if item.sub_equipment %}
+          <div class="sub-equipment">{% for sub in item.sub_equipment %}{% if not forloop.first %}, {% endif %}{% noclook_node_to_link sub.data %}{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if unracked_equipment %}
+<div class="unracked flex-adjust">
+  <h4>Equipment without specific placement</h4>
+  {% blockvar th %}
+              <th>Type</th><th>Name</th>
+  {% endblockvar %}
+  {% blockvar tbody %}
+      {% for item in unracked_equipment %}
+          <tr>
+              {% noclook_get_type item.node.handle_id as node_type %}
+              <td>{{ node_type }}</td>
+              <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+          </tr>
+      {% endfor %}
+  {% endblockvar %}
+  {% table th tbody id="equipment" %}
+</div>
+{% endif %}
+</div>

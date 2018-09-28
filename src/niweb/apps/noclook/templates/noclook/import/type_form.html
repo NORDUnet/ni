@@ -16,6 +16,7 @@
   {% select_if item 'security_class' id %}
   {% field_if item 'security_comment' id  %}
   {% field_if item 'rack_units' id  %}
+  {% field_if item 'rack_position' id  %}
 
   {% for child in item.children %}
     {% type_form child forloop.counter id %}
