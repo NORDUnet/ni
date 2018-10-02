@@ -1,20 +1,24 @@
 {% load noclook_tags %}
+{% load static %}
+
 {% blockvar located_in_title %}
   Located in {{ node_handle.node_type|lower }} (optional)
 {% endblockvar %}
 {% accordion located_in_title 'located-in-edit' '#edit-accordion' %}
   {% if located_in.Located_in %}
       <h4>Located in rack</h4>
-      {% for item in located_in.Located_in %}
+      {% for item in located_in.Located_in|rack_sort %}
           <div class="row">
               <div class="span5">
-                   <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                <input type="number" style="width: 2em;" data-placement-edit="{{item.node.handle_id}}" value="{{item.node.data.rack_position}}">
+                <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a> {%if item.node.data.rack_units %}({{item.node.data.rack_units}}u){% endif %}
               </div>
               <div class="span1">
                   <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
               </div>
           </div>
       {% endfor %}
+      <script src="{% static "js/rack_edit.js" %}" defer></script>
       <hr>
   {% endif %}
   <h4>Add to rack</h4>

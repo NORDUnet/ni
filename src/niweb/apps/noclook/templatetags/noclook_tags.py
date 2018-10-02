@@ -394,3 +394,9 @@ def noclook_rack(rack, equipment):
         'racked_equipment': racked_equipment,
         'unracked_equipment': unracked_equipment,
     }
+
+
+@register.filter
+def rack_sort(equipment):
+    equipment.sort(key=_rack_sort, reverse=True)
+    return equipment

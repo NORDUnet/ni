@@ -737,6 +737,22 @@ def edit_rack(request, handle_id):
 
 
 @staff_member_required
+def update_rack_position(request, rack_handle_id, handle_id, position):
+    """
+    Updates the nodes rack_position if node is placed in rack
+    """
+    if request.method == 'POST':
+        success = False
+        nh, node = helpers.get_nh_node(handle_id)
+        if nh.node_meta_type == 'Physical':
+            helpers.dict_update_node(request.user, node.handle_id, {'rack_position': int(position)})
+            success = True
+        return JsonResponse({'success': success, 'position': '{}'.format(position), 'handle_id': node.handle_id})
+    else:
+        return Http404()
+
+
+@staff_member_required
 def edit_router(request, handle_id):
     # Get needed data from node
     nh, router = helpers.get_nh_node(handle_id)
