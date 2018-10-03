@@ -87,5 +87,13 @@
         {% include "noclook/edit/includes/dependency_group.html" %}
         {% include "noclook/edit/includes/user_group.html" %}
         {% include "noclook/edit/includes/provider_group.html" %}
+        {% accordion 'NCS fields (very optional)' 'ncs' '#edit-accordion' %}
+          <h4>Fields managed by NCS</h4>
+          {{ form.ncs_service_name | as_crispy_field }}
+          {{ form.vpn_type | as_crispy_field }}
+          {{ form.vlan | as_crispy_field }}
+          {{ form.vrf_target | as_crispy_field }}
+          {{ form.route_distinguisher | as_crispy_field }}
+        {% endaccordion %}
     </div>
 {% endblock %}
