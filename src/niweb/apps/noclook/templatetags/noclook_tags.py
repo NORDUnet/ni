@@ -370,7 +370,8 @@ def noclook_rack(rack, equipment):
     racked_equipment = []
     unracked_equipment = []
 
-    equipment.sort(key=_rack_sort)
+    if equipment:
+        equipment.sort(key=_rack_sort)
     idx = 1
     last_eq = None
     for item in equipment:
@@ -399,5 +400,6 @@ def noclook_rack(rack, equipment):
 
 @register.filter
 def rack_sort(equipment):
-    equipment.sort(key=_rack_sort, reverse=True)
+    if equipment:
+        equipment.sort(key=_rack_sort, reverse=True)
     return equipment
