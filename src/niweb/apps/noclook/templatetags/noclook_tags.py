@@ -47,7 +47,7 @@ def noclook_node_to_url(context,handle_id):
 def noclook_node_to_link(context, node):
     if "handle_id" in node:
         url = noclook_node_to_url(context, node.get("handle_id"))
-        result = format_html(u'<a class="handle" href="{}">{}</a>', url, node.get("name"))
+        result = format_html(u'<a class="handle" href="{}" title="{}">{}</a>', url, node.get("name"), node.get("name"))
     else:
         result = None
     return result
@@ -350,6 +350,7 @@ def _rack_sort(item):
 
     return (pos, size)
 
+RACK_SIZE_PX=20
 
 def _equipment(item):
     data = item.get('node').data
@@ -358,7 +359,7 @@ def _equipment(item):
         'units': units,
         'position': data.get('rack_position'),
         'position_end': units + data.get('rack_position', 1) - 1,
-        'height': "{}px".format(units * 18),
+        'height': "{}px".format(units * RACK_SIZE_PX),
         'sub_equipment': [],
         'data': data,
     }
@@ -390,7 +391,7 @@ def noclook_rack(rack, equipment):
         else:
             unracked_equipment.append(item)
     return {
-        'rack_size': rack.data.get('rack_units', 42) * 18,
+        'rack_size': rack.data.get('rack_units', 42) * RACK_SIZE_PX,
         'racked_equipment': racked_equipment,
         'unracked_equipment': unracked_equipment,
     }

@@ -398,6 +398,12 @@ h3.compact {
   right: 3px;
 }
 
+.equipment > .handle {
+  height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .equipment .position {
   bottom: 0;
   right: 242px;
