@@ -375,12 +375,28 @@ h3.compact {
   align-items: center;
   padding: 0 4px;
   position: relative;
+  border-right: 2px solid transparent;
 }
 
 .sub-equipment {
-  width: 200px;
+  max-width: 200px;
   position: absolute;
-  left: 250px;
+  left: 245px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in;
+  border: 1px solid #efefef;
+  border-radius: 4px;
+  padding: 0 4px;
+  background: #efefef;
+  white-space: nowrap;
+}
+
+.sub-equipment .handle {
+  display: inline-block;
+}
+
+.equipment:hover .sub-equipment {
+  opacity: 1;
 }
 
 .equipment.spacer {
@@ -399,7 +415,7 @@ h3.compact {
 }
 
 .equipment > .handle {
-  height: 100%;
+  max-height: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -414,6 +430,20 @@ h3.compact {
   top: 0;
   right: 242px;
   text-align: right;
+}
+
+.has-subequipment {
+  border-color: #08c;
+}
+
+.has-subequipment::after {
+  position: absolute;
+  left: 100%;
+  content: '';
+  
+  border-left: 8px solid #08c;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
 }
 
 .row-flex {
