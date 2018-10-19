@@ -27,6 +27,10 @@ def delete_node(request, slug, handle_id):
     """
     redirect_url = '/{}'.format(slug)
     nh, node = helpers.get_nh_node(handle_id)
+    if nh.node_type.get_label() == 'Unit':
+        part_of = node.get_part_of()
+        if part_of.get('Part_of'):
+            redirect_url = helpers.get_node_url(part_of.get('Part_of')[0]['node'].handle_id)
     try:
         # Redirect to parent if deleted node was a child node
         parent = node.get_parent().get('Has', [])
@@ -923,6 +927,7 @@ def disable_noclook_auto_manage(request, slug, handle_id):
         }
         helpers.dict_update_node(request.user, node.handle_id, node_properties, node_properties.keys())
     return redirect(nh.get_absolute_url())
+
 
 
 EDIT_FUNC = {
