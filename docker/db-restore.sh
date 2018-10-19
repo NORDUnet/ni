@@ -5,7 +5,7 @@ SCRIPT_DIR="$(pwd)"
 popd > /dev/null
 
 usage="Usage: $0 [-h] [-o] [-f <postgres.sql.gz>] [-d <ni_store>] [-c <ni-data-conf>]"
-while getopts ":f:d:c:" opt; do
+while getopts ":f:d:c:o" opt; do
   case $opt in
     f) SQL_DUMP="$OPTARG";;
     d) NI_STORE="$OPTARG";;
