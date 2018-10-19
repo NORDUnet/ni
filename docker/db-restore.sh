@@ -4,28 +4,57 @@ pushd `dirname $0` > /dev/null
 SCRIPT_DIR="$(pwd)"
 popd > /dev/null
 
-usage="Usage: $0 [-h] [-f <postgres.sql.gz>] -d <ni_store>"
-while getopts ":f:d:" opt; do
+usage="Usage: $0 [-h] [-o] [-f <postgres.sql.gz>] [-d <ni_store>] [-c <ni-data-conf>]"
+while getopts ":f:d:c:" opt; do
   case $opt in
     f) SQL_DUMP="$OPTARG";;
     d) NI_STORE="$OPTARG";;
-    *) echo $usage
+    c) NI_DATA_CONF="$OPTARG";;
+    o) OVERWRITE_NI_DATA=true;;
+    *) echo "$usage"
        exit 1;;
   esac
 done
 
-if [ ! -d "$NI_STORE" ]; then
-  echo "Error: NI_STORE is not defined, use -d <ni_store>"
+if [ ! -d "$NI_STORE" ] && [ -z "$NI_DATA_CONF" ]; then
+  echo "Error: NI_STORE is not defined, use -d <ni_store> or -c <ni-data-conf>"
   exit 1
 fi
 
-if [ -z "$SQL_DUMP" ]; then
-  SQL_DUMP="$NI_STORE/producers/noclook/sql/postgres.sql.gz"
-fi
+if [ -z "$NI_DATA_CONF" ]; then
+  if [ -z "$SQL_DUMP" ]; then
+    SQL_DUMP="$NI_STORE/producers/noclook/sql/postgres.sql.gz"
+  fi
 
-if [ ! -f "$SQL_DUMP" ]; then
-  echo "Error: $SQL_DUMP does not exist, use -f <postgres.sql.gz>"
-  exit 1
+  if [ ! -f "$SQL_DUMP" ]; then
+    echo "Error: $SQL_DUMP does not exist, use -f <postgres.sql.gz>"
+    exit 1
+  fi
+  NI_DUMP="$NI_STORE/producers/noclook/json/"
+else
+  NI_DATA_URL=$(awk -F'=' '/url=/ {print $2}' "$NI_DATA_CONF")
+  NI_DATA_AUTH=$(awk -F'=' '/auth=/ {print $2}' "$NI_DATA_CONF")
+  NI_TMP="$SCRIPT_DIR/data/nidata"
+  mkdir -p "$NI_TMP"
+
+  if [ ! -f "$NI_TMP/postgres.sql.gz" ] || [ ! -z "$OVERWRITE_NI_DATA" ]; then
+    curl -u "$NI_DATA_AUTH" -o "$NI_TMP/postgres.sql.gz" "$NI_DATA_URL/postgres.sql.gz"
+  else
+    echo "Skipping postgres download"
+  fi
+  SQL_DUMP="$NI_TMP/postgres.sql.gz"
+
+  if [ ! -f "$NI_TMP/ni_data.tar.gz" ] || [ ! -z "$OVERWRITE_NI_DATA" ]; then
+    curl -u "$NI_DATA_AUTH" -o "$NI_TMP/ni_data.tar.gz" "$NI_DATA_URL/ni_data.tar.gz"
+  else
+    echo "Skipping ni_data.tar.gz download"
+  fi
+  NI_DUMP="$NI_TMP/dump"
+  test -d "$NI_DUMP" && rm -r "$NI_DUMP"
+  mkdir -p "$NI_DUMP"
+  cd "$NI_DUMP"
+  echo "Exctracting ni_data.tar.gz"
+  tar xf "$NI_TMP/ni_data.tar.gz"
 fi
 
 
@@ -77,7 +106,7 @@ docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage migrate
 
 
 msg "Import neo4j data from json"
-cat << EOM | docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm -v $NI_STORE/producers/noclook/json/:/opt/noclook norduni consume
+cat << EOM | docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm -v $NI_DUMP:/opt/noclook norduni consume
 # Set after how many days data should be considered old.
 [data_age]
 juniper_conf = 30
@@ -110,6 +139,12 @@ EOM
 echo ""
 echo "> Finished db-restore in $(duration $SECONDS )"
 echo "" 
+
+# Cleanup
+
+if [ -z "$NI_DATA_CONF" ]; then
+  rm -r "$NI_DUMP"
+fi
 
 msg "Create superuser"
 docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage createsuperuser
