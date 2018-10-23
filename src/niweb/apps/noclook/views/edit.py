@@ -175,7 +175,7 @@ def convert_host(request, handle_id, slug):
     """
     Convert a Host to Firewall or Switch.
     """
-    allowed_types = ['firewall', 'switch', 'pdu']  # Types that can be added as Hosts by nmap
+    allowed_types = ['firewall', 'switch', 'pdu', 'router']  # Types that can be added as Hosts by nmap
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     if slug in allowed_types and nh.node_type.type == 'Host':
         node_type = helpers.slug_to_node_type(slug, create=True)
