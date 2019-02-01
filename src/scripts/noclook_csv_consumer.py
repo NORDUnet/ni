@@ -8,7 +8,7 @@ logger = logging.getLogger('noclook_csv_consumer')
 
 
 def create_new_ports(parent_node, ports, user):
-    existing_ports = [item.get('node').data.get('name') for item in parent_node.get_ports().get('Has') if item.get('node')]
+    existing_ports = [item.get('node').data.get('name') for item in parent_node.get_ports().get('Has', []) if item.get('node')]
     for port_name in [port for port in ports if port not in existing_ports]:
         helpers.create_port(parent_node, port_name, user)
 
