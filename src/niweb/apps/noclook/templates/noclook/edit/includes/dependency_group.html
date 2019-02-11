@@ -20,9 +20,11 @@
       {% endfor %}
       <hr>
   {% endif %}
+  {% if dependency_categories %}
   <h4>Add depends on relationship</h4>
   <div class="span4">
     {% json_combo form.relationship_depends_on '/formdata/{id}/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/' dependency_categories %}
     <span class="help-block">Choose a dependency</span>
   </div>
+  {% endif %}
 {% endaccordion %}

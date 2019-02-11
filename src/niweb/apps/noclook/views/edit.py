@@ -637,6 +637,28 @@ def edit_pdu(request, handle_id):
 
 
 @staff_member_required
+def edit_peering_group(request, handle_id):
+    # Get needed data from node
+    nh, peering_group = helpers.get_nh_node(handle_id)
+    depends_on = peering_group.get_dependencies()
+
+    if request.POST:
+        form = forms.EditPeeringGroupForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, peering_group.handle_id, form)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditPeeringGroupForm(peering_group.data)
+    return render(request, 'noclook/edit/edit_peering_group.html',
+                  {'node_handle': nh, 'node': peering_group, 'form': form,
+                      'depends_on': depends_on})
+
+
+@staff_member_required
 def edit_peering_partner(request, handle_id):
     # Get needed data from node
     nh, peering_partner = helpers.get_nh_node(handle_id)
@@ -946,6 +968,7 @@ EDIT_FUNC = {
     'optical-path': edit_optical_path,
     'pdu': edit_pdu,
     'peering-partner': edit_peering_partner,
+    'peering-group': edit_peering_group,
     'port': edit_port,
     'provider': edit_provider,
     'rack': edit_rack,

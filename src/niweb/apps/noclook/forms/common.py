@@ -262,6 +262,10 @@ class EditPeeringPartnerForm(forms.Form):
     name = forms.CharField()
 
 
+class EditPeeringGroupForm(forms.Form):
+    name = forms.CharField()
+
+
 class NewRackForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewRackForm, self).__init__(*args, **kwargs)
