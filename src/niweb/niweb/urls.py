@@ -49,7 +49,7 @@ v1_api.register(niapi.SiteResource())
 v1_api.register(niapi.SiteOwnerResource())
 v1_api.register(niapi.SwitchResource())
 v1_api.register(niapi.UnitResource())
-#other
+# other
 v1_api.register(niapi.HostScanResource())
 if "apps.scan" in settings.INSTALLED_APPS:
     from apps.scan.api.resources import ScanQueryItemResource
@@ -58,16 +58,23 @@ if "apps.nerds" in settings.INSTALLED_APPS:
     from apps.nerds.api.resources import NerdsResource
     v1_api.register(NerdsResource())
 
-urlpatterns = [ 
+urlpatterns = [
     # Uncomment the next line to enable the admin:
     url(r'^admin/', admin.site.urls),
+]
 
-    # Django Generic Login
-    url(r'^accounts/login/$', auth_views.LoginView.as_view(), name='django_login'),
+if not settings.DJANGO_LOGIN_DISABLED:
+    urlpatterns += [
+        url(r'^accounts/login/$', auth_views.LoginView.as_view(), name='django_login'),
+    ]
 
-    # Federated login
-    #url(r'^saml2/', include('djangosaml2.urls')),
+# Federated login
+if settings.SAML_ENABLED:
+    urlpatterns += [
+        url(r'^saml2/', include('djangosaml2.urls')),
+    ]
 
+urlpatterns += [
     # Tastypie URLs
     url(r'^api/', include(v1_api.urls)),
 
