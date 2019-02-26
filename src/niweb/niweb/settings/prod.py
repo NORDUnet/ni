@@ -28,7 +28,6 @@ SECURITY_REPORTS_BCC = environ.get('SECURITY_REPORTS_BCC', '').split()   # Optio
 
 ########## END GENERAL CONFIGURATION
 # djangosaml2 settings
-LOGIN_URL = environ.get('LOGIN_URL', '/saml2/login/')
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SAML_CREATE_UNKNOWN_USER = True
 
