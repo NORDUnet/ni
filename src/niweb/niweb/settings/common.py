@@ -104,7 +104,7 @@ USE_L10N = True
 USE_TZ = True
 
 # Login settings
-LOGIN_URL = '/login/'
+LOGIN_URL = environ.get('LOGIN_URL', '/login/')
 AUTH_PROFILE_MODULE = 'userprofile.UserProfile'
 
 DATETIME_FORMAT = "N j, Y, H:i"
