@@ -3,13 +3,14 @@
 __author__ = 'lundberg'
 
 import sys
+import os
 import argparse
 from collections import defaultdict
 from apiclient import NIApiClient
 
-USER = ''
-APIKEY = ''
-BASE_URL = 'http://localhost'
+USER = os.environ.get('USER', '')
+APIKEY = os.environ.get('API_KEY', '')
+BASE_URL = os.environ.get('BASE_URL', 'http://localhost')
 VERBOSE = False
 
 
