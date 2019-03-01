@@ -33,7 +33,7 @@ def get_hosts(output_file):
     for host in client.get_type('host', headers=client.create_headers()):
         if host['node'].get('operational_state', 'Not set') != 'Decommissioned':
             if VERBOSE:
-                print 'Getting ports for %s...' % host['node_name'],
+                print('Getting ports for %s...' % host['node_name']),
             ports = defaultdict(list)
             for rel in client.get_relationships(host, relationship_type='Depends_on', headers=client.create_headers()):
                 protocol = rel['properties'].get('protocol', None)
@@ -49,7 +49,7 @@ def get_hosts(output_file):
                 for ip_address in host['node'].get('ip_addresses', []):
                     output_file.writelines('%s %s%s\n' % (ip_address, tcp_ports, udp_ports))
             if VERBOSE:
-                print 'done.'
+                print('done.')
 
 
 def main():
