@@ -55,15 +55,19 @@ def get_hosts(output_file):
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output', '-O', default=sys.stdout, type=argparse.FileType('wb', 0))
+    parser.add_argument('--output', '-O')
     parser.add_argument('--verbose', '-V', action='store_true', default=False)
     args = parser.parse_args()
     if args.verbose:
         global VERBOSE
         VERBOSE = True
-    get_host_scan(args.output)
-    args.output.close()
+    if args.output:
+        with open(args.output, 'w') as f:
+            get_host_scan(f)
+    else:
+        get_host_scan(sys.stdout)
     return 0
+
 
 if __name__ == '__main__':
     main()
