@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+from apps.noclook.models import User, NodeType, NodeHandle, NODE_META_TYPE_CHOICES
 from django.core.management.base import BaseCommand, CommandError
 from pprint import pprint
-from apps.noclook.models import User, NodeType, NodeHandle, NODE_META_TYPE_CHOICES
+from time import sleep
 
 import argparse
 import norduniclient as nc
@@ -26,6 +27,9 @@ class Command(BaseCommand):
                             help='Delimiter to use use. Default ";".')
 
     def handle(self, *args, **options):
+        relation_meta_type = NODE_META_TYPE_CHOICES[2][1] # relation
+        logical_meta_type = NODE_META_TYPE_CHOICES[1][1] # logical
+
         ## (We'll use handle_id on to get the node on cql code)
         # check if new types exists
         if options['verbosity'] > 0:
@@ -47,7 +51,7 @@ class Command(BaseCommand):
 
         csv_organizations = None
         csv_contacts = None
-        user = User.objects.filter(username='admin').first()
+        self.user = User.objects.filter(username='admin').first()
 
         # IMPORT ORGANIZATIONS
         if options['organizations']:
@@ -73,24 +77,64 @@ class Command(BaseCommand):
 
             total_lines = total_lines + con_lines
 
+        imported_lines = 0
+        # print progress bar
+        if options['verbosity'] > 0:
+            self.printProgressBar(imported_lines, total_lines)
+
         # process organizations
         if options['organizations']:
+            # contact
+            node_type = NodeType.objects.filter(type=self.new_types[0]).first()
             csv_organizations = options['organizations']
             node_list = self.read_csv(csv_organizations)
 
-            # dj: organization exist?: create or get (using just the name)
-        	# n4: add attributes
-        	# dj: if parent organization: create or get (using just the name)
-        	# n4: add relation between org and parent_org
-            # Print iterations progress
+            for node in node_list:
+                account_name = node['account_name']
 
-            options['organizations'].close()
+                # dj: organization exist?: create or get (using just the name)
+
+                #def get_or_create(self, node_name, node_type, node_meta_type):
+                new_organization = self.get_or_create(
+                        account_name,
+                        node_type,
+                        relation_meta_type
+                    )
+
+            	# n4: add attributes
+                graph_node = new_organization.get_node()
+
+                graph_node.add_property('name', account_name)
+                for key in node.keys():
+                    if key not in ['account_name', 'parent_account'] and node[key]:
+                        graph_node.add_property(key, node[key])
+
+                	# dj: if parent organization: create or get (using just the name)
+                    if key == 'parent_account' and node['parent_account']:
+                        parent_org_name = node['parent_account']
+
+                        parent_organization = self.get_or_create(
+                                parent_org_name,
+                                node_type,
+                                relation_meta_type
+                            )
+
+                        parent_node = parent_organization.get_node()
+                        graph_node.add_property('name', parent_org_name)
+
+            	        # n4: add relation between org and parent_org
+                        graph_node.set_parent(parent_organization.pk)
+
+                # Print iterations progress
+                if options['verbosity'] > 0:
+                    imported_lines = imported_lines + 1
+                    self.printProgressBar(imported_lines, total_lines)
+
+            csv_organizations.close()
 
         # process contacts
         if options['contacts']:
             node_type = NodeType.objects.filter(type=self.new_types[2]).first() # contact
-            relation_meta_type = NODE_META_TYPE_CHOICES[2][1] # relation
-            logical_meta_type = NODE_META_TYPE_CHOICES[1][1] # logical
             node_list = self.read_csv(csv_contacts)
 
             for node in node_list:
@@ -100,24 +144,11 @@ class Command(BaseCommand):
                             )
 
                 # dj: contact exists?: create or get
-                new_contact = None
-                qs = NodeHandle.objects.filter(
-                        node_name = full_name,
-                        node_type = node_type
+                new_contact = self.get_or_create(
+                        full_name,
+                        node_type,
+                        relation_meta_type
                     )
-
-                if qs:
-                    new_contact = qs.first()
-                else:
-                    new_contact = NodeHandle(
-                        node_name = full_name,
-                        node_type = node_type,
-                        node_meta_type = relation_meta_type,
-                        creator = user,
-                        modifier = user,
-                    )
-
-                    new_contact.save()
 
             	# n4: add attributes
                 graph_node = new_contact.get_node()
@@ -132,33 +163,63 @@ class Command(BaseCommand):
 
                 if role_name:
                     role_type = NodeType.objects.filter(type=self.new_types[4]).first() # role
-                    new_role = None
-                    qs = NodeHandle.objects.filter(
-                            node_name = node['contact_role'],
-                            node_type = role_type
+                    new_role = self.get_or_create(
+                            role_name,
+                            role_type,
+                            logical_meta_type
                         )
-
-                    if qs:
-                        new_role = qs.first()
-                    else:
-                        new_role = NodeHandle(
-                            node_name = node['contact_role'],
-                            node_type = role_type,
-                            node_meta_type = logical_meta_type,
-                            creator = user,
-                            modifier = user,
-                        )
-
-                        new_role.save()
 
             	    # n4: add relation between role and contact
                     graph_node.add_role(new_role.pk)
 
             	# dj: organization exist?: create or get
-            	# n4: add relation between role and organization
+                organization_name = node['account_name']
+
+                if organization_name:
+                    org_type = NodeType.objects.filter(type=self.new_types[0]).first() # organization
+
+                    new_org = self.get_or_create(
+                            organization_name,
+                            org_type,
+                            relation_meta_type
+                        )
+
+                    # n4: add relation between role and organization
+                    graph_node.add_organization(new_org.pk)
+
                 # Print iterations progress
+                if options['verbosity'] > 0:
+                    imported_lines = imported_lines + 1
+                    self.printProgressBar(imported_lines, total_lines)
 
             csv_contacts.close()
+
+    # replace all the duplicate code
+    def get_or_create(self, node_name, node_type, node_meta_type):
+        new_node = None
+
+        if not node_name:
+            raise Exception('Empty node_name')
+
+        qs = NodeHandle.objects.filter(
+                node_name = node_name,
+                node_type = node_type
+            )
+
+        if qs:
+            new_node = qs.first()
+        else:
+            new_node = NodeHandle(
+                node_name = node_name,
+                node_type = node_type,
+                node_meta_type = node_meta_type,
+                creator = self.user,
+                modifier = self.user,
+            )
+
+            new_node.save()
+
+        return new_node
 
     def count_lines(self, file):
         num_lines = 0
@@ -201,7 +262,7 @@ class Command(BaseCommand):
             line = self.normalize_whitespace(f.readline())
         return node_list
 
-    def printProgressBar (self, iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+    def printProgressBar (self, iteration, total, prefix = 'Progress', suffix = 'Complete', decimals = 1, length = 100, fill = '█'):
         """
         Call in a loop to create terminal progress bar
         (from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console)
