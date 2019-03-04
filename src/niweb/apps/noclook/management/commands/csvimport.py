@@ -93,8 +93,6 @@ class Command(BaseCommand):
                 account_name = node['account_name']
 
                 # dj: organization exist?: create or get (using just the name)
-
-                #def get_or_create(self, node_name, node_type, node_meta_type):
                 new_organization = self.get_or_create(
                         account_name,
                         node_type,
@@ -120,7 +118,7 @@ class Command(BaseCommand):
                             )
 
                         parent_node = parent_organization.get_node()
-                        graph_node.add_property('name', parent_org_name)
+                        parent_node.add_property('name', parent_org_name)
 
             	        # n4: add relation between org and parent_org
                         graph_node.set_parent(parent_organization.pk)
@@ -155,7 +153,7 @@ class Command(BaseCommand):
 
                 graph_node.add_property('name', full_name)
                 for key in node.keys():
-                    if key not in ['node_type', 'role', 'name', 'account_name'] and node[key]:
+                    if key not in ['node_type', 'contact_role', 'name', 'account_name'] and node[key]:
                         graph_node.add_property(key, node[key])
 
             	# dj: role exist?: create or get
