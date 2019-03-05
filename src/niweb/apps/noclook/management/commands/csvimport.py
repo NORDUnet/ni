@@ -30,6 +30,10 @@ class Command(BaseCommand):
         relation_meta_type = NODE_META_TYPE_CHOICES[2][1] # relation
         logical_meta_type = NODE_META_TYPE_CHOICES[1][1] # logical
 
+        self.delimiter = ';'
+        if options['delimiter']:
+            self.delimiter = options['delimiter']
+
         ## (We'll use handle_id on to get the node on cql code)
         # check if new types exists
         if options['verbosity'] > 0:
@@ -51,7 +55,7 @@ class Command(BaseCommand):
 
         csv_organizations = None
         csv_contacts = None
-        self.user = User.objects.filter(username='admin').first()
+        self.user = User.objects.all().first()
 
         # IMPORT ORGANIZATIONS
         if options['organizations']:
@@ -87,7 +91,7 @@ class Command(BaseCommand):
             # contact
             node_type = NodeType.objects.filter(type=self.new_types[0]).first()
             csv_organizations = options['organizations']
-            node_list = self.read_csv(csv_organizations)
+            node_list = self.read_csv(csv_organizations, delim=self.delimiter)
 
             for node in node_list:
                 account_name = node['account_name']
@@ -133,7 +137,7 @@ class Command(BaseCommand):
         # process contacts
         if options['contacts']:
             node_type = NodeType.objects.filter(type=self.new_types[2]).first() # contact
-            node_list = self.read_csv(csv_contacts)
+            node_list = self.read_csv(csv_contacts, delim=self.delimiter)
 
             for node in node_list:
                 full_name = '{} {}'.format(
@@ -171,7 +175,7 @@ class Command(BaseCommand):
                     graph_node.add_role(new_role.pk)
 
             	# dj: organization exist?: create or get
-                organization_name = node['account_name']
+                organization_name = node.get('account_name', None)
 
                 if organization_name:
                     org_type = NodeType.objects.filter(type=self.new_types[0]).first() # organization
