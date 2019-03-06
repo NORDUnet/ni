@@ -27,8 +27,8 @@ class Command(BaseCommand):
                             help='Delimiter to use use. Default ";".')
 
     def handle(self, *args, **options):
-        relation_meta_type = NODE_META_TYPE_CHOICES[2][1] # relation
-        logical_meta_type = NODE_META_TYPE_CHOICES[1][1] # logical
+        relation_meta_type = 'Relation'
+        logical_meta_type = 'Logical'
 
         self.delimiter = ';'
         if options['delimiter']:
@@ -55,7 +55,7 @@ class Command(BaseCommand):
 
         csv_organizations = None
         csv_contacts = None
-        self.user = User.objects.all().first()
+        self.user = User.objects.filter(username='noclook').first()
 
         # IMPORT ORGANIZATIONS
         if options['organizations']:
@@ -97,16 +97,17 @@ class Command(BaseCommand):
                 account_name = node['account_name']
 
                 # dj: organization exist?: create or get (using just the name)
-                new_organization = self.get_or_create(
-                        account_name,
-                        node_type,
-                        relation_meta_type
+                new_organization = NodeHandle.get_or_create(
+                        node_name = account_name,
+                        node_type = node_type,
+                        node_meta_type = relation_meta_type,
+                        creator = self.user,
+                        modifier = self.user,
                     )
 
             	# n4: add attributes
                 graph_node = new_organization.get_node()
 
-                graph_node.add_property('name', account_name)
                 for key in node.keys():
                     if key not in ['account_name', 'parent_account'] and node[key]:
                         graph_node.add_property(key, node[key])
@@ -115,17 +116,18 @@ class Command(BaseCommand):
                     if key == 'parent_account' and node['parent_account']:
                         parent_org_name = node['parent_account']
 
-                        parent_organization = self.get_or_create(
-                                parent_org_name,
-                                node_type,
-                                relation_meta_type
+                        parent_organization = NodeHandle.get_or_create(
+                                node_name = parent_org_name,
+                                node_type = node_type,
+                                node_meta_type = relation_meta_type,
+                                creator = self.user,
+                                modifier = self.user,
                             )
 
                         parent_node = parent_organization.get_node()
-                        parent_node.add_property('name', parent_org_name)
 
             	        # n4: add relation between org and parent_org
-                        graph_node.set_parent(parent_organization.pk)
+                        graph_node.set_parent(parent_organization.handle_id)
 
                 # Print iterations progress
                 if options['verbosity'] > 0:
@@ -146,16 +148,17 @@ class Command(BaseCommand):
                             )
 
                 # dj: contact exists?: create or get
-                new_contact = self.get_or_create(
-                        full_name,
-                        node_type,
-                        relation_meta_type
+                new_contact = NodeHandle.get_or_create(
+                        node_name = full_name,
+                        node_type = node_type,
+                        node_meta_type = relation_meta_type,
+                        creator = self.user,
+                        modifier = self.user,
                     )
 
             	# n4: add attributes
                 graph_node = new_contact.get_node()
 
-                graph_node.add_property('name', full_name)
                 for key in node.keys():
                     if key not in ['node_type', 'contact_role', 'name', 'account_name'] and node[key]:
                         graph_node.add_property(key, node[key])
@@ -165,10 +168,12 @@ class Command(BaseCommand):
 
                 if role_name:
                     role_type = NodeType.objects.filter(type=self.new_types[4]).first() # role
-                    new_role = self.get_or_create(
-                            role_name,
-                            role_type,
-                            logical_meta_type
+                    new_role = NodeHandle.get_or_create(
+                            node_name = role_name,
+                            node_type = role_type,
+                            node_meta_type = logical_meta_type,
+                            creator = self.user,
+                            modifier = self.user,
                         )
 
             	    # n4: add relation between role and contact
@@ -180,10 +185,12 @@ class Command(BaseCommand):
                 if organization_name:
                     org_type = NodeType.objects.filter(type=self.new_types[0]).first() # organization
 
-                    new_org = self.get_or_create(
-                            organization_name,
-                            org_type,
-                            relation_meta_type
+                    new_org = NodeHandle.get_or_create(
+                            node_name = organization_name,
+                            node_type = org_type,
+                            node_meta_type = relation_meta_type,
+                            creator = self.user,
+                            modifier = self.user,
                         )
 
                     # n4: add relation between role and organization
@@ -195,33 +202,6 @@ class Command(BaseCommand):
                     self.printProgressBar(imported_lines, total_lines)
 
             csv_contacts.close()
-
-    # replace all the duplicate code
-    def get_or_create(self, node_name, node_type, node_meta_type):
-        new_node = None
-
-        if not node_name:
-            raise Exception('Empty node_name')
-
-        qs = NodeHandle.objects.filter(
-                node_name = node_name,
-                node_type = node_type
-            )
-
-        if qs:
-            new_node = qs.first()
-        else:
-            new_node = NodeHandle(
-                node_name = node_name,
-                node_type = node_type,
-                node_meta_type = node_meta_type,
-                creator = self.user,
-                modifier = self.user,
-            )
-
-            new_node.save()
-
-        return new_node
 
     def count_lines(self, file):
         num_lines = 0
