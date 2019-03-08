@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.models import User, NodeType, NodeHandle, NODE_META_TYPE_CHOICES
+from apps.nerds.lib.consumer_util import get_user
 from django.core.management.base import BaseCommand, CommandError
 from pprint import pprint
 from time import sleep
@@ -55,9 +56,7 @@ class Command(BaseCommand):
 
         csv_organizations = None
         csv_contacts = None
-        self.user = User.objects.filter(username='noclook').first()
-
-        from pprint import pprint
+        self.user = get_user()
 
         # IMPORT ORGANIZATIONS
         if options['organizations']:
