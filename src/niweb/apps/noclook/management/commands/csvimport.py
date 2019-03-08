@@ -57,6 +57,8 @@ class Command(BaseCommand):
         csv_contacts = None
         self.user = User.objects.filter(username='noclook').first()
 
+        from pprint import pprint
+
         # IMPORT ORGANIZATIONS
         if options['organizations']:
             # py: count lines
@@ -97,13 +99,13 @@ class Command(BaseCommand):
                 account_name = node['account_name']
 
                 # dj: organization exist?: create or get (using just the name)
-                new_organization = NodeHandle.get_or_create(
+                new_organization = NodeHandle.objects.get_or_create(
                         node_name = account_name,
                         node_type = node_type,
                         node_meta_type = relation_meta_type,
                         creator = self.user,
                         modifier = self.user,
-                    )
+                    )[0]
 
             	# n4: add attributes
                 graph_node = new_organization.get_node()
@@ -116,13 +118,13 @@ class Command(BaseCommand):
                     if key == 'parent_account' and node['parent_account']:
                         parent_org_name = node['parent_account']
 
-                        parent_organization = NodeHandle.get_or_create(
+                        parent_organization = NodeHandle.objects.get_or_create(
                                 node_name = parent_org_name,
                                 node_type = node_type,
                                 node_meta_type = relation_meta_type,
                                 creator = self.user,
                                 modifier = self.user,
-                            )
+                            )[0]
 
                         parent_node = parent_organization.get_node()
 
@@ -148,13 +150,13 @@ class Command(BaseCommand):
                             )
 
                 # dj: contact exists?: create or get
-                new_contact = NodeHandle.get_or_create(
+                new_contact = NodeHandle.objects.get_or_create(
                         node_name = full_name,
                         node_type = node_type,
                         node_meta_type = relation_meta_type,
                         creator = self.user,
                         modifier = self.user,
-                    )
+                    )[0]
 
             	# n4: add attributes
                 graph_node = new_contact.get_node()
@@ -168,13 +170,13 @@ class Command(BaseCommand):
 
                 if role_name:
                     role_type = NodeType.objects.filter(type=self.new_types[4]).first() # role
-                    new_role = NodeHandle.get_or_create(
+                    new_role = NodeHandle.objects.get_or_create(
                             node_name = role_name,
                             node_type = role_type,
                             node_meta_type = logical_meta_type,
                             creator = self.user,
                             modifier = self.user,
-                        )
+                        )[0]
 
             	    # n4: add relation between role and contact
                     graph_node.add_role(new_role.pk)
@@ -185,13 +187,13 @@ class Command(BaseCommand):
                 if organization_name:
                     org_type = NodeType.objects.filter(type=self.new_types[0]).first() # organization
 
-                    new_org = NodeHandle.get_or_create(
+                    new_org = NodeHandle.objects.get_or_create(
                             node_name = organization_name,
                             node_type = org_type,
                             node_meta_type = relation_meta_type,
                             creator = self.user,
                             modifier = self.user,
-                        )
+                        )[0]
 
                     # n4: add relation between role and organization
                     graph_node.add_organization(new_org.pk)

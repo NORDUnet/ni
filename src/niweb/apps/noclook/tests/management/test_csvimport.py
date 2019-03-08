@@ -6,7 +6,7 @@ import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 import norduniclient.models as ncmodels
 
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, User
 
 from ..neo4j_base import NeoTestCase
 
@@ -39,6 +39,9 @@ class CsvImportTest(NeoTestCase):
 
         # write contacts csv file to disk
         self.contacts_file = self.write_string_to_disk(self.contacts_str)
+
+        # create noclook user
+        User.objects.get_or_create(username="noclook")[0]
 
     def tearDown(self):
         super(CsvImportTest, self).tearDown()
