@@ -929,6 +929,30 @@ def disable_noclook_auto_manage(request, slug, handle_id):
     return redirect(nh.get_absolute_url())
 
 
+@staff_member_required
+def edit_organization(request, handle_id):
+    # Get needed data from node
+    nh, organization = helpers.get_nh_node(handle_id)
+    relations = organization.get_relations()
+    if request.POST:
+        form = forms.EditOrganizationForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, organization.handle_id, form)
+            # Set site owner
+            if form.cleaned_data['relationship_parent_of']:
+                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
+                helpers.set_parent_of(request.user, organization, responsible_nh.handle_id)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditOrganizationForm(organization.data)
+    return render(request, 'noclook/edit/edit_organization.html',
+                  {'node_handle': nh, 'form': form, 'relations': relations, 'node': organization})
+
+
 
 EDIT_FUNC = {
     'cable': edit_cable,
@@ -953,4 +977,5 @@ EDIT_FUNC = {
     'site': edit_site,
     'site-owner': edit_site_owner,
     'switch': edit_switch,
+    'organization': edit_organization,
 }

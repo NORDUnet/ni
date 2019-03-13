@@ -1,7 +1,7 @@
 from datetime import datetime
 from django import forms
 from django.forms.utils import ErrorDict, ErrorList, ValidationError
-from django.forms.widgets import HiddenInput
+from django.forms.widgets import HiddenInput, Textarea
 from django.db import IntegrityError
 import json
 import csv
@@ -782,3 +782,19 @@ class CsvForm(forms.Form):
         cleaned = form.cleaned_data
         raw = form.data
         return u",".join([cleaned.get(h) or raw.get(h, '') for h in headers])
+
+class NewOrganizationForm(forms.Form):
+    account_id = forms.CharField(required=False)
+    name = forms.CharField()
+    description = description_field('organization')
+    phone = forms.CharField(required=False)
+    website = forms.CharField(required=False)
+    customer_id = forms.CharField(required=False)
+    type = forms.CharField(required=False)
+
+class EditOrganizationForm(NewOrganizationForm):
+    def __init__(self, *args, **kwargs):
+        super(EditOrganizationForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
+
+    relationship_parent_of = relationship_field('children', True)

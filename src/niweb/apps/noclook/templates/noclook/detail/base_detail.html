@@ -64,6 +64,7 @@
 {% block content_footer %}
 {% if node_handle %}
     <div class="section top-space">
+        {% block edit_link %}{% endblock %}
         <a class="btn btn-info" data-toggle="collapse" data-parent="#detail-accordion" href="#collapseOne">
             <i class="icon-comment icon-white"></i> Add a comment
         </a>

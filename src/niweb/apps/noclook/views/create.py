@@ -37,6 +37,7 @@ TYPES = [
     ("rack", "Rack"),
     ("site", "Site"),
     ("site-owner", "Site Owner"),
+    ("organization", "Organization"),
 ]
 if helpers.app_enabled("apps.scan"):
     TYPES.append(("/scan/queue", "Host scan"))
@@ -557,6 +558,22 @@ def reserve_id_sequence(request, slug=None):
         return render(request, 'noclook/edit/reserve_id.html', {'form': form, 'slug': slug})
 
 
+@staff_member_required
+def new_organization(request, **kwargs):
+    if request.POST:
+        form = forms.NewOrganizationForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'organization', 'Relation')
+            except UniqueNodeError:
+                form.add_error('name', 'An Organization with that name already exists.')
+                return render(request, 'noclook/create/create_organization.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewOrganizationForm()
+    return render(request, 'noclook/create/create_organization.html', {'form': form})
+
 NEW_FUNC = {
     'cable': new_cable,
     'cable_csv': new_cable_csv,
@@ -577,4 +594,5 @@ NEW_FUNC = {
     'site': new_site,
     'site-owner': new_site_owner,
     'optical-node': new_optical_node,
+    'organization': new_organization,
 }
