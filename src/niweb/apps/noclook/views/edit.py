@@ -954,11 +954,9 @@ def edit_organization(request, handle_id):
 
 @staff_member_required
 def edit_contact(request, handle_id):
-    from pprint import pprint
     # Get needed data from node
     nh, contact = helpers.get_nh_node(handle_id)
     relations = contact.get_outgoing_relations()
-    pprint(vars(contact))
     if request.POST:
         form = forms.EditContactForm(request.POST)
         if form.is_valid():
@@ -984,6 +982,24 @@ def edit_contact(request, handle_id):
                   {'node_handle': nh, 'form': form, 'relations': relations, 'node': contact})
 
 
+@staff_member_required
+def edit_role(request, handle_id):
+    # Get needed data from node
+    nh, role = helpers.get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditRoleForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, role.handle_id, form)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditRoleForm(role.data)
+    return render(request, 'noclook/edit/edit_role.html',
+                  {'node_handle': nh, 'form': form, 'node': role})
+
 EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
@@ -1005,6 +1021,7 @@ EDIT_FUNC = {
     'provider': edit_provider,
     'rack': edit_rack,
     'router': edit_router,
+    'role': edit_role,
     'site': edit_site,
     'site-owner': edit_site_owner,
     'switch': edit_switch,

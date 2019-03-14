@@ -36,6 +36,7 @@ TYPES = [
     ("port", "Port"),
     ("provider", "Provider"),
     ("rack", "Rack"),
+    ("role", "Role"),
     ("site", "Site"),
     ("site-owner", "Site Owner"),
     ("organization", "Organization"),
@@ -592,6 +593,22 @@ def new_contact(request, **kwargs):
         form = forms.NewContactForm()
     return render(request, 'noclook/create/create_contact.html', {'form': form})
 
+@staff_member_required
+def new_role(request, **kwargs):
+    if request.POST:
+        form = forms.NewRoleForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'role', 'Logical')
+            except UniqueNodeError:
+                form.add_error('name', 'A Role with that name already exists.')
+                return render(request, 'noclook/create/create_role.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewRoleForm()
+    return render(request, 'noclook/create/create_role.html', {'form': form})
+
 NEW_FUNC = {
     'cable': new_cable,
     'cable_csv': new_cable_csv,
@@ -609,6 +626,7 @@ NEW_FUNC = {
     'port': new_port,
     'provider': new_provider,
     'rack': new_rack,
+    'role': new_role,
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,

@@ -839,3 +839,11 @@ class EditContactForm(NewContactForm):
     relationship_works_for = relationship_field('organization', True)
     relationship_member_of = relationship_field('group', True)
     relationship_is        = relationship_field('role', True)
+
+
+class NewRoleForm(forms.Form):
+    name = forms.CharField()
+
+
+class EditRoleForm(NewRoleForm):
+    pass

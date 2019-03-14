@@ -111,6 +111,7 @@ urlpatterns = [
     url(r'^port/(?P<handle_id>\d+)/$', detail.port_detail),
     url(r'^site/(?P<handle_id>\d+)/$', detail.site_detail),
     url(r'^rack/(?P<handle_id>\d+)/$', detail.rack_detail),
+    url(r'^role/(?P<handle_id>\d+)/$', detail.role_detail),
     url(r'^site-owner/(?P<handle_id>\d+)/$', detail.site_owner_detail),
     url(r'^service/(?P<handle_id>\d+)/$', detail.service_detail),
     url(r'^optical-link/(?P<handle_id>\d+)/$', detail.optical_link_detail),
