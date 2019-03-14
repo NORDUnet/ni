@@ -21,6 +21,7 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 TYPES = [
     ("customer", "Customer"),
     ("cable", "Cable"),
+    ("contact", "Contact"),
     ("end-user", "End User"),
     ("external-cable", "External Cable"),
     ("external-equipment", "External Equipment"),
@@ -574,9 +575,27 @@ def new_organization(request, **kwargs):
         form = forms.NewOrganizationForm()
     return render(request, 'noclook/create/create_organization.html', {'form': form})
 
+
+@staff_member_required
+def new_contact(request, **kwargs):
+    if request.POST:
+        form = forms.NewContactForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'contact', 'Relation')
+            except UniqueNodeError:
+                form.add_error('name', 'A Contact with that name already exists.')
+                return render(request, 'noclook/create/create_contact.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewContactForm()
+    return render(request, 'noclook/create/create_contact.html', {'form': form})
+
 NEW_FUNC = {
     'cable': new_cable,
     'cable_csv': new_cable_csv,
+    'contact': new_contact,
     'customer': new_customer,
     'end-user': new_end_user,
     'external-equipment': new_external_equipment,

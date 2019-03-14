@@ -117,6 +117,7 @@ urlpatterns = [
     url(r'^optical-path/(?P<handle_id>\d+)/$', detail.optical_path_detail),
     url(r'^organization/(?P<handle_id>\d+)/$', detail.organization_detail),
     url(r'^end-user/(?P<handle_id>\d+)/$', detail.end_user_detail),
+    url(r'^contact/(?P<handle_id>\d+)/$', detail.contact_detail),
     url(r'^customer/(?P<handle_id>\d+)/$', detail.customer_detail),
     url(r'^provider/(?P<handle_id>\d+)/$', detail.provider_detail),
     url(r'^unit/(?P<handle_id>\d+)/$', detail.unit_detail),

@@ -939,7 +939,7 @@ def edit_organization(request, handle_id):
         if form.is_valid():
             # Generic node update
             helpers.form_update_node(request.user, organization.handle_id, form)
-            # Set site owner
+            # Set child organizations
             if form.cleaned_data['relationship_parent_of']:
                 responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
                 helpers.set_parent_of(request.user, organization, responsible_nh.handle_id)
@@ -952,11 +952,42 @@ def edit_organization(request, handle_id):
     return render(request, 'noclook/edit/edit_organization.html',
                   {'node_handle': nh, 'form': form, 'relations': relations, 'node': organization})
 
+@staff_member_required
+def edit_contact(request, handle_id):
+    from pprint import pprint
+    # Get needed data from node
+    nh, contact = helpers.get_nh_node(handle_id)
+    relations = contact.get_outgoing_relations()
+    pprint(vars(contact))
+    if request.POST:
+        form = forms.EditContactForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, contact.handle_id, form)
+            # Set works for organization
+            if form.cleaned_data['relationship_works_for']:
+                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_works_for'])
+                helpers.set_works_for(request.user, contact, responsible_nh.handle_id)
+            if form.cleaned_data['relationship_member_of']:
+                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_member_of'])
+                helpers.set_member_of(request.user, contact, responsible_nh.handle_id)
+            if form.cleaned_data['relationship_is']:
+                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_is'])
+                helpers.set_is(request.user, contact, responsible_nh.handle_id)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditContactForm(contact.data)
+    return render(request, 'noclook/edit/edit_contact.html',
+                  {'node_handle': nh, 'form': form, 'relations': relations, 'node': contact})
 
 
 EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
+    'contact': edit_contact,
     'end-user': edit_end_user,
     'external-equipment': edit_external_equipment,
     'firewall': edit_firewall,

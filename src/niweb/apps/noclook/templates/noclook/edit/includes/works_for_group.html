@@ -1,13 +1,13 @@
 {% load noclook_tags %}
 {% load crispy_forms_tags %}
-{% blockvar responsible_title %}
-   {{ node_handle.node_type }} Parent Organization (optional)
+{% blockvar worksfor_title %}
+   {{ node_handle.node_type }} organization (optional)
 {% endblockvar %}
-{% accordion responsible_title 'responsible-edit' '#edit-accordion' %}
-  {% if relations.Parent_of %}
+{% accordion worksfor_title 'worksfor-edit' '#edit-accordion' %}
+  {% if relations.Works_for %}
       {% load noclook_tags %}
       <h4>Remove organization</h4>
-      {% for item in relations.Parent_of %}
+      {% for item in relations.Works_for %}
           <div class="row">
               <div class="span5">
                   {% noclook_get_type item.node.handle_id as node_type %}
@@ -20,8 +20,8 @@
       {% endfor %}
       <hr>
   {% endif %}
-  <h4>Add parent organization</h4>
+  <h4>Link contact to organization</h4>
   <div class="span4">
-    {{ form.relationship_parent_of | as_crispy_field }}
+    {{ form.relationship_works_for | as_crispy_field }}
    </div>
 {% endaccordion %}

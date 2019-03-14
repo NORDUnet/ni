@@ -618,6 +618,7 @@ def switch_detail(request, handle_id):
                    'dependencies': dependencies, 'relations': relations, 'location_path': location_path,
                    'history': True, 'urls': urls, 'scan_enabled': scan_enabled, 'hardware_modules': hardware_modules})
 
+
 @login_required
 def organization_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -626,4 +627,15 @@ def organization_detail(request, handle_id):
     # Get location
     location_path = node.get_location_path()
     return render(request, 'noclook/detail/organization_detail.html',
+                  {'node_handle': nh, 'node': node, 'location_path': location_path})
+
+
+@login_required
+def contact_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    # Get location
+    location_path = node.get_location_path()
+    return render(request, 'noclook/detail/contact_detail.html',
                   {'node_handle': nh, 'node': node, 'location_path': location_path})

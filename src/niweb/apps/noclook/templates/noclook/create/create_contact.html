@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Create new organization</h1>
+    {% if form.errors %}
+         <div class="alert alert-error">
+            <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
+            Please resubmit the form after making the following changes:
+            {{ form.errors }}
+        </div>
+    {% endif %}
+    <div class="well">
+        <form action="" method="post">{% csrf_token %}
+            <h3>Main information</h3>
+            <label>First Name</label>
+            {{ form.first_name }}
+            <br />
+            <label>Last Name</label>
+            {{ form.last_name }}
+            <br />
+            <label>Type</label>
+            {{ form.contact_type }}
+            <br />
+            <label>Mailing Country</label>
+            {{ form.mailing_country }}
+            <br />
+            <h3>Additional info (optional)</h3>
+            <label>Salutation</label>
+            {{ form.salutation }}
+            <br />
+            <label>Phone</label>
+            {{ form.phone }}
+            <br />
+            <label>Mobile phone</label>
+            {{ form.mobile }}
+            <br />
+            <label>Email</label>
+            {{ form.email }}
+            <br />
+            <input type="submit" value="Save" class="btn btn-primary" />
+            <a href="/new/" class="btn">Cancel</a>
+        </form>
+    </div>
+{% endblock %}

@@ -783,6 +783,7 @@ class CsvForm(forms.Form):
         raw = form.data
         return u",".join([cleaned.get(h) or raw.get(h, '') for h in headers])
 
+
 class NewOrganizationForm(forms.Form):
     account_id = forms.CharField(required=False)
     name = forms.CharField()
@@ -790,11 +791,51 @@ class NewOrganizationForm(forms.Form):
     phone = forms.CharField(required=False)
     website = forms.CharField(required=False)
     customer_id = forms.CharField(required=False)
-    type = forms.CharField(required=False)
+    type = forms.CharField(required=False) # possible ChoiceField
+
 
 class EditOrganizationForm(NewOrganizationForm):
     def __init__(self, *args, **kwargs):
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
 
-    relationship_parent_of = relationship_field('children', True)
+    relationship_parent_of = relationship_field('organization', True)
+
+
+class NewContactForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewContactForm, self).__init__(*args, **kwargs)
+        self.fields['mailing_country'].choices = country_codes()
+
+    first_name = forms.CharField()
+    last_name = forms.CharField()
+    contact_type = forms.CharField(required=False) # possible ChoiceField
+    mobile = forms.CharField(required=False)
+    mailing_country = forms.ChoiceField(widget=forms.widgets.Select)
+    phone = forms.CharField(required=False)
+    salutation = forms.CharField(required=False)
+    email = forms.CharField(required=False)
+
+    def clean(self):
+        """
+        Sets name from first and second name
+        """
+        cleaned_data = super(NewContactForm, self).clean()
+        # Set name to a generated id if the service is not a manually named service.
+        first_name = cleaned_data.get("first_name")
+        last_name = cleaned_data.get("last_name")
+        cleaned_data['name'] = '{} {}'.format(first_name, last_name)
+
+        return cleaned_data
+
+
+class EditContactForm(NewContactForm):
+    def __init__(self, *args, **kwargs):
+        super(EditContactForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_works_for'].choices = get_node_type_tuples('Organization')
+        self.fields['relationship_member_of'].choices = get_node_type_tuples('Group')
+        self.fields['relationship_is'].choices        = get_node_type_tuples('Role')
+
+    relationship_works_for = relationship_field('organization', True)
+    relationship_member_of = relationship_field('group', True)
+    relationship_is        = relationship_field('role', True)

@@ -1,9 +1,9 @@
 {% load noclook_tags %}
 {% load crispy_forms_tags %}
-{% blockvar responsible_title %}
-   {{ node_handle.node_type }} Parent Organization (optional)
+{% blockvar memberof_title %}
+   {{ node_handle.node_type }} group (optional)
 {% endblockvar %}
-{% accordion responsible_title 'responsible-edit' '#edit-accordion' %}
+{% accordion memberof_title 'memberof-edit' '#edit-accordion' %}
   {% if relations.Parent_of %}
       {% load noclook_tags %}
       <h4>Remove organization</h4>
@@ -20,8 +20,8 @@
       {% endfor %}
       <hr>
   {% endif %}
-  <h4>Add parent organization</h4>
+  <h4>Add contact to group</h4>
   <div class="span4">
-    {{ form.relationship_parent_of | as_crispy_field }}
+    {{ form.relationship_member_of | as_crispy_field }}
    </div>
 {% endaccordion %}

@@ -895,3 +895,48 @@ def set_parent_of(user, node, child_org_id):
     if created:
         activitylog.create_relationship(user, relationship)
     return relationship, created
+
+def set_works_for(user, node, child_org_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param child_org_id: unique id
+    :return: norduniclient model, boolean
+    """
+    result = node.add_organization(child_org_id)
+    relationship_id = result.get('Works_for')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Works_for')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+def set_member_of(user, node, child_org_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param child_org_id: unique id
+    :return: norduniclient model, boolean
+    """
+    result = node.add_group(child_org_id)
+    relationship_id = result.get('Member_of')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Member_of')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+def set_is(user, node, child_org_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param child_org_id: unique id
+    :return: norduniclient model, boolean
+    """
+    result = node.add_role(child_org_id)
+    relationship_id = result.get('Is')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Is')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
