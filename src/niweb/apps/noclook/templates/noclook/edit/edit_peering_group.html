@@ -1,0 +1,13 @@
+{% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+{{ block.super }}
+    <div class="well">
+        {{ form.name | as_crispy_field }}
+    </div>
+    <div class="accordion" id="edit-accordion">
+        {% include "noclook/edit/includes/dependency_group.html" %}
+    </div>
+{% endblock %}
+

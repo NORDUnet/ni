@@ -61,7 +61,6 @@ ALLOWED_HOSTS = environ.get('ALLOWED_HOSTS', '').split()
 ########## MANAGER CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#admins
 ADMINS = (
-    ('Your Name', 'your_email@example.com'),
 )
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#managers
@@ -104,7 +103,7 @@ USE_L10N = True
 USE_TZ = True
 
 # Login settings
-LOGIN_URL = '/login/'
+LOGIN_URL = environ.get('LOGIN_URL', '/login/')
 AUTH_PROFILE_MODULE = 'userprofile.UserProfile'
 
 DATETIME_FORMAT = "N j, Y, H:i"
@@ -178,6 +177,10 @@ TEMPLATES = [
 ########## END TEMPLATE CONFIGURATION
 
 
+### LOGIN conf
+DJANGO_LOGIN_DISABLED = environ.get('DJANGO_LOGIN_DISABLED', False)
+SAML_ENABLED = environ.get('SAML_ENABLED', False)
+
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
 MIDDLEWARE_CLASSES = (
@@ -196,6 +199,10 @@ MIDDLEWARE_CLASSES = (
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
+if SAML_ENABLED:
+    AUTHENTICATION_BACKENDS += (
+        'djangosaml2.backends.Saml2Backend',
+    )
 ######### END AUTHENTICATION BACKENDS CONFIGURATION
 
 ########## URL CONFIGURATION

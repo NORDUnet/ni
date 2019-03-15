@@ -20,7 +20,6 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-import sys
 import os
 import json
 import argparse
@@ -48,16 +47,16 @@ def output(out_dir, json_list):
             hostn = host['host']['name']
             try:
                 f = open('%s%s.json' % (out_dir, hostn), 'w')
-            except IOError as (errno, strerror):
-                print "I/O error({0}): {1}".format(errno, strerror)
+            except IOError as err:
+                print("I/O error: {}".format(err))
                 # The directory to write in must exist
                 os.mkdir(out_dir)
                 f = open('%s%s.json' % (out_dir, hostn), 'w')
             f.write(json.dumps(host, sort_keys=True, indent=4))
             f.close()
-    except IOError as (errno, strerror):
-        print 'When trying to open output file.'
-        print "I/O error({0}): {1}".format(errno, strerror)
+    except IOError as err:
+        print('When trying to open output file.')
+        print("I/O error: {}".format(err))
 
 
 def labels_to_node_type(labels):
@@ -142,7 +141,7 @@ def main():
     out_data.extend(relationships_to_json())
 
     if args.N:
-        print json.dumps(out_data, sort_keys=True, indent=4)
+        print(json.dumps(out_data, sort_keys=True, indent=4))
     else:
         # Output directory should be ./json/ if nothing else is
         # specified
