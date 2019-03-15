@@ -121,6 +121,7 @@ urlpatterns = [
     url(r'^contact/(?P<handle_id>\d+)/$', detail.contact_detail),
     url(r'^customer/(?P<handle_id>\d+)/$', detail.customer_detail),
     url(r'^provider/(?P<handle_id>\d+)/$', detail.provider_detail),
+    url(r'^procedure/(?P<handle_id>\d+)/$', detail.procedure_detail),
     url(r'^unit/(?P<handle_id>\d+)/$', detail.unit_detail),
     url(r'^external-equipment/(?P<handle_id>\d+)/$', detail.external_equipment_detail),
     url(r'^optical-multiplex-section/(?P<handle_id>\d+)/$', detail.optical_multiplex_section_detail),

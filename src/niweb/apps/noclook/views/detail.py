@@ -650,3 +650,14 @@ def role_detail(request, handle_id):
     location_path = node.get_location_path()
     return render(request, 'noclook/detail/role_detail.html',
                   {'node_handle': nh, 'node': node, 'location_path': location_path})
+
+
+@login_required
+def procedure_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    node = nh.get_node()
+    # Get location
+    location_path = node.get_location_path()
+    return render(request, 'noclook/detail/procedure_detail.html',
+                  {'node_handle': nh, 'node': node, 'location_path': location_path})

@@ -943,6 +943,9 @@ def edit_organization(request, handle_id):
             if form.cleaned_data['relationship_parent_of']:
                 responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
                 helpers.set_parent_of(request.user, organization, responsible_nh.handle_id)
+            if form.cleaned_data['relationship_uses_a']:
+                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_uses_a'])
+                helpers.set_uses_a(request.user, organization, responsible_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return redirect(nh.get_absolute_url())
             else:
@@ -1000,6 +1003,25 @@ def edit_role(request, handle_id):
     return render(request, 'noclook/edit/edit_role.html',
                   {'node_handle': nh, 'form': form, 'node': role})
 
+
+@staff_member_required
+def edit_procedure(request, handle_id):
+    # Get needed data from node
+    nh, procedure = helpers.get_nh_node(handle_id)
+    if request.POST:
+        form = forms.EditProcedureForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, procedure.handle_id, form)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditProcedureForm(procedure.data)
+    return render(request, 'noclook/edit/edit_procedure.html',
+                  {'node_handle': nh, 'form': form, 'node': procedure})
+
 EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
@@ -1019,6 +1041,7 @@ EDIT_FUNC = {
     'peering-partner': edit_peering_partner,
     'port': edit_port,
     'provider': edit_provider,
+    'procedure': edit_procedure,
     'rack': edit_rack,
     'router': edit_router,
     'role': edit_role,

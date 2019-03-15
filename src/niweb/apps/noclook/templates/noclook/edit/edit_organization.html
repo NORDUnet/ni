@@ -12,6 +12,9 @@ $(document).ready(
         organizationCategories = [
             ['organization', 'Organizations']
         ];
+        procedureCategories = [
+            ['procedure', 'Procedures']
+        ];
     }
 );
 </script>
@@ -31,4 +34,5 @@ $(document).ready(
         {{ form.type | as_crispy_field}}
       {% endaccordion %}
       {% include "noclook/edit/includes/parent_of_group.html" %}
+      {% include "noclook/edit/includes/uses_a_group.html" %}
 {% endblock %}

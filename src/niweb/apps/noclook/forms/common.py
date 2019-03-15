@@ -798,8 +798,10 @@ class EditOrganizationForm(NewOrganizationForm):
     def __init__(self, *args, **kwargs):
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
+        self.fields['relationship_uses_a'].choices = get_node_type_tuples('Procedure')
 
     relationship_parent_of = relationship_field('organization', True)
+    relationship_uses_a = relationship_field('procedure', True)
 
 
 class NewContactForm(forms.Form):
@@ -846,4 +848,13 @@ class NewRoleForm(forms.Form):
 
 
 class EditRoleForm(NewRoleForm):
+    pass
+
+
+class NewProcedureForm(forms.Form):
+    name = forms.CharField()
+    description = description_field('procedure')
+
+
+class EditProcedureForm(NewProcedureForm):
     pass

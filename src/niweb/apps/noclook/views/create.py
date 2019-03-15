@@ -35,6 +35,7 @@ TYPES = [
     ("optical-node", "Optical Node"),
     ("port", "Port"),
     ("provider", "Provider"),
+    ("procedure", "Procedure"),
     ("rack", "Rack"),
     ("role", "Role"),
     ("site", "Site"),
@@ -593,6 +594,7 @@ def new_contact(request, **kwargs):
         form = forms.NewContactForm()
     return render(request, 'noclook/create/create_contact.html', {'form': form})
 
+
 @staff_member_required
 def new_role(request, **kwargs):
     if request.POST:
@@ -608,6 +610,23 @@ def new_role(request, **kwargs):
     else:
         form = forms.NewRoleForm()
     return render(request, 'noclook/create/create_role.html', {'form': form})
+
+
+@staff_member_required
+def new_procedure(request, **kwargs):
+    if request.POST:
+        form = forms.NewProcedureForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'procedure', 'Logical')
+            except UniqueNodeError:
+                form.add_error('name', 'A Procedure with that name already exists.')
+                return render(request, 'noclook/create/create_procedure.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewProcedureForm()
+    return render(request, 'noclook/create/create_procedure.html', {'form': form})
 
 NEW_FUNC = {
     'cable': new_cable,
@@ -625,6 +644,7 @@ NEW_FUNC = {
     'optical-path': new_optical_path,
     'port': new_port,
     'provider': new_provider,
+    'procedure': new_procedure,
     'rack': new_rack,
     'role': new_role,
     'service': new_service,
