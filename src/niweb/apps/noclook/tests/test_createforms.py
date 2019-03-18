@@ -257,6 +257,68 @@ class CommonNewForms(FormTestCase):
         self.assertDictContainsSubset(data, nh.get_node().data)
         self.assertEqual(len(nh.get_node().relationships), 1)
 
+    def test_NewOrganizationForm_full(self):
+        node_type = 'Organization'
+        data = {
+            'name': 'test organization',
+            'description': 'SE',
+            'phone': '08-49 400 000',
+            'website': 'www.stdh.se',
+            'customer_id': 'STDH',
+            'type': 'University, College',
+        }
+        resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
+        nh = NodeType.objects.get(type=node_type).nodehandle_set.get(node_name='test organization')
+        data['website'] = 'www.stdh.se'
+        self.assertDictContainsSubset(data, nh.get_node().data)
+
+    def test_NewContactForm_full(self):
+        node_type = 'Contact'
+        country_code = forms.country_codes()[0]
+        data = {
+            'first_name': 'Stefan',
+            'last_name': 'Listrom',
+            'contact_type': 'Person',
+            'mobile': '+46733023915',
+            'phone': '+46733023915',
+            'salutation': 'Mr',
+            'email': 'steli@sunet.se',
+        }
+        resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
+        nh = NodeType.objects.get(type=node_type).nodehandle_set.get(node_name='Stefan Listrom')
+        data['phone'] = '+46733023915'
+        self.assertDictContainsSubset(data, nh.get_node().data)
+
+    def test_NewRoleForm_full(self):
+        node_type = 'Role'
+        data = {
+            'name': 'IT Manager',
+        }
+        resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
+        nh = NodeType.objects.get(type=node_type).nodehandle_set.get(node_name='IT Manager')
+        data['name'] = 'IT Manager'
+        self.assertDictContainsSubset(data, nh.get_node().data)
+
+
+    def test_NewProcedureForm_full(self):
+        node_type = 'Procedure'
+        data = {
+            'name': 'Reboot',
+            'description': 'Lorem ipsum dolor sit amet',
+        }
+        resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
+        nh = NodeType.objects.get(type=node_type).nodehandle_set.get(node_name='Reboot')
+        data['description'] = 'Lorem ipsum dolor sit amet'
+        self.assertDictContainsSubset(data, nh.get_node().data)
+
 
 class NordunetNewForms(FormTestCase):
 
@@ -398,4 +460,3 @@ class NordunetNewForms(FormTestCase):
         self.assertDictContainsSubset(data, nh.get_node().data)
         self.assertEqual(len(nh.get_node().relationships), 1)
         self.assertEqual(nh.get_node().data['name'], 'SERVICE-000001')
-

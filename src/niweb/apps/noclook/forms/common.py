@@ -813,7 +813,7 @@ class NewContactForm(forms.Form):
     last_name = forms.CharField()
     contact_type = forms.CharField(required=False) # possible ChoiceField
     mobile = forms.CharField(required=False)
-    mailing_country = forms.ChoiceField(widget=forms.widgets.Select)
+    mailing_country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     phone = forms.CharField(required=False)
     salutation = forms.CharField(required=False)
     email = forms.CharField(required=False)
