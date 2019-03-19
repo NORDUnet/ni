@@ -21,6 +21,7 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 TYPES = [
     ("customer", "Customer"),
     ("cable", "Cable"),
+    ("contact", "Contact"),
     ("end-user", "End User"),
     ("external-cable", "External Cable"),
     ("external-equipment", "External Equipment"),
@@ -34,9 +35,12 @@ TYPES = [
     ("optical-node", "Optical Node"),
     ("port", "Port"),
     ("provider", "Provider"),
+    ("procedure", "Procedure"),
     ("rack", "Rack"),
+    ("role", "Role"),
     ("site", "Site"),
     ("site-owner", "Site Owner"),
+    ("organization", "Organization"),
 ]
 if helpers.app_enabled("apps.scan"):
     TYPES.append(("/scan/queue", "Host scan"))
@@ -557,9 +561,77 @@ def reserve_id_sequence(request, slug=None):
         return render(request, 'noclook/edit/reserve_id.html', {'form': form, 'slug': slug})
 
 
+@staff_member_required
+def new_organization(request, **kwargs):
+    if request.POST:
+        form = forms.NewOrganizationForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'organization', 'Relation')
+            except UniqueNodeError:
+                form.add_error('name', 'An Organization with that name already exists.')
+                return render(request, 'noclook/create/create_organization.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewOrganizationForm()
+    return render(request, 'noclook/create/create_organization.html', {'form': form})
+
+
+@staff_member_required
+def new_contact(request, **kwargs):
+    if request.POST:
+        form = forms.NewContactForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'contact', 'Relation')
+            except UniqueNodeError:
+                form.add_error('name', 'A Contact with that name already exists.')
+                return render(request, 'noclook/create/create_contact.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewContactForm()
+    return render(request, 'noclook/create/create_contact.html', {'form': form})
+
+
+@staff_member_required
+def new_role(request, **kwargs):
+    if request.POST:
+        form = forms.NewRoleForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'role', 'Logical')
+            except UniqueNodeError:
+                form.add_error('name', 'A Role with that name already exists.')
+                return render(request, 'noclook/create/create_role.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewRoleForm()
+    return render(request, 'noclook/create/create_role.html', {'form': form})
+
+
+@staff_member_required
+def new_procedure(request, **kwargs):
+    if request.POST:
+        form = forms.NewProcedureForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'procedure', 'Logical')
+            except UniqueNodeError:
+                form.add_error('name', 'A Procedure with that name already exists.')
+                return render(request, 'noclook/create/create_procedure.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewProcedureForm()
+    return render(request, 'noclook/create/create_procedure.html', {'form': form})
+
 NEW_FUNC = {
     'cable': new_cable,
     'cable_csv': new_cable_csv,
+    'contact': new_contact,
     'customer': new_customer,
     'end-user': new_end_user,
     'external-equipment': new_external_equipment,
@@ -572,9 +644,12 @@ NEW_FUNC = {
     'optical-path': new_optical_path,
     'port': new_port,
     'provider': new_provider,
+    'procedure': new_procedure,
     'rack': new_rack,
+    'role': new_role,
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,
     'optical-node': new_optical_node,
+    'organization': new_organization,
 }

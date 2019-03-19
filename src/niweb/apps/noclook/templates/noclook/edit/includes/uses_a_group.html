@@ -1,0 +1,27 @@
+{% load noclook_tags %}
+{% load crispy_forms_tags %}
+{% blockvar procedure_title %}
+   {{ node_handle.node_type }} Linked Procedure (optional)
+{% endblockvar %}
+{% accordion procedure_title 'procedure-edit' '#edit-accordion' %}
+  {% if relations.Uses_a %}
+      {% load noclook_tags %}
+      <h4>Remove procedure</h4>
+      {% for item in relations.Uses_a %}
+          <div class="row">
+              <div class="span5">
+                  {% noclook_get_type item.node.handle_id as node_type %}
+                  {{ node_type }} <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+              </div>
+              <div class="span1">
+                  <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+              </div>
+          </div>
+      {% endfor %}
+      <hr>
+  {% endif %}
+  <h4>Add procedure</h4>
+  <div class="span4">
+    {{ form.relationship_uses_a | as_crispy_field }}
+   </div>
+{% endaccordion %}
