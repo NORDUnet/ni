@@ -1,0 +1,38 @@
+{% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Responsible for
+        // Populate first level combo box
+        organizationCategories = [
+            ['organization', 'Organizations']
+        ];
+        procedureCategories = [
+            ['procedure', 'Procedures']
+        ];
+    }
+);
+</script>
+{% endblock %}
+{% block content %}
+{{ block.super }}
+    <div class="well">
+        {{ form.name | as_crispy_field}}
+        {{ form.description | as_crispy_field}}
+    </div>
+
+    <div class="accordion" id="edit-accordion">
+      {% accordion 'Additional info (optional)' 'additional-edit' '#edit-accordion' %}
+        {{ form.phone | as_crispy_field}}
+        {{ form.website | as_crispy_field}}
+        {{ form.customer_id | as_crispy_field}}
+        {{ form.type | as_crispy_field}}
+      {% endaccordion %}
+      {% include "noclook/edit/includes/parent_of_group.html" %}
+      {% include "noclook/edit/includes/uses_a_group.html" %}
+{% endblock %}
