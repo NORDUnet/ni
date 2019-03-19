@@ -1,7 +1,7 @@
 from datetime import datetime
 from django import forms
 from django.forms.utils import ErrorDict, ErrorList, ValidationError
-from django.forms.widgets import HiddenInput
+from django.forms.widgets import HiddenInput, Textarea
 from django.db import IntegrityError
 import json
 import csv
@@ -782,3 +782,79 @@ class CsvForm(forms.Form):
         cleaned = form.cleaned_data
         raw = form.data
         return u",".join([cleaned.get(h) or raw.get(h, '') for h in headers])
+
+
+class NewOrganizationForm(forms.Form):
+    account_id = forms.CharField(required=False)
+    name = forms.CharField()
+    description = description_field('organization')
+    phone = forms.CharField(required=False)
+    website = forms.CharField(required=False)
+    customer_id = forms.CharField(required=False)
+    type = forms.CharField(required=False) # possible ChoiceField
+
+
+class EditOrganizationForm(NewOrganizationForm):
+    def __init__(self, *args, **kwargs):
+        super(EditOrganizationForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
+        self.fields['relationship_uses_a'].choices = get_node_type_tuples('Procedure')
+
+    relationship_parent_of = relationship_field('organization', True)
+    relationship_uses_a = relationship_field('procedure', True)
+
+
+class NewContactForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewContactForm, self).__init__(*args, **kwargs)
+        self.fields['mailing_country'].choices = country_codes()
+
+    first_name = forms.CharField()
+    last_name = forms.CharField()
+    contact_type = forms.CharField(required=False) # possible ChoiceField
+    mobile = forms.CharField(required=False)
+    mailing_country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+    phone = forms.CharField(required=False)
+    salutation = forms.CharField(required=False)
+    email = forms.CharField(required=False)
+
+    def clean(self):
+        """
+        Sets name from first and second name
+        """
+        cleaned_data = super(NewContactForm, self).clean()
+        # Set name to a generated id if the service is not a manually named service.
+        first_name = cleaned_data.get("first_name")
+        last_name = cleaned_data.get("last_name")
+        cleaned_data['name'] = '{} {}'.format(first_name, last_name)
+
+        return cleaned_data
+
+
+class EditContactForm(NewContactForm):
+    def __init__(self, *args, **kwargs):
+        super(EditContactForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_works_for'].choices = get_node_type_tuples('Organization')
+        self.fields['relationship_member_of'].choices = get_node_type_tuples('Group')
+        self.fields['relationship_is'].choices        = get_node_type_tuples('Role')
+
+    relationship_works_for = relationship_field('organization', True)
+    relationship_member_of = relationship_field('group', True)
+    relationship_is        = relationship_field('role', True)
+
+
+class NewRoleForm(forms.Form):
+    name = forms.CharField()
+
+
+class EditRoleForm(NewRoleForm):
+    pass
+
+
+class NewProcedureForm(forms.Form):
+    name = forms.CharField()
+    description = description_field('procedure')
+
+
+class EditProcedureForm(NewProcedureForm):
+    pass
