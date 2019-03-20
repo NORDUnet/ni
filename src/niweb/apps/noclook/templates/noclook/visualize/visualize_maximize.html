@@ -16,7 +16,7 @@
         <!-- First initialize -->
         <script type="text/javascript">
         window.onload = function(){
-            var sys = arbor.ParticleSystem({repulsion:200, stiffness:512, friction:0.5, gravity: true, dt:0.1});
+            var sys = arbor.ParticleSystem({repulsion:1000, stiffness:100, friction:0.5, gravity: true, dt:0.02});
             sys.screenPadding(20, 200, 20, 200)
             sys.renderer = Renderer("#viewport");
             $.getJSON('/visualize/{{ node_handle.handle_id }}.json', function(json) {
