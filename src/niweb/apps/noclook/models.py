@@ -31,8 +31,7 @@ NODE_META_TYPE_CHOICES = zip(nc.META_TYPES, nc.META_TYPES)
 @python_2_unicode_compatible
 class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
-    slug = models.SlugField(unique=True, help_text='Suggested value \
-        #automatically generated from type. Must be unique.')
+    slug = models.SlugField(unique=True, help_text='Automatically generated from type. Must be unique.')
     hidden = models.BooleanField(default=False, help_text="Hide from menus")
 
     def __str__(self):
