@@ -23,7 +23,7 @@ RELATION = {'color': '#FF9900'}
 LOCATION = {'color': '#FF4040'}
 
 
-def get_arbor_node(node):
+def get_arbor_node(node, fixed=False):
     """
     Creates the data structure for JSON export from a neo4j node.
 
@@ -39,10 +39,13 @@ def get_arbor_node(node):
         node.handle_id: {
             'color': '',
             'label': '%s %s' % (node.labels[0], node.data['name']),
-            'url': '%s' % get_node_url(node.handle_id)
+            'url': '%s' % get_node_url(node.handle_id),
             #'mass': len(node.relationships),
+
         }
     }
+    if fixed:
+        structure[node.handle_id]['fixed'] = fixed
     # Set node specific apperance
     meta_type = node.meta_type
     if meta_type == 'Physical':
@@ -107,7 +110,7 @@ def create_generic_graph(root_node, graph_dict=None):
     if not graph_dict:
         graph_dict = {'nodes': {}, 'edges': {}}
     # Generic graph dict
-    arbor_root = get_arbor_node(root_node)
+    arbor_root = get_arbor_node(root_node, fixed=True)
     graph_dict['nodes'].update(arbor_root)
     relationships = root_node.relationships
     for rel_type in relationships:
