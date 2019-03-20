@@ -12,6 +12,7 @@
         <!-- Arbor Library File -->
         <script language="javascript" type="text/javascript" src="{% static "js/arbor/arbor.js" %}"></script>
         <script language="javascript" type="text/javascript" src="{% static "js/arbor/arbor-graphics.js" %}"></script>
+        <script language="javascript" type="text/javascript" src="{% static "js/arbor/arbor-tween.js" %}"></script>
         <script language="javascript" type="text/javascript" src="{% static "js/arbor/renderer.js" %}"></script>
         <!-- First initialize -->
         <script type="text/javascript">
@@ -27,6 +28,11 @@
                 e.preventDefault();
                 sys.renderer.undo();
             });
+            $('a#cleanup').click(function(e)
+            {
+                e.preventDefault();
+                sys.renderer.cleanup();
+            });
         };
         </script>
         <script type="text/css">
@@ -39,6 +45,7 @@
     </head>
     <body>
         <a id="undo" class="btn btn-danger"><i class="icon-backward icon-white"></i> Undo</a>
+        <a id="cleanup" class="btn btn-warning"><i class="icon-trash icon-white"></i> Cleanup</a>
         <canvas id="viewport">(Your browser doesn't support canvas)</canvas>
     </body>
 </html>
