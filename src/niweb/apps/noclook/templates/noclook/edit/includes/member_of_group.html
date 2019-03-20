@@ -4,10 +4,10 @@
    {{ node_handle.node_type }} group (optional)
 {% endblockvar %}
 {% accordion memberof_title 'memberof-edit' '#edit-accordion' %}
-  {% if relations.Parent_of %}
+  {% if relations.Member_of %}
       {% load noclook_tags %}
-      <h4>Remove organization</h4>
-      {% for item in relations.Parent_of %}
+      <h4>Remove group</h4>
+      {% for item in relations.Member_of %}
           <div class="row">
               <div class="span5">
                   {% noclook_get_type item.node.handle_id as node_type %}

@@ -1,13 +1,13 @@
 {% load noclook_tags %}
 {% load crispy_forms_tags %}
-{% blockvar procedure_title %}
-   {{ node_handle.node_type }} Linked Procedure (optional)
+{% blockvar memberof_title %}
+   {{ node_handle.node_type }} contacts
 {% endblockvar %}
-{% accordion procedure_title 'procedure-edit' '#edit-accordion' %}
-  {% if out_relations.Uses_a %}
+{% accordion memberof_title 'memberof-edit' '#edit-accordion' %}
+  {% if relations.Member_of %}
       {% load noclook_tags %}
-      <h4>Remove procedure</h4>
-      {% for item in out_relations.Uses_a %}
+      <h4>Remove contact</h4>
+      {% for item in relations.Member_of %}
           <div class="row">
               <div class="span5">
                   {% noclook_get_type item.node.handle_id as node_type %}
@@ -20,8 +20,8 @@
       {% endfor %}
       <hr>
   {% endif %}
-  <h4>Add procedure</h4>
+  <h4>Add contact to group</h4>
   <div class="span4">
-    {{ form.relationship_uses_a | as_crispy_field }}
+    {{ form.relationship_member_of | as_crispy_field }}
    </div>
 {% endaccordion %}
