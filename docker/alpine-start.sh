@@ -7,7 +7,7 @@ case "$*" in
     export DEBUG_MODE=True
     export DJANGO_SETTINGS_MODULE=niweb.settings.dev
     yes no | python $MANAGE_PY migrate
-    python $MANAGE_PY runserver 0.0.0.0:8000
+    exec python $MANAGE_PY runserver 0.0.0.0:8000
     ;;
   shell)
     export DJANGO_SETTINGS_MODULE=niweb.settings.dev
