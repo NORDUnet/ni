@@ -305,7 +305,6 @@ class CommonNewForms(FormTestCase):
         data['name'] = 'IT Manager'
         self.assertDictContainsSubset(data, nh.get_node().data)
 
-
     def test_NewProcedureForm_full(self):
         node_type = 'Procedure'
         data = {
@@ -317,6 +316,19 @@ class CommonNewForms(FormTestCase):
         self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
         nh = NodeType.objects.get(type=node_type).nodehandle_set.get(node_name='Reboot')
         data['description'] = 'Lorem ipsum dolor sit amet'
+        self.assertDictContainsSubset(data, nh.get_node().data)
+
+    def test_NewGroupForm_full(self):
+        group_name = 'New users'
+        node_type = 'Group'
+        data = {
+            'name': group_name,
+        }
+        resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
+        nh = NodeType.objects.get(type=node_type).nodehandle_set.get(node_name=group_name)
+        data['name'] = group_name
         self.assertDictContainsSubset(data, nh.get_node().data)
 
 
