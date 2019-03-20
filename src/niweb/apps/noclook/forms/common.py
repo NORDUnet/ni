@@ -503,6 +503,7 @@ class NewServiceForm(forms.Form):
     class Meta:
         id_generator_property = 'id_generators__services'
         manually_named_services = ['External']  # service_type of manually named services
+        manually_named_services_class = ['External']
 
     def clean(self):
         """
@@ -518,7 +519,8 @@ class NewServiceForm(forms.Form):
         name = cleaned_data.get("name")
         service_type = cleaned_data.get("service_type")
         if self.is_valid():
-            if not name and service_type not in self.Meta.manually_named_services:
+            is_maunal_name = service_type in self.Meta.manually_named_services or cleaned_data['service_class'] in self.Meta.manually_named_services_class
+            if not name and not is_maunal_name:
                 try:
                     global_preferences = global_preferences_registry.manager()
                     id_generator_name = global_preferences[self.Meta.id_generator_property]
