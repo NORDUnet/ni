@@ -147,5 +147,6 @@ if [ -z "$NI_DATA_CONF" ]; then
 fi
 
 msg "Create superuser"
+echo -e "\a" # play bell
 docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage createsuperuser
 
