@@ -934,6 +934,7 @@ def edit_organization(request, handle_id):
     # Get needed data from node
     nh, organization = helpers.get_nh_node(handle_id)
     relations = organization.get_relations()
+    out_relations = organization.get_outgoing_relations()
     if request.POST:
         form = forms.EditOrganizationForm(request.POST)
         if form.is_valid():
@@ -941,11 +942,11 @@ def edit_organization(request, handle_id):
             helpers.form_update_node(request.user, organization.handle_id, form)
             # Set child organizations
             if form.cleaned_data['relationship_parent_of']:
-                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
-                helpers.set_parent_of(request.user, organization, responsible_nh.handle_id)
+                organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
+                helpers.set_parent_of(request.user, organization, organization_nh.handle_id)
             if form.cleaned_data['relationship_uses_a']:
-                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_uses_a'])
-                helpers.set_uses_a(request.user, organization, responsible_nh.handle_id)
+                procedure_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_uses_a'])
+                helpers.set_uses_a(request.user, organization, procedure_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return redirect(nh.get_absolute_url())
             else:
@@ -953,7 +954,7 @@ def edit_organization(request, handle_id):
     else:
         form = forms.EditOrganizationForm(organization.data)
     return render(request, 'noclook/edit/edit_organization.html',
-                  {'node_handle': nh, 'form': form, 'relations': relations, 'node': organization})
+                  {'node_handle': nh, 'form': form, 'relations': relations, 'out_relations': out_relations, 'node': organization})
 
 @staff_member_required
 def edit_contact(request, handle_id):
@@ -965,16 +966,16 @@ def edit_contact(request, handle_id):
         if form.is_valid():
             # Generic node update
             helpers.form_update_node(request.user, contact.handle_id, form)
-            # Set works for organization
+            # Set relationships
             if form.cleaned_data['relationship_works_for']:
-                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_works_for'])
-                helpers.set_works_for(request.user, contact, responsible_nh.handle_id)
+                organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_works_for'])
+                helpers.set_works_for(request.user, contact, organization_nh.handle_id)
             if form.cleaned_data['relationship_member_of']:
-                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_member_of'])
-                helpers.set_member_of(request.user, contact, responsible_nh.handle_id)
+                group_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_member_of'])
+                helpers.set_member_of(request.user, contact, group_nh.handle_id)
             if form.cleaned_data['relationship_is']:
-                responsible_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_is'])
-                helpers.set_is(request.user, contact, responsible_nh.handle_id)
+                role_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_is'])
+                helpers.set_is(request.user, contact, role_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return redirect(nh.get_absolute_url())
             else:
@@ -1022,6 +1023,29 @@ def edit_procedure(request, handle_id):
     return render(request, 'noclook/edit/edit_procedure.html',
                   {'node_handle': nh, 'form': form, 'node': procedure})
 
+
+@staff_member_required
+def edit_group(request, handle_id):
+    # Get needed data from node
+    nh, group = helpers.get_nh_node(handle_id)
+    relations = group.get_relations()
+    if request.POST:
+        form = forms.EditGroupForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, group.handle_id, form)
+            if form.cleaned_data['relationship_member_of']:
+                contact_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_member_of'])
+                helpers.set_of_member(request.user, group, contact_nh.handle_id)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditGroupForm(group.data)
+    return render(request, 'noclook/edit/edit_group.html',
+                  {'node_handle': nh, 'form': form, 'node': group, 'relations': relations})
+
 EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
@@ -1030,6 +1054,7 @@ EDIT_FUNC = {
     'external-equipment': edit_external_equipment,
     'firewall': edit_firewall,
     'service': edit_service,
+    'group': edit_group,
     'host': edit_host,
     'odf': edit_odf,
     'optical-filter': edit_optical_fillter,

@@ -858,3 +858,15 @@ class NewProcedureForm(forms.Form):
 
 class EditProcedureForm(NewProcedureForm):
     pass
+
+
+class NewGroupForm(forms.Form):
+    name = forms.CharField()
+
+
+class EditGroupForm(NewProcedureForm):
+    def __init__(self, *args, **kwargs):
+        super(EditGroupForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_member_of'].choices = get_node_type_tuples('Contact')
+
+    relationship_member_of = relationship_field('contact', True)
