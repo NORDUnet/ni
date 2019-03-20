@@ -7,8 +7,46 @@
   {% if relations.Member_of %}
       {% load noclook_tags %}
       <h4>Remove contact</h4>
+      <div class="row">
+          <div class="span5">
+              <script>
+                    var contact_list = [];
+
+                    var filterFunct = function(query){
+                        var filtered_array = contact_list.filter(function(value){
+                            var daquery = query.toLowerCase();
+                            var davalue = value.split('-').slice(1).join(' ').toLowerCase();
+
+                            return davalue.includes(daquery);
+                        });
+
+                        return filtered_array;
+                    }
+
+                    var filterContacts = function(){
+                        var txtValue = document.querySelector('#filter_contact').value;
+
+                        if(txtValue.length > 2){
+                            var filtered_array = filterFunct(txtValue);
+                            $('.contact-relation').hide();
+
+                            for(var i in filtered_array){
+                                var id = filtered_array[i];
+                                $('#'+id).show();
+                            }
+                        } else {
+                            $('.contact-relation').show();
+                        }
+                    }
+              </script>
+              <input type="text" id="filter_contact" onkeyup="filterContacts()" placeholder="Filter contacts">
+          </div>
+      </div>
       {% for item in relations.Member_of %}
-          <div class="row">
+          <script>
+              contact_list.push('cntc-{{item.node.data.first_name|lower}}-{{item.node.data.last_name|lower}}');
+          </script>
+          <div id="cntc-{{item.node.data.first_name|lower}}-{{item.node.data.last_name|lower}}" class="row contact-relation">
               <div class="span5">
                   {% noclook_get_type item.node.handle_id as node_type %}
                   {{ node_type }} <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
