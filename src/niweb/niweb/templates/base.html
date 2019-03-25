@@ -142,15 +142,14 @@
                         <li class="divider"></li>
                         <li class="nav-header"><i class="icon-list"></i> Browse types</li>
                         {% type_menu %}
-                        {% comment %}
-                        <li class="divider"></li>
-                        <li class="nav-header"><i class="icon-briefcase"></i> Reports</li>
-                        {% endcomment %}
+                        {% report_menu %}
+                        {% maps_menu %}
                         {% if user.is_authenticated %}
                             <li class="divider"></li>
                             <li class="nav-header"><i class="icon-wrench"></i> Admin</li>
                             {% if user.is_staff %}
                                 <li><a href="/new/">Create new</a></li>
+                                {% admin_menu %}
                                 <li><a href="/userprofile/">Users</a></li>
                             {% endif %}
                             <li><a href="/logout/">Log out</a></li>

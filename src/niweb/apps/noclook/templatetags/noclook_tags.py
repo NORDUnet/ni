@@ -24,6 +24,34 @@ def type_menu():
     return {'types': types}
 
 
+def mode_menu():
+    """
+    Adds a the menu items if it's set in the dynamic_preferences
+    """
+    global_preferences = global_preferences_registry.manager()
+    menu_mode = global_preferences['general__menu_mode']
+
+    if menu_mode == 'ni':
+        return { 'val': True }
+    else:
+        return { 'val': False }
+
+
+@register.inclusion_tag('report_menu.html')
+def report_menu():
+    return mode_menu()
+
+
+@register.inclusion_tag('maps_menu.html')
+def maps_menu():
+    return mode_menu()
+
+
+@register.inclusion_tag('type_menu.html')
+def admin_menu():
+    return mode_menu()
+
+
 @register.simple_tag(takes_context=True)
 def noclook_node_to_url(context,handle_id):
     """G
@@ -37,7 +65,7 @@ def noclook_node_to_url(context,handle_id):
       return "/nodes/%s" % handle_id
    #else:
       #
-      #try: 
+      #try:
       #  return get_node_url(handle_id)
       #except ObjectDoesNotExist:
       #  return ''
@@ -86,7 +114,7 @@ def noclook_last_seen_as_td(date):
     table column.
     """
     if type(date) is datetime:
-        last_seen = date    
+        last_seen = date
     else:
         last_seen = noclook_last_seen_to_dt(date)
     return {'last_seen': last_seen}
@@ -219,12 +247,12 @@ def as_json(value):
 def hardware_module(module, level=0):
     result = ""
     indent = " "*4*level
-    keys = ["name", 
-            "version", 
-            "part_number", 
-            "serial_number", 
+    keys = ["name",
+            "version",
+            "part_number",
+            "serial_number",
             "description",
-            "hardware_description", 
+            "hardware_description",
             "model_number",
             "clei_code"]
     if module:
@@ -234,7 +262,7 @@ def hardware_module(module, level=0):
             result += "\n".join([ hardware_module(mod, level+1) for mod in module.get('modules',[]) ])
             result += "\n".join([ hardware_module(mod, level+1) for mod in module.get('sub_modules',[]) ])
         result += "\n{0}{1}\n".format(indent,"-"*8)
-    
+
     return result
 
 
@@ -251,7 +279,7 @@ def dynamic_ports(context,bulk_ports, *args, **kwargs):
         port_types = context.request.POST.getlist("port_type")
     ports = zip(port_names, port_types)
     bulk_ports.auto_id = False
-    
+
     export = {}
     export.update({"bulk_ports": bulk_ports, "ports": ports})
     export.update(kwargs)
