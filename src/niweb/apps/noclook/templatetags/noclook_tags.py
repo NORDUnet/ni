@@ -24,32 +24,15 @@ def type_menu():
     return {'types': types}
 
 
-def mode_menu():
+@register.inclusion_tag('type_menu.html')
+def menu_mode():
     """
     Adds a the menu items if it's set in the dynamic_preferences
     """
     global_preferences = global_preferences_registry.manager()
     menu_mode = global_preferences['general__menu_mode']
 
-    if menu_mode == 'ni':
-        return { 'val': True }
-    else:
-        return { 'val': False }
-
-
-@register.inclusion_tag('report_menu.html')
-def report_menu():
-    return mode_menu()
-
-
-@register.inclusion_tag('maps_menu.html')
-def maps_menu():
-    return mode_menu()
-
-
-@register.inclusion_tag('type_menu.html')
-def admin_menu():
-    return mode_menu()
+    { 'menu_mode': menu_mode }
 
 
 @register.simple_tag(takes_context=True)

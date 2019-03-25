@@ -30,7 +30,7 @@ class MoreInfoLink(StringPreference):
 class NOCLookMenuMode(StringPreference):
     section = general
     name = 'menu_mode'
-    default = 'sri'
+    default = 'ni'
     help_text = 'sri|ni'
 
 

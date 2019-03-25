@@ -142,14 +142,24 @@
                         <li class="divider"></li>
                         <li class="nav-header"><i class="icon-list"></i> Browse types</li>
                         {% type_menu %}
-                        {% report_menu %}
-                        {% maps_menu %}
+                        {% ifequal menu_mode 'ni' %}
+                            <li class="divider"></li>
+                            <li class="nav-header"><i class="icon-briefcase"></i> Reports</li>
+                            <li><a href="/reports/hosts/">Host reports</a></li>
+                            <li><a href="/reports/unique-ids/">Unique IDs</a></li>
+                            <li class="divider"></li>
+                            <li class="nav-header"><i class="icon-map-marker"></i> Maps</li>
+                            <li><a href="/gmaps/sites/">Site map</a></li>
+                            <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
+                        {% endifequal %}
                         {% if user.is_authenticated %}
                             <li class="divider"></li>
                             <li class="nav-header"><i class="icon-wrench"></i> Admin</li>
                             {% if user.is_staff %}
                                 <li><a href="/new/">Create new</a></li>
-                                {% admin_menu %}
+                                {% ifequal menu_mode 'ni' %}
+                                    <li><a href="/reserve-id/">Reserve IDs</a></li>
+                                {% endifequal %}
                                 <li><a href="/userprofile/">Users</a></li>
                             {% endif %}
                             <li><a href="/logout/">Log out</a></li>
