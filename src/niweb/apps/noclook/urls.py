@@ -85,6 +85,7 @@ urlpatterns = [
     url(r'^optical-multiplex-section/$', _list.list_optical_multiplex_section),
     url(r'^optical-link/$', _list.list_optical_links),
     url(r'^optical-node/$', _list.list_optical_nodes),
+    url(r'^organization/$', _list.list_organizations),
     url(r'^router/$', _list.list_routers),
     url(r'^rack/$', _list.list_racks),
     url(r'^odf/$', _list.list_odfs),
