@@ -27,6 +27,14 @@ class MoreInfoLink(StringPreference):
 
 
 @global_preferences_registry.register
+class NOCLookMenuMode(StringPreference):
+    section = general
+    name = 'menu_mode'
+    default = 'ni'
+    help_text = 'sri|ni'
+
+
+@global_preferences_registry.register
 class PageFlashMessage(StringPreference):
     section = announcements
     name = 'page_flash_message'
