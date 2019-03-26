@@ -824,8 +824,8 @@ class NewContactForm(forms.Form):
         """
         cleaned_data = super(NewContactForm, self).clean()
         # Set name to a generated id if the service is not a manually named service.
-        first_name = cleaned_data.get("first_name")
-        last_name = cleaned_data.get("last_name")
+        first_name = cleaned_data.get("first_name").encode('utf-8')
+        last_name = cleaned_data.get("last_name").encode('utf-8')
         cleaned_data['name'] = '{} {}'.format(first_name, last_name)
 
         return cleaned_data
