@@ -6,7 +6,7 @@ import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 import norduniclient.models as ncmodels
 
-from apps.noclook.models import NodeHandle, User
+from apps.noclook.models import NodeHandle, NodeType, User
 
 from ..neo4j_base import NeoTestCase
 
@@ -32,6 +32,14 @@ class CsvImportTest(NeoTestCase):
 "Rev";"Kiri";"Janosevic";;"Physical Therapy Assistant";"Person";;;;;"China";"568-690-1854";"118-569-1303";;"kjanosevic4@umich.edu";;;"Youspan"
     """
 
+    secroles_str = """"Organisation";"Contact";"Role"
+"Chalmers";"CTH Abuse";"Abuse"
+"Chalmers";"CTH IRT";"IRT Gruppfunktion"
+"Chalmers";"Hans Nilsson";"Övrig incidentkontakt"
+"Chalmers";"Stefan Svensson";"Övrig incidentkontakt"
+"Chalmers";"Karl Larsson";"Primär incidentkontakt"
+    """
+
     def setUp(self):
         super(CsvImportTest, self).setUp()
         # write organizations csv file to disk
@@ -39,6 +47,9 @@ class CsvImportTest(NeoTestCase):
 
         # write contacts csv file to disk
         self.contacts_file = self.write_string_to_disk(self.contacts_str)
+
+        # write contacts csv file to disk
+        self.secroles_file = self.write_string_to_disk(self.secroles_str)
 
         # create noclook user
         User.objects.get_or_create(username="noclook")[0]
@@ -50,6 +61,9 @@ class CsvImportTest(NeoTestCase):
 
         # close contacts csv file
         self.contacts_file.close()
+
+        # close contacts csv file
+        self.secroles_file.close()
 
     def test_organizations_import(self):
         # call csvimport command (verbose 0)
@@ -63,6 +77,7 @@ class CsvImportTest(NeoTestCase):
         self.assertIsNotNone(qs)
         organization1 = qs.first()
         self.assertIsNotNone(organization1)
+        self.assertIsInstance(organization1.get_node(), ncmodels.OrganizationModel)
 
         # check if one of them has a parent organization
         relations = organization1.get_node().get_relations()
@@ -83,12 +98,14 @@ class CsvImportTest(NeoTestCase):
         self.assertIsNotNone(qs)
         contact1 = qs.first()
         self.assertIsNotNone(contact1)
+        self.assertIsInstance(contact1.get_node(), ncmodels.ContactModel)
 
         # check if it has a role assigned
         qs = NodeHandle.objects.filter(node_name='Computer Systems Analyst III')
         self.assertIsNotNone(qs)
         role1 = qs.first()
         self.assertIsNotNone(role1)
+        self.assertIsInstance(role1.get_node(), ncmodels.RoleModel)
 
         relations = role1.get_node().get_relations()
         relation = relations.get('Is', None)
@@ -100,11 +117,44 @@ class CsvImportTest(NeoTestCase):
         self.assertIsNotNone(qs)
         organization1 = qs.first()
         self.assertIsNotNone(organization1)
+        self.assertIsInstance(organization1.get_node(), ncmodels.OrganizationModel)
 
         relations = organization1.get_node().get_relations()
         relation = relations.get('Works_for', None)
         self.assertIsNotNone(relation)
         self.assertIsInstance(relations['Works_for'][0]['node'], ncmodels.RelationModel)
+
+    def test_secroles_import(self):
+        # call csvimport command (verbose 0)
+        call_command(
+            self.cmd_name,
+            secroles=self.secroles_file,
+            verbosity=0,
+        )
+
+        # check if the organization is present
+        qs = NodeHandle.objects.filter(node_name='Chalmers')
+        self.assertIsNotNone(qs)
+        organization1 = qs.first()
+        self.assertIsNotNone(organization1)
+
+        # check a contact is present
+        qs = NodeHandle.objects.filter(node_name='Hans Nilsson')
+        self.assertIsNotNone(qs)
+        contact1 = qs.first()
+        self.assertIsNotNone(contact1)
+
+        # check if role is created
+        qs = NodeHandle.objects.filter(node_name='Övrig incidentkontakt')
+        self.assertIsNotNone(qs)
+        role1 = qs.first()
+        self.assertIsNotNone(role1)
+
+        relations = contact1.get_node().get_outgoing_relations()
+        self.assertEquals(relations['Works_for'][0]['node'], organization1.get_node())
+        self.assertIsInstance(relations['Works_for'][0]['node'], ncmodels.OrganizationModel)
+        self.assertEquals(relations['Is'][0]['node'], role1.get_node())
+        self.assertIsInstance(relations['Is'][0]['node'], ncmodels.RoleModel)
 
     def write_string_to_disk(self, string):
         # get random file
