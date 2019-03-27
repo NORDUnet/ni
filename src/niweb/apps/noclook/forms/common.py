@@ -817,6 +817,7 @@ class NewContactForm(forms.Form):
     phone = forms.CharField(required=False)
     salutation = forms.CharField(required=False)
     email = forms.CharField(required=False)
+    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
 
     def clean(self):
         """
@@ -826,6 +827,11 @@ class NewContactForm(forms.Form):
         # Set name to a generated id if the service is not a manually named service.
         first_name = cleaned_data.get("first_name")
         last_name = cleaned_data.get("last_name")
+
+        if six.PY2:
+            first_name = first_name.encode('utf-8')
+            last_name  = last_name.encode('utf-8')
+
         cleaned_data['name'] = '{} {}'.format(first_name, last_name)
 
         return cleaned_data
