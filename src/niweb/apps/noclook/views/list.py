@@ -84,7 +84,7 @@ def _type_table(wrapped_node):
 @login_required
 def list_by_type(request, slug):
     node_type = get_object_or_404(NodeType, slug=slug)
-    q = """ 
+    q = """
         MATCH (node:%(nodetype)s)
         RETURN node
         ORDER BY node.name
@@ -311,7 +311,7 @@ def list_optical_links(request):
     # TODO: returns [None,None] and [node, None]
     #   tried to use [:Has *0-1] path matching but that gave "duplicate paths"
     q = """
-        MATCH (link:Optical_Link) 
+        MATCH (link:Optical_Link)
         OPTIONAL MATCH (link)-[:Depends_on]->(node)
         OPTIONAL MATCH p=(node)<-[:Has]-(parent)
         RETURN link as link, collect([node, parent]) as dependencies
@@ -382,9 +382,9 @@ def list_optical_nodes(request):
 
 def _optical_path_table(path):
     row = TableRow(
-            path, 
-            path.get('framing'), 
-            path.get('capacity'), 
+            path,
+            path.get('framing'),
+            path.get('capacity'),
             path.get('description'),
             ", ".join(path.get('enrs',[])))
     _set_operational_state(row, path)
@@ -463,7 +463,7 @@ def _router_table(router):
     row = TableRow(router, router.get('model'), router.get('version'), router.get('operational_state'))
     _set_expired(row, router)
     return row
-    
+
 
 @login_required
 def list_routers(request):
@@ -585,3 +585,33 @@ def list_organizations(request):
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Organizations', 'urls': urls})
+
+def _contact_table(con, org):
+    contact_link = {
+            'url': u'/contact/{}/'.format(con.get('handle_id')),
+            'name': u'{}'.format(con.get('name', ''))
+            }
+    name_org = ''
+    if org:
+        name_org = org.get('name', '')
+
+    row = TableRow(contact_link, name_org)
+    return row
+
+@login_required
+def list_contacts(request):
+    q = """
+        OPTIONAL MATCH (con:Contact)-[:Works_for]->(org:Organization)
+        RETURN con, org
+        ORDER BY con.name;
+        """
+
+    con_list = nc.query_to_list(nc.graphdb.manager, q)
+    urls = get_node_urls(con_list)
+
+    table = Table('Name', 'Organization')
+    table.rows = [_contact_table(item['con'], item['org']) for item in con_list]
+    table.no_badges=True
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'Contacts', 'urls': urls})
