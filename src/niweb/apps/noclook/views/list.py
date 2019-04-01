@@ -601,9 +601,9 @@ def _contact_table(con, org):
 @login_required
 def list_contacts(request):
     q = """
-        OPTIONAL MATCH (con:Contact)-[:Works_for]->(org:Organization)
+        MATCH (con:Contact)
+        OPTIONAL MATCH (con)-[:Works_for]->(org:Organization)
         RETURN con, org
-        ORDER BY con.name;
         """
 
     con_list = nc.query_to_list(nc.graphdb.manager, q)
