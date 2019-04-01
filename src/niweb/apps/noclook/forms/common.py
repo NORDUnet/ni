@@ -821,6 +821,7 @@ class NewContactForm(forms.Form):
     phone = forms.CharField(required=False)
     salutation = forms.CharField(required=False)
     email = forms.CharField(required=False)
+    name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
 
     def clean(self):
         """
@@ -830,6 +831,11 @@ class NewContactForm(forms.Form):
         # Set name to a generated id if the service is not a manually named service.
         first_name = cleaned_data.get("first_name")
         last_name = cleaned_data.get("last_name")
+
+        if six.PY2:
+            first_name = first_name.encode('utf-8')
+            last_name  = last_name.encode('utf-8')
+
         cleaned_data['name'] = '{} {}'.format(first_name, last_name)
 
         return cleaned_data
@@ -862,3 +868,15 @@ class NewProcedureForm(forms.Form):
 
 class EditProcedureForm(NewProcedureForm):
     pass
+
+
+class NewGroupForm(forms.Form):
+    name = forms.CharField()
+
+
+class EditGroupForm(NewProcedureForm):
+    def __init__(self, *args, **kwargs):
+        super(EditGroupForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_member_of'].choices = get_node_type_tuples('Contact')
+
+    relationship_member_of = relationship_field('contact', True)

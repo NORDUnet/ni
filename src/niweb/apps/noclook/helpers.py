@@ -955,3 +955,18 @@ def set_is(user, node, role_id):
     if created:
         activitylog.create_relationship(user, relationship)
     return relationship, created
+
+def set_of_member(user, node, contact_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param contact_id: unique id
+    :return: norduniclient model, boolean
+    """
+    result = node.add_member(contact_id)
+    relationship_id = result.get('Member_of')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Member_of')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created

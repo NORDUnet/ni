@@ -24,6 +24,8 @@ class Command(BaseCommand):
                     type=argparse.FileType('r'))
         parser.add_argument("-c", "--contacts", help="contacts CSV file",
                     type=argparse.FileType('r'))
+        parser.add_argument("-s", "--secroles", help="security roles CSV file",
+                    type=argparse.FileType('r'))
         parser.add_argument('-d', "--delimiter", nargs='?', default=';',
                             help='Delimiter to use use. Default ";".')
 
@@ -56,6 +58,7 @@ class Command(BaseCommand):
 
         csv_organizations = None
         csv_contacts = None
+        csv_secroles = None
         self.user = get_user()
 
         # IMPORT ORGANIZATIONS
@@ -81,6 +84,18 @@ class Command(BaseCommand):
                     .format(con_lines, csv_contacts.name))
 
             total_lines = total_lines + con_lines
+
+        # IMPORT SECURITY ROLES
+        if options['secroles']:
+            # py: count lines
+            csv_secroles = options['secroles']
+            srl_lines = self.count_lines(csv_secroles)
+
+            if options['verbosity'] > 0:
+                self.stdout.write('Importing {} Security Roles from file "{}"'\
+                    .format(srl_lines, csv_secroles.name))
+
+            total_lines = total_lines + srl_lines
 
         imported_lines = 0
         # print progress bar
@@ -204,7 +219,51 @@ class Command(BaseCommand):
 
             csv_contacts.close()
 
+        # process security roles
+        if options['secroles']:
+            orga_type = NodeType.objects.filter(type=self.new_types[0]).first() # organization
+            cont_type = NodeType.objects.filter(type=self.new_types[2]).first() # contact
+            role_type = NodeType.objects.filter(type=self.new_types[4]).first() # role
+            node_list = self.read_csv(csv_secroles, delim=self.delimiter)
+
+            for node in node_list:
+                # create or get nodes
+                organization = NodeHandle.objects.get_or_create(
+                        node_name = node['organisation'],
+                        node_type = orga_type,
+                        node_meta_type = relation_meta_type,
+                        creator = self.user,
+                        modifier = self.user,
+                    )[0]
+
+                contact = NodeHandle.objects.get_or_create(
+                        node_name = node['contact'],
+                        node_type = cont_type,
+                        node_meta_type = relation_meta_type,
+                        creator = self.user,
+                        modifier = self.user,
+                    )[0]
+
+                role = NodeHandle.objects.get_or_create(
+                        node_name = node['role'],
+                        node_type = role_type,
+                        node_meta_type = logical_meta_type,
+                        creator = self.user,
+                        modifier = self.user,
+                    )[0]
+
+                # we're adding the relations straight since if the relation
+                # already exists doesn't alter the result
+                contact.get_node().add_role(role.handle_id)
+                contact.get_node().add_organization(organization.handle_id)
+
+            csv_secroles.close()
+
+
     def count_lines(self, file):
+        '''
+        Counts lines in a file
+        '''
         num_lines = 0
         try:
             num_lines = sum(1 for line in file)

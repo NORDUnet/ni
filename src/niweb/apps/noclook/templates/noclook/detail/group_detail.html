@@ -1,0 +1,8 @@
+{% extends "noclook/detail/detail.html" %}
+{% load table_tags %}
+
+{% block edit_link %}
+    {% if user.is_staff %}
+        <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+    {% endif %}
+{% endblock %}

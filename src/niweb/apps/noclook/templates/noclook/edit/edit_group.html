@@ -1,0 +1,27 @@
+{% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+
+{% block js %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(
+    function(){
+        // Responsible for
+        // Populate first level combo box
+        contactCategories = [
+            ['contact', 'Contacts']
+        ];
+    }
+);
+</script>
+{% endblock %}
+{% block content %}
+{{ block.super }}
+    <div class="well">
+        {{ form.name | as_crispy_field}}
+    </div>
+
+    <div class="accordion" id="edit-accordion">
+      {% include "noclook/edit/includes/of_member_group.html" %}
+{% endblock %}

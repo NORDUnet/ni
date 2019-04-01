@@ -628,11 +628,29 @@ def new_procedure(request, **kwargs):
         form = forms.NewProcedureForm()
     return render(request, 'noclook/create/create_procedure.html', {'form': form})
 
+
+@staff_member_required
+def new_group(request, **kwargs):
+    if request.POST:
+        form = forms.NewGroupForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'group', 'Logical')
+            except UniqueNodeError:
+                form.add_error('name', 'A Group with that name already exists.')
+                return render(request, 'noclook/create/create_group.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewGroupForm()
+    return render(request, 'noclook/create/create_group.html', {'form': form})
+
 NEW_FUNC = {
     'cable': new_cable,
     'cable_csv': new_cable_csv,
     'contact': new_contact,
     'customer': new_customer,
+    'group': new_group,
     'end-user': new_end_user,
     'external-equipment': new_external_equipment,
     'external-cable': new_external_cable,
