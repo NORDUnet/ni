@@ -791,7 +791,20 @@ class NewOrganizationForm(forms.Form):
     phone = forms.CharField(required=False)
     website = forms.CharField(required=False)
     customer_id = forms.CharField(required=False)
-    type = forms.CharField(required=False) # possible ChoiceField
+    type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(NewOrganizationForm, self).__init__(*args, **kwargs)
+        self.fields['contact_type'].choices = [
+            ('university_college', 'University, College'),
+            ('museum', 'Museum, Institution'),
+            ('research', 'Research facility'),
+            ('university_coldep', 'University, College dep.'),
+            ('student_net', 'Student network'),
+            ('partner', 'Partner'),
+            ('provider', 'Service provider'),
+            ('supplier', 'Supplier'),
+        ]
 
 
 class EditOrganizationForm(NewOrganizationForm):
@@ -807,17 +820,19 @@ class EditOrganizationForm(NewOrganizationForm):
 class NewContactForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewContactForm, self).__init__(*args, **kwargs)
-        self.fields['mailing_country'].choices = country_codes()
+        self.fields['contact_type'].choices = [('person', 'Person'), ('group', 'Group')]
 
     first_name = forms.CharField()
     last_name = forms.CharField()
-    contact_type = forms.CharField(required=False) # possible ChoiceField
+    contact_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     mobile = forms.CharField(required=False)
-    mailing_country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     phone = forms.CharField(required=False)
     salutation = forms.CharField(required=False)
     email = forms.CharField(required=False)
+    other_email = forms.CharField(required=False)
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
+    title = forms.CharField(required=False)
+    PGP_fingerprint = forms.CharField(required=False)
 
     def clean(self):
         """
