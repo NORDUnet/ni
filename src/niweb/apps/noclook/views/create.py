@@ -571,7 +571,25 @@ def new_organization(request, **kwargs):
             except UniqueNodeError:
                 form.add_error('name', 'An Organization with that name already exists.')
                 return render(request, 'noclook/create/create_organization.html', {'form': form})
-            helpers.form_update_node(request.user, nh.handle_id, form)
+
+            # use property keys to avoid inserting contacts as a string property of the node
+            property_keys = [
+                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
+            ]
+            helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
+
+            contact_fields = [
+                ('abuse_contact', 'Abuse'),
+                ('primary_contact', 'Primary contact at incidents'),
+                ('secondary_contact', 'Secondary contact at incidents'),
+                ('it_technical_contact', 'IT-technical'),
+                ('it_security_contact', 'IT-security'),
+                ('it_manager_contact', 'IT-manager'),
+            ]
+            for field in contact_fields:
+                contact_name = form.cleaned_data[field[0]]
+                helpers.create_contact_role_for_organization(request.user, nh, contact_name, field[1])
+
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewOrganizationForm()
