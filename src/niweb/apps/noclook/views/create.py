@@ -17,33 +17,12 @@ from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
-
 TYPES = [
-    ("customer", "Customer"),
-    ("cable", "Cable"),
     ("contact", "Contact"),
-    ("end-user", "End User"),
-    ("external-cable", "External Cable"),
-    ("external-equipment", "External Equipment"),
-    ("host", "Host"),
-    ("optical-link", "Optical Link"),
-    ("optical-path", "Optical Path"),
-    ("service", "Service"),
-    ("odf", "ODF"),
-    ("optical-filter", "Optical Filter"),
-    ("optical-multiplex-section", "Optical Multiplex Section"),
-    ("optical-node", "Optical Node"),
-    ("port", "Port"),
-    ("provider", "Provider"),
-    ("procedure", "Procedure"),
-    ("rack", "Rack"),
     ("role", "Role"),
-    ("site", "Site"),
-    ("site-owner", "Site Owner"),
     ("organization", "Organization"),
+    ("group", "Group"),
 ]
-if helpers.app_enabled("apps.scan"):
-    TYPES.append(("/scan/queue", "Host scan"))
 
 
 # Create functions
