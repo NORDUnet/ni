@@ -984,6 +984,14 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role):
     if six.PY2:
         role  = role.encode('utf-8')
 
+    # delete previous relationship first
+    q = """
+        MATCH (r:Role)<-[l:Is]-(c:Contact)-[:Works_for]->(o:Organization)
+        WHERE o.handle_id = {organization_id} AND r.name = "{role_name}"
+        DELETE l RETURN c
+        """.format(organization_id=node.handle_id, role_name=role)
+    d = nc.query_to_dict(nc.graphdb.manager, q)
+
     contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
     role = NodeHandle.objects.get_or_create(
@@ -1012,6 +1020,14 @@ def create_contact_role_for_organization(user, node, contact_name, role):
     if six.PY2:
         contact_name = contact_name.encode('utf-8')
         role  = role.encode('utf-8')
+
+    # delete previous relationship first
+    q = """
+        MATCH (r:Role)<-[l:Is]-(c:Contact)-[:Works_for]->(o:Organization)
+        WHERE o.handle_id = {organization_id} AND r.name = "{role_name}"
+        DELETE l RETURN c
+        """.format(organization_id=node.handle_id, role_name=role)
+    d = nc.query_to_dict(nc.graphdb.manager, q)
 
     first_name, last_name = contact_name.split(' ')
 
