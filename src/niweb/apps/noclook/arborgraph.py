@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 COLOR_MAP = {
     'Meta:': '#000000',
     'Physical': '#00CC00',
+    'Logical': '#007FFF',
     'Relation': '#FF9900',
     'Location': '#FF4040',
 }
