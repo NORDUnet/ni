@@ -1007,6 +1007,7 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role):
 
     return contact, role
 
+
 def create_contact_role_for_organization(user, node, contact_name, role):
     """
     :param user: Django user
@@ -1014,12 +1015,12 @@ def create_contact_role_for_organization(user, node, contact_name, role):
     :param contact_name: full name of the contact
     :return: contact, role: New objects if they're not present in the db
     """
-    contact_type = NodeType.objects.filter(type='Contact').first()
-    role_type = NodeType.objects.filter(type='Role').first()
+    contact_type = NodeType.objects.get(type='Contact')
+    role_type = NodeType.objects.get(type='Role')
 
     if six.PY2:
         contact_name = contact_name.encode('utf-8')
-        role  = role.encode('utf-8')
+        role = role.encode('utf-8')
 
     # delete previous relationship first
     q = """
@@ -1031,29 +1032,49 @@ def create_contact_role_for_organization(user, node, contact_name, role):
 
     first_name, last_name = contact_name.split(' ')
 
-    contact = NodeHandle.objects.get_or_create(
-            node_name = contact_name,
-            node_type = contact_type,
-            node_meta_type = 'Relation',
-            creator = user,
-            modifier = user,
-        )[0]
+    contact, created_contact = NodeHandle.objects.get_or_create(
+        node_name=contact_name,
+        node_type=contact_type,
+        node_meta_type='Relation',
+        creator=user,
+        modifier=user,
+    )
 
-    contact.get_node().add_property('first_name', first_name)
-    contact.get_node().add_property('last_name', last_name)
+    if created_contact:
+        contact.get_node().add_property('first_name', first_name)
+        contact.get_node().add_property('last_name', last_name)
 
-    role = NodeHandle.objects.get_or_create(
-            node_name = role,
-            node_type = role_type,
-            node_meta_type = 'Logical',
-            creator = user,
-            modifier = user,
-        )[0]
+    role, created_role = NodeHandle.objects.get_or_create(
+        node_name=role,
+        node_type=role_type,
+        node_meta_type='Logical',
+        creator=user,
+        modifier=user,
+    )
 
-    contact.get_node().add_role(role.handle_id)
-    contact.get_node().add_organization(node.handle_id)
+    result_role = contact.get_node().add_role(role.handle_id)
+    result_organization = contact.get_node().add_organization(node.handle_id)
+
+    # Get relationship for contact-role
+    relationship_role_id = result_role.get('Is')[0].get('relationship_id')
+    relationship_role = nc.get_relationship_model(nc.graphdb.manager, relationship_role_id)
+
+    # Get relationship for contact-organization
+    relationship_organization_id = result_organization.get('Works_for')[0].get('relationship_id')
+    relationship_organization = nc.get_relationship_model(nc.graphdb.manager, relationship_organization_id)
+
+    created_relationship_role = result_role.get('Is')[0].get('created')
+    created_relationship_organization = result_organization.get('Works_for')[0].get('created')
+
+    # Log relationships if they have been created
+    if created_relationship_role:
+        activitylog.create_relationship(user, relationship_role)
+
+    if created_relationship_organization:
+        activitylog.create_relationship(user, relationship_organization)
 
     return contact, role
+
 
 def get_contact_for_orgrole(organization_id, role_name):
     """
