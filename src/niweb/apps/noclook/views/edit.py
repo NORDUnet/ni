@@ -952,7 +952,8 @@ def edit_organization(request, handle_id):
                     contact_data = form.cleaned_data[field[0]]
                     if contact_data:
                         if isinstance(contact_data, six.string_types):
-                            helpers.create_contact_role_for_organization(request.user, nh, contact_data, field[1])
+                            if contact_data:
+                                helpers.create_contact_role_for_organization(request.user, nh, contact_data, field[1])
                         else:
                             helpers.link_contact_role_for_organization(request.user, nh, contact_data, field[1])
 
