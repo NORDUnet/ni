@@ -1041,6 +1041,7 @@ def create_contact_role_for_organization(user, node, contact_name, role):
     )
 
     if created_contact:
+        activitylog.create_node(user, contact)
         contact.get_node().add_property('first_name', first_name)
         contact.get_node().add_property('last_name', last_name)
 
@@ -1051,6 +1052,9 @@ def create_contact_role_for_organization(user, node, contact_name, role):
         creator=user,
         modifier=user,
     )
+
+    if created_role:
+        activitylog.create_node(user, role)
 
     result_role = contact.get_node().add_role(role.handle_id)
     result_organization = contact.get_node().add_organization(node.handle_id)
