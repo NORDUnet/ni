@@ -1060,7 +1060,6 @@ def get_contact_for_orgrole(organization_id, role_name):
     :param organization_id: Organization's handle_id
     :param role_name: Role name
     """
-    contact_type = NodeType.objects.filter(type='Contact').first()
     q = """
     MATCH (r:Role)<-[:Is]-(c:Contact)-[:Works_for]->(o:Organization)
     WHERE o.handle_id = {organization_id} AND r.name = "{role_name}"
