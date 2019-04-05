@@ -824,16 +824,7 @@ class NewOrganizationForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewOrganizationForm, self).__init__(*args, **kwargs)
-        self.fields['type'].choices = [
-            ('university_college', 'University, College'),
-            ('museum', 'Museum, Institution'),
-            ('research', 'Research facility'),
-            ('university_coldep', 'University, College dep.'),
-            ('student_net', 'Student network'),
-            ('partner', 'Partner'),
-            ('provider', 'Service provider'),
-            ('supplier', 'Supplier'),
-        ]
+        self.fields['type'].choices = Dropdown.get('organization_types').as_choices()
 
 org_contact_fields = [
     ('abuse_contact', 'Abuse'),

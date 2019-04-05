@@ -44,3 +44,11 @@ countries,NO,Norway
 countries,SE,Sweden
 countries,UK,United Kingdom
 countries,US,USA
+organization_types,university_college,"University, College"
+organization_types,museum,"Museum, Institution"
+organization_types,research,Research facility
+organization_types,university_coldep,"University, College dep"
+organization_types,student_net,Student network
+organization_types,partner,Partner
+organization_types,provider,Service provider
+organization_types,supplier,Supplier
