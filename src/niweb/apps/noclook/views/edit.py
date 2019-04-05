@@ -968,7 +968,7 @@ def edit_organization(request, handle_id):
             ]
             helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
             # Set contacts
-            contact_fields = forms.org_contact_fields
+            contact_fields = Dropdown.get('organization_contact_types').as_choices(empty=False)
             for field in contact_fields:
                 if field[0] in form.cleaned_data:
                     contact_data = form.cleaned_data[field[0]]

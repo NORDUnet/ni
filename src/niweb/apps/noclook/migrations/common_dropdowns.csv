@@ -52,3 +52,9 @@ organization_types,student_net,Student network
 organization_types,partner,Partner
 organization_types,provider,Service provider
 organization_types,supplier,Supplier
+organization_contact_types,abuse_contact,Abuse
+organization_contact_types,primary_contact,Primary contact at incidents
+organization_contact_types,secondary_contact,Secondary contact at incidents
+organization_contact_types,it_technical_contact,IT-technical
+organization_contact_types,it_security_contact,IT-security
+organization_contact_types,it_manager_contact,IT-manager
