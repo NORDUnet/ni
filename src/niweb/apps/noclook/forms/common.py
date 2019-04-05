@@ -5,6 +5,7 @@ from django.forms.widgets import HiddenInput, Textarea
 from django.db import IntegrityError
 import json
 import csv
+from apps.noclook import helpers
 from apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
@@ -44,6 +45,22 @@ def get_node_type_tuples(node_type):
         RETURN n.handle_id as handle_id, n.name as name
         ORDER BY n.name
         """.format(node_type=node_type.replace(' ', '_'))
+    l = nc.query_to_list(nc.graphdb.manager, q)
+    choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
+    return choices
+
+def get_contacts_for_organization(organization_id):
+    """
+    Returns a list of tuple of node.handle_id and node['name'] of contacts that
+    works for a certain organization
+    """
+    choices = [('', '')]
+    q = """
+        MATCH (c:Contact)-[:Works_for]->(o:Organization)
+        WHERE o.handle_id = {organization_id}
+        RETURN c.handle_id as handle_id, c.name as name
+        """.format(organization_id=organization_id)
+
     l = nc.query_to_list(nc.graphdb.manager, q)
     choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
     return choices
@@ -795,33 +812,111 @@ class NewOrganizationForm(forms.Form):
     phone = forms.CharField(required=False)
     website = forms.CharField(required=False)
     customer_id = forms.CharField(required=False)
-    type = forms.CharField(required=False) # possible ChoiceField
+    type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+    additional_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
+    # these fields will be replaced by selects in the edit form
+    abuse_contact = forms.CharField(required=False)
+    primary_contact = forms.CharField(required=False) # Primary contact at incidents
+    secondary_contact = forms.CharField(required=False) # Secondary contact at incidents
+    it_technical_contact = forms.CharField(required=False) # IT-technical
+    it_security_contact = forms.CharField(required=False) # IT-security
+    it_manager_contact = forms.CharField(required=False) # IT-manager
 
+    def __init__(self, *args, **kwargs):
+        super(NewOrganizationForm, self).__init__(*args, **kwargs)
+        self.fields['type'].choices = [
+            ('university_college', 'University, College'),
+            ('museum', 'Museum, Institution'),
+            ('research', 'Research facility'),
+            ('university_coldep', 'University, College dep.'),
+            ('student_net', 'Student network'),
+            ('partner', 'Partner'),
+            ('provider', 'Service provider'),
+            ('supplier', 'Supplier'),
+        ]
+
+org_contact_fields = [
+    ('abuse_contact', 'Abuse'),
+    ('primary_contact', 'Primary contact at incidents'),
+    ('secondary_contact', 'Secondary contact at incidents'),
+    ('it_technical_contact', 'IT-technical'),
+    ('it_security_contact', 'IT-security'),
+    ('it_manager_contact', 'IT-manager'),
+]
 
 class EditOrganizationForm(NewOrganizationForm):
     def __init__(self, *args, **kwargs):
+        # set initial for contact combos
+        initial = {} if 'initial' not in kwargs else kwargs['initial']
+
+        if 'handle_id' in args[0]:
+            for field in org_contact_fields:
+                possible_contact = helpers.get_contact_for_orgrole(args[0]['handle_id'], field[1])
+                if possible_contact:
+                    field_name = field[0].decode('utf8') if six.PY2 else field[0]
+                    args[0][field_name] = possible_contact.handle_id
+
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
         self.fields['relationship_uses_a'].choices = get_node_type_tuples('Procedure')
 
+        # contact choices
+        if 'handle_id' in args[0]:
+            organization_id = args[0]['handle_id']
+            contact_choices = get_contacts_for_organization(organization_id)
+            self.fields['abuse_contact'].choices = contact_choices
+            self.fields['primary_contact'].choices = contact_choices
+            self.fields['secondary_contact'].choices = contact_choices
+            self.fields['it_technical_contact'].choices = contact_choices
+            self.fields['it_security_contact'].choices = contact_choices
+            self.fields['it_manager_contact'].choices = contact_choices
+
+    def clean(self):
+        """
+        Sets name from first and second name
+        """
+        cleaned_data = super(EditOrganizationForm, self).clean()
+        contact_fields = [field[0] for field in org_contact_fields]
+
+        for field in contact_fields:
+            if field in self.data:
+                value = self.data[field]
+                if value:
+                    try:
+                        contact_handle_id = int(value)
+                        cleaned_data[field] = contact_handle_id
+                    except ValueError:
+                        cleaned_data[field] = value
+
+                    if field in self._errors:
+                        del self._errors[field]
+
     relationship_parent_of = relationship_field('organization', True)
     relationship_uses_a = relationship_field('procedure', True)
+    abuse_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Abuse")
+    primary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Primary contact at incidents") # Primary contact at incidents
+    secondary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Secondary contact at incidents") # Secondary contact at incidents
+    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-technical") # IT-technical
+    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-security") # IT-security
+    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-manager") # IT-manager
 
 
 class NewContactForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewContactForm, self).__init__(*args, **kwargs)
-        self.fields['mailing_country'].choices = country_codes()
+        self.fields['contact_type'].choices = [('person', 'Person'), ('group', 'Group')]
 
     first_name = forms.CharField()
     last_name = forms.CharField()
-    contact_type = forms.CharField(required=False) # possible ChoiceField
+    contact_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     mobile = forms.CharField(required=False)
-    mailing_country = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     phone = forms.CharField(required=False)
     salutation = forms.CharField(required=False)
     email = forms.CharField(required=False)
+    other_email = forms.CharField(required=False)
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
+    title = forms.CharField(required=False)
+    PGP_fingerprint = forms.CharField(required=False)
 
     def clean(self):
         """

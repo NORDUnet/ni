@@ -10,6 +10,7 @@ from operator import itemgetter
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
+from django.utils import six
 from django.shortcuts import get_object_or_404, render, redirect
 import json
 from apps.noclook.models import NodeHandle, Dropdown
@@ -961,7 +962,22 @@ def edit_organization(request, handle_id):
         form = forms.EditOrganizationForm(request.POST)
         if form.is_valid():
             # Generic node update
-            helpers.form_update_node(request.user, organization.handle_id, form)
+            # use property keys to avoid inserting contacts as a string property of the node
+            property_keys = [
+                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
+            ]
+            helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
+            # Set contacts
+            contact_fields = forms.org_contact_fields
+            for field in contact_fields:
+                if field[0] in form.cleaned_data:
+                    contact_data = form.cleaned_data[field[0]]
+                    if contact_data:
+                        if isinstance(contact_data, six.string_types):
+                            helpers.create_contact_role_for_organization(request.user, nh, contact_data, field[1])
+                        else:
+                            helpers.link_contact_role_for_organization(request.user, nh, contact_data, field[1])
+
             # Set child organizations
             if form.cleaned_data['relationship_parent_of']:
                 organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])

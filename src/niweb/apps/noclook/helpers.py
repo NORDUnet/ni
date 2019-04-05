@@ -14,6 +14,7 @@ from django.core.mail import EmailMessage
 from datetime import datetime, timedelta
 from actstream.models import action_object_stream, target_stream
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.utils import six
 import csv
 import xlwt
 import re
@@ -970,3 +971,105 @@ def set_of_member(user, node, contact_id):
     if created:
         activitylog.create_relationship(user, relationship)
     return relationship, created
+
+def link_contact_role_for_organization(user, node, contact_handle_id, role):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param contact_handle_id: contact's handle_id
+    :return: contact, role: Only the role is created if it don't exists
+    """
+    role_type = NodeType.objects.filter(type='Role').first()
+
+    if six.PY2:
+        role  = role.encode('utf-8')
+
+    # delete previous relationship first
+    q = """
+        MATCH (r:Role)<-[l:Is]-(c:Contact)-[:Works_for]->(o:Organization)
+        WHERE o.handle_id = {organization_id} AND r.name = "{role_name}"
+        DELETE l RETURN c
+        """.format(organization_id=node.handle_id, role_name=role)
+    d = nc.query_to_dict(nc.graphdb.manager, q)
+
+    contact = NodeHandle.objects.get(handle_id=contact_handle_id)
+
+    role = NodeHandle.objects.get_or_create(
+            node_name = role,
+            node_type = role_type,
+            node_meta_type = 'Logical',
+            creator = user,
+            modifier = user,
+        )[0]
+
+    contact.get_node().add_role(role.handle_id)
+    contact.get_node().add_organization(node.handle_id)
+
+    return contact, role
+
+def create_contact_role_for_organization(user, node, contact_name, role):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param contact_name: full name of the contact
+    :return: contact, role: New objects if they're not present in the db
+    """
+    contact_type = NodeType.objects.filter(type='Contact').first()
+    role_type = NodeType.objects.filter(type='Role').first()
+
+    if six.PY2:
+        contact_name = contact_name.encode('utf-8')
+        role  = role.encode('utf-8')
+
+    # delete previous relationship first
+    q = """
+        MATCH (r:Role)<-[l:Is]-(c:Contact)-[:Works_for]->(o:Organization)
+        WHERE o.handle_id = {organization_id} AND r.name = "{role_name}"
+        DELETE l RETURN c
+        """.format(organization_id=node.handle_id, role_name=role)
+    d = nc.query_to_dict(nc.graphdb.manager, q)
+
+    first_name, last_name = contact_name.split(' ')
+
+    contact = NodeHandle.objects.get_or_create(
+            node_name = contact_name,
+            node_type = contact_type,
+            node_meta_type = 'Relation',
+            creator = user,
+            modifier = user,
+        )[0]
+
+    contact.get_node().add_property('first_name', first_name)
+    contact.get_node().add_property('last_name', last_name)
+
+    role = NodeHandle.objects.get_or_create(
+            node_name = role,
+            node_type = role_type,
+            node_meta_type = 'Logical',
+            creator = user,
+            modifier = user,
+        )[0]
+
+    contact.get_node().add_role(role.handle_id)
+    contact.get_node().add_organization(node.handle_id)
+
+    return contact, role
+
+def get_contact_for_orgrole(organization_id, role_name):
+    """
+    :param organization_id: Organization's handle_id
+    :param role_name: Role name
+    """
+    contact_type = NodeType.objects.filter(type='Contact').first()
+    q = """
+    MATCH (r:Role)<-[:Is]-(c:Contact)-[:Works_for]->(o:Organization)
+    WHERE o.handle_id = {organization_id} AND r.name = "{role_name}"
+    RETURN c.handle_id AS handle_id
+    """.format(organization_id=organization_id, role_name=role_name)
+    d = nc.query_to_dict(nc.graphdb.manager, q)
+
+    if 'handle_id' in d and d['handle_id']:
+        contact_handle_id = d['handle_id']
+        contact = NodeHandle.objects.get(handle_id=contact_handle_id)
+
+        return contact
