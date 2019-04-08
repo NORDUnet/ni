@@ -557,14 +557,7 @@ def new_organization(request, **kwargs):
             ]
             helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
 
-            contact_fields = [
-                ('abuse_contact', 'Abuse'),
-                ('primary_contact', 'Primary contact at incidents'),
-                ('secondary_contact', 'Secondary contact at incidents'),
-                ('it_technical_contact', 'IT-technical'),
-                ('it_security_contact', 'IT-security'),
-                ('it_manager_contact', 'IT-manager'),
-            ]
+            contact_fields = Dropdown.get('organization_contact_types').as_choices(empty=False)
             for field in contact_fields:
                 contact_name = form.cleaned_data[field[0]]
                 if contact_name:

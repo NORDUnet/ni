@@ -3,13 +3,14 @@
 __author__ = 'lundberg'
 
 import sys
+import os
 import argparse
 from collections import defaultdict
 from apiclient import NIApiClient
 
-USER = ''
-APIKEY = ''
-BASE_URL = 'http://localhost'
+USER = os.environ.get('USER', '')
+APIKEY = os.environ.get('API_KEY', '')
+BASE_URL = os.environ.get('BASE_URL', 'http://localhost')
 VERBOSE = False
 
 
@@ -32,7 +33,7 @@ def get_hosts(output_file):
     for host in client.get_type('host', headers=client.create_headers()):
         if host['node'].get('operational_state', 'Not set') != 'Decommissioned':
             if VERBOSE:
-                print 'Getting ports for %s...' % host['node_name'],
+                print('Getting ports for %s...' % host['node_name']),
             ports = defaultdict(list)
             for rel in client.get_relationships(host, relationship_type='Depends_on', headers=client.create_headers()):
                 protocol = rel['properties'].get('protocol', None)
@@ -48,21 +49,25 @@ def get_hosts(output_file):
                 for ip_address in host['node'].get('ip_addresses', []):
                     output_file.writelines('%s %s%s\n' % (ip_address, tcp_ports, udp_ports))
             if VERBOSE:
-                print 'done.'
+                print('done.')
 
 
 def main():
     # User friendly usage output
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output', '-O', default=sys.stdout, type=argparse.FileType('wb', 0))
+    parser.add_argument('--output', '-O')
     parser.add_argument('--verbose', '-V', action='store_true', default=False)
     args = parser.parse_args()
     if args.verbose:
         global VERBOSE
         VERBOSE = True
-    get_host_scan(args.output)
-    args.output.close()
+    if args.output:
+        with open(args.output, 'w') as f:
+            get_host_scan(f)
+    else:
+        get_host_scan(sys.stdout)
     return 0
+
 
 if __name__ == '__main__':
     main()

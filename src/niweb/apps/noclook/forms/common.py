@@ -49,21 +49,26 @@ def get_node_type_tuples(node_type):
     choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
     return choices
 
+
 def get_contacts_for_organization(organization_id):
     """
     Returns a list of tuple of node.handle_id and node['name'] of contacts that
     works for a certain organization
     """
-    choices = [('', '')]
-    q = """
-        MATCH (c:Contact)-[:Works_for]->(o:Organization)
-        WHERE o.handle_id = {organization_id}
-        RETURN c.handle_id as handle_id, c.name as name
-        """.format(organization_id=organization_id)
+    organization = NodeHandle.objects.get(handle_id=organization_id)
+    contacts = organization.get_node().get_contacts()
 
-    l = nc.query_to_list(nc.graphdb.manager, q)
-    choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
+    return _get_tuples_for_iterator(contacts)
+
+
+def _get_tuples_for_iterator(iterator):
+    """
+    Returns a list of tuple of handle_id and name of iterator.
+    """
+    choices = [('', '')]
+    choices.extend([tuple([item['handle_id'], item['name']]) for item in iterator])
     return choices
+
 
 class IPAddrField(forms.CharField):
     def __init__(self, *args, **kwargs):
@@ -276,6 +281,10 @@ class EditOpticalNodeForm(OpticalNodeForm):
 
 
 class EditPeeringPartnerForm(forms.Form):
+    name = forms.CharField()
+
+
+class EditPeeringGroupForm(forms.Form):
     name = forms.CharField()
 
 
@@ -820,25 +829,8 @@ class NewOrganizationForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(NewOrganizationForm, self).__init__(*args, **kwargs)
-        self.fields['type'].choices = [
-            ('university_college', 'University, College'),
-            ('museum', 'Museum, Institution'),
-            ('research', 'Research facility'),
-            ('university_coldep', 'University, College dep.'),
-            ('student_net', 'Student network'),
-            ('partner', 'Partner'),
-            ('provider', 'Service provider'),
-            ('supplier', 'Supplier'),
-        ]
+        self.fields['type'].choices = Dropdown.get('organization_types').as_choices()
 
-org_contact_fields = [
-    ('abuse_contact', 'Abuse'),
-    ('primary_contact', 'Primary contact at incidents'),
-    ('secondary_contact', 'Secondary contact at incidents'),
-    ('it_technical_contact', 'IT-technical'),
-    ('it_security_contact', 'IT-security'),
-    ('it_manager_contact', 'IT-manager'),
-]
 
 class EditOrganizationForm(NewOrganizationForm):
     def __init__(self, *args, **kwargs):
@@ -846,7 +838,7 @@ class EditOrganizationForm(NewOrganizationForm):
         initial = {} if 'initial' not in kwargs else kwargs['initial']
 
         if 'handle_id' in args[0]:
-            for field in org_contact_fields:
+            for field in Dropdown.get('organization_contact_types').as_choices(empty=False):
                 possible_contact = helpers.get_contact_for_orgrole(args[0]['handle_id'], field[1])
                 if possible_contact:
                     field_name = field[0].decode('utf8') if six.PY2 else field[0]
@@ -872,7 +864,7 @@ class EditOrganizationForm(NewOrganizationForm):
         Sets name from first and second name
         """
         cleaned_data = super(EditOrganizationForm, self).clean()
-        contact_fields = [field[0] for field in org_contact_fields]
+        contact_fields = Dropdown.get('organization_contact_types').as_values()
 
         for field in contact_fields:
             if field in self.data:
