@@ -56,8 +56,18 @@ def get_contacts_for_organization(organization_id):
     works for a certain organization
     """
     organization = NodeHandle.objects.get(handle_id=organization_id)
+    contacts = organization.get_node().get_contacts()
 
-    return organization.get_node().get_contacts()
+    return _get_tuples_for_iterator(contacts)
+
+
+def _get_tuples_for_iterator(iterator):
+    """
+    Returns a list of tuple of handle_id and name of iterator.
+    """
+    choices = [('', '')]
+    choices.extend([tuple([item['handle_id'], item['name']]) for item in iterator])
+    return choices
 
 
 class IPAddrField(forms.CharField):
