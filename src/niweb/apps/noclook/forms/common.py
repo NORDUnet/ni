@@ -49,21 +49,16 @@ def get_node_type_tuples(node_type):
     choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
     return choices
 
+
 def get_contacts_for_organization(organization_id):
     """
     Returns a list of tuple of node.handle_id and node['name'] of contacts that
     works for a certain organization
     """
-    choices = [('', '')]
-    q = """
-        MATCH (c:Contact)-[:Works_for]->(o:Organization)
-        WHERE o.handle_id = {organization_id}
-        RETURN c.handle_id as handle_id, c.name as name
-        """.format(organization_id=organization_id)
+    organization = NodeHandle.objects.get(handle_id=organization_id)
 
-    l = nc.query_to_list(nc.graphdb.manager, q)
-    choices.extend([tuple([item['handle_id'], item['name']]) for item in l])
-    return choices
+    return organization.get_node().get_contacts()
+
 
 class IPAddrField(forms.CharField):
     def __init__(self, *args, **kwargs):
