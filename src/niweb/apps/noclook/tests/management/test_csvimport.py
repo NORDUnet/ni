@@ -158,7 +158,7 @@ class CsvImportTest(NeoTestCase):
 
     def write_string_to_disk(self, string):
         # get random file
-        tf = tempfile.NamedTemporaryFile()
+        tf = tempfile.NamedTemporaryFile(mode='w+')
         # write text
         tf.write(string)
         tf.flush()
