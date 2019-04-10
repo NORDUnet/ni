@@ -14,3 +14,4 @@ django-dotenv<1.5
 django-dynamic-preferences<1.4
 django-attachments<2.0
 configparser
+graphene-django>=2.0

@@ -156,7 +156,7 @@ TEMPLATES = [
             normpath(join(DJANGO_ROOT, 'templates')),
         ],
         'APP_DIRS': True,
-        'OPTIONS': { 
+        'OPTIONS': {
             'context_processors': [
                 'django.contrib.auth.context_processors.auth',
                 'django.template.context_processors.debug',
@@ -232,6 +232,7 @@ THIRD_PARTY_APPS = (
     'crispy_forms',
     'dynamic_preferences',
     'attachments',
+    'graphene_django',
 )
 
 LOCAL_APPS = (
@@ -252,6 +253,10 @@ ACTSTREAM_SETTINGS = {
     'USE_PREFETCH': True,
     'USE_JSONFIELD': True,
     'GFK_FETCH_DEPTH': 1,
+}
+
+GRAPHENE = {
+    'SCHEMA': 'niweb.schema.schema',
 }
 ########## END APP CONFIGURATION
 
