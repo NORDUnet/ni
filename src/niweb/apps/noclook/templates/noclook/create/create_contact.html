@@ -18,15 +18,15 @@
             <label>Last Name</label>
             {{ form.last_name }}
             <br />
-            <label>Type</label>
-            {{ form.contact_type }}
-            <br />
-            <label>Mailing Country</label>
-            {{ form.mailing_country }}
-            <br />
             <h3>Additional info (optional)</h3>
+            <label>Title</label>
+            {{ form.title }}
+            <br />
             <label>Salutation</label>
             {{ form.salutation }}
+            <br />
+            <label>Type</label>
+            {{ form.contact_type }}
             <br />
             <label>Phone</label>
             {{ form.phone }}
@@ -36,6 +36,12 @@
             <br />
             <label>Email</label>
             {{ form.email }}
+            <br />
+            <label>Other Email</label>
+            {{ form.other_email }}
+            <br />
+            <label>PGP fingerprint</label>
+            {{ form.PGP_fingerprint }}
             <br />
             <input type="submit" value="Save" class="btn btn-primary" />
             <a href="/new/" class="btn">Cancel</a>

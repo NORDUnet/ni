@@ -25,18 +25,20 @@ $(document).ready(
 {% block content %}
 {{ block.super }}
     <div class="well">
-        {{ form.first_name | as_crispy_field}}
-        {{ form.last_name | as_crispy_field}}
+        {{ form.first_name | as_crispy_field }}
+        {{ form.last_name | as_crispy_field }}
     </div>
 
     <div class="accordion" id="edit-accordion">
       {% accordion 'Additional info (optional)' 'additional-edit' '#edit-accordion' %}
-          {{ form.contact_type | as_crispy_field}}
-          {{ form.mobile | as_crispy_field}}
-          {{ form.mailing_country | as_crispy_field}}
-          {{ form.phone | as_crispy_field}}
-          {{ form.salutation | as_crispy_field}}
-          {{ form.email | as_crispy_field}}
+          {{ form.title | as_crispy_field }}
+          {{ form.salutation | as_crispy_field }}
+          {{ form.contact_type | as_crispy_field }}
+          {{ form.phone | as_crispy_field }}
+          {{ form.mobile | as_crispy_field }}
+          {{ form.email | as_crispy_field }}
+          {{ form.other_email | as_crispy_field }}
+          {{ form.PGP_fingerprint | as_crispy_field}}
       {% endaccordion %}
       {% include "noclook/edit/includes/works_for_group.html" %}
       {% include "noclook/edit/includes/member_of_group.html" %}
