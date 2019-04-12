@@ -7,4 +7,8 @@ class Query(ncschema.Query, graphene.ObjectType):
 schema = graphene.Schema(
             query=Query,
             auto_camelcase=False,
+            types=[
+                ncschema.RoleType,
+                ncschema.ContactType,
+            ]
         )
