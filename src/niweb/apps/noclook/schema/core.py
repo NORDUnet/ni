@@ -16,17 +16,18 @@ def get_srifield_resolver(field_name, field_type, rel_name=None, rel_method=None
     def resolve_relationship_list(self, info, **kwargs):
         neo4jnode = self.get_node()
         relations = getattr(neo4jnode, rel_method)()
-        roles = relations.get(rel_name)
+        nodes = relations.get(rel_name)
 
         # this may be the worst way to do it, but it's just for a PoC
         handle_id_list = []
-        for role in roles:
-            role = role['node']
-            role_id = role.data.get('handle_id')
-            handle_id_list.append(role_id)
+        if nodes:
+            for node in nodes:
+                node = node['node']
+                node_id = node.data.get('handle_id')
+                handle_id_list.append(node_id)
 
         ret = NodeHandle.objects.filter(handle_id__in=handle_id_list)
-        
+
         return ret
 
     if isinstance(field_type, graphene.String) or isinstance(field_type, graphene.Int):
@@ -36,6 +37,7 @@ def get_srifield_resolver(field_name, field_type, rel_name=None, rel_method=None
     else:
         return resolve_node_string
 
+# define new and different types: String, List
 class NIObjectField():
     def __init__(self, field_type=graphene.String, manual_resolver=False,
                     type_args=None, type_kwargs=None, rel_name=None,
@@ -59,12 +61,15 @@ class NIObjectType(DjangoObjectType):
         fields_names = ''
         allfields = cls.__dict__
         graphfields = OrderedDict()
+
+        # getting all not magic attributes
         for name, field in allfields.items():
             pattern = re.compile("^__.*__$")
             if pattern.match(name) or callable(field):
                 continue
             graphfields[name] = field
 
+        # run over the fields defined and adding graphene fields and resolvers
         for name, field in graphfields.items():
             fields_names = fields_names + ' ' + '({} / {})'.format(name, field.__dict__)
             field_fields = field.__dict__
@@ -107,6 +112,8 @@ class NIObjectType(DjangoObjectType):
                     'NIObjectField manual_resolver must be a callable in field {}'\
                         .format(name)
                 )
+
+        # add data field and resolver
 
         super(NIObjectType, cls).__init_subclass_with_meta__(
             model=NIObjectType._meta.model,
