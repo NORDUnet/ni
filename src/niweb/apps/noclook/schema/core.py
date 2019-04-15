@@ -1,10 +1,10 @@
-import graphene
+# -*- coding: utf-8 -*-
+__author__ = 'ffuentes'
+
 import re
 from collections import OrderedDict
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
-
-from .models import *
 
 def get_srifield_resolver(field_name, field_type, rel_name='', rel_method=None):
     def resolve_node_string(self, info, **kwargs):
@@ -106,40 +106,3 @@ class NIObjectType(DjangoObjectType):
 
     class Meta:
         model = NodeHandle
-
-class RoleType(NIObjectType):
-    name = NIObjectField(type_kwargs={ 'required': True })
-
-class ContactType(NIObjectType):
-    name = NIObjectField(type_kwargs={ 'required': True })
-    first_name = NIObjectField(type_kwargs={ 'required': True })
-    last_name = NIObjectField(type_kwargs={ 'required': True })
-    title = NIObjectField()
-    salutation = NIObjectField()
-    contact_type = NIObjectField()
-    phone = NIObjectField()
-    mobile = NIObjectField()
-    email = NIObjectField()
-    other_email = NIObjectField()
-    PGP_fingerprint = NIObjectField()
-    is_roles = NIObjectField(field_type=graphene.List, type_args=(RoleType,), rel_name='Is', rel_method='get_outgoing_relations')
-
-class Query(graphene.ObjectType):
-    roles = graphene.List(RoleType, limit=graphene.Int())
-    contacts = graphene.List(ContactType, limit=graphene.Int())
-
-    def resolve_roles(self, info, **args):
-        limit = args.get('limit', False)
-        type = NodeType.objects.get(type="Role") # TODO too raw
-        if limit:
-            return NodeHandle.objects.filter(node_type=type)[:10]
-        else:
-            return NodeHandle.objects.filter(node_type=type)
-
-    def resolve_contacts(self, info, **args):
-        limit = args.get('limit', False)
-        type = NodeType.objects.get(type="Contact") # TODO too raw
-        if limit:
-            return NodeHandle.objects.filter(node_type=type)[:10]
-        else:
-            return NodeHandle.objects.filter(node_type=type)
