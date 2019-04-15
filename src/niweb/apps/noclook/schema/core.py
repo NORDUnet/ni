@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+import graphene
 import re
 from collections import OrderedDict
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
 
-def get_srifield_resolver(field_name, field_type, rel_name='', rel_method=None):
+from ..models import *
+
+def get_srifield_resolver(field_name, field_type, rel_name=None, rel_method=None):
     def resolve_node_string(self, info, **kwargs):
         return self.get_node().data.get(field_name)
 
@@ -23,7 +26,7 @@ def get_srifield_resolver(field_name, field_type, rel_name='', rel_method=None):
             handle_id_list.append(role_id)
 
         ret = NodeHandle.objects.filter(handle_id__in=handle_id_list)
-
+        
         return ret
 
     if isinstance(field_type, graphene.String) or isinstance(field_type, graphene.Int):
@@ -31,7 +34,6 @@ def get_srifield_resolver(field_name, field_type, rel_name='', rel_method=None):
     elif isinstance(field_type, graphene.List):
         return resolve_relationship_list
     else:
-        raise Exception(field_type.__class__)
         return resolve_node_string
 
 class NIObjectField():
@@ -59,7 +61,7 @@ class NIObjectType(DjangoObjectType):
         graphfields = OrderedDict()
         for name, field in allfields.items():
             pattern = re.compile("^__.*__$")
-            if pattern.match(name):# or callable(field):
+            if pattern.match(name) or callable(field):
                 continue
             graphfields[name] = field
 
@@ -97,6 +99,13 @@ class NIObjectType(DjangoObjectType):
                             rel_name,
                             rel_method,
                         )
+                )
+            elif callable(manual_resolver):
+                setattr(cls, 'resolve_{}'.format(name), manual_resolver)
+            else:
+                raise Exception(
+                    'NIObjectField manual_resolver must be a callable in field {}'\
+                        .format(name)
                 )
 
         super(NIObjectType, cls).__init_subclass_with_meta__(

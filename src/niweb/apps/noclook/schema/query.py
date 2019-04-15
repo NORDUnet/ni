@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+import graphene
+from .types import *
+
 class Query(graphene.ObjectType):
     roles = graphene.List(RoleType, limit=graphene.Int())
     contacts = graphene.List(ContactType, limit=graphene.Int())

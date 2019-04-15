@@ -1,14 +1,14 @@
 import graphene
-import apps.noclook.schema as ncschema
+import apps.noclook.schema as nocschema
 
-class Query(ncschema.Query, graphene.ObjectType):
+class Query(nocschema.Query, graphene.ObjectType):
     pass
 
 schema = graphene.Schema(
             query=Query,
             auto_camelcase=False,
             types=[
-                ncschema.RoleType,
-                ncschema.ContactType,
+                nocschema.RoleType,
+                nocschema.ContactType,
             ]
         )
