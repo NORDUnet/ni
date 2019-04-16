@@ -22,22 +22,22 @@ def resolve_roles_list(self, info, **kwargs):
     return ret
 
 class RoleType(NIObjectType):
-    name = NIObjectField(type_kwargs={ 'required': True })
+    name = NIStringField(type_kwargs={ 'required': True })
 
 class GroupType(NIObjectType):
-    name = NIObjectField(type_kwargs={ 'required': True })
+    name = NIStringField(type_kwargs={ 'required': True })
 
 class ContactType(NIObjectType):
-    name = NIObjectField(type_kwargs={ 'required': True })
-    first_name = NIObjectField(type_kwargs={ 'required': True })
-    last_name = NIObjectField(type_kwargs={ 'required': True })
-    title = NIObjectField()
-    salutation = NIObjectField()
-    contact_type = NIObjectField()
-    phone = NIObjectField()
-    mobile = NIObjectField()
-    email = NIObjectField()
-    other_email = NIObjectField()
-    PGP_fingerprint = NIObjectField()
-    is_roles = NIObjectField(field_type=graphene.List, type_args=(RoleType,), manual_resolver=resolve_roles_list)
-    member_of_groups = NIObjectField(field_type=graphene.List, type_args=(GroupType,), rel_name='Member_of', rel_method='get_outgoing_relations')
+    name = NIStringField(type_kwargs={ 'required': True })
+    first_name = NIStringField(type_kwargs={ 'required': True })
+    last_name = NIStringField(type_kwargs={ 'required': True })
+    title = NIStringField()
+    salutation = NIStringField()
+    contact_type = NIStringField()
+    phone = NIStringField()
+    mobile = NIStringField()
+    email = NIStringField()
+    other_email = NIStringField()
+    PGP_fingerprint = NIStringField()
+    is_roles = NIListField(type_args=(RoleType,), manual_resolver=resolve_roles_list)
+    member_of_groups = NIListField(type_args=(GroupType,), rel_name='Member_of', rel_method='get_outgoing_relations')

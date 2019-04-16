@@ -4,3 +4,13 @@ __author__ = 'ffuentes'
 from .core import *
 from .types import *
 from .query import *
+
+NOCSCHEMA_TYPES = [
+    RoleType,
+    GroupType,
+    ContactType,
+]
+
+NOCSCHEMA_QUERIES = [
+    Query,
+]

@@ -9,47 +9,83 @@ from graphene_django.types import DjangoObjectTypeOptions
 
 from ..models import *
 
-def get_srifield_resolver(field_name, field_type, rel_name=None, rel_method=None):
-    def resolve_node_string(self, info, **kwargs):
-        return self.get_node().data.get(field_name)
+class DictEntryType(graphene.ObjectType):
+    key = graphene.String(required=True)
+    value = graphene.String(required=True)
 
-    def resolve_relationship_list(self, info, **kwargs):
-        neo4jnode = self.get_node()
-        relations = getattr(neo4jnode, rel_method)()
-        nodes = relations.get(rel_name)
+def resolve_nidata(self, info, **kwargs):
+    ret = []
 
-        # this may be the worst way to do it, but it's just for a PoC
-        handle_id_list = []
-        if nodes:
-            for node in nodes:
-                node = node['node']
-                node_id = node.data.get('handle_id')
-                handle_id_list.append(node_id)
+    alldata = self.get_node().data
+    for key, value in alldata.items():
+        ret.append(DictEntryType(key=key, value=value))
 
-        ret = NodeHandle.objects.filter(handle_id__in=handle_id_list)
+    return ret
 
-        return ret
-
-    if isinstance(field_type, graphene.String) or isinstance(field_type, graphene.Int):
-        return resolve_node_string
-    elif isinstance(field_type, graphene.List):
-        return resolve_relationship_list
-    else:
-        return resolve_node_string
-
-# define new and different types: String, List
-class NIObjectField():
+class NIBasicField():
     def __init__(self, field_type=graphene.String, manual_resolver=False,
-                    type_args=None, type_kwargs=None, rel_name=None,
-                    rel_method=None, not_null_list=False, **kwargs):
+                    type_kwargs=None, **kwargs):
+
+        self.field_type      = field_type
+        self.manual_resolver = manual_resolver
+        self.type_kwargs     = type_kwargs
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_string(self, info, **kwargs):
+            return self.get_node().data.get(field_name)
+
+        return resolve_node_string
+
+class NIStringField(NIBasicField):
+    pass
+
+class NIIntField(NIBasicField):
+    def __init__(self, field_type=graphene.Int, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIIntField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+class NIListField(NIBasicField):
+    def __init__(self, field_type=graphene.List, manual_resolver=False,
+                    type_args=None, rel_name=None, rel_method=None,
+                    not_null_list=False, **kwargs):
 
         self.field_type      = field_type
         self.manual_resolver = manual_resolver
         self.type_args       = type_args
-        self.type_kwargs     = type_kwargs
         self.rel_name        = rel_name
         self.rel_method      = rel_method
         self.not_null_list   = not_null_list
+
+    def get_resolver(self, **kwargs):
+        rel_name   = kwargs.get('rel_name')
+        rel_method = kwargs.get('rel_method')
+
+        def resolve_relationship_list(self, info, **kwargs):
+            neo4jnode = self.get_node()
+            relations = getattr(neo4jnode, rel_method)()
+            nodes = relations.get(rel_name)
+
+            # this may be the worst way to do it, but it's just for a PoC
+            handle_id_list = []
+            if nodes:
+                for node in nodes:
+                    node = node['node']
+                    node_id = node.data.get('handle_id')
+                    handle_id_list.append(node_id)
+
+            ret = NodeHandle.objects.filter(handle_id__in=handle_id_list)
+
+            return ret
+
+        return resolve_relationship_list
 
 class NIObjectType(DjangoObjectType):
     @classmethod
@@ -62,10 +98,11 @@ class NIObjectType(DjangoObjectType):
         allfields = cls.__dict__
         graphfields = OrderedDict()
 
-        # getting all not magic attributes
+        # getting all not magic attributes, also filter non NI fields
         for name, field in allfields.items():
             pattern = re.compile("^__.*__$")
-            if pattern.match(name) or callable(field):
+            is_nibasicfield = issubclass(field.__class__, NIBasicField)
+            if pattern.match(name) or callable(field) or not is_nibasicfield:
                 continue
             graphfields[name] = field
 
@@ -98,13 +135,13 @@ class NIObjectType(DjangoObjectType):
             # adding the resolver
             if not manual_resolver:
                 setattr(cls, 'resolve_{}'.format(name), \
-                        get_srifield_resolver(
-                            name,
-                            field_value,
-                            rel_name,
-                            rel_method,
-                        )
+                    field.get_resolver(
+                        field_name=name,
+                        rel_name=rel_name,
+                        rel_method=rel_method,
+                    )
                 )
+
             elif callable(manual_resolver):
                 setattr(cls, 'resolve_{}'.format(name), manual_resolver)
             else:
@@ -114,6 +151,8 @@ class NIObjectType(DjangoObjectType):
                 )
 
         # add data field and resolver
+        setattr(cls, 'nidata', graphene.List(DictEntryType))
+        setattr(cls, 'resolve_nidata', resolve_nidata)
 
         super(NIObjectType, cls).__init_subclass_with_meta__(
             model=NIObjectType._meta.model,
