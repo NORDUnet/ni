@@ -4,16 +4,49 @@ __author__ = 'ffuentes'
 import graphene
 import re
 from collections import OrderedDict
+from graphene import relay
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
 
 from ..models import *
 
+class NIRelayNode(relay.Node):
+    '''
+    from https://docs.graphene-python.org/en/latest/relay/nodes/
+    This node may implement the id policies in the graph database
+    '''
+    class Meta:
+        name = 'NIRelayNode'
+
+    @staticmethod
+    def to_global_id(type, id):
+        return '{}:{}'.format(type, id)
+
+    @staticmethod
+    def get_node_from_global_id(info, global_id, only_type=None):
+        type, id = global_id.split(':')
+        if only_type:
+            # We assure that the node type that we want to retrieve
+            # is the same that was indicated in the field type
+            assert type == only_type._meta.name, 'Received not compatible node.'
+
+        if type == 'User':
+            return get_user(id)
+        elif type == 'Photo':
+            return get_photo(id)
+
 class DictEntryType(graphene.ObjectType):
+    '''
+    This type represents an key value pair in a dictionary for the data
+    dict of the norduniclient nodes
+    '''
     key = graphene.String(required=True)
     value = graphene.String(required=True)
 
 def resolve_nidata(self, info, **kwargs):
+    '''
+    Resolvers norduniclient nodes data dictionary
+    '''
     ret = []
 
     alldata = self.get_node().data
@@ -23,6 +56,9 @@ def resolve_nidata(self, info, **kwargs):
     return ret
 
 class NIBasicField():
+    '''
+    Super class of the type fields
+    '''
     def __init__(self, field_type=graphene.String, manual_resolver=False,
                     type_kwargs=None, **kwargs):
 
@@ -44,15 +80,24 @@ class NIBasicField():
         return resolve_node_string
 
 class NIStringField(NIBasicField):
+    '''
+    String type
+    '''
     pass
 
 class NIIntField(NIBasicField):
+    '''
+    Int type
+    '''
     def __init__(self, field_type=graphene.Int, manual_resolver=False,
                     type_kwargs=None, **kwargs):
         super(NIIntField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
 
 class NIListField(NIBasicField):
+    '''
+    Object list type
+    '''
     def __init__(self, field_type=graphene.List, manual_resolver=False,
                     type_args=None, rel_name=None, rel_method=None,
                     not_null_list=False, **kwargs):
@@ -88,6 +133,12 @@ class NIListField(NIBasicField):
         return resolve_relationship_list
 
 class NIObjectType(DjangoObjectType):
+    '''
+    This class expands graphene_django object type adding the defined fields in
+    the types subclasses and extracts the data from the norduniclient nodes and
+    adds a resolver for each field, a nidata field is also added to hold the
+    values of the node data dict.
+    '''
     @classmethod
     def __init_subclass_with_meta__(
         cls,
@@ -154,10 +205,13 @@ class NIObjectType(DjangoObjectType):
         setattr(cls, 'nidata', graphene.List(DictEntryType))
         setattr(cls, 'resolve_nidata', resolve_nidata)
 
+        options['model'] = NIObjectType._meta.model
+        options['interfaces'] = NIObjectType._meta.interfaces
+
         super(NIObjectType, cls).__init_subclass_with_meta__(
-            model=NIObjectType._meta.model,
             **options
         )
 
     class Meta:
         model = NodeHandle
+        interfaces = (NIRelayNode, )

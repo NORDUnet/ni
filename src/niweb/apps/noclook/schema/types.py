@@ -5,6 +5,10 @@ from .core import *
 from ..models import *
 
 def resolve_roles_list(self, info, **kwargs):
+    """
+    This method is only present here to illustrate how a manual resolver
+    could be used
+    """
     neo4jnode = self.get_node()
     relations = neo4jnode.get_outgoing_relations()
     roles = relations.get('Is')

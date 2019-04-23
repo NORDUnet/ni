@@ -1,5 +1,5 @@
 import graphene
-from apps.noclook.schema import NOCSCHEMA_QUERIES, NOCSCHEMA_TYPES
+from apps.noclook.schema import NOCSCHEMA_QUERIES, NOCSCHEMA_TYPES, NIRelayNode
 
 class Query(*NOCSCHEMA_QUERIES, graphene.ObjectType):
     pass

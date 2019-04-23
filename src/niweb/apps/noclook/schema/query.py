@@ -5,6 +5,7 @@ import graphene
 from .types import *
 
 class Query(graphene.ObjectType):
+    node = NIRelayNode.Field()
     roles = graphene.List(RoleType, limit=graphene.Int())
     groups = graphene.List(GroupType, limit=graphene.Int())
     contacts = graphene.List(ContactType, limit=graphene.Int())
