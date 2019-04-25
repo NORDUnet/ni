@@ -2,3 +2,5 @@
 ipython
 django-debug-toolbar
 django-nose<1.5
+django-extensions
+ipdb
