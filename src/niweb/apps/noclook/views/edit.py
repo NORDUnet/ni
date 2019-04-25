@@ -975,9 +975,9 @@ def edit_organization(request, handle_id):
                     if contact_data:
                         if isinstance(contact_data, six.string_types):
                             if contact_data:
-                                helpers.create_contact_role_for_organization(request.user, nh, contact_data, field[1])
+                                helpers.create_contact_role_for_organization(request.user, organization, contact_data, field[1])
                         else:
-                            helpers.link_contact_role_for_organization(request.user, nh, contact_data, field[1])
+                            helpers.link_contact_role_for_organization(request.user, organization, contact_data, field[1])
 
             # Set child organizations
             if form.cleaned_data['relationship_parent_of']:

@@ -70,18 +70,22 @@ CACHES = {
 # See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
 INSTALLED_APPS += (
     'debug_toolbar',
-    'django_nose'
+    'django_nose',
+    'django_extensions'
 )
 
 # See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
 INTERNAL_IPS = ('127.0.0.1',)
 
 # See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
-MIDDLEWARE_CLASSES += (
+MIDDLEWARE_CLASSES = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
-)
+) + MIDDLEWARE_CLASSES
 
-DEBUG_TOOLBAR_CONFIG = {}
+DEBUG_TOOLBAR_CONFIG = {
+    'INTERCEPT_REDIRECTS': False,
+    'SHOW_TOOLBAR_CALLBACK': lambda x: True,
+}
 ########## END TOOLBAR CONFIGURATION
 
 ########## SECRET CONFIGURATION
