@@ -13,9 +13,9 @@ NOCSCHEMA_TYPES = [
 ]
 
 NOCSCHEMA_QUERIES = [
-    Query,
+    NOCRootQuery,
 ]
 
 NOCSCHEMA_MUTATIONS = [
-    
+    NOCRootMutation,
 ]

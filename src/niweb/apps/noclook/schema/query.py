@@ -4,7 +4,7 @@ __author__ = 'ffuentes'
 import graphene
 from .types import *
 
-class Query(graphene.ObjectType):
+class NOCRootQuery(graphene.ObjectType):
     node = NIRelayNode.Field()
     roles = graphene.List(RoleType, limit=graphene.Int())
     groups = graphene.List(GroupType, limit=graphene.Int())
