@@ -27,7 +27,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = {
             'contacts': [
                 OrderedDict([
-                    ('handle_id', '4'),
+                    ('handle_id', '13'),
                     ('name', 'John Smith'),
                     ('first_name', 'John'),
                     ('last_name', 'Smith'),
@@ -35,7 +35,7 @@ class QueryTest(Neo4jGraphQLTest):
                     ('member_of_groups', [OrderedDict([('name', 'group2')])]),
                 ]),
                 OrderedDict([
-                    ('handle_id', '3'),
+                    ('handle_id', '12'),
                     ('name', 'Jane Doe'),
                     ('first_name', 'Jane'),
                     ('last_name', 'Doe'),
@@ -45,5 +45,6 @@ class QueryTest(Neo4jGraphQLTest):
             ]
         }
         result = schema.execute(query)
+
         assert not result.errors
         assert result.data == expected

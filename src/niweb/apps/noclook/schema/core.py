@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 import graphene
 import re
+from apps.nerds.lib.consumer_util import get_user
 from collections import OrderedDict
 from graphene import relay
 from graphene_django import DjangoObjectType
@@ -215,3 +216,6 @@ class NIObjectType(DjangoObjectType):
     class Meta:
         model = NodeHandle
         interfaces = (NIRelayNode, )
+
+def get_logger_user():
+    return get_user()
