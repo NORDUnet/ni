@@ -214,6 +214,8 @@ class UpdateNIMutation(AbstractNIMutation):
             raise GraphQLError('Form errors: {}'.format(form))
 
 class DeleteNIMutation(AbstractNIMutation):
+    nodehandle = graphene.Boolean(required=True)
+
     class NIMetaClass:
         node_type      = None
         node_meta_type = None
@@ -221,7 +223,12 @@ class DeleteNIMutation(AbstractNIMutation):
 
     @classmethod
     def do_request(cls, request, **kwargs):
-        pass
+        handle_id      = request.POST.get('handle_id')
+        
+        nh, node = helpers.get_nh_node(handle_id)
+        helpers.delete_node(request.user, node.handle_id)
+
+        return True
 
 class NIMutationFactory():
     '''
@@ -313,7 +320,6 @@ class NIMutationFactory():
             class_name,
             (cls.delete_mutation_class,),
             {
-                nh_field: graphene.Field(nodetype, required=True),
                 metaclass_name: delete_metaclass,
             },
         )

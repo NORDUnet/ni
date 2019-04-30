@@ -20,19 +20,6 @@ class QueryTest(Neo4jGraphQLTest):
         }
         '''
 
-        expected = {
-            'create_role': [
-                OrderedDict([
-                    ('nodehandle',
-                        OrderedDict([
-                            ('handle_id', '9'),
-                            ('name', 'New test role'),
-                        ])),
-                    ('clientMutationId', None),
-                ]),
-            ]
-        }
-
         expected = OrderedDict([
             ('create_role',
                 OrderedDict([
@@ -46,7 +33,6 @@ class QueryTest(Neo4jGraphQLTest):
             )
         ])
 
-
         result = schema.execute(query)
 
         assert not result.errors
@@ -58,7 +44,7 @@ class QueryTest(Neo4jGraphQLTest):
         mutation update_test_role {
           update_role(input: {handle_id: 9, name: "A test role"}){
             nodehandle {
-              id
+              handle_id
               name
             }
             clientMutationId
@@ -66,20 +52,40 @@ class QueryTest(Neo4jGraphQLTest):
         }
         """
 
+        expected = OrderedDict([
+            ('update_role',
+                OrderedDict([
+                    ('nodehandle',
+                        OrderedDict([
+                            ('handle_id', '9'),
+                            ('name', 'A test role')
+                        ])),
+                    ('clientMutationId', None)
+                ])
+            )
+        ])
+
         result = schema.execute(query)
         assert not result.errors
+        assert result.data == expected
 
-        """## delete ##
-        query = '''
-        mutation create_test_role {
-          delete_role(input: {handle_id: {}}){
+        ## delete ##
+        query = """
+        mutation delete_test_role {
+          delete_role(input: {handle_id: 9}){
             nodehandle
-            clientMutationId
           }
         }
-        '''.format(role_handle_id)
+        """
+
+        expected = OrderedDict([
+            ('delete_role',
+                OrderedDict([
+                    ('nodehandle', True),
+                ])
+            )
+        ])
 
         result = schema.execute(query)
-        import pprint
-        raise Exception(pprint.pprint(result.data))
-        assert not result.errors"""
+        assert not result.errors
+        assert result.data == expected
