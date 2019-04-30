@@ -24,9 +24,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
         ''' In this method we'll build an input nested object using the form
         '''
         # read form
-        ni_metaclass = getattr(cls, 'NIMetaClass')
-        django_form = getattr(ni_metaclass, 'django_form', None)
+        ni_metaclass  = getattr(cls, 'NIMetaClass')
+        django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', cls.__name__)
+        is_create     = getattr(ni_metaclass, 'is_create', False)
 
         # build fields into Input
         inner_fields = {}
@@ -43,11 +44,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
                                     inner_fields[field_name] = graphene_field
                             else:
                                 inner_fields[field_name] = graphene_field
-        else:
-            # this would set a handle_id for the input param
-            '''assert 'Delete' in cls.__name__, \
-                '{} is not a Delete Mutation '.format(cls.__name__)'''
-            inner_fields['handle_id'] = forms.IntegerField(required=True)
+
+        # add handle_id
+        if not is_create:
+            inner_fields['handle_id'] = graphene.Int(required=True)
 
         # add Input attribute to class
         inner_class = type('Input', (object,), inner_fields)
@@ -112,17 +112,21 @@ class AbstractNIMutation(relay.ClientIDMutation):
         ni_metaclass = getattr(cls, 'NIMetaClass')
         return getattr(ni_metaclass, 'typeclass')
 
-    class Meta:
-        abstract = True
-
-class CreateNIMutation(AbstractNIMutation):
-    class NIMetaClass:
-        node_type      = None
-        node_meta_type = None
-        request_path   = None
-
     @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
+    def from_input_to_request(cls, **input):
+        '''
+        Gets the input data from the input inner class, and this is build using
+        the fields in the django form. It returns a nodehandle of the type
+        defined by the NIMetaClass
+        '''
+        # get ni metaclass data
+        ni_metaclass   = getattr(cls, 'NIMetaClass')
+        form_class     = getattr(ni_metaclass, 'django_form', None)
+        node_type      = getattr(ni_metaclass, 'node_type')
+        node_meta_type = getattr(ni_metaclass, 'node_meta_type')
+        request_path   = getattr(ni_metaclass, 'request_path', '/')
+        is_create      = getattr(ni_metaclass, 'is_create', False)
+
         # get input values
         input_class = getattr(cls, 'Input', None)
         input_params = {}
@@ -131,25 +135,40 @@ class CreateNIMutation(AbstractNIMutation):
                 attr_value = input.get(attr_name)
                 input_params[attr_name] = attr_value
 
-        # get node_type and node_metatype
-        # get request_path and request_data
-        ni_metaclass = getattr(cls, 'NIMetaClass')
-        form_class     = getattr(ni_metaclass, 'django_form', None)
-        node_type      = getattr(ni_metaclass, 'node_type')
-        node_meta_type = getattr(ni_metaclass, 'node_meta_type')
-        request_path   = getattr(ni_metaclass, 'request_path', '/')
+        if not is_create:
+            input_params['handle_id'] = input.get('handle_id')
 
+        # forge request
         request_factory = RequestFactory()
         request = request_factory.post(request_path, data=input_params)
         request.user = get_logger_user()
 
-        ret = cls.do_create(request, form_class=form_class, node_type=node_type,
-                                node_meta_type=node_meta_type)
+        return (request, dict(form_class=form_class, node_type=node_type,
+                                node_meta_type=node_meta_type))
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        reqinput = cls.from_input_to_request(**input)
+        ret = cls.do_request(reqinput[0], **reqinput[1])
 
         return cls(nodehandle=ret)
 
+    class Meta:
+        abstract = True
+
+class CreateNIMutation(AbstractNIMutation):
+    '''
+    This class is used by the Mutation factory but it could be used as the
+    superclass of a manualy coded class in case it's needed.
+    '''
+    class NIMetaClass:
+        node_type      = None
+        node_meta_type = None
+        request_path   = None
+        is_create      = True
+
     @classmethod
-    def do_create(cls, request, **kwargs):
+    def do_request(cls, request, **kwargs):
         form_class     = kwargs.get('form_class')
         node_type      = kwargs.get('node_type')
         node_meta_type = kwargs.get('node_meta_type')
@@ -170,18 +189,6 @@ class CreateNIMutation(AbstractNIMutation):
             # get the errors and return them
             raise GraphQLError('Form errors: {}'.format(form))
 
-class CreateRoleNIMutation(CreateNIMutation):
-    nodehandle = graphene.Field(RoleType, required=True)
-
-    class NIMetaClass:
-        node_type      = 'role'
-        node_meta_type = 'Logical'
-        request_path   = '/'
-        django_form    = NewRoleForm
-
-    class Meta:
-        abstract = False
-
 class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:
         node_type      = None
@@ -189,17 +196,22 @@ class UpdateNIMutation(AbstractNIMutation):
         request_path   = None
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
-        pass
+    def do_request(cls, request, **kwargs):
+        form_class     = kwargs.get('form_class')
+        node_type      = kwargs.get('node_type')
+        node_meta_type = kwargs.get('node_meta_type')
+        handle_id      = request.POST.get('handle_id')
 
-    # to be implemented by the subclass
-    @classmethod
-    def do_edit(cls, *args, **kwargs):
-        raise Exception('The class {} doesn\'t implemet the \
-            do_edit method'.format(cls))
-
-    class Meta:
-        abstract = False
+        nh, nodehandler = helpers.get_nh_node(handle_id)
+        if request.POST:
+            form = form_class(request.POST)
+            if form.is_valid():
+                # Generic node update
+                helpers.form_update_node(request.user, nodehandler.handle_id, form)
+                return nh
+        else:
+            # get the errors and return them
+            raise GraphQLError('Form errors: {}'.format(form))
 
 class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -208,29 +220,24 @@ class DeleteNIMutation(AbstractNIMutation):
         request_path   = None
 
     @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
+    def do_request(cls, request, **kwargs):
         pass
-
-    # to be implemented by the subclass
-    @classmethod
-    def do_delete(cls, *args, **kwargs):
-        raise Exception('The class {} doesn\'t implemet the \
-            do_delete method'.format(cls))
-
-    class Meta:
-        abstract = False
 
 class NIMutationFactory():
     '''
-    This class could have the methods create|update|delete_mutate_and_get_payload
-    implemented to override the default functionality, but it must implement
-    do_create|do_update|do_delete so these methods could be added to the generated
-    classes that would be part of the schema
+    The mutation factory takes a django form, a node type and some parameters
+    more and generates a mutation to create/update/delete nodes. If a higher
+    degree of control is needed the classes CreateNIMutation, UpdateNIMutation
+    and DeleteNIMutation could be subclassed to override any method's behaviour.
     '''
 
     node_type      = None
     node_meta_type = None
     request_path   = None
+
+    create_mutation_class = CreateNIMutation
+    update_mutation_class = UpdateNIMutation
+    delete_mutation_class = DeleteNIMutation
 
     def __init_subclass__(cls, **kwargs):
         metaclass_name = 'NIMetaClass'
@@ -268,13 +275,14 @@ class NIMutationFactory():
             'node_type': node_type,
             'node_meta_type': node_meta_type,
             'request_path': request_path,
+            'is_create': True,
         }
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
 
         cls._create_mutation = type(
             class_name,
-            (CreateNIMutation,),
+            (cls.create_mutation_class,),
             {
                 nh_field: graphene.Field(nodetype, required=True),
                 metaclass_name: create_metaclass,
@@ -282,13 +290,14 @@ class NIMutationFactory():
         )
 
         class_name = 'UpdateNI{}Mutation'.format(node_type.capitalize())
-        attr_dict['django_form'] = update_form
+        attr_dict['django_form']   = update_form
         attr_dict['mutation_name'] = class_name
+        attr_dict['is_create']     = False
         update_metaclass = type(metaclass_name, (object,), attr_dict)
 
         cls._update_mutation = type(
             class_name,
-            (UpdateNIMutation,),
+            (cls.update_mutation_class,),
             {
                 nh_field: graphene.Field(nodetype, required=True),
                 metaclass_name: update_metaclass,
@@ -302,7 +311,7 @@ class NIMutationFactory():
 
         cls._delete_mutation = type(
             class_name,
-            (DeleteNIMutation,),
+            (cls.delete_mutation_class,),
             {
                 nh_field: graphene.Field(nodetype, required=True),
                 metaclass_name: delete_metaclass,
@@ -331,6 +340,23 @@ class NIRoleMutationFactory(NIMutationFactory):
         request_path   = '/'
         form           = NewRoleForm
         nodetype       = RoleType
+
+    class Meta:
+        abstract = False
+
+class CreateRoleNIMutation(CreateNIMutation):
+    '''This class is not used but left out as documentation in the case that as
+    finer grain of control is needed'''
+    nodehandle = graphene.Field(RoleType, required=True)
+
+    class NIMetaClass:
+        node_type      = 'role'
+        node_meta_type = 'Logical'
+        request_path   = '/'
+        django_form    = NewRoleForm
+
+    class Meta:
+        abstract = False
 
 class NOCRootMutation(graphene.ObjectType):
     create_role = NIRoleMutationFactory.get_create_mutation().Field()

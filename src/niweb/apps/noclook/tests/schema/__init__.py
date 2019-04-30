@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+from django.db import connection
+
+from apps.noclook.models import NodeHandle
 from ..neo4j_base import NeoTestCase
 
 class Neo4jGraphQLTest(NeoTestCase):
@@ -44,3 +47,12 @@ class Neo4jGraphQLTest(NeoTestCase):
         contact2.get_node().add_role(role2.handle_id)
         contact2.get_node().add_group(group2.handle_id)
         contact2.get_node().add_organization(organization2.handle_id)
+
+    def tearDown(self):
+        super(Neo4jGraphQLTest, self).tearDown()
+
+        # reset sql database
+        NodeHandle.objects.all().delete()
+
+        with connection.cursor() as cursor:
+            cursor.execute("ALTER SEQUENCE noclook_nodehandle_handle_id_seq RESTART WITH 1")
