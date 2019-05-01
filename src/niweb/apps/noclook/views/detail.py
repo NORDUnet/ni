@@ -462,7 +462,10 @@ def rack_detail(request, handle_id):
     last_seen, expired = helpers.neo4j_data_age(rack.data)
     location_path = rack.get_location_path()
     # Get equipment in rack
-    physical_relationships = rack.get_located_in()
+    _located_in = rack.get_located_in().get('Located_in', [])
+    physical_relationships = {
+        "Located_in": [n for n in _located_in if n.get('node').data.get('operational_state', '').lower() not in ['decommissioned']]
+    }
 
     urls = helpers.get_node_urls(rack, physical_relationships, location_path)
     return render(request, 'noclook/detail/rack_detail.html',
