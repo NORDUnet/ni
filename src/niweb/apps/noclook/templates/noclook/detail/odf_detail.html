@@ -7,6 +7,11 @@
 <div class="row">
     <div class="span4">
         <table class="table">
+            {% if node.data.description %}
+                <tr>
+                    <th>Description:</th><td>{{ node.data.description }}</td>
+                </tr>
+            {% endif %}
             {% if node.data.max_number_of_ports %}
                 <tr>
                     <th>Max ports:</th><td>{{ node.data.max_number_of_ports }}</td>
