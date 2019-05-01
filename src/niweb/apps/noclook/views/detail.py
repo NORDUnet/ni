@@ -7,6 +7,7 @@ import logging
 
 from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
+from apps.noclook.views.helpers import Table, TableRow
 import norduniclient as nc
 
 logger = logging.getLogger(__name__)
@@ -454,6 +455,10 @@ def provider_detail(request, handle_id):
                    'history': True, 'urls': urls})
 
 
+def _nodes_without(nodes, what, excludes):
+    return [n for n in nodes if n.get('node').data.get(what, '').lower() not in excludes]
+
+
 @login_required
 def rack_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -464,7 +469,7 @@ def rack_detail(request, handle_id):
     # Get equipment in rack
     _located_in = rack.get_located_in().get('Located_in', [])
     physical_relationships = {
-        "Located_in": [n for n in _located_in if n.get('node').data.get('operational_state', '').lower() not in ['decommissioned']]
+        "Located_in": _nodes_without(_located_in, 'operational_state', ['decommissioned'])
     }
 
     urls = helpers.get_node_urls(rack, physical_relationships, location_path)
@@ -560,15 +565,35 @@ def site_detail(request, handle_id):
     site = nh.get_node()
     last_seen, expired = helpers.neo4j_data_age(site.data)
     relations = site.get_relations()
-    equipment_relationships = site.get_located_in()
-    location_relationships = site.get_has()
 
-    urls = helpers.get_node_urls(site, equipment_relationships, relations, location_relationships)
+    # Direct equipment (aka not racked)
+    equipment_relationships = _nodes_without(site.get_located_in().get('Located_in', []), 'operational_state', ['decommissioned'])
+
+    # Racked equipment
+    q = """
+    MATCH (site:Site {handle_id: {handle_id}})-[:Has]->(rack:Node)
+    OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
+    WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
+    RETURN rack, item order by toLower(rack.name), toLower(item.name)
+    """
+    rack_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
+
+    # Create racked equipment table
+    racks_table = Table('Rack', 'Equipment')
+    racks_table.rows = [TableRow(r.get('rack'), r.get('item')) for r in rack_list]
+
+    urls = helpers.get_node_urls(site, equipment_relationships, relations, rack_list)
     return render(request, 'noclook/detail/site_detail.html',
-                  {'node_handle': nh, 'node': site, 'last_seen': last_seen, 'expired': expired,
-                   'equipment_relationships': equipment_relationships, 'relations': relations,
-                   'location_relationships': location_relationships,
-                   'history': True, 'urls': urls})
+                  {'node_handle': nh,
+                   'node': site,
+                   'last_seen': last_seen,
+                   'expired': expired,
+                   'equipment_relationships': equipment_relationships,
+                   'relations': relations,
+                   'racks_table': racks_table,
+                   'history': True,
+                   'urls': urls,
+                   })
 
 
 @login_required
