@@ -83,11 +83,13 @@ def create_generic_graph(root_node, graph_dict=None):
 
     q = """
         MATCH (n:Node {handle_id: {handle_id}})-[r]->(end)
+        WHERE NOT end.operational_state IN ['Decommissioned'] OR NOT exists(end.operational_state)
         RETURN type(r) as relation, collect(distinct end) as nodes
         """
     relations = nc.query_to_list(nc.graphdb.manager, q, handle_id=root_node.handle_id)
     q = """
         MATCH (n:Node {handle_id: {handle_id}})<-[r]-(start)
+        WHERE NOT start.operational_state IN ['Decommissioned'] OR NOT exists(start.operational_state)
         RETURN type(r) as relation, collect(distinct start) as nodes
         """
     dependencies = nc.query_to_list(nc.graphdb.manager, q, handle_id=root_node.handle_id)
