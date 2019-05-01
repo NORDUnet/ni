@@ -184,6 +184,7 @@ def _host_table(host, users):
     os_version = host.get('os_version')
     row = TableRow(host, ip_addresses, os, os_version, users)
     _set_expired(row, host)
+    _set_operational_state(row, host)
     return row
 
 
@@ -198,11 +199,13 @@ def list_hosts(request):
 
     host_list = nc.query_to_list(nc.graphdb.manager, q)
     host_list = _filter_expired(host_list, request, select=lambda n: n.get('host'))
+    host_list = _filter_operational_state(host_list, request, select=lambda n: n.get('host'))
     urls = get_node_urls(host_list)
 
     table = Table('Host', 'Address', 'OS', 'OS version', 'User')
     table.rows = [_host_table(item['host'], item['users']) for item in host_list]
     _set_filters_expired(table, request)
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Hosts', 'urls': urls})
@@ -271,7 +274,7 @@ def _odf_table(item):
             location_names.append(location.get('name'))
         location.properties['name'] = ' '.join(location_names)
     row = TableRow(location, odf)
-    _set_expired(row, odf)
+    _set_operational_state(row, odf)
     return row
 
 
@@ -285,10 +288,13 @@ def list_odfs(request):
         ORDER BY site.name, location.name, odf.name
         """
     odf_list = nc.query_to_list(nc.graphdb.manager, q)
+    odf_list = _filter_operational_state(odf_list, request, select=lambda n: n.get('odf'))
     urls = get_node_urls(odf_list)
 
     table = Table("Location", "Name")
     table.rows = [_odf_table(item) for item in odf_list]
+    # Filter out
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'ODFs', 'urls': urls})

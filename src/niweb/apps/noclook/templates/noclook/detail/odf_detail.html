@@ -17,6 +17,11 @@
                     <th>Max ports:</th><td>{{ node.data.max_number_of_ports }}</td>
                 </tr>
             {% endif %}
+            {% if node.data.operational_state %}
+                <tr>
+                    <th>Operational state:</th><td>{{ node.data.operational_state }}</td>
+                </tr>
+            {% endif %}
             {% if node.data.rack_units %}
                 <tr>
                     <th>Height (u):</th><td>{{ node.data.rack_units }}</td>

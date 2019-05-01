@@ -378,10 +378,12 @@ class NewOdfForm(forms.Form):
         max_num_of_ports = 48
         choices = [(x, x) for x in range(1, max_num_of_ports + 1) if x]
         self.fields['max_number_of_ports'].choices = choices
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
 
     name = forms.CharField()
     description = description_field('ODF')
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_location = relationship_field('location')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
@@ -401,11 +403,16 @@ class BulkPortsForm(forms.Form):
 
 
 class EditOdfForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditOdfForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
     name = forms.CharField()
     description = description_field('ODF')
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
 
