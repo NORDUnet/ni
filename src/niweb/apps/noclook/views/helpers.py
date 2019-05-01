@@ -25,8 +25,8 @@ class Table(object):
         if self.rows:
             row = self.rows[0]
             omitted = len(self.rows) - 1
-        if self.filter:
-            filter = self.filters
+        if self.filters:
+            filters = self.filters
         return s.format(header=self.headers, row=row, filters=filters, omitted=omitted)
 
     def __str__(self):
@@ -37,7 +37,11 @@ class TableRow(object):
     def __init__(self, *args):
         self.cols = args[:]
 
-def create_filter(badge,  name, param, params):
+
+def create_filter(badge, name, param, params):
+    """
+        params should be a QueryDict e.g. request.GET.copy()
+    """
     # handle show/hide
     active = param in params
     if 'hide' in param:
@@ -47,7 +51,7 @@ def create_filter(badge,  name, param, params):
         del params[param]
     else:
         params[param] = ''
-    link = "?{}".format(urlencode(params))
+    link = "?{}".format(params.urlencode())
     return (badge, name, link, active)
 
     def __repr__(self):
