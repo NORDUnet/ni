@@ -74,6 +74,12 @@ if settings.SAML_ENABLED:
         url(r'^saml2/', include('djangosaml2.urls')),
     ]
 
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns = [
+        url(r'^__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns
+
 urlpatterns += [
     # Tastypie URLs
     url(r'^api/', include(v1_api.urls)),

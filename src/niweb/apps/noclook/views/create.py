@@ -17,33 +17,12 @@ from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
-
 TYPES = [
-    ("customer", "Customer"),
-    ("cable", "Cable"),
     ("contact", "Contact"),
-    ("end-user", "End User"),
-    ("external-cable", "External Cable"),
-    ("external-equipment", "External Equipment"),
-    ("host", "Host"),
-    ("optical-link", "Optical Link"),
-    ("optical-path", "Optical Path"),
-    ("service", "Service"),
-    ("odf", "ODF"),
-    ("optical-filter", "Optical Filter"),
-    ("optical-multiplex-section", "Optical Multiplex Section"),
-    ("optical-node", "Optical Node"),
-    ("port", "Port"),
-    ("provider", "Provider"),
-    ("procedure", "Procedure"),
-    ("rack", "Rack"),
     ("role", "Role"),
-    ("site", "Site"),
-    ("site-owner", "Site Owner"),
     ("organization", "Organization"),
+    ("group", "Group"),
 ]
-if helpers.app_enabled("apps.scan"):
-    TYPES.append(("/scan/queue", "Host scan"))
 
 
 # Create functions
@@ -571,7 +550,19 @@ def new_organization(request, **kwargs):
             except UniqueNodeError:
                 form.add_error('name', 'An Organization with that name already exists.')
                 return render(request, 'noclook/create/create_organization.html', {'form': form})
-            helpers.form_update_node(request.user, nh.handle_id, form)
+
+            # use property keys to avoid inserting contacts as a string property of the node
+            property_keys = [
+                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
+            ]
+            helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
+
+            contact_fields = Dropdown.get('organization_contact_types').as_choices(empty=False)
+            for field in contact_fields:
+                contact_name = form.cleaned_data[field[0]]
+                if contact_name:
+                    helpers.create_contact_role_for_organization(request.user, nh, contact_name, field[1])
+
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewOrganizationForm()
