@@ -14,11 +14,9 @@ class NIRoleMutationFactory(NIMutationFactory):
     update_form    = EditRoleForm
 
     class NIMetaClass:
-        node_type      = 'role'
-        node_meta_type = 'Logical'
         request_path   = '/'
         form           = NewRoleForm
-        nodetype       = RoleType
+        graphql_type   = RoleType
 
     class Meta:
         abstract = False
@@ -29,10 +27,9 @@ class CreateRoleNIMutation(CreateNIMutation):
     nodehandle = graphene.Field(RoleType, required=True)
 
     class NIMetaClass:
-        node_type      = 'role'
-        node_meta_type = 'Logical'
         request_path   = '/'
         django_form    = NewRoleForm
+        graphql_type   = RoleType
 
     class Meta:
         abstract = False

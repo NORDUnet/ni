@@ -334,10 +334,13 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # get ni metaclass data
         ni_metaclass   = getattr(cls, 'NIMetaClass')
         form_class     = getattr(ni_metaclass, 'django_form', None)
-        node_type      = getattr(ni_metaclass, 'node_type')
-        node_meta_type = getattr(ni_metaclass, 'node_meta_type')
         request_path   = getattr(ni_metaclass, 'request_path', '/')
         is_create      = getattr(ni_metaclass, 'is_create', False)
+
+        graphql_type   = getattr(ni_metaclass, 'graphql_type')
+        nimetatype     = getattr(graphql_type, 'NIMetaType')
+        node_type      = getattr(nimetatype, 'ni_type').lower()
+        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
 
         # get input values
         input_class = getattr(cls, 'Input', None)
@@ -374,16 +377,18 @@ class CreateNIMutation(AbstractNIMutation):
     superclass of a manualy coded class in case it's needed.
     '''
     class NIMetaClass:
-        node_type      = None
-        node_meta_type = None
         request_path   = None
         is_create      = True
+        graphql_type   = None
 
     @classmethod
     def do_request(cls, request, **kwargs):
         form_class     = kwargs.get('form_class')
-        node_type      = kwargs.get('node_type')
-        node_meta_type = kwargs.get('node_meta_type')
+        nimetaclass    = getattr(cls, 'NIMetaClass')
+        graphql_type   = getattr(nimetaclass, 'graphql_type')
+        nimetatype     = getattr(graphql_type, 'NIMetaType')
+        node_type      = getattr(nimetatype, 'ni_type').lower()
+        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
 
         ## code from role creation
         form = form_class(request.POST)
@@ -403,15 +408,17 @@ class CreateNIMutation(AbstractNIMutation):
 
 class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:
-        node_type      = None
-        node_meta_type = None
         request_path   = None
+        graphql_type   = None
 
     @classmethod
     def do_request(cls, request, **kwargs):
         form_class     = kwargs.get('form_class')
-        node_type      = kwargs.get('node_type')
-        node_meta_type = kwargs.get('node_meta_type')
+        nimetaclass    = getattr(cls, 'NIMetaClass')
+        graphql_type   = getattr(nimetaclass, 'graphql_type')
+        nimetatype     = getattr(graphql_type, 'NIMetaType')
+        node_type      = getattr(nimetatype, 'ni_type').lower()
+        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
         handle_id      = request.POST.get('handle_id')
 
         nh, nodehandler = helpers.get_nh_node(handle_id)
@@ -429,9 +436,8 @@ class DeleteNIMutation(AbstractNIMutation):
     nodehandle = graphene.Boolean(required=True)
 
     class NIMetaClass:
-        node_type      = None
-        node_meta_type = None
         request_path   = None
+        graphql_type   = None
 
     @classmethod
     def do_request(cls, request, **kwargs):
@@ -471,10 +477,12 @@ class NIMutationFactory():
         form           = getattr(ni_metaclass, 'form', None)
         create_form    = getattr(ni_metaclass, 'create_form', None)
         update_form    = getattr(ni_metaclass, 'update_form', None)
-        node_type      = getattr(ni_metaclass, 'node_type', None)
-        node_meta_type = getattr(ni_metaclass, 'node_meta_type', None)
         request_path   = getattr(ni_metaclass, 'request_path', None)
-        nodetype       = getattr(ni_metaclass, 'nodetype', NodeHandleType)
+        graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandleType)
+
+        # we'll retrieve these values NI type/metatype from the GraphQLType
+        nimetatype     = getattr(graphql_type, 'NIMetaType')
+        node_type      = getattr(nimetatype, 'ni_type').lower()
 
         # specify and set create and update forms
         assert form and not create_form and not update_form or\
@@ -491,10 +499,9 @@ class NIMutationFactory():
         attr_dict = {
             'django_form': create_form,
             'mutation_name': class_name,
-            'node_type': node_type,
-            'node_meta_type': node_meta_type,
             'request_path': request_path,
             'is_create': True,
+            'graphql_type': graphql_type,
         }
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
@@ -503,7 +510,7 @@ class NIMutationFactory():
             class_name,
             (cls.create_mutation_class,),
             {
-                nh_field: graphene.Field(nodetype, required=True),
+                nh_field: graphene.Field(graphql_type, required=True),
                 metaclass_name: create_metaclass,
             },
         )
@@ -518,7 +525,7 @@ class NIMutationFactory():
             class_name,
             (cls.update_mutation_class,),
             {
-                nh_field: graphene.Field(nodetype, required=True),
+                nh_field: graphene.Field(graphql_type, required=True),
                 metaclass_name: update_metaclass,
             },
         )
@@ -589,7 +596,7 @@ class NOCAutoQuery(graphene.ObjectType):
             return NodeHandle.objects.get(handle_id=handle_id)
         else:
             raise GraphQLError('A handle_id must be provided')
-    
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
