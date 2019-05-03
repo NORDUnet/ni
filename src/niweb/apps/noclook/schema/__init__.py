@@ -10,6 +10,7 @@ NOCSCHEMA_TYPES = [
     RoleType,
     GroupType,
     ContactType,
+    NodeHandleType,
 ]
 
 NOCSCHEMA_QUERIES = [

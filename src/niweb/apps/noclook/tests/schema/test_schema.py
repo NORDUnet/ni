@@ -48,3 +48,16 @@ class QueryTest(Neo4jGraphQLTest):
 
         assert not result.errors
         assert result.data == expected
+
+    def test_getnodebyhandle_id(self):
+        query = '''
+        query {
+          getNodeById(handle_id: 13){
+            handle_id
+          }
+        }
+        '''
+
+        result = schema.execute(query)
+
+        #assert not result.errors

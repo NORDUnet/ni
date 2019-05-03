@@ -25,11 +25,24 @@ def resolve_roles_list(self, info, **kwargs):
 
     return ret
 
+class DropdownType(DjangoObjectType):
+    class Meta:
+        model = NodeHandle
+        interfaces = (NIRelayNode, )
+
 class RoleType(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
+    class NIMetaType:
+        ni_type = 'Role'
+        ni_metatype = 'logical'
+
 class GroupType(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
+
+    class NIMetaType:
+        ni_type = 'Group'
+        ni_metatype = 'logical'
 
 class ContactType(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -45,3 +58,7 @@ class ContactType(NIObjectType):
     PGP_fingerprint = NIStringField()
     is_roles = NIListField(type_args=(RoleType,), manual_resolver=resolve_roles_list)
     member_of_groups = NIListField(type_args=(GroupType,), rel_name='Member_of', rel_method='get_outgoing_relations')
+
+    class NIMetaType:
+        ni_type = 'Contact'
+        ni_metatype = 'relation'

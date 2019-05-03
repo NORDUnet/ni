@@ -15,6 +15,8 @@ from graphene_django.types import DjangoObjectTypeOptions
 from graphql import GraphQLError
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
+from ..models import NodeType, NodeHandle
+
 class NIRelayNode(relay.Node):
     '''
     from https://docs.graphene-python.org/en/latest/relay/nodes/
@@ -35,10 +37,10 @@ class NIRelayNode(relay.Node):
             # is the same that was indicated in the field type
             assert type == only_type._meta.name, 'Received not compatible node.'
 
-        if type == 'User':
-            return get_user(id)
-        elif type == 'Photo':
-            return get_photo(id)
+        if type == 'DropdownType':
+            return Dropdown.objects.get(pk=id)
+        else:
+            return NodeHandle.objects.get(handle_id=id)
 
 class DictEntryType(graphene.ObjectType):
     '''
@@ -221,8 +223,11 @@ class NIObjectType(DjangoObjectType):
         model = NodeHandle
         interfaces = (NIRelayNode, )
 
+class NodeHandleType(NIObjectType):
+    pass
+
 class AbstractNIMutation(relay.ClientIDMutation):
-    nodehandle = graphene.Field(NIObjectType, required=True) # the type should be replaced
+    nodehandle = graphene.Field(NodeHandleType, required=True) # the type should be replaced
 
     @classmethod
     def __init_subclass_with_meta__(
@@ -469,7 +474,7 @@ class NIMutationFactory():
         node_type      = getattr(ni_metaclass, 'node_type', None)
         node_meta_type = getattr(ni_metaclass, 'node_meta_type', None)
         request_path   = getattr(ni_metaclass, 'request_path', None)
-        nodetype       = getattr(ni_metaclass, 'nodetype', NIObjectType)
+        nodetype       = getattr(ni_metaclass, 'nodetype', NodeHandleType)
 
         # specify and set create and update forms
         assert form and not create_form and not update_form or\
@@ -542,6 +547,85 @@ class NIMutationFactory():
     @classmethod
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
+
+# TODO: this should evolve to a method with pagination
+def get_list_resolver(nodetype):
+    def generic_list_resolver(self, info, **args):
+        limit = args.get('limit', False)
+        node_type = NodeType.objects.get(type=nodetype)
+
+        if limit:
+            return NodeHandle.objects.filter(node_type=node_type)[:10]
+        else:
+            return NodeHandle.objects.filter(node_type=node_type)
+
+    return generic_list_resolver
+
+def get_byid_resolver(nodetype):
+    def generic_byid_resolver(self, info, **args):
+        handle_id = args.get('handle_id')
+        node_type = NodeType.objects.get(type=nodetype)
+
+        ret = None
+        if handle_id:
+            ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+        else:
+            raise GraphQLError('A handle_id must be provided')
+
+        if not ret:
+            raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
+
+        return ret
+
+class NOCAutoQuery(graphene.ObjectType):
+    node = NIRelayNode.Field()
+
+    getNodeById = graphene.Field(NodeHandleType, handle_id=graphene.Int())
+
+    def resolve_getNodeById(self, info, **args):
+        handle_id = args.get('handle_id')
+
+        if handle_id:
+            return NodeHandle.objects.get(handle_id=handle_id)
+        else:
+            raise GraphQLError('A handle_id must be provided')
+    
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        _nimeta = getattr(cls, 'NIMeta')
+        graphql_types = getattr(_nimeta, 'graphql_types')
+
+        assert graphql_types, \
+            'A tuple with the types should be set in the Meta class of {}'.format(cls.__name__)
+
+        # add list with pagination resolver
+        # add by id resolver
+        for graphql_type in graphql_types:
+            _nimetatype   = getattr(graphql_type, 'NIMetaType')
+
+            ni_type = getattr(_nimetatype, 'ni_type')
+            assert ni_type, '{} has not set its ni_type attribute'.format(cls.__name__)
+            ni_metatype = getattr(_nimetatype, 'ni_metatype')
+            assert ni_metatype, '{} has not set its ni_metatype attribute'.format(cls.__name__)
+
+            node_type     = NodeType.objects.filter(type=ni_type).first()
+            type_name     = node_type.type
+            type_slug     = node_type.slug
+
+            # construct field and resolver for list
+            field_name    = '{}s'.format(type_slug)
+            resolver_name = 'resolve_{}'.format(field_name)
+
+            setattr(cls, field_name, graphene.List(graphql_type, limit=graphene.Int()))
+            setattr(cls, resolver_name, get_list_resolver(type_name))
+
+            # construct field and resolver byid
+            field_name    = 'get{}ById'.format(type_name)
+            resolver_name = 'resolve_{}'.format(field_name)
+
+            setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
+            setattr(cls, resolver_name, get_byid_resolver(type_name))
 
 def get_logger_user():
     return get_user()
