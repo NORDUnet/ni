@@ -25,9 +25,6 @@ def resolve_roles_list(self, info, **kwargs):
 
     return ret
 
-class NodeHandleType(NIObjectType):
-    pass
-
 class RoleType(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
