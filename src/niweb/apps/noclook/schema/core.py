@@ -37,7 +37,7 @@ class NIRelayNode(relay.Node):
             # is the same that was indicated in the field type
             assert type == only_type._meta.name, 'Received not compatible node.'
 
-        if type == 'DropdownType':
+        if type == 'DropdownType' or 'RoleType': # TODO too raw
             return Dropdown.objects.get(pk=id)
         else:
             return NodeHandle.objects.get(handle_id=id)
@@ -404,7 +404,7 @@ class CreateNIMutation(AbstractNIMutation):
             return nh
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form))
+            raise GraphQLError('Form errors: {}'.format(form._errors))
 
 class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:

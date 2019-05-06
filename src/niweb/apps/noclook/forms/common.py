@@ -896,7 +896,7 @@ class NewContactForm(forms.Form):
 
     first_name = forms.CharField()
     last_name = forms.CharField()
-    contact_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+    contact_type = forms.ChoiceField(widget=forms.widgets.Select)
     mobile = forms.CharField(required=False)
     phone = forms.CharField(required=False)
     salutation = forms.CharField(required=False)

@@ -27,7 +27,12 @@ def resolve_roles_list(self, info, **kwargs):
 
 class DropdownType(DjangoObjectType):
     class Meta:
-        model = NodeHandle
+        model = Dropdown
+        interfaces = (NIRelayNode, )
+
+class ChoiceType(DjangoObjectType):
+    class Meta:
+        model = Choice
         interfaces = (NIRelayNode, )
 
 class RoleType(NIObjectType):
