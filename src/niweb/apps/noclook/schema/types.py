@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+from django.contrib.auth.models import User
+from graphene import relay
 from .core import *
 from ..models import *
 
@@ -25,6 +27,11 @@ def resolve_roles_list(self, info, **kwargs):
 
     return ret
 
+class UserType(DjangoObjectType):
+    class Meta:
+        model = User
+        interfaces = (NIRelayNode, )
+
 class DropdownType(DjangoObjectType):
     class Meta:
         model = Dropdown
@@ -41,6 +48,11 @@ class RoleType(NIObjectType):
     class NIMetaType:
         ni_type = 'Role'
         ni_metatype = 'logical'
+
+## connection test: this should be removed and autoimplemented in core ##
+class RoleConnection(relay.Connection):
+    class Meta:
+        node = RoleType
 
 class GroupType(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })

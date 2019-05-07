@@ -5,9 +5,21 @@ import graphene
 from graphql import GraphQLError
 from ..models import Dropdown
 from .types import *
+from .core import get_logger_user
 
 class NOCRootQuery(NOCAutoQuery):
+    viewer = graphene.Field(UserType)
     getChoicesForDropdown = graphene.List(ChoiceType, name=graphene.String(required=True))
+    rolesconn = graphene.relay.ConnectionField(RoleConnection)
+
+    def resolve_rolesconn(self, info, **kwargs):
+        node_type = NodeType.objects.filter(type='Role').first()
+        return NodeHandle.objects.filter(node_type=node_type)
+
+    # viewer field for relay
+    def resolve_viewer(self, info, **kwargs):
+        user = get_logger_user()
+        return user
 
     def resolve_getChoicesForDropdown(self, info, **kwargs):
         name = kwargs.get('name')
