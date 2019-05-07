@@ -555,16 +555,14 @@ class NIMutationFactory():
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
 
-# TODO: this should evolve to a method with pagination
-def get_list_resolver(nodetype):
+def get_connection_resolver(nodetype):
     def generic_list_resolver(self, info, **args):
-        limit = args.get('limit', False)
         node_type = NodeType.objects.get(type=nodetype)
+        ret = NodeHandle.objects.filter(node_type=node_type)
+        if not ret:
+            ret = []
 
-        if limit:
-            return NodeHandle.objects.filter(node_type=node_type)[:10]
-        else:
-            return NodeHandle.objects.filter(node_type=node_type)
+        return ret
 
     return generic_list_resolver
 
@@ -584,6 +582,8 @@ def get_byid_resolver(nodetype):
 
         return ret
 
+    return generic_byid_resolver
+
 class NOCAutoQuery(graphene.ObjectType):
     node = NIRelayNode.Field()
 
@@ -595,7 +595,7 @@ class NOCAutoQuery(graphene.ObjectType):
         if handle_id:
             return NodeHandle.objects.get(handle_id=handle_id)
         else:
-            raise GraphQLError('A handle_id must be provided')
+            raise GraphQLError('A valid handle_id must be provided')
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -609,6 +609,7 @@ class NOCAutoQuery(graphene.ObjectType):
         # add list with pagination resolver
         # add by id resolver
         for graphql_type in graphql_types:
+            # extract values
             _nimetatype   = getattr(graphql_type, 'NIMetaType')
 
             ni_type = getattr(_nimetatype, 'ni_type')
@@ -620,14 +621,21 @@ class NOCAutoQuery(graphene.ObjectType):
             type_name     = node_type.type
             type_slug     = node_type.slug
 
-            # construct field and resolver for list
+            # build connection class
             field_name    = '{}s'.format(type_slug)
             resolver_name = 'resolve_{}'.format(field_name)
 
-            setattr(cls, field_name, graphene.List(graphql_type, limit=graphene.Int()))
-            setattr(cls, resolver_name, get_list_resolver(type_name))
+            connection_meta = type('Meta', (object, ), dict(node=graphql_type))
+            connection_class = type(
+                '{}Connection'.format(type_name),
+                (graphene.relay.Connection,),
+                dict(Meta=connection_meta)
+            )
 
-            # construct field and resolver byid
+            setattr(cls, field_name, graphene.relay.ConnectionField(connection_class))
+            setattr(cls, resolver_name, get_connection_resolver(type_name))
+
+            # build field and resolver byid
             field_name    = 'get{}ById'.format(type_name)
             resolver_name = 'resolve_{}'.format(field_name)
 

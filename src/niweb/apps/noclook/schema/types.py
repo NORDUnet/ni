@@ -49,11 +49,6 @@ class RoleType(NIObjectType):
         ni_type = 'Role'
         ni_metatype = 'logical'
 
-## connection test: this should be removed and autoimplemented in core ##
-class RoleConnection(relay.Connection):
-    class Meta:
-        node = RoleType
-
 class GroupType(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
