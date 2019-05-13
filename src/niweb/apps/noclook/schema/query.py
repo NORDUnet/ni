@@ -5,7 +5,6 @@ import graphene
 from graphql import GraphQLError
 from ..models import Dropdown
 from .types import *
-from .core import get_logger_user
 
 class NOCRootQuery(NOCAutoQuery):
     getChoicesForDropdown = graphene.List(ChoiceType, name=graphene.String(required=True))

@@ -3,11 +3,11 @@ __author__ = 'ffuentes'
 
 import graphene
 import re
-from apps.nerds.lib.consumer_util import get_user
 from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle
 from collections import OrderedDict
 from django import forms
+from django.db.models import Q
 from django.test import RequestFactory
 from graphene import relay
 from graphene_django import DjangoObjectType
@@ -219,6 +219,15 @@ class NIObjectType(DjangoObjectType):
             **options
         )
 
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        if info.context.user.is_anonymous:
+            return queryset.none()
+        else:
+            return queryset.filter(
+                Q(creator=info.context.user) | Q(modifier=info.context.user)
+            )
+
     class Meta:
         model = NodeHandle
         interfaces = (NIRelayNode, )
@@ -325,7 +334,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         return getattr(ni_metaclass, 'typeclass')
 
     @classmethod
-    def from_input_to_request(cls, **input):
+    def from_input_to_request(cls, user, **input):
         '''
         Gets the input data from the input inner class, and this is build using
         the fields in the django form. It returns a nodehandle of the type
@@ -356,14 +365,14 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # forge request
         request_factory = RequestFactory()
         request = request_factory.post(request_path, data=input_params)
-        request.user = get_logger_user()
+        request.user = user
 
         return (request, dict(form_class=form_class, node_type=node_type,
                                 node_meta_type=node_meta_type))
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        reqinput = cls.from_input_to_request(**input)
+        reqinput = cls.from_input_to_request(info.context.user, **input)
         ret = cls.do_request(reqinput[0], **reqinput[1])
 
         return cls(nodehandle=ret)
@@ -555,14 +564,29 @@ class NIMutationFactory():
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
 
+class GraphQLAuthException(Exception):
+    def __init__(self, message=None):
+        message = 'You need to be authenticated{}'.format(
+            ': {}'.format(message) if message else ''
+        )
+        super().__init__(message)
+
 def get_connection_resolver(nodetype):
     def generic_list_resolver(self, info, **args):
         node_type = NodeType.objects.get(type=nodetype)
-        ret = NodeHandle.objects.filter(node_type=node_type)
-        if not ret:
-            ret = []
 
-        return ret
+        if info.context.user.is_authenticated():
+            ret = NodeHandle.objects.filter(node_type=node_type)
+            ret.filter(
+                Q(creator=info.context.user) | Q(modifier=info.context.user)
+            )
+
+            if not ret:
+                ret = []
+
+            return ret
+        else:
+            raise GraphQLAuthException()
 
     return generic_list_resolver
 
@@ -572,30 +596,44 @@ def get_byid_resolver(nodetype):
         node_type = NodeType.objects.get(type=nodetype)
 
         ret = None
-        if handle_id:
-            ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+
+        if info.context.user.is_authenticated():
+            if handle_id:
+                ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+            else:
+                raise GraphQLError('A handle_id must be provided')
+
+            if not ret:
+                raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
+
+            return ret
         else:
-            raise GraphQLError('A handle_id must be provided')
-
-        if not ret:
-            raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
-
-        return ret
+            raise GraphQLAuthException()
 
     return generic_byid_resolver
 
 class NOCAutoQuery(graphene.ObjectType):
     node = NIRelayNode.Field()
-
     getNodeById = graphene.Field(NodeHandleType, handle_id=graphene.Int())
 
     def resolve_getNodeById(self, info, **args):
         handle_id = args.get('handle_id')
 
-        if handle_id:
-            return NodeHandle.objects.get(handle_id=handle_id)
+        ret = None
+
+        if info.context.user.is_authenticated():
+            if handle_id:
+                ret = NodeHandle.objects.get(handle_id=handle_id)
+            else:
+                raise GraphQLError('A valid handle_id must be provided')
+
+            if not ret:
+                raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
+
+            return ret
         else:
-            raise GraphQLError('A valid handle_id must be provided')
+            raise GraphQLAuthException()
+
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -641,6 +679,3 @@ class NOCAutoQuery(graphene.ObjectType):
 
             setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
             setattr(cls, resolver_name, get_byid_resolver(type_name))
-
-def get_logger_user():
-    return get_user()
