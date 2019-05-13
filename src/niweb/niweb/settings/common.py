@@ -184,6 +184,7 @@ SAML_ENABLED = environ.get('SAML_ENABLED', False)
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
 MIDDLEWARE_CLASSES = (
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -233,6 +234,7 @@ THIRD_PARTY_APPS = (
     'dynamic_preferences',
     'attachments',
     'graphene_django',
+    'corsheaders',
 )
 
 LOCAL_APPS = (
