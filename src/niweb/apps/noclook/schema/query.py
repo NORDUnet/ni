@@ -8,13 +8,7 @@ from .types import *
 from .core import get_logger_user
 
 class NOCRootQuery(NOCAutoQuery):
-    viewer = graphene.Field(UserType)
     getChoicesForDropdown = graphene.List(ChoiceType, name=graphene.String(required=True))
-
-    # viewer field for relay
-    def resolve_viewer(self, info, **kwargs):
-        user = get_logger_user()
-        return user
 
     def resolve_getChoicesForDropdown(self, info, **kwargs):
         name = kwargs.get('name')
