@@ -372,6 +372,9 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
+        if not info.context or not info.context.user.is_authenticated():
+            raise GraphQLAuthException()
+
         reqinput = cls.from_input_to_request(info.context.user, **input)
         ret = cls.do_request(reqinput[0], **reqinput[1])
 
