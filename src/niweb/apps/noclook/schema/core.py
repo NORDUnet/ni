@@ -372,7 +372,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        if not info.context or not info.context.user.is_authenticated():
+        if not info.context or not info.context.user.is_authenticated:
             raise GraphQLAuthException()
 
         reqinput = cls.from_input_to_request(info.context.user, **input)
@@ -569,7 +569,7 @@ class NIMutationFactory():
 
 class GraphQLAuthException(Exception):
     def __init__(self, message=None):
-        message = 'You need to be authenticated{}'.format(
+        message = 'You must be logged in the system: {}'.format(
             ': {}'.format(message) if message else ''
         )
         super().__init__(message)
@@ -578,11 +578,11 @@ def get_connection_resolver(nodetype):
     def generic_list_resolver(self, info, **args):
         node_type = NodeType.objects.get(type=nodetype)
 
-        if info.context.user.is_authenticated():
+        if info.context and info.context.user.is_authenticated:
             ret = NodeHandle.objects.filter(node_type=node_type)
-            ret.filter(
+            """ret.filter(
                 Q(creator=info.context.user) | Q(modifier=info.context.user)
-            )
+            )"""
 
             if not ret:
                 ret = []
@@ -600,7 +600,7 @@ def get_byid_resolver(nodetype):
 
         ret = None
 
-        if info.context.user.is_authenticated():
+        if info.context and info.context.user.is_authenticated:
             if handle_id:
                 ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
             else:
@@ -624,7 +624,7 @@ class NOCAutoQuery(graphene.ObjectType):
 
         ret = None
 
-        if info.context.user.is_authenticated():
+        if info.context and info.context.user.is_authenticated:
             if handle_id:
                 ret = NodeHandle.objects.get(handle_id=handle_id)
             else:
