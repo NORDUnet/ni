@@ -4,7 +4,7 @@ from tastypie.api import Api
 import apps.noclook.api.resources as niapi
 from django.contrib.auth import views as auth_views
 from django.views.decorators.csrf import csrf_exempt
-from graphene_django.views import GraphQLView
+from apps.noclook.schema import AuthGraphQLView
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -87,7 +87,7 @@ urlpatterns += [
     url(r'^api/', include(v1_api.urls)),
 
     # GraphQL endpoint
-    url(r'^graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    url(r'^graphql/', csrf_exempt(AuthGraphQLView.as_view(graphiql=True))),
 
     # Django Generic Comments
     url(r'^comments/', include('django_comments.urls')),

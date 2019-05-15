@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from graphene_django.views import GraphQLView
+
 from .core import *
 from .types import *
 from .query import *
@@ -20,3 +24,7 @@ NOCSCHEMA_QUERIES = [
 NOCSCHEMA_MUTATIONS = [
     NOCRootMutation,
 ]
+
+@method_decorator(login_required, name='dispatch')
+class AuthGraphQLView(GraphQLView):
+    pass
