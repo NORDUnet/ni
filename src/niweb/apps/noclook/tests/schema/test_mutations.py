@@ -33,9 +33,9 @@ class QueryTest(Neo4jGraphQLTest):
             )
         ])
 
-        result = schema.execute(query)
+        result = schema.execute(query, context=self.context)
 
-        assert not result.errors
+        assert not result.errors, result.errors
         assert result.data == expected
 
         ## update ##
@@ -65,7 +65,7 @@ class QueryTest(Neo4jGraphQLTest):
             )
         ])
 
-        result = schema.execute(query)
+        result = schema.execute(query, context=self.context)
         assert not result.errors
         assert result.data == expected
 
@@ -86,6 +86,6 @@ class QueryTest(Neo4jGraphQLTest):
             )
         ])
 
-        result = schema.execute(query)
+        result = schema.execute(query, context=self.context)
         assert not result.errors
         assert result.data == expected

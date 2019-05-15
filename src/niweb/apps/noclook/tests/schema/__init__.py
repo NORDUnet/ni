@@ -6,11 +6,16 @@ from django.db import connection
 from apps.noclook.models import NodeHandle
 from ..neo4j_base import NeoTestCase
 
+class TestContext():
+    def __init__(self, user, *ignore):
+        self.user = user
+
 class Neo4jGraphQLTest(NeoTestCase):
     initialized = False
 
     def setUp(self):
         super(Neo4jGraphQLTest, self).setUp()
+        self.context = TestContext(self.user)
 
         if not self.initialized:
             # create nodes
