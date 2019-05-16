@@ -65,9 +65,34 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
 ]
 
+
+class SuccessURLAllowedHostsMixin(object):
+    success_url_allowed_hosts = set()
+
+    def get_success_url_allowed_hosts(self):
+        allowed_hosts = {self.request.get_host()}
+        allowed_hosts.update(self.success_url_allowed_hosts)
+        return allowed_hosts
+
+
+class CustomLoginView(SuccessURLAllowedHostsMixin, auth_views.LoginView):
+
+    def get_success_url(self):
+        from django.shortcuts import resolve_url
+        url = self.get_redirect_url()
+        return url or resolve_url(settings.LOGIN_REDIRECT_URL)
+
+    def form_valid(self, form):
+        from django.http import HttpResponseRedirect
+        from django.contrib.auth import login as auth_login
+        """Security check complete. Log the user in."""
+        auth_login(self.request, form.get_user())
+        return HttpResponseRedirect("http://localhost:3000/")
+
+
 if not settings.DJANGO_LOGIN_DISABLED:
     urlpatterns += [
-        url(r'^accounts/login/$', auth_views.LoginView.as_view(), name='django_login'),
+        url(r'^accounts/login/$', CustomLoginView.as_view(), name='django_login'),
     ]
 
 # Federated login
