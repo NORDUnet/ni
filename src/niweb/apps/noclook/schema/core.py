@@ -214,8 +214,6 @@ class NodeHandleType(NIObjectType):
     pass
 
 class AbstractNIMutation(relay.ClientIDMutation):
-    nodehandle = graphene.Field(NodeHandleType, required=True) # the type should be replaced
-
     @classmethod
     def __init_subclass_with_meta__(
         cls, output=None, input_fields=None, arguments=None, name=None, **options
@@ -224,6 +222,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         '''
         # read form
         ni_metaclass  = getattr(cls, 'NIMetaClass')
+        graphql_type  = getattr(ni_metaclass, 'graphql_type', None)
         django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', cls.__name__)
         is_create     = getattr(ni_metaclass, 'is_create', False)
@@ -251,6 +250,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # add Input attribute to class
         inner_class = type('Input', (object,), inner_fields)
         setattr(cls, 'Input', inner_class)
+
+        # add return type
+        if graphql_type:
+            setattr(cls, graphql_type.__name__.lower(), graphene.Field(graphql_type))
 
         super(AbstractNIMutation, cls).__init_subclass_with_meta__(
             output, inner_fields, arguments, name=mutation_name, **options
@@ -356,7 +359,19 @@ class AbstractNIMutation(relay.ClientIDMutation):
         reqinput = cls.from_input_to_request(info.context.user, **input)
         ret = cls.do_request(reqinput[0], **reqinput[1])
 
-        return cls(nodehandle=ret)
+        graphql_type = cls.get_graphql_type()
+        init_params = {}
+        if graphql_type:
+            init_params[graphql_type.__name__.lower()] = ret
+
+        return cls(**init_params)
+
+    @classmethod
+    def get_graphql_type(cls):
+        ni_metaclass  = getattr(cls, 'NIMetaClass')
+        graphql_type  = getattr(ni_metaclass, 'graphql_type', None)
+
+        return graphql_type
 
     class Meta:
         abstract = True
@@ -423,8 +438,6 @@ class UpdateNIMutation(AbstractNIMutation):
             raise GraphQLError('Form errors: {}'.format(form))
 
 class DeleteNIMutation(AbstractNIMutation):
-    nodehandle = graphene.Boolean(required=True)
-
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
@@ -436,7 +449,7 @@ class DeleteNIMutation(AbstractNIMutation):
         nh, node = helpers.get_nh_node(handle_id)
         helpers.delete_node(request.user, node.handle_id)
 
-        return True
+        return None
 
 class NIMutationFactory():
     '''
@@ -500,7 +513,6 @@ class NIMutationFactory():
             class_name,
             (cls.create_mutation_class,),
             {
-                nh_field: graphene.Field(graphql_type, required=True),
                 metaclass_name: create_metaclass,
             },
         )
@@ -515,7 +527,6 @@ class NIMutationFactory():
             class_name,
             (cls.update_mutation_class,),
             {
-                nh_field: graphene.Field(graphql_type, required=True),
                 metaclass_name: update_metaclass,
             },
         )
