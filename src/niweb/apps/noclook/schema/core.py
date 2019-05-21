@@ -644,11 +644,10 @@ class NOCAutoQuery(graphene.ObjectType):
             field_name    = '{}s'.format(type_slug)
             resolver_name = 'resolve_{}'.format(field_name)
 
-            connection_input = cls.build_filter_input(graphql_type, type_name)
-
+            connection_input = cls.build_filter_and_order(graphql_type, type_name)
             connection_meta = type('Meta', (object, ), dict(node=graphql_type))
             connection_class = type(
-                '{}Connection'.format(type_name),
+                '{}Connection'.format(graphql_type.__name__),
                 (graphene.relay.Connection,),
                 #(connection_type,),
                 dict(Meta=connection_meta)
@@ -665,7 +664,7 @@ class NOCAutoQuery(graphene.ObjectType):
             setattr(cls, resolver_name, get_byid_resolver(type_name))
 
     @classmethod
-    def build_filter_input(cls, graphql_type, type_name):
+    def build_filter_and_order(cls, graphql_type, type_name):
         ## Maybe the input class should be declared in the types
 
         # build filter input class
@@ -682,13 +681,16 @@ class NOCAutoQuery(graphene.ObjectType):
                 filter_attrib['{}_lte'.format(name)] = field
                 filter_attrib['{}_gt'.format(name)] = field
                 filter_attrib['{}_gte'.format(name)] = field
-                filter_attrib['{}_contains'.format(name)] = field
-                filter_attrib['{}_not_contains'.format(name)] = field
-                filter_attrib['{}_starts_with'.format(name)] = field
-                filter_attrib['{}_not_starts_with'.format(name)] = field
-                filter_attrib['{}_ends_with'.format(name)] = field
-                filter_attrib['{}_not_ends_with'.format(name)] = field
-                filter_attrib['{}'.format(name)] = field
+
+                if isinstance(field, graphene.String):
+                    filter_attrib['{}_contains'.format(name)] = field
+                    filter_attrib['{}_not_contains'.format(name)] = field
+                    filter_attrib['{}_starts_with'.format(name)] = field
+                    filter_attrib['{}_not_starts_with'.format(name)] = field
+                    filter_attrib['{}_ends_with'.format(name)] = field
+                    filter_attrib['{}_not_ends_with'.format(name)] = field
+
+                # adding order attributes
 
         filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
 

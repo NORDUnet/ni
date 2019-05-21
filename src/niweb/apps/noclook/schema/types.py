@@ -30,6 +30,7 @@ def resolve_roles_list(self, info, **kwargs):
 class UserType(DjangoObjectType):
     class Meta:
         model = User
+        exclude_fields = ['creator', 'modifier']
 
 class DropdownType(DjangoObjectType):
     class Meta:
