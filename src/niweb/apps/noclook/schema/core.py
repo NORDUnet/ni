@@ -233,7 +233,7 @@ class NIObjectType(DjangoObjectType):
 
     class Meta:
         model = NodeHandle
-        interfaces = (NIRelayNode, )
+        interfaces = (relay.Node, )
 
 class NodeHandleType(NIObjectType):
     pass
@@ -678,7 +678,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 #(connection_type,),
                 dict(Meta=connection_meta)
             )
-            
+
             setattr(cls, field_name, graphene.relay.ConnectionField(connection_class, filter=graphene.Argument(connection_input)))
             setattr(cls, resolver_name, get_connection_resolver(type_name))
 
