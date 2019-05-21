@@ -86,6 +86,9 @@ class NIBasicField():
 
         return resolve_node_string
 
+    def get_field_type(self):
+        return self.field_type
+
 class NIStringField(NIBasicField):
     '''
     String type
@@ -650,7 +653,7 @@ class NOCAutoQuery(graphene.ObjectType):
         # add list with pagination resolver
         # add by id resolver
         for graphql_type in graphql_types:
-            # extract values
+            ## extract values
             _nimetatype   = getattr(graphql_type, 'NIMetaType')
 
             ni_type = getattr(_nimetatype, 'ni_type')
@@ -662,23 +665,45 @@ class NOCAutoQuery(graphene.ObjectType):
             type_name     = node_type.type
             type_slug     = node_type.slug
 
-            # build connection class
+            # add connection attribute
             field_name    = '{}s'.format(type_slug)
             resolver_name = 'resolve_{}'.format(field_name)
+
+            connection_input = cls.build_filter_input(graphql_type, type_name)
 
             connection_meta = type('Meta', (object, ), dict(node=graphql_type))
             connection_class = type(
                 '{}Connection'.format(type_name),
                 (graphene.relay.Connection,),
+                #(connection_type,),
                 dict(Meta=connection_meta)
             )
-
-            setattr(cls, field_name, graphene.relay.ConnectionField(connection_class))
+            
+            setattr(cls, field_name, graphene.relay.ConnectionField(connection_class, filter=graphene.Argument(connection_input)))
             setattr(cls, resolver_name, get_connection_resolver(type_name))
 
-            # build field and resolver byid
+            ## build field and resolver byid
             field_name    = 'get{}ById'.format(type_name)
             resolver_name = 'resolve_{}'.format(field_name)
 
             setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
             setattr(cls, resolver_name, get_byid_resolver(type_name))
+
+    @classmethod
+    def build_filter_input(cls, graphql_type, type_name):
+        ## Maybe the input class should be declared in the types
+
+        # build filter input class
+        filter_attrib = {}
+        #raise Exception(graphql_type.__dict__)
+        for name, field in graphql_type.__dict__.items():
+            if field and not isinstance(field, str) and field.__module__ == 'graphene.types.scalars':
+                # adding filter attributes
+                filter_attrib['{}'.format(name)] = field
+                filter_attrib['{}_not'.format(name)] = field
+                filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(type(field)))
+                filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(type(field)))
+
+        filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
+
+        return filter_input
