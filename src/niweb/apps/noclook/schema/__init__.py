@@ -11,13 +11,13 @@ from .query import *
 from .mutations import *
 
 NOCSCHEMA_TYPES = [
-    UserType,
-    DropdownType,
-    ChoiceType,
-    RoleType,
-    GroupType,
-    ContactType,
-    NodeHandleType,
+    User,
+    Dropdown,
+    Choice,
+    Role,
+    Group,
+    Contact,
+    NodeHandler,
 ]
 
 NOCSCHEMA_QUERIES = [

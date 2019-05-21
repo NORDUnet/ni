@@ -210,7 +210,7 @@ class NIObjectType(DjangoObjectType):
         model = NodeHandle
         interfaces = (relay.Node, )
 
-class NodeHandleType(NIObjectType):
+class NodeHandler(NIObjectType):
     pass
 
 class AbstractNIMutation(relay.ClientIDMutation):
@@ -481,7 +481,7 @@ class NIMutationFactory():
         create_form    = getattr(ni_metaclass, 'create_form', None)
         update_form    = getattr(ni_metaclass, 'update_form', None)
         request_path   = getattr(ni_metaclass, 'request_path', None)
-        graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandleType)
+        graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandler)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -606,7 +606,7 @@ def get_byid_resolver(nodetype):
 
 class NOCAutoQuery(graphene.ObjectType):
     node = relay.Node.Field()
-    getNodeById = graphene.Field(NodeHandleType, handle_id=graphene.Int())
+    getNodeById = graphene.Field(NodeHandler, handle_id=graphene.Int())
 
     def resolve_getNodeById(self, info, **args):
         handle_id = args.get('handle_id')
@@ -704,5 +704,6 @@ class NOCAutoQuery(graphene.ObjectType):
                 # adding order attributes
 
         filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
+        #Episode = graphene.Enum('Episode', [('NEWHOPE', 4), ('EMPIRE', 5), ('JEDI', 6)])
 
         return filter_input

@@ -7,7 +7,7 @@ from ..models import Dropdown
 from .types import *
 
 class NOCRootQuery(NOCAutoQuery):
-    getChoicesForDropdown = graphene.List(ChoiceType, name=graphene.String(required=True))
+    getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
 
     def resolve_getChoicesForDropdown(self, info, **kwargs):
         name = kwargs.get('name')
@@ -19,4 +19,4 @@ class NOCRootQuery(NOCAutoQuery):
             raise Exception(u'Could not find dropdown with name \'{}\'. Please create it using /admin/'.format(name))
 
     class NIMeta:
-        graphql_types = [ RoleType, GroupType, ContactType ]
+        graphql_types = [ Role, Group, Contact ]
