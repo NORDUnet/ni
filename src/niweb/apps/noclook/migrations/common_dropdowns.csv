@@ -58,3 +58,5 @@ organization_contact_types,secondary_contact,Secondary contact at incidents
 organization_contact_types,it_technical_contact,IT-technical
 organization_contact_types,it_security_contact,IT-security
 organization_contact_types,it_manager_contact,IT-manager
+contact_type,person,Person
+contact_type,group,Group
