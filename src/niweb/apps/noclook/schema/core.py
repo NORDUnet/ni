@@ -17,31 +17,6 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 from ..models import NodeType, NodeHandle
 
-class NIRelayNode(relay.Node):
-    '''
-    from https://docs.graphene-python.org/en/latest/relay/nodes/
-    This node may implement the id policies in the graph database
-    '''
-    class Meta:
-        name = 'NIRelayNode'
-
-    @staticmethod
-    def to_global_id(type, id):
-        return '{}:{}'.format(type, id)
-
-    @staticmethod
-    def get_node_from_global_id(info, global_id, only_type=None):
-        type, id = global_id.split(':')
-        if only_type:
-            # We assure that the node type that we want to retrieve
-            # is the same that was indicated in the field type
-            assert type == only_type._meta.name, 'Received not compatible node.'
-
-        if type == 'DropdownType' or 'RoleType': # TODO too raw
-            return Dropdown.objects.get(pk=id)
-        else:
-            return NodeHandle.objects.get(handle_id=id)
-
 class DictEntryType(graphene.ObjectType):
     '''
     This type represents an key value pair in a dictionary for the data
@@ -619,7 +594,7 @@ def get_byid_resolver(nodetype):
     return generic_byid_resolver
 
 class NOCAutoQuery(graphene.ObjectType):
-    node = NIRelayNode.Field()
+    node = relay.Node.Field()
     getNodeById = graphene.Field(NodeHandleType, handle_id=graphene.Int())
 
     def resolve_getNodeById(self, info, **args):
@@ -703,6 +678,17 @@ class NOCAutoQuery(graphene.ObjectType):
                 filter_attrib['{}_not'.format(name)] = field
                 filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(type(field)))
                 filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(type(field)))
+                filter_attrib['{}_lt'.format(name)] = field
+                filter_attrib['{}_lte'.format(name)] = field
+                filter_attrib['{}_gt'.format(name)] = field
+                filter_attrib['{}_gte'.format(name)] = field
+                filter_attrib['{}_contains'.format(name)] = field
+                filter_attrib['{}_not_contains'.format(name)] = field
+                filter_attrib['{}_starts_with'.format(name)] = field
+                filter_attrib['{}_not_starts_with'.format(name)] = field
+                filter_attrib['{}_ends_with'.format(name)] = field
+                filter_attrib['{}_not_ends_with'.format(name)] = field
+                filter_attrib['{}'.format(name)] = field
 
         filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
 

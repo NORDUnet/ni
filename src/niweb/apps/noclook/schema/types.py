@@ -30,17 +30,14 @@ def resolve_roles_list(self, info, **kwargs):
 class UserType(DjangoObjectType):
     class Meta:
         model = User
-        interfaces = (NIRelayNode, )
 
 class DropdownType(DjangoObjectType):
     class Meta:
         model = Dropdown
-        interfaces = (NIRelayNode, )
 
 class ChoiceType(DjangoObjectType):
     class Meta:
         model = Choice
-        interfaces = (NIRelayNode, )
 
 class RoleType(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })

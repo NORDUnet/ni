@@ -1,6 +1,6 @@
 import graphene
 from apps.noclook.schema import NOCSCHEMA_QUERIES, NOCSCHEMA_MUTATIONS,\
-                                    NOCSCHEMA_TYPES, NIRelayNode
+                                    NOCSCHEMA_TYPES
 
 ALL_TYPES = NOCSCHEMA_TYPES # + OTHER_APP_TYPES
 ALL_QUERIES = NOCSCHEMA_QUERIES
