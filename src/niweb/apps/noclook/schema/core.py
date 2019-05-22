@@ -2,7 +2,9 @@
 __author__ = 'ffuentes'
 
 import graphene
+import norduniclient as nc
 import re
+
 from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle
 from collections import OrderedDict
@@ -565,14 +567,24 @@ class GraphQLAuthException(Exception):
 
 def get_connection_resolver(nodetype):
     def generic_list_resolver(self, info, **args):
-        raise Exception(args)
-        node_type = NodeType.objects.get(type=nodetype)
+        filter  = args.get('filter', None)
+        orderBy = args.get('orderBy', None)
 
         if info.context and info.context.user.is_authenticated:
-            ret = NodeHandle.objects.filter(node_type=node_type)
-            """ret.filter(
-                Q(creator=info.context.user) | Q(modifier=info.context.user)
-            )"""
+            # filtering will take a different approach
+            nodes = None
+            if filter:
+                pass
+            else:
+                nodes = nc.get_nodes_by_type(nc.graphdb.manager, nodetype)
+
+            if not nodes:
+                ret = []
+            else:
+                handle_ids = [ node['handle_id'] for node in nodes ]
+                ret = NodeHandle.objects.filter(
+                    handle_id__in=handle_ids
+                )
 
             if not ret:
                 ret = []
@@ -681,10 +693,8 @@ class NOCAutoQuery(graphene.ObjectType):
 
     @classmethod
     def build_filter_and_order(cls, graphql_type, type_name):
-        ## Maybe the input class should be declared in the types
-
         # build filter input class and order enum
-        filter_attrib = {}
+        simple_filter_attrib = {}
         enum_options = []
 
         for name, field in graphql_type.__dict__.items():
@@ -692,28 +702,43 @@ class NOCAutoQuery(graphene.ObjectType):
                 input_field = type(field)()
 
                 # adding filter attributes
-                filter_attrib['{}'.format(name)] = input_field
-                filter_attrib['{}_not'.format(name)] = input_field
-                filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
-                filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
-                filter_attrib['{}_lt'.format(name)] = input_field
-                filter_attrib['{}_lte'.format(name)] = input_field
-                filter_attrib['{}_gt'.format(name)] = input_field
-                filter_attrib['{}_gte'.format(name)] = input_field
+                simple_filter_attrib['{}'.format(name)] = input_field
+                simple_filter_attrib['{}_not'.format(name)] = input_field
+                simple_filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
+                simple_filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
+                simple_filter_attrib['{}_lt'.format(name)] = input_field
+                simple_filter_attrib['{}_lte'.format(name)] = input_field
+                simple_filter_attrib['{}_gt'.format(name)] = input_field
+                simple_filter_attrib['{}_gte'.format(name)] = input_field
 
                 if isinstance(field, graphene.String):
-                    filter_attrib['{}_contains'.format(name)] = input_field
-                    filter_attrib['{}_not_contains'.format(name)] = input_field
-                    filter_attrib['{}_starts_with'.format(name)] = input_field
-                    filter_attrib['{}_not_starts_with'.format(name)] = input_field
-                    filter_attrib['{}_ends_with'.format(name)] = input_field
-                    filter_attrib['{}_not_ends_with'.format(name)] = input_field
+                    simple_filter_attrib['{}_contains'.format(name)] = input_field
+                    simple_filter_attrib['{}_not_contains'.format(name)] = input_field
+                    simple_filter_attrib['{}_starts_with'.format(name)] = input_field
+                    simple_filter_attrib['{}_not_starts_with'.format(name)] = input_field
+                    simple_filter_attrib['{}_ends_with'.format(name)] = input_field
+                    simple_filter_attrib['{}_not_ends_with'.format(name)] = input_field
 
                 # adding order attributes
                 enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
                 enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
 
-        simple_filter_input = type('{}NestedFilter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
+        # add handle_id
+        name = 'handle_id'
+        simple_filter_attrib['{}'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_not'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(graphene.Int))
+        simple_filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(graphene.Int))
+        simple_filter_attrib['{}_lt'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_lte'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_gt'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_gte'.format(name)] = graphene.Int()
+        enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
+        enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
+
+        simple_filter_input = type('{}NestedFilter'.format(type_name), (graphene.InputObjectType, ), simple_filter_attrib)
+
+        filter_attrib = {}
         filter_attrib['AND'] = graphene.List(graphene.NonNull(simple_filter_input))
         filter_attrib['OR'] = graphene.List(graphene.NonNull(simple_filter_input))
 
