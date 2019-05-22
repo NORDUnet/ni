@@ -655,7 +655,7 @@ class NOCAutoQuery(graphene.ObjectType):
             field_name    = '{}s'.format(type_slug)
             resolver_name = 'resolve_{}'.format(field_name)
 
-            connection_input = cls.build_filter_and_order(graphql_type, type_name)
+            connection_input, connection_order = cls.build_filter_and_order(graphql_type, type_name)
             connection_meta = type('Meta', (object, ), dict(node=graphql_type))
             connection_class = type(
                 '{}Connection'.format(graphql_type.__name__),
@@ -664,7 +664,11 @@ class NOCAutoQuery(graphene.ObjectType):
                 dict(Meta=connection_meta)
             )
 
-            setattr(cls, field_name, graphene.relay.ConnectionField(connection_class, filter=graphene.Argument(connection_input)))
+            setattr(cls, field_name, graphene.relay.ConnectionField(
+                connection_class,
+                filter=graphene.Argument(connection_input),
+                orderBy=graphene.Argument(connection_order),
+            ))
             setattr(cls, resolver_name, get_connection_resolver(type_name))
 
             ## build field and resolver byid
@@ -678,8 +682,10 @@ class NOCAutoQuery(graphene.ObjectType):
     def build_filter_and_order(cls, graphql_type, type_name):
         ## Maybe the input class should be declared in the types
 
-        # build filter input class
+        # build filter input class and order enum
         filter_attrib = {}
+        enum_options = []
+
         #raise Exception(graphql_type.__dict__)
         for name, field in graphql_type.__dict__.items():
             if field and not isinstance(field, str) and field.__module__ == 'graphene.types.scalars':
@@ -702,8 +708,10 @@ class NOCAutoQuery(graphene.ObjectType):
                     filter_attrib['{}_not_ends_with'.format(name)] = field
 
                 # adding order attributes
+                enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
+                enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
 
         filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
-        #Episode = graphene.Enum('Episode', [('NEWHOPE', 4), ('EMPIRE', 5), ('JEDI', 6)])
+        orderBy = graphene.Enum('{}OrderBy'.format(type_name), enum_options)
 
-        return filter_input
+        return filter_input, orderBy
