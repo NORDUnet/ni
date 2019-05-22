@@ -578,13 +578,21 @@ def get_connection_resolver(nodetype):
             else:
                 nodes = nc.get_nodes_by_type(nc.graphdb.manager, nodetype)
 
-            if not nodes:
-                ret = []
-            else:
+            if nodes:
+                # ordering
+                nodes = list(nodes)
+                if orderBy:
+                    m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                    prop = m[1]
+                    order = m[2]
+                    reverse = True if order == 'DESC' else False
+                    nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
+
+                # get the QuerySet
                 handle_ids = [ node['handle_id'] for node in nodes ]
-                ret = NodeHandle.objects.filter(
-                    handle_id__in=handle_ids
-                )
+                ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
+            else:
+                ret = []
 
             if not ret:
                 ret = []
