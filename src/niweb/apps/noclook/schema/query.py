@@ -3,7 +3,7 @@ __author__ = 'ffuentes'
 
 import graphene
 from graphql import GraphQLError
-from ..models import Dropdown
+from ..models import Dropdown as DropdownModel
 from .types import *
 
 class NOCRootQuery(NOCAutoQuery):
@@ -11,7 +11,7 @@ class NOCRootQuery(NOCAutoQuery):
 
     def resolve_getChoicesForDropdown(self, info, **kwargs):
         name = kwargs.get('name')
-        ddqs = Dropdown.get(name)
+        ddqs = DropdownModel.get(name)
 
         if not isinstance(ddqs, DummyDropdown):
             return ddqs.choice_set.order_by('name')
