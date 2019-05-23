@@ -574,13 +574,15 @@ def get_connection_resolver(nodetype):
             # filtering will take a different approach
             nodes = None
             if filter:
-                pass
+                q = build_filter_query(filter, nodetype)
+                nodes = nc.query_to_list(nc.graphdb.manager, q)
+                nodes = [ node['n'].properties for node in nodes]
             else:
                 nodes = nc.get_nodes_by_type(nc.graphdb.manager, nodetype)
+                nodes = list(nodes)
 
             if nodes:
                 # ordering
-                nodes = list(nodes)
                 if orderBy:
                     m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
                     prop = m[1]
@@ -588,9 +590,13 @@ def get_connection_resolver(nodetype):
                     reverse = True if order == 'DESC' else False
                     nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
 
-                # get the QuerySet
-                handle_ids = [ node['handle_id'] for node in nodes ]
-                ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
+                    # get the QuerySet
+                    handle_ids = [ node['handle_id'] for node in nodes ]
+                    ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
+                else:
+                    handle_ids = [ node['handle_id'] for node in nodes ]
+                    node_type = NodeType.objects.get(type=nodetype)
+                    ret = NodeHandle.objects.filter(node_type=node_type)
             else:
                 ret = []
 
@@ -602,6 +608,29 @@ def get_connection_resolver(nodetype):
             raise GraphQLAuthException()
 
     return generic_list_resolver
+
+def build_filter_query(filter, nodetype):
+    build_query = ''
+
+    # build AND block
+    and_query = ''
+    and_filters = filter.get('AND')
+    for and_filter in and_filters:
+        pass
+
+    # build OR block
+    or_query = ''
+    or_filters = filter.get('OR')
+    for or_filter in or_filters:
+        pass
+
+    q = """
+        MATCH (n:{label})
+        {build_query}
+        RETURN distinct n
+        """.format(label=nodetype, build_query=build_query)
+
+    return q
 
 def get_byid_resolver(nodetype):
     def generic_byid_resolver(self, info, **args):
