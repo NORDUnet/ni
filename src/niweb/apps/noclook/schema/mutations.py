@@ -14,7 +14,7 @@ class NIRoleMutationFactory(NIMutationFactory):
         create_form    = NewRoleForm
         update_form    = EditRoleForm
         request_path   = '/'
-        graphql_type   = RoleType
+        graphql_type   = Role
 
     class Meta:
         abstract = False
@@ -24,7 +24,7 @@ class NIGroupMutationFactory(NIMutationFactory):
         create_form    = NewGroupForm
         update_form    = EditGroupForm
         request_path   = '/'
-        graphql_type   = GroupType
+        graphql_type   = Group
 
     class Meta:
         abstract = False
@@ -34,7 +34,7 @@ class NIContactMutationFactory(NIMutationFactory):
         create_form    = NewContactForm
         update_form    = EditContactForm
         request_path   = '/'
-        graphql_type   = ContactType
+        graphql_type   = Contact
 
     class Meta:
         abstract = False
@@ -42,12 +42,12 @@ class NIContactMutationFactory(NIMutationFactory):
 class CreateRoleNIMutation(CreateNIMutation):
     '''This class is not used but left out as documentation in the case that as
     finer grain of control is needed'''
-    nodehandle = graphene.Field(RoleType, required=True)
+    role = graphene.Field(Role, required=True)
 
     class NIMetaClass:
         request_path   = '/'
         django_form    = NewRoleForm
-        graphql_type   = RoleType
+        graphql_type   = Role
 
     class Meta:
         abstract = False

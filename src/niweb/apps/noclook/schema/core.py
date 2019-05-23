@@ -2,7 +2,9 @@
 __author__ = 'ffuentes'
 
 import graphene
+import norduniclient as nc
 import re
+
 from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle
 from collections import OrderedDict
@@ -16,31 +18,6 @@ from graphql import GraphQLError
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 from ..models import NodeType, NodeHandle
-
-class NIRelayNode(relay.Node):
-    '''
-    from https://docs.graphene-python.org/en/latest/relay/nodes/
-    This node may implement the id policies in the graph database
-    '''
-    class Meta:
-        name = 'NIRelayNode'
-
-    @staticmethod
-    def to_global_id(type, id):
-        return '{}:{}'.format(type, id)
-
-    @staticmethod
-    def get_node_from_global_id(info, global_id, only_type=None):
-        type, id = global_id.split(':')
-        if only_type:
-            # We assure that the node type that we want to retrieve
-            # is the same that was indicated in the field type
-            assert type == only_type._meta.name, 'Received not compatible node.'
-
-        if type == 'DropdownType' or 'RoleType': # TODO too raw
-            return Dropdown.objects.get(pk=id)
-        else:
-            return NodeHandle.objects.get(handle_id=id)
 
 class DictEntryType(graphene.ObjectType):
     '''
@@ -85,6 +62,9 @@ class NIBasicField():
             return self.get_node().data.get(field_name)
 
         return resolve_node_string
+
+    def get_field_type(self):
+        return self.field_type
 
 class NIStringField(NIBasicField):
     '''
@@ -230,14 +210,12 @@ class NIObjectType(DjangoObjectType):
 
     class Meta:
         model = NodeHandle
-        interfaces = (NIRelayNode, )
+        interfaces = (relay.Node, )
 
-class NodeHandleType(NIObjectType):
+class NodeHandler(NIObjectType):
     pass
 
 class AbstractNIMutation(relay.ClientIDMutation):
-    nodehandle = graphene.Field(NodeHandleType, required=True) # the type should be replaced
-
     @classmethod
     def __init_subclass_with_meta__(
         cls, output=None, input_fields=None, arguments=None, name=None, **options
@@ -246,6 +224,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         '''
         # read form
         ni_metaclass  = getattr(cls, 'NIMetaClass')
+        graphql_type  = getattr(ni_metaclass, 'graphql_type', None)
         django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', cls.__name__)
         is_create     = getattr(ni_metaclass, 'is_create', False)
@@ -273,6 +252,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # add Input attribute to class
         inner_class = type('Input', (object,), inner_fields)
         setattr(cls, 'Input', inner_class)
+
+        # add return type
+        if graphql_type:
+            setattr(cls, graphql_type.__name__.lower(), graphene.Field(graphql_type))
 
         super(AbstractNIMutation, cls).__init_subclass_with_meta__(
             output, inner_fields, arguments, name=mutation_name, **options
@@ -378,7 +361,19 @@ class AbstractNIMutation(relay.ClientIDMutation):
         reqinput = cls.from_input_to_request(info.context.user, **input)
         ret = cls.do_request(reqinput[0], **reqinput[1])
 
-        return cls(nodehandle=ret)
+        graphql_type = cls.get_graphql_type()
+        init_params = {}
+        if graphql_type:
+            init_params[graphql_type.__name__.lower()] = ret
+
+        return cls(**init_params)
+
+    @classmethod
+    def get_graphql_type(cls):
+        ni_metaclass  = getattr(cls, 'NIMetaClass')
+        graphql_type  = getattr(ni_metaclass, 'graphql_type', None)
+
+        return graphql_type
 
     class Meta:
         abstract = True
@@ -445,8 +440,6 @@ class UpdateNIMutation(AbstractNIMutation):
             raise GraphQLError('Form errors: {}'.format(form))
 
 class DeleteNIMutation(AbstractNIMutation):
-    nodehandle = graphene.Boolean(required=True)
-
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
@@ -458,7 +451,7 @@ class DeleteNIMutation(AbstractNIMutation):
         nh, node = helpers.get_nh_node(handle_id)
         helpers.delete_node(request.user, node.handle_id)
 
-        return True
+        return None
 
 class NIMutationFactory():
     '''
@@ -490,7 +483,7 @@ class NIMutationFactory():
         create_form    = getattr(ni_metaclass, 'create_form', None)
         update_form    = getattr(ni_metaclass, 'update_form', None)
         request_path   = getattr(ni_metaclass, 'request_path', None)
-        graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandleType)
+        graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandler)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -522,7 +515,6 @@ class NIMutationFactory():
             class_name,
             (cls.create_mutation_class,),
             {
-                nh_field: graphene.Field(graphql_type, required=True),
                 metaclass_name: create_metaclass,
             },
         )
@@ -537,7 +529,6 @@ class NIMutationFactory():
             class_name,
             (cls.update_mutation_class,),
             {
-                nh_field: graphene.Field(graphql_type, required=True),
                 metaclass_name: update_metaclass,
             },
         )
@@ -576,13 +567,38 @@ class GraphQLAuthException(Exception):
 
 def get_connection_resolver(nodetype):
     def generic_list_resolver(self, info, **args):
-        node_type = NodeType.objects.get(type=nodetype)
+        filter  = args.get('filter', None)
+        orderBy = args.get('orderBy', None)
 
         if info.context and info.context.user.is_authenticated:
-            ret = NodeHandle.objects.filter(node_type=node_type)
-            """ret.filter(
-                Q(creator=info.context.user) | Q(modifier=info.context.user)
-            )"""
+            # filtering will take a different approach
+            nodes = None
+            if filter:
+                q = build_filter_query(filter, nodetype)
+                nodes = nc.query_to_list(nc.graphdb.manager, q)
+                nodes = [ node['n'].properties for node in nodes]
+            else:
+                nodes = nc.get_nodes_by_type(nc.graphdb.manager, nodetype)
+                nodes = list(nodes)
+
+            if nodes:
+                # ordering
+                if orderBy:
+                    m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                    prop = m[1]
+                    order = m[2]
+                    reverse = True if order == 'DESC' else False
+                    nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
+
+                    # get the QuerySet
+                    handle_ids = [ node['handle_id'] for node in nodes ]
+                    ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
+                else:
+                    handle_ids = [ node['handle_id'] for node in nodes ]
+                    node_type = NodeType.objects.get(type=nodetype)
+                    ret = NodeHandle.objects.filter(node_type=node_type)
+            else:
+                ret = []
 
             if not ret:
                 ret = []
@@ -592,6 +608,29 @@ def get_connection_resolver(nodetype):
             raise GraphQLAuthException()
 
     return generic_list_resolver
+
+def build_filter_query(filter, nodetype):
+    build_query = ''
+
+    # build AND block
+    and_query = ''
+    and_filters = filter.get('AND')
+    for and_filter in and_filters:
+        pass
+
+    # build OR block
+    or_query = ''
+    or_filters = filter.get('OR')
+    for or_filter in or_filters:
+        pass
+
+    q = """
+        MATCH (n:{label})
+        {build_query}
+        RETURN distinct n
+        """.format(label=nodetype, build_query=build_query)
+
+    return q
 
 def get_byid_resolver(nodetype):
     def generic_byid_resolver(self, info, **args):
@@ -616,8 +655,8 @@ def get_byid_resolver(nodetype):
     return generic_byid_resolver
 
 class NOCAutoQuery(graphene.ObjectType):
-    node = NIRelayNode.Field()
-    getNodeById = graphene.Field(NodeHandleType, handle_id=graphene.Int())
+    node = relay.Node.Field()
+    getNodeById = graphene.Field(NodeHandler, handle_id=graphene.Int())
 
     def resolve_getNodeById(self, info, **args):
         handle_id = args.get('handle_id')
@@ -650,7 +689,7 @@ class NOCAutoQuery(graphene.ObjectType):
         # add list with pagination resolver
         # add by id resolver
         for graphql_type in graphql_types:
-            # extract values
+            ## extract values
             _nimetatype   = getattr(graphql_type, 'NIMetaType')
 
             ni_type = getattr(_nimetatype, 'ni_type')
@@ -662,23 +701,86 @@ class NOCAutoQuery(graphene.ObjectType):
             type_name     = node_type.type
             type_slug     = node_type.slug
 
-            # build connection class
+            # add connection attribute
             field_name    = '{}s'.format(type_slug)
             resolver_name = 'resolve_{}'.format(field_name)
 
+            connection_input, connection_order = cls.build_filter_and_order(graphql_type, type_name)
             connection_meta = type('Meta', (object, ), dict(node=graphql_type))
             connection_class = type(
-                '{}Connection'.format(type_name),
+                '{}Connection'.format(graphql_type.__name__),
                 (graphene.relay.Connection,),
+                #(connection_type,),
                 dict(Meta=connection_meta)
             )
 
-            setattr(cls, field_name, graphene.relay.ConnectionField(connection_class))
+            setattr(cls, field_name, graphene.relay.ConnectionField(
+                connection_class,
+                filter=graphene.Argument(connection_input),
+                orderBy=graphene.Argument(connection_order),
+            ))
             setattr(cls, resolver_name, get_connection_resolver(type_name))
 
-            # build field and resolver byid
+            ## build field and resolver byid
             field_name    = 'get{}ById'.format(type_name)
             resolver_name = 'resolve_{}'.format(field_name)
 
             setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
             setattr(cls, resolver_name, get_byid_resolver(type_name))
+
+    @classmethod
+    def build_filter_and_order(cls, graphql_type, type_name):
+        # build filter input class and order enum
+        simple_filter_attrib = {}
+        enum_options = []
+
+        for name, field in graphql_type.__dict__.items():
+            if field and not isinstance(field, str) and field.__module__ == 'graphene.types.scalars':
+                input_field = type(field)()
+
+                # adding filter attributes
+                simple_filter_attrib['{}'.format(name)] = input_field
+                simple_filter_attrib['{}_not'.format(name)] = input_field
+                simple_filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
+                simple_filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
+                simple_filter_attrib['{}_lt'.format(name)] = input_field
+                simple_filter_attrib['{}_lte'.format(name)] = input_field
+                simple_filter_attrib['{}_gt'.format(name)] = input_field
+                simple_filter_attrib['{}_gte'.format(name)] = input_field
+
+                if isinstance(field, graphene.String):
+                    simple_filter_attrib['{}_contains'.format(name)] = input_field
+                    simple_filter_attrib['{}_not_contains'.format(name)] = input_field
+                    simple_filter_attrib['{}_starts_with'.format(name)] = input_field
+                    simple_filter_attrib['{}_not_starts_with'.format(name)] = input_field
+                    simple_filter_attrib['{}_ends_with'.format(name)] = input_field
+                    simple_filter_attrib['{}_not_ends_with'.format(name)] = input_field
+
+                # adding order attributes
+                enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
+                enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
+
+        # add handle_id
+        name = 'handle_id'
+        simple_filter_attrib['{}'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_not'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(graphene.Int))
+        simple_filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(graphene.Int))
+        simple_filter_attrib['{}_lt'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_lte'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_gt'.format(name)] = graphene.Int()
+        simple_filter_attrib['{}_gte'.format(name)] = graphene.Int()
+        enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
+        enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
+
+        simple_filter_input = type('{}NestedFilter'.format(type_name), (graphene.InputObjectType, ), simple_filter_attrib)
+
+        filter_attrib = {}
+        filter_attrib['AND'] = graphene.List(graphene.NonNull(simple_filter_input))
+        filter_attrib['OR'] = graphene.List(graphene.NonNull(simple_filter_input))
+
+        filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
+
+        orderBy = graphene.Enum('{}OrderBy'.format(type_name), enum_options)
+
+        return filter_input, orderBy

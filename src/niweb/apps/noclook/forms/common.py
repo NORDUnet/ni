@@ -892,7 +892,7 @@ class EditOrganizationForm(NewOrganizationForm):
 class NewContactForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewContactForm, self).__init__(*args, **kwargs)
-        self.fields['contact_type'].choices = [('person', 'Person'), ('group', 'Group')]
+        self.fields['contact_type'].choices = Dropdown.get('contact_type').as_choices()
 
     first_name = forms.CharField()
     last_name = forms.CharField()

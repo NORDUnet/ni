@@ -3,7 +3,7 @@ __author__ = 'ffuentes'
 
 from django.db import connection
 
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, Dropdown, Choice
 from ..neo4j_base import NeoTestCase
 
 class TestContext():
@@ -55,6 +55,14 @@ class Neo4jGraphQLTest(NeoTestCase):
             contact2.get_node().add_role(role2.handle_id)
             contact2.get_node().add_group(group2.handle_id)
             contact2.get_node().add_organization(organization2.handle_id)
+
+            # create dummy dropdown
+            dropdown = Dropdown.objects.get_or_create(name='contact_type')[0]
+            dropdown.save()
+            ch1 = Choice.objects.get_or_create(dropdown=dropdown, name='Person', value='person')[0]
+            ch2 = Choice.objects.get_or_create(dropdown=dropdown, name='Group', value='group')[0]
+            ch1.save()
+            ch2.save()
 
             self.initialized = True
 
