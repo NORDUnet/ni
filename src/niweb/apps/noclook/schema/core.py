@@ -129,7 +129,6 @@ class NIObjectType(DjangoObjectType):
     @classmethod
     def __init_subclass_with_meta__(
         cls,
-        sri_fields=None,
         **options,
     ):
         fields_names = ''
@@ -199,21 +198,43 @@ class NIObjectType(DjangoObjectType):
             **options
         )
 
-    @classmethod
-    def get_queryset(cls, queryset, info):
-        if info.context.user.is_anonymous:
-            return queryset.none()
-        else:
-            return queryset.filter(
-                Q(creator=info.context.user) | Q(modifier=info.context.user)
-            )
-
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
 
 class NodeHandler(NIObjectType):
     pass
+
+class NIRelationType(graphene.ObjectType):
+    @classmethod
+    def __init_subclass_with_meta__(
+        cls,
+        **options,
+    ):
+        super(NIObjectType, cls).__init_subclass_with_meta__(
+            **options
+        )
+
+    relation_id = graphene.Int(required=True)
+    type = graphene.String(required=True) # this may be set to an Enum
+    start = graphene.Field(NIObjectType, required=True)
+    end = graphene.Field(NIObjectType, required=True)
+    data = graphene.List(DictEntryType)
+
+    def resolve_nidata(self, info, **kwargs):
+        '''
+        Is just the same than old resolve_nidata, but it doesn't resolve the node
+        '''
+        ret = []
+
+        alldata = self.data
+        for key, value in alldata.items():
+            ret.append(DictEntryType(key=key, value=value))
+
+        return ret
+
+    class Meta:
+        interfaces = (relay.Node, )
 
 class AbstractNIMutation(relay.ClientIDMutation):
     @classmethod
