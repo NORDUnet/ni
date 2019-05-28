@@ -39,6 +39,38 @@ def resolve_nidata(self, info, **kwargs):
 
     return ret
 
+"""
+class NIRelationType(graphene.ObjectType):
+    @classmethod
+    def __init_subclass_with_meta__(
+        cls,
+        **options,
+    ):
+        super(NIObjectType, cls).__init_subclass_with_meta__(
+            **options
+        )
+
+    relation_id = graphene.Int(required=True)
+    type = graphene.String(required=True) # this may be set to an Enum
+    start = graphene.Field(graphene.Int, required=True)
+    end = graphene.Field(graphene.Int, required=True)
+    data = graphene.List(DictEntryType)
+
+    def resolve_nidata(self, info, **kwargs):
+        '''
+        Is just the same than old resolve_nidata, but it doesn't resolve the node
+        '''
+        ret = []
+
+        alldata = self.data
+        for key, value in alldata.items():
+            ret.append(DictEntryType(key=key, value=value))
+
+        return ret
+
+    class Meta:
+        interfaces = (relay.Node, )"""
+
 class NIBasicField():
     '''
     Super class of the type fields
@@ -58,10 +90,10 @@ class NIBasicField():
                     field_name, self.__class__
                 )
             )
-        def resolve_node_string(self, info, **kwargs):
+        def resolve_node_value(self, info, **kwargs):
             return self.get_node().data.get(field_name)
 
-        return resolve_node_string
+        return resolve_node_value
 
     def get_field_type(self):
         return self.field_type
@@ -80,6 +112,27 @@ class NIIntField(NIBasicField):
                     type_kwargs=None, **kwargs):
         super(NIIntField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
+'''
+class NIRelationField(NIBasicField):
+    def __init__(self, field_type=NIRelationType, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIRelationField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+        rel_name   = kwargs.get('rel_name')
+
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_value(self, info, **kwargs):
+            return self.get_node().data.get(field_name)
+
+        return resolve_node_value'''
 
 class NIListField(NIBasicField):
     '''
@@ -119,6 +172,52 @@ class NIListField(NIBasicField):
 
         return resolve_relationship_list
 
+class NIRelationType(graphene.ObjectType):
+    @classmethod
+    def __init_subclass_with_meta__(
+        cls,
+        **options,
+    ):
+        super(NIObjectType, cls).__init_subclass_with_meta__(
+            **options
+        )
+
+    relation_id = graphene.Int(required=True)
+    type = graphene.String(required=True) # this may be set to an Enum
+    start = graphene.Field(graphene.Int, required=True)
+    end = graphene.Field(graphene.Int, required=True)
+    data = graphene.List(DictEntryType)
+
+    def resolve_relation_id(self, info, **kwargs):
+        self.relation_id = self.id
+        self.id = None
+
+        return self.relation_id
+
+    def resolve_nidata(self, info, **kwargs):
+        '''
+        Is just the same than old resolve_nidata, but it doesn't resolve the node
+        '''
+        ret = []
+
+        alldata = self.data
+        for key, value in alldata.items():
+            ret.append(DictEntryType(key=key, value=value))
+
+        return ret
+
+    class Meta:
+        interfaces = (relay.Node, )
+
+class DictRelationType(graphene.ObjectType):
+    '''
+    This type represents an key value pair in a dictionary for the data
+    dict of the norduniclient nodes
+    '''
+    name = graphene.String(required=True)
+    relation = graphene.Field(NIRelationType, required=True)
+
+
 class NIObjectType(DjangoObjectType):
     '''
     This class expands graphene_django object type adding the defined fields in
@@ -126,6 +225,7 @@ class NIObjectType(DjangoObjectType):
     adds a resolver for each field, a nidata field is also added to hold the
     values of the node data dict.
     '''
+
     @classmethod
     def __init_subclass_with_meta__(
         cls,
@@ -187,10 +287,6 @@ class NIObjectType(DjangoObjectType):
                         .format(name)
                 )
 
-        # add data field and resolver
-        setattr(cls, 'nidata', graphene.List(DictEntryType))
-        setattr(cls, 'resolve_nidata', resolve_nidata)
-
         options['model'] = NIObjectType._meta.model
         options['interfaces'] = NIObjectType._meta.interfaces
 
@@ -198,43 +294,37 @@ class NIObjectType(DjangoObjectType):
             **options
         )
 
+    nidata = graphene.List(DictEntryType, resolver=resolve_nidata)
+
+    incoming = graphene.List(DictRelationType)
+    outgoing = graphene.List(DictRelationType)
+
+    def resolve_incoming(self, info, **kwargs):
+        incoming_rels = self.get_node().incoming
+        ret = []
+        for rel_name, rel in incoming_rels.items():
+            relation_id = rel[0]['relationship_id']
+            rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
+            ret.append(DictRelationType(name=rel_name, relation=rel))
+
+        return ret
+
+    def resolve_outgoing(self, info, **kwargs):
+        outgoing_rels = self.get_node().outgoing
+        ret = []
+        for rel_name, rel in outgoing_rels.items():
+            relation_id = rel[0]['relationship_id']
+            rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
+            ret.append(DictRelationType(name=rel_name, relation=rel))
+
+        return ret
+
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
 
 class NodeHandler(NIObjectType):
-    pass
-
-class NIRelationType(graphene.ObjectType):
-    @classmethod
-    def __init_subclass_with_meta__(
-        cls,
-        **options,
-    ):
-        super(NIObjectType, cls).__init_subclass_with_meta__(
-            **options
-        )
-
-    relation_id = graphene.Int(required=True)
-    type = graphene.String(required=True) # this may be set to an Enum
-    start = graphene.Field(NIObjectType, required=True)
-    end = graphene.Field(NIObjectType, required=True)
-    data = graphene.List(DictEntryType)
-
-    def resolve_nidata(self, info, **kwargs):
-        '''
-        Is just the same than old resolve_nidata, but it doesn't resolve the node
-        '''
-        ret = []
-
-        alldata = self.data
-        for key, value in alldata.items():
-            ret.append(DictEntryType(key=key, value=value))
-
-        return ret
-
-    class Meta:
-        interfaces = (relay.Node, )
+    name = NIStringField(type_kwargs={ 'required': True })
 
 class AbstractNIMutation(relay.ClientIDMutation):
     @classmethod

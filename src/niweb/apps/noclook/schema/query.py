@@ -10,7 +10,7 @@ from .types import *
 
 class NOCRootQuery(NOCAutoQuery):
     getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
-    getRelationFromId = graphene.Field(NIRelationType, relation_id=graphene.Int(required=True))
+    getRelationById = graphene.Field(NIRelationType, relation_id=graphene.Int(required=True))
 
     def resolve_getChoicesForDropdown(self, info, **kwargs):
         name = kwargs.get('name')
@@ -21,14 +21,11 @@ class NOCRootQuery(NOCAutoQuery):
         else:
             raise Exception(u'Could not find dropdown with name \'{}\'. Please create it using /admin/'.format(name))
 
-    def resolve_getRelationFromId(self, info, **kwargs):
+    def resolve_getRelationById(self, info, **kwargs):
         relation_id = kwargs.get('relation_id')
         rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
         rel.relation_id = rel.id
         rel.id = None
-
-        #raise Exception(rel)
-        #raise Exception(vars(rel))
 
         return rel
 
