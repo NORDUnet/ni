@@ -388,11 +388,12 @@ def list_optical_nodes(request):
 
 def _optical_path_table(path):
     row = TableRow(
-            path, 
-            path.get('framing'), 
-            path.get('capacity'), 
-            path.get('description'),
-            ", ".join(path.get('enrs',[])))
+        path,
+        path.get('framing'),
+        path.get('capacity'),
+        path.get('wavelength'),
+        path.get('description'),
+        ", ".join(path.get('enrs', [])))
     _set_operational_state(row, path)
     return row
 
@@ -409,7 +410,7 @@ def list_optical_paths(request):
     optical_path_list = _filter_operational_state(optical_path_list, request, select=lambda n: n.get('path'))
     urls = get_node_urls(optical_path_list)
 
-    table = Table('Optical Path', 'Framing', 'Capacity', 'Description', 'ENRs')
+    table = Table('Optical Path', 'Framing', 'Capacity', 'Wavelength', 'Description', 'ENRs')
     table.rows = [_optical_path_table(item['path']) for item in optical_path_list]
     _set_filters_operational_state(table, request)
 
