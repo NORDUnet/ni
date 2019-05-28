@@ -30,17 +30,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected =  OrderedDict([('contacts',
                       OrderedDict([('edges',
-                        [OrderedDict([('node',
-                           OrderedDict([('handle_id', '20'),
-                                ('name', 'Jane Doe'),
-                                ('first_name', 'Jane'),
-                                ('last_name', 'Doe'),
-                                ('is_roles',
-                                 [OrderedDict([('name',
-                                    'role1')])]),
-                                ('member_of_groups',
-                                 [OrderedDict([('name',
-                                    'group1')])])]))]),
+                        [
                          OrderedDict([('node',
                            OrderedDict([('handle_id', '21'),
                                 ('name', 'John Smith'),
@@ -51,7 +41,20 @@ class QueryTest(Neo4jGraphQLTest):
                                     'role2')])]),
                                 ('member_of_groups',
                                  [OrderedDict([('name',
-                                    'group2')])])]))])])]))])
+                                    'group2')])])]))]),
+                        OrderedDict([('node',
+                           OrderedDict([('handle_id', '20'),
+                                ('name', 'Jane Doe'),
+                                ('first_name', 'Jane'),
+                                ('last_name', 'Doe'),
+                                ('is_roles',
+                                 [OrderedDict([('name',
+                                    'role1')])]),
+                                ('member_of_groups',
+                                 [OrderedDict([('name',
+                                    'group1')])])]))]),
+                        ])]))])
+
 
         result = schema.execute(query, context=self.context)
 

@@ -69,6 +69,8 @@ class Contact(NIObjectType):
     is_roles = NIListField(type_args=(Role,), manual_resolver=resolve_roles_list)
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
 
+    works_for = NIRelationField(rel_name='Works_for')
+
     class NIMetaType:
         ni_type = 'Contact'
         ni_metatype = 'relation'

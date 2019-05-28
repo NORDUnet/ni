@@ -39,38 +39,6 @@ def resolve_nidata(self, info, **kwargs):
 
     return ret
 
-"""
-class NIRelationType(graphene.ObjectType):
-    @classmethod
-    def __init_subclass_with_meta__(
-        cls,
-        **options,
-    ):
-        super(NIObjectType, cls).__init_subclass_with_meta__(
-            **options
-        )
-
-    relation_id = graphene.Int(required=True)
-    type = graphene.String(required=True) # this may be set to an Enum
-    start = graphene.Field(graphene.Int, required=True)
-    end = graphene.Field(graphene.Int, required=True)
-    data = graphene.List(DictEntryType)
-
-    def resolve_nidata(self, info, **kwargs):
-        '''
-        Is just the same than old resolve_nidata, but it doesn't resolve the node
-        '''
-        ret = []
-
-        alldata = self.data
-        for key, value in alldata.items():
-            ret.append(DictEntryType(key=key, value=value))
-
-        return ret
-
-    class Meta:
-        interfaces = (relay.Node, )"""
-
 class NIBasicField():
     '''
     Super class of the type fields
@@ -112,27 +80,6 @@ class NIIntField(NIBasicField):
                     type_kwargs=None, **kwargs):
         super(NIIntField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
-'''
-class NIRelationField(NIBasicField):
-    def __init__(self, field_type=NIRelationType, manual_resolver=False,
-                    type_kwargs=None, **kwargs):
-        super(NIRelationField, self).__init__(field_type, manual_resolver,
-                        type_kwargs, **kwargs)
-
-    def get_resolver(self, **kwargs):
-        field_name = kwargs.get('field_name')
-        rel_name   = kwargs.get('rel_name')
-
-        if not field_name:
-            raise Exception(
-                'Field name for field {} should not be empty for a {}'.format(
-                    field_name, self.__class__
-                )
-            )
-        def resolve_node_value(self, info, **kwargs):
-            return self.get_node().data.get(field_name)
-
-        return resolve_node_value'''
 
 class NIListField(NIBasicField):
     '''
@@ -217,7 +164,6 @@ class DictRelationType(graphene.ObjectType):
     name = graphene.String(required=True)
     relation = graphene.Field(NIRelationType, required=True)
 
-
 class NIObjectType(DjangoObjectType):
     '''
     This class expands graphene_django object type adding the defined fields in
@@ -231,7 +177,6 @@ class NIObjectType(DjangoObjectType):
         cls,
         **options,
     ):
-        fields_names = ''
         allfields = cls.__dict__
         graphfields = OrderedDict()
 
@@ -245,7 +190,6 @@ class NIObjectType(DjangoObjectType):
 
         # run over the fields defined and adding graphene fields and resolvers
         for name, field in graphfields.items():
-            fields_names = fields_names + ' ' + '({} / {})'.format(name, field.__dict__)
             field_fields = field.__dict__
 
             field_type      = field_fields.get('field_type')
@@ -322,6 +266,38 @@ class NIObjectType(DjangoObjectType):
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
+
+class NIRelationField(NIBasicField):
+    def __init__(self, field_type=graphene.List, manual_resolver=False,
+                    type_args=(NIRelationType,), rel_name=None, **kwargs):
+        self.field_type      = field_type
+        self.manual_resolver = manual_resolver
+        self.type_args       = type_args
+        self.rel_name        = rel_name
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+        rel_name   = kwargs.get('rel_name')
+
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_relation(self, info, **kwargs):
+            ret = []
+            reldicts = self.get_node().relationships[rel_name]
+
+            for reldict in reldicts:
+                relbundle = nc.get_relationship_bundle(nc.graphdb.manager, relationship_id=reldict['relationship_id'])
+                relation = nc.models.BaseRelationshipModel(nc.graphdb.manager)
+                relation.load(relbundle)
+                ret.append(relation)
+
+            return ret
+
+        return resolve_node_relation
 
 class NodeHandler(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
