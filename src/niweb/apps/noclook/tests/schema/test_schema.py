@@ -9,7 +9,7 @@ class QueryTest(Neo4jGraphQLTest):
     def test_get_contacts(self):
         query = '''
         query getLastTenContacts {
-          contacts(first: 10) {
+          contacts(first: 2) {
             edges {
               node {
                 handle_id
@@ -32,7 +32,7 @@ class QueryTest(Neo4jGraphQLTest):
                       OrderedDict([('edges',
                         [
                          OrderedDict([('node',
-                           OrderedDict([('handle_id', '21'),
+                           OrderedDict([('handle_id', '29'),
                                 ('name', 'John Smith'),
                                 ('first_name', 'John'),
                                 ('last_name', 'Smith'),
@@ -43,7 +43,7 @@ class QueryTest(Neo4jGraphQLTest):
                                  [OrderedDict([('name',
                                     'group2')])])]))]),
                         OrderedDict([('node',
-                           OrderedDict([('handle_id', '20'),
+                           OrderedDict([('handle_id', '28'),
                                 ('name', 'Jane Doe'),
                                 ('first_name', 'Jane'),
                                 ('last_name', 'Doe'),
@@ -63,7 +63,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         query = '''
         query {
-          getNodeById(handle_id: 20){
+          getNodeById(handle_id: 28){
             handle_id
           }
         }

@@ -11,60 +11,54 @@ class TestContext():
         self.user = user
 
 class Neo4jGraphQLTest(NeoTestCase):
-    initialized = False
-
     def setUp(self):
         super(Neo4jGraphQLTest, self).setUp()
         self.context = TestContext(self.user)
+        # create nodes
+        organization1 = self.create_node('organization1', 'organization', meta='Logical')
+        organization2 = self.create_node('organization2', 'organization', meta='Logical')
+        contact1 = self.create_node('contact1', 'contact', meta='Relation')
+        contact2 = self.create_node('contact2', 'contact', meta='Relation')
+        role1 = self.create_node('role1', 'role', meta='Logical')
+        role2 = self.create_node('role2', 'role', meta='Logical')
+        group1 = self.create_node('group1', 'group', meta='Logical')
+        group2 = self.create_node('group2', 'group', meta='Logical')
 
-        if not self.initialized:
-            # create nodes
-            organization1 = self.create_node('organization1', 'organization', meta='Logical')
-            organization2 = self.create_node('organization2', 'organization', meta='Logical')
-            contact1 = self.create_node('contact1', 'contact', meta='Relation')
-            contact2 = self.create_node('contact2', 'contact', meta='Relation')
-            role1 = self.create_node('role1', 'role', meta='Logical')
-            role2 = self.create_node('role2', 'role', meta='Logical')
-            group1 = self.create_node('group1', 'group', meta='Logical')
-            group2 = self.create_node('group2', 'group', meta='Logical')
+        # add some data
+        contact1_data = {
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'name': 'Jane Doe',
+        }
 
-            # add some data
-            contact1_data = {
-                'first_name': 'Jane',
-                'last_name': 'Doe',
-                'name': 'Jane Doe',
-            }
+        for key, value in contact1_data.items():
+            contact1.get_node().add_property(key, value)
 
-            for key, value in contact1_data.items():
-                contact1.get_node().add_property(key, value)
+        contact2_data = {
+            'first_name': 'John',
+            'last_name': 'Smith',
+            'name': 'John Smith',
+        }
 
-            contact2_data = {
-                'first_name': 'John',
-                'last_name': 'Smith',
-                'name': 'John Smith',
-            }
+        for key, value in contact2_data.items():
+            contact2.get_node().add_property(key, value)
 
-            for key, value in contact2_data.items():
-                contact2.get_node().add_property(key, value)
+        # create relationships
+        contact1.get_node().add_role(role1.handle_id)
+        contact1.get_node().add_group(group1.handle_id)
+        contact1.get_node().add_organization(organization1.handle_id)
 
-            # create relationships
-            contact1.get_node().add_role(role1.handle_id)
-            contact1.get_node().add_group(group1.handle_id)
-            contact1.get_node().add_organization(organization1.handle_id)
+        contact2.get_node().add_role(role2.handle_id)
+        contact2.get_node().add_group(group2.handle_id)
+        contact2.get_node().add_organization(organization2.handle_id)
 
-            contact2.get_node().add_role(role2.handle_id)
-            contact2.get_node().add_group(group2.handle_id)
-            contact2.get_node().add_organization(organization2.handle_id)
-
-            # create dummy dropdown
-            dropdown = Dropdown.objects.get_or_create(name='contact_type')[0]
-            dropdown.save()
-            ch1 = Choice.objects.get_or_create(dropdown=dropdown, name='Person', value='person')[0]
-            ch2 = Choice.objects.get_or_create(dropdown=dropdown, name='Group', value='group')[0]
-            ch1.save()
-            ch2.save()
-
-            self.initialized = True
+        # create dummy dropdown
+        dropdown = Dropdown.objects.get_or_create(name='contact_type')[0]
+        dropdown.save()
+        ch1 = Choice.objects.get_or_create(dropdown=dropdown, name='Person', value='person')[0]
+        ch2 = Choice.objects.get_or_create(dropdown=dropdown, name='Group', value='group')[0]
+        ch1.save()
+        ch2.save()
 
     def tearDown(self):
         super(Neo4jGraphQLTest, self).tearDown()

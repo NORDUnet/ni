@@ -696,20 +696,38 @@ def get_connection_resolver(nodetype):
 
     return generic_list_resolver
 
+filter_array = {
+    '':       { 'wrapper_field': None, 'only_strings': False },
+    'not':    { 'wrapper_field': None, 'only_strings': False },
+    'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False },
+    'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False },
+    'lt':     { 'wrapper_field': None, 'only_strings': False },
+    'lte':    { 'wrapper_field': None, 'only_strings': False },
+    'gt':     { 'wrapper_field': None, 'only_strings': False },
+    'gte':    { 'wrapper_field': None, 'only_strings': False },
+
+    'contains':        { 'wrapper_field': None, 'only_strings': True },
+    'not_contains':    { 'wrapper_field': None, 'only_strings': True },
+    'starts_with':     { 'wrapper_field': None, 'only_strings': True },
+    'not_starts_with': { 'wrapper_field': None, 'only_strings': True },
+    'ends_with':       { 'wrapper_field': None, 'only_strings': True },
+    'not_ends_with':   { 'wrapper_field': None, 'only_strings': True },
+}
+
 def build_filter_query(filter, nodetype):
     build_query = ''
 
     # build AND block
     and_query = ''
-    and_filters = filter.get('AND')
+    and_filters = filter.get('AND', [])
     for and_filter in and_filters:
-        pass
+        print(and_filter)
 
     # build OR block
     or_query = ''
-    or_filters = filter.get('OR')
+    or_filters = filter.get('OR', [])
     for or_filter in or_filters:
-        pass
+        print(or_filter)
 
     q = """
         MATCH (n:{label})
@@ -820,45 +838,35 @@ class NOCAutoQuery(graphene.ObjectType):
         # build filter input class and order enum
         simple_filter_attrib = {}
         enum_options = []
+        input_fields = {}
 
         for name, field in graphql_type.__dict__.items():
             if field and not isinstance(field, str) and field.__module__ == 'graphene.types.scalars':
-                input_field = type(field)()
+                input_field = type(field)
+                input_fields[name] = input_field
 
-                # adding filter attributes
-                simple_filter_attrib['{}'.format(name)] = input_field
-                simple_filter_attrib['{}_not'.format(name)] = input_field
-                simple_filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
-                simple_filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
-                simple_filter_attrib['{}_lt'.format(name)] = input_field
-                simple_filter_attrib['{}_lte'.format(name)] = input_field
-                simple_filter_attrib['{}_gt'.format(name)] = input_field
-                simple_filter_attrib['{}_gte'.format(name)] = input_field
+        input_fields['handler_id'] = graphene.Int
 
-                if isinstance(field, graphene.String):
-                    simple_filter_attrib['{}_contains'.format(name)] = input_field
-                    simple_filter_attrib['{}_not_contains'.format(name)] = input_field
-                    simple_filter_attrib['{}_starts_with'.format(name)] = input_field
-                    simple_filter_attrib['{}_not_starts_with'.format(name)] = input_field
-                    simple_filter_attrib['{}_ends_with'.format(name)] = input_field
-                    simple_filter_attrib['{}_not_ends_with'.format(name)] = input_field
+        for name, input_field in input_fields.items():
+            # adding order attributes
+            enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
+            enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
 
-                # adding order attributes
-                enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
-                enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
+            # adding filter attributes
+            for suffix, suffix_attr in filter_array.items():
+                fmt_filter_field = '{}_{}'.format(name, suffix)
+                if suffix == '':
+                    fmt_filter_field = '{}'.format(name)
 
-        # add handle_id
-        name = 'handle_id'
-        simple_filter_attrib['{}'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_not'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(graphene.Int))
-        simple_filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(graphene.Int))
-        simple_filter_attrib['{}_lt'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_lte'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_gt'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_gte'.format(name)] = graphene.Int()
-        enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
-        enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
+                if not suffix_attr['only_strings'] or isinstance(input_field(), graphene.String):
+                    if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
+                        simple_filter_attrib[fmt_filter_field] = input_field()
+                    else:
+                        the_field = input_field
+                        for wrapper_field in suffix_attr['wrapper_field']:
+                            the_field = wrapper_field(the_field)
+
+                        simple_filter_attrib[fmt_filter_field] = the_field
 
         simple_filter_input = type('{}NestedFilter'.format(type_name), (graphene.InputObjectType, ), simple_filter_attrib)
 

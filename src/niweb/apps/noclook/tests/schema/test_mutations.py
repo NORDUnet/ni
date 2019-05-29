@@ -25,7 +25,7 @@ class QueryTest(Neo4jGraphQLTest):
                 OrderedDict([
                     ('role',
                         OrderedDict([
-                            ('handle_id', '9'),
+                            ('handle_id', '17'),
                             ('name', 'New test role')
                         ])),
                     ('clientMutationId', None)
@@ -34,7 +34,7 @@ class QueryTest(Neo4jGraphQLTest):
         ])
 
         result = schema.execute(query, context=self.context)
-
+        
         assert not result.errors, result.errors
         assert result.data == expected
 
