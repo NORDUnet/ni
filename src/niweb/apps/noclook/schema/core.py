@@ -19,22 +19,88 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 from ..models import NodeType, NodeHandle
 
-filter_array = {
-    '':       { 'wrapper_field': None, 'only_strings': False },
-    'not':    { 'wrapper_field': None, 'only_strings': False },
-    'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False },
-    'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False },
-    'lt':     { 'wrapper_field': None, 'only_strings': False },
-    'lte':    { 'wrapper_field': None, 'only_strings': False },
-    'gt':     { 'wrapper_field': None, 'only_strings': False },
-    'gte':    { 'wrapper_field': None, 'only_strings': False },
+def build_match_predicate(field, value, type):
+    # string quoting
+    if isinstance(type, graphene.String):
+        value = "'{}'".format(value)
 
-    'contains':        { 'wrapper_field': None, 'only_strings': True },
-    'not_contains':    { 'wrapper_field': None, 'only_strings': True },
-    'starts_with':     { 'wrapper_field': None, 'only_strings': True },
-    'not_starts_with': { 'wrapper_field': None, 'only_strings': True },
-    'ends_with':       { 'wrapper_field': None, 'only_strings': True },
-    'not_ends_with':   { 'wrapper_field': None, 'only_strings': True },
+    ret = """n.{field} = {value}""".format(field=field, value=value)
+
+    return ret
+
+def build_not_predicate(field, value, type):
+    # string quoting
+    if isinstance(type, graphene.String):
+        value = "'{}'".format(value)
+
+    ret = """n.{field} <> {value}""".format(field=field, value=value)
+
+    return ret
+
+def build_in_predicate(field, value, type): # a list predicate builder
+    ret = None
+    return ret
+
+def build_not_in_predicate(field, value, type): # a list predicate builder
+    ret = None
+    return ret
+
+def build_lt_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_lte_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_gt_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_gte_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_contains_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_not_contains_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_starts_with_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_not_starts_with_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_ends_with_predicate(field, value, type):
+    ret = None
+    return ret
+
+def build_not_ends_with_predicate(field, value, type):
+    ret = None
+    return ret
+
+filter_array = {
+    '':       { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_match_predicate },
+    'not':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_not_predicate },
+    'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': build_in_predicate },
+    'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': build_not_in_predicate },
+    'lt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_lt_predicate },
+    'lte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_lte_predicate },
+    'gt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_gt_predicate },
+    'gte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_gte_predicate },
+
+    'contains':        { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_contains_predicate },
+    'not_contains':    { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_not_contains_predicate },
+    'starts_with':     { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_starts_with_predicate },
+    'not_starts_with': { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_not_starts_with_predicate },
+    'ends_with':       { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_ends_with_predicate },
+    'not_ends_with':   { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_not_ends_with_predicate },
 }
 
 class DictEntryType(graphene.ObjectType):
@@ -193,6 +259,8 @@ class NIObjectType(DjangoObjectType):
     values of the node data dict.
     '''
 
+    filter_names = None
+
     @classmethod
     def __init_subclass_with_meta__(
         cls,
@@ -309,7 +377,7 @@ class NIObjectType(DjangoObjectType):
         input_fields = {}
 
         for name, field in cls.__dict__.items():
-            if field and not isinstance(field, str) and field.__module__ == 'graphene.types.scalars':
+            if field and not isinstance(field, str) and getattr(field, '__module__', None) == 'graphene.types.scalars':
                 input_field = type(field)
                 input_fields[name] = input_field
 
@@ -326,32 +394,44 @@ class NIObjectType(DjangoObjectType):
         ni_type = cls.get_from_nimetatype('ni_type')
 
         # build filter input class and order enum
-        simple_filter_attrib = {}
+        filter_attrib = {}
+        cls.filter_names = {}
         enum_options = []
         input_fields = cls.get_filter_input_fields()
 
-        for name, input_field in input_fields.items():
+        for field_name, input_field in input_fields.items():
             # adding order attributes
-            enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
-            enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
+            enum_options.append(['{}_ASC'.format(field_name), '{}_ASC'.format(field_name)])
+            enum_options.append(['{}_DESC'.format(field_name), '{}_DESC'.format(field_name)])
 
             # adding filter attributes
             for suffix, suffix_attr in filter_array.items():
-                fmt_filter_field = '{}_{}'.format(name, suffix)
-                if suffix == '':
-                    fmt_filter_field = '{}'.format(name)
+                if not suffix == '':
+                    suffix = '_{}'.format(suffix)
+
+                fmt_filter_field = '{}{}'.format(field_name, suffix)
 
                 if not suffix_attr['only_strings'] or isinstance(input_field(), graphene.String):
                     if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
-                        simple_filter_attrib[fmt_filter_field] = input_field()
+                        filter_attrib[fmt_filter_field] = input_field()
+                        cls.filter_names[fmt_filter_field]  = {
+                            'field' : field_name,
+                            'suffix': suffix,
+                            'field_type': input_field(),
+                        }
                     else:
                         the_field = input_field
                         for wrapper_field in suffix_attr['wrapper_field']:
                             the_field = wrapper_field(the_field)
 
-                        simple_filter_attrib[fmt_filter_field] = the_field
+                        filter_attrib[fmt_filter_field] = the_field
+                        cls.filter_names[fmt_filter_field]  = {
+                            'field' : field_name,
+                            'suffix': suffix,
+                            'field_type': the_field,
+                        }
 
-        simple_filter_input = type('{}NestedFilter'.format(ni_type), (graphene.InputObjectType, ), simple_filter_attrib)
+        simple_filter_input = type('{}NestedFilter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
 
         filter_attrib = {}
         filter_attrib['AND'] = graphene.List(graphene.NonNull(simple_filter_input))
@@ -393,6 +473,7 @@ class NIObjectType(DjangoObjectType):
         type_name = cls.get_type_name()
 
         def generic_list_resolver(self, info, **args):
+            ret = None
             filter  = args.get('filter', None)
             orderBy = args.get('orderBy', None)
 
@@ -408,6 +489,7 @@ class NIObjectType(DjangoObjectType):
                     nodes = list(nodes)
 
                 if nodes:
+                    handle_ids = []
                     # ordering
                     if orderBy:
                         m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
@@ -415,16 +497,12 @@ class NIObjectType(DjangoObjectType):
                         order = m[2]
                         reverse = True if order == 'DESC' else False
                         nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
-
-                        # get the QuerySet
                         handle_ids = [ node['handle_id'] for node in nodes ]
-                        ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
                     else:
                         handle_ids = [ node['handle_id'] for node in nodes ]
                         node_type = NodeType.objects.get(type=type_name)
-                        ret = NodeHandle.objects.filter(node_type=node_type)
-                else:
-                    ret = []
+
+                    ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
 
                 if not ret:
                     ret = []
@@ -440,16 +518,54 @@ class NIObjectType(DjangoObjectType):
         build_query = ''
 
         # build AND block
-        and_query = ''
         and_filters = filter.get('AND', [])
+        and_predicates = []
+
+        # iterate through the nested filters
         for and_filter in and_filters:
-            print(and_filter)
+            # iterate though values of a nested filter
+            for filter_key, filter_value in and_filter.items():
+                filter_field = cls.filter_names[filter_key]
+                field  = filter_field['field']
+                suffix = filter_field['suffix']
+                field_type = filter_field['field_type']
+
+                # iterate through the keys of the filter array and extracts
+                # the predicate building function
+                for fa_suffix, fa_value in filter_array.items():
+                    if fa_suffix != '':
+                         fa_suffix = '_{}'.format(fa_suffix)
+
+                    # get the predicate
+                    if suffix == fa_suffix:
+                        build_preficate_func = fa_value['qpredicate']
+                        predicate = build_preficate_func(field, filter_value, field_type)
+                        if predicate:
+                            and_predicates.append(predicate)
 
         # build OR block
-        or_query = ''
         or_filters = filter.get('OR', [])
+        or_predicates = []
+
         for or_filter in or_filters:
             print(or_filter)
+
+        and_query = ' AND '.join(and_predicates)
+        or_query = ' OR '.join(or_predicates)
+
+        if and_query and or_query:
+            build_query = '{} OR {}'.format(
+                and_query,
+                or_query
+            )
+        else:
+            if and_query:
+                build_query = and_query
+            elif or_query:
+                build_query = or_query
+
+        if build_query != '':
+            build_query = 'WHERE {}'.format(build_query)
 
         q = """
             MATCH (n:{label})
@@ -874,7 +990,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 raise GraphQLError('A valid handle_id must be provided')
 
             if not ret:
-                raise GraphQLError("There isn't any {} with handle_id {}"\.format(nodetype, handle_id))
+                raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
 
             return ret
         else:
