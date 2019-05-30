@@ -37,53 +37,93 @@ def build_not_predicate(field, value, type):
 
     return ret
 
-def build_in_predicate(field, value, type): # a list predicate builder
-    ret = None
+def build_in_predicate(field, values, type): # a list predicate builder
+    # string quoting
+    filter_strings = False
+    if isinstance(type, graphene.String):
+        filter_strings = True
+
+    subpredicates = []
+    for value in values:
+        if filter_strings:
+            value = "'{}'".format(value)
+        subpredicates.append(
+            """n.{field} = {value}""".format(field=field, value=value)
+        )
+
+    ret = ' OR '.join(subpredicates)
     return ret
 
-def build_not_in_predicate(field, value, type): # a list predicate builder
-    ret = None
+def build_not_in_predicate(field, values, type): # a list predicate builder
+    # string quoting
+    filter_strings = False
+    if isinstance(type, graphene.String):
+        filter_strings = True
+
+    subpredicates = []
+    for value in values:
+        if filter_strings:
+            value = "'{}'".format(value)
+        subpredicates.append(
+            """n.{field} <> {value}""".format(field=field, value=value)
+        )
+
+    ret = ' AND '.join(subpredicates)
     return ret
 
 def build_lt_predicate(field, value, type):
-    ret = None
+    # string quoting
+    if isinstance(type, graphene.String):
+        value = "'{}'".format(value)
+
+    ret = """n.{field} < {value}""".format(field=field, value=value)
+
     return ret
 
 def build_lte_predicate(field, value, type):
-    ret = None
+    # string quoting
+    if isinstance(type, graphene.String):
+        value = "'{}'".format(value)
+
+    ret = """n.{field} <= {value}""".format(field=field, value=value)
+
     return ret
 
 def build_gt_predicate(field, value, type):
-    ret = None
+    # string quoting
+    if isinstance(type, graphene.String):
+        value = "'{}'".format(value)
+
+    ret = """n.{field} > {value}""".format(field=field, value=value)
+
     return ret
 
 def build_gte_predicate(field, value, type):
-    ret = None
+    # string quoting
+    if isinstance(type, graphene.String):
+        value = "'{}'".format(value)
+
+    ret = """n.{field} >= {value}""".format(field=field, value=value)
+
     return ret
 
 def build_contains_predicate(field, value, type):
-    ret = None
-    return ret
+    return """n.{field} CONTAINS '{value}'""".format(field=field, value=value)
 
 def build_not_contains_predicate(field, value, type):
-    ret = None
-    return ret
+    return """NOT n.{field} CONTAINS '{value}'""".format(field=field, value=value)
 
 def build_starts_with_predicate(field, value, type):
-    ret = None
-    return ret
+    return """n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
 
 def build_not_starts_with_predicate(field, value, type):
-    ret = None
-    return ret
+    return """NOT n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
 
 def build_ends_with_predicate(field, value, type):
-    ret = None
-    return ret
+    return """n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
 
 def build_not_ends_with_predicate(field, value, type):
-    ret = None
-    return ret
+    return """NOT n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
 
 filter_array = {
     '':       { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_match_predicate },
@@ -428,7 +468,7 @@ class NIObjectType(DjangoObjectType):
                         cls.filter_names[fmt_filter_field]  = {
                             'field' : field_name,
                             'suffix': suffix,
-                            'field_type': the_field,
+                            'field_type': input_field(),
                         }
 
         simple_filter_input = type('{}NestedFilter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
