@@ -19,6 +19,24 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 from ..models import NodeType, NodeHandle
 
+filter_array = {
+    '':       { 'wrapper_field': None, 'only_strings': False },
+    'not':    { 'wrapper_field': None, 'only_strings': False },
+    'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False },
+    'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False },
+    'lt':     { 'wrapper_field': None, 'only_strings': False },
+    'lte':    { 'wrapper_field': None, 'only_strings': False },
+    'gt':     { 'wrapper_field': None, 'only_strings': False },
+    'gte':    { 'wrapper_field': None, 'only_strings': False },
+
+    'contains':        { 'wrapper_field': None, 'only_strings': True },
+    'not_contains':    { 'wrapper_field': None, 'only_strings': True },
+    'starts_with':     { 'wrapper_field': None, 'only_strings': True },
+    'not_starts_with': { 'wrapper_field': None, 'only_strings': True },
+    'ends_with':       { 'wrapper_field': None, 'only_strings': True },
+    'not_ends_with':   { 'wrapper_field': None, 'only_strings': True },
+}
+
 class DictEntryType(graphene.ObjectType):
     '''
     This type represents an key value pair in a dictionary for the data
@@ -120,6 +138,9 @@ class NIListField(NIBasicField):
         return resolve_relationship_list
 
 class NIRelationType(graphene.ObjectType):
+    '''
+    This class represents a relationship and its properties
+    '''
     @classmethod
     def __init_subclass_with_meta__(
         cls,
@@ -158,8 +179,8 @@ class NIRelationType(graphene.ObjectType):
 
 class DictRelationType(graphene.ObjectType):
     '''
-    This type represents an key value pair in a dictionary for the data
-    dict of the norduniclient nodes
+    This type represents an key value pair for a relationship dictionary,
+    the key is the name of the relationship and the value the NIRelationType itself
     '''
     name = graphene.String(required=True)
     relation = graphene.Field(NIRelationType, required=True)
@@ -244,6 +265,9 @@ class NIObjectType(DjangoObjectType):
     outgoing = graphene.List(DictRelationType)
 
     def resolve_incoming(self, info, **kwargs):
+        '''
+        Resolver for incoming relationships for the node
+        '''
         incoming_rels = self.get_node().incoming
         ret = []
         for rel_name, rel in incoming_rels.items():
@@ -254,6 +278,9 @@ class NIObjectType(DjangoObjectType):
         return ret
 
     def resolve_outgoing(self, info, **kwargs):
+        '''
+        Resolver for outgoing relationships for the node
+        '''
         outgoing_rels = self.get_node().outgoing
         ret = []
         for rel_name, rel in outgoing_rels.items():
@@ -263,11 +290,81 @@ class NIObjectType(DjangoObjectType):
 
         return ret
 
+    @classmethod
+    def get_ni_type(cls):
+        ni_metatype = getattr(cls, 'NIMetaType')
+        return getattr(ni_metatype, 'ni_type')
+
+    @classmethod
+    def get_filter_input_fields(cls):
+        '''
+        Method used by build_filter_and_order
+        '''
+        input_fields = {}
+
+        for name, field in cls.__dict__.items():
+            if field and not isinstance(field, str) and field.__module__ == 'graphene.types.scalars':
+                input_field = type(field)
+                input_fields[name] = input_field
+
+        input_fields['handler_id'] = graphene.Int
+
+        return input_fields
+
+    @classmethod
+    def build_filter_and_order(cls):
+        '''
+        This method generates a Filter and Order object from the class itself
+        to be used in filtering connections
+        '''
+        type_name = cls.get_ni_type()
+
+        # build filter input class and order enum
+        simple_filter_attrib = {}
+        enum_options = []
+        input_fields = cls.get_filter_input_fields()
+
+        for name, input_field in input_fields.items():
+            # adding order attributes
+            enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
+            enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
+
+            # adding filter attributes
+            for suffix, suffix_attr in filter_array.items():
+                fmt_filter_field = '{}_{}'.format(name, suffix)
+                if suffix == '':
+                    fmt_filter_field = '{}'.format(name)
+
+                if not suffix_attr['only_strings'] or isinstance(input_field(), graphene.String):
+                    if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
+                        simple_filter_attrib[fmt_filter_field] = input_field()
+                    else:
+                        the_field = input_field
+                        for wrapper_field in suffix_attr['wrapper_field']:
+                            the_field = wrapper_field(the_field)
+
+                        simple_filter_attrib[fmt_filter_field] = the_field
+
+        simple_filter_input = type('{}NestedFilter'.format(type_name), (graphene.InputObjectType, ), simple_filter_attrib)
+
+        filter_attrib = {}
+        filter_attrib['AND'] = graphene.List(graphene.NonNull(simple_filter_input))
+        filter_attrib['OR'] = graphene.List(graphene.NonNull(simple_filter_input))
+
+        filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
+
+        orderBy = graphene.Enum('{}OrderBy'.format(type_name), enum_options)
+
+        return filter_input, orderBy
+
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
 
 class NIRelationField(NIBasicField):
+    '''
+    This field can be used in NIObjectTypes to represent a set relationships
+    '''
     def __init__(self, field_type=graphene.List, manual_resolver=False,
                     type_args=(NIRelationType,), rel_name=None, **kwargs):
         self.field_type      = field_type
@@ -696,24 +793,6 @@ def get_connection_resolver(nodetype):
 
     return generic_list_resolver
 
-filter_array = {
-    '':       { 'wrapper_field': None, 'only_strings': False },
-    'not':    { 'wrapper_field': None, 'only_strings': False },
-    'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False },
-    'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False },
-    'lt':     { 'wrapper_field': None, 'only_strings': False },
-    'lte':    { 'wrapper_field': None, 'only_strings': False },
-    'gt':     { 'wrapper_field': None, 'only_strings': False },
-    'gte':    { 'wrapper_field': None, 'only_strings': False },
-
-    'contains':        { 'wrapper_field': None, 'only_strings': True },
-    'not_contains':    { 'wrapper_field': None, 'only_strings': True },
-    'starts_with':     { 'wrapper_field': None, 'only_strings': True },
-    'not_starts_with': { 'wrapper_field': None, 'only_strings': True },
-    'ends_with':       { 'wrapper_field': None, 'only_strings': True },
-    'not_ends_with':   { 'wrapper_field': None, 'only_strings': True },
-}
-
 def build_filter_query(filter, nodetype):
     build_query = ''
 
@@ -810,7 +889,7 @@ class NOCAutoQuery(graphene.ObjectType):
             field_name    = '{}s'.format(type_slug)
             resolver_name = 'resolve_{}'.format(field_name)
 
-            connection_input, connection_order = cls.build_filter_and_order(graphql_type, type_name)
+            connection_input, connection_order = graphql_type.build_filter_and_order()
             connection_meta = type('Meta', (object, ), dict(node=graphql_type))
             connection_class = type(
                 '{}Connection'.format(graphql_type.__name__),
@@ -832,50 +911,3 @@ class NOCAutoQuery(graphene.ObjectType):
 
             setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
             setattr(cls, resolver_name, get_byid_resolver(type_name))
-
-    @classmethod
-    def build_filter_and_order(cls, graphql_type, type_name):
-        # build filter input class and order enum
-        simple_filter_attrib = {}
-        enum_options = []
-        input_fields = {}
-
-        for name, field in graphql_type.__dict__.items():
-            if field and not isinstance(field, str) and field.__module__ == 'graphene.types.scalars':
-                input_field = type(field)
-                input_fields[name] = input_field
-
-        input_fields['handler_id'] = graphene.Int
-
-        for name, input_field in input_fields.items():
-            # adding order attributes
-            enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
-            enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
-
-            # adding filter attributes
-            for suffix, suffix_attr in filter_array.items():
-                fmt_filter_field = '{}_{}'.format(name, suffix)
-                if suffix == '':
-                    fmt_filter_field = '{}'.format(name)
-
-                if not suffix_attr['only_strings'] or isinstance(input_field(), graphene.String):
-                    if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
-                        simple_filter_attrib[fmt_filter_field] = input_field()
-                    else:
-                        the_field = input_field
-                        for wrapper_field in suffix_attr['wrapper_field']:
-                            the_field = wrapper_field(the_field)
-
-                        simple_filter_attrib[fmt_filter_field] = the_field
-
-        simple_filter_input = type('{}NestedFilter'.format(type_name), (graphene.InputObjectType, ), simple_filter_attrib)
-
-        filter_attrib = {}
-        filter_attrib['AND'] = graphene.List(graphene.NonNull(simple_filter_input))
-        filter_attrib['OR'] = graphene.List(graphene.NonNull(simple_filter_input))
-
-        filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
-
-        orderBy = graphene.Enum('{}OrderBy'.format(type_name), enum_options)
-
-        return filter_input, orderBy

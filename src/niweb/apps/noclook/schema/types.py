@@ -28,15 +28,24 @@ def resolve_roles_list(self, info, **kwargs):
     return ret
 
 class User(DjangoObjectType):
+    '''
+    The django user type
+    '''
     class Meta:
         model = User
         exclude_fields = ['creator', 'modifier']
 
 class Dropdown(DjangoObjectType):
+    '''
+    This class represents a dropdown to use in forms
+    '''
     class Meta:
         model = Dropdown
 
 class Choice(DjangoObjectType):
+    '''
+    This class is used for the choices available in a dropdown
+    '''
     class Meta:
         model = Choice
 
@@ -48,6 +57,9 @@ class Role(NIObjectType):
         ni_metatype = 'logical'
 
 class Group(NIObjectType):
+    '''
+    The group type is used to group contacts
+    '''
     name = NIStringField(type_kwargs={ 'required': True })
 
     class NIMetaType:
@@ -55,6 +67,9 @@ class Group(NIObjectType):
         ni_metatype = 'logical'
 
 class Contact(NIObjectType):
+    '''
+    A contact in the SRI system
+    '''
     name = NIStringField(type_kwargs={ 'required': True })
     first_name = NIStringField(type_kwargs={ 'required': True })
     last_name = NIStringField(type_kwargs={ 'required': True })
