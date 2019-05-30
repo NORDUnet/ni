@@ -291,9 +291,15 @@ class NIObjectType(DjangoObjectType):
         return ret
 
     @classmethod
-    def get_ni_type(cls):
+    def get_from_nimetatype(cls, attr):
         ni_metatype = getattr(cls, 'NIMetaType')
-        return getattr(ni_metatype, 'ni_type')
+        return getattr(ni_metatype, attr)
+
+    @classmethod
+    def get_type_name(cls):
+        ni_type = cls.get_from_nimetatype('ni_type')
+        node_type = NodeType.objects.filter(type=ni_type).first()
+        return node_type.type
 
     @classmethod
     def get_filter_input_fields(cls):
@@ -317,7 +323,7 @@ class NIObjectType(DjangoObjectType):
         This method generates a Filter and Order object from the class itself
         to be used in filtering connections
         '''
-        type_name = cls.get_ni_type()
+        ni_type = cls.get_from_nimetatype('ni_type')
 
         # build filter input class and order enum
         simple_filter_attrib = {}
@@ -345,17 +351,113 @@ class NIObjectType(DjangoObjectType):
 
                         simple_filter_attrib[fmt_filter_field] = the_field
 
-        simple_filter_input = type('{}NestedFilter'.format(type_name), (graphene.InputObjectType, ), simple_filter_attrib)
+        simple_filter_input = type('{}NestedFilter'.format(ni_type), (graphene.InputObjectType, ), simple_filter_attrib)
 
         filter_attrib = {}
         filter_attrib['AND'] = graphene.List(graphene.NonNull(simple_filter_input))
         filter_attrib['OR'] = graphene.List(graphene.NonNull(simple_filter_input))
 
-        filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
+        filter_input = type('{}Filter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
 
-        orderBy = graphene.Enum('{}OrderBy'.format(type_name), enum_options)
+        orderBy = graphene.Enum('{}OrderBy'.format(ni_type), enum_options)
 
         return filter_input, orderBy
+
+    @classmethod
+    def get_byid_resolver(cls):
+        type_name = cls.get_type_name()
+
+        def generic_byid_resolver(self, info, **args):
+            handle_id = args.get('handle_id')
+            node_type = NodeType.objects.get(type=type_name)
+
+            ret = None
+
+            if info.context and info.context.user.is_authenticated:
+                if handle_id:
+                    ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+                else:
+                    raise GraphQLError('A handle_id must be provided')
+
+                if not ret:
+                    raise GraphQLError("There isn't any {} with handle_id {}".format(type_name, handle_id))
+
+                return ret
+            else:
+                raise GraphQLAuthException()
+
+        return generic_byid_resolver
+
+    @classmethod
+    def get_connection_resolver(cls):
+        type_name = cls.get_type_name()
+
+        def generic_list_resolver(self, info, **args):
+            filter  = args.get('filter', None)
+            orderBy = args.get('orderBy', None)
+
+            if info.context and info.context.user.is_authenticated:
+                # filtering will take a different approach
+                nodes = None
+                if filter:
+                    q = cls.build_filter_query(filter, type_name)
+                    nodes = nc.query_to_list(nc.graphdb.manager, q)
+                    nodes = [ node['n'].properties for node in nodes]
+                else:
+                    nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
+                    nodes = list(nodes)
+
+                if nodes:
+                    # ordering
+                    if orderBy:
+                        m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                        prop = m[1]
+                        order = m[2]
+                        reverse = True if order == 'DESC' else False
+                        nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
+
+                        # get the QuerySet
+                        handle_ids = [ node['handle_id'] for node in nodes ]
+                        ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
+                    else:
+                        handle_ids = [ node['handle_id'] for node in nodes ]
+                        node_type = NodeType.objects.get(type=type_name)
+                        ret = NodeHandle.objects.filter(node_type=node_type)
+                else:
+                    ret = []
+
+                if not ret:
+                    ret = []
+
+                return ret
+            else:
+                raise GraphQLAuthException()
+
+        return generic_list_resolver
+
+    @classmethod
+    def build_filter_query(cls, filter, nodetype):
+        build_query = ''
+
+        # build AND block
+        and_query = ''
+        and_filters = filter.get('AND', [])
+        for and_filter in and_filters:
+            print(and_filter)
+
+        # build OR block
+        or_query = ''
+        or_filters = filter.get('OR', [])
+        for or_filter in or_filters:
+            print(or_filter)
+
+        q = """
+            MATCH (n:{label})
+            {build_query}
+            RETURN distinct n
+            """.format(label=nodetype, build_query=build_query)
+
+        return q
 
     class Meta:
         model = NodeHandle
@@ -743,102 +845,20 @@ class NIMutationFactory():
         return cls._delete_mutation
 
 class GraphQLAuthException(Exception):
+    '''
+    Simple auth exception
+    '''
     def __init__(self, message=None):
         message = 'You must be logged in the system: {}'.format(
             ': {}'.format(message) if message else ''
         )
         super().__init__(message)
 
-def get_connection_resolver(nodetype):
-    def generic_list_resolver(self, info, **args):
-        filter  = args.get('filter', None)
-        orderBy = args.get('orderBy', None)
-
-        if info.context and info.context.user.is_authenticated:
-            # filtering will take a different approach
-            nodes = None
-            if filter:
-                q = build_filter_query(filter, nodetype)
-                nodes = nc.query_to_list(nc.graphdb.manager, q)
-                nodes = [ node['n'].properties for node in nodes]
-            else:
-                nodes = nc.get_nodes_by_type(nc.graphdb.manager, nodetype)
-                nodes = list(nodes)
-
-            if nodes:
-                # ordering
-                if orderBy:
-                    m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
-                    prop = m[1]
-                    order = m[2]
-                    reverse = True if order == 'DESC' else False
-                    nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
-
-                    # get the QuerySet
-                    handle_ids = [ node['handle_id'] for node in nodes ]
-                    ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
-                else:
-                    handle_ids = [ node['handle_id'] for node in nodes ]
-                    node_type = NodeType.objects.get(type=nodetype)
-                    ret = NodeHandle.objects.filter(node_type=node_type)
-            else:
-                ret = []
-
-            if not ret:
-                ret = []
-
-            return ret
-        else:
-            raise GraphQLAuthException()
-
-    return generic_list_resolver
-
-def build_filter_query(filter, nodetype):
-    build_query = ''
-
-    # build AND block
-    and_query = ''
-    and_filters = filter.get('AND', [])
-    for and_filter in and_filters:
-        print(and_filter)
-
-    # build OR block
-    or_query = ''
-    or_filters = filter.get('OR', [])
-    for or_filter in or_filters:
-        print(or_filter)
-
-    q = """
-        MATCH (n:{label})
-        {build_query}
-        RETURN distinct n
-        """.format(label=nodetype, build_query=build_query)
-
-    return q
-
-def get_byid_resolver(nodetype):
-    def generic_byid_resolver(self, info, **args):
-        handle_id = args.get('handle_id')
-        node_type = NodeType.objects.get(type=nodetype)
-
-        ret = None
-
-        if info.context and info.context.user.is_authenticated:
-            if handle_id:
-                ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
-            else:
-                raise GraphQLError('A handle_id must be provided')
-
-            if not ret:
-                raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
-
-            return ret
-        else:
-            raise GraphQLAuthException()
-
-    return generic_byid_resolver
-
 class NOCAutoQuery(graphene.ObjectType):
+    '''
+    This class creates a connection and a getById method for each of the types
+    declared on the graphql_types of the NIMeta class of any subclass.
+    '''
     node = relay.Node.Field()
     getNodeById = graphene.Field(NodeHandler, handle_id=graphene.Int())
 
@@ -854,7 +874,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 raise GraphQLError('A valid handle_id must be provided')
 
             if not ret:
-                raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
+                raise GraphQLError("There isn't any {} with handle_id {}"\.format(nodetype, handle_id))
 
             return ret
         else:
@@ -874,11 +894,9 @@ class NOCAutoQuery(graphene.ObjectType):
         # add by id resolver
         for graphql_type in graphql_types:
             ## extract values
-            _nimetatype   = getattr(graphql_type, 'NIMetaType')
-
-            ni_type = getattr(_nimetatype, 'ni_type')
+            ni_type = graphql_type.get_from_nimetatype('ni_type')
             assert ni_type, '{} has not set its ni_type attribute'.format(cls.__name__)
-            ni_metatype = getattr(_nimetatype, 'ni_metatype')
+            ni_metatype = graphql_type.get_from_nimetatype('ni_metatype')
             assert ni_metatype, '{} has not set its ni_metatype attribute'.format(cls.__name__)
 
             node_type     = NodeType.objects.filter(type=ni_type).first()
@@ -903,11 +921,11 @@ class NOCAutoQuery(graphene.ObjectType):
                 filter=graphene.Argument(connection_input),
                 orderBy=graphene.Argument(connection_order),
             ))
-            setattr(cls, resolver_name, get_connection_resolver(type_name))
+            setattr(cls, resolver_name, graphql_type.get_connection_resolver())
 
             ## build field and resolver byid
             field_name    = 'get{}ById'.format(type_name)
             resolver_name = 'resolve_{}'.format(field_name)
 
             setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
-            setattr(cls, resolver_name, get_byid_resolver(type_name))
+            setattr(cls, resolver_name, graphql_type.get_byid_resolver())
