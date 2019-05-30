@@ -381,7 +381,7 @@ class NIObjectType(DjangoObjectType):
                 input_field = type(field)
                 input_fields[name] = input_field
 
-        input_fields['handler_id'] = graphene.Int
+        input_fields['handle_id'] = graphene.Int
 
         return input_fields
 

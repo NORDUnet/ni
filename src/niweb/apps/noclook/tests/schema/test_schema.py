@@ -9,7 +9,7 @@ class QueryTest(Neo4jGraphQLTest):
     def test_get_contacts(self):
         query = '''
         query getLastTenContacts {
-          contacts(first: 2) {
+          contacts(first: 2, orderBy: handle_id_DESC) {
             edges {
               node {
                 handle_id
