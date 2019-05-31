@@ -7,6 +7,7 @@ from niweb.schema import schema
 
 class QueryTest(Neo4jGraphQLTest):
     def test_get_contacts(self):
+        # test contacts
         query = '''
         query getLastTenContacts {
           contacts(first: 2, orderBy: handle_id_DESC) {
@@ -61,6 +62,7 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, result.errors
         assert result.data == expected
 
+        # getNodeById
         query = '''
         query {
           getNodeById(handle_id: 28){
@@ -71,6 +73,74 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, result.errors
+
+        # filter tests
+        query = '''
+        {
+          groups(first: 10, filter:{
+            AND:[{
+              name: "group1", name_not: "group2",
+              name_not_in: ["group2"]
+            }]
+          }, orderBy: handle_id_ASC){
+            edges{
+              node{
+                handle_id
+                name
+              }
+            }
+          }
+        }
+        '''
+        expected = OrderedDict([('groups',
+                        OrderedDict([('edges',
+                            [OrderedDict([('node',
+                                   OrderedDict([('handle_id', '32'),
+                                        ('name',
+                                         'group1')]
+                                    ))])]
+                            )]))
+                    ])
+
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, result.errors
+        assert result.data == expected
+
+        query = '''
+        {
+          groups(first: 10, filter:{
+            OR:[{
+              name: "group1",
+              name_in: ["group1", "group2"]
+            },{
+              name: "group2",
+            }]
+          }, orderBy: handle_id_ASC){
+            edges{
+              node{
+                handle_id
+                name
+              }
+            }
+          }
+        }
+        '''
+        expected = OrderedDict([('groups',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([('handle_id', '32'),
+                            ('name', 'group1')]))]),
+                         OrderedDict([('node',
+                           OrderedDict([('handle_id', '33'),
+                                ('name',
+                                 'group2')]))])])]))])
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, result.errors
+        assert result.data == expected
 
     def test_getnodebyhandle_id(self):
         query = '''

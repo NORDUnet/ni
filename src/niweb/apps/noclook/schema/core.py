@@ -588,7 +588,25 @@ class NIObjectType(DjangoObjectType):
         or_predicates = []
 
         for or_filter in or_filters:
-            print(or_filter)
+            # iterate though values of a nested filter
+            for filter_key, filter_value in or_filter.items():
+                filter_field = cls.filter_names[filter_key]
+                field  = filter_field['field']
+                suffix = filter_field['suffix']
+                field_type = filter_field['field_type']
+
+                # iterate through the keys of the filter array and extracts
+                # the predicate building function
+                for fa_suffix, fa_value in filter_array.items():
+                    if fa_suffix != '':
+                         fa_suffix = '_{}'.format(fa_suffix)
+
+                    # get the predicate
+                    if suffix == fa_suffix:
+                        build_preficate_func = fa_value['qpredicate']
+                        predicate = build_preficate_func(field, filter_value, field_type)
+                        if predicate:
+                            or_predicates.append(predicate)
 
         and_query = ' AND '.join(and_predicates)
         or_query = ' OR '.join(or_predicates)
