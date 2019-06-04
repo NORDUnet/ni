@@ -8,6 +8,7 @@ except NameError:
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
+from django.utils import six
 from dynamic_preferences.registries import global_preferences_registry
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator, ServiceType, ServiceClass
 from apps.noclook import forms, helpers
@@ -276,7 +277,11 @@ class CommonNewForms(FormTestCase):
 
     def test_NewContactForm_full(self):
         node_type = 'Contact'
-        country_code = forms.country_codes()[0]
+        country_codes = forms.country_codes()
+        if six.PY3:
+            country_codes = list(country_codes)
+
+        country_code = country_codes[0]
         data = {
             'first_name': 'Stefan',
             'last_name': 'Listrom',
