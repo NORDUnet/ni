@@ -100,18 +100,6 @@ class CsvImportTest(NeoTestCase):
         self.assertIsNotNone(contact1)
         self.assertIsInstance(contact1.get_node(), ncmodels.ContactModel)
 
-        # check if it has a role assigned
-        qs = NodeHandle.objects.filter(node_name='Computer Systems Analyst III')
-        self.assertIsNotNone(qs)
-        role1 = qs.first()
-        self.assertIsNotNone(role1)
-        self.assertIsInstance(role1.get_node(), ncmodels.RoleModel)
-
-        relations = role1.get_node().get_relations()
-        relation = relations.get('Is', None)
-        self.assertIsNotNone(relation)
-        self.assertIsInstance(relations['Is'][0]['node'], ncmodels.RelationModel)
-
         # check if works for an organization
         qs = NodeHandle.objects.filter(node_name='Gabtune')
         self.assertIsNotNone(qs)
@@ -119,10 +107,11 @@ class CsvImportTest(NeoTestCase):
         self.assertIsNotNone(organization1)
         self.assertIsInstance(organization1.get_node(), ncmodels.OrganizationModel)
 
-        relations = organization1.get_node().get_relations()
-        relation = relations.get('Works_for', None)
-        self.assertIsNotNone(relation)
-        self.assertIsInstance(relations['Works_for'][0]['node'], ncmodels.RelationModel)
+        # check if role is created
+        role1 = ncmodels.RoleRelationship(nc.core.GraphDB.get_instance().manager)
+        role1.load_from_nodes(contact1.handle_id, organization1.handle_id)
+        self.assertIsNotNone(role1)
+        self.assertEquals(role1.name, 'Computer Systems Analyst III')
 
     def test_secroles_import(self):
         # call csvimport command (verbose 0)
@@ -145,20 +134,15 @@ class CsvImportTest(NeoTestCase):
         self.assertIsNotNone(contact1)
 
         # check if role is created
-        qs = NodeHandle.objects.filter(node_name='Övrig incidentkontakt')
-        self.assertIsNotNone(qs)
-        role1 = qs.first()
+        role1 = ncmodels.RoleRelationship(nc.core.GraphDB.get_instance().manager)
+        role1.load_from_nodes(contact1.handle_id, organization1.handle_id)
         self.assertIsNotNone(role1)
-
-        relations = contact1.get_node().get_outgoing_relations()
-        self.assertEquals(relations['Works_for'][0]['node'], organization1.get_node())
-        self.assertIsInstance(relations['Works_for'][0]['node'], ncmodels.OrganizationModel)
-        self.assertEquals(relations['Is'][0]['node'], role1.get_node())
-        self.assertIsInstance(relations['Is'][0]['node'], ncmodels.RoleModel)
+        self.assertEquals(role1.name, 'Övrig incidentkontakt')
 
     def write_string_to_disk(self, string):
         # get random file
-        tf = tempfile.NamedTemporaryFile()
+        tf = tempfile.NamedTemporaryFile(mode='w+')
+
         # write text
         tf.write(string)
         tf.flush()
