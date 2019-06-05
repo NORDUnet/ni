@@ -977,7 +977,7 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role_name)
     :return: contact
     """
     if six.PY2:
-        role = role.encode('utf-8')
+        role_name = role_name.encode('utf-8')
 
     relationship = nc.models.RoleRelationship.link_contact_organization(
         contact_handle_id,
@@ -996,7 +996,7 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role_name)
 
     contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
-    return contact
+    return contact, relationship
 
 
 def create_contact_role_for_organization(user, node, contact_name, role_name):
@@ -1045,9 +1045,11 @@ def create_contact_role_for_organization(user, node, contact_name, role_name):
     for relation in node.relationships.get('Works_for'):
         if relation['node'].handle_id == contact.handle_id:
             created = relation.get('created')
-    
+
     if created:
         activitylog.create_relationship(user, relationship)
+
+    return contact, relationship
 
 
 def get_contact_for_orgrole(organization_id, role_name):

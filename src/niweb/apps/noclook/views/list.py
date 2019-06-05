@@ -603,7 +603,7 @@ def list_contacts(request):
     q = """
         MATCH (con:Contact)
         OPTIONAL MATCH (con)-[:Works_for]->(org:Organization)
-        RETURN con, org
+        RETURN DISTINCT con.handle_id, con, org
         """
 
     con_list = nc.query_to_list(nc.graphdb.manager, q)
