@@ -19,7 +19,6 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 TYPES = [
     ("contact", "Contact"),
-    ("role", "Role"),
     ("organization", "Organization"),
     ("group", "Group"),
 ]
@@ -587,23 +586,6 @@ def new_contact(request, **kwargs):
 
 
 @staff_member_required
-def new_role(request, **kwargs):
-    if request.POST:
-        form = forms.NewRoleForm(request.POST)
-        if form.is_valid():
-            try:
-                nh = helpers.form_to_unique_node_handle(request, form, 'role', 'Logical')
-            except UniqueNodeError:
-                form.add_error('name', 'A Role with that name already exists.')
-                return render(request, 'noclook/create/create_role.html', {'form': form})
-            helpers.form_update_node(request.user, nh.handle_id, form)
-            return redirect(nh.get_absolute_url())
-    else:
-        form = forms.NewRoleForm()
-    return render(request, 'noclook/create/create_role.html', {'form': form})
-
-
-@staff_member_required
 def new_procedure(request, **kwargs):
     if request.POST:
         form = forms.NewProcedureForm(request.POST)
@@ -655,7 +637,6 @@ NEW_FUNC = {
     'provider': new_provider,
     'procedure': new_procedure,
     'rack': new_rack,
-    'role': new_role,
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,
