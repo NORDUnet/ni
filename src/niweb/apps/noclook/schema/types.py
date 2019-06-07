@@ -54,7 +54,7 @@ class Choice(DjangoObjectType):
         model = Choice
         interfaces = (KeyValue, )
 
-class Role(graphene.ObjectType):
+class Neo4jChoice(graphene.ObjectType):
     class Meta:
         interfaces = (KeyValue, )
 

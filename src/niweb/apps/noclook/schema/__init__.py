@@ -14,7 +14,7 @@ NOCSCHEMA_TYPES = [
     User,
     Dropdown,
     Choice,
-    Role,
+    Neo4jChoice,
     Group,
     Contact,
     NodeHandler,

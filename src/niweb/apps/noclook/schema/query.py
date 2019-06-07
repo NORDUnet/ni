@@ -13,7 +13,7 @@ def get_roles_dropdown():
     roles = nc.models.RoleRelationship.get_all_roles()
     for role in roles:
         name = role.replace(' ', '_').lower()
-        ret.append(Role(name=name, value=role))
+        ret.append(Neo4jChoice(name=name, value=role))
 
     return ret
 
