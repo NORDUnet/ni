@@ -1008,13 +1008,11 @@ def edit_contact(request, handle_id):
             # Set relationships
             if form.cleaned_data['relationship_works_for']:
                 organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_works_for'])
-                helpers.set_works_for(request.user, contact, organization_nh.handle_id)
+                role_name = form.cleaned_data['role_name']
+                helpers.set_works_for(request.user, contact, organization_nh.handle_id, role_name)
             if form.cleaned_data['relationship_member_of']:
                 group_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_member_of'])
                 helpers.set_member_of(request.user, contact, group_nh.handle_id)
-            if form.cleaned_data['relationship_is']:
-                role_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_is'])
-                helpers.set_is(request.user, contact, role_nh.handle_id)
             if 'saveanddone' in request.POST:
                 return redirect(nh.get_absolute_url())
             else:
@@ -1023,25 +1021,6 @@ def edit_contact(request, handle_id):
         form = forms.EditContactForm(contact.data)
     return render(request, 'noclook/edit/edit_contact.html',
                   {'node_handle': nh, 'form': form, 'relations': relations, 'node': contact})
-
-
-@staff_member_required
-def edit_role(request, handle_id):
-    # Get needed data from node
-    nh, role = helpers.get_nh_node(handle_id)
-    if request.POST:
-        form = forms.EditRoleForm(request.POST)
-        if form.is_valid():
-            # Generic node update
-            helpers.form_update_node(request.user, role.handle_id, form)
-            if 'saveanddone' in request.POST:
-                return redirect(nh.get_absolute_url())
-            else:
-                return redirect('%sedit' % nh.get_absolute_url())
-    else:
-        form = forms.EditRoleForm(role.data)
-    return render(request, 'noclook/edit/edit_role.html',
-                  {'node_handle': nh, 'form': form, 'node': role})
 
 
 @staff_member_required
@@ -1109,7 +1088,6 @@ EDIT_FUNC = {
     'procedure': edit_procedure,
     'rack': edit_rack,
     'router': edit_router,
-    'role': edit_role,
     'site': edit_site,
     'site-owner': edit_site_owner,
     'switch': edit_switch,

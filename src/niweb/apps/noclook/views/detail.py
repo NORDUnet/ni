@@ -498,7 +498,7 @@ def router_detail(request, handle_id):
     hw_name = "{}-hardware.json".format(router.data.get('name', 'router'))
     hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
     if hw_attachment:
-        try: 
+        try:
             hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
         except IOError as e:
             logger.warning('Missing hardware modules json for router %s(%s). Error was: %s', nh.node_name, nh.handle_id, e)
@@ -605,7 +605,7 @@ def switch_detail(request, handle_id):
     hw_name = "{}-hardware.json".format(switch.data.get('name', 'switch'))
     hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
     if hw_attachment:
-        try: 
+        try:
             hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
         except IOError as e:
             logger.warning('Missing hardware modules json for router %s(%s). Error was: %s', nh.node_name, nh.handle_id, e)
@@ -638,17 +638,6 @@ def contact_detail(request, handle_id):
     # Get location
     location_path = node.get_location_path()
     return render(request, 'noclook/detail/contact_detail.html',
-                  {'node_handle': nh, 'node': node, 'location_path': location_path})
-
-
-@login_required
-def role_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    # Get location
-    location_path = node.get_location_path()
-    return render(request, 'noclook/detail/role_detail.html',
                   {'node_handle': nh, 'node': node, 'location_path': location_path})
 
 
