@@ -143,13 +143,18 @@ filter_array = {
     'not_ends_with':   { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_not_ends_with_predicate },
 }
 
+class KeyValue(graphene.Interface):
+    name = graphene.String(required=True)
+    value = graphene.String(required=True)
+
 class DictEntryType(graphene.ObjectType):
     '''
     This type represents an key value pair in a dictionary for the data
     dict of the norduniclient nodes
     '''
-    key = graphene.String(required=True)
-    value = graphene.String(required=True)
+
+    class Meta:
+        interfaces = (KeyValue, )
 
 def resolve_nidata(self, info, **kwargs):
     '''
@@ -894,10 +899,18 @@ class UpdateNIMutation(AbstractNIMutation):
             if form.is_valid():
                 # Generic node update
                 helpers.form_update_node(request.user, nodehandler.handle_id, form)
+
+                # process relations if implemented
+                cls.process_relations(form, nodehandler)
+
                 return nh
         else:
             # get the errors and return them
             raise GraphQLError('Form errors: {}'.format(form))
+
+    @classmethod
+    def process_relations(cls, form, nodehandler):
+        pass
 
 class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -1017,6 +1030,10 @@ class NIMutationFactory():
     @classmethod
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
+
+# TODO: create a new mutation factory for relationships types
+# update relationship attributes or delete the relation itself
+# what about creating relationships between two related entities?
 
 class GraphQLAuthException(Exception):
     '''

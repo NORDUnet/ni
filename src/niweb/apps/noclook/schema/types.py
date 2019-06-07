@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+import graphene
+
 from django.contrib.auth.models import User
 from graphene import relay
 from .core import *
@@ -40,6 +42,7 @@ class Dropdown(DjangoObjectType):
     This class represents a dropdown to use in forms
     '''
     class Meta:
+        only_fields = ('id', 'name')
         model = Dropdown
 
 class Choice(DjangoObjectType):
@@ -47,14 +50,13 @@ class Choice(DjangoObjectType):
     This class is used for the choices available in a dropdown
     '''
     class Meta:
+        only_fields = ('name', 'value')
         model = Choice
+        interfaces = (KeyValue, )
 
-class Role(NIObjectType):
-    name = NIStringField(type_kwargs={ 'required': True })
-
-    class NIMetaType:
-        ni_type = 'Role'
-        ni_metatype = 'logical'
+class Role(graphene.ObjectType):
+    class Meta:
+        interfaces = (KeyValue, )
 
 class Group(NIObjectType):
     '''
@@ -81,9 +83,7 @@ class Contact(NIObjectType):
     email = NIStringField()
     other_email = NIStringField()
     PGP_fingerprint = NIStringField()
-    is_roles = NIListField(type_args=(Role,), manual_resolver=resolve_roles_list)
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
-
     works_for = NIRelationField(rel_name='Works_for')
 
     class NIMetaType:
