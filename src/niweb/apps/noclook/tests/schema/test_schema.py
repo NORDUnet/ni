@@ -17,9 +17,6 @@ class QueryTest(Neo4jGraphQLTest):
                 name
                 first_name
                 last_name
-                is_roles {
-                  name
-                }
                 member_of_groups {
                   name
                 }
@@ -33,24 +30,18 @@ class QueryTest(Neo4jGraphQLTest):
                       OrderedDict([('edges',
                         [
                          OrderedDict([('node',
-                           OrderedDict([('handle_id', '29'),
+                           OrderedDict([('handle_id', '12'),
                                 ('name', 'John Smith'),
                                 ('first_name', 'John'),
                                 ('last_name', 'Smith'),
-                                ('is_roles',
-                                 [OrderedDict([('name',
-                                    'role2')])]),
                                 ('member_of_groups',
                                  [OrderedDict([('name',
                                     'group2')])])]))]),
                         OrderedDict([('node',
-                           OrderedDict([('handle_id', '28'),
+                           OrderedDict([('handle_id', '11'),
                                 ('name', 'Jane Doe'),
                                 ('first_name', 'Jane'),
                                 ('last_name', 'Doe'),
-                                ('is_roles',
-                                 [OrderedDict([('name',
-                                    'role1')])]),
                                 ('member_of_groups',
                                  [OrderedDict([('name',
                                     'group1')])])]))]),
@@ -65,7 +56,7 @@ class QueryTest(Neo4jGraphQLTest):
         # getNodeById
         query = '''
         query {
-          getNodeById(handle_id: 28){
+          getNodeById(handle_id: 12){
             handle_id
           }
         }
@@ -95,7 +86,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('groups',
                         OrderedDict([('edges',
                             [OrderedDict([('node',
-                                   OrderedDict([('handle_id', '32'),
+                                   OrderedDict([('handle_id', '15'),
                                         ('name',
                                          'group1')]
                                     ))])]
@@ -130,10 +121,10 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('groups',
                       OrderedDict([('edges',
                         [OrderedDict([('node',
-                           OrderedDict([('handle_id', '32'),
+                           OrderedDict([('handle_id', '15'),
                             ('name', 'group1')]))]),
                          OrderedDict([('node',
-                           OrderedDict([('handle_id', '33'),
+                           OrderedDict([('handle_id', '16'),
                                 ('name',
                                  'group2')]))])])]))])
 
@@ -158,19 +149,6 @@ class QueryTest(Neo4jGraphQLTest):
         query = '''
         query{
           getChoicesForDropdown(name:"contact_type"){
-            id
-            dropdown{
-              id
-              name
-              choice_set{
-                id
-                dropdown {
-                  id
-                }
-                name
-                value
-              }
-            }
             name
             value
           }

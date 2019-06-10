@@ -265,7 +265,7 @@ class NIRelationType(graphene.ObjectType):
     type = graphene.String(required=True) # this may be set to an Enum
     start = graphene.Field(graphene.Int, required=True)
     end = graphene.Field(graphene.Int, required=True)
-    data = graphene.List(DictEntryType)
+    nidata = graphene.List(DictEntryType)
 
     def resolve_relation_id(self, info, **kwargs):
         self.relation_id = self.id
@@ -281,7 +281,8 @@ class NIRelationType(graphene.ObjectType):
 
         alldata = self.data
         for key, value in alldata.items():
-            ret.append(DictEntryType(key=key, value=value))
+            if key and value:
+                ret.append(DictEntryType(name=key, value=value))
 
         return ret
 
@@ -805,7 +806,8 @@ class AbstractNIMutation(relay.ClientIDMutation):
         if input_class:
             for attr_name, attr_field in input_class.__dict__.items():
                 attr_value = input.get(attr_name)
-                input_params[attr_name] = attr_value
+                if attr_value:
+                    input_params[attr_name] = attr_value
 
         if not is_create:
             input_params['handle_id'] = input.get('handle_id')
@@ -876,7 +878,7 @@ class CreateNIMutation(AbstractNIMutation):
             return nh
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form._errors))
+            raise GraphQLError('Form errors: {}'.format(form.errors))
 
 class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -904,9 +906,11 @@ class UpdateNIMutation(AbstractNIMutation):
                 cls.process_relations(form, nodehandler)
 
                 return nh
+            else:
+                raise GraphQLError('Form is not valid: {}'.format(form.errors))
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form))
+            raise GraphQLError('Form errors: {}'.format(form.errors))
 
     @classmethod
     def process_relations(cls, form, nodehandler):

@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 from django.db import connection
 
+from apps.noclook import helpers
 from apps.noclook.models import NodeHandle, Dropdown, Choice
 from ..neo4j_base import NeoTestCase
 
@@ -44,13 +45,21 @@ class Neo4jGraphQLTest(NeoTestCase):
             contact2.get_node().add_property(key, value)
 
         # create relationships
-        contact1.get_node().add_role(role1.handle_id)
         contact1.get_node().add_group(group1.handle_id)
-        contact1.get_node().add_organization(organization1.handle_id)
-
-        contact2.get_node().add_role(role2.handle_id)
         contact2.get_node().add_group(group2.handle_id)
-        contact2.get_node().add_organization(organization2.handle_id)
+
+        helpers.link_contact_role_for_organization(
+            self.context.user,
+            organization1.get_node(),
+            contact1.handle_id,
+            'role1'
+        )
+        helpers.link_contact_role_for_organization(
+            self.context.user,
+            organization2.get_node(),
+            contact2.handle_id,
+            'role2'
+        )
 
         # create dummy dropdown
         dropdown = Dropdown.objects.get_or_create(name='contact_type')[0]

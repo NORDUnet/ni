@@ -947,7 +947,7 @@ class NewGroupForm(forms.Form):
     name = forms.CharField()
 
 
-class EditGroupForm(NewProcedureForm):
+class EditGroupForm(NewGroupForm):
     def __init__(self, *args, **kwargs):
         super(EditGroupForm, self).__init__(*args, **kwargs)
         self.fields['relationship_member_of'].choices = get_node_type_tuples('Contact')

@@ -971,7 +971,7 @@ def set_of_member(user, node, contact_id):
 def link_contact_role_for_organization(user, node, contact_handle_id, role_name):
     """
     :param user: Django user
-    :param node: norduniclient contact model
+    :param node: norduniclient organization model
     :param contact_handle_id: contact's handle_id
     :param role_name: role name
     :return: contact
