@@ -8,27 +8,6 @@ from graphene import relay
 from .core import *
 from ..models import *
 
-def resolve_roles_list(self, info, **kwargs):
-    """
-    This method is only present here to illustrate how a manual resolver
-    could be used
-    """
-    neo4jnode = self.get_node()
-    relations = neo4jnode.get_outgoing_relations()
-    roles = relations.get('Is')
-
-    # this may be the worst way to do it, but it's just for a PoC
-    handle_id_list = []
-    if roles:
-        for role in roles:
-            role = role['node']
-            role_id = role.data.get('handle_id')
-            handle_id_list.append(role_id)
-
-    ret = NodeHandle.objects.filter(handle_id__in=handle_id_list)
-
-    return ret
-
 class Role(NIRelationType):
     name = graphene.String(required=True)
 
