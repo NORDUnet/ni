@@ -896,7 +896,7 @@ class NewContactForm(forms.Form):
 
     first_name = forms.CharField()
     last_name = forms.CharField()
-    contact_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+    contact_type = forms.ChoiceField(widget=forms.widgets.Select)
     mobile = forms.CharField(required=False)
     phone = forms.CharField(required=False)
     salutation = forms.CharField(required=False)
@@ -947,7 +947,7 @@ class NewGroupForm(forms.Form):
     name = forms.CharField()
 
 
-class EditGroupForm(NewProcedureForm):
+class EditGroupForm(NewGroupForm):
     def __init__(self, *args, **kwargs):
         super(EditGroupForm, self).__init__(*args, **kwargs)
         self.fields['relationship_member_of'].choices = get_node_type_tuples('Contact')
