@@ -30,7 +30,7 @@ class QueryTest(Neo4jGraphQLTest):
                       OrderedDict([('edges',
                         [
                          OrderedDict([('node',
-                           OrderedDict([('handle_id', '12'),
+                           OrderedDict([('handle_id', '29'),
                                 ('name', 'John Smith'),
                                 ('first_name', 'John'),
                                 ('last_name', 'Smith'),
@@ -38,7 +38,7 @@ class QueryTest(Neo4jGraphQLTest):
                                  [OrderedDict([('name',
                                     'group2')])])]))]),
                         OrderedDict([('node',
-                           OrderedDict([('handle_id', '11'),
+                           OrderedDict([('handle_id', '28'),
                                 ('name', 'Jane Doe'),
                                 ('first_name', 'Jane'),
                                 ('last_name', 'Doe'),
@@ -56,7 +56,7 @@ class QueryTest(Neo4jGraphQLTest):
         # getNodeById
         query = '''
         query {
-          getNodeById(handle_id: 12){
+          getNodeById(handle_id: 29){
             handle_id
           }
         }
@@ -86,7 +86,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('groups',
                         OrderedDict([('edges',
                             [OrderedDict([('node',
-                                   OrderedDict([('handle_id', '15'),
+                                   OrderedDict([('handle_id', '32'),
                                         ('name',
                                          'group1')]
                                     ))])]
@@ -95,7 +95,7 @@ class QueryTest(Neo4jGraphQLTest):
 
 
         result = schema.execute(query, context=self.context)
-
+        
         assert not result.errors, result.errors
         assert result.data == expected
 
@@ -121,10 +121,10 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('groups',
                       OrderedDict([('edges',
                         [OrderedDict([('node',
-                           OrderedDict([('handle_id', '15'),
+                           OrderedDict([('handle_id', '32'),
                             ('name', 'group1')]))]),
                          OrderedDict([('node',
-                           OrderedDict([('handle_id', '16'),
+                           OrderedDict([('handle_id', '33'),
                                 ('name',
                                  'group2')]))])])]))])
 

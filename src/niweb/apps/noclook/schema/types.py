@@ -29,6 +29,18 @@ def resolve_roles_list(self, info, **kwargs):
 
     return ret
 
+class Role(NIRelationType):
+    name = graphene.String(required=True)
+
+    def resolve_name(self, info, **kwargs):
+        if self.name:
+            return self.name
+        else:
+            raise Exception('This must not be a role relationship')
+
+    class Meta:
+        interfaces = (relay.Node, )
+
 class User(DjangoObjectType):
     '''
     The django user type
@@ -84,7 +96,7 @@ class Contact(NIObjectType):
     other_email = NIStringField()
     PGP_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
-    works_for = NIRelationField(rel_name='Works_for')
+    works_for = NIRelationField(rel_name='Works_for', type_args=(Role, ))
 
     class NIMetaType:
         ni_type = 'Contact'

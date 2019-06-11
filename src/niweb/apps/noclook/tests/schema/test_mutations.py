@@ -25,7 +25,7 @@ class QueryTest(Neo4jGraphQLTest):
                 OrderedDict([
                     ('group',
                         OrderedDict([
-                            ('handle_id', '9'),
+                            ('handle_id', '17'),
                             ('name', 'New test group')
                         ])),
                     ('clientMutationId', None)
@@ -34,8 +34,6 @@ class QueryTest(Neo4jGraphQLTest):
         ])
 
         result = schema.execute(query, context=self.context)
-        #from pprint import pformat
-        #raise Exception(pformat(result.data))
 
         assert not result.errors, result.errors
         assert result.data == expected
@@ -43,7 +41,7 @@ class QueryTest(Neo4jGraphQLTest):
         ## update ##
         query = """
         mutation update_test_group {
-          update_group(input: {handle_id: 9, name: "A test group"}){
+          update_group(input: {handle_id: 17, name: "A test group"}){
             group {
               handle_id
               name
@@ -58,7 +56,7 @@ class QueryTest(Neo4jGraphQLTest):
                 OrderedDict([
                     ('group',
                         OrderedDict([
-                            ('handle_id', '9'),
+                            ('handle_id', '17'),
                             ('name', 'A test group')
                         ])),
                     ('clientMutationId', None)

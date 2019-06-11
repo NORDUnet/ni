@@ -257,7 +257,7 @@ class NIRelationType(graphene.ObjectType):
         cls,
         **options,
     ):
-        super(NIObjectType, cls).__init_subclass_with_meta__(
+        super(NIRelationType, cls).__init_subclass_with_meta__(
             **options
         )
 
