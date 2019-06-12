@@ -179,22 +179,6 @@ class Command(BaseCommand):
                     if key not in ['node_type', 'contact_role', 'name', 'account_name'] and node[key]:
                         graph_node.add_property(key, node[key])
 
-            	# dj: role exist?: create or get
-                role_name = node['contact_role']
-
-                if role_name:
-                    role_type = NodeType.objects.filter(type=self.new_types[4]).first() # role
-                    new_role = NodeHandle.objects.get_or_create(
-                            node_name = role_name,
-                            node_type = role_type,
-                            node_meta_type = logical_meta_type,
-                            creator = self.user,
-                            modifier = self.user,
-                        )[0]
-
-            	    # n4: add relation between role and contact
-                    graph_node.add_role(new_role.pk)
-
             	# dj: organization exist?: create or get
                 organization_name = node.get('account_name', None)
 
@@ -209,8 +193,15 @@ class Command(BaseCommand):
                             modifier = self.user,
                         )[0]
 
-                    # n4: add relation between role and organization
-                    graph_node.add_organization(new_org.pk)
+                    # add role relatioship
+                    role_name = node['contact_role']
+
+                    nc.models.RoleRelationship.link_contact_organization(
+                        new_contact.handle_id,
+                        new_org.handle_id,
+                        role_name
+                    )
+
 
                 # Print iterations progress
                 if options['verbosity'] > 0:
@@ -244,18 +235,13 @@ class Command(BaseCommand):
                         modifier = self.user,
                     )[0]
 
-                role = NodeHandle.objects.get_or_create(
-                        node_name = node['role'],
-                        node_type = role_type,
-                        node_meta_type = logical_meta_type,
-                        creator = self.user,
-                        modifier = self.user,
-                    )[0]
+                role_name = node['role']
 
-                # we're adding the relations straight since if the relation
-                # already exists doesn't alter the result
-                contact.get_node().add_role(role.handle_id)
-                contact.get_node().add_organization(organization.handle_id)
+                nc.models.RoleRelationship.link_contact_organization(
+                    contact.handle_id,
+                    organization.handle_id,
+                    role_name
+                )
 
             csv_secroles.close()
 

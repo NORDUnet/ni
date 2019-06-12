@@ -48,7 +48,7 @@ class Neo4jHelpersTest(NeoTestCase):
                 'Physical')
 
     def test_link_contact_role_for_organization(self):
-        data = {
+        thedata = {
             'role_name': 'IT-manager'
         }
 
@@ -56,14 +56,14 @@ class Neo4jHelpersTest(NeoTestCase):
 
         contact, role = helpers.link_contact_role_for_organization(self.user, self.organization_node,
                                                                    self.contact_node.handle_id,
-                                                                   data.get('role_name')
+                                                                   thedata['role_name']
                                                                    )
 
-        self.assertEqual(self.contact_node.relationships.get('Is')[0].get('node'), role)
+        self.assertEqual(role.name, thedata['role_name'])
         self.assertEqual(contact.get_node(), self.organization_node.get_relations().get('Works_for')[0].get('node'))
 
     def test_create_contact_role_for_organization(self):
-        data = {
+        thedata = {
             'contact_name': 'FirstName LastName',
             'role_name': 'IT-manager'
         }
@@ -71,20 +71,10 @@ class Neo4jHelpersTest(NeoTestCase):
         self.assertEqual(len(self.organization_node.relationships), 0)
 
         contact, role = helpers.create_contact_role_for_organization(self.user, self.organization_node,
-                                                                     data.get('contact_name'),
-                                                                     data.get('role_name')
+                                                                     thedata['contact_name'],
+                                                                     thedata['role_name'],
                                                                      )
 
         self.assertEqual(contact.get_node(), self.organization_node.get_relations().get('Works_for')[0].get('node'))
-        self.assertEqual(contact.get_node().data.get('name'), data.get('contact_name'))
-        self.assertEqual(role.get_node().data.get('name'), data.get('role_name'))
-
-    def test_get_contact_for_orgrole(self):
-        self.contact_node.add_role(self.role_node.handle_id)
-
-        self.assertEqual(len(self.organization_node.relationships), 0)
-
-        self.contact_node.add_organization(self.organization_node.handle_id)
-        contact = helpers.get_contact_for_orgrole(self.organization_node.handle_id, self.role_node.data.get('name'))
-
-        self.assertEqual(contact.get_node(), self.organization_node.get_relations().get('Works_for')[0].get('node'))
+        self.assertEqual(contact.get_node().data.get('name'), thedata['contact_name'])
+        self.assertEqual(role.name, thedata['role_name'])
