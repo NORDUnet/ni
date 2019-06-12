@@ -80,3 +80,21 @@ class Contact(NIObjectType):
     class NIMetaType:
         ni_type = 'Contact'
         ni_metatype = 'relation'
+
+class Organization(NIObjectType):
+    '''
+    The group type is used to group contacts
+    '''
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField(type_kwargs={ 'required': True })
+    phone = NIStringField()
+    website = NIStringField()
+    customer_id = NIStringField()
+    additional_info = NIStringField()
+    
+    # add relation
+    works_for = NIRelationField(rel_name='Works_for', type_args=(Role, ))
+
+    class NIMetaType:
+        ni_type = 'Organization'
+        ni_metatype = 'relation'

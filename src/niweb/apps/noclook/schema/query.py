@@ -62,4 +62,4 @@ class NOCRootQuery(NOCAutoQuery):
         return rel
 
     class NIMeta:
-        graphql_types = [ Group, Contact ]
+        graphql_types = [ Group, Contact, Organization ]

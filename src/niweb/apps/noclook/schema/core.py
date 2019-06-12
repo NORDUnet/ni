@@ -173,11 +173,14 @@ class NIBasicField():
     Super class of the type fields
     '''
     def __init__(self, field_type=graphene.String, manual_resolver=False,
-                    type_kwargs=None, **kwargs):
+                    type_kwargs=None, required=False, req_on_create=False,
+                    **kwargs):
 
         self.field_type      = field_type
         self.manual_resolver = manual_resolver
         self.type_kwargs     = type_kwargs
+        self.required        = required
+        self.req_on_create   = req_on_create
 
     def get_resolver(self, **kwargs):
         field_name = kwargs.get('field_name')
@@ -206,9 +209,10 @@ class NIIntField(NIBasicField):
     Int type
     '''
     def __init__(self, field_type=graphene.Int, manual_resolver=False,
-                    type_kwargs=None, **kwargs):
+                    type_kwargs=None, required=False, req_on_create=False,
+                    **kwargs):
         super(NIIntField, self).__init__(field_type, manual_resolver,
-                        type_kwargs, **kwargs)
+                        type_kwargs, required, req_on_create, **kwargs)
 
 class NIListField(NIBasicField):
     '''
@@ -694,6 +698,8 @@ class AbstractNIMutation(relay.ClientIDMutation):
         django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', None)
         is_create     = getattr(ni_metaclass, 'is_create', False)
+        fields        = getattr(ni_metaclass, 'fields', None)
+        exclude       = getattr(ni_metaclass, 'exclude', None)
 
         # build fields into Input
         inner_fields = {}
@@ -857,6 +863,8 @@ class CreateNIMutation(AbstractNIMutation):
         request_path   = None
         is_create      = True
         graphql_type   = None
+        fields         = None
+        exclude        = None
 
     @classmethod
     def do_request(cls, request, **kwargs):
@@ -968,6 +976,10 @@ class NIMutationFactory():
         update_form    = getattr(ni_metaclass, 'update_form', None)
         request_path   = getattr(ni_metaclass, 'request_path', None)
         graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandler)
+        create_fields  = getattr(ni_metaclass, 'create_fields', None)
+        create_exclude = getattr(ni_metaclass, 'create_exclude', None)
+        update_fields  = getattr(ni_metaclass, 'update_fields', None)
+        update_exclude = getattr(ni_metaclass, 'update_exclude', None)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -990,6 +1002,8 @@ class NIMutationFactory():
             'request_path': request_path,
             'is_create': True,
             'graphql_type': graphql_type,
+            'fields': create_fields,
+            'exclude': create_exclude,
         }
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
@@ -1005,6 +1019,8 @@ class NIMutationFactory():
         class_name = 'UpdateNI{}Mutation'.format(node_type.capitalize())
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
+        attr_dict['fields']        = update_fields
+        attr_dict['exclude']       = update_exclude
         update_metaclass = type(metaclass_name, (object,), attr_dict)
 
         cls._update_mutation = type(
@@ -1017,6 +1033,8 @@ class NIMutationFactory():
 
         class_name = 'DeleteNI{}Mutation'.format(node_type.capitalize())
         del attr_dict['django_form']
+        del attr_dict['fields']
+        del attr_dict['exclude']
         delete_metaclass = type(metaclass_name, (object,), attr_dict)
 
         cls._delete_mutation = type(

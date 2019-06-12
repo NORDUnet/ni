@@ -30,6 +30,21 @@ class NIContactMutationFactory(NIMutationFactory):
     class Meta:
         abstract = False
 
+class NIOrganizationMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewOrganizationForm
+        update_form    = EditOrganizationForm
+        request_path   = '/'
+        graphql_type   = Organization
+        # create_fields or create_exclude
+        # update_fields or update_exclude
+        update_exclude = ('abuse_contact', 'primary_contact',
+                            'secondary_contact', 'it_technical_contact',
+                            'it_security_contact', 'it_manager_contact')
+
+    class Meta:
+        abstract = False
+
 class DeleteRelationship(relay.ClientIDMutation):
     class Input:
         relation_id = graphene.Int(required=True)
@@ -60,5 +75,9 @@ class NOCRootMutation(graphene.ObjectType):
     create_contact = NIContactMutationFactory.get_create_mutation().Field()
     update_contact = NIContactMutationFactory.get_update_mutation().Field()
     delete_contact = NIContactMutationFactory.get_delete_mutation().Field()
+
+    create_organization = NIOrganizationMutationFactory.get_create_mutation().Field()
+    update_organization = NIOrganizationMutationFactory.get_update_mutation().Field()
+    delete_organization = NIOrganizationMutationFactory.get_delete_mutation().Field()
 
     delete_relationship = DeleteRelationship.Field()
