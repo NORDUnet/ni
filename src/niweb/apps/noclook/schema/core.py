@@ -698,8 +698,11 @@ class AbstractNIMutation(relay.ClientIDMutation):
         django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', None)
         is_create     = getattr(ni_metaclass, 'is_create', False)
-        fields        = getattr(ni_metaclass, 'fields', None)
+        include       = getattr(ni_metaclass, 'include', None)
         exclude       = getattr(ni_metaclass, 'exclude', None)
+
+        if include and exclude:
+            raise Exception('Only "include" or "exclude" metafields can be defined')
 
         # build fields into Input
         inner_fields = {}
@@ -711,10 +714,21 @@ class AbstractNIMutation(relay.ClientIDMutation):
                         graphene_field = cls.form_to_graphene_field(field)
 
                         if graphene_field:
+                            add_field = False
+
                             if hasattr(django_form, 'Meta') and hasattr(django_form.Meta, 'exclude'):
                                 if field not in django_form.Meta.exclude:
-                                    inner_fields[field_name] = graphene_field
+                                    add_field = True
+                            elif include:
+                                if field_name in include:
+                                    add_field = True
+                            elif exclude:
+                                if field_name not in exclude:
+                                    add_field = True
                             else:
+                                add_field = True
+
+                            if add_field:
                                 inner_fields[field_name] = graphene_field
 
         # add handle_id
@@ -737,7 +751,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
             setattr(cls, graphql_type.__name__.lower(), graphene.Field(graphql_type))
 
     @classmethod
-    def form_to_graphene_field(cls, form_field):
+    def form_to_graphene_field(cls, form_field, include=None, exclude=None):
         '''Django form to graphene field conversor
         '''
         graphene_field = None
@@ -863,7 +877,7 @@ class CreateNIMutation(AbstractNIMutation):
         request_path   = None
         is_create      = True
         graphql_type   = None
-        fields         = None
+        include        = None
         exclude        = None
 
     @classmethod
@@ -895,6 +909,8 @@ class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
+        include        = None
+        exclude        = None
 
     @classmethod
     def do_request(cls, request, **kwargs):
@@ -976,9 +992,9 @@ class NIMutationFactory():
         update_form    = getattr(ni_metaclass, 'update_form', None)
         request_path   = getattr(ni_metaclass, 'request_path', None)
         graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandler)
-        create_fields  = getattr(ni_metaclass, 'create_fields', None)
+        create_include = getattr(ni_metaclass, 'create_include', None)
         create_exclude = getattr(ni_metaclass, 'create_exclude', None)
-        update_fields  = getattr(ni_metaclass, 'update_fields', None)
+        update_include = getattr(ni_metaclass, 'update_include', None)
         update_exclude = getattr(ni_metaclass, 'update_exclude', None)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
@@ -1002,7 +1018,7 @@ class NIMutationFactory():
             'request_path': request_path,
             'is_create': True,
             'graphql_type': graphql_type,
-            'fields': create_fields,
+            'include': create_include,
             'exclude': create_exclude,
         }
 
@@ -1019,7 +1035,7 @@ class NIMutationFactory():
         class_name = 'UpdateNI{}Mutation'.format(node_type.capitalize())
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
-        attr_dict['fields']        = update_fields
+        attr_dict['include']        = update_include
         attr_dict['exclude']       = update_exclude
         update_metaclass = type(metaclass_name, (object,), attr_dict)
 
@@ -1033,7 +1049,7 @@ class NIMutationFactory():
 
         class_name = 'DeleteNI{}Mutation'.format(node_type.capitalize())
         del attr_dict['django_form']
-        del attr_dict['fields']
+        del attr_dict['include']
         del attr_dict['exclude']
         delete_metaclass = type(metaclass_name, (object,), attr_dict)
 

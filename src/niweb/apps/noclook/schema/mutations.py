@@ -36,8 +36,8 @@ class NIOrganizationMutationFactory(NIMutationFactory):
         update_form    = EditOrganizationForm
         request_path   = '/'
         graphql_type   = Organization
-        # create_fields or create_exclude
-        # update_fields or update_exclude
+        # create_include or create_exclude
+        # update_include or update_exclude
         update_exclude = ('abuse_contact', 'primary_contact',
                             'secondary_contact', 'it_technical_contact',
                             'it_security_contact', 'it_manager_contact')
