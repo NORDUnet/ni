@@ -615,7 +615,10 @@ def list_contacts(request):
         if con_handle_id in contact_list.keys():
             org_list = contact_list[con_handle_id]['org_list']
 
-        new_org_name = row['org']['name']
+        new_org_name = ''
+        if 'org' in row and row['org']:
+            new_org_name = row['org'].get('name', '')
+
         org_list.append(new_org_name)
 
         contact_list[con_handle_id] = {

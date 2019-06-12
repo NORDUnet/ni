@@ -979,6 +979,11 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role_name)
     if six.PY2:
         role_name = role_name.encode('utf-8')
 
+    nc.models.RoleRelationship.remove_role_in_organization(
+        node.handle_id,
+        role_name
+    )
+
     relationship = nc.models.RoleRelationship.link_contact_organization(
         contact_handle_id,
         node.handle_id,
@@ -1012,6 +1017,11 @@ def create_contact_role_for_organization(user, node, contact_name, role_name):
     if six.PY2:
         contact_name = contact_name.encode('utf-8')
         role_name = role_name.encode('utf-8')
+
+    nc.models.RoleRelationship.remove_role_in_organization(
+        node.handle_id,
+        role_name
+    )
 
     first_name, last_name = contact_name.split(' ')
 
