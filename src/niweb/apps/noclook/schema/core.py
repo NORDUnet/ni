@@ -173,14 +173,11 @@ class NIBasicField():
     Super class of the type fields
     '''
     def __init__(self, field_type=graphene.String, manual_resolver=False,
-                    type_kwargs=None, required=False, req_on_create=False,
-                    **kwargs):
+                    type_kwargs=None, **kwargs):
 
         self.field_type      = field_type
         self.manual_resolver = manual_resolver
         self.type_kwargs     = type_kwargs
-        self.required        = required
-        self.req_on_create   = req_on_create
 
     def get_resolver(self, **kwargs):
         field_name = kwargs.get('field_name')
@@ -209,10 +206,9 @@ class NIIntField(NIBasicField):
     Int type
     '''
     def __init__(self, field_type=graphene.Int, manual_resolver=False,
-                    type_kwargs=None, required=False, req_on_create=False,
-                    **kwargs):
+                    type_kwargs=None, **kwargs):
         super(NIIntField, self).__init__(field_type, manual_resolver,
-                        type_kwargs, required, req_on_create, **kwargs)
+                        type_kwargs, **kwargs)
 
 class NIListField(NIBasicField):
     '''
@@ -1035,7 +1031,7 @@ class NIMutationFactory():
         class_name = 'UpdateNI{}Mutation'.format(node_type.capitalize())
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
-        attr_dict['include']        = update_include
+        attr_dict['include']       = update_include
         attr_dict['exclude']       = update_exclude
         update_metaclass = type(metaclass_name, (object,), attr_dict)
 
