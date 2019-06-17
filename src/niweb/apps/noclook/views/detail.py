@@ -664,16 +664,6 @@ def group_detail(request, handle_id):
     return render(request, 'noclook/detail/group_detail.html',
                   {'node_handle': nh, 'node': node, 'location_path': location_path})
 
-@login_required
-def role_detail(request, role_name):
-    # Get node from neo4j-database
-    node = nh.get_node()
-    # Get location
-    contact_list = nc.models.RoleRelationship.get_contacts_with_role(role_name)
-    location_path = node.get_location_path()
-    return render(request, 'noclook/detail/procedure_detail.html',
-                  {'node_handle': nh, 'node': node, 'location_path': location_path})
-
 def _contact_with_role_table(con):
     from pprint import pformat
     #raise Exception(pformat(vars(con)))
