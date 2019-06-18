@@ -655,6 +655,15 @@ class NIRelationField(NIBasicField):
         self.rel_name        = rel_name
 
     def get_resolver(self, **kwargs):
+        # getting nimodel
+        nimodel = nc.models.BaseRelationshipModel
+
+        if self.type_args != (NIRelationType,):
+            rel_type = self.type_args[0]
+            nimeta = getattr(rel_type, 'NIMeta', None)
+            if nimeta:
+                nimodel = getattr(nimeta, 'nimodel', None)
+
         field_name = kwargs.get('field_name')
         rel_name   = kwargs.get('rel_name')
 
@@ -666,13 +675,14 @@ class NIRelationField(NIBasicField):
             )
         def resolve_node_relation(self, info, **kwargs):
             ret = []
-            reldicts = self.get_node().relationships[rel_name]
+            reldicts = self.get_node().relationships.get(rel_name, None)
 
-            for reldict in reldicts:
-                relbundle = nc.get_relationship_bundle(nc.graphdb.manager, relationship_id=reldict['relationship_id'])
-                relation = nc.models.BaseRelationshipModel(nc.graphdb.manager)
-                relation.load(relbundle)
-                ret.append(relation)
+            if reldicts:
+                for reldict in reldicts:
+                    relbundle = nc.get_relationship_bundle(nc.graphdb.manager, relationship_id=reldict['relationship_id'])
+                    relation = nimodel(nc.graphdb.manager)
+                    relation.load(relbundle)
+                    ret.append(relation)
 
             return ret
 

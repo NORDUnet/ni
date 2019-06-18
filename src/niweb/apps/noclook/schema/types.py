@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 import graphene
 
+from norduniclient.models import RoleRelationship
 from django.contrib.auth.models import User
 from graphene import relay
 from .core import *
@@ -17,8 +18,8 @@ class Role(NIRelationType):
         else:
             raise Exception('This must not be a role relationship')
 
-    class Meta:
-        interfaces = (relay.Node, )
+    class NIMeta:
+        nimodel = RoleRelationship
 
 class User(DjangoObjectType):
     '''
@@ -91,7 +92,7 @@ class Organization(NIObjectType):
     website = NIStringField()
     customer_id = NIStringField()
     additional_info = NIStringField()
-    
+
     # add relation
     works_for = NIRelationField(rel_name='Works_for', type_args=(Role, ))
 

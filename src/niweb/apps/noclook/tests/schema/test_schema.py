@@ -2,14 +2,15 @@
 __author__ = 'ffuentes'
 
 from collections import OrderedDict
-from . import Neo4jGraphQLTest
 from niweb.schema import schema
+from pprint import pformat
+from . import Neo4jGraphQLTest
 
 class QueryTest(Neo4jGraphQLTest):
     def test_get_contacts(self):
         # test contacts
         query = '''
-        query getLastTenContacts {
+        query getLastTwoContacts {
           contacts(first: 2, orderBy: handle_id_DESC) {
             edges {
               node {
@@ -20,38 +21,44 @@ class QueryTest(Neo4jGraphQLTest):
                 member_of_groups {
                   name
                 }
+                works_for{
+                  name
+                }
               }
             }
           }
         }
         '''
 
-        expected =  OrderedDict([('contacts',
+        expected = OrderedDict([('contacts',
                       OrderedDict([('edges',
-                        [
-                         OrderedDict([('node',
+                        [OrderedDict([('node',
                            OrderedDict([('handle_id', '29'),
-                                ('name', 'John Smith'),
-                                ('first_name', 'John'),
-                                ('last_name', 'Smith'),
-                                ('member_of_groups',
-                                 [OrderedDict([('name',
-                                    'group2')])])]))]),
-                        OrderedDict([('node',
+                            ('name', 'John Smith'),
+                            ('first_name', 'John'),
+                            ('last_name', 'Smith'),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group2')])]),
+                            ('works_for',
+                             [OrderedDict([('name',
+                                'role2')])])]))]),
+                         OrderedDict([('node',
                            OrderedDict([('handle_id', '28'),
-                                ('name', 'Jane Doe'),
-                                ('first_name', 'Jane'),
-                                ('last_name', 'Doe'),
-                                ('member_of_groups',
-                                 [OrderedDict([('name',
-                                    'group1')])])]))]),
-                        ])]))])
-
+                            ('name', 'Jane Doe'),
+                            ('first_name', 'Jane'),
+                            ('last_name', 'Doe'),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group1')])]),
+                            ('works_for',
+                             [OrderedDict([('name',
+                                'role1')])])]))])])]))])
 
         result = schema.execute(query, context=self.context)
 
-        assert not result.errors, result.errors
-        assert result.data == expected
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
 
         # getNodeById
         query = '''
@@ -63,7 +70,7 @@ class QueryTest(Neo4jGraphQLTest):
         '''
 
         result = schema.execute(query, context=self.context)
-        assert not result.errors, result.errors
+        assert not result.errors, pformat(result.errors, indent=1)
 
         # filter tests
         query = '''
@@ -95,9 +102,9 @@ class QueryTest(Neo4jGraphQLTest):
 
 
         result = schema.execute(query, context=self.context)
-        
-        assert not result.errors, result.errors
-        assert result.data == expected
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
 
         query = '''
         {
@@ -130,8 +137,8 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
 
-        assert not result.errors, result.errors
-        assert result.data == expected
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
 
     def test_getnodebyhandle_id(self):
         query = '''
@@ -156,4 +163,4 @@ class QueryTest(Neo4jGraphQLTest):
         '''
 
         result = schema.execute(query, context=self.context)
-        assert not result.errors, result.errors
+        assert not result.errors, pformat(result.errors, indent=1)
