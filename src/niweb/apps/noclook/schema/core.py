@@ -896,7 +896,7 @@ class CreateNIMutation(AbstractNIMutation):
                     'A {} with that name already exists.'.format(node_type)
                 )
             helpers.form_update_node(request.user, nh.handle_id, form)
-            return nh
+            return { graphql_type.__name__.lower(): nh }
         else:
             # get the errors and return them
             raise GraphQLError('Form errors: {}'.format(form.errors))
@@ -937,7 +937,10 @@ class UpdateNIMutation(AbstractNIMutation):
 
     @classmethod
     def process_relations(cls, form, nodehandler):
-        pass
+        relations_processors = getattr(cls, 'relations_processors', None)
+        if relations_processors:
+            for relation_name, relation_f in relations_processors.items():
+                relation_f(form, nodehandler, relation_name)
 
 class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -993,6 +996,9 @@ class NIMutationFactory():
         update_include = getattr(ni_metaclass, 'update_include', None)
         update_exclude = getattr(ni_metaclass, 'update_exclude', None)
 
+        # check for relationship processors
+        relations_processors = getattr(cls, 'relations_processors', None)
+
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
@@ -1033,6 +1039,10 @@ class NIMutationFactory():
         attr_dict['is_create']     = False
         attr_dict['include']       = update_include
         attr_dict['exclude']       = update_exclude
+
+        if relations_processors:
+            attr_dict['relations_processors'] = relations_processors
+
         update_metaclass = type(metaclass_name, (object,), attr_dict)
 
         cls._update_mutation = type(
@@ -1047,6 +1057,10 @@ class NIMutationFactory():
         del attr_dict['django_form']
         del attr_dict['include']
         del attr_dict['exclude']
+
+        if relations_processors:
+            del attr_dict['relations_processors']
+
         delete_metaclass = type(metaclass_name, (object,), attr_dict)
 
         cls._delete_mutation = type(

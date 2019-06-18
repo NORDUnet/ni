@@ -21,6 +21,16 @@ class NIGroupMutationFactory(NIMutationFactory):
         abstract = False
 
 class NIContactMutationFactory(NIMutationFactory):
+    @classmethod
+    def process_works_for(cls, form, nodehandler, relation_name):
+        organization_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
+        role_name = form.cleaned_data['role_name']
+        helpers.set_works_for(request.user, nodehandler, organization_nh.handle_id, role_name)
+    
+    relations_processors = {
+        'relationship_works_for': process_works_for
+    }
+
     class NIMetaClass:
         create_form    = NewContactForm
         update_form    = EditContactForm

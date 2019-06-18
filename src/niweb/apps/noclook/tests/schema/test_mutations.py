@@ -2,8 +2,9 @@
 __author__ = 'ffuentes'
 
 from collections import OrderedDict
-from . import Neo4jGraphQLTest
 from niweb.schema import schema
+from pprint import pformat
+from . import Neo4jGraphQLTest
 
 class QueryTest(Neo4jGraphQLTest):
     def test_group(self):
@@ -73,9 +74,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
         mutation delete_test_group {
           delete_group(input: {handle_id: 9}){
-            group{
-              handle_id
-            }
+            success
           }
         }
         """
@@ -83,11 +82,11 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([
             ('delete_group',
                 OrderedDict([
-                    ('group', None),
+                    ('success', True),
                 ])
             )
         ])
 
         result = schema.execute(query, context=self.context)
-        assert not result.errors
+        assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected
