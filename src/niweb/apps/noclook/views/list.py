@@ -7,6 +7,7 @@ from apps.noclook.models import NodeType
 from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
+import urllib
 
 __author__ = 'lundberg'
 
@@ -615,7 +616,10 @@ def list_contacts(request):
         if con_handle_id in contact_list.keys():
             org_list = contact_list[con_handle_id]['org_list']
 
-        new_org_name = row['org']['name']
+        new_org_name = ''
+        if 'org' in row and row['org']:
+            new_org_name = row['org'].get('name', '')
+
         org_list.append(new_org_name)
 
         contact_list[con_handle_id] = {
@@ -633,3 +637,23 @@ def list_contacts(request):
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Contacts', 'urls': urls})
+
+def _role_table(role_name):
+    name_param = { 'name': role_name }
+    role_link = {
+            'url': u'/role/detail/?{}'.format(urllib.parse.urlencode(name_param)),
+            'name': u'{}'.format(role_name)
+            }
+    row = TableRow(role_link)
+    return row
+
+@login_required
+def list_roles(request):
+    role_list = nc.models.RoleRelationship.get_all_roles(nc.graphdb.manager)
+
+    table = Table('Name')
+    table.rows = [_role_table(role_name) for role_name in role_list]
+    table.no_badges=True
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'Roles', 'urls': role_list})

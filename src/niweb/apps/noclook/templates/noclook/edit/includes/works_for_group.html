@@ -11,7 +11,7 @@
           <div class="row">
               <div class="span5">
                   {% noclook_get_type item.node.handle_id as node_type %}
-                  {{ node_type }} <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+                  {{ node_type }} <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>{% if item.relationship.name %} (as {{ item.relationship.name }}){% endif %}
               </div>
               <div class="span1">
                   <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
