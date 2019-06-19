@@ -19,6 +19,7 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 from ..models import NodeType, NodeHandle
 
+########## CONNECTION FILTER BUILD FUNCTIONS
 def build_match_predicate(field, value, type):
     # string quoting
     if isinstance(type, graphene.String):
@@ -142,7 +143,9 @@ filter_array = {
     'ends_with':       { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_ends_with_predicate },
     'not_ends_with':   { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_not_ends_with_predicate },
 }
+########## END CONNECTION FILTER BUILD FUNCTIONS
 
+########## KEYVALUE TYPES
 class KeyValue(graphene.Interface):
     name = graphene.String(required=True)
     value = graphene.String(required=True)
@@ -168,6 +171,9 @@ def resolve_nidata(self, info, **kwargs):
 
     return ret
 
+########## END KEYVALUE TYPES
+
+########## BASIC NI FIELDS
 class NIBasicField():
     '''
     Super class of the type fields
@@ -248,6 +254,10 @@ class NIListField(NIBasicField):
 
         return resolve_relationship_list
 
+########## END BASIC NI FIELDS
+
+
+########## RELATION AND NODE TYPES
 class NIRelationType(graphene.ObjectType):
     '''
     This class represents a relationship and its properties
@@ -642,7 +652,10 @@ class NIObjectType(DjangoObjectType):
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
+########## END RELATION AND NODE TYPES
 
+
+########## RELATION FIELD
 class NIRelationField(NIBasicField):
     '''
     This field can be used in NIObjectTypes to represent a set relationships
@@ -688,6 +701,9 @@ class NIRelationField(NIBasicField):
 
         return resolve_node_relation
 
+########## END RELATION FIELD
+
+########## MUTATION FACTORY
 class NodeHandler(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
@@ -1096,10 +1112,9 @@ class NIMutationFactory():
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
 
-# TODO: create a new mutation factory for relationships types
-# update relationship attributes or delete the relation itself
-# what about creating relationships between two related entities?
+########## END MUTATION FACTORY
 
+########## EXCEPTION AND AUTOQUERY
 class GraphQLAuthException(Exception):
     '''
     Simple auth exception
@@ -1185,3 +1200,4 @@ class NOCAutoQuery(graphene.ObjectType):
 
             setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
             setattr(cls, resolver_name, graphql_type.get_byid_resolver())
+########## END EXCEPTION AND AUTOQUERY
