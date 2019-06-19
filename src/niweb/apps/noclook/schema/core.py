@@ -497,10 +497,11 @@ class NIObjectType(DjangoObjectType):
         '''
         incoming_rels = self.get_node().incoming
         ret = []
-        for rel_name, rel in incoming_rels.items():
-            relation_id = rel[0]['relationship_id']
-            rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
-            ret.append(DictRelationType(name=rel_name, relation=rel))
+        for rel_name, rel_list in incoming_rels.items():
+            for rel in rel_list:
+                relation_id = rel['relationship_id']
+                rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
+                ret.append(DictRelationType(name=rel_name, relation=rel))
 
         return ret
 
@@ -510,10 +511,11 @@ class NIObjectType(DjangoObjectType):
         '''
         outgoing_rels = self.get_node().outgoing
         ret = []
-        for rel_name, rel in outgoing_rels.items():
-            relation_id = rel[0]['relationship_id']
-            rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
-            ret.append(DictRelationType(name=rel_name, relation=rel))
+        for rel_name, rel_list in outgoing_rels.items():
+            for rel in rel_list:
+                relation_id = rel['relationship_id']
+                rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
+                ret.append(DictRelationType(name=rel_name, relation=rel))
 
         return ret
 
@@ -536,9 +538,15 @@ class NIObjectType(DjangoObjectType):
         input_fields = {}
 
         for name, field in cls.__dict__.items():
-            if field and not isinstance(field, str) and getattr(field, '__module__', None) == 'graphene.types.scalars':
-                input_field = type(field)
-                input_fields[name] = input_field
+            # string or string like fields
+            if field:
+                if isinstance(field, str) and getattr(field, '__module__', None) == 'graphene.types.scalars':
+                    input_field = type(field)
+                    input_fields[name] = input_field
+                elif isinstance(field, graphene.types.structures.List):
+                    continue
+                    input_field = type(field)
+                    input_fields[name] = input_field, field._of_type
 
         input_fields['handle_id'] = graphene.Int
 
@@ -559,24 +567,33 @@ class NIObjectType(DjangoObjectType):
         input_fields = cls.get_filter_input_fields()
 
         for field_name, input_field in input_fields.items():
+            # creating field instance
+            if hasattr(input_field, '__call__'):
+                field_instance = input_field()
+            else: # it must be a list then
+                field_instance = input_field[0](of_type=input_field[1])
+
             # adding order attributes
             enum_options.append(['{}_ASC'.format(field_name), '{}_ASC'.format(field_name)])
             enum_options.append(['{}_DESC'.format(field_name), '{}_DESC'.format(field_name)])
 
             # adding filter attributes
             for suffix, suffix_attr in filter_array.items():
+                # filter field naming
                 if not suffix == '':
                     suffix = '_{}'.format(suffix)
 
                 fmt_filter_field = '{}{}'.format(field_name, suffix)
 
-                if not suffix_attr['only_strings'] or isinstance(input_field(), graphene.String):
+                if not suffix_attr['only_strings'] or isinstance(field_instance, graphene.String):
                     if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
-                        filter_attrib[fmt_filter_field] = input_field()
+                        field_instance = None
+
+                        filter_attrib[fmt_filter_field] = field_instance
                         cls.filter_names[fmt_filter_field]  = {
                             'field' : field_name,
                             'suffix': suffix,
-                            'field_type': input_field(),
+                            'field_type': field_instance,
                         }
                     else:
                         the_field = input_field
@@ -587,7 +604,7 @@ class NIObjectType(DjangoObjectType):
                         cls.filter_names[fmt_filter_field]  = {
                             'field' : field_name,
                             'suffix': suffix,
-                            'field_type': input_field(),
+                            'field_type': field_instance,
                         }
 
         simple_filter_input = type('{}NestedFilter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)

@@ -112,7 +112,7 @@ class Contact(NIObjectType):
     other_email = NIStringField()
     PGP_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
-    works_for = NIRelationField(rel_name='Works_for', type_args=(Role, ))
+    roles = NIRelationField(rel_name='Works_for', type_args=(Role, ))
 
     class NIMetaType:
         ni_type = 'Contact'
