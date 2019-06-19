@@ -10,14 +10,113 @@ from apps.noclook.models import NodeType, NodeHandle
 from collections import OrderedDict
 from django import forms
 from django.db.models import Q
+from django.forms.utils import ValidationError
 from django.test import RequestFactory
 from graphene import relay
+from graphene.types import Scalar
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
 from graphql import GraphQLError
+from io import StringIO
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 from ..models import NodeType, NodeHandle
+
+########## CUSTOM SCALARS FOR FORM FIELD CONVERSION
+class IPAddr(Scalar):
+    '''IPAddr scalar to be matched with the IPAddrField in a django form'''
+    @staticmethod
+    def serialize(value):
+        # this would be to_python method
+        if isinstance(value, list):
+            value = u'\n'.join(value)
+        return value
+
+    @staticmethod
+    def parse_value(value):
+        # and this would be the clean method
+        result = []
+        for line in StringIO(value):
+            ip = line.replace('\n','').strip()
+            if ip:
+                try:
+                    ipaddress.ip_address(ip)
+                    result.append(ip)
+                except ValueError as e:
+                    errors.append(str(e))
+        if errors:
+            raise ValidationError(errors)
+        return result
+
+class JSON(Scalar):
+    '''JSON scalar to be matched with the JSONField in a django form'''
+    @staticmethod
+    def serialize(value):
+        if value:
+            value = json.dumps(value)
+
+        return value
+
+    @staticmethod
+    def parse_value(value):
+        try:
+            if value:
+                value = json.loads(value)
+        except ValueError:
+            raise ValidationError(self.error_messages['invalid'], code='invalid')
+        return value
+
+class DateTime(Scalar):
+    # http://docs.graphene-python.org/en/latest/types/scalars/#custom-scalars
+    '''DateTime Scalar Description'''
+
+    @staticmethod
+    def serialize(dt):
+        return dt.isoformat()
+
+    @staticmethod
+    def parse_literal(node):
+        if isinstance(node, ast.StringValue):
+            return datetime.datetime.strptime(
+                node.value, "%Y-%m-%dT%H:%M:%S.%f")
+
+    @staticmethod
+    def parse_value(value):
+        return datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f")
+
+class RoleScalar(Scalar):
+    '''This is a POC scalar that may be used in the contact mutation input'''
+    @staticmethod
+    def serialize(value):
+        roles_dict = get_roles_dropdown()
+
+        if value in roles_dict.keys():
+            return roles_dict[value]
+        else:
+            raise Exception('The selected role ("{}") doesn\'t exists'
+                                .format(value))
+
+    @staticmethod
+    def parse_value(value):
+        roles_dict = get_roles_dropdown()
+
+        key = value.replace(' ', '_').lower()
+        if key in roles_dict.keys():
+            return roles_dict[key]
+        else:
+            return value
+
+    @staticmethod
+    def get_roles_dropdown():
+        ret = {}
+        roles = nc.models.RoleRelationship.get_all_roles()
+        for role in roles:
+            name = role.replace(' ', '_').lower()
+            ret[name] = role
+
+        return ret
+
+########## END CUSTOM SCALARS FOR FORM FIELD CONVERSION
 
 ########## CONNECTION FILTER BUILD FUNCTIONS
 def build_match_predicate(field, value, type):
