@@ -25,6 +25,7 @@ class NOCRootQuery(NOCAutoQuery):
     getAvailableDropdowns = graphene.List(graphene.String)
     getChoicesForDropdown = graphene.List(KeyValue, name=graphene.String(required=True))
     getRelationById = graphene.Field(NIRelationType, relation_id=graphene.Int(required=True))
+    getRoleById = graphene.Field(Role, relation_id=graphene.Int(required=True))
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -56,6 +57,14 @@ class NOCRootQuery(NOCAutoQuery):
     def resolve_getRelationById(self, info, **kwargs):
         relation_id = kwargs.get('relation_id')
         rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
+        rel.relation_id = rel.id
+        rel.id = None
+
+        return rel
+
+    def resolve_getRoleById(self, info, **kwargs):
+        relation_id = kwargs.get('relation_id')
+        rel = nc.models.RoleRelationship.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
         rel.relation_id = rel.id
         rel.id = None
 
