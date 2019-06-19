@@ -540,13 +540,16 @@ class NIObjectType(DjangoObjectType):
         for name, field in cls.__dict__.items():
             # string or string like fields
             if field:
-                if isinstance(field, str) and getattr(field, '__module__', None) == 'graphene.types.scalars':
+                if isinstance(field, graphene.types.scalars.String) or\
+                    isinstance(field, graphene.types.scalars.Int):
                     input_field = type(field)
                     input_fields[name] = input_field
                 elif isinstance(field, graphene.types.structures.List):
                     continue
-                    input_field = type(field)
-                    input_fields[name] = input_field, field._of_type
+                    #input_field = type(field)
+                    filter_attrib = { 'handle_id': graphene.Int() }
+                    binput_field = type('{}InputField'.format(name), (graphene.InputObjectType, ), filter_attrib)
+                    input_fields[name] = binput_field, field._of_type
 
         input_fields['handle_id'] = graphene.Int
 
@@ -568,10 +571,15 @@ class NIObjectType(DjangoObjectType):
 
         for field_name, input_field in input_fields.items():
             # creating field instance
+            field_instance = None
+            the_field = None
+
             if hasattr(input_field, '__call__'):
                 field_instance = input_field()
-            else: # it must be a list then
-                field_instance = input_field[0](of_type=input_field[1])
+                the_field = input_field
+            else: # it must be a list other_node
+                field_instance = input_field[0]
+                the_field = input_field[1]
 
             # adding order attributes
             enum_options.append(['{}_ASC'.format(field_name), '{}_ASC'.format(field_name)])
@@ -587,8 +595,6 @@ class NIObjectType(DjangoObjectType):
 
                 if not suffix_attr['only_strings'] or isinstance(field_instance, graphene.String):
                     if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
-                        field_instance = None
-
                         filter_attrib[fmt_filter_field] = field_instance
                         cls.filter_names[fmt_filter_field]  = {
                             'field' : field_name,
@@ -596,7 +602,6 @@ class NIObjectType(DjangoObjectType):
                             'field_type': field_instance,
                         }
                     else:
-                        the_field = input_field
                         for wrapper_field in suffix_attr['wrapper_field']:
                             the_field = wrapper_field(the_field)
 
