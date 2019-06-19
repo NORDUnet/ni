@@ -266,7 +266,7 @@ def resolve_nidata(self, info, **kwargs):
 
     alldata = self.get_node().data
     for key, value in alldata.items():
-        ret.append(DictEntryType(key=key, value=value))
+        ret.append(DictEntryType(name=key, value=value))
 
     return ret
 

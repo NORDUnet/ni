@@ -9,6 +9,12 @@ from graphene import relay
 from .core import *
 from ..models import *
 
+# further centralization?
+NIMETA_LOGICAL  = 'logical'
+NIMETA_RELATION = 'relation'
+NIMETA_PHYSICAL = 'physical'
+NIMETA_LOCATION = 'location'
+
 class User(DjangoObjectType):
     '''
     The django user type
@@ -46,7 +52,7 @@ class Group(NIObjectType):
 
     class NIMetaType:
         ni_type = 'Group'
-        ni_metatype = 'logical'
+        ni_metatype = NIMETA_LOGICAL
 
 class Procedure(NIObjectType):
     '''
@@ -57,7 +63,7 @@ class Procedure(NIObjectType):
 
     class NIMetaType:
         ni_type = 'Procedure'
-        ni_metatype = 'logical'
+        ni_metatype = NIMETA_LOGICAL
 
 class Organization(NIObjectType):
     '''
@@ -72,7 +78,7 @@ class Organization(NIObjectType):
 
     class NIMetaType:
         ni_type = 'Organization'
-        ni_metatype = 'relation'
+        ni_metatype = NIMETA_RELATION
 
 class Role(NIRelationType):
     name = graphene.String(required=True)
@@ -110,4 +116,9 @@ class Contact(NIObjectType):
 
     class NIMetaType:
         ni_type = 'Contact'
-        ni_metatype = 'relation'
+        ni_metatype = NIMETA_RELATION
+
+class Host(NIObjectType):
+    class NIMetaType:
+        ni_type = 'Host'
+        ni_metatype = NIMETA_LOGICAL
