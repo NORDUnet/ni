@@ -20,22 +20,20 @@ class NIGroupMutationFactory(NIMutationFactory):
     class Meta:
         abstract = False
 
-class NIContactMutationFactory(NIMutationFactory):
-    @classmethod
-    def process_works_for(cls, form, nodehandler, relation_name):
-        organization_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
-        role_name = form.cleaned_data['role_name']
-        helpers.set_works_for(request.user, nodehandler, organization_nh.handle_id, role_name)
-    
-    relations_processors = {
-        'relationship_works_for': process_works_for
-    }
+def process_works_for(request, form, nodehandler, relation_name):
+    organization_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
+    role_name = form.cleaned_data['role_name']
+    helpers.set_works_for(request.user, nodehandler, organization_nh.handle_id, role_name)
 
+class NIContactMutationFactory(NIMutationFactory):
     class NIMetaClass:
         create_form    = NewContactForm
         update_form    = EditContactForm
         request_path   = '/'
         graphql_type   = Contact
+        relations_processors = {
+            'relationship_works_for': process_works_for
+        }
 
     class Meta:
         abstract = False

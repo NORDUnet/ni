@@ -936,7 +936,7 @@ class UpdateNIMutation(AbstractNIMutation):
                 helpers.form_update_node(request.user, nodehandler.handle_id, form)
 
                 # process relations if implemented
-                cls.process_relations(form, nodehandler)
+                cls.process_relations(request, form, nodehandler)
 
                 return { graphql_type.__name__.lower(): nh }
             else:
@@ -946,11 +946,14 @@ class UpdateNIMutation(AbstractNIMutation):
             raise GraphQLError('Form errors: {}'.format(form.errors))
 
     @classmethod
-    def process_relations(cls, form, nodehandler):
-        relations_processors = getattr(cls, 'relations_processors', None)
+    def process_relations(cls, request, form, nodehandler):
+        from pprint import pformat
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        relations_processors = getattr(nimetaclass, 'relations_processors', None)
+
         if relations_processors:
             for relation_name, relation_f in relations_processors.items():
-                relation_f(form, nodehandler, relation_name)
+                relation_f(request, form, nodehandler, relation_name)
 
 class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -1007,7 +1010,7 @@ class NIMutationFactory():
         update_exclude = getattr(ni_metaclass, 'update_exclude', None)
 
         # check for relationship processors
-        relations_processors = getattr(cls, 'relations_processors', None)
+        relations_processors = getattr(ni_metaclass, 'relations_processors', None)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
