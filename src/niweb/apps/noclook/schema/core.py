@@ -29,8 +29,9 @@ class IPAddr(Scalar):
     def serialize(value):
         # this would be to_python method
         if isinstance(value, list):
-            value = u'\n'.join(value)
-        return value
+            return value
+        else:
+            return none
 
     @staticmethod
     def parse_value(value):
@@ -47,6 +48,9 @@ class IPAddr(Scalar):
         if errors:
             raise ValidationError(errors)
         return result
+
+    parse_literal = parse_value
+
 
 class JSON(Scalar):
     '''JSON scalar to be matched with the JSONField in a django form'''

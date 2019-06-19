@@ -119,6 +119,27 @@ class Contact(NIObjectType):
         ni_metatype = NIMETA_RELATION
 
 class Host(NIObjectType):
+    '''
+    A host in the SRI system
+    '''
+    name = NIStringField(type_kwargs={ 'required': True })
+    operational_state = NIStringField(type_kwargs={ 'required': True })
+    os = NIStringField()
+    os_version = NIStringField()
+    vendor = NIStringField()
+    backup = NIStringField()
+    managed_by = NIStringField()
+    ip_addresses = IPAddr()
+    description = NIStringField()
+    responsible_group = NIStringField()
+    support_group = NIStringField()
+    security_class = NIStringField()
+    security_comment = NIStringField()
+
+    def resolve_ip_addresses(self, info, **kwargs):
+        '''Manual resolver for the ip field'''
+        return self.get_node().data.get('ip_addresses', None)
+
     class NIMetaType:
         ni_type = 'Host'
         ni_metatype = NIMETA_LOGICAL
