@@ -20,6 +20,16 @@ class NIGroupMutationFactory(NIMutationFactory):
     class Meta:
         abstract = False
 
+class NIProcedureMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewProcedureForm
+        update_form    = EditProcedureForm
+        request_path   = '/'
+        graphql_type   = Procedure
+
+    class Meta:
+        abstract = False
+
 def process_works_for(request, form, nodehandler, relation_name):
     organization_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
     role_name = form.cleaned_data['role_name']
@@ -76,13 +86,17 @@ class DeleteRelationship(relay.ClientIDMutation):
         return DeleteRelationship(success=success, relation_id=relation_id)
 
 class NOCRootMutation(graphene.ObjectType):
-    create_group   = NIGroupMutationFactory.get_create_mutation().Field()
-    update_group   = NIGroupMutationFactory.get_update_mutation().Field()
-    delete_group   = NIGroupMutationFactory.get_delete_mutation().Field()
+    create_group        = NIGroupMutationFactory.get_create_mutation().Field()
+    update_group        = NIGroupMutationFactory.get_update_mutation().Field()
+    delete_group        = NIGroupMutationFactory.get_delete_mutation().Field()
+    
+    create_procedure    = NIProcedureMutationFactory.get_create_mutation().Field()
+    update_procedure    = NIProcedureMutationFactory.get_update_mutation().Field()
+    delete_procedure    = NIProcedureMutationFactory.get_delete_mutation().Field()
 
-    create_contact = NIContactMutationFactory.get_create_mutation().Field()
-    update_contact = NIContactMutationFactory.get_update_mutation().Field()
-    delete_contact = NIContactMutationFactory.get_delete_mutation().Field()
+    create_contact      = NIContactMutationFactory.get_create_mutation().Field()
+    update_contact      = NIContactMutationFactory.get_update_mutation().Field()
+    delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
 
     create_organization = NIOrganizationMutationFactory.get_create_mutation().Field()
     update_organization = NIOrganizationMutationFactory.get_update_mutation().Field()

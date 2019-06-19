@@ -17,6 +17,7 @@ NOCSCHEMA_TYPES = [
     Neo4jChoice,
     Group,
     Contact,
+    Procedure,
     NodeHandler,
 ]
 

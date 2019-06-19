@@ -48,6 +48,17 @@ class Group(NIObjectType):
         ni_type = 'Group'
         ni_metatype = 'logical'
 
+class Procedure(NIObjectType):
+    '''
+    The group type is used to group contacts
+    '''
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+
+    class NIMetaType:
+        ni_type = 'Procedure'
+        ni_metatype = 'logical'
+
 class Organization(NIObjectType):
     '''
     The group type is used to group contacts
