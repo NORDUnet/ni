@@ -665,9 +665,6 @@ def group_detail(request, handle_id):
                   {'node_handle': nh, 'node': node, 'location_path': location_path})
 
 def _contact_with_role_table(con):
-    from pprint import pformat
-    #raise Exception(pformat(vars(con)))
-
     contact_link = {
             'url': u'/contact/{}/'.format(con.handle_id),
             'name': u'{}'.format(con.node_name)
@@ -689,7 +686,8 @@ def role_detail(request):
         table.rows = [_contact_with_role_table(item) for item in contact_list]
         table.no_badges=True
 
-        return render(request, 'noclook/list/list_generic.html',
-                      {'table': table, 'name': 'Contacts', 'urls': urls})
+        return render(request, 'noclook/detail/role_detail.html',
+                      {'table': table, 'name': role_name, 'slug': 'role',
+                        'urls': urls})
     else:
         raise Http404("The role doesn't exists")
