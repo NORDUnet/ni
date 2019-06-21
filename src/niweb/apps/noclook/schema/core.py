@@ -7,7 +7,7 @@ import re
 
 from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 from django import forms
 from django.db.models import Q
 from django.forms.utils import ValidationError
@@ -399,6 +399,44 @@ class NIRelationType(graphene.ObjectType):
 
         return ret
 
+    @classmethod
+    def get_filter_input_fields(cls):
+        '''
+        Method used by build_filter_and_order for a Relatio type
+        '''
+        input_fields = {}
+        classes = NIRelationType, cls
+
+        ni_metatype    = getattr(cls, 'NIMetaType')
+        filter_include = getattr(ni_metatype, 'filter_include', None)
+        filter_exclude = getattr(ni_metatype, 'filter_exclude', None)
+
+        if filter_include and filter_exclude:
+            raise Exception("Only filter_include or filter_include metafields can be defined on {}".format(cls))
+
+        # add type NIRelationType and subclass
+        for clz in classes:
+            for name, field in clz.__dict__.items():
+                if field:
+                    add_field = False
+
+                    if isinstance(field, graphene.types.scalars.String) or\
+                        isinstance(field, graphene.types.scalars.Int):
+                        add_field = True
+
+                    if filter_include:
+                        if name not in filter_include:
+                            add_field = False
+                    elif filter_exclude:
+                        if name in filter_exclude:
+                            add_field = False
+
+                    if add_field:
+                        input_field = type(field)
+                        input_fields[name] = input_field
+
+        return input_fields
+
     class Meta:
         interfaces = (relay.Node, )
 
@@ -533,9 +571,13 @@ class NIObjectType(DjangoObjectType):
     @classmethod
     def get_filter_input_fields(cls):
         '''
-        Method used by build_filter_and_order
+        Method used by build_filter_and_order for a Node type
         '''
         input_fields = {}
+
+        ni_metatype    = getattr(cls, 'NIMetaType')
+        filter_include = getattr(ni_metatype, 'filter_include', None)
+        filter_exclude = getattr(ni_metatype, 'filter_exclude', None)
 
         for name, field in cls.__dict__.items():
             # string or string like fields
@@ -545,10 +587,21 @@ class NIObjectType(DjangoObjectType):
                     input_field = type(field)
                     input_fields[name] = input_field
                 elif isinstance(field, graphene.types.structures.List):
-                    continue
-                    #input_field = type(field)
-                    filter_attrib = { 'handle_id': graphene.Int() }
-                    binput_field = type('{}InputField'.format(name), (graphene.InputObjectType, ), filter_attrib)
+                    # create arguments for input_field
+                    field_of_type = field._of_type
+
+                    # recase to lower camelCase
+                    name_fot = field_of_type.__name__
+                    components = name_fot.split('_')
+                    name_fot = components[0] + ''.join(x.title() for x in components[1:])
+
+                    # get object attributes by their filter input fields
+                    # to build the filter field for the nested object
+                    filter_attrib = {}
+                    for a, b in field_of_type.get_filter_input_fields().items():
+                        filter_attrib[a] = b()
+
+                    binput_field = type('{}InputField'.format(name_fot), (graphene.InputObjectType, ), filter_attrib)
                     input_fields[name] = binput_field, field._of_type
 
         input_fields['handle_id'] = graphene.Int
@@ -574,16 +627,17 @@ class NIObjectType(DjangoObjectType):
             field_instance = None
             the_field = None
 
-            if hasattr(input_field, '__call__'):
+            # is a plain scalar field?
+            if not isinstance(input_field, Iterable):
                 field_instance = input_field()
                 the_field = input_field
+
+                # adding order attributes (only for scalar fields)
+                enum_options.append(['{}_ASC'.format(field_name), '{}_ASC'.format(field_name)])
+                enum_options.append(['{}_DESC'.format(field_name), '{}_DESC'.format(field_name)])
             else: # it must be a list other_node
                 field_instance = input_field[0]
-                the_field = input_field[1]
-
-            # adding order attributes
-            enum_options.append(['{}_ASC'.format(field_name), '{}_ASC'.format(field_name)])
-            enum_options.append(['{}_DESC'.format(field_name), '{}_DESC'.format(field_name)])
+                the_field = input_field[0]
 
             # adding filter attributes
             for suffix, suffix_attr in filter_array.items():
@@ -602,6 +656,9 @@ class NIObjectType(DjangoObjectType):
                             'field_type': field_instance,
                         }
                     else:
+                        #if isinstance(input_field, Iterable):
+                        #    the_field = field_instance
+
                         for wrapper_field in suffix_attr['wrapper_field']:
                             the_field = wrapper_field(the_field)
 
@@ -798,7 +855,7 @@ class NIRelationField(NIBasicField):
 
         if self.type_args != (NIRelationType,):
             rel_type = self.type_args[0]
-            nimeta = getattr(rel_type, 'NIMeta', None)
+            nimeta = getattr(rel_type, 'NIMetaType', None)
             if nimeta:
                 nimodel = getattr(nimeta, 'nimodel', None)
 
@@ -825,7 +882,6 @@ class NIRelationField(NIBasicField):
             return ret
 
         return resolve_node_relation
-
 ########## END RELATION FIELD
 
 ########## MUTATION FACTORY
@@ -866,14 +922,15 @@ class AbstractNIMutation(relay.ClientIDMutation):
                             if hasattr(django_form, 'Meta') and hasattr(django_form.Meta, 'exclude'):
                                 if field not in django_form.Meta.exclude:
                                     add_field = True
-                            elif include:
-                                if field_name in include:
-                                    add_field = True
-                            elif exclude:
-                                if field_name not in exclude:
-                                    add_field = True
                             else:
                                 add_field = True
+
+                            if include:
+                                if field_name not in include:
+                                    add_field = False
+                            elif exclude:
+                                if field_name in exclude:
+                                    add_field = False
 
                             if add_field:
                                 inner_fields[field_name] = graphene_field
@@ -1088,7 +1145,6 @@ class UpdateNIMutation(AbstractNIMutation):
 
     @classmethod
     def process_relations(cls, request, form, nodehandler):
-        from pprint import pformat
         nimetaclass = getattr(cls, 'NIMetaClass')
         relations_processors = getattr(nimetaclass, 'relations_processors', None)
 

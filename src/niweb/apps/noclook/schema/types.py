@@ -93,8 +93,9 @@ class Role(NIRelationType):
     def resolve_organization(self, info, **kwargs):
         return NodeHandle.objects.get(handle_id=self.end)
 
-    class NIMeta:
+    class NIMetaType:
         nimodel = RoleRelationship
+        filter_exclude = ('type')
 
 class Contact(NIObjectType):
     '''
