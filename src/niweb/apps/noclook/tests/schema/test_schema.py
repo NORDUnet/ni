@@ -21,7 +21,7 @@ class QueryTest(Neo4jGraphQLTest):
                 member_of_groups {
                   name
                 }
-                works_for{
+                roles{
                   name
                 }
               }
@@ -40,7 +40,7 @@ class QueryTest(Neo4jGraphQLTest):
                             ('member_of_groups',
                              [OrderedDict([('name',
                                 'group2')])]),
-                            ('works_for',
+                            ('roles',
                              [OrderedDict([('name',
                                 'role2')])])]))]),
                          OrderedDict([('node',
@@ -51,7 +51,7 @@ class QueryTest(Neo4jGraphQLTest):
                             ('member_of_groups',
                              [OrderedDict([('name',
                                 'group1')])]),
-                            ('works_for',
+                            ('roles',
                              [OrderedDict([('name',
                                 'role1')])])]))])])]))])
 

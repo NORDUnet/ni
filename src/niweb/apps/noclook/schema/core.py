@@ -142,37 +142,13 @@ def build_not_predicate(field, value, type):
     return ret
 
 def build_in_predicate(field, values, type): # a list predicate builder
-    # string quoting
-    filter_strings = False
-    if isinstance(type, graphene.String):
-        filter_strings = True
-
-    subpredicates = []
-    for value in values:
-        if filter_strings:
-            value = "'{}'".format(value)
-        subpredicates.append(
-            """n.{field} = {value}""".format(field=field, value=value)
-        )
-
-    ret = ' OR '.join(subpredicates)
+    in_string = '{}'.format(', '.join(["'{}'".format(str(x[0])) for x in values]))
+    ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
     return ret
 
 def build_not_in_predicate(field, values, type): # a list predicate builder
-    # string quoting
-    filter_strings = False
-    if isinstance(type, graphene.String):
-        filter_strings = True
-
-    subpredicates = []
-    for value in values:
-        if filter_strings:
-            value = "'{}'".format(value)
-        subpredicates.append(
-            """n.{field} <> {value}""".format(field=field, value=value)
-        )
-
-    ret = ' AND '.join(subpredicates)
+    in_string = '{}'.format(', '.join(["'{}'".format(str(x[0])) for x in values]))
+    ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
     return ret
 
 def build_lt_predicate(field, value, type):
@@ -720,6 +696,7 @@ class NIObjectType(DjangoObjectType):
                 nodes = None
                 if filter:
                     q = cls.build_filter_query(filter, type_name)
+                    #raise Exception(q)
                     nodes = nc.query_to_list(nc.graphdb.manager, q)
                     nodes = [ node['n'].properties for node in nodes]
                 else:
