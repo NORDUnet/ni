@@ -1,5 +1,9 @@
-{% extends "noclook/detail/detail.html" %}
+{% extends "noclook/list/list_generic.html" %}
 {% load table_tags %}
+
+{% block before_table %}
+    <h1><a href="{% url 'generic_list' slug %}">Role</a> {{name}}</h1>
+{% endblock %}
 
 {% block edit_link %}
     {% if user.is_staff %}
