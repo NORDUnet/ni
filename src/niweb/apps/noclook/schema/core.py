@@ -123,105 +123,205 @@ class RoleScalar(Scalar):
 ########## END CUSTOM SCALARS FOR FORM FIELD CONVERSION
 
 ########## CONNECTION FILTER BUILD FUNCTIONS
-def build_match_predicate(field, value, type):
-    # string quoting
-    if isinstance(type, graphene.String):
-        value = "'{}'".format(value)
+class classproperty(object):
+    def __init__(self, f):
+        self.f = f
+    def __get__(self, obj, owner):
+        return self.f(owner)
 
-    ret = """n.{field} = {value}""".format(field=field, value=value)
+class AbstractQueryBuilder:
+    @staticmethod
+    def build_match_predicate(field, value, type):
+        pass
 
-    return ret
+    @staticmethod
+    def build_not_predicate(field, value, type):
+        pass
 
-def build_not_predicate(field, value, type):
-    # string quoting
-    if isinstance(type, graphene.String):
-        value = "'{}'".format(value)
+    @staticmethod
+    def build_in_predicate(field, value, type):
+        pass
 
-    ret = """n.{field} <> {value}""".format(field=field, value=value)
+    @staticmethod
+    def build_not_in_predicate(field, value, type):
+        pass
 
-    return ret
+    @staticmethod
+    def build_lt_predicate(field, value, type):
+        pass
 
-def build_in_predicate(field, values, type): # a list predicate builder
-    in_string = '{}'.format(', '.join(["'{}'".format(str(x[0])) for x in values]))
-    ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
-    return ret
+    @staticmethod
+    def build_lte_predicate(field, value, type):
+        pass
 
-def build_not_in_predicate(field, values, type): # a list predicate builder
-    in_string = '{}'.format(', '.join(["'{}'".format(str(x[0])) for x in values]))
-    ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
-    return ret
+    @staticmethod
+    def build_gt_predicate(field, value, type):
+        pass
 
-def build_lt_predicate(field, value, type):
-    # string quoting
-    if isinstance(type, graphene.String):
-        value = "'{}'".format(value)
+    @staticmethod
+    def build_gte_predicate(field, value, type):
+        pass
 
-    ret = """n.{field} < {value}""".format(field=field, value=value)
+    @staticmethod
+    def build_contains_predicate(field, value, type):
+        pass
 
-    return ret
+    @staticmethod
+    def build_not_contains_predicate(field, value, type):
+        pass
 
-def build_lte_predicate(field, value, type):
-    # string quoting
-    if isinstance(type, graphene.String):
-        value = "'{}'".format(value)
+    @staticmethod
+    def build_starts_with_predicate(field, value, type):
+        pass
 
-    ret = """n.{field} <= {value}""".format(field=field, value=value)
+    @staticmethod
+    def build_not_starts_with_predicate(field, value, type):
+        pass
 
-    return ret
+    @staticmethod
+    def build_ends_with_predicate(field, value, type):
+        pass
 
-def build_gt_predicate(field, value, type):
-    # string quoting
-    if isinstance(type, graphene.String):
-        value = "'{}'".format(value)
+    @staticmethod
+    def build_not_ends_with_predicate(field, value, type):
+        pass
 
-    ret = """n.{field} > {value}""".format(field=field, value=value)
+    @classproperty
+    def filter_array(cls):
+        return {
+            '':       { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_match_predicate },
+            'not':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_not_predicate },
+            'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': cls.build_in_predicate },
+            'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': cls.build_not_in_predicate },
+            'lt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_lt_predicate },
+            'lte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_lte_predicate },
+            'gt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_gt_predicate },
+            'gte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_gte_predicate },
 
-    return ret
+            'contains':        { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_contains_predicate },
+            'not_contains':    { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_contains_predicate },
+            'starts_with':     { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_starts_with_predicate },
+            'not_starts_with': { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_starts_with_predicate },
+            'ends_with':       { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_ends_with_predicate },
+            'not_ends_with':   { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_ends_with_predicate },
+        }
 
-def build_gte_predicate(field, value, type):
-    # string quoting
-    if isinstance(type, graphene.String):
-        value = "'{}'".format(value)
+class ScalarQueryBuilder(AbstractQueryBuilder):
+    @staticmethod
+    def build_match_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
 
-    ret = """n.{field} >= {value}""".format(field=field, value=value)
+        ret = """n.{field} = {value}""".format(field=field, value=value)
 
-    return ret
+        return ret
 
-def build_contains_predicate(field, value, type):
-    return """n.{field} CONTAINS '{value}'""".format(field=field, value=value)
+    @staticmethod
+    def build_not_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
 
-def build_not_contains_predicate(field, value, type):
-    return """NOT n.{field} CONTAINS '{value}'""".format(field=field, value=value)
+        ret = """n.{field} <> {value}""".format(field=field, value=value)
 
-def build_starts_with_predicate(field, value, type):
-    return """n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
+        return ret
 
-def build_not_starts_with_predicate(field, value, type):
-    return """NOT n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
+    @staticmethod
+    def build_in_predicate(field, values, type): # a list predicate builder
+        #raise Exception(values)
+        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
+        ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        return ret
 
-def build_ends_with_predicate(field, value, type):
-    return """n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
+    @staticmethod
+    def build_not_in_predicate(field, values, type): # a list predicate builder
+        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
+        ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        return ret
 
-def build_not_ends_with_predicate(field, value, type):
-    return """NOT n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
+    @staticmethod
+    def build_lt_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
 
-filter_array = {
-    '':       { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_match_predicate },
-    'not':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_not_predicate },
-    'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': build_in_predicate },
-    'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': build_not_in_predicate },
-    'lt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_lt_predicate },
-    'lte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_lte_predicate },
-    'gt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_gt_predicate },
-    'gte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': build_gte_predicate },
+        ret = """n.{field} < {value}""".format(field=field, value=value)
 
-    'contains':        { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_contains_predicate },
-    'not_contains':    { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_not_contains_predicate },
-    'starts_with':     { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_starts_with_predicate },
-    'not_starts_with': { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_not_starts_with_predicate },
-    'ends_with':       { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_ends_with_predicate },
-    'not_ends_with':   { 'wrapper_field': None, 'only_strings': True, 'qpredicate': build_not_ends_with_predicate },
-}
+        return ret
+
+    @staticmethod
+    def build_lte_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} <= {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_gt_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} > {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_gte_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} >= {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_contains_predicate(field, value, type):
+        return """n.{field} CONTAINS '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_not_contains_predicate(field, value, type):
+        return """NOT n.{field} CONTAINS '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_starts_with_predicate(field, value, type):
+        return """n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_not_starts_with_predicate(field, value, type):
+        return """NOT n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_ends_with_predicate(field, value, type):
+        return """n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_not_ends_with_predicate(field, value, type):
+        return """NOT n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
+
+class InputFieldQueryBuilder(AbstractQueryBuilder):
+    @staticmethod
+    def build_in_predicate(field, values, type): # a list predicate builder
+        subqueries = []
+        for element in values:
+            for name, field in element.__dict__:
+                pass
+
+        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
+        ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        return ret
+
+    @staticmethod
+    def build_not_in_predicate(field, values, type): # a list predicate builder
+        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
+        ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        return ret
+
 ########## END CONNECTION FILTER BUILD FUNCTIONS
 
 ########## KEYVALUE TYPES
@@ -612,18 +712,19 @@ class NIObjectType(DjangoObjectType):
                 enum_options.append(['{}_ASC'.format(field_name), '{}_ASC'.format(field_name)])
                 enum_options.append(['{}_DESC'.format(field_name), '{}_DESC'.format(field_name)])
             else: # it must be a list other_node
-                field_instance = input_field[0]
+                field_instance = input_field[0]()
                 the_field = input_field[0]
 
             # adding filter attributes
-            for suffix, suffix_attr in filter_array.items():
+            for suffix, suffix_attr in AbstractQueryBuilder.filter_array.items():
                 # filter field naming
                 if not suffix == '':
                     suffix = '_{}'.format(suffix)
 
                 fmt_filter_field = '{}{}'.format(field_name, suffix)
 
-                if not suffix_attr['only_strings'] or isinstance(field_instance, graphene.String):
+                if not suffix_attr['only_strings'] \
+                    or isinstance(field_instance, graphene.String):
                     if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
                         filter_attrib[fmt_filter_field] = field_instance
                         cls.filter_names[fmt_filter_field]  = {
@@ -632,13 +733,11 @@ class NIObjectType(DjangoObjectType):
                             'field_type': field_instance,
                         }
                     else:
-                        #if isinstance(input_field, Iterable):
-                        #    the_field = field_instance
-
+                        wrapped_field = the_field
                         for wrapper_field in suffix_attr['wrapper_field']:
-                            the_field = wrapper_field(the_field)
+                            wrapped_field = wrapper_field(wrapped_field)
 
-                        filter_attrib[fmt_filter_field] = the_field
+                        filter_attrib[fmt_filter_field] = wrapped_field
                         cls.filter_names[fmt_filter_field]  = {
                             'field' : field_name,
                             'suffix': suffix,
@@ -696,7 +795,6 @@ class NIObjectType(DjangoObjectType):
                 nodes = None
                 if filter:
                     q = cls.build_filter_query(filter, type_name)
-                    #raise Exception(q)
                     nodes = nc.query_to_list(nc.graphdb.manager, q)
                     nodes = [ node['n'].properties for node in nodes]
                 else:
@@ -740,6 +838,9 @@ class NIObjectType(DjangoObjectType):
         for and_filter in and_filters:
             # iterate though values of a nested filter
             for filter_key, filter_value in and_filter.items():
+                # choose filter array for query building
+                filter_array = ScalarQueryBuilder.filter_array
+
                 filter_field = cls.filter_names[filter_key]
                 field  = filter_field['field']
                 suffix = filter_field['suffix']
@@ -765,6 +866,9 @@ class NIObjectType(DjangoObjectType):
         for or_filter in or_filters:
             # iterate though values of a nested filter
             for filter_key, filter_value in or_filter.items():
+                # choose filter array for query building
+                filter_array = ScalarQueryBuilder.filter_array
+
                 filter_field = cls.filter_names[filter_key]
                 field  = filter_field['field']
                 suffix = filter_field['suffix']
@@ -800,11 +904,22 @@ class NIObjectType(DjangoObjectType):
         if build_query != '':
             build_query = 'WHERE {}'.format(build_query)
 
+        # additional clauses
+        match_additional_clauses = []
+
+        # remove redundant
+        match_additional_clauses = list(set(match_additional_clauses))
+        match_additional = ''.join(match_additional_clauses)
+        optional = ''
+        if match_additional:
+            optional = "OPTIONAL "
+
         q = """
-            MATCH (n:{label})
+            {optional}MATCH (n:{label}){match_additional}
             {build_query}
             RETURN distinct n
-            """.format(label=nodetype, build_query=build_query)
+            """.format(optional=optional, label=nodetype, match_additional="",
+                        build_query=build_query)
 
         return q
 
