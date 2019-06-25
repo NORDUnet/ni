@@ -305,8 +305,12 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
         return """NOT n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
 
 class InputFieldQueryBuilder(AbstractQueryBuilder):
-    @staticmethod
-    def build_in_predicate(field, values, type): # a list predicate builder
+    @classmethod
+    def build_match_predicate(cls, field, value, type):
+        pass
+
+    @classmethod
+    def build_in_predicate(cls, field, values, type): # a list predicate builder
         subqueries = []
         for element in values:
             for name, field in element.__dict__:
@@ -316,8 +320,8 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
         ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
         return ret
 
-    @staticmethod
-    def build_not_in_predicate(field, values, type): # a list predicate builder
+    @classmethod
+    def build_not_in_predicate(cls, field, values, type): # a list predicate builder
         in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
         ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
         return ret
@@ -512,6 +516,10 @@ class NIRelationType(graphene.ObjectType):
                         input_fields[name] = input_field
 
         return input_fields
+
+    @classproperty
+    def match_additional_clause(cls):
+        return "[r{}:{}]".format('{}',cls)
 
     class Meta:
         interfaces = (relay.Node, )
@@ -839,7 +847,10 @@ class NIObjectType(DjangoObjectType):
             # iterate though values of a nested filter
             for filter_key, filter_value in and_filter.items():
                 # choose filter array for query building
-                filter_array = ScalarQueryBuilder.filter_array
+                if isinstance(filter_value, int) or isinstance(filter_value, str):
+                    filter_array = ScalarQueryBuilder.filter_array
+                else:
+                    filter_array = InputFieldQueryBuilder.filter_array
 
                 filter_field = cls.filter_names[filter_key]
                 field  = filter_field['field']
@@ -909,19 +920,20 @@ class NIObjectType(DjangoObjectType):
 
         # remove redundant
         match_additional_clauses = list(set(match_additional_clauses))
-        match_additional = ''.join(match_additional_clauses)
-        optional = ''
-        if match_additional:
-            optional = "OPTIONAL "
+        match_additional = ', '.join(match_additional_clauses)
 
         q = """
-            {optional}MATCH (n:{label}){match_additional}
+            MATCH (n:{label}){match_additional}
             {build_query}
             RETURN distinct n
-            """.format(optional=optional, label=nodetype, match_additional="",
+            """.format(label=nodetype, match_additional="",
                         build_query=build_query)
 
         return q
+
+    @classproperty
+    def match_additional_clause(cls):
+        return "[m{}:{}]".format('{}',cls.NIMetaType.ni_type)
 
     class Meta:
         model = NodeHandle
@@ -1444,33 +1456,35 @@ class NOCAutoQuery(graphene.ObjectType):
             assert ni_metatype, '{} has not set its ni_metatype attribute'.format(cls.__name__)
 
             node_type     = NodeType.objects.filter(type=ni_type).first()
-            type_name     = node_type.type
-            type_slug     = node_type.slug
 
-            # add connection attribute
-            field_name    = '{}s'.format(type_slug)
-            resolver_name = 'resolve_{}'.format(field_name)
+            if node_type:
+                type_name     = node_type.type
+                type_slug     = node_type.slug
 
-            connection_input, connection_order = graphql_type.build_filter_and_order()
-            connection_meta = type('Meta', (object, ), dict(node=graphql_type))
-            connection_class = type(
-                '{}Connection'.format(graphql_type.__name__),
-                (graphene.relay.Connection,),
-                #(connection_type,),
-                dict(Meta=connection_meta)
-            )
+                # add connection attribute
+                field_name    = '{}s'.format(type_slug)
+                resolver_name = 'resolve_{}'.format(field_name)
 
-            setattr(cls, field_name, graphene.relay.ConnectionField(
-                connection_class,
-                filter=graphene.Argument(connection_input),
-                orderBy=graphene.Argument(connection_order),
-            ))
-            setattr(cls, resolver_name, graphql_type.get_connection_resolver())
+                connection_input, connection_order = graphql_type.build_filter_and_order()
+                connection_meta = type('Meta', (object, ), dict(node=graphql_type))
+                connection_class = type(
+                    '{}Connection'.format(graphql_type.__name__),
+                    (graphene.relay.Connection,),
+                    #(connection_type,),
+                    dict(Meta=connection_meta)
+                )
 
-            ## build field and resolver byid
-            field_name    = 'get{}ById'.format(type_name)
-            resolver_name = 'resolve_{}'.format(field_name)
+                setattr(cls, field_name, graphene.relay.ConnectionField(
+                    connection_class,
+                    filter=graphene.Argument(connection_input),
+                    orderBy=graphene.Argument(connection_order),
+                ))
+                setattr(cls, resolver_name, graphql_type.get_connection_resolver())
 
-            setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
-            setattr(cls, resolver_name, graphql_type.get_byid_resolver())
+                ## build field and resolver byid
+                field_name    = 'get{}ById'.format(type_name)
+                resolver_name = 'resolve_{}'.format(field_name)
+
+                setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
+                setattr(cls, resolver_name, graphql_type.get_byid_resolver())
 ########## END EXCEPTION AND AUTOQUERY
