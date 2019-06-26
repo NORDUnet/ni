@@ -2,16 +2,17 @@
 __author__ = 'ffuentes'
 
 from collections import OrderedDict
-from . import Neo4jGraphQLTest
 from niweb.schema import schema
+from pprint import pformat
+from . import Neo4jGraphQLTest
 
 class QueryTest(Neo4jGraphQLTest):
-    def test_role(self):
+    def test_group(self):
         ## create ##
         query = '''
-        mutation create_test_role {
-          create_role(input: {name: "New test role"}){
-            role {
+        mutation create_test_group {
+          create_group(input: {name: "New test group"}){
+            group {
               handle_id
               name
             }
@@ -21,12 +22,12 @@ class QueryTest(Neo4jGraphQLTest):
         '''
 
         expected = OrderedDict([
-            ('create_role',
+            ('create_group',
                 OrderedDict([
-                    ('role',
+                    ('group',
                         OrderedDict([
-                            ('handle_id', '9'),
-                            ('name', 'New test role')
+                            ('handle_id', '17'),
+                            ('name', 'New test group')
                         ])),
                     ('clientMutationId', None)
                 ])
@@ -39,11 +40,10 @@ class QueryTest(Neo4jGraphQLTest):
         assert result.data == expected
 
         ## update ##
-        role_handle_id = int(result.data['create_role']['role']['handle_id'])
         query = """
-        mutation update_test_role {
-          update_role(input: {handle_id: 9, name: "A test role"}){
-            role {
+        mutation update_test_group {
+          update_group(input: {handle_id: 17, name: "A test group"}){
+            group {
               handle_id
               name
             }
@@ -53,12 +53,12 @@ class QueryTest(Neo4jGraphQLTest):
         """
 
         expected = OrderedDict([
-            ('update_role',
+            ('update_group',
                 OrderedDict([
-                    ('role',
+                    ('group',
                         OrderedDict([
-                            ('handle_id', '9'),
-                            ('name', 'A test role')
+                            ('handle_id', '17'),
+                            ('name', 'A test group')
                         ])),
                     ('clientMutationId', None)
                 ])
@@ -66,28 +66,27 @@ class QueryTest(Neo4jGraphQLTest):
         ])
 
         result = schema.execute(query, context=self.context)
+
         assert not result.errors
         assert result.data == expected
 
         ## delete ##
         query = """
-        mutation delete_test_role {
-          delete_role(input: {handle_id: 9}){
-            role{
-              handle_id
-            }
+        mutation delete_test_group {
+          delete_group(input: {handle_id: 9}){
+            success
           }
         }
         """
 
         expected = OrderedDict([
-            ('delete_role',
+            ('delete_group',
                 OrderedDict([
-                    ('role', None),
+                    ('success', True),
                 ])
             )
         ])
 
         result = schema.execute(query, context=self.context)
-        assert not result.errors
+        assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected

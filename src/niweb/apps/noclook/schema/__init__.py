@@ -14,10 +14,12 @@ NOCSCHEMA_TYPES = [
     User,
     Dropdown,
     Choice,
-    Role,
+    Neo4jChoice,
+    NodeHandler,
     Group,
     Contact,
-    NodeHandler,
+    Procedure,
+    Host,
 ]
 
 NOCSCHEMA_QUERIES = [

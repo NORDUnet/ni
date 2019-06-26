@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth.decorators import login_required
+from django.http import Http404
 from django.shortcuts import render, get_object_or_404
 import ipaddress
 import json
@@ -7,6 +8,7 @@ import logging
 
 from apps.noclook.models import NodeHandle
 from apps.noclook import helpers
+from apps.noclook.views.helpers import Table, TableRow
 import norduniclient as nc
 
 logger = logging.getLogger(__name__)
@@ -498,7 +500,7 @@ def router_detail(request, handle_id):
     hw_name = "{}-hardware.json".format(router.data.get('name', 'router'))
     hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
     if hw_attachment:
-        try: 
+        try:
             hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
         except IOError as e:
             logger.warning('Missing hardware modules json for router %s(%s). Error was: %s', nh.node_name, nh.handle_id, e)
@@ -605,7 +607,7 @@ def switch_detail(request, handle_id):
     hw_name = "{}-hardware.json".format(switch.data.get('name', 'switch'))
     hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
     if hw_attachment:
-        try: 
+        try:
             hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
         except IOError as e:
             logger.warning('Missing hardware modules json for router %s(%s). Error was: %s', nh.node_name, nh.handle_id, e)
@@ -642,17 +644,6 @@ def contact_detail(request, handle_id):
 
 
 @login_required
-def role_detail(request, handle_id):
-    nh = get_object_or_404(NodeHandle, pk=handle_id)
-    # Get node from neo4j-database
-    node = nh.get_node()
-    # Get location
-    location_path = node.get_location_path()
-    return render(request, 'noclook/detail/role_detail.html',
-                  {'node_handle': nh, 'node': node, 'location_path': location_path})
-
-
-@login_required
 def procedure_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     # Get node from neo4j-database
@@ -672,3 +663,33 @@ def group_detail(request, handle_id):
     location_path = node.get_location_path()
     return render(request, 'noclook/detail/group_detail.html',
                   {'node_handle': nh, 'node': node, 'location_path': location_path})
+
+def _contact_with_role_table(con):
+    from pprint import pformat
+    #raise Exception(pformat(vars(con)))
+
+    contact_link = {
+            'url': u'/contact/{}/'.format(con.handle_id),
+            'name': u'{}'.format(con.node_name)
+            }
+
+    row = TableRow(contact_link)
+    return row
+
+@login_required
+def role_detail(request):
+    role_name = request.GET.get('name', None)
+
+    if role_name:
+        con_list = nc.models.RoleRelationship.get_contacts_with_role(role_name)
+        contact_list = [ NodeHandle.objects.get(handle_id=x.data['handle_id']) for x in con_list ]
+        urls = helpers.get_node_urls(contact_list)
+
+        table = Table('Name')
+        table.rows = [_contact_with_role_table(item) for item in contact_list]
+        table.no_badges=True
+
+        return render(request, 'noclook/list/list_generic.html',
+                      {'table': table, 'name': 'Contacts', 'urls': urls})
+    else:
+        raise Http404("The role doesn't exists")

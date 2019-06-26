@@ -117,7 +117,7 @@ def form_update_node(user, handle_id, form, property_keys=None):
     meta_fields = ['relationship_location', 'relationship_end_a', 'relationship_end_b', 'relationship_parent',
                    'relationship_provider', 'relationship_end_user', 'relationship_customer', 'relationship_depends_on',
                    'relationship_user', 'relationship_owner', 'relationship_located_in', 'relationship_ports',
-                   'services_checked', 'relationship_responsible_for', 'relationship_connected_to']
+                   'services_checked', 'relationship_responsible_for', 'relationship_connected_to', 'role_name']
     nh, node = get_nh_node(handle_id)
     if not property_keys:
         property_keys = []
@@ -912,17 +912,24 @@ def set_uses_a(user, node, procedure_id):
         activitylog.create_relationship(user, relationship)
     return relationship, created
 
-def set_works_for(user, node, organization_id):
+def set_works_for(user, node, organization_id, role_name):
     """
     :param user: Django user
     :param node: norduniclient model
     :param organization_id: unique id
+    :param role_name: string for role name
     :return: norduniclient model, boolean
     """
-    result = node.add_organization(organization_id)
-    relationship_id = result.get('Works_for')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
-    created = result.get('Works_for')[0].get('created')
+    from pprint import pprint
+    contact_id = node.handle_id
+    relationship = nc.models.RoleRelationship.link_contact_organization(contact_id, organization_id, role_name)
+
+    if not relationship:
+        relationship = RoleRelationship()
+        relationship.load_from_nodes(contact_id, organization_id)
+
+    node = node.reload()
+    created = node.outgoing.get('Works_for')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
     return relationship, created
@@ -942,20 +949,6 @@ def set_member_of(user, node, group_id):
         activitylog.create_relationship(user, relationship)
     return relationship, created
 
-def set_is(user, node, role_id):
-    """
-    :param user: Django user
-    :param node: norduniclient model
-    :param role_id: unique id
-    :return: norduniclient model, boolean
-    """
-    result = node.add_role(role_id)
-    relationship_id = result.get('Is')[0].get('relationship_id')
-    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
-    created = result.get('Is')[0].get('created')
-    if created:
-        activitylog.create_relationship(user, relationship)
-    return relationship, created
 
 def set_of_member(user, node, contact_id):
     """
@@ -968,82 +961,71 @@ def set_of_member(user, node, contact_id):
     relationship_id = result.get('Member_of')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Member_of')[0].get('created')
+
     if created:
         activitylog.create_relationship(user, relationship)
+
     return relationship, created
 
 
-def link_contact_role_for_organization(user, node, contact_handle_id, role):
+def link_contact_role_for_organization(user, node, contact_handle_id, role_name):
     """
     :param user: Django user
-    :param node: norduniclient model
+    :param node: norduniclient organization model
     :param contact_handle_id: contact's handle_id
-    :return: contact, role: Only the role is created if it don't exists
+    :param role_name: role name
+    :return: contact
     """
-    role_type = NodeType.objects.filter(type='Role').first()
-
     if six.PY2:
-        role = role.encode('utf-8')
+        role_name = role_name.encode('utf-8')
 
-    # delete previous relationship first
-    node.remove_role_from_contacts(role)
+    nc.models.RoleRelationship.remove_role_in_organization(
+        node.handle_id,
+        role_name
+    )
+
+    relationship = nc.models.RoleRelationship.link_contact_organization(
+        contact_handle_id,
+        node.handle_id,
+        role_name
+    )
+
+    if not relationship:
+        relationship = RoleRelationship()
+        relationship.load_from_nodes(contact_id, organization_id)
+
+    node = node.reload()
+    created = node.incoming.get('Works_for')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
 
     contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
-    role, created = NodeHandle.objects.get_or_create(
-        node_name=role,
-        node_type=role_type,
-        node_meta_type='Logical',
-        creator=user,
-        modifier=user,
-    )
-
-    if created:
-        activitylog.create_node(user, contact)
-
-    result_role = contact.get_node().add_role(role.handle_id)
-    result_organization = contact.get_node().add_organization(node.handle_id)
-
-    # Get relationship for contact-role
-    relationship_role_id = result_role.get('Is')[0].get('relationship_id')
-    relationship_role = nc.get_relationship_model(nc.graphdb.manager, relationship_role_id)
-
-    # Get relationship for contact-organization
-    relationship_organization_id = result_organization.get('Works_for')[0].get('relationship_id')
-    relationship_organization = nc.get_relationship_model(nc.graphdb.manager, relationship_organization_id)
-
-    created_relationship_role = result_role.get('Is')[0].get('created')
-    created_relationship_organization = result_organization.get('Works_for')[0].get('created')
-
-    # Log relationships if they have been created
-    if created_relationship_role:
-        activitylog.create_relationship(user, relationship_role)
-
-    if created_relationship_organization:
-        activitylog.create_relationship(user, relationship_organization)
-
-    return contact, role
+    return contact, relationship
 
 
-def create_contact_role_for_organization(user, node, contact_name, role):
+def create_contact_role_for_organization(user, node, contact_name, role_name):
     """
     :param user: Django user
-    :param node: norduniclient model
+    :param node: norduniclient organization model
     :param contact_name: full name of the contact
     :return: contact, role: New objects if they're not present in the db
     """
     contact_type = NodeType.objects.get(type='Contact')
-    role_type = NodeType.objects.get(type='Role')
 
+    # convert string if necesary
     if six.PY2:
         contact_name = contact_name.encode('utf-8')
-        role = role.encode('utf-8')
+        role_name = role_name.encode('utf-8')
 
-    # delete previous relationship first
-    node.remove_role_from_contacts(role)
+    nc.models.RoleRelationship.remove_role_in_organization(
+        node.handle_id,
+        role_name
+    )
 
     first_name, last_name = contact_name.split(' ')
 
+    # create or get contact
     contact, created_contact = NodeHandle.objects.get_or_create(
         node_name=contact_name,
         node_type=contact_type,
@@ -1057,39 +1039,27 @@ def create_contact_role_for_organization(user, node, contact_name, role):
         contact.get_node().add_property('first_name', first_name)
         contact.get_node().add_property('last_name', last_name)
 
-    role, created_role = NodeHandle.objects.get_or_create(
-        node_name=role,
-        node_type=role_type,
-        node_meta_type='Logical',
-        creator=user,
-        modifier=user,
+    relationship = nc.models.RoleRelationship.link_contact_organization(
+        contact.handle_id,
+        node.handle_id,
+        role_name
     )
 
-    if created_role:
-        activitylog.create_node(user, role)
+    if not relationship:
+        relationship = RoleRelationship()
+        relationship.load_from_nodes(contact_id, organization_id)
 
-    result_role = contact.get_node().add_role(role.handle_id)
-    result_organization = contact.get_node().add_organization(node.handle_id)
+    node = node.reload()
 
-    # Get relationship for contact-role
-    relationship_role_id = result_role.get('Is')[0].get('relationship_id')
-    relationship_role = nc.get_relationship_model(nc.graphdb.manager, relationship_role_id)
+    created = False
+    for relation in node.relationships.get('Works_for'):
+        if relation['node'].handle_id == contact.handle_id:
+            created = relation.get('created')
 
-    # Get relationship for contact-organization
-    relationship_organization_id = result_organization.get('Works_for')[0].get('relationship_id')
-    relationship_organization = nc.get_relationship_model(nc.graphdb.manager, relationship_organization_id)
+    if created:
+        activitylog.create_relationship(user, relationship)
 
-    created_relationship_role = result_role.get('Is')[0].get('created')
-    created_relationship_organization = result_organization.get('Works_for')[0].get('created')
-
-    # Log relationships if they have been created
-    if created_relationship_role:
-        activitylog.create_relationship(user, relationship_role)
-
-    if created_relationship_organization:
-        activitylog.create_relationship(user, relationship_organization)
-
-    return contact, role
+    return contact, relationship
 
 
 def get_contact_for_orgrole(organization_id, role_name):
@@ -1098,8 +1068,8 @@ def get_contact_for_orgrole(organization_id, role_name):
     :param role_name: Role name
     """
     q = """
-    MATCH (r:Role)<-[:Is]-(c:Contact)-[:Works_for]->(o:Organization)
-    WHERE o.handle_id = {organization_id} AND r.name = "{role_name}"
+    MATCH (c:Contact)-[:Works_for {{ name: '{role_name}'}}]->(o:Organization)
+    WHERE o.handle_id = {organization_id}
     RETURN c.handle_id AS handle_id
     """.format(organization_id=organization_id, role_name=role_name)
     d = nc.query_to_dict(nc.graphdb.manager, q)

@@ -7,25 +7,340 @@ import re
 
 from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 from django import forms
 from django.db.models import Q
+from django.forms.utils import ValidationError
 from django.test import RequestFactory
 from graphene import relay
+from graphene.types import Scalar
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
 from graphql import GraphQLError
+from io import StringIO
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
 from ..models import NodeType, NodeHandle
+
+########## CUSTOM SCALARS FOR FORM FIELD CONVERSION
+class IPAddr(Scalar):
+    '''IPAddr scalar to be matched with the IPAddrField in a django form'''
+    @staticmethod
+    def serialize(value):
+        # this would be to_python method
+        if isinstance(value, list):
+            return value
+        else:
+            return none
+
+    @staticmethod
+    def parse_value(value):
+        # and this would be the clean method
+        result = []
+        for line in StringIO(value):
+            ip = line.replace('\n','').strip()
+            if ip:
+                try:
+                    ipaddress.ip_address(ip)
+                    result.append(ip)
+                except ValueError as e:
+                    errors.append(str(e))
+        if errors:
+            raise ValidationError(errors)
+        return result
+
+    parse_literal = parse_value
+
+
+class JSON(Scalar):
+    '''JSON scalar to be matched with the JSONField in a django form'''
+    @staticmethod
+    def serialize(value):
+        if value:
+            value = json.dumps(value)
+
+        return value
+
+    @staticmethod
+    def parse_value(value):
+        try:
+            if value:
+                value = json.loads(value)
+        except ValueError:
+            raise ValidationError(self.error_messages['invalid'], code='invalid')
+        return value
+
+class DateTime(Scalar):
+    # http://docs.graphene-python.org/en/latest/types/scalars/#custom-scalars
+    '''DateTime Scalar Description'''
+
+    @staticmethod
+    def serialize(dt):
+        return dt.isoformat()
+
+    @staticmethod
+    def parse_literal(node):
+        if isinstance(node, ast.StringValue):
+            return datetime.datetime.strptime(
+                node.value, "%Y-%m-%dT%H:%M:%S.%f")
+
+    @staticmethod
+    def parse_value(value):
+        return datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f")
+
+class RoleScalar(Scalar):
+    '''This is a POC scalar that may be used in the contact mutation input'''
+    @staticmethod
+    def serialize(value):
+        roles_dict = get_roles_dropdown()
+
+        if value in roles_dict.keys():
+            return roles_dict[value]
+        else:
+            raise Exception('The selected role ("{}") doesn\'t exists'
+                                .format(value))
+
+    @staticmethod
+    def parse_value(value):
+        roles_dict = get_roles_dropdown()
+
+        key = value.replace(' ', '_').lower()
+        if key in roles_dict.keys():
+            return roles_dict[key]
+        else:
+            return value
+
+    @staticmethod
+    def get_roles_dropdown():
+        ret = {}
+        roles = nc.models.RoleRelationship.get_all_roles()
+        for role in roles:
+            name = role.replace(' ', '_').lower()
+            ret[name] = role
+
+        return ret
+
+########## END CUSTOM SCALARS FOR FORM FIELD CONVERSION
+
+########## CONNECTION FILTER BUILD FUNCTIONS
+class classproperty(object):
+    def __init__(self, f):
+        self.f = f
+    def __get__(self, obj, owner):
+        return self.f(owner)
+
+class AbstractQueryBuilder:
+    @staticmethod
+    def build_match_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_not_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_in_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_not_in_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_lt_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_lte_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_gt_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_gte_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_contains_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_not_contains_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_starts_with_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_not_starts_with_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_ends_with_predicate(field, value, type):
+        pass
+
+    @staticmethod
+    def build_not_ends_with_predicate(field, value, type):
+        pass
+
+    @classproperty
+    def filter_array(cls):
+        return {
+            '':       { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_match_predicate },
+            'not':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_not_predicate },
+            'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': cls.build_in_predicate },
+            'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': cls.build_not_in_predicate },
+            'lt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_lt_predicate },
+            'lte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_lte_predicate },
+            'gt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_gt_predicate },
+            'gte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_gte_predicate },
+
+            'contains':        { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_contains_predicate },
+            'not_contains':    { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_contains_predicate },
+            'starts_with':     { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_starts_with_predicate },
+            'not_starts_with': { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_starts_with_predicate },
+            'ends_with':       { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_ends_with_predicate },
+            'not_ends_with':   { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_ends_with_predicate },
+        }
+
+class ScalarQueryBuilder(AbstractQueryBuilder):
+    @staticmethod
+    def build_match_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} = {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_not_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} <> {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_in_predicate(field, values, type): # a list predicate builder
+        #raise Exception(values)
+        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
+        ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        return ret
+
+    @staticmethod
+    def build_not_in_predicate(field, values, type): # a list predicate builder
+        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
+        ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        return ret
+
+    @staticmethod
+    def build_lt_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} < {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_lte_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} <= {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_gt_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} > {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_gte_predicate(field, value, type):
+        # string quoting
+        if isinstance(type, graphene.String):
+            value = "'{}'".format(value)
+
+        ret = """n.{field} >= {value}""".format(field=field, value=value)
+
+        return ret
+
+    @staticmethod
+    def build_contains_predicate(field, value, type):
+        return """n.{field} CONTAINS '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_not_contains_predicate(field, value, type):
+        return """NOT n.{field} CONTAINS '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_starts_with_predicate(field, value, type):
+        return """n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_not_starts_with_predicate(field, value, type):
+        return """NOT n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_ends_with_predicate(field, value, type):
+        return """n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
+
+    @staticmethod
+    def build_not_ends_with_predicate(field, value, type):
+        return """NOT n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
+
+class InputFieldQueryBuilder(AbstractQueryBuilder):
+    @classmethod
+    def build_match_predicate(cls, field, value, type):
+        pass
+
+    @classmethod
+    def build_in_predicate(cls, field, values, type): # a list predicate builder
+        subqueries = []
+        for element in values:
+            for name, field in element.__dict__:
+                pass
+
+        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
+        ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        return ret
+
+    @classmethod
+    def build_not_in_predicate(cls, field, values, type): # a list predicate builder
+        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
+        ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        return ret
+
+########## END CONNECTION FILTER BUILD FUNCTIONS
+
+########## KEYVALUE TYPES
+class KeyValue(graphene.Interface):
+    name = graphene.String(required=True)
+    value = graphene.String(required=True)
 
 class DictEntryType(graphene.ObjectType):
     '''
     This type represents an key value pair in a dictionary for the data
     dict of the norduniclient nodes
     '''
-    key = graphene.String(required=True)
-    value = graphene.String(required=True)
+
+    class Meta:
+        interfaces = (KeyValue, )
 
 def resolve_nidata(self, info, **kwargs):
     '''
@@ -35,10 +350,13 @@ def resolve_nidata(self, info, **kwargs):
 
     alldata = self.get_node().data
     for key, value in alldata.items():
-        ret.append(DictEntryType(key=key, value=value))
+        ret.append(DictEntryType(name=key, value=value))
 
     return ret
 
+########## END KEYVALUE TYPES
+
+########## BASIC NI FIELDS
 class NIBasicField():
     '''
     Super class of the type fields
@@ -58,10 +376,10 @@ class NIBasicField():
                     field_name, self.__class__
                 )
             )
-        def resolve_node_string(self, info, **kwargs):
+        def resolve_node_value(self, info, **kwargs):
             return self.get_node().data.get(field_name)
 
-        return resolve_node_string
+        return resolve_node_value
 
     def get_field_type(self):
         return self.field_type
@@ -119,6 +437,101 @@ class NIListField(NIBasicField):
 
         return resolve_relationship_list
 
+########## END BASIC NI FIELDS
+
+
+########## RELATION AND NODE TYPES
+class NIRelationType(graphene.ObjectType):
+    '''
+    This class represents a relationship and its properties
+    '''
+    @classmethod
+    def __init_subclass_with_meta__(
+        cls,
+        **options,
+    ):
+        super(NIRelationType, cls).__init_subclass_with_meta__(
+            **options
+        )
+
+    relation_id = graphene.Int(required=True)
+    type = graphene.String(required=True) # this may be set to an Enum
+    start = graphene.Field(graphene.Int, required=True)
+    end = graphene.Field(graphene.Int, required=True)
+    nidata = graphene.List(DictEntryType)
+
+    def resolve_relation_id(self, info, **kwargs):
+        self.relation_id = self.id
+        self.id = None
+
+        return self.relation_id
+
+    def resolve_nidata(self, info, **kwargs):
+        '''
+        Is just the same than old resolve_nidata, but it doesn't resolve the node
+        '''
+        ret = []
+
+        alldata = self.data
+        for key, value in alldata.items():
+            if key and value:
+                ret.append(DictEntryType(name=key, value=value))
+
+        return ret
+
+    @classmethod
+    def get_filter_input_fields(cls):
+        '''
+        Method used by build_filter_and_order for a Relatio type
+        '''
+        input_fields = {}
+        classes = NIRelationType, cls
+
+        ni_metatype    = getattr(cls, 'NIMetaType')
+        filter_include = getattr(ni_metatype, 'filter_include', None)
+        filter_exclude = getattr(ni_metatype, 'filter_exclude', None)
+
+        if filter_include and filter_exclude:
+            raise Exception("Only filter_include or filter_include metafields can be defined on {}".format(cls))
+
+        # add type NIRelationType and subclass
+        for clz in classes:
+            for name, field in clz.__dict__.items():
+                if field:
+                    add_field = False
+
+                    if isinstance(field, graphene.types.scalars.String) or\
+                        isinstance(field, graphene.types.scalars.Int):
+                        add_field = True
+
+                    if filter_include:
+                        if name not in filter_include:
+                            add_field = False
+                    elif filter_exclude:
+                        if name in filter_exclude:
+                            add_field = False
+
+                    if add_field:
+                        input_field = type(field)
+                        input_fields[name] = input_field
+
+        return input_fields
+
+    @classproperty
+    def match_additional_clause(cls):
+        return "[r{}:{}]".format('{}',cls)
+
+    class Meta:
+        interfaces = (relay.Node, )
+
+class DictRelationType(graphene.ObjectType):
+    '''
+    This type represents an key value pair for a relationship dictionary,
+    the key is the name of the relationship and the value the NIRelationType itself
+    '''
+    name = graphene.String(required=True)
+    relation = graphene.Field(NIRelationType, required=True)
+
 class NIObjectType(DjangoObjectType):
     '''
     This class expands graphene_django object type adding the defined fields in
@@ -126,13 +539,14 @@ class NIObjectType(DjangoObjectType):
     adds a resolver for each field, a nidata field is also added to hold the
     values of the node data dict.
     '''
+
+    filter_names = None
+
     @classmethod
     def __init_subclass_with_meta__(
         cls,
-        sri_fields=None,
         **options,
     ):
-        fields_names = ''
         allfields = cls.__dict__
         graphfields = OrderedDict()
 
@@ -146,7 +560,6 @@ class NIObjectType(DjangoObjectType):
 
         # run over the fields defined and adding graphene fields and resolvers
         for name, field in graphfields.items():
-            fields_names = fields_names + ' ' + '({} / {})'.format(name, field.__dict__)
             field_fields = field.__dict__
 
             field_type      = field_fields.get('field_type')
@@ -188,10 +601,6 @@ class NIObjectType(DjangoObjectType):
                         .format(name)
                 )
 
-        # add data field and resolver
-        setattr(cls, 'nidata', graphene.List(DictEntryType))
-        setattr(cls, 'resolve_nidata', resolve_nidata)
-
         options['model'] = NIObjectType._meta.model
         options['interfaces'] = NIObjectType._meta.interfaces
 
@@ -199,21 +608,389 @@ class NIObjectType(DjangoObjectType):
             **options
         )
 
+    nidata = graphene.List(DictEntryType, resolver=resolve_nidata)
+
+    incoming = graphene.List(DictRelationType)
+    outgoing = graphene.List(DictRelationType)
+
+    def resolve_incoming(self, info, **kwargs):
+        '''
+        Resolver for incoming relationships for the node
+        '''
+        incoming_rels = self.get_node().incoming
+        ret = []
+        for rel_name, rel_list in incoming_rels.items():
+            for rel in rel_list:
+                relation_id = rel['relationship_id']
+                rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
+                ret.append(DictRelationType(name=rel_name, relation=rel))
+
+        return ret
+
+    def resolve_outgoing(self, info, **kwargs):
+        '''
+        Resolver for outgoing relationships for the node
+        '''
+        outgoing_rels = self.get_node().outgoing
+        ret = []
+        for rel_name, rel_list in outgoing_rels.items():
+            for rel in rel_list:
+                relation_id = rel['relationship_id']
+                rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
+                ret.append(DictRelationType(name=rel_name, relation=rel))
+
+        return ret
+
     @classmethod
-    def get_queryset(cls, queryset, info):
-        if info.context.user.is_anonymous:
-            return queryset.none()
-        else:
-            return queryset.filter(
-                Q(creator=info.context.user) | Q(modifier=info.context.user)
+    def get_from_nimetatype(cls, attr):
+        ni_metatype = getattr(cls, 'NIMetaType')
+        return getattr(ni_metatype, attr)
+
+    @classmethod
+    def get_type_name(cls):
+        ni_type = cls.get_from_nimetatype('ni_type')
+        node_type = NodeType.objects.filter(type=ni_type).first()
+        return node_type.type
+
+    @classmethod
+    def get_filter_input_fields(cls):
+        '''
+        Method used by build_filter_and_order for a Node type
+        '''
+        input_fields = {}
+
+        ni_metatype    = getattr(cls, 'NIMetaType')
+        filter_include = getattr(ni_metatype, 'filter_include', None)
+        filter_exclude = getattr(ni_metatype, 'filter_exclude', None)
+
+        for name, field in cls.__dict__.items():
+            # string or string like fields
+            if field:
+                if isinstance(field, graphene.types.scalars.String) or\
+                    isinstance(field, graphene.types.scalars.Int):
+                    input_field = type(field)
+                    input_fields[name] = input_field
+                elif isinstance(field, graphene.types.structures.List):
+                    # create arguments for input_field
+                    field_of_type = field._of_type
+
+                    # recase to lower camelCase
+                    name_fot = field_of_type.__name__
+                    components = name_fot.split('_')
+                    name_fot = components[0] + ''.join(x.title() for x in components[1:])
+
+                    # get object attributes by their filter input fields
+                    # to build the filter field for the nested object
+                    filter_attrib = {}
+                    for a, b in field_of_type.get_filter_input_fields().items():
+                        filter_attrib[a] = b()
+
+                    binput_field = type('{}InputField'.format(name_fot), (graphene.InputObjectType, ), filter_attrib)
+                    input_fields[name] = binput_field, field._of_type
+
+        input_fields['handle_id'] = graphene.Int
+
+        return input_fields
+
+    @classmethod
+    def build_filter_and_order(cls):
+        '''
+        This method generates a Filter and Order object from the class itself
+        to be used in filtering connections
+        '''
+        ni_type = cls.get_from_nimetatype('ni_type')
+
+        # build filter input class and order enum
+        filter_attrib = {}
+        cls.filter_names = {}
+        enum_options = []
+        input_fields = cls.get_filter_input_fields()
+
+        for field_name, input_field in input_fields.items():
+            # creating field instance
+            field_instance = None
+            the_field = None
+
+            # is a plain scalar field?
+            if not isinstance(input_field, Iterable):
+                field_instance = input_field()
+                the_field = input_field
+
+                # adding order attributes (only for scalar fields)
+                enum_options.append(['{}_ASC'.format(field_name), '{}_ASC'.format(field_name)])
+                enum_options.append(['{}_DESC'.format(field_name), '{}_DESC'.format(field_name)])
+            else: # it must be a list other_node
+                field_instance = input_field[0]()
+                the_field = input_field[0]
+
+            # adding filter attributes
+            for suffix, suffix_attr in AbstractQueryBuilder.filter_array.items():
+                # filter field naming
+                if not suffix == '':
+                    suffix = '_{}'.format(suffix)
+
+                fmt_filter_field = '{}{}'.format(field_name, suffix)
+
+                if not suffix_attr['only_strings'] \
+                    or isinstance(field_instance, graphene.String):
+                    if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
+                        filter_attrib[fmt_filter_field] = field_instance
+                        cls.filter_names[fmt_filter_field]  = {
+                            'field' : field_name,
+                            'suffix': suffix,
+                            'field_type': field_instance,
+                        }
+                    else:
+                        wrapped_field = the_field
+                        for wrapper_field in suffix_attr['wrapper_field']:
+                            wrapped_field = wrapper_field(wrapped_field)
+
+                        filter_attrib[fmt_filter_field] = wrapped_field
+                        cls.filter_names[fmt_filter_field]  = {
+                            'field' : field_name,
+                            'suffix': suffix,
+                            'field_type': field_instance,
+                        }
+
+        simple_filter_input = type('{}NestedFilter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
+
+        filter_attrib = {}
+        filter_attrib['AND'] = graphene.List(graphene.NonNull(simple_filter_input))
+        filter_attrib['OR'] = graphene.List(graphene.NonNull(simple_filter_input))
+
+        filter_input = type('{}Filter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
+
+        orderBy = graphene.Enum('{}OrderBy'.format(ni_type), enum_options)
+
+        return filter_input, orderBy
+
+    @classmethod
+    def get_byid_resolver(cls):
+        type_name = cls.get_type_name()
+
+        def generic_byid_resolver(self, info, **args):
+            handle_id = args.get('handle_id')
+            node_type = NodeType.objects.get(type=type_name)
+
+            ret = None
+
+            if info.context and info.context.user.is_authenticated:
+                if handle_id:
+                    ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+                else:
+                    raise GraphQLError('A handle_id must be provided')
+
+                if not ret:
+                    raise GraphQLError("There isn't any {} with handle_id {}".format(type_name, handle_id))
+
+                return ret
+            else:
+                raise GraphQLAuthException()
+
+        return generic_byid_resolver
+
+    @classmethod
+    def get_connection_resolver(cls):
+        type_name = cls.get_type_name()
+
+        def generic_list_resolver(self, info, **args):
+            ret = None
+            filter  = args.get('filter', None)
+            orderBy = args.get('orderBy', None)
+
+            if info.context and info.context.user.is_authenticated:
+                # filtering will take a different approach
+                nodes = None
+                if filter:
+                    q = cls.build_filter_query(filter, type_name)
+                    nodes = nc.query_to_list(nc.graphdb.manager, q)
+                    nodes = [ node['n'].properties for node in nodes]
+                else:
+                    nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
+                    nodes = list(nodes)
+
+                if nodes:
+                    handle_ids = []
+                    # ordering
+                    if orderBy:
+                        m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                        prop = m[1]
+                        order = m[2]
+                        reverse = True if order == 'DESC' else False
+                        nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
+                        handle_ids = [ node['handle_id'] for node in nodes ]
+                    else:
+                        handle_ids = [ node['handle_id'] for node in nodes ]
+                        node_type = NodeType.objects.get(type=type_name)
+
+                    ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
+
+                if not ret:
+                    ret = []
+
+                return ret
+            else:
+                raise GraphQLAuthException()
+
+        return generic_list_resolver
+
+    @classmethod
+    def build_filter_query(cls, filter, nodetype):
+        build_query = ''
+
+        # build AND block
+        and_filters = filter.get('AND', [])
+        and_predicates = []
+
+        # iterate through the nested filters
+        for and_filter in and_filters:
+            # iterate though values of a nested filter
+            for filter_key, filter_value in and_filter.items():
+                # choose filter array for query building
+                if isinstance(filter_value, int) or isinstance(filter_value, str):
+                    filter_array = ScalarQueryBuilder.filter_array
+                else:
+                    filter_array = InputFieldQueryBuilder.filter_array
+
+                filter_field = cls.filter_names[filter_key]
+                field  = filter_field['field']
+                suffix = filter_field['suffix']
+                field_type = filter_field['field_type']
+
+                # iterate through the keys of the filter array and extracts
+                # the predicate building function
+                for fa_suffix, fa_value in filter_array.items():
+                    if fa_suffix != '':
+                         fa_suffix = '_{}'.format(fa_suffix)
+
+                    # get the predicate
+                    if suffix == fa_suffix:
+                        build_preficate_func = fa_value['qpredicate']
+                        predicate = build_preficate_func(field, filter_value, field_type)
+                        if predicate:
+                            and_predicates.append(predicate)
+
+        # build OR block
+        or_filters = filter.get('OR', [])
+        or_predicates = []
+
+        for or_filter in or_filters:
+            # iterate though values of a nested filter
+            for filter_key, filter_value in or_filter.items():
+                # choose filter array for query building
+                filter_array = ScalarQueryBuilder.filter_array
+
+                filter_field = cls.filter_names[filter_key]
+                field  = filter_field['field']
+                suffix = filter_field['suffix']
+                field_type = filter_field['field_type']
+
+                # iterate through the keys of the filter array and extracts
+                # the predicate building function
+                for fa_suffix, fa_value in filter_array.items():
+                    if fa_suffix != '':
+                         fa_suffix = '_{}'.format(fa_suffix)
+
+                    # get the predicate
+                    if suffix == fa_suffix:
+                        build_preficate_func = fa_value['qpredicate']
+                        predicate = build_preficate_func(field, filter_value, field_type)
+                        if predicate:
+                            or_predicates.append(predicate)
+
+        and_query = ' AND '.join(and_predicates)
+        or_query = ' OR '.join(or_predicates)
+
+        if and_query and or_query:
+            build_query = '{} OR {}'.format(
+                and_query,
+                or_query
             )
+        else:
+            if and_query:
+                build_query = and_query
+            elif or_query:
+                build_query = or_query
+
+        if build_query != '':
+            build_query = 'WHERE {}'.format(build_query)
+
+        # additional clauses
+        match_additional_clauses = []
+
+        # remove redundant
+        match_additional_clauses = list(set(match_additional_clauses))
+        match_additional = ', '.join(match_additional_clauses)
+
+        q = """
+            MATCH (n:{label}){match_additional}
+            {build_query}
+            RETURN distinct n
+            """.format(label=nodetype, match_additional="",
+                        build_query=build_query)
+
+        return q
+
+    @classproperty
+    def match_additional_clause(cls):
+        return "[m{}:{}]".format('{}',cls.NIMetaType.ni_type)
 
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
+########## END RELATION AND NODE TYPES
 
+
+########## RELATION FIELD
+class NIRelationField(NIBasicField):
+    '''
+    This field can be used in NIObjectTypes to represent a set relationships
+    '''
+    def __init__(self, field_type=graphene.List, manual_resolver=False,
+                    type_args=(NIRelationType,), rel_name=None, **kwargs):
+        self.field_type      = field_type
+        self.manual_resolver = manual_resolver
+        self.type_args       = type_args
+        self.rel_name        = rel_name
+
+    def get_resolver(self, **kwargs):
+        # getting nimodel
+        nimodel = nc.models.BaseRelationshipModel
+
+        if self.type_args != (NIRelationType,):
+            rel_type = self.type_args[0]
+            nimeta = getattr(rel_type, 'NIMetaType', None)
+            if nimeta:
+                nimodel = getattr(nimeta, 'nimodel', None)
+
+        field_name = kwargs.get('field_name')
+        rel_name   = kwargs.get('rel_name')
+
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_relation(self, info, **kwargs):
+            ret = []
+            reldicts = self.get_node().relationships.get(rel_name, None)
+
+            if reldicts:
+                for reldict in reldicts:
+                    relbundle = nc.get_relationship_bundle(nc.graphdb.manager, relationship_id=reldict['relationship_id'])
+                    relation = nimodel(nc.graphdb.manager)
+                    relation.load(relbundle)
+                    ret.append(relation)
+
+            return ret
+
+        return resolve_node_relation
+########## END RELATION FIELD
+
+########## MUTATION FACTORY
 class NodeHandler(NIObjectType):
-    pass
+    name = NIStringField(type_kwargs={ 'required': True })
 
 class AbstractNIMutation(relay.ClientIDMutation):
     @classmethod
@@ -226,8 +1003,13 @@ class AbstractNIMutation(relay.ClientIDMutation):
         ni_metaclass  = getattr(cls, 'NIMetaClass')
         graphql_type  = getattr(ni_metaclass, 'graphql_type', None)
         django_form   = getattr(ni_metaclass, 'django_form', None)
-        mutation_name = getattr(ni_metaclass, 'mutation_name', cls.__name__)
+        mutation_name = getattr(ni_metaclass, 'mutation_name', None)
         is_create     = getattr(ni_metaclass, 'is_create', False)
+        include       = getattr(ni_metaclass, 'include', None)
+        exclude       = getattr(ni_metaclass, 'exclude', None)
+
+        if include and exclude:
+            raise Exception('Only "include" or "exclude" metafields can be defined')
 
         # build fields into Input
         inner_fields = {}
@@ -239,10 +1021,22 @@ class AbstractNIMutation(relay.ClientIDMutation):
                         graphene_field = cls.form_to_graphene_field(field)
 
                         if graphene_field:
+                            add_field = False
+
                             if hasattr(django_form, 'Meta') and hasattr(django_form.Meta, 'exclude'):
                                 if field not in django_form.Meta.exclude:
-                                    inner_fields[field_name] = graphene_field
+                                    add_field = True
                             else:
+                                add_field = True
+
+                            if include:
+                                if field_name not in include:
+                                    add_field = False
+                            elif exclude:
+                                if field_name in exclude:
+                                    add_field = False
+
+                            if add_field:
                                 inner_fields[field_name] = graphene_field
 
         # add handle_id
@@ -253,16 +1047,19 @@ class AbstractNIMutation(relay.ClientIDMutation):
         inner_class = type('Input', (object,), inner_fields)
         setattr(cls, 'Input', inner_class)
 
-        # add return type
-        if graphql_type:
-            setattr(cls, graphql_type.__name__.lower(), graphene.Field(graphql_type))
+        cls.add_return_type(graphql_type)
 
         super(AbstractNIMutation, cls).__init_subclass_with_meta__(
             output, inner_fields, arguments, name=mutation_name, **options
         )
 
     @classmethod
-    def form_to_graphene_field(cls, form_field):
+    def add_return_type(cls, graphql_type):
+        if graphql_type:
+            setattr(cls, graphql_type.__name__.lower(), graphene.Field(graphql_type))
+
+    @classmethod
+    def form_to_graphene_field(cls, form_field, include=None, exclude=None):
         '''Django form to graphene field conversor
         '''
         graphene_field = None
@@ -340,7 +1137,8 @@ class AbstractNIMutation(relay.ClientIDMutation):
         if input_class:
             for attr_name, attr_field in input_class.__dict__.items():
                 attr_value = input.get(attr_name)
-                input_params[attr_name] = attr_value
+                if attr_value:
+                    input_params[attr_name] = attr_value
 
         if not is_create:
             input_params['handle_id'] = input.get('handle_id')
@@ -363,8 +1161,8 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
         graphql_type = cls.get_graphql_type()
         init_params = {}
-        if graphql_type:
-            init_params[graphql_type.__name__.lower()] = ret
+        for key, value in ret.items():
+            init_params[key] = value
 
         return cls(**init_params)
 
@@ -387,6 +1185,8 @@ class CreateNIMutation(AbstractNIMutation):
         request_path   = None
         is_create      = True
         graphql_type   = None
+        include        = None
+        exclude        = None
 
     @classmethod
     def do_request(cls, request, **kwargs):
@@ -408,15 +1208,17 @@ class CreateNIMutation(AbstractNIMutation):
                     'A {} with that name already exists.'.format(node_type)
                 )
             helpers.form_update_node(request.user, nh.handle_id, form)
-            return nh
+            return { graphql_type.__name__.lower(): nh }
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form._errors))
+            raise GraphQLError('Form errors: {}'.format(form.errors))
 
 class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
+        include        = None
+        exclude        = None
 
     @classmethod
     def do_request(cls, request, **kwargs):
@@ -434,10 +1236,25 @@ class UpdateNIMutation(AbstractNIMutation):
             if form.is_valid():
                 # Generic node update
                 helpers.form_update_node(request.user, nodehandler.handle_id, form)
-                return nh
+
+                # process relations if implemented
+                cls.process_relations(request, form, nodehandler)
+
+                return { graphql_type.__name__.lower(): nh }
+            else:
+                raise GraphQLError('Form is not valid: {}'.format(form.errors))
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form))
+            raise GraphQLError('Form errors: {}'.format(form.errors))
+
+    @classmethod
+    def process_relations(cls, request, form, nodehandler):
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        relations_processors = getattr(nimetaclass, 'relations_processors', None)
+
+        if relations_processors:
+            for relation_name, relation_f in relations_processors.items():
+                relation_f(request, form, nodehandler, relation_name)
 
 class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -445,13 +1262,17 @@ class DeleteNIMutation(AbstractNIMutation):
         graphql_type   = None
 
     @classmethod
+    def add_return_type(cls, graphql_type):
+        setattr(cls, 'success', graphene.Boolean(required=True))
+
+    @classmethod
     def do_request(cls, request, **kwargs):
         handle_id      = request.POST.get('handle_id')
 
         nh, node = helpers.get_nh_node(handle_id)
-        helpers.delete_node(request.user, node.handle_id)
+        success = helpers.delete_node(request.user, node.handle_id)
 
-        return None
+        return {'success': success}
 
 class NIMutationFactory():
     '''
@@ -484,6 +1305,13 @@ class NIMutationFactory():
         update_form    = getattr(ni_metaclass, 'update_form', None)
         request_path   = getattr(ni_metaclass, 'request_path', None)
         graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandler)
+        create_include = getattr(ni_metaclass, 'create_include', None)
+        create_exclude = getattr(ni_metaclass, 'create_exclude', None)
+        update_include = getattr(ni_metaclass, 'update_include', None)
+        update_exclude = getattr(ni_metaclass, 'update_exclude', None)
+
+        # check for relationship processors
+        relations_processors = getattr(ni_metaclass, 'relations_processors', None)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -503,10 +1331,11 @@ class NIMutationFactory():
         class_name = 'CreateNI{}Mutation'.format(node_type.capitalize())
         attr_dict = {
             'django_form': create_form,
-            'mutation_name': class_name,
             'request_path': request_path,
             'is_create': True,
             'graphql_type': graphql_type,
+            'include': create_include,
+            'exclude': create_exclude,
         }
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
@@ -521,8 +1350,13 @@ class NIMutationFactory():
 
         class_name = 'UpdateNI{}Mutation'.format(node_type.capitalize())
         attr_dict['django_form']   = update_form
-        attr_dict['mutation_name'] = class_name
         attr_dict['is_create']     = False
+        attr_dict['include']       = update_include
+        attr_dict['exclude']       = update_exclude
+
+        if relations_processors:
+            attr_dict['relations_processors'] = relations_processors
+
         update_metaclass = type(metaclass_name, (object,), attr_dict)
 
         cls._update_mutation = type(
@@ -535,7 +1369,12 @@ class NIMutationFactory():
 
         class_name = 'DeleteNI{}Mutation'.format(node_type.capitalize())
         del attr_dict['django_form']
-        attr_dict['mutation_name'] = class_name
+        del attr_dict['include']
+        del attr_dict['exclude']
+
+        if relations_processors:
+            del attr_dict['relations_processors']
+
         delete_metaclass = type(metaclass_name, (object,), attr_dict)
 
         cls._delete_mutation = type(
@@ -558,103 +1397,24 @@ class NIMutationFactory():
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
 
+########## END MUTATION FACTORY
+
+########## EXCEPTION AND AUTOQUERY
 class GraphQLAuthException(Exception):
+    '''
+    Simple auth exception
+    '''
     def __init__(self, message=None):
         message = 'You must be logged in the system: {}'.format(
             ': {}'.format(message) if message else ''
         )
         super().__init__(message)
 
-def get_connection_resolver(nodetype):
-    def generic_list_resolver(self, info, **args):
-        filter  = args.get('filter', None)
-        orderBy = args.get('orderBy', None)
-
-        if info.context and info.context.user.is_authenticated:
-            # filtering will take a different approach
-            nodes = None
-            if filter:
-                q = build_filter_query(filter, nodetype)
-                nodes = nc.query_to_list(nc.graphdb.manager, q)
-                nodes = [ node['n'].properties for node in nodes]
-            else:
-                nodes = nc.get_nodes_by_type(nc.graphdb.manager, nodetype)
-                nodes = list(nodes)
-
-            if nodes:
-                # ordering
-                if orderBy:
-                    m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
-                    prop = m[1]
-                    order = m[2]
-                    reverse = True if order == 'DESC' else False
-                    nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
-
-                    # get the QuerySet
-                    handle_ids = [ node['handle_id'] for node in nodes ]
-                    ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
-                else:
-                    handle_ids = [ node['handle_id'] for node in nodes ]
-                    node_type = NodeType.objects.get(type=nodetype)
-                    ret = NodeHandle.objects.filter(node_type=node_type)
-            else:
-                ret = []
-
-            if not ret:
-                ret = []
-
-            return ret
-        else:
-            raise GraphQLAuthException()
-
-    return generic_list_resolver
-
-def build_filter_query(filter, nodetype):
-    build_query = ''
-
-    # build AND block
-    and_query = ''
-    and_filters = filter.get('AND')
-    for and_filter in and_filters:
-        pass
-
-    # build OR block
-    or_query = ''
-    or_filters = filter.get('OR')
-    for or_filter in or_filters:
-        pass
-
-    q = """
-        MATCH (n:{label})
-        {build_query}
-        RETURN distinct n
-        """.format(label=nodetype, build_query=build_query)
-
-    return q
-
-def get_byid_resolver(nodetype):
-    def generic_byid_resolver(self, info, **args):
-        handle_id = args.get('handle_id')
-        node_type = NodeType.objects.get(type=nodetype)
-
-        ret = None
-
-        if info.context and info.context.user.is_authenticated:
-            if handle_id:
-                ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
-            else:
-                raise GraphQLError('A handle_id must be provided')
-
-            if not ret:
-                raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
-
-            return ret
-        else:
-            raise GraphQLAuthException()
-
-    return generic_byid_resolver
-
 class NOCAutoQuery(graphene.ObjectType):
+    '''
+    This class creates a connection and a getById method for each of the types
+    declared on the graphql_types of the NIMeta class of any subclass.
+    '''
     node = relay.Node.Field()
     getNodeById = graphene.Field(NodeHandler, handle_id=graphene.Int())
 
@@ -690,97 +1450,41 @@ class NOCAutoQuery(graphene.ObjectType):
         # add by id resolver
         for graphql_type in graphql_types:
             ## extract values
-            _nimetatype   = getattr(graphql_type, 'NIMetaType')
-
-            ni_type = getattr(_nimetatype, 'ni_type')
+            ni_type = graphql_type.get_from_nimetatype('ni_type')
             assert ni_type, '{} has not set its ni_type attribute'.format(cls.__name__)
-            ni_metatype = getattr(_nimetatype, 'ni_metatype')
+            ni_metatype = graphql_type.get_from_nimetatype('ni_metatype')
             assert ni_metatype, '{} has not set its ni_metatype attribute'.format(cls.__name__)
 
             node_type     = NodeType.objects.filter(type=ni_type).first()
-            type_name     = node_type.type
-            type_slug     = node_type.slug
 
-            # add connection attribute
-            field_name    = '{}s'.format(type_slug)
-            resolver_name = 'resolve_{}'.format(field_name)
+            if node_type:
+                type_name     = node_type.type
+                type_slug     = node_type.slug
 
-            connection_input, connection_order = cls.build_filter_and_order(graphql_type, type_name)
-            connection_meta = type('Meta', (object, ), dict(node=graphql_type))
-            connection_class = type(
-                '{}Connection'.format(graphql_type.__name__),
-                (graphene.relay.Connection,),
-                #(connection_type,),
-                dict(Meta=connection_meta)
-            )
+                # add connection attribute
+                field_name    = '{}s'.format(type_slug)
+                resolver_name = 'resolve_{}'.format(field_name)
 
-            setattr(cls, field_name, graphene.relay.ConnectionField(
-                connection_class,
-                filter=graphene.Argument(connection_input),
-                orderBy=graphene.Argument(connection_order),
-            ))
-            setattr(cls, resolver_name, get_connection_resolver(type_name))
+                connection_input, connection_order = graphql_type.build_filter_and_order()
+                connection_meta = type('Meta', (object, ), dict(node=graphql_type))
+                connection_class = type(
+                    '{}Connection'.format(graphql_type.__name__),
+                    (graphene.relay.Connection,),
+                    #(connection_type,),
+                    dict(Meta=connection_meta)
+                )
 
-            ## build field and resolver byid
-            field_name    = 'get{}ById'.format(type_name)
-            resolver_name = 'resolve_{}'.format(field_name)
+                setattr(cls, field_name, graphene.relay.ConnectionField(
+                    connection_class,
+                    filter=graphene.Argument(connection_input),
+                    orderBy=graphene.Argument(connection_order),
+                ))
+                setattr(cls, resolver_name, graphql_type.get_connection_resolver())
 
-            setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
-            setattr(cls, resolver_name, get_byid_resolver(type_name))
+                ## build field and resolver byid
+                field_name    = 'get{}ById'.format(type_name)
+                resolver_name = 'resolve_{}'.format(field_name)
 
-    @classmethod
-    def build_filter_and_order(cls, graphql_type, type_name):
-        # build filter input class and order enum
-        simple_filter_attrib = {}
-        enum_options = []
-
-        for name, field in graphql_type.__dict__.items():
-            if field and not isinstance(field, str) and field.__module__ == 'graphene.types.scalars':
-                input_field = type(field)()
-
-                # adding filter attributes
-                simple_filter_attrib['{}'.format(name)] = input_field
-                simple_filter_attrib['{}_not'.format(name)] = input_field
-                simple_filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
-                simple_filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(type(input_field)))
-                simple_filter_attrib['{}_lt'.format(name)] = input_field
-                simple_filter_attrib['{}_lte'.format(name)] = input_field
-                simple_filter_attrib['{}_gt'.format(name)] = input_field
-                simple_filter_attrib['{}_gte'.format(name)] = input_field
-
-                if isinstance(field, graphene.String):
-                    simple_filter_attrib['{}_contains'.format(name)] = input_field
-                    simple_filter_attrib['{}_not_contains'.format(name)] = input_field
-                    simple_filter_attrib['{}_starts_with'.format(name)] = input_field
-                    simple_filter_attrib['{}_not_starts_with'.format(name)] = input_field
-                    simple_filter_attrib['{}_ends_with'.format(name)] = input_field
-                    simple_filter_attrib['{}_not_ends_with'.format(name)] = input_field
-
-                # adding order attributes
-                enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
-                enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
-
-        # add handle_id
-        name = 'handle_id'
-        simple_filter_attrib['{}'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_not'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_in'.format(name)] = graphene.List(graphene.NonNull(graphene.Int))
-        simple_filter_attrib['{}_not_in'.format(name)] = graphene.List(graphene.NonNull(graphene.Int))
-        simple_filter_attrib['{}_lt'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_lte'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_gt'.format(name)] = graphene.Int()
-        simple_filter_attrib['{}_gte'.format(name)] = graphene.Int()
-        enum_options.append(['{}_ASC'.format(name), '{}_ASC'.format(name)])
-        enum_options.append(['{}_DESC'.format(name), '{}_DESC'.format(name)])
-
-        simple_filter_input = type('{}NestedFilter'.format(type_name), (graphene.InputObjectType, ), simple_filter_attrib)
-
-        filter_attrib = {}
-        filter_attrib['AND'] = graphene.List(graphene.NonNull(simple_filter_input))
-        filter_attrib['OR'] = graphene.List(graphene.NonNull(simple_filter_input))
-
-        filter_input = type('{}Filter'.format(type_name), (graphene.InputObjectType, ), filter_attrib)
-
-        orderBy = graphene.Enum('{}OrderBy'.format(type_name), enum_options)
-
-        return filter_input, orderBy
+                setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
+                setattr(cls, resolver_name, graphql_type.get_byid_resolver())
+########## END EXCEPTION AND AUTOQUERY
