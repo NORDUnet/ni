@@ -685,6 +685,8 @@ class NIObjectType(DjangoObjectType):
                     for a, b in field_of_type.get_filter_input_fields().items():
                         filter_attrib[a] = b()
 
+                    filter_attrib['_of_type'] = field._of_type
+
                     binput_field = type('{}InputField'.format(name_fot), (graphene.InputObjectType, ), filter_attrib)
                     input_fields[name] = binput_field, field._of_type
 
@@ -842,15 +844,44 @@ class NIObjectType(DjangoObjectType):
         and_filters = filter.get('AND', [])
         and_predicates = []
 
+        # additional clauses
+        match_additional_nodes = []
+        match_additional_rels  = []
+
+        # embed entity index
+        rel_index, node_index = 1, 1
+
         # iterate through the nested filters
         for and_filter in and_filters:
             # iterate though values of a nested filter
             for filter_key, filter_value in and_filter.items():
                 # choose filter array for query building
+                filter_array, queryBuilder = None, None
+
                 if isinstance(filter_value, int) or isinstance(filter_value, str):
                     filter_array = ScalarQueryBuilder.filter_array
+                    queryBuilder = ScalarQueryBuilder
                 else:
+                    # set of type
+                    of_type = None
+                    if isinstance(filter_value, list):
+                        of_type = filter_value[0]._of_type
+                    else:
+                        of_type = filter_value._of_type
+
                     filter_array = InputFieldQueryBuilder.filter_array
+                    queryBuilder = InputFieldQueryBuilder
+                    additional_clause = of_type.match_additional_clause
+
+                    if additional_clause:
+                        if issubclass(of_type, NIObjectType):
+                            additional_clause.format(node_index)
+                            node_index = node_index + 1
+                            match_additional_nodes.append(additional_clause)
+                        elif issubclass(of_type, NIRelationType):
+                            additional_clause.format(rel_index)
+                            rel_index = rel_index + 1
+                            match_additional_rels.append(additional_clause)
 
                 filter_field = cls.filter_names[filter_key]
                 field  = filter_field['field']
@@ -861,12 +892,13 @@ class NIObjectType(DjangoObjectType):
                 # the predicate building function
                 for fa_suffix, fa_value in filter_array.items():
                     if fa_suffix != '':
-                         fa_suffix = '_{}'.format(fa_suffix)
+                        fa_suffix = '_{}'.format(fa_suffix)
 
                     # get the predicate
                     if suffix == fa_suffix:
-                        build_preficate_func = fa_value['qpredicate']
-                        predicate = build_preficate_func(field, filter_value, field_type)
+                        build_predicate_func = fa_value['qpredicate']
+                        predicate = build_predicate_func(field, filter_value, field_type)
+
                         if predicate:
                             and_predicates.append(predicate)
 
@@ -915,25 +947,27 @@ class NIObjectType(DjangoObjectType):
         if build_query != '':
             build_query = 'WHERE {}'.format(build_query)
 
-        # additional clauses
-        match_additional_clauses = []
+        # remove redundant additional clauses
+        match_additional_nodes = list(set(match_additional_nodes))
+        match_1 = ', '.join(match_additional_nodes)
 
-        # remove redundant
-        match_additional_clauses = list(set(match_additional_clauses))
-        match_additional = ', '.join(match_additional_clauses)
+        match_additional_rels = list(set(match_additional_rels))
+        match_2 = ', '.join(match_additional_rels)
+
+        node_match_clause = "(n:{label})".format(label=nodetype)
 
         q = """
-            MATCH (n:{label}){match_additional}
+            MATCH {node_match_clause}{match_additional}
             {build_query}
             RETURN distinct n
-            """.format(label=nodetype, match_additional="",
-                        build_query=build_query)
+            """.format(node_match_clause=node_match_clause,
+                        match_additional="", build_query=build_query)
 
         return q
 
     @classproperty
     def match_additional_clause(cls):
-        return "[m{}:{}]".format('{}',cls.NIMetaType.ni_type)
+        return "{}-[]-(m{}:{})".format('{}',cls.NIMetaType.ni_type)
 
     class Meta:
         model = NodeHandle
