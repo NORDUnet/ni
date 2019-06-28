@@ -58,7 +58,6 @@ class NOCRootQuery(NOCAutoQuery):
         relation_id = kwargs.get('relation_id')
         rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
         rel.relation_id = rel.id
-        rel.id = None
 
         return rel
 
@@ -66,7 +65,6 @@ class NOCRootQuery(NOCAutoQuery):
         relation_id = kwargs.get('relation_id')
         rel = nc.models.RoleRelationship.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
         rel.relation_id = rel.id
-        rel.id = None
 
         return rel
 
