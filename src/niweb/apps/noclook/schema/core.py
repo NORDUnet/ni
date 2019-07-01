@@ -304,29 +304,179 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
         return """NOT n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
 
 class InputFieldQueryBuilder(AbstractQueryBuilder):
-    @classmethod
-    def build_match_predicate(cls, field, value, type, **kwargs):
-        pass
+    standard_expression = """{neo4j_var}.{field} {op} {value}"""
+    id_expression = """ID({neo4j_var}) {op} {value}"""
 
     @classmethod
-    def build_in_predicate(cls, field, values, type, **kwargs): # a list predicate builder
+    def format_expression(cls, key, value, neo4j_var, op, add_quotes=True):
+        # string quoting
+        if isinstance(value, str) and add_quotes:
+            value = "'{}'".format(value)
+
+        if key is 'relation_id':
+            ret = cls.id_expression.format(
+                neo4j_var=neo4j_var,
+                op=op,
+                value=value,
+            )
+        else:
+            ret = cls.standard_expression.format(
+                neo4j_var=neo4j_var,
+                field=key,
+                op=op,
+                value=value,
+            )
+
+        return ret
+
+    @staticmethod
+    def single_value_predicate(field, value, type, op, not_in=False, **kwargs):
+        neo4j_var = kwargs.get('neo4j_var')
+        ret = ""
+
+        for k, v in value.items():
+            ret = InputFieldQueryBuilder.format_expression(k, v, neo4j_var, op)
+
+        if not_in:
+            ret = 'NOT {}'.format(ret)
+
+        return ret
+
+    @classmethod
+    def multiple_value_predicate(cls, field, values, type, op, not_in=False, **kwargs): # a list predicate builder
         neo4j_var = kwargs.get('neo4j_var')
 
-        ret = []
+        all_values = []
+        field_name = ""
+
         for value in values:
             for k, v in value.items():
                 if isinstance(v, str):
                     v = "'{}'".format(v)
 
-                ret.append('{}.{} = {}'.format(neo4j_var, k, v))
+                field_name = k
+                all_values.append(v)
 
-        return '({})'.format(' OR '.join(ret))
+        the_value = "[{}]".format(', '.join([str(x) for x in all_values]))
+
+        ret = InputFieldQueryBuilder.format_expression(field_name, the_value, neo4j_var, op, False)
+
+        if not_in:
+            ret = 'NOT {}'.format(ret)
+
+        return ret
+
+    @staticmethod
+    def build_match_predicate(field, value, type, **kwargs):
+        op = "="
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_not_predicate(field, value, type, **kwargs):
+        op = "<>"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @classmethod
+    def build_in_predicate(cls, field, values, type, **kwargs): # a list predicate builder
+        op = "IN"
+        ret = InputFieldQueryBuilder.multiple_value_predicate(
+            field, values, type, op, **kwargs
+        )
+        return ret
 
     @classmethod
     def build_not_in_predicate(cls, field, values, type, **kwargs): # a list predicate builder
-        ret = ''
+        op = "IN"
+        ret = InputFieldQueryBuilder.multiple_value_predicate(
+            field, values, type, op, True, **kwargs
+        )
         return ret
 
+    @staticmethod
+    def build_lt_predicate(field, value, type, **kwargs):
+        op = "<"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_lte_predicate(field, value, type, **kwargs):
+        op = "<="
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_gt_predicate(field, value, type, **kwargs):
+        op = ">"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_gte_predicate(field, value, type, **kwargs):
+        op = ">="
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_contains_predicate(field, value, type):
+        op = "CONTAINS"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_not_contains_predicate(field, value, type):
+        op = "CONTAINS"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, True, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_starts_with_predicate(field, value, type):
+        op = "STARTS WITH"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_not_starts_with_predicate(field, value, type):
+        op = "STARTS WITH"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, True, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_ends_with_predicate(field, value, type):
+        op = "ENDS WITH"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_not_ends_with_predicate(field, value, type):
+        op = "ENDS WITH"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, True, **kwargs)
+
+        return ret
 ########## END CONNECTION FILTER BUILD FUNCTIONS
 
 ########## KEYVALUE TYPES
@@ -889,8 +1039,8 @@ class NIObjectType(DjangoObjectType):
                     filter_array = ScalarQueryBuilder.filter_array
                     queryBuilder = ScalarQueryBuilder
                 elif isinstance(filter_value, list) and not (\
-                        isinstance(filter_value[0], str) or isinstance(filter_value[0], int)\
-                    ):
+                        isinstance(filter_value[0], str) or isinstance(filter_value[0], int))\
+                        or issubclass(type(filter_value), graphene.InputObjectType):
                     # set of type
                     is_nested_query = True
                     of_type = None
