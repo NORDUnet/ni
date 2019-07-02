@@ -1010,6 +1010,10 @@ class NIObjectType(DjangoObjectType):
         and_filters = filter.get('AND', [])
         and_predicates = []
 
+        # build OR block
+        or_filters = filter.get('OR', [])
+        or_predicates = []
+
         # additional clauses
         match_additional_nodes = []
         match_additional_rels  = []
@@ -1018,7 +1022,6 @@ class NIObjectType(DjangoObjectType):
         and_rels_predicates = []
 
         # embed entity index
-        rel_idx, node_idx, subnode_idx, subrel_idx = 1, 1, 1, 1
         idxdict = {
             'rel_idx': 1,
             'node_idx': 1,
@@ -1026,100 +1029,99 @@ class NIObjectType(DjangoObjectType):
             'subrel_idx': 1,
         }
 
-        # iterate through the nested filters
-        for and_filter in and_filters:
-            # iterate though values of a nested filter
-            for filter_key, filter_value in and_filter.items():
-                # choose filter array for query building
-                filter_array, queryBuilder = None, None
-                is_nested_query = False
-                neo4j_var = ''
+        operations = {
+            'AND': {
+                'filters': filter.get('AND', []),
+                'predicates': [],
+            },
+            'OR': {
+                'filters': filter.get('OR', []),
+                'predicates': [],
+            },
+        }
 
-                if isinstance(filter_value, int) or isinstance(filter_value, str):
-                    filter_array = ScalarQueryBuilder.filter_array
-                    queryBuilder = ScalarQueryBuilder
-                elif isinstance(filter_value, list) and not (\
-                        isinstance(filter_value[0], str) or isinstance(filter_value[0], int))\
-                        or issubclass(type(filter_value), graphene.InputObjectType):
-                    # set of type
-                    is_nested_query = True
-                    of_type = None
+        for operation in operations.keys():
+            filters = operations[operation]['filters']
+            predicates = operations[operation]['predicates']
 
-                    if isinstance(filter_value, list):
-                        of_type = filter_value[0]._of_type
+            # iterate through the nested filters
+            for a_filter in filters:
+                # iterate though values of a nested filter
+                for filter_key, filter_value in a_filter.items():
+                    # choose filter array for query building
+                    filter_array, queryBuilder = None, None
+                    is_nested_query = False
+                    neo4j_var = ''
+
+                    if isinstance(filter_value, int) or isinstance(filter_value, str):
+                        filter_array = ScalarQueryBuilder.filter_array
+                        queryBuilder = ScalarQueryBuilder
+                    elif isinstance(filter_value, list) and not (\
+                            isinstance(filter_value[0], str) or isinstance(filter_value[0], int))\
+                            or issubclass(type(filter_value), graphene.InputObjectType):
+                        # set of type
+                        is_nested_query = True
+                        of_type = None
+
+                        if isinstance(filter_value, list):
+                            of_type = filter_value[0]._of_type
+                        else:
+                            of_type = filter_value._of_type
+
+                        filter_array = InputFieldQueryBuilder.filter_array
+                        queryBuilder = InputFieldQueryBuilder
+                        additional_clause = of_type.match_additional_clause
+
+                        if additional_clause:
+                            # format var name and additional match
+                            if issubclass(of_type, NIObjectType):
+                                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
+                                additional_clause = additional_clause.format(
+                                    'n:{}'.format(nodetype),
+                                    'l{}'.format(idxdict['subrel_idx']),
+                                    idxdict['node_idx']
+                                )
+                                idxdict['node_idx'] = idxdict['node_idx'] + 1
+                                idxdict['subrel_idx'] = idxdict['subrel_idx'] + 1
+                                match_additional_nodes.append(additional_clause)
+                            elif issubclass(of_type, NIRelationType):
+                                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
+                                additional_clause = additional_clause.format(
+                                    'n:{}'.format(nodetype),
+                                    idxdict['rel_idx'],
+                                    'z{}'.format(idxdict['subnode_idx'])
+                                )
+                                idxdict['rel_idx'] = idxdict['rel_idx'] + 1
+                                idxdict['subnode_idx'] = idxdict['subnode_idx'] + 1
+                                match_additional_rels.append(additional_clause)
                     else:
-                        of_type = filter_value._of_type
+                        filter_array = ScalarQueryBuilder.filter_array
+                        queryBuilder = ScalarQueryBuilder
 
-                    filter_array = InputFieldQueryBuilder.filter_array
-                    queryBuilder = InputFieldQueryBuilder
-                    additional_clause = of_type.match_additional_clause
+                    filter_field = cls.filter_names[filter_key]
+                    field  = filter_field['field']
+                    suffix = filter_field['suffix']
+                    field_type = filter_field['field_type']
 
-                    if additional_clause:
-                        # format var name and additional match
-                        if issubclass(of_type, NIObjectType):
-                            #additional_clause.format(node_index)
-                            idxdict['node_idx'] = idxdict['node_idx'] + 1
-                            match_additional_nodes.append(additional_clause)
-                        elif issubclass(of_type, NIRelationType):
-                            neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
-                            additional_clause = additional_clause.format('n:{}'.format(nodetype), idxdict['rel_idx'], 'z{}'.format(idxdict['subnode_idx']))
-                            idxdict['rel_idx'] = idxdict['rel_idx'] + 1
-                            idxdict['subnode_idx'] = idxdict['subnode_idx'] + 1
-                            match_additional_rels.append(additional_clause)
-                else:
-                    filter_array = ScalarQueryBuilder.filter_array
-                    queryBuilder = ScalarQueryBuilder
+                    # iterate through the keys of the filter array and extracts
+                    # the predicate building function
+                    for fa_suffix, fa_value in filter_array.items():
+                        if fa_suffix != '':
+                            fa_suffix = '_{}'.format(fa_suffix)
 
-                filter_field = cls.filter_names[filter_key]
-                field  = filter_field['field']
-                suffix = filter_field['suffix']
-                field_type = filter_field['field_type']
+                        # get the predicate
+                        if suffix == fa_suffix:
+                            build_predicate_func = fa_value['qpredicate']
 
-                # iterate through the keys of the filter array and extracts
-                # the predicate building function
-                for fa_suffix, fa_value in filter_array.items():
-                    if fa_suffix != '':
-                        fa_suffix = '_{}'.format(fa_suffix)
+                            predicate = build_predicate_func(field, filter_value, field_type, neo4j_var=neo4j_var)
 
-                    # get the predicate
-                    if suffix == fa_suffix:
-                        build_predicate_func = fa_value['qpredicate']
+                            if predicate:
+                                predicates.append(predicate)
 
-                        predicate = build_predicate_func(field, filter_value, field_type, neo4j_var=neo4j_var)
+            operations[operation]['predicates'] = predicates
 
-                        if predicate:
-                            and_predicates.append(predicate)
-
-        # build OR block
-        or_filters = filter.get('OR', [])
-        or_predicates = []
-
-        for or_filter in or_filters:
-            # iterate though values of a nested filter
-            for filter_key, filter_value in or_filter.items():
-                # choose filter array for query building
-                filter_array = ScalarQueryBuilder.filter_array
-
-                filter_field = cls.filter_names[filter_key]
-                field  = filter_field['field']
-                suffix = filter_field['suffix']
-                field_type = filter_field['field_type']
-
-                # iterate through the keys of the filter array and extracts
-                # the predicate building function
-                for fa_suffix, fa_value in filter_array.items():
-                    if fa_suffix != '':
-                         fa_suffix = '_{}'.format(fa_suffix)
-
-                    # get the predicate
-                    if suffix == fa_suffix:
-                        build_preficate_func = fa_value['qpredicate']
-                        predicate = build_preficate_func(field, filter_value, field_type)
-                        if predicate:
-                            or_predicates.append(predicate)
-
-        and_query = ' AND '.join(and_predicates)
-        or_query = ' OR '.join(or_predicates)
+        and_query = ' AND '.join(operations['AND']['predicates'])
+        or_query = ' OR '.join(operations['OR']['predicates'])
 
         if and_query and or_query:
             build_query = '{} OR {}'.format(
@@ -1156,7 +1158,7 @@ class NIObjectType(DjangoObjectType):
 
     @classproperty
     def match_additional_clause(cls):
-        return "{}-[]-(m{}:{})".format('{}', cls.neo4j_var_name, '{}',
+        return "({})-[{}]-({}{}:{})".format('{}', '{}', cls.neo4j_var_name, '{}',
                                         cls.NIMetaType.ni_type)
 
     neo4j_var_name = "m"
