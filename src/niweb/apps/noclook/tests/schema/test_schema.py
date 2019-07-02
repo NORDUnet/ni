@@ -60,6 +60,144 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
+        # subquery test
+        query = '''
+        query {
+          contacts(filter: {AND: [
+            {
+              member_of_groups: { name: "group2" },
+              roles: { name: "role2"}
+            }
+          ]}){
+            edges{
+              node{
+                handle_id
+                name
+                roles{
+                  name
+                }
+                member_of_groups{
+                  name
+                  handle_id
+                }
+              }
+            }
+          }
+        }
+        '''
+        expected = OrderedDict([('contacts',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([('handle_id', '29'),
+                            ('name', 'John Smith'),
+                            ('roles',
+                             [OrderedDict([('name',
+                                'role2')])]),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group2'),
+                               ('handle_id',
+                                '33')])])]))])])]))])
+
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        query = '''
+        query {
+          contacts(orderBy: handle_id_DESC, filter: {AND: [
+            {
+              member_of_groups_in: [{ name: "group1" }, { name: "group2" }],
+              roles_in: [{ name: "role1" }, { name: "role2" }]
+            }
+          ]}){
+            edges{
+              node{
+                handle_id
+                name
+                member_of_groups{
+                  name
+                }
+                roles{
+                  name
+                }
+              }
+            }
+          }
+        }
+        '''
+        expected = OrderedDict([('contacts',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([('handle_id', '29'),
+                            ('name', 'John Smith'),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group2')])]),
+                            ('roles',
+                             [OrderedDict([('name',
+                                'role2')])])]))]),
+                         OrderedDict([('node',
+                           OrderedDict([('handle_id', '28'),
+                            ('name', 'Jane Doe'),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group1')])]),
+                            ('roles',
+                             [OrderedDict([('name',
+                                'role1')])])]))])])]))])
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        query = '''
+        query {
+          contacts(filter: {AND: [
+            {
+              member_of_groups: { handle_id: 33 },
+              roles: { relation_id: 20}
+            }
+          ]}){
+            edges{
+              node{
+                handle_id
+                name
+                roles{
+                  name
+                }
+                member_of_groups{
+                  name
+                  handle_id
+                }
+              }
+            }
+          }
+        }
+        '''
+        expected = OrderedDict([('contacts',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([('handle_id', '29'),
+                            ('name', 'John Smith'),
+                            ('roles',
+                             [OrderedDict([('name',
+                                'role2')])]),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group2'),
+                               ('handle_id',
+                                '33')])])]))])])]))])
+
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
         # getNodeById
         query = '''
         query {
@@ -69,8 +207,13 @@ class QueryTest(Neo4jGraphQLTest):
         }
         '''
 
+        expected = OrderedDict([
+                    ('getNodeById', OrderedDict([('handle_id', '29')]))
+                ])
+
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
 
         # filter tests
         query = '''
