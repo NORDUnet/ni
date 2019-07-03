@@ -45,6 +45,8 @@ class NIContactMutationFactory(NIMutationFactory):
             'relationship_works_for': process_works_for
         }
 
+        update_exclude = ('relationship_member_of')
+
     class Meta:
         abstract = False
 
@@ -89,7 +91,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()
     update_group        = NIGroupMutationFactory.get_update_mutation().Field()
     delete_group        = NIGroupMutationFactory.get_delete_mutation().Field()
-    
+
     create_procedure    = NIProcedureMutationFactory.get_create_mutation().Field()
     update_procedure    = NIProcedureMutationFactory.get_update_mutation().Field()
     delete_procedure    = NIProcedureMutationFactory.get_delete_mutation().Field()

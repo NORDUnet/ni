@@ -17,6 +17,7 @@ from graphene.types import Scalar
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
 from graphql import GraphQLError
+from graphql.language.ast import IntValue
 from io import StringIO
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
@@ -119,6 +120,33 @@ class RoleScalar(Scalar):
             ret[name] = role
 
         return ret
+
+class ChoiceScalar(Scalar):
+    @staticmethod
+    def coerce_choice(value):
+        num = None
+        try:
+            num = int(value)
+        except ValueError:
+            try:
+                num = int(float(value))
+            except ValueError:
+                return None
+        if num:
+            return graphene.Int.coerce_int(value)
+        else:
+            return graphene.String.coerce_string(value)
+
+
+    serialize = coerce_choice
+    parse_value = coerce_choice
+
+    @staticmethod
+    def parse_literal(ast):
+        if isinstance(ast, IntValue):
+            return graphene.Int.parse_literal(ast)
+        else:
+            return graphene.String.parse_literal(ast)
 
 ########## END CUSTOM SCALARS FOR FORM FIELD CONVERSION
 
@@ -1314,7 +1342,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
             elif isinstance(form_field, forms.CharField):
                 graphene_field = graphene.String(**graph_kwargs)
             elif isinstance(form_field, forms.ChoiceField):
-                graphene_field = graphene.String(**graph_kwargs)
+                graphene_field = ChoiceScalar(**graph_kwargs)
             elif isinstance(form_field, forms.FloatField):
                 graphene_field = graphene.Float(**graph_kwargs)
             elif isinstance(form_field, forms.IntegerField):
