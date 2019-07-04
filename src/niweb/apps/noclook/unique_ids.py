@@ -21,8 +21,8 @@ def unique_id_map(slug):
 def generator_links():
     result = []
     for gen in UniqueIdGenerator.objects.all():
-        slug = slugify(gen.name.replace('_id', ''))
-        name = gen.name.replace('_', ' ').replace(settings.BRAND.lower(), settings.BRAND)
+        slug = slugify(gen.name.replace('_id', '')).replace('_', '-')
+        name = gen.name.replace('_', ' ').title().replace(settings.BRAND.title(), settings.BRAND)
 
         result.append({'slug': slug, 'title': name})
 
