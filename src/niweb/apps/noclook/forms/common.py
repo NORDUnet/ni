@@ -193,13 +193,13 @@ class NewSiteForm(forms.Form):
     address = forms.CharField(required=False)
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
-    
+
     def clean(self):
         cleaned_data = super(NewSiteForm, self).clean()
         cleaned_data['country'] = country_map(cleaned_data['country_code'])
         return cleaned_data
-    
-    
+
+
 class EditSiteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
@@ -232,8 +232,8 @@ class EditSiteForm(forms.Form):
         cleaned_data['name'] = cleaned_data['name']
         cleaned_data['country_code'] = country_code_map(cleaned_data['country'])
         return cleaned_data
-                              
-                              
+
+
 class NewSiteOwnerForm(forms.Form):
     name = forms.CharField()
     description = description_field('site owner')
@@ -777,7 +777,7 @@ class CsvForm(forms.Form):
 
     csv_data = forms.CharField(required=False,
                                widget=forms.Textarea(
-                                   attrs={'rows': '5', 
+                                   attrs={'rows': '5',
                                           'class': 'input-xxlarge'}))
     reviewed = forms.BooleanField(required=False)
 
@@ -933,6 +933,16 @@ class EditContactForm(NewContactForm):
     relationship_works_for = relationship_field('organization', True)
     relationship_member_of = relationship_field('group', True)
     role_name = forms.CharField(required=False)
+
+    def clean(self):
+        """
+        Check empty role names
+        """
+        cleaned_data = super(EditContactForm, self).clean()
+        role_name = cleaned_data.get("role_name")
+
+        if not role_name:
+            cleaned_data['relationship_works_for'] = None
 
 class NewProcedureForm(forms.Form):
     name = forms.CharField()
