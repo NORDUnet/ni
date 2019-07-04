@@ -74,7 +74,7 @@ class QueryTest(Neo4jGraphQLTest):
         ## delete ##
         query = """
         mutation delete_test_group {
-          delete_group(input: {handle_id: 9}){
+          delete_group(input: {handle_id: 17}){
             success
           }
         }
@@ -156,6 +156,7 @@ class QueryTest(Neo4jGraphQLTest):
               contact_type: "person"
               relationship_works_for: 10
               role_name: "IT-manager"
+              relationship_member_of: 16
             }
           ){
             contact{
@@ -177,6 +178,9 @@ class QueryTest(Neo4jGraphQLTest):
                   name
                 }
               }
+              member_of_groups{
+                name
+              }
             }
           }
         }
@@ -196,13 +200,15 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('email', None),
                                          ('other_email', None),
                                          ('roles',
-                                          [OrderedDict([
-                                                        ('name', 'IT-manager'),
-                                                        ('end_node',
-                                                         OrderedDict([('handle_id',
-                                                                       '10'),
-                                                                      ('name',
-                                                                       'organization2')]))])])]))]))])
+                                          [OrderedDict([('name', 'IT-manager'),
+                                            ('end_node',
+                                             OrderedDict([('handle_id',
+                                               '10'),
+                                              ('name',
+                                               'organization2')]))])]),
+                                         ('member_of_groups',
+                                          [OrderedDict([('name',
+                                             'group2')])])]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)

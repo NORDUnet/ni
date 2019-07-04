@@ -972,7 +972,11 @@ class NIObjectType(DjangoObjectType):
 
             if info.context and info.context.user.is_authenticated:
                 if handle_id:
-                    ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+                    try:
+                        int_id = str(handle_id)
+                        ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=int_id)
+                    except ValueError:
+                        ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
                 else:
                     raise GraphQLError('A handle_id must be provided')
 

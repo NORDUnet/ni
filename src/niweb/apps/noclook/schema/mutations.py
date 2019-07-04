@@ -35,6 +35,10 @@ def process_works_for(request, form, nodehandler, relation_name):
     role_name = form.cleaned_data['role_name']
     helpers.set_works_for(request.user, nodehandler, organization_nh.handle_id, role_name)
 
+def process_member_of(request, form, nodehandler, relation_name):
+    group_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
+    helpers.set_member_of(request.user, nodehandler, group_nh.handle_id)
+
 class NIContactMutationFactory(NIMutationFactory):
     class NIMetaClass:
         create_form    = NewContactForm
@@ -42,10 +46,9 @@ class NIContactMutationFactory(NIMutationFactory):
         request_path   = '/'
         graphql_type   = Contact
         relations_processors = {
-            'relationship_works_for': process_works_for
+            'relationship_works_for': process_works_for,
+            'relationship_member_of': process_member_of,
         }
-
-        update_exclude = ('relationship_member_of')
 
     class Meta:
         abstract = False
