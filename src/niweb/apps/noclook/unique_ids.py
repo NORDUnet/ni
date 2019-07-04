@@ -3,19 +3,30 @@ __author__ = 'lundberg'
 
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.text import slugify
+from django.conf import settings
 from .models import NordunetUniqueId, UniqueIdGenerator
 
 
-# TODO: Maybe move this to settings.py?
 def unique_id_map(slug):
     """
     :param slug: A slug that specifies the type of object that we want to generate ID for.
     :return: Tuple of UniqueIdGenerator instance and an optional subclass of UniqueId collection.
     """
-    m = {
-        'nordunet-cable': (UniqueIdGenerator.objects.get(name='nordunet_cable_id'), NordunetUniqueId),
-    }
-    return m[slug]
+    # turn slug into id
+    name = '{}_id'.format(slug.replace('-', '_').lower())
+    return UniqueIdGenerator.objects.get(name=name), NordunetUniqueId
+
+
+def generator_links():
+    result = []
+    for gen in UniqueIdGenerator.objects.all():
+        slug = slugify(gen.name.replace('_id', ''))
+        name = gen.name.replace('_', ' ').replace(settings.BRAND.lower(), settings.BRAND)
+
+        result.append({'slug': slug, 'title': name})
+
+    return result
 
 
 def is_free_unique_id(unique_id_collection, unique_id):
