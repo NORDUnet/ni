@@ -1,0 +1,30 @@
+---
+image: python:3
+
+services:
+  - postgres:latest
+  - neo4j:latest
+
+variables:
+  POSTGRES_DB: norduni
+
+
+cache:
+  paths:
+    - ~/.cache/pip/
+
+
+before_script:
+  - python -V
+  - pip install -r requirements/testing.txt
+
+
+test:
+  variables:
+    TEST_NEO4J_URI: bolt://neo4j:7687
+    DB_HOST: postgres
+    DJANGO_SETTINGS_MODULE: niweb.settings.dev
+    REPORTS_TO: markus@nordu.net
+  script:
+    - cd src/niweb
+    - python manage.py
