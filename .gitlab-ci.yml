@@ -1,5 +1,5 @@
 ---
-image: python:3-alpine
+image: python:3
 
 services:
   - postgres:latest
@@ -19,6 +19,8 @@ cache:
 before_script:
   - python -V
   - pip install -r requirements/testing.txt
+  - apt-get update
+  - apt-get install netcat
 
 
 test:
