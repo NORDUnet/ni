@@ -28,6 +28,7 @@ test:
     - docker
   variables:
     TEST_NEO4J_URI: bolt://neo4j:7687
+    TEST_NEO4J_PASSWORD: neo4j
     DB_HOST: postgres
     DJANGO_SETTINGS_MODULE: niweb.settings.dev
     REPORTS_TO: markus@nordu.net
