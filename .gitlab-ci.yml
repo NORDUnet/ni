@@ -30,5 +30,6 @@ test:
     DJANGO_SETTINGS_MODULE: niweb.settings.dev
     REPORTS_TO: markus@nordu.net
   script:
+    - for i in $(seq 1 60); do if nc -z neo4j 7687; then break; fi; sleep 1; done
     - cd src/niweb
     - python manage.py test
