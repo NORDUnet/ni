@@ -20,7 +20,7 @@ before_script:
   - python -V
   - pip install -r requirements/testing.txt
   - apt-get update
-  - apt-get install netcat
+  - apt-get install -y netcat
 
 
 test:
