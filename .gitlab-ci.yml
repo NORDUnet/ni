@@ -1,5 +1,7 @@
 ---
 image: python:3
+tags:
+  - docker
 
 services:
   - postgres:latest
