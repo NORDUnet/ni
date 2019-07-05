@@ -27,4 +27,4 @@ test:
     REPORTS_TO: markus@nordu.net
   script:
     - cd src/niweb
-    - python manage.py
+    - python manage.py test
