@@ -16,6 +16,8 @@
                 e.preventDefault();
                 var theHREF = $(this).attr("href");
                 var modalDialog = $("#dialog-relationship-confirm");
+                var what = this.parentNode.previousElementSibling.querySelector("a").textContent;
+                document.getElementById("relationship-confirm-name").textContent = what;
                 // non jquery to avoid event handling
                 var btn_confirm = document.getElementById("relationship-confirm");
                 btn_confirm.onclick = function() {
@@ -102,7 +104,7 @@
   <div id="dialog-relationship-confirm" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-      <h3 id="myModalLabel">Remove relationship?</h3>
+      <h3 id="myModalLabel">Remove relationship to <span id="relationship-confirm-name"></span>?</h3>
     </div>
     <div class="modal-body">
       <p><i class="icon-warning-sign"></i> The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
