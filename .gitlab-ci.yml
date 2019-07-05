@@ -1,7 +1,5 @@
 ---
 image: python:3
-tags:
-  - docker
 
 services:
   - postgres:latest
@@ -24,6 +22,8 @@ before_script:
 
 
 test:
+  tags:
+    - docker
   variables:
     TEST_NEO4J_URI: bolt://neo4j:7687
     DB_HOST: postgres
