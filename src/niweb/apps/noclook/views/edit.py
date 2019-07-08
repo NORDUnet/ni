@@ -823,7 +823,8 @@ def edit_service(request, handle_id):
                              'optical-path',
                              'router',
                              'service',
-                             'switch']
+                             'switch',
+                             'external-equipment']
     user_categories = ['customer', 'end-user']
     if request.POST:
         form = forms.EditServiceForm(request.POST)
