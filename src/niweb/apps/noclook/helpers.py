@@ -794,8 +794,6 @@ def find_recursive(key, target):
             for result in find_recursive(key, d):
                 yield result
     elif isinstance(target, dict) or isinstance(target, Node):
-        if isinstance(target, Node):
-            target = target.properties
         for k, v in target.items():
             if k == key:
                 yield v

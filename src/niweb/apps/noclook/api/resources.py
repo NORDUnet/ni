@@ -335,7 +335,7 @@ class RelationshipResource(Resource):
         new_obj = RelationshipObject()
         new_obj.id = rel.id
         new_obj.type = rel.type
-        new_obj.properties.update(rel.data)
+        new_obj.update(rel.data)
         new_obj.start = handle_id2resource_uri(rel.start)
         new_obj.end = handle_id2resource_uri(rel.end)
         return new_obj

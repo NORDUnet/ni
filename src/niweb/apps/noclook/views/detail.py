@@ -486,7 +486,7 @@ def _zip_modules(chain, out):
         out_part = next((p for p in out if p['name'] == name), None)
         if not out_part:
             out_part = part
-            out_part.properties['modules'] = []
+            out_part['modules'] = []
             out.append(out_part)
         # process rest of chain
         _zip_modules(chain[1:], out_part['modules'])

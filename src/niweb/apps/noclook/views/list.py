@@ -263,6 +263,7 @@ def list_firewalls(request):
 
 def _odf_table(item):
     location = item.get('location')
+    location_view = None
     odf = item.get('odf')
     site = item.get('site')
     # manipulate location name to include site name
@@ -272,8 +273,8 @@ def _odf_table(item):
     if location:
         if location.get('name'):
             location_names.append(location.get('name'))
-        location.properties['name'] = ' '.join(location_names)
-    row = TableRow(location, odf)
+        location_view = {'name': ' '.join(location_names), 'handle_id': location.get('handle_id')}
+    row = TableRow(location_view, odf)
     _set_operational_state(row, odf)
     return row
 
@@ -301,13 +302,14 @@ def list_odfs(request):
 
 
 def _optical_link_table(link, dependencies):
+    dependencies_view = []
     for deps in dependencies:
-        node = deps[0]
+        node = {'name': deps[0], 'handle_id': deps[0]['handle_id']}
         if node and len(deps) > 1:
             name = [n.get('name') for n in reversed(deps) if n]
-            node.properties['name'] = u' '.join(name)
-    dependencies = [deps[0] for deps in dependencies]
-    row = TableRow(link, link.get('link_type'), link.get('description'), dependencies)
+            node['name'] = u' '.join(name)
+        dependencies_view.append(node)
+    row = TableRow(link, link.get('link_type'), link.get('description'), dependencies_view)
     _set_operational_state(row, link)
     return row
 

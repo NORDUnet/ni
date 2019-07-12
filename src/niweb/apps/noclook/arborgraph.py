@@ -35,10 +35,10 @@ def to_arbor_node(raw_node, fixed=False):
         "label": "",
     }}
     """
-    handle_id = raw_node.properties['handle_id']
+    handle_id = raw_node['handle_id']
     meta_type = next(l for l in raw_node.labels if l in nc.core.META_TYPES)
     node_type = labels_to_node_type(raw_node.labels)
-    node_name = raw_node.properties['name']
+    node_name = raw_node['name']
     structure = {
         handle_id: {
             'color': COLOR_MAP.get(meta_type, ''),
@@ -97,13 +97,13 @@ def create_generic_graph(root_node, graph_dict=None):
         rel_type = rel['relation'].replace('_', ' ')
         for node in rel['nodes']:
             graph_dict['nodes'].update(to_arbor_node(node))
-        graph_dict['edges'][root_node.handle_id].update({n.properties['handle_id']: {"directed": True, "label": rel_type} for n in rel['nodes']})
+        graph_dict['edges'][root_node.handle_id].update({n['handle_id']: {"directed": True, "label": rel_type} for n in rel['nodes']})
 
     for dep in dependencies:
         rel_type = dep['relation'].replace('_', ' ')
         for node in dep['nodes']:
             graph_dict['nodes'].update(to_arbor_node(node))
-            graph_dict['edges'][node.properties['handle_id']].update({root_node.handle_id: {"directed": True, "label": rel_type}})
+            graph_dict['edges'][node['handle_id']].update({root_node.handle_id: {"directed": True, "label": rel_type}})
     urls = get_node_urls(root_node, relations, dependencies)
     for node in graph_dict['nodes']:
         graph_dict['nodes'][node]['url'] = urls.get(node)
