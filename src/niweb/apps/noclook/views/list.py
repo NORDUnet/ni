@@ -560,28 +560,37 @@ def list_sites(request):
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Sites', 'urls': urls})
 
-def _organization_table(org):
+def _organization_table(org, parent_org):
     organization_link = {
             'url': u'/organization/{}/'.format(org.get('handle_id')),
             'name': u'{}'.format(org.get('name', ''))
             }
+    if parent_org:
+        parent_org_link = {
+                'url': u'/organization/{}/'.format(parent_org.get('handle_id')),
+                'name': u'{}'.format(parent_org.get('name', ''))
+                }
+    else:
+        parent_org_link = ''
+    
     name = org.get('customer_id')
-    row = TableRow(organization_link, name)
+    row = TableRow(organization_link, parent_org_link)
     return row
 
 @login_required
 def list_organizations(request):
     q = """
         MATCH (org:Organization)
-        RETURN org
+        OPTIONAL MATCH (parent_org)-[:Parent_of]->(org:Organization)
+        RETURN org, parent_org
         ORDER BY org.name
         """
 
     org_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(org_list)
 
-    table = Table('Name', 'ID')
-    table.rows = [_organization_table(item['org']) for item in org_list]
+    table = Table('Name', 'Parent Org.')
+    table.rows = [_organization_table(item['org'], item['parent_org']) for item in org_list]
     table.no_badges=True
 
     return render(request, 'noclook/list/list_generic.html',
