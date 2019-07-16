@@ -969,3 +969,7 @@ class EditGroupForm(NewGroupForm):
         self.fields['relationship_member_of'].choices = get_node_type_tuples('Contact')
 
     relationship_member_of = relationship_field('contact', True)
+
+    def clean(self):
+        self.data = self.data.copy()
+        del self.data['relationship_member_of']
