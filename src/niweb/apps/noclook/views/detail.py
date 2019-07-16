@@ -664,13 +664,18 @@ def group_detail(request, handle_id):
     return render(request, 'noclook/detail/group_detail.html',
                   {'node_handle': nh, 'node': node, 'location_path': location_path})
 
-def _contact_with_role_table(con):
+def _contact_with_role_table(con, org=None):
     contact_link = {
             'url': u'/contact/{}/'.format(con.handle_id),
             'name': u'{}'.format(con.node_name)
             }
 
-    row = TableRow(contact_link)
+    organization_link = {
+            'url': u'/organization/{}/'.format(org.handle_id),
+            'name': u'{}'.format(org.node_name)
+            }
+
+    row = TableRow(contact_link, organization_link)
     return row
 
 @login_required
@@ -679,11 +684,17 @@ def role_detail(request):
 
     if role_name:
         con_list = nc.models.RoleRelationship.get_contacts_with_role(role_name)
-        contact_list = [ NodeHandle.objects.get(handle_id=x.data['handle_id']) for x in con_list ]
-        urls = helpers.get_node_urls(contact_list)
+        urls = []
+        rows = []
 
-        table = Table('Name')
-        table.rows = [_contact_with_role_table(item) for item in contact_list]
+        for x, y in con_list:
+            con_node = NodeHandle.objects.get(handle_id=x.data['handle_id'])
+            org_node = NodeHandle.objects.get(handle_id=y.data['handle_id'])
+            urls.append((con_node.get_absolute_url(), org_node.get_absolute_url()))
+            rows.append(_contact_with_role_table(con_node, org_node))
+
+        table = Table('Name', 'Organization')
+        table.rows =  rows
         table.no_badges=True
 
         return render(request, 'noclook/detail/role_detail.html',
