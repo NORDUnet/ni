@@ -6,7 +6,7 @@ from django.db import IntegrityError
 import json
 import csv
 from apps.noclook import helpers
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
+from apps.noclook.models import NodeType, NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
@@ -906,7 +906,7 @@ class NewContactForm(forms.Form):
     title = forms.CharField(required=False)
     PGP_fingerprint = forms.CharField(required=False)
 
-    def clean(self):
+    def clean(self, is_create=True):
         """
         Sets name from first and second name
         """
@@ -919,7 +919,13 @@ class NewContactForm(forms.Form):
             first_name = first_name.encode('utf-8')
             last_name  = last_name.encode('utf-8')
 
-        cleaned_data['name'] = '{} {}'.format(first_name, last_name)
+        full_name = '{} {}'.format(first_name, last_name)
+        node_type = NodeType.objects.get(type="Contact")
+
+        if is_create and self.data and NodeHandle.objects.filter(node_name=full_name, node_type=node_type):
+            raise ValidationError('A contact with that name already exists')
+
+        cleaned_data['name'] = full_name
 
         return cleaned_data
 
@@ -938,7 +944,7 @@ class EditContactForm(NewContactForm):
         """
         Check empty role names
         """
-        cleaned_data = super(EditContactForm, self).clean()
+        cleaned_data = super(EditContactForm, self).clean(False)
         role_name = cleaned_data.get("role_name")
 
         if not role_name:
