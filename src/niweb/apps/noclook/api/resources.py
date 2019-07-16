@@ -46,6 +46,8 @@ def handle_id2resource_uri(handle_id):
     """
     Returns a NodeHandleResource URI from a Neo4j node.
     """
+    if 'handle_id' in handle_id:
+        handle_id = handle_id['handle_id']
     nh = NodeHandle.objects.get(pk=handle_id)
     view = 'api_dispatch_detail'
     nhr = NodeHandleResource()
@@ -335,7 +337,7 @@ class RelationshipResource(Resource):
         new_obj = RelationshipObject()
         new_obj.id = rel.id
         new_obj.type = rel.type
-        new_obj.update(rel.data)
+        new_obj.properties.update(rel.data)
         new_obj.start = handle_id2resource_uri(rel.start)
         new_obj.end = handle_id2resource_uri(rel.end)
         return new_obj

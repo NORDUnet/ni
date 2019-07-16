@@ -76,7 +76,7 @@ def update_relationship(request, slug, handle_id, rel_id):
             for key, value in request.POST.items():
                 properties[key] = json.loads(value)
             relationship = nc.get_relationship_model(nc.graphdb.manager, int(rel_id))
-            if node.handle_id == relationship.start or node.handle_id == relationship.end:
+            if node.handle_id == relationship.start['handle_id'] or node.handle_id == relationship.end['handle_id']:
                 success = helpers.dict_update_relationship(request.user, relationship.id, properties)
         except nc.exceptions.RelationshipNotFound:
             # If the relationship does not exist, then we cannot update
