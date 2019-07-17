@@ -6,7 +6,7 @@ import ipaddress
 import json
 import logging
 
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, Role
 from apps.noclook import helpers
 from apps.noclook.views.helpers import Table, TableRow
 import norduniclient as nc
@@ -679,26 +679,23 @@ def _contact_with_role_table(con, org=None):
     return row
 
 @login_required
-def role_detail(request):
-    role_name = request.GET.get('name', None)
+def role_detail(request, handle_id):
+    role = get_object_or_404(Role, pk=handle_id)
 
-    if role_name:
-        con_list = nc.models.RoleRelationship.get_contacts_with_role(role_name)
-        urls = []
-        rows = []
+    con_list = nc.models.RoleRelationship.get_contacts_with_role_id(role.handle_id)
+    urls = []
+    rows = []
 
-        for x, y in con_list:
-            con_node = NodeHandle.objects.get(handle_id=x.data['handle_id'])
-            org_node = NodeHandle.objects.get(handle_id=y.data['handle_id'])
-            urls.append((con_node.get_absolute_url(), org_node.get_absolute_url()))
-            rows.append(_contact_with_role_table(con_node, org_node))
+    for x, y in con_list:
+        con_node = NodeHandle.objects.get(handle_id=x.data['handle_id'])
+        org_node = NodeHandle.objects.get(handle_id=y.data['handle_id'])
+        urls.append((con_node.get_absolute_url(), org_node.get_absolute_url()))
+        rows.append(_contact_with_role_table(con_node, org_node))
 
-        table = Table('Name', 'Organization')
-        table.rows =  rows
-        table.no_badges=True
+    table = Table('Name', 'Organization')
+    table.rows =  rows
+    table.no_badges=True
 
-        return render(request, 'noclook/detail/role_detail.html',
-                      {'table': table, 'name': role_name, 'slug': 'role',
-                        'urls': urls})
-    else:
-        raise Http404("The role doesn't exists")
+    return render(request, 'noclook/detail/role_detail.html',
+                  {'table': table, 'name': role.name, 'slug': 'role',
+                    'urls': urls})

@@ -3,7 +3,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
-from apps.noclook.models import NodeType
+from apps.noclook.models import NodeType, Role
 from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
@@ -667,21 +667,19 @@ def list_contacts(request):
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Contacts', 'urls': urls})
 
-def _role_table(role_name):
-    name_param = { 'name': role_name }
+def _role_table(role):
     role_link = {
-            'url': u'/role/detail/?{}'.format(urllib.parse.urlencode(name_param)),
-            'name': u'{}'.format(role_name)
-            }
-    row = TableRow(role_link)
-    return row
+        'url': u'/role/{}/'.format(role.handle_id),
+        'name': u'{}'.format(role.name)
+    }
+    return TableRow(role_link)
 
 @login_required
 def list_roles(request):
-    role_list = nc.models.RoleRelationship.get_all_roles(nc.graphdb.manager)
+    role_list = Role.objects.all()
 
     table = Table('Name')
-    table.rows = [_role_table(role_name) for role_name in role_list]
+    table.rows = [_role_table(role) for role in role_list]
     table.no_badges=True
 
     return render(request, 'noclook/list/list_generic.html',

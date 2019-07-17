@@ -4,7 +4,7 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, Choice
+from .models import NodeHandle, NodeType, Role, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, Choice
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -99,3 +99,4 @@ admin.site.register(ServiceType, ServiceTypeAdmin)
 admin.site.register(ServiceClass)
 admin.site.register(Dropdown, DropdownAdmin)
 admin.site.register(Choice, ChoiceAdmin)
+admin.site.register(Role)

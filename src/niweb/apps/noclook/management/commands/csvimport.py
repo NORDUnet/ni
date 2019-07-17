@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from apps.noclook.models import User, NodeType, NodeHandle, NODE_META_TYPE_CHOICES
+from apps.noclook.models import User, NodeType, NodeHandle, Role, NODE_META_TYPE_CHOICES
 from apps.nerds.lib.consumer_util import get_user
 from django.core.management.base import BaseCommand, CommandError
 from pprint import pprint
@@ -26,10 +26,15 @@ class Command(BaseCommand):
                     type=argparse.FileType('r'))
         parser.add_argument("-s", "--secroles", help="security roles CSV file",
                     type=argparse.FileType('r'))
+        parser.add_argument("-f", "--fixroles", help="regenerate roles in intermediate setup")
         parser.add_argument('-d', "--delimiter", nargs='?', default=';',
                             help='Delimiter to use use. Default ";".')
 
     def handle(self, *args, **options):
+        if options['fixroles']:
+            self.fix_roles()
+            return
+
         relation_meta_type = 'Relation'
         logical_meta_type = 'Logical'
 
@@ -245,6 +250,31 @@ class Command(BaseCommand):
 
             csv_secroles.close()
 
+    def fix_roles(self):
+        '''
+        This method is provided to update an existing setup into the new
+        role database representation in both databases
+        '''
+        # get all unique role string in all Works_for relation in neo4j db
+        role_names = nc.models.RoleRelationship.get_all_roles()
+
+        # create a role for each of them
+        for role_name in role_names:
+            if Role.objects.filter(name=role_name):
+                role = Role.objects.filter(name=role_name).first()
+            elif role_name != '':
+                role = Role(name=role_name)
+                role.save()
+
+            # update the relation in neo4j using the relation_id to add the handle_id
+            q = """
+                MATCH (c:Contact)-[r:Works_for]->(o:Organization)
+                WHERE r.name = "{role_name}"
+                SET r.handle_id = {handle_id}
+                RETURN r
+                """.format(role_name=role_name, handle_id=role.handle_id)
+
+            ret = nc.core.query_to_list(nc.graphdb.manager, q)
 
     def count_lines(self, file):
         '''

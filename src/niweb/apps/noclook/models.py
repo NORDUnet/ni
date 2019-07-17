@@ -129,6 +129,14 @@ class NodeHandle(models.Model):
 
     delete.alters_data = True
 
+@python_2_unicode_compatible
+class Role(models.Model):
+    # Data shared with the relationship
+    handle_id = models.AutoField(primary_key=True) # Handle <-> Node data
+    name = models.CharField(max_length=200)
+    # Data only present in the relational database
+    description = models.TextField()
+
 
 @python_2_unicode_compatible
 class UniqueIdGenerator(models.Model):
