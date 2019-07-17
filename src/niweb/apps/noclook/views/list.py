@@ -560,21 +560,25 @@ def list_sites(request):
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Sites', 'urls': urls})
 
-def _organization_table(org, parent_org):
+def _organization_table(org, parent_orgs):
     organization_link = {
             'url': u'/organization/{}/'.format(org.get('handle_id')),
             'name': u'{}'.format(org.get('name', ''))
             }
-    if parent_org:
-        parent_org_link = {
-                'url': u'/organization/{}/'.format(parent_org.get('handle_id')),
-                'name': u'{}'.format(parent_org.get('name', ''))
-                }
-    else:
-        parent_org_link = ''
-    
+
+    parent_org_link = ''
+
+    parent_links = []
+    if parent_orgs:
+        for parent_org in parent_orgs:
+            parent_org_link = {
+                    'url': u'/organization/{}/'.format(parent_org.get('handle_id')),
+                    'name': u'{}'.format(parent_org.get('name', ''))
+                    }
+            parent_links.append(parent_org_link)
+
     name = org.get('customer_id')
-    row = TableRow(organization_link, parent_org_link)
+    row = TableRow(organization_link, parent_links)
     return row
 
 @login_required
@@ -590,7 +594,23 @@ def list_organizations(request):
     urls = get_node_urls(org_list)
 
     table = Table('Name', 'Parent Org.')
-    table.rows = [_organization_table(item['org'], item['parent_org']) for item in org_list]
+    table.rows = []
+    orgs_dict = {}
+
+    for item in org_list:
+        org = item['org']
+        parent_org = item['parent_org']
+        org_handle_id = org.get('handle_id')
+
+        if org_handle_id not in orgs_dict:
+            orgs_dict[org_handle_id] = { 'org': org, 'parent_orgs': [] }
+
+        if item['parent_org']:
+            orgs_dict[org_handle_id]['parent_orgs'].append(item['parent_org'])
+
+    for org_dict in orgs_dict.values():
+        table.rows.append(_organization_table(org_dict['org'], org_dict['parent_orgs']))
+
     table.no_badges=True
 
     return render(request, 'noclook/list/list_generic.html',

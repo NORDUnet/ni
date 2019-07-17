@@ -889,7 +889,7 @@ def set_parent_of(user, node, child_org_id):
     :param child_org_id: unique id
     :return: norduniclient model, boolean
     """
-    result = node.set_child(child_org_id)
+    result = node.set_parent(child_org_id)
     relationship_id = result.get('Parent_of')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Parent_of')[0].get('created')
