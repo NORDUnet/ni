@@ -53,7 +53,7 @@ def delete_relationship(request, slug, handle_id, rel_id):
         nh, node = helpers.get_nh_node(handle_id)
         try:
             relationship = nc.get_relationship_model(nc.graphdb.manager, rel_id)
-            if node.handle_id == relationship.start or node.handle_id == relationship.end:
+            if node.handle_id == relationship.start['handle_id'] or node.handle_id == relationship.end['handle_id']:
                 activitylog.delete_relationship(request.user, relationship)
                 relationship.delete()
                 success = True

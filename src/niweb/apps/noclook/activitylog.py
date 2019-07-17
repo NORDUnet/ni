@@ -127,7 +127,6 @@ def delete_relationship(user, relationship):
     :param relationship: norduniclient relationship model
     :return: None
     """
-    print(relationship, relationship.start)
     start_nh = NodeHandle.objects.get(pk=relationship.start['handle_id'])
     start_nh.modifier = user
     start_nh.save()
