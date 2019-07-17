@@ -967,18 +967,6 @@ def edit_organization(request, handle_id):
                 'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
             ]
             helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
-            # Set contacts
-            contact_fields = Dropdown.get('organization_contact_types').as_choices(empty=False)
-            for field in contact_fields:
-                if field[0] in form.cleaned_data:
-                    contact_data = form.cleaned_data[field[0]]
-                    if contact_data:
-                        if isinstance(contact_data, six.string_types):
-                            if contact_data:
-                                helpers.create_contact_role_for_organization(request.user, organization, contact_data, field[1])
-                        else:
-                            helpers.link_contact_role_for_organization(request.user, organization, contact_data, field[1])
-
             # Set child organizations
             if form.cleaned_data['relationship_parent_of']:
                 organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])

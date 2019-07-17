@@ -834,59 +834,12 @@ class NewOrganizationForm(forms.Form):
 
 class EditOrganizationForm(NewOrganizationForm):
     def __init__(self, *args, **kwargs):
-        # set initial for contact combos
-        initial = {} if 'initial' not in kwargs else kwargs['initial']
-
-        if 'handle_id' in args[0]:
-            for field in Dropdown.get('organization_contact_types').as_choices(empty=False):
-                possible_contact = helpers.get_contact_for_orgrole(args[0]['handle_id'], field[1])
-                if possible_contact:
-                    field_name = field[0].decode('utf8') if six.PY2 else field[0]
-                    args[0][field_name] = possible_contact.handle_id
-
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
         self.fields['relationship_uses_a'].choices = get_node_type_tuples('Procedure')
 
-        # contact choices
-        if 'handle_id' in args[0]:
-            organization_id = args[0]['handle_id']
-            contact_choices = get_contacts_for_organization(organization_id)
-            self.fields['abuse_contact'].choices = contact_choices
-            self.fields['primary_contact'].choices = contact_choices
-            self.fields['secondary_contact'].choices = contact_choices
-            self.fields['it_technical_contact'].choices = contact_choices
-            self.fields['it_security_contact'].choices = contact_choices
-            self.fields['it_manager_contact'].choices = contact_choices
-
-    def clean(self):
-        """
-        Sets name from first and second name
-        """
-        cleaned_data = super(EditOrganizationForm, self).clean()
-        contact_fields = Dropdown.get('organization_contact_types').as_values()
-
-        for field in contact_fields:
-            if field in self.data:
-                value = self.data[field]
-                if value:
-                    try:
-                        contact_handle_id = int(value)
-                        cleaned_data[field] = contact_handle_id
-                    except ValueError:
-                        cleaned_data[field] = value
-
-                    if field in self._errors:
-                        del self._errors[field]
-
     relationship_parent_of = relationship_field('organization', True)
     relationship_uses_a = relationship_field('procedure', True)
-    abuse_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Abuse")
-    primary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Primary contact at incidents") # Primary contact at incidents
-    secondary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Secondary contact at incidents") # Secondary contact at incidents
-    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-technical") # IT-technical
-    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-security") # IT-security
-    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-manager") # IT-manager
 
 
 class NewContactForm(forms.Form):
