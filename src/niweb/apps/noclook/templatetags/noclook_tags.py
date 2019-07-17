@@ -74,7 +74,7 @@ def noclook_last_seen_to_dt(noclook_last_seen):
     """
     try:
         dt = datetime.strptime(noclook_last_seen, '%Y-%m-%dT%H:%M:%S.%f')
-    except ValueError:
+    except (ValueError, TypeError):
         dt = None
     return dt
 
