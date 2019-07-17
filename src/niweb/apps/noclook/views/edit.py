@@ -1049,8 +1049,12 @@ def edit_group(request, handle_id):
                 return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditGroupForm(group.data)
+
+    contacts = [x['node'] for x in relations['Member_of']]
+    contacts = sorted(contacts, key=lambda x: x.data['name'], reverse=False)
+
     return render(request, 'noclook/edit/edit_group.html',
-                  {'node_handle': nh, 'form': form, 'node': group, 'relations': relations})
+                  {'node_handle': nh, 'form': form, 'node': group, 'relations': relations, 'contacts': contacts })
 
 EDIT_FUNC = {
     'cable': edit_cable,
