@@ -556,12 +556,6 @@ def new_organization(request, **kwargs):
             ]
             helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
 
-            contact_fields = Dropdown.get('organization_contact_types').as_choices(empty=False)
-            for field in contact_fields:
-                contact_name = form.cleaned_data[field[0]]
-                if contact_name:
-                    helpers.create_contact_role_for_organization(request.user, nh, contact_name, field[1])
-
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewOrganizationForm()

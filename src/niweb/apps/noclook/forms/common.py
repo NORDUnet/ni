@@ -819,13 +819,6 @@ class NewOrganizationForm(forms.Form):
     customer_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     additional_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
-    # these fields will be replaced by selects in the edit form
-    abuse_contact = forms.CharField(required=False)
-    primary_contact = forms.CharField(required=False) # Primary contact at incidents
-    secondary_contact = forms.CharField(required=False) # Secondary contact at incidents
-    it_technical_contact = forms.CharField(required=False) # IT-technical
-    it_security_contact = forms.CharField(required=False) # IT-security
-    it_manager_contact = forms.CharField(required=False) # IT-manager
 
     def __init__(self, *args, **kwargs):
         super(NewOrganizationForm, self).__init__(*args, **kwargs)
