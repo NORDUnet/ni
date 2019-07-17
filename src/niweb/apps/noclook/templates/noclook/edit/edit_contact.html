@@ -29,7 +29,6 @@ $(document).ready(
     <div class="accordion" id="edit-accordion">
       {% accordion 'Additional info (optional)' 'additional-edit' '#edit-accordion' %}
           {{ form.title | as_crispy_field }}
-          {{ form.salutation | as_crispy_field }}
           {{ form.contact_type | as_crispy_field }}
           {{ form.phone | as_crispy_field }}
           {{ form.mobile | as_crispy_field }}
