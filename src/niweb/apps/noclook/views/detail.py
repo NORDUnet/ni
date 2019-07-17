@@ -96,10 +96,23 @@ def external_equipment_detail(request, handle_id):
     location_path = external_equipment.get_location_path()
     # Get owner
     relations = external_equipment.get_relations()
-    return render(request, 'noclook/detail/external_equipment_detail.html',
-                  {'node': external_equipment, 'node_handle': nh, 'last_seen': last_seen,
-                   'expired': expired, 'connections': connections, 'relations': relations,
-                   'location_path': location_path, 'history': True})
+    # Get dependents
+    dependent = external_equipment.get_dependent_as_types()
+    print(dependent)
+
+    return render(
+        request,
+        'noclook/detail/external_equipment_detail.html',
+        {
+            'node': external_equipment,
+            'node_handle': nh,
+            'last_seen': last_seen,
+            'expired': expired,
+            'connections': connections,
+            'relations': relations,
+            'dependent': dependent,
+            'location_path': location_path,
+            'history': True})
 
 
 @login_required

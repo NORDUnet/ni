@@ -49,6 +49,7 @@
     <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
 {% endif %}
 <br><br><br>
+{% include "noclook/detail/includes/depend_include.html" %}
 {% include "noclook/detail/includes/connections.html" with connections=connections node_name=node.data.name only %}
 {% endblock %}
 
