@@ -610,7 +610,7 @@ def set_owner(user, node, owner_id):
     :param owner_id: unique id
     :return: norduniclient model, boolean
     """
-    if 'handle_id' in owner_id:
+    if not isinstance(owner_id, int):
         owner_id = owner_id['handle_id']
     result = node.set_owner(owner_id)
     relationship_id = result.get('Owns')[0].get('relationship_id')
@@ -628,7 +628,7 @@ def set_user(user, node, user_id):
     :param user_id: unique id
     :return: norduniclient model, boolean
     """
-    if 'handle_id' in user_id:
+    if not isinstance(user_id, int):
         user_id = user_id['handle_id']
     result = node.set_user(user_id)
     relationship_id = result.get('Uses')[0].get('relationship_id')
