@@ -906,6 +906,7 @@ class EditProcedureForm(NewProcedureForm):
 
 class NewGroupForm(forms.Form):
     name = forms.CharField()
+    description = description_field('group')
 
 
 class EditGroupForm(NewGroupForm):
@@ -916,5 +917,6 @@ class EditGroupForm(NewGroupForm):
     relationship_member_of = relationship_field('contact', True)
 
     def clean(self):
-        self.data = self.data.copy()
-        del self.data['relationship_member_of']
+        if 'relationship_member_of' in self.data:
+            self.data = self.data.copy()
+            del self.data['relationship_member_of']
