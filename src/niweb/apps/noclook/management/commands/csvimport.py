@@ -26,7 +26,8 @@ class Command(BaseCommand):
                     type=argparse.FileType('r'))
         parser.add_argument("-s", "--secroles", help="security roles CSV file",
                     type=argparse.FileType('r'))
-        parser.add_argument("-f", "--fixroles", help="regenerate roles in intermediate setup")
+        parser.add_argument("-f", "--fixroles",
+                    action='store_true', help="regenerate roles in intermediate setup")
         parser.add_argument('-d', "--delimiter", nargs='?', default=';',
                             help='Delimiter to use use. Default ";".')
 
@@ -200,10 +201,12 @@ class Command(BaseCommand):
 
                     # add role relatioship
                     role_name = node['contact_role']
+                    role = Role.objects.get_or_create(name = role_name)[0]
 
                     nc.models.RoleRelationship.link_contact_organization(
                         new_contact.handle_id,
                         new_org.handle_id,
+                        role.handle_id,
                         role_name
                     )
 
@@ -241,10 +244,12 @@ class Command(BaseCommand):
                     )[0]
 
                 role_name = node['role']
+                role = Role.objects.get_or_create(name = role_name)[0]
 
                 nc.models.RoleRelationship.link_contact_organization(
                     contact.handle_id,
                     organization.handle_id,
+                    role.handle_id,
                     role_name
                 )
 
