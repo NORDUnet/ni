@@ -698,4 +698,4 @@ def role_detail(request, handle_id):
 
     return render(request, 'noclook/detail/role_detail.html',
                   {'table': table, 'name': role.name, 'slug': 'role',
-                    'urls': urls})
+                    'urls': urls, 'node_handle': role })

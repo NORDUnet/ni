@@ -672,13 +672,13 @@ def _role_table(role):
         'url': u'/role/{}/'.format(role.handle_id),
         'name': u'{}'.format(role.name)
     }
-    return TableRow(role_link)
+    return TableRow(role_link, role.description)
 
 @login_required
 def list_roles(request):
     role_list = Role.objects.all()
 
-    table = Table('Name')
+    table = Table('Name', 'Description')
     table.rows = [_role_table(role) for role in role_list]
     table.no_badges=True
 

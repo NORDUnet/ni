@@ -137,6 +137,9 @@ class Role(models.Model):
     # Data only present in the relational database
     description = models.TextField()
 
+    def __str__(self):
+        return 'Role %s' % (self.name)
+
     def get_absolute_url(self):
         return self.url()
 
