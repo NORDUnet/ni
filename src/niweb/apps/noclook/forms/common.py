@@ -6,7 +6,7 @@ from django.db import IntegrityError
 import json
 import csv
 from apps.noclook import helpers
-from apps.noclook.models import NodeType, NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
+from apps.noclook.models import NodeType, NodeHandle, Role, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
@@ -920,3 +920,9 @@ class EditGroupForm(NewGroupForm):
         if 'relationship_member_of' in self.data:
             self.data = self.data.copy()
             del self.data['relationship_member_of']
+
+
+class NewRoleForm(forms.ModelForm):
+    class Meta:
+        model = Role
+        fields = '__all__'

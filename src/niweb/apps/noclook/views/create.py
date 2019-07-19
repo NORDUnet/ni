@@ -21,6 +21,7 @@ TYPES = [
     ("contact", "Contact"),
     ("organization", "Organization"),
     ("group", "Group"),
+    ("role", "Role"),
 ]
 
 
@@ -612,6 +613,17 @@ def new_group(request, **kwargs):
         form = forms.NewGroupForm()
     return render(request, 'noclook/create/create_group.html', {'form': form})
 
+@staff_member_required
+def new_role(request, **kwargs):
+    if request.POST:
+        form = forms.NewRoleForm(request.POST)
+        if form.is_valid():
+            role = form.save()
+            return redirect(role.get_absolute_url())
+    else:
+        form = forms.NewGroupForm()
+    return render(request, 'noclook/create/create_role.html', {'form': form})
+
 NEW_FUNC = {
     'cable': new_cable,
     'cable_csv': new_cable_csv,
@@ -631,6 +643,7 @@ NEW_FUNC = {
     'provider': new_provider,
     'procedure': new_procedure,
     'rack': new_rack,
+    'role': new_role,
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,

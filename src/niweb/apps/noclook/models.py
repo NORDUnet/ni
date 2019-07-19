@@ -137,6 +137,12 @@ class Role(models.Model):
     # Data only present in the relational database
     description = models.TextField()
 
+    def get_absolute_url(self):
+        return self.url()
+
+    def url(self):
+        return '/role/{}'.format(self.handle_id)
+
 
 @python_2_unicode_compatible
 class UniqueIdGenerator(models.Model):
