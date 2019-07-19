@@ -21,7 +21,7 @@ import re
 import os
 from neo4j.v1.types import Node
 
-from .models import NodeHandle, NodeType
+from .models import NodeHandle, NodeType, Role
 from . import activitylog
 import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
@@ -221,7 +221,7 @@ def create_unique_node_handle(user, node_name, slug, node_meta_type):
 
 def set_noclook_auto_manage(item, auto_manage):
     """
-    Sets the node or relationship noclook_auto_manage flag to True or False. 
+    Sets the node or relationship noclook_auto_manage flag to True or False.
     Also sets the noclook_last_seen flag to now.
 
     :param item: norduclient model
@@ -240,11 +240,11 @@ def set_noclook_auto_manage(item, auto_manage):
         relationship = nc.get_relationship_model(nc.graphdb.manager, item.id)
         relationship.data.update(auto_manage_data)
         nc.set_relationship_properties(nc.graphdb.manager, relationship.id, relationship.data)
-    
+
 
 def update_noclook_auto_manage(item):
     """
-    Updates the noclook_auto_manage and noclook_last_seen properties. If 
+    Updates the noclook_auto_manage and noclook_last_seen properties. If
     noclook_auto_manage is not set, it is set to True.
 
     :param item: norduclient model
@@ -912,7 +912,7 @@ def set_uses_a(user, node, procedure_id):
         activitylog.create_relationship(user, relationship)
     return relationship, created
 
-def set_works_for(user, node, organization_id, role_name):
+def set_works_for(user, node, organization_id, role_handle_id):
     """
     :param user: Django user
     :param node: norduniclient model
@@ -920,9 +920,10 @@ def set_works_for(user, node, organization_id, role_name):
     :param role_name: string for role name
     :return: norduniclient model, boolean
     """
-    from pprint import pprint
+    role = Role.objects.get(handle_id=role_handle_id)
+    role_name = role.name
     contact_id = node.handle_id
-    relationship = nc.models.RoleRelationship.link_contact_organization(contact_id, organization_id, role_name)
+    relationship = nc.models.RoleRelationship.link_contact_organization(contact_id, organization_id, role_handle_id, role_name)
 
     if not relationship:
         relationship = RoleRelationship()

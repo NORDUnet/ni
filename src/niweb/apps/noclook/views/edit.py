@@ -996,8 +996,8 @@ def edit_contact(request, handle_id):
             # Set relationships
             if form.cleaned_data['relationship_works_for']:
                 organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_works_for'])
-                role_name = form.cleaned_data['role_name']
-                helpers.set_works_for(request.user, contact, organization_nh.handle_id, role_name)
+                role_handle_id = form.cleaned_data['role']
+                helpers.set_works_for(request.user, contact, organization_nh.handle_id, role_handle_id)
             if form.cleaned_data['relationship_member_of']:
                 group_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_member_of'])
                 helpers.set_member_of(request.user, contact, group_nh.handle_id)

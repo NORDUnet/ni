@@ -880,19 +880,20 @@ class EditContactForm(NewContactForm):
         super(EditContactForm, self).__init__(*args, **kwargs)
         self.fields['relationship_works_for'].choices = get_node_type_tuples('Organization')
         self.fields['relationship_member_of'].choices = get_node_type_tuples('Group')
+        self.fields['role'].choices = [('', '')] + list(Role.objects.all().values_list('handle_id', 'name'))
 
     relationship_works_for = relationship_field('organization', True)
     relationship_member_of = relationship_field('group', True)
-    role_name = forms.CharField(required=False)
+    role = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     def clean(self):
         """
         Check empty role names
         """
         cleaned_data = super(EditContactForm, self).clean(False)
-        role_name = cleaned_data.get("role_name")
+        role_id = cleaned_data.get("role")
 
-        if not role_name:
+        if not role_id:
             cleaned_data['relationship_works_for'] = None
 
 class NewProcedureForm(forms.Form):
