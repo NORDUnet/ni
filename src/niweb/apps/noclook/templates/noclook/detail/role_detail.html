@@ -64,11 +64,13 @@
 {% block content %}
     {{ block.super }}
     <h1><a href="{% url 'generic_list' slug %}">Role</a> {{name}}</h1>
+    {% if node_handle.description %}
     <table class="table">
         <tr>
             <td><strong>description</strong></td><td>{{ node_handle.description }}</td>
         </tr>
     </table>
+    {% endif %}
     <div class="pull-right">
         {% if table.no_badges %}
             {# Nothing to show #}

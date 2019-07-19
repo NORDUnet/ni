@@ -926,3 +926,15 @@ class NewRoleForm(forms.ModelForm):
     class Meta:
         model = Role
         fields = '__all__'
+
+class EditRoleForm(forms.ModelForm):
+    def save(self, commit=True):
+        role = super(EditRoleForm, self).save(commit)
+        if 'name' in self.changed_data:
+            nc.models.RoleRelationship.update_roles_withid(role.handle_id, role.name)
+
+        return role
+
+    class Meta:
+        model = Role
+        fields = '__all__'

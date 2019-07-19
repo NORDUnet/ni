@@ -13,7 +13,7 @@ from django.http import Http404, JsonResponse
 from django.utils import six
 from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle, Dropdown
+from apps.noclook.models import NodeHandle, Role, Dropdown
 from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
@@ -1059,6 +1059,24 @@ def edit_group(request, handle_id):
     return render(request, 'noclook/edit/edit_group.html',
                   {'node_handle': nh, 'form': form, 'node': group, 'relations': relations, 'contacts': contacts })
 
+@staff_member_required
+def edit_role(request, handle_id):
+    # Get needed data from node
+    role = get_object_or_404(Role, pk=handle_id)
+
+    if request.POST:
+        form = forms.EditRoleForm(request.POST, instance=role)
+        if form.is_valid():
+            role = form.save()
+            return redirect(role.get_absolute_url())
+        else:
+            return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditRoleForm(instance=role)
+    return render(request, 'noclook/edit/edit_role.html',
+                  {'form': form, 'role': role})
+
+
 EDIT_FUNC = {
     'cable': edit_cable,
     'customer': edit_customer,
@@ -1082,6 +1100,7 @@ EDIT_FUNC = {
     'provider': edit_provider,
     'procedure': edit_procedure,
     'rack': edit_rack,
+    'role': edit_role,
     'router': edit_router,
     'site': edit_site,
     'site-owner': edit_site_owner,
