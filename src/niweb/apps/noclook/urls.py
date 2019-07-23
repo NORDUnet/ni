@@ -46,6 +46,7 @@ urlpatterns = [
     url(r'^reserve-id/(?P<slug>[-\w]+)/$', create.reserve_id_sequence),
 
     # -- edit views
+    url(r'^role/(?P<handle_id>\d+)/delete$', edit.delete_role),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', edit.edit_node, name='generic_edit'),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit/disable-noclook-auto-manage/$', edit.disable_noclook_auto_manage),
     url(r'^host/(?P<handle_id>\d+)/edit/convert-to/(?P<slug>[-\w]+)/$', edit.convert_host),

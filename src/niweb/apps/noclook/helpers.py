@@ -21,7 +21,7 @@ import re
 import os
 from neo4j.v1.types import Node
 
-from .models import NodeHandle, NodeType, Role
+from .models import NodeHandle, NodeType, RoleGroup, Role
 from . import activitylog
 import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
@@ -969,26 +969,20 @@ def set_of_member(user, node, contact_id):
     return relationship, created
 
 
-def link_contact_role_for_organization(user, node, contact_handle_id, role_name):
+def link_contact_role_for_organization(user, node, contact_handle_id, role):
     """
     :param user: Django user
     :param node: norduniclient organization model
     :param contact_handle_id: contact's handle_id
-    :param role_name: role name
+    :param role: the selected role
     :return: contact
     """
-    if six.PY2:
-        role_name = role_name.encode('utf-8')
-
-    nc.models.RoleRelationship.remove_role_in_organization(
-        node.handle_id,
-        role_name
-    )
 
     relationship = nc.models.RoleRelationship.link_contact_organization(
         contact_handle_id,
         node.handle_id,
-        role_name
+        role.handle_id,
+        role.name
     )
 
     if not relationship:
@@ -1003,6 +997,21 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role_name)
     contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
     return contact, relationship
+
+
+def unlink_contact_with_role_from_org(user, organization, role):
+    """
+    :param user: Django user
+    :param organization: norduniclient organization model
+    :param role: role model
+    """
+    relationship = nc.models.RoleRelationship.get_role_relation_from_organization(
+        organization.handle_id,
+        role.handle_id,
+    )
+
+    activitylog.delete_relationship(user, relationship)
+    relationship.delete()
 
 
 def create_contact_role_for_organization(user, node, contact_name, role_name):
@@ -1063,20 +1072,51 @@ def create_contact_role_for_organization(user, node, contact_name, role_name):
     return contact, relationship
 
 
-def get_contact_for_orgrole(organization_id, role_name):
+def get_contact_for_orgrole(organization_id, role):
     """
     :param organization_id: Organization's handle_id
-    :param role_name: Role name
+    :param role_name: Role object
     """
-    q = """
-    MATCH (c:Contact)-[:Works_for {{ name: '{role_name}'}}]->(o:Organization)
-    WHERE o.handle_id = {organization_id}
-    RETURN c.handle_id AS handle_id
-    """.format(organization_id=organization_id, role_name=role_name)
-    d = nc.query_to_dict(nc.graphdb.manager, q)
+    contact_handle_id = nc.models.RoleRelationship.get_contact_with_role_in_organization(
+        organization_id,
+        role.handle_id,
+    )
 
-    if 'handle_id' in d and d['handle_id']:
-        contact_handle_id = d['handle_id']
+    if contact_handle_id:
         contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
         return contact
+
+DEFAULT_ROLEGROUP_NAME = 'default'
+DEFAULT_ROLES = {
+    'abuse_contact': { 'name': 'Abuse', 'description': '' },
+    'primary_contact': { 'name': 'Primary contact at incidents', 'description': '' },
+    'secondary_contact': { 'name': 'Secondary contact at incidents', 'description': '' },
+    'it_technical_contact': { 'name': 'IT-technical', 'description': '' },
+    'it_security_contact': { 'name': 'IT-security', 'description': '' },
+    'it_manager_contact': { 'name': 'IT-manager', 'description': '' },
+}
+
+def init_default_rolegroup():
+    default_rolegroup = RoleGroup.objects.filter(name=DEFAULT_ROLEGROUP_NAME)
+
+    if not default_rolegroup:
+        # create the group first
+        default_rolegroup = RoleGroup(name=DEFAULT_ROLEGROUP_NAME, hidden=True)
+        default_rolegroup.save()
+
+        # and then get or create the default roles and link them
+        for role_slug, roledict in DEFAULT_ROLES.items():
+            role = Role.objects.get_or_create(slug=role_slug)[0]
+            role.role_group = default_rolegroup
+
+            # add a default description and name to the roles
+            if not role.description and roledict['description']:
+                role.description = roledict['description']
+                role.save()
+
+            if not role.name and roledict['name']:
+                role.name = roledict['name']
+                role.save()
+
+            role.save()

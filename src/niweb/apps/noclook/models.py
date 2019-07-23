@@ -129,13 +129,22 @@ class NodeHandle(models.Model):
 
     delete.alters_data = True
 
+
+@python_2_unicode_compatible
+class RoleGroup(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    hidden = models.BooleanField(default=False, blank=True)
+
+
 @python_2_unicode_compatible
 class Role(models.Model):
     # Data shared with the relationship
     handle_id = models.AutoField(primary_key=True) # Handle <-> Node data
     name = models.CharField(max_length=200)
+    slug = models.CharField(max_length=20, unique=True, null=True)
     # Data only present in the relational database
     description = models.TextField(blank=True, null=True)
+    role_group = models.ForeignKey(RoleGroup, models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return 'Role %s' % (self.name)
@@ -145,6 +154,13 @@ class Role(models.Model):
 
     def url(self):
         return '/role/{}'.format(self.handle_id)
+
+    def delete(self, **kwargs):
+        """
+        Propagate the changes over the graph db
+        """
+        nc.models.RoleRelationship.delete_roles_withid(self.handle_id)
+        super(Role, self).delete()
 
 
 @python_2_unicode_compatible

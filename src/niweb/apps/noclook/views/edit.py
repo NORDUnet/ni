@@ -13,7 +13,7 @@ from django.http import Http404, JsonResponse
 from django.utils import six
 from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle, Role, Dropdown
+from apps.noclook.models import NodeHandle, Role, RoleGroup, Dropdown
 from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
@@ -967,6 +967,18 @@ def edit_organization(request, handle_id):
                 'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
             ]
             helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
+
+            # specific role setting
+            for field, roledict in helpers.DEFAULT_ROLES.items():
+                if field in form.cleaned_data:
+                    contact_id = form.cleaned_data[field]
+                    role = Role.objects.get(slug=field)
+
+                    if contact_id:
+                        # first we get delete any previous contact with that role on that organization
+                        helpers.unlink_contact_with_role_from_org(request.user, organization, role)
+                        helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
+
             # Set child organizations
             if form.cleaned_data['relationship_parent_of']:
                 organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
@@ -1059,6 +1071,7 @@ def edit_group(request, handle_id):
     return render(request, 'noclook/edit/edit_group.html',
                   {'node_handle': nh, 'form': form, 'node': group, 'relations': relations, 'contacts': contacts })
 
+
 @staff_member_required
 def edit_role(request, handle_id):
     # Get needed data from node
@@ -1075,6 +1088,17 @@ def edit_role(request, handle_id):
         form = forms.EditRoleForm(instance=role)
     return render(request, 'noclook/edit/edit_role.html',
                   {'form': form, 'role': role})
+
+
+@staff_member_required
+def delete_role(request, handle_id):
+    """
+    Removes the role and all the relationships with its handle_id.
+    """
+    redirect_url = '/role/'
+    role = get_object_or_404(Role, handle_id=handle_id)
+    role.delete()
+    return redirect(redirect_url)
 
 
 EDIT_FUNC = {

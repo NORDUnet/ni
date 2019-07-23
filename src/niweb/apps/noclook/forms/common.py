@@ -6,7 +6,7 @@ from django.db import IntegrityError
 import json
 import csv
 from apps.noclook import helpers
-from apps.noclook.models import NodeType, NodeHandle, Role, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
+from apps.noclook.models import NodeType, NodeHandle, RoleGroup, Role, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
@@ -827,12 +827,67 @@ class NewOrganizationForm(forms.Form):
 
 class EditOrganizationForm(NewOrganizationForm):
     def __init__(self, *args, **kwargs):
+        # set initial for contact combos
+        initial = {} if 'initial' not in kwargs else kwargs['initial']
+
+        if 'handle_id' in args[0]:
+            organization_id = args[0]['handle_id']
+
+            # check or create the default roles
+            helpers.init_default_rolegroup()
+
+            for field, roledict in helpers.DEFAULT_ROLES.items():
+                role = Role.objects.get(slug=field)
+                possible_contact = helpers.get_contact_for_orgrole(organization_id, role)
+
+                if possible_contact:
+                    args[0][field] = possible_contact.handle_id
+
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
         self.fields['relationship_uses_a'].choices = get_node_type_tuples('Procedure')
 
+        # contact choices
+        if 'handle_id' in args[0]:
+            organization_id = args[0]['handle_id']
+            contact_choices = get_contacts_for_organization(organization_id)
+            contact_type = NodeType.objects.get(slug='contact')
+            contact_choices = [('', '')] + list(NodeHandle.objects.filter(node_type=contact_type).values_list('handle_id', 'node_name'))
+
+            self.fields['abuse_contact'].choices = contact_choices
+            self.fields['primary_contact'].choices = contact_choices
+            self.fields['secondary_contact'].choices = contact_choices
+            self.fields['it_technical_contact'].choices = contact_choices
+            self.fields['it_security_contact'].choices = contact_choices
+            self.fields['it_manager_contact'].choices = contact_choices
+
     relationship_parent_of = relationship_field('organization', True)
     relationship_uses_a = relationship_field('procedure', True)
+
+    abuse_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Abuse")
+    primary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Primary contact at incidents") # Primary contact at incidents
+    secondary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Secondary contact at incidents") # Secondary contact at incidents
+    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-technical") # IT-technical
+    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-security") # IT-security
+    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-manager") # IT-manager
+
+    def clean(self):
+        """
+        Sets name from first and second name
+        """
+        cleaned_data = super(EditOrganizationForm, self).clean()
+        for field, roledict in helpers.DEFAULT_ROLES.items():
+            if field in self.data:
+                value = self.data[field]
+                if value:
+                    try:
+                        contact_handle_id = int(value)
+                        cleaned_data[field] = contact_handle_id
+                    except ValueError:
+                        cleaned_data[field] = value
+
+                    if field in self._errors:
+                        del self._errors[field]
 
 
 class NewContactForm(forms.Form):
