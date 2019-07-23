@@ -973,11 +973,18 @@ def edit_organization(request, handle_id):
                 if field in form.cleaned_data:
                     contact_id = form.cleaned_data[field]
                     role = Role.objects.get(slug=field)
+                    set_contact = helpers.get_contact_for_orgrole(organization.handle_id, role)
 
                     if contact_id:
-                        # first we get delete any previous contact with that role on that organization
-                        helpers.unlink_contact_with_role_from_org(request.user, organization, role)
-                        helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
+                        if set_contact:
+                            if set_contact.handle_id != contact_id:
+                                helpers.unlink_contact_with_role_from_org(request.user, organization, role)
+                                helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
+                        else:
+                            helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
+                    elif set_contact:
+                        helpers.unlink_contact_and_role_from_org(request.user, organization, set_contact.handle_id, role)
+
 
             # Set child organizations
             if form.cleaned_data['relationship_parent_of']:

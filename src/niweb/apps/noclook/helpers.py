@@ -21,7 +21,8 @@ import re
 import os
 from neo4j.v1.types import Node
 
-from .models import NodeHandle, NodeType, RoleGroup, Role
+from .models import NodeHandle, NodeType, RoleGroup, Role,\
+                    DEFAULT_ROLEGROUP_NAME, DEFAULT_ROLES
 from . import activitylog
 import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
@@ -1010,9 +1011,20 @@ def unlink_contact_with_role_from_org(user, organization, role):
         role.handle_id,
     )
 
-    activitylog.delete_relationship(user, relationship)
-    relationship.delete()
+    if relationship:
+        activitylog.delete_relationship(user, relationship)
+        relationship.delete()
 
+def unlink_contact_and_role_from_org(user, organization, contact_id, role):
+    relationship = nc.models.RoleRelationship.get_role_relation_from_contact_organization(
+        organization.handle_id,
+        role.handle_id,
+        contact_id
+    )
+
+    if relationship:
+        activitylog.delete_relationship(user, relationship)
+        relationship.delete()
 
 def create_contact_role_for_organization(user, node, contact_name, role_name):
     """
@@ -1087,15 +1099,6 @@ def get_contact_for_orgrole(organization_id, role):
 
         return contact
 
-DEFAULT_ROLEGROUP_NAME = 'default'
-DEFAULT_ROLES = {
-    'abuse_contact': { 'name': 'Abuse', 'description': '' },
-    'primary_contact': { 'name': 'Primary contact at incidents', 'description': '' },
-    'secondary_contact': { 'name': 'Secondary contact at incidents', 'description': '' },
-    'it_technical_contact': { 'name': 'IT-technical', 'description': '' },
-    'it_security_contact': { 'name': 'IT-security', 'description': '' },
-    'it_manager_contact': { 'name': 'IT-manager', 'description': '' },
-}
 
 def init_default_rolegroup():
     default_rolegroup = RoleGroup.objects.filter(name=DEFAULT_ROLEGROUP_NAME)

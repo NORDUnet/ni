@@ -6,7 +6,10 @@ from django.db import IntegrityError
 import json
 import csv
 from apps.noclook import helpers
-from apps.noclook.models import NodeType, NodeHandle, RoleGroup, Role, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
+from apps.noclook.models import NodeType, NodeHandle, RoleGroup, Role,\
+                                UniqueIdGenerator, ServiceType,\
+                                NordunetUniqueId, Dropdown, DEFAULT_ROLES,\
+                                DEFAULT_ROLEGROUP_NAME
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
@@ -836,7 +839,7 @@ class EditOrganizationForm(NewOrganizationForm):
             # check or create the default roles
             helpers.init_default_rolegroup()
 
-            for field, roledict in helpers.DEFAULT_ROLES.items():
+            for field, roledict in DEFAULT_ROLES.items():
                 role = Role.objects.get(slug=field)
                 possible_contact = helpers.get_contact_for_orgrole(organization_id, role)
 

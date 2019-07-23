@@ -130,6 +130,17 @@ class NodeHandle(models.Model):
     delete.alters_data = True
 
 
+DEFAULT_ROLEGROUP_NAME = 'default'
+DEFAULT_ROLES = {
+    'abuse_contact': { 'name': 'Abuse', 'description': '' },
+    'primary_contact': { 'name': 'Primary contact at incidents', 'description': '' },
+    'secondary_contact': { 'name': 'Secondary contact at incidents', 'description': '' },
+    'it_technical_contact': { 'name': 'IT-technical', 'description': '' },
+    'it_security_contact': { 'name': 'IT-security', 'description': '' },
+    'it_manager_contact': { 'name': 'IT-manager', 'description': '' },
+}
+
+
 @python_2_unicode_compatible
 class RoleGroup(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -159,8 +170,10 @@ class Role(models.Model):
         """
         Propagate the changes over the graph db
         """
-        nc.models.RoleRelationship.delete_roles_withid(self.handle_id)
-        super(Role, self).delete()
+        default_rolegroup = RoleGroup.objects.get(name=DEFAULT_ROLEGROUP_NAME)
+        if self.role_group != default_rolegroup:
+            nc.models.RoleRelationship.delete_roles_withid(self.handle_id)
+            super(Role, self).delete()
 
 
 @python_2_unicode_compatible
