@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from apps.noclook.models import User, NodeType, NodeHandle, Role, NODE_META_TYPE_CHOICES
+from apps.noclook import helpers
+from apps.noclook.models import User, NodeType, NodeHandle, Role, NODE_META_TYPE_CHOICES, DEFAULT_ROLE_KEY
 from apps.nerds.lib.consumer_util import get_user
 from django.core.management.base import BaseCommand, CommandError
 from pprint import pprint
@@ -32,6 +33,10 @@ class Command(BaseCommand):
                             help='Delimiter to use use. Default ";".')
 
     def handle(self, *args, **options):
+        # init default roles and rolegroup
+        helpers.init_default_rolegroup()
+
+        # check if the fixroles option has been called, do it and exit
         if options['fixroles']:
             self.fix_roles()
             return
@@ -199,9 +204,13 @@ class Command(BaseCommand):
                             modifier = self.user,
                         )[0]
 
-                    # add role relatioship
+                    # add role relatioship, use employee role if empty
                     role_name = node['contact_role']
-                    role = Role.objects.get_or_create(name = role_name)[0]
+                    
+                    if role_name:
+                        role = Role.objects.get_or_create(name = role_name)[0]
+                    else:
+                        role = Role.objects.get(slug=DEFAULT_ROLE_KEY)
 
                     nc.models.RoleRelationship.link_contact_organization(
                         new_contact.handle_id,
@@ -258,7 +267,8 @@ class Command(BaseCommand):
     def fix_roles(self):
         '''
         This method is provided to update an existing setup into the new
-        role database representation in both databases
+        role database representation in both databases. It runs over the
+        neo4j db and creates the existent roles into the relational db
         '''
         # get all unique role string in all Works_for relation in neo4j db
         role_names = nc.models.RoleRelationship.get_all_role_names()

@@ -9,7 +9,7 @@ from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle, RoleGroup, Role,\
                                 UniqueIdGenerator, ServiceType,\
                                 NordunetUniqueId, Dropdown, DEFAULT_ROLES,\
-                                DEFAULT_ROLEGROUP_NAME
+                                DEFAULT_ROLE_KEY, DEFAULT_ROLEGROUP_NAME
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
@@ -879,7 +879,7 @@ class EditOrganizationForm(NewOrganizationForm):
         Sets name from first and second name
         """
         cleaned_data = super(EditOrganizationForm, self).clean()
-        for field, roledict in helpers.DEFAULT_ROLES.items():
+        for field, roledict in DEFAULT_ROLES.items():
             if field in self.data:
                 value = self.data[field]
                 if value:
@@ -936,6 +936,11 @@ class NewContactForm(forms.Form):
 class EditContactForm(NewContactForm):
     def __init__(self, *args, **kwargs):
         super(EditContactForm, self).__init__(*args, **kwargs)
+
+        # check or create the default roles
+        helpers.init_default_rolegroup()
+
+        # init combos
         self.fields['relationship_works_for'].choices = get_node_type_tuples('Organization')
         self.fields['relationship_member_of'].choices = get_node_type_tuples('Group')
         self.fields['role'].choices = [('', '')] + list(Role.objects.all().values_list('handle_id', 'name'))
@@ -946,13 +951,14 @@ class EditContactForm(NewContactForm):
 
     def clean(self):
         """
-        Check empty role names
+        Check empty role, set to employee
         """
         cleaned_data = super(EditContactForm, self).clean(False)
         role_id = cleaned_data.get("role")
 
         if not role_id:
-            cleaned_data['relationship_works_for'] = None
+            default_role = Role.objects.get(slug=DEFAULT_ROLE_KEY)
+            cleaned_data['role'] = default_role.handle_id
 
 class NewProcedureForm(forms.Form):
     name = forms.CharField()

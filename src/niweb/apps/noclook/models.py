@@ -131,6 +131,7 @@ class NodeHandle(models.Model):
 
 
 DEFAULT_ROLEGROUP_NAME = 'default'
+DEFAULT_ROLE_KEY = 'employee'
 DEFAULT_ROLES = {
     'abuse_contact': { 'name': 'Abuse', 'description': '' },
     'primary_contact': { 'name': 'Primary contact at incidents', 'description': '' },
@@ -138,6 +139,7 @@ DEFAULT_ROLES = {
     'it_technical_contact': { 'name': 'IT-technical', 'description': '' },
     'it_security_contact': { 'name': 'IT-security', 'description': '' },
     'it_manager_contact': { 'name': 'IT-manager', 'description': '' },
+    DEFAULT_ROLE_KEY: { 'name': 'Employee', 'description': '' },
 }
 
 
