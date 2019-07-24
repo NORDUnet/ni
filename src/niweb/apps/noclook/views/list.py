@@ -304,6 +304,8 @@ def list_odfs(request):
 def _optical_link_table(link, dependencies):
     dependencies_view = []
     for deps in dependencies:
+        if deps[0] is None:
+            continue
         node = {'name': deps[0], 'handle_id': deps[0]['handle_id']}
         if node and len(deps) > 1:
             name = [n.get('name') for n in reversed(deps) if n]
