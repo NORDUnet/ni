@@ -182,7 +182,7 @@ class Command(BaseCommand):
                 graph_node = new_contact.get_node()
 
                 for key in node.keys():
-                    if key not in ['node_type', 'contact_role', 'name', 'account_name'] and node[key]:
+                    if key not in ['node_type', 'contact_role', 'name', 'account_name', 'salutation'] and node[key]:
                         graph_node.add_property(key, node[key])
 
             	# dj: organization exist?: create or get
