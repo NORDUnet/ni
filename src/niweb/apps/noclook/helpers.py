@@ -883,14 +883,14 @@ def attachment_content(attachment):
         content = f.read()
     return content
 
-def set_parent_of(user, node, child_org_id):
+def set_parent_of(user, node, parent_org_id):
     """
     :param user: Django user
     :param node: norduniclient model
     :param child_org_id: unique id
     :return: norduniclient model, boolean
     """
-    result = node.set_parent(child_org_id)
+    result = node.set_parent(parent_org_id)
     relationship_id = result.get('Parent_of')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Parent_of')[0].get('created')
@@ -1024,64 +1024,11 @@ def unlink_contact_and_role_from_org(user, organization, contact_id, role):
 
     if relationship:
         activitylog.delete_relationship(user, relationship)
-        relationship.delete()
-
-def create_contact_role_for_organization(user, node, contact_name, role_name):
-    """
-    :param user: Django user
-    :param node: norduniclient organization model
-    :param contact_name: full name of the contact
-    :return: contact, role: New objects if they're not present in the db
-    """
-    contact_type = NodeType.objects.get(type='Contact')
-
-    # convert string if necesary
-    if six.PY2:
-        contact_name = contact_name.encode('utf-8')
-        role_name = role_name.encode('utf-8')
-
-    nc.models.RoleRelationship.remove_role_in_organization(
-        node.handle_id,
-        role_name
-    )
-
-    first_name, last_name = contact_name.split(' ')
-
-    # create or get contact
-    contact, created_contact = NodeHandle.objects.get_or_create(
-        node_name=contact_name,
-        node_type=contact_type,
-        node_meta_type='Relation',
-        creator=user,
-        modifier=user,
-    )
-
-    if created_contact:
-        activitylog.create_node(user, contact)
-        contact.get_node().add_property('first_name', first_name)
-        contact.get_node().add_property('last_name', last_name)
-
-    relationship = nc.models.RoleRelationship.link_contact_organization(
-        contact.handle_id,
-        node.handle_id,
-        role_name
-    )
-
-    if not relationship:
-        relationship = RoleRelationship()
-        relationship.load_from_nodes(contact_id, organization_id)
-
-    node = node.reload()
-
-    created = False
-    for relation in node.relationships.get('Works_for'):
-        if relation['node'].handle_id == contact.handle_id:
-            created = relation.get('created')
-
-    if created:
-        activitylog.create_relationship(user, relationship)
-
-    return contact, relationship
+        nc.models.RoleRelationship.unlink_contact_with_role_organization(
+            contact_id,
+            organization.handle_id,
+            role.handle_id,
+        )
 
 
 def get_contact_for_orgrole(organization_id, role):

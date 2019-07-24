@@ -146,6 +146,9 @@ class RoleGroup(models.Model):
     name = models.CharField(max_length=100, unique=True)
     hidden = models.BooleanField(default=False, blank=True)
 
+    def __str__(self):
+        return 'RoleGroup %s' % (self.name)
+
 
 @python_2_unicode_compatible
 class Role(models.Model):

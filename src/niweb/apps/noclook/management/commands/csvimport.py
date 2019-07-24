@@ -261,7 +261,7 @@ class Command(BaseCommand):
         role database representation in both databases
         '''
         # get all unique role string in all Works_for relation in neo4j db
-        role_names = nc.models.RoleRelationship.get_all_roles()
+        role_names = nc.models.RoleRelationship.get_all_role_names()
 
         # create a role for each of them
         for role_name in role_names:
