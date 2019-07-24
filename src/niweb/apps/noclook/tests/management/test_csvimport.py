@@ -6,7 +6,7 @@ import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 import norduniclient.models as ncmodels
 
-from apps.noclook.models import NodeHandle, NodeType, User
+from apps.noclook.models import NodeHandle, NodeType, User, Role
 
 from ..neo4j_base import NeoTestCase
 
@@ -112,6 +112,10 @@ class CsvImportTest(NeoTestCase):
         role1.load_from_nodes(contact1.handle_id, organization1.handle_id)
         self.assertIsNotNone(role1)
         self.assertEquals(role1.name, 'Computer Systems Analyst III')
+
+        roleqs = Role.objects.filter(name=role1.name)
+        self.assertIsNotNone(roleqs)
+        self.assertIsNotNone(roleqs.first)
 
     def test_secroles_import(self):
         # call csvimport command (verbose 0)
