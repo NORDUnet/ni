@@ -33,9 +33,6 @@ class Command(BaseCommand):
                             help='Delimiter to use use. Default ";".')
 
     def handle(self, *args, **options):
-        # init default roles and rolegroup
-        helpers.init_default_rolegroup()
-
         # check if the fixroles option has been called, do it and exit
         if options['fixroles']:
             self.fix_roles()
@@ -206,7 +203,7 @@ class Command(BaseCommand):
 
                     # add role relatioship, use employee role if empty
                     role_name = node['contact_role']
-                    
+
                     if role_name:
                         role = Role.objects.get_or_create(name = role_name)[0]
                     else:

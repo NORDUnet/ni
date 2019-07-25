@@ -1045,28 +1045,3 @@ def get_contact_for_orgrole(organization_id, role):
         contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
         return contact
-
-
-def init_default_rolegroup():
-    default_rolegroup = RoleGroup.objects.filter(name=DEFAULT_ROLEGROUP_NAME)
-
-    if not default_rolegroup:
-        # create the group first
-        default_rolegroup = RoleGroup(name=DEFAULT_ROLEGROUP_NAME, hidden=True)
-        default_rolegroup.save()
-
-        # and then get or create the default roles and link them
-        for role_slug, roledict in DEFAULT_ROLES.items():
-            role = Role.objects.get_or_create(slug=role_slug)[0]
-            role.role_group = default_rolegroup
-
-            # add a default description and name to the roles
-            if not role.description and roledict['description']:
-                role.description = roledict['description']
-                role.save()
-
-            if not role.name and roledict['name']:
-                role.name = roledict['name']
-                role.save()
-
-            role.save()

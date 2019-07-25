@@ -156,8 +156,8 @@ class RoleGroup(models.Model):
 class Role(models.Model):
     # Data shared with the relationship
     handle_id = models.AutoField(primary_key=True) # Handle <-> Node data
-    name = models.CharField(max_length=200)
-    slug = models.CharField(max_length=20, unique=True, null=True)
+    name = models.CharField(max_length=200, unique=True)
+    slug = models.CharField(max_length=200, unique=True)
     # Data only present in the relational database
     description = models.TextField(blank=True, null=True)
     role_group = models.ForeignKey(RoleGroup, models.SET_NULL, blank=True, null=True)
@@ -170,6 +170,14 @@ class Role(models.Model):
 
     def url(self):
         return '/role/{}'.format(self.handle_id)
+
+    def save(self, **kwargs):
+        # set slug value if empty
+        if not self.slug:
+            self.slug = self.name.replace(' ', '_').lower()
+
+        super(Role, self).save()
+        return self
 
     def delete(self, **kwargs):
         """

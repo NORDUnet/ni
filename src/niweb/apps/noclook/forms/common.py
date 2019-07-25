@@ -836,9 +836,6 @@ class EditOrganizationForm(NewOrganizationForm):
         if 'handle_id' in args[0]:
             organization_id = args[0]['handle_id']
 
-            # check or create the default roles
-            helpers.init_default_rolegroup()
-
             for field, roledict in DEFAULT_ROLES.items():
                 role = Role.objects.get(slug=field)
                 possible_contact = helpers.get_contact_for_orgrole(organization_id, role)
@@ -937,9 +934,6 @@ class EditContactForm(NewContactForm):
     def __init__(self, *args, **kwargs):
         super(EditContactForm, self).__init__(*args, **kwargs)
 
-        # check or create the default roles
-        helpers.init_default_rolegroup()
-
         # init combos
         self.fields['relationship_works_for'].choices = get_node_type_tuples('Organization')
         self.fields['relationship_member_of'].choices = get_node_type_tuples('Group')
@@ -994,9 +988,10 @@ class NewRoleForm(forms.ModelForm):
 
 class EditRoleForm(forms.ModelForm):
     def save(self, commit=True):
-        role = super(EditRoleForm, self).save(commit)
+        role = super(EditRoleForm, self).save(False)
         if 'name' in self.changed_data:
             nc.models.RoleRelationship.update_roles_withid(role.handle_id, role.name)
+            role.save()
 
         return role
 
