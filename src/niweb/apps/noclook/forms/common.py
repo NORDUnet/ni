@@ -921,10 +921,6 @@ class NewContactForm(forms.Form):
 
         full_name = '{} {}'.format(first_name, last_name)
         node_type = NodeType.objects.get(type="Contact")
-
-        if is_create and self.data and NodeHandle.objects.filter(node_name=full_name, node_type=node_type):
-            raise ValidationError('A contact with that name already exists')
-
         cleaned_data['name'] = full_name
 
         return cleaned_data

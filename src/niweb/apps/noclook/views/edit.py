@@ -13,7 +13,7 @@ from django.http import Http404, JsonResponse
 from django.utils import six
 from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle, Role, RoleGroup, Dropdown
+from apps.noclook.models import NodeHandle, Role, RoleGroup, Dropdown, DEFAULT_ROLES
 from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
@@ -969,7 +969,7 @@ def edit_organization(request, handle_id):
             helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
 
             # specific role setting
-            for field, roledict in helpers.DEFAULT_ROLES.items():
+            for field, roledict in DEFAULT_ROLES.items():
                 if field in form.cleaned_data:
                     contact_id = form.cleaned_data[field]
                     role = Role.objects.get(slug=field)
