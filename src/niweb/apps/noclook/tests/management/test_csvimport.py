@@ -6,7 +6,7 @@ import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 import norduniclient.models as ncmodels
 
-from apps.noclook.models import NodeHandle, NodeType, User
+from apps.noclook.models import NodeHandle, NodeType, User, Role, DEFAULT_ROLE_KEY
 
 from ..neo4j_base import NeoTestCase
 
@@ -28,8 +28,9 @@ class CsvImportTest(NeoTestCase):
 "Honorable";"Caesar";"Newby";;"Computer Systems Analyst III";"Person";;;;;"China";"897-979-7799";"501-503-1550";;"cnewby0@joomla.org";;;"Gabtune"
 "Mr";"Zilvia";"Linnard";;"Analog Circuit Design manager";"Person";;;;;"Indonesia";"205-934-3477";"473-256-5648";;"zlinnard1@wunderground.com";;;"Babblestorm"
 "Honorable";"Reamonn";"Scriviner";;"Tax Accountant";"Person";;;;;"China";"200-111-4607";"419-639-2648";;"rscriviner2@moonfruit.com";;;"Babbleblab"
-"Mrs";"Franny";"Bainton";;"Software Consultant";"Person";;;;;"China";"877-832-9647";"138-608-6235";;"fbainton3@si.edu";;;"Mudo"
-"Rev";"Kiri";"Janosevic";;"Physical Therapy Assistant";"Person";;;;;"China";"568-690-1854";"118-569-1303";;"kjanosevic4@umich.edu";;;"Youspan"
+"Mrs";"Jessy";"Bainton";;"Software Consultant";"Person";;;;;"China";"877-832-9647";"138-608-6235";;"fbainton3@si.edu";;;"Mudo"
+"Rev";"Theresa";"Janosevic";;"Physical Therapy Assistant";"Person";;;;;"China";"568-690-1854";"118-569-1303";;"tjanosevic4@umich.edu";;;"Youspan"
+"Mrs";"David";"Janosevic";;;"Person";;;;;"United Kingdom";"568-690-1854";"118-569-1303";;"djanosevic4@afaa.co.uk";;;"AsFastAsAFAA"
     """
 
     secroles_str = """"Organisation";"Contact";"Role"
@@ -112,6 +113,19 @@ class CsvImportTest(NeoTestCase):
         role1.load_from_nodes(contact1.handle_id, organization1.handle_id)
         self.assertIsNotNone(role1)
         self.assertEquals(role1.name, 'Computer Systems Analyst III')
+
+        roleqs = Role.objects.filter(name=role1.name)
+        self.assertIsNotNone(roleqs)
+        self.assertIsNotNone(roleqs.first)
+
+        # check for empty role and if it has the role employee
+        qs = NodeHandle.objects.filter(node_name='David Janosevic')
+        self.assertIsNotNone(qs)
+        contact_employee = qs.first()
+        self.assertIsNotNone(contact_employee)
+        employee_role = Role.objects.get(slug=DEFAULT_ROLE_KEY)
+        relations = contact_employee.get_node().get_outgoing_relations()
+        self.assertEquals(employee_role.name, relations['Works_for'][0]['relationship']['name'])
 
     def test_secroles_import(self):
         # call csvimport command (verbose 0)

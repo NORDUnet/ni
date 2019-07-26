@@ -3,7 +3,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
-from apps.noclook.models import NodeType
+from apps.noclook.models import NodeType, Role
 from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
@@ -560,28 +560,57 @@ def list_sites(request):
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Sites', 'urls': urls})
 
-def _organization_table(org):
+def _organization_table(org, parent_orgs):
     organization_link = {
             'url': u'/organization/{}/'.format(org.get('handle_id')),
             'name': u'{}'.format(org.get('name', ''))
             }
+
+    parent_org_link = ''
+
+    parent_links = []
+    if parent_orgs:
+        for parent_org in parent_orgs:
+            parent_org_link = {
+                    'url': u'/organization/{}/'.format(parent_org.get('handle_id')),
+                    'name': u'{}'.format(parent_org.get('name', ''))
+                    }
+            parent_links.append(parent_org_link)
+
     name = org.get('customer_id')
-    row = TableRow(organization_link, name)
+    row = TableRow(organization_link, parent_links)
     return row
 
 @login_required
 def list_organizations(request):
     q = """
         MATCH (org:Organization)
-        RETURN org
+        OPTIONAL MATCH (parent_org)-[:Parent_of]->(org:Organization)
+        RETURN org, parent_org
         ORDER BY org.name
         """
 
     org_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(org_list)
 
-    table = Table('Name', 'ID')
-    table.rows = [_organization_table(item['org']) for item in org_list]
+    table = Table('Name', 'Parent Org.')
+    table.rows = []
+    orgs_dict = {}
+
+    for item in org_list:
+        org = item['org']
+        parent_org = item['parent_org']
+        org_handle_id = org.get('handle_id')
+
+        if org_handle_id not in orgs_dict:
+            orgs_dict[org_handle_id] = { 'org': org, 'parent_orgs': [] }
+
+        if item['parent_org']:
+            orgs_dict[org_handle_id]['parent_orgs'].append(item['parent_org'])
+
+    for org_dict in orgs_dict.values():
+        table.rows.append(_organization_table(org_dict['org'], org_dict['parent_orgs']))
+
     table.no_badges=True
 
     return render(request, 'noclook/list/list_generic.html',
@@ -603,7 +632,7 @@ def list_contacts(request):
     q = """
         MATCH (con:Contact)
         OPTIONAL MATCH (con)-[:Works_for]->(org:Organization)
-        RETURN con.handle_id AS con_handle_id, con, org
+        RETURN con.handle_id AS con_handle_id, con, count(DISTINCT org), org
         """
 
     con_list = nc.query_to_list(nc.graphdb.manager, q)
@@ -638,21 +667,19 @@ def list_contacts(request):
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Contacts', 'urls': urls})
 
-def _role_table(role_name):
-    name_param = { 'name': role_name }
+def _role_table(role):
     role_link = {
-            'url': u'/role/detail/?{}'.format(urllib.parse.urlencode(name_param)),
-            'name': u'{}'.format(role_name)
-            }
-    row = TableRow(role_link)
-    return row
+        'url': u'/role/{}/'.format(role.handle_id),
+        'name': u'{}'.format(role.name)
+    }
+    return TableRow(role_link, role.description)
 
 @login_required
 def list_roles(request):
-    role_list = nc.models.RoleRelationship.get_all_roles(nc.graphdb.manager)
+    role_list = Role.objects.all()
 
-    table = Table('Name')
-    table.rows = [_role_table(role_name) for role_name in role_list]
+    table = Table('Name', 'Description')
+    table.rows = [_role_table(role) for role in role_list]
     table.no_badges=True
 
     return render(request, 'noclook/list/list_generic.html',

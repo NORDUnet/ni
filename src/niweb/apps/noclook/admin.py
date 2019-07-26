@@ -4,7 +4,7 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, Choice
+from .models import NodeHandle, NodeType, Role, RoleGroup, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, Choice
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -13,7 +13,7 @@ class NodeHandleAdmin(admin.ModelAdmin):
     list_filter = ('node_type', 'creator')
     search_fields = ['node_name']
     actions = ['delete_object']
-    
+
     # Remove the bulk delete option from the admin interface as it does not
     # run the NodeHandle delete-function.
     def get_actions(self, request):
@@ -21,7 +21,7 @@ class NodeHandleAdmin(admin.ModelAdmin):
         if 'delete_selected' in actions:
             del actions['delete_selected']
         return actions
-        
+
     def delete_object(self, request, queryset):
         deleted = 0
         for obj in queryset:
@@ -33,12 +33,12 @@ class NodeHandleAdmin(admin.ModelAdmin):
             message_bit = "%s NodeHandles were" % deleted
         self.message_user(request, "%s successfully deleted." % message_bit)
     delete_object.short_description = "Delete the selected NodeHandle(s)"
-        
+
 
 class NodeTypeAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('type',)}
     actions = ['delete_object']
-    
+
     # Remove the bulk delete option from the admin interface as it does not
     # run the NodeHandle delete-function.
     def get_actions(self, request):
@@ -46,7 +46,7 @@ class NodeTypeAdmin(admin.ModelAdmin):
         if 'delete_selected' in actions:
             del actions['delete_selected']
         return actions
-        
+
     def delete_object(self, request, queryset):
         deleted = 0
         for obj in queryset:
@@ -99,3 +99,5 @@ admin.site.register(ServiceType, ServiceTypeAdmin)
 admin.site.register(ServiceClass)
 admin.site.register(Dropdown, DropdownAdmin)
 admin.site.register(Choice, ChoiceAdmin)
+admin.site.register(RoleGroup)
+admin.site.register(Role)
