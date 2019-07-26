@@ -964,7 +964,7 @@ def edit_organization(request, handle_id):
             # Generic node update
             # use property keys to avoid inserting contacts as a string property of the node
             property_keys = [
-                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
+                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'incident_management_info',
             ]
             helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
 

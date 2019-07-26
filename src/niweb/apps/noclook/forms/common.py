@@ -821,7 +821,7 @@ class NewOrganizationForm(forms.Form):
     website = forms.CharField(required=False)
     customer_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
-    additional_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
+    incident_management_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
 
     def __init__(self, *args, **kwargs):
         super(NewOrganizationForm, self).__init__(*args, **kwargs)
