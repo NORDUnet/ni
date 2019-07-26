@@ -82,7 +82,7 @@ class Neo4jHelpersTest(NeoTestCase):
             self.user,
             self.contact_node,
             self.organization_node.handle_id,
-            self.role.handle_id
+            self.role.name
         )
         self.assertEqual(
             self.organization_node.get_relations()['Works_for'][0]['relationship_id'],

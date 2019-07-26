@@ -125,7 +125,7 @@ class CsvImportTest(NeoTestCase):
         self.assertIsNotNone(contact_employee)
         employee_role = Role.objects.get(slug=DEFAULT_ROLE_KEY)
         relations = contact_employee.get_node().get_outgoing_relations()
-        self.assertEquals(employee_role.handle_id, relations['Works_for'][0]['relationship']['handle_id'])
+        self.assertEquals(employee_role.name, relations['Works_for'][0]['relationship']['name'])
 
     def test_secroles_import(self):
         # call csvimport command (verbose 0)

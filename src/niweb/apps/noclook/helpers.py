@@ -913,7 +913,7 @@ def set_uses_a(user, node, procedure_id):
         activitylog.create_relationship(user, relationship)
     return relationship, created
 
-def set_works_for(user, node, organization_id, role_handle_id):
+def set_works_for(user, node, organization_id, role_name):
     """
     :param user: Django user
     :param node: norduniclient model
@@ -921,10 +921,8 @@ def set_works_for(user, node, organization_id, role_handle_id):
     :param role_name: string for role name
     :return: norduniclient model, boolean
     """
-    role = Role.objects.get(handle_id=role_handle_id)
-    role_name = role.name
     contact_id = node.handle_id
-    relationship = nc.models.RoleRelationship.link_contact_organization(contact_id, organization_id, role_handle_id, role_name)
+    relationship = nc.models.RoleRelationship.link_contact_organization(contact_id, organization_id, role_name)
 
     if not relationship:
         relationship = RoleRelationship()
@@ -982,7 +980,6 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role):
     relationship = nc.models.RoleRelationship.link_contact_organization(
         contact_handle_id,
         node.handle_id,
-        role.handle_id,
         role.name
     )
 
@@ -1008,7 +1005,7 @@ def unlink_contact_with_role_from_org(user, organization, role):
     """
     relationship = nc.models.RoleRelationship.get_role_relation_from_organization(
         organization.handle_id,
-        role.handle_id,
+        role.name,
     )
 
     if relationship:
@@ -1018,7 +1015,7 @@ def unlink_contact_with_role_from_org(user, organization, role):
 def unlink_contact_and_role_from_org(user, organization, contact_id, role):
     relationship = nc.models.RoleRelationship.get_role_relation_from_contact_organization(
         organization.handle_id,
-        role.handle_id,
+        role.name,
         contact_id
     )
 
@@ -1027,7 +1024,7 @@ def unlink_contact_and_role_from_org(user, organization, contact_id, role):
         nc.models.RoleRelationship.unlink_contact_with_role_organization(
             contact_id,
             organization.handle_id,
-            role.handle_id,
+            role.name,
         )
 
 
@@ -1038,7 +1035,7 @@ def get_contact_for_orgrole(organization_id, role):
     """
     contact_handle_id = nc.models.RoleRelationship.get_contact_with_role_in_organization(
         organization_id,
-        role.handle_id,
+        role.name,
     )
 
     if contact_handle_id:

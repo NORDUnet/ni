@@ -139,7 +139,7 @@ DEFAULT_ROLES = {
     'it_technical_contact': { 'name': 'IT-technical', 'description': '' },
     'it_security_contact': { 'name': 'IT-security', 'description': '' },
     'it_manager_contact': { 'name': 'IT-manager', 'description': '' },
-    DEFAULT_ROLE_KEY: { 'name': 'Employee', 'description': '' },
+    DEFAULT_ROLE_KEY: { 'name': nc.models.RoleRelationship.DEFAULT_ROLE_NAME, 'description': '' },
 }
 
 
@@ -184,8 +184,9 @@ class Role(models.Model):
         Propagate the changes over the graph db
         """
         default_rolegroup = RoleGroup.objects.get(name=DEFAULT_ROLEGROUP_NAME)
+        
         if self.role_group != default_rolegroup:
-            nc.models.RoleRelationship.delete_roles_withid(self.handle_id)
+            nc.models.RoleRelationship.delete_roles_withname(self.name)
             super(Role, self).delete()
 
 

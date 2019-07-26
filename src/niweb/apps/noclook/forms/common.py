@@ -950,6 +950,15 @@ class EditContactForm(NewContactForm):
             default_role = Role.objects.get(slug=DEFAULT_ROLE_KEY)
             cleaned_data['role'] = default_role.handle_id
 
+        # clear organization and role selects
+        if 'relationship_works_for' in self.data:
+            self.data = self.data.copy()
+            del self.data['relationship_works_for']
+
+        if 'role' in self.data:
+            self.data = self.data.copy()
+            del self.data['role']
+
 class NewProcedureForm(forms.Form):
     name = forms.CharField()
     description = description_field('procedure')
@@ -984,13 +993,16 @@ class NewRoleForm(forms.ModelForm):
 
 class EditRoleForm(forms.ModelForm):
     def save(self, commit=True):
+        initial_name = self.initial['name']
         role = super(EditRoleForm, self).save(False)
-        if 'name' in self.changed_data:
-            nc.models.RoleRelationship.update_roles_withid(role.handle_id, role.name)
+
+        if self.has_changed():
+            if 'name' in self.changed_data:
+                nc.models.RoleRelationship.update_roles_withname(initial_name, role.name)
             role.save()
 
         return role
 
     class Meta:
         model = Role
-        fields = '__all__'
+        fields = ['name', 'description']

@@ -212,8 +212,7 @@ class Command(BaseCommand):
                     nc.models.RoleRelationship.link_contact_organization(
                         new_contact.handle_id,
                         new_org.handle_id,
-                        role.handle_id,
-                        role_name
+                        role.name
                     )
 
 
@@ -255,8 +254,7 @@ class Command(BaseCommand):
                 nc.models.RoleRelationship.link_contact_organization(
                     contact.handle_id,
                     organization.handle_id,
-                    role.handle_id,
-                    role_name
+                    role.name
                 )
 
             csv_secroles.close()

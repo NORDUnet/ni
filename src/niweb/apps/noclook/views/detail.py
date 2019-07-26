@@ -682,7 +682,7 @@ def _contact_with_role_table(con, org=None):
 def role_detail(request, handle_id):
     role = get_object_or_404(Role, pk=handle_id)
 
-    con_list = nc.models.RoleRelationship.get_contacts_with_role_id(role.handle_id)
+    con_list = nc.models.RoleRelationship.get_contacts_with_role_name(role.name)
     urls = []
     rows = []
 
