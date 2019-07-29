@@ -1,7 +1,0 @@
-# TODO: Run tests before triggering downstream
-builders:
-  - script
-downstream:
-  - docker-ni
-script:
-  - echo "Bogus script to trigger downstream"

@@ -1,4 +1,3 @@
--i https://pypi.sunet.se/simple
 Django<1.12
 django-activity-stream<0.7
 django-jsonfield
