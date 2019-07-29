@@ -21,7 +21,8 @@ import re
 import os
 from neo4j.v1.types import Node
 
-from .models import NodeHandle, NodeType
+from .models import NodeHandle, NodeType, RoleGroup, Role,\
+                    DEFAULT_ROLEGROUP_NAME, DEFAULT_ROLES
 from . import activitylog
 import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
@@ -221,7 +222,7 @@ def create_unique_node_handle(user, node_name, slug, node_meta_type):
 
 def set_noclook_auto_manage(item, auto_manage):
     """
-    Sets the node or relationship noclook_auto_manage flag to True or False. 
+    Sets the node or relationship noclook_auto_manage flag to True or False.
     Also sets the noclook_last_seen flag to now.
 
     :param item: norduclient model
@@ -240,11 +241,11 @@ def set_noclook_auto_manage(item, auto_manage):
         relationship = nc.get_relationship_model(nc.graphdb.manager, item.id)
         relationship.data.update(auto_manage_data)
         nc.set_relationship_properties(nc.graphdb.manager, relationship.id, relationship.data)
-    
+
 
 def update_noclook_auto_manage(item):
     """
-    Updates the noclook_auto_manage and noclook_last_seen properties. If 
+    Updates the noclook_auto_manage and noclook_last_seen properties. If
     noclook_auto_manage is not set, it is set to True.
 
     :param item: norduclient model
@@ -882,14 +883,14 @@ def attachment_content(attachment):
         content = f.read()
     return content
 
-def set_parent_of(user, node, child_org_id):
+def set_parent_of(user, node, parent_org_id):
     """
     :param user: Django user
     :param node: norduniclient model
     :param child_org_id: unique id
     :return: norduniclient model, boolean
     """
-    result = node.set_child(child_org_id)
+    result = node.set_parent(parent_org_id)
     relationship_id = result.get('Parent_of')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Parent_of')[0].get('created')
@@ -920,7 +921,6 @@ def set_works_for(user, node, organization_id, role_name):
     :param role_name: string for role name
     :return: norduniclient model, boolean
     """
-    from pprint import pprint
     contact_id = node.handle_id
     relationship = nc.models.RoleRelationship.link_contact_organization(contact_id, organization_id, role_name)
 
@@ -968,26 +968,19 @@ def set_of_member(user, node, contact_id):
     return relationship, created
 
 
-def link_contact_role_for_organization(user, node, contact_handle_id, role_name):
+def link_contact_role_for_organization(user, node, contact_handle_id, role):
     """
     :param user: Django user
     :param node: norduniclient organization model
     :param contact_handle_id: contact's handle_id
-    :param role_name: role name
+    :param role: the selected role
     :return: contact
     """
-    if six.PY2:
-        role_name = role_name.encode('utf-8')
-
-    nc.models.RoleRelationship.remove_role_in_organization(
-        node.handle_id,
-        role_name
-    )
 
     relationship = nc.models.RoleRelationship.link_contact_organization(
         contact_handle_id,
         node.handle_id,
-        role_name
+        role.name
     )
 
     if not relationship:
@@ -1004,78 +997,48 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role_name)
     return contact, relationship
 
 
-def create_contact_role_for_organization(user, node, contact_name, role_name):
+def unlink_contact_with_role_from_org(user, organization, role):
     """
     :param user: Django user
-    :param node: norduniclient organization model
-    :param contact_name: full name of the contact
-    :return: contact, role: New objects if they're not present in the db
+    :param organization: norduniclient organization model
+    :param role: role model
     """
-    contact_type = NodeType.objects.get(type='Contact')
-
-    # convert string if necesary
-    if six.PY2:
-        contact_name = contact_name.encode('utf-8')
-        role_name = role_name.encode('utf-8')
-
-    nc.models.RoleRelationship.remove_role_in_organization(
-        node.handle_id,
-        role_name
+    relationship = nc.models.RoleRelationship.get_role_relation_from_organization(
+        organization.handle_id,
+        role.name,
     )
 
-    first_name, last_name = contact_name.split(' ')
+    if relationship:
+        activitylog.delete_relationship(user, relationship)
+        relationship.delete()
 
-    # create or get contact
-    contact, created_contact = NodeHandle.objects.get_or_create(
-        node_name=contact_name,
-        node_type=contact_type,
-        node_meta_type='Relation',
-        creator=user,
-        modifier=user,
+def unlink_contact_and_role_from_org(user, organization, contact_id, role):
+    relationship = nc.models.RoleRelationship.get_role_relation_from_contact_organization(
+        organization.handle_id,
+        role.name,
+        contact_id
     )
 
-    if created_contact:
-        activitylog.create_node(user, contact)
-        contact.get_node().add_property('first_name', first_name)
-        contact.get_node().add_property('last_name', last_name)
-
-    relationship = nc.models.RoleRelationship.link_contact_organization(
-        contact.handle_id,
-        node.handle_id,
-        role_name
-    )
-
-    if not relationship:
-        relationship = RoleRelationship()
-        relationship.load_from_nodes(contact_id, organization_id)
-
-    node = node.reload()
-
-    created = False
-    for relation in node.relationships.get('Works_for'):
-        if relation['node'].handle_id == contact.handle_id:
-            created = relation.get('created')
-
-    if created:
-        activitylog.create_relationship(user, relationship)
-
-    return contact, relationship
+    if relationship:
+        activitylog.delete_relationship(user, relationship)
+        nc.models.RoleRelationship.unlink_contact_with_role_organization(
+            contact_id,
+            organization.handle_id,
+            role.name,
+        )
 
 
-def get_contact_for_orgrole(organization_id, role_name):
+def get_contact_for_orgrole(organization_id, role):
     """
     :param organization_id: Organization's handle_id
-    :param role_name: Role name
+    :param role_name: Role object
     """
-    q = """
-    MATCH (c:Contact)-[:Works_for {{ name: '{role_name}'}}]->(o:Organization)
-    WHERE o.handle_id = {organization_id}
-    RETURN c.handle_id AS handle_id
-    """.format(organization_id=organization_id, role_name=role_name)
-    d = nc.query_to_dict(nc.graphdb.manager, q)
+    contact_handle_id = nc.models.RoleRelationship.get_contact_with_role_in_organization(
+        organization_id,
+        role.name,
+    )
 
-    if 'handle_id' in d and d['handle_id']:
-        contact_handle_id = d['handle_id']
+    if contact_handle_id:
         contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
         return contact

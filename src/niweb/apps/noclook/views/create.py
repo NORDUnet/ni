@@ -21,6 +21,7 @@ TYPES = [
     ("contact", "Contact"),
     ("organization", "Organization"),
     ("group", "Group"),
+    ("role", "Role"),
 ]
 
 
@@ -552,15 +553,9 @@ def new_organization(request, **kwargs):
 
             # use property keys to avoid inserting contacts as a string property of the node
             property_keys = [
-                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
+                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'incident_management_info',
             ]
             helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
-
-            contact_fields = Dropdown.get('organization_contact_types').as_choices(empty=False)
-            for field in contact_fields:
-                contact_name = form.cleaned_data[field[0]]
-                if contact_name:
-                    helpers.create_contact_role_for_organization(request.user, nh, contact_name, field[1])
 
             return redirect(nh.get_absolute_url())
     else:
@@ -573,11 +568,7 @@ def new_contact(request, **kwargs):
     if request.POST:
         form = forms.NewContactForm(request.POST)
         if form.is_valid():
-            try:
-                nh = helpers.form_to_unique_node_handle(request, form, 'contact', 'Relation')
-            except UniqueNodeError:
-                form.add_error('name', 'A Contact with that name already exists.')
-                return render(request, 'noclook/create/create_contact.html', {'form': form})
+            nh = helpers.form_to_generic_node_handle(request, form, 'contact', 'Relation')
             helpers.form_update_node(request.user, nh.handle_id, form)
             return redirect(nh.get_absolute_url())
     else:
@@ -618,6 +609,17 @@ def new_group(request, **kwargs):
         form = forms.NewGroupForm()
     return render(request, 'noclook/create/create_group.html', {'form': form})
 
+@staff_member_required
+def new_role(request, **kwargs):
+    if request.POST:
+        form = forms.NewRoleForm(request.POST)
+        if form.is_valid():
+            role = form.save()
+            return redirect(role.get_absolute_url())
+    else:
+        form = forms.NewGroupForm()
+    return render(request, 'noclook/create/create_role.html', {'form': form})
+
 NEW_FUNC = {
     'cable': new_cable,
     'cable_csv': new_cable_csv,
@@ -637,6 +639,7 @@ NEW_FUNC = {
     'provider': new_provider,
     'procedure': new_procedure,
     'rack': new_rack,
+    'role': new_role,
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,
