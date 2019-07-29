@@ -7,7 +7,6 @@ from apps.noclook.models import NodeType, Role
 from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
-import urllib
 
 __author__ = 'lundberg'
 
@@ -185,6 +184,7 @@ def _host_table(host, users):
     os_version = host.get('os_version')
     row = TableRow(host, ip_addresses, os, os_version, users)
     _set_expired(row, host)
+    _set_operational_state(row, host)
     return row
 
 
@@ -199,11 +199,13 @@ def list_hosts(request):
 
     host_list = nc.query_to_list(nc.graphdb.manager, q)
     host_list = _filter_expired(host_list, request, select=lambda n: n.get('host'))
+    host_list = _filter_operational_state(host_list, request, select=lambda n: n.get('host'))
     urls = get_node_urls(host_list)
 
     table = Table('Host', 'Address', 'OS', 'OS version', 'User')
     table.rows = [_host_table(item['host'], item['users']) for item in host_list]
     _set_filters_expired(table, request)
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
             {'table': table, 'name': 'Hosts', 'urls': urls})
@@ -261,6 +263,7 @@ def list_firewalls(request):
 
 def _odf_table(item):
     location = item.get('location')
+    location_view = None
     odf = item.get('odf')
     site = item.get('site')
     # manipulate location name to include site name
@@ -270,9 +273,9 @@ def _odf_table(item):
     if location:
         if location.get('name'):
             location_names.append(location.get('name'))
-        location.properties['name'] = ' '.join(location_names)
-    row = TableRow(location, odf)
-    _set_expired(row, odf)
+        location_view = {'name': ' '.join(location_names), 'handle_id': location.get('handle_id')}
+    row = TableRow(location_view, odf)
+    _set_operational_state(row, odf)
     return row
 
 
@@ -286,23 +289,29 @@ def list_odfs(request):
         ORDER BY site.name, location.name, odf.name
         """
     odf_list = nc.query_to_list(nc.graphdb.manager, q)
+    odf_list = _filter_operational_state(odf_list, request, select=lambda n: n.get('odf'))
     urls = get_node_urls(odf_list)
 
     table = Table("Location", "Name")
     table.rows = [_odf_table(item) for item in odf_list]
+    # Filter out
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'ODFs', 'urls': urls})
 
 
 def _optical_link_table(link, dependencies):
+    dependencies_view = []
     for deps in dependencies:
-        node = deps[0]
+        if deps[0] is None:
+            continue
+        node = {'name': deps[0], 'handle_id': deps[0]['handle_id']}
         if node and len(deps) > 1:
             name = [n.get('name') for n in reversed(deps) if n]
-            node.properties['name'] = u' '.join(name)
-    dependencies = [deps[0] for deps in dependencies]
-    row = TableRow(link, link.get('link_type'), link.get('description'), dependencies)
+            node['name'] = u' '.join(name)
+        dependencies_view.append(node)
+    row = TableRow(link, link.get('link_type'), link.get('description'), dependencies_view)
     _set_operational_state(row, link)
     return row
 
@@ -383,11 +392,12 @@ def list_optical_nodes(request):
 
 def _optical_path_table(path):
     row = TableRow(
-            path,
-            path.get('framing'),
-            path.get('capacity'),
-            path.get('description'),
-            ", ".join(path.get('enrs',[])))
+        path,
+        path.get('framing'),
+        path.get('capacity'),
+        path.get('wavelength'),
+        path.get('description'),
+        ", ".join(path.get('enrs', [])))
     _set_operational_state(row, path)
     return row
 
@@ -404,7 +414,7 @@ def list_optical_paths(request):
     optical_path_list = _filter_operational_state(optical_path_list, request, select=lambda n: n.get('path'))
     urls = get_node_urls(optical_path_list)
 
-    table = Table('Optical Path', 'Framing', 'Capacity', 'Description', 'ENRs')
+    table = Table('Optical Path', 'Framing', 'Capacity', 'Wavelength', 'Description', 'ENRs')
     table.rows = [_optical_path_table(item['path']) for item in optical_path_list]
     _set_filters_operational_state(table, request)
 

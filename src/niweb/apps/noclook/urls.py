@@ -72,8 +72,7 @@ urlpatterns = [
     url(r'^reports/hosts/host-security-class/(?P<status>[-\w]+)/$', report.host_security_class),
     url(r'^reports/hosts/host-services/$', report.host_services),
     url(r'^reports/hosts/host-services/(?P<status>[-\w]+)/$', report.host_services),
-    url(r'^reports/unique-ids/(?P<organisation>[-\w]+)\.(?P<file_format>xls|csv)$', report.download_unique_ids),
-    url(r'^reports/unique-ids/(?P<organisation>[-\w]+)/$', report.unique_ids),
+    url(r'^reports/unique-ids\.(?P<file_format>xls|csv)$', report.download_unique_ids),
     url(r'^reports/unique-ids/$', report.unique_ids),
 
     # -- list views

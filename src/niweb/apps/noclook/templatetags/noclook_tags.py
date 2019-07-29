@@ -85,7 +85,7 @@ def noclook_last_seen_to_dt(noclook_last_seen):
     """
     try:
         dt = datetime.strptime(noclook_last_seen, '%Y-%m-%dT%H:%M:%S.%f')
-    except ValueError:
+    except (ValueError, TypeError):
         dt = None
     return dt
 
@@ -136,12 +136,17 @@ def noclook_get_model(handle_id):
         return ''
 
 
-@register.assignment_tag
-def noclook_get_type(handle_id):
-    try:
-        return get_node_type(handle_id)
-    except nc.exceptions.NodeNotFound:
-        return ''
+@register.assignment_tag(takes_context=True)
+def noclook_get_type(context, handle_id):
+    urls = context.get('urls')
+    if urls and handle_id in urls:
+        raw_type = urls[handle_id].split('/')[1]
+        return raw_type.replace('-', ' ').title()
+    else:
+        try:
+            return get_node_type(handle_id)
+        except nc.exceptions.NodeNotFound:
+            return ''
 
 
 @register.assignment_tag

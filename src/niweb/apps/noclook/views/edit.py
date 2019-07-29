@@ -54,7 +54,7 @@ def delete_relationship(request, slug, handle_id, rel_id):
         nh, node = helpers.get_nh_node(handle_id)
         try:
             relationship = nc.get_relationship_model(nc.graphdb.manager, rel_id)
-            if node.handle_id == relationship.start or node.handle_id == relationship.end:
+            if node.handle_id == relationship.start['handle_id'] or node.handle_id == relationship.end['handle_id']:
                 activitylog.delete_relationship(request.user, relationship)
                 relationship.delete()
                 success = True
@@ -77,7 +77,7 @@ def update_relationship(request, slug, handle_id, rel_id):
             for key, value in request.POST.items():
                 properties[key] = json.loads(value)
             relationship = nc.get_relationship_model(nc.graphdb.manager, int(rel_id))
-            if node.handle_id == relationship.start or node.handle_id == relationship.end:
+            if node.handle_id == relationship.start['handle_id'] or node.handle_id == relationship.end['handle_id']:
                 success = helpers.dict_update_relationship(request.user, relationship.id, properties)
         except nc.exceptions.RelationshipNotFound:
             # If the relationship does not exist, then we cannot update
@@ -120,7 +120,7 @@ def get_unlocated_node_type(request, slug):
     with nc.graphdb.manager.session as s:
         result = s.run(q)
         for record in result:
-            result_list.append([record['n'].properties['name'], record['n'].properties['handle_id']])
+            result_list.append([record['n']['name'], record['n']['handle_id']])
     return JsonResponse(result_list, safe=False)
 
 
@@ -562,7 +562,7 @@ def edit_optical_path(request, handle_id):
     nh, path = helpers.get_nh_node(handle_id)
     relations = path.get_relations()
     depends_on = path.get_dependencies()
-    dependency_categories = 'odf,optical-link,optical-multiplex-section,optical-node,router,switch'
+    dependency_categories = 'odf,optical-link,optical-multiplex-section,optical-node,router,switch,optical-path'
     if request.POST:
         form = forms.EditOpticalPathForm(request.POST)
         if form.is_valid():
@@ -824,7 +824,8 @@ def edit_service(request, handle_id):
                              'optical-path',
                              'router',
                              'service',
-                             'switch']
+                             'switch',
+                             'external-equipment']
     user_categories = ['customer', 'end-user']
     if request.POST:
         form = forms.EditServiceForm(request.POST)
