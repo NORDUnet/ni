@@ -933,7 +933,6 @@ class NewContactForm(forms.Form):
             last_name  = last_name.encode('utf-8')
 
         full_name = '{} {}'.format(first_name, last_name)
-        node_type = NodeType.objects.get(type="Contact")
         cleaned_data['name'] = full_name
 
         return cleaned_data
