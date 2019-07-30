@@ -44,6 +44,13 @@ class Neo4jChoice(graphene.ObjectType):
     class Meta:
         interfaces = (KeyValue, )
 
+class Role(DjangoObjectType):
+    '''
+    This class represents a Role in the relational db
+    '''
+    class Meta:
+        model = Role
+
 class Group(NIObjectType):
     '''
     The group type is used to group contacts
@@ -75,12 +82,13 @@ class Organization(NIObjectType):
     website = NIStringField()
     customer_id = NIStringField()
     additional_info = NIStringField()
+    type = NIStringField()
 
     class NIMetaType:
         ni_type = 'Organization'
         ni_metatype = NIMETA_RELATION
 
-class Role(NIRelationType):
+class RoleRelation(NIRelationType):
     name = graphene.String()
     end_node = graphene.Field(Organization)
 
@@ -107,7 +115,7 @@ class Contact(NIObjectType):
     other_email = NIStringField()
     PGP_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
-    roles = NIRelationField(rel_name='Works_for', type_args=(Role, ))
+    roles = NIRelationField(rel_name=RoleRelationship.RELATION_NAME, type_args=(RoleRelation, ))
 
     class NIMetaType:
         ni_type = 'Contact'

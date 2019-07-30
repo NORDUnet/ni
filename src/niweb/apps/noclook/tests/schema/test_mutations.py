@@ -10,55 +10,73 @@ class QueryTest(Neo4jGraphQLTest):
     def test_group(self):
         ### Simple entity ###
         ## create ##
+        new_group_name = "New test group"
         query = '''
-        mutation create_test_group {
-          create_group(input: {name: "New test group"}){
-            group {
+        mutation create_test_group {{
+          create_group(input: {{name: "{new_group_name}"}}){{
+            group {{
               handle_id
               name
-            }
+            }}
             clientMutationId
-          }
-        }
-        '''
+          }}
+        }}
+        '''.format(new_group_name=new_group_name)
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        create_group_result = result.data
+
+        # query the api to get the handle_id of the new group
+        query = '''
+        query {{
+          groups(filter:{{ AND:[{{ name: "{new_group_name}" }}]}}){{
+            edges{{
+              node{{
+                handle_id
+              }}
+            }}
+          }}
+        }}
+        '''.format(new_group_name=new_group_name)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        handle_id = int(result.data['groups']['edges'][0]['node']['handle_id'])
 
         expected = OrderedDict([
             ('create_group',
                 OrderedDict([
                     ('group',
                         OrderedDict([
-                            ('handle_id', '17'),
-                            ('name', 'New test group')
+                            ('handle_id', str(handle_id)),
+                            ('name', new_group_name)
                         ])),
                     ('clientMutationId', None)
                 ])
             )
         ])
-
-        result = schema.execute(query, context=self.context)
-
-        assert not result.errors, result.errors
-        assert result.data == expected
+        assert create_group_result == expected, pformat(result.data, indent=1)
 
         ## update ##
         query = """
-        mutation update_test_group {
-          update_group(input: {handle_id: 17, name: "A test group"}){
-            group {
+        mutation update_test_group {{
+          update_group(input: {{ handle_id: {handle_id}, name: "A test group"}} ){{
+            group {{
               handle_id
               name
-            }
+            }}
             clientMutationId
-          }
-        }
-        """
+          }}
+        }}
+        """.format(handle_id=handle_id)
 
         expected = OrderedDict([
             ('update_group',
                 OrderedDict([
                     ('group',
                         OrderedDict([
-                            ('handle_id', '17'),
+                            ('handle_id', str(handle_id)),
                             ('name', 'A test group')
                         ])),
                     ('clientMutationId', None)
@@ -73,12 +91,12 @@ class QueryTest(Neo4jGraphQLTest):
 
         ## delete ##
         query = """
-        mutation delete_test_group {
-          delete_group(input: {handle_id: 17}){
+        mutation delete_test_group {{
+          delete_group(input: {{ handle_id: {handle_id} }}){{
             success
-          }
-        }
-        """
+          }}
+        }}
+        """.format(handle_id=handle_id)
 
         expected = OrderedDict([
             ('delete_group',
@@ -101,7 +119,6 @@ class QueryTest(Neo4jGraphQLTest):
               first_name: "Jane"
               last_name: "Smith"
               title: ""
-              salutation: "Ms"
               contact_type: "person"
               phone: "	823-971-5606"
               mobile: "617-372-0822"
@@ -115,7 +132,6 @@ class QueryTest(Neo4jGraphQLTest):
               first_name
               last_name
               title
-              salutation
               contact_type
               phone
               mobile
@@ -128,12 +144,11 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected = OrderedDict([('create_contact',
                       OrderedDict([('contact',
-                        OrderedDict([('handle_id', '18'),
+                        OrderedDict([('handle_id', '14'),
                                      ('name', 'Jane Smith'),
                                      ('first_name', 'Jane'),
                                      ('last_name', 'Smith'),
                                      ('title', None),
-                                     ('salutation', 'Ms'),
                                      ('contact_type', 'person'),
                                      ('phone', '823-971-5606'),
                                      ('mobile', '617-372-0822'),
@@ -150,7 +165,7 @@ class QueryTest(Neo4jGraphQLTest):
         mutation update_test_contact {
           update_contact(
             input: {
-              handle_id: 18
+              handle_id: 14
               first_name: "Janet"
               last_name: "Doe"
               contact_type: "person"
@@ -165,7 +180,6 @@ class QueryTest(Neo4jGraphQLTest):
               first_name
               last_name
               title
-              salutation
               contact_type
               phone
               mobile
@@ -188,12 +202,11 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected = OrderedDict([('update_contact',
               OrderedDict([('contact',
-                            OrderedDict([('handle_id', '18'),
+                            OrderedDict([('handle_id', '14'),
                                          ('name', 'Janet Doe'),
                                          ('first_name', 'Janet'),
                                          ('last_name', 'Doe'),
                                          ('title', None),
-                                         ('salutation', None),
                                          ('contact_type', 'person'),
                                          ('phone', None),
                                          ('mobile', None),
@@ -217,7 +230,7 @@ class QueryTest(Neo4jGraphQLTest):
         ## delete ##
         query = """
         mutation delete_test_contact {
-          delete_contact(input: {handle_id: 18}){
+          delete_contact(input: {handle_id: 14}){
             success
           }
         }

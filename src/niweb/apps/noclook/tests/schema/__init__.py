@@ -4,7 +4,7 @@ __author__ = 'ffuentes'
 from django.db import connection
 
 from apps.noclook import helpers
-from apps.noclook.models import NodeHandle, Dropdown, Choice
+from apps.noclook.models import NodeHandle, Dropdown, Choice, Role
 from ..neo4j_base import NeoTestCase
 
 class TestContext():
@@ -16,14 +16,14 @@ class Neo4jGraphQLTest(NeoTestCase):
         super(Neo4jGraphQLTest, self).setUp()
         self.context = TestContext(self.user)
         # create nodes
-        organization1 = self.create_node('organization1', 'organization', meta='Logical')
-        organization2 = self.create_node('organization2', 'organization', meta='Logical')
-        contact1 = self.create_node('contact1', 'contact', meta='Relation')
-        contact2 = self.create_node('contact2', 'contact', meta='Relation')
-        role1 = self.create_node('role1', 'role', meta='Logical')
-        role2 = self.create_node('role2', 'role', meta='Logical')
-        group1 = self.create_node('group1', 'group', meta='Logical')
-        group2 = self.create_node('group2', 'group', meta='Logical')
+        self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
+        self.organization2 = self.create_node('organization2', 'organization', meta='Logical')
+        self.contact1 = self.create_node('contact1', 'contact', meta='Relation')
+        self.contact2 = self.create_node('contact2', 'contact', meta='Relation')
+        self.group1 = self.create_node('group1', 'group', meta='Logical')
+        self.group2 = self.create_node('group2', 'group', meta='Logical')
+        self.role1 = Role(name='role1').save()
+        self.role2 = Role(name='role2').save()
 
         # add some data
         contact1_data = {
@@ -33,7 +33,7 @@ class Neo4jGraphQLTest(NeoTestCase):
         }
 
         for key, value in contact1_data.items():
-            contact1.get_node().add_property(key, value)
+            self.contact1.get_node().add_property(key, value)
 
         contact2_data = {
             'first_name': 'John',
@@ -42,23 +42,23 @@ class Neo4jGraphQLTest(NeoTestCase):
         }
 
         for key, value in contact2_data.items():
-            contact2.get_node().add_property(key, value)
+            self.contact2.get_node().add_property(key, value)
 
         # create relationships
-        contact1.get_node().add_group(group1.handle_id)
-        contact2.get_node().add_group(group2.handle_id)
+        self.contact1.get_node().add_group(self.group1.handle_id)
+        self.contact2.get_node().add_group(self.group2.handle_id)
 
         helpers.link_contact_role_for_organization(
             self.context.user,
-            organization1.get_node(),
-            contact1.handle_id,
-            'role1'
+            self.organization1.get_node(),
+            self.contact1.handle_id,
+            self.role1
         )
         helpers.link_contact_role_for_organization(
             self.context.user,
-            organization2.get_node(),
-            contact2.handle_id,
-            'role2'
+            self.organization2.get_node(),
+            self.contact2.handle_id,
+            self.role2
         )
 
         # create dummy dropdown

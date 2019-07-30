@@ -6,7 +6,7 @@ import norduniclient as nc
 
 from apps.noclook import activitylog, helpers
 from apps.noclook.forms import *
-from apps.noclook.models import Dropdown as DropdownModel
+from apps.noclook.models import Dropdown as DropdownModel, Role, DEFAULT_ROLES
 
 from .core import NIMutationFactory, CreateNIMutation
 from .types import *
@@ -21,6 +21,7 @@ class NIGroupMutationFactory(NIMutationFactory):
     class Meta:
         abstract = False
 
+
 class NIProcedureMutationFactory(NIMutationFactory):
     class NIMetaClass:
         create_form    = NewProcedureForm
@@ -31,6 +32,7 @@ class NIProcedureMutationFactory(NIMutationFactory):
     class Meta:
         abstract = False
 
+
 def process_works_for(request, form, nodehandler, relation_name):
     organization_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
     role_name = form.cleaned_data['role_name']
@@ -39,6 +41,7 @@ def process_works_for(request, form, nodehandler, relation_name):
 def process_member_of(request, form, nodehandler, relation_name):
     group_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
     helpers.set_member_of(request.user, nodehandler, group_nh.handle_id)
+
 
 class NIContactMutationFactory(NIMutationFactory):
     class NIMetaClass:
@@ -54,9 +57,6 @@ class NIContactMutationFactory(NIMutationFactory):
     class Meta:
         abstract = False
 
-def process_abuse_contact(request, form, nodehandler, relation_name):
-    group_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
-    helpers.set_member_of(request.user, nodehandler, group_nh.handle_id)
 
 class NIOrganizationMutationFactory(NIMutationFactory):
     class NIMetaClass:
@@ -68,6 +68,7 @@ class NIOrganizationMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
 
 class UpdateNIOrganizationMutation(UpdateNIMutation):
     @classmethod
@@ -93,17 +94,23 @@ class UpdateNIOrganizationMutation(UpdateNIMutation):
                     'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
                 ]
                 helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
-                # Set contacts
-                contact_fields = DropdownModel.get('organization_contact_types').as_choices(empty=False)
-                for field in contact_fields:
-                    if field[0] in form.cleaned_data:
-                        contact_data = form.cleaned_data[field[0]]
-                        if contact_data:
-                            if isinstance(contact_data, six.string_types):
-                                if contact_data:
-                                    helpers.create_contact_role_for_organization(request.user, organization, contact_data, field[1])
+
+                # specific role setting
+                for field, roledict in DEFAULT_ROLES.items():
+                    if field in form.cleaned_data:
+                        contact_id = form.cleaned_data[field]
+                        role = Role.objects.get(slug=field)
+                        set_contact = helpers.get_contact_for_orgrole(organization.handle_id, role)
+
+                        if contact_id:
+                            if set_contact:
+                                if set_contact.handle_id != contact_id:
+                                    helpers.unlink_contact_with_role_from_org(request.user, organization, role)
+                                    helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
                             else:
-                                helpers.link_contact_role_for_organization(request.user, organization, contact_data, field[1])
+                                helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
+                        elif set_contact:
+                            helpers.unlink_contact_and_role_from_org(request.user, organization, set_contact.handle_id, role)
 
                 # Set child organizations
                 if form.cleaned_data['relationship_parent_of']:
@@ -122,6 +129,7 @@ class UpdateNIOrganizationMutation(UpdateNIMutation):
         django_form = EditOrganizationForm
         request_path   = '/'
         graphql_type   = Organization
+
 
 class DeleteRelationship(relay.ClientIDMutation):
     class Input:
@@ -144,6 +152,7 @@ class DeleteRelationship(relay.ClientIDMutation):
             success = True
 
         return DeleteRelationship(success=success, relation_id=relation_id)
+
 
 class NOCRootMutation(graphene.ObjectType):
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()

@@ -122,6 +122,7 @@ class RoleScalar(Scalar):
         return ret
 
 class ChoiceScalar(Scalar):
+    '''This scalar represents a choice field on a mutation'''
     @staticmethod
     def coerce_choice(value):
         num = None
@@ -1023,7 +1024,10 @@ class NIObjectType(DjangoObjectType):
                         handle_ids = [ node['handle_id'] for node in nodes ]
                         node_type = NodeType.objects.get(type=type_name)
 
-                    ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
+                    ret = []
+
+                    for handle_id in handle_ids:
+                        ret.append(NodeHandle.objects.get(handle_id=handle_id))
 
                 if not ret:
                     ret = []

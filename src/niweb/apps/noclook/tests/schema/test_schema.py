@@ -74,7 +74,6 @@ class QueryTest(Neo4jGraphQLTest):
                 }
                 member_of_groups{
                   name
-                  handle_id
                 }
               }
             }
@@ -90,9 +89,7 @@ class QueryTest(Neo4jGraphQLTest):
                                 'role2')])]),
                             ('member_of_groups',
                              [OrderedDict([('name',
-                                'group2'),
-                               ('handle_id',
-                                '34')])])]))])])]))])
+                                'group2')])])]))])])]))])
 
 
         result = schema.execute(query, context=self.context)
@@ -156,14 +153,12 @@ class QueryTest(Neo4jGraphQLTest):
           ]}){
             edges{
               node{
-                handle_id
                 name
                 roles{
                   name
                 }
                 member_of_groups{
                   name
-                  handle_id
                 }
               }
             }
@@ -173,16 +168,14 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('contacts',
                       OrderedDict([('edges',
                         [OrderedDict([('node',
-                           OrderedDict([('handle_id', '30'),
+                           OrderedDict([
                             ('name', 'John Smith'),
                             ('roles',
                              [OrderedDict([('name',
                                 'role2')])]),
                             ('member_of_groups',
                              [OrderedDict([('name',
-                                'group2'),
-                               ('handle_id',
-                                '34')])])]))])])]))])
+                                'group2')])])]))])])]))])
 
 
         result = schema.execute(query, context=self.context)
@@ -193,14 +186,14 @@ class QueryTest(Neo4jGraphQLTest):
         # getNodeById
         query = '''
         query {
-          getNodeById(handle_id: 30){
+          getNodeById(handle_id: 23){
             handle_id
           }
         }
         '''
 
         expected = OrderedDict([
-                    ('getNodeById', OrderedDict([('handle_id', '30')]))
+                    ('getNodeById', OrderedDict([('handle_id', '23')]))
                 ])
 
         result = schema.execute(query, context=self.context)
