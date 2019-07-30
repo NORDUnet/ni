@@ -82,7 +82,7 @@ class Organization(NIObjectType):
     website = NIStringField()
     customer_id = NIStringField()
     additional_info = NIStringField()
-    type = NIStringField()
+    type = NIChoiceField()
 
     class NIMetaType:
         ni_type = 'Organization'

@@ -12,12 +12,13 @@ from django import forms
 from django.db.models import Q
 from django.forms.utils import ValidationError
 from django.test import RequestFactory
+from django.utils import six
 from graphene import relay
 from graphene.types import Scalar
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions
 from graphql import GraphQLError
-from graphql.language.ast import IntValue
+from graphql.language.ast import IntValue, StringValue
 from io import StringIO
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
@@ -122,7 +123,7 @@ class RoleScalar(Scalar):
         return ret
 
 class ChoiceScalar(Scalar):
-    '''This scalar represents a choice field on a mutation'''
+    '''This scalar represents a choice field in query/mutation'''
     @staticmethod
     def coerce_choice(value):
         num = None
@@ -132,7 +133,7 @@ class ChoiceScalar(Scalar):
             try:
                 num = int(float(value))
             except ValueError:
-                return None
+                pass
         if num:
             return graphene.Int.coerce_int(value)
         else:
@@ -146,8 +147,12 @@ class ChoiceScalar(Scalar):
     def parse_literal(ast):
         if isinstance(ast, IntValue):
             return graphene.Int.parse_literal(ast)
-        else:
+        elif isinstance(ast, StringValue):
             return graphene.String.parse_literal(ast)
+
+    @classmethod
+    def get_roles_dropdown(cls):
+        pass
 
 ########## END CUSTOM SCALARS FOR FORM FIELD CONVERSION
 
@@ -239,7 +244,7 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_match_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} = {value}""".format(field=field, value=value)
@@ -249,7 +254,7 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_not_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} <> {value}""".format(field=field, value=value)
@@ -271,7 +276,7 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_lt_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} < {value}""".format(field=field, value=value)
@@ -281,7 +286,7 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_lte_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} <= {value}""".format(field=field, value=value)
@@ -291,7 +296,7 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_gt_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} > {value}""".format(field=field, value=value)
@@ -301,7 +306,7 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_gte_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} >= {value}""".format(field=field, value=value)
@@ -578,6 +583,16 @@ class NIIntField(NIBasicField):
                     type_kwargs=None, **kwargs):
         super(NIIntField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
+
+class NIChoiceField(NIBasicField):
+    '''
+    Choice type
+    '''
+    def __init__(self, field_type=ChoiceScalar, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIChoiceField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
 
 class NIListField(NIBasicField):
     '''
@@ -862,7 +877,8 @@ class NIObjectType(DjangoObjectType):
             # string or string like fields
             if field:
                 if isinstance(field, graphene.types.scalars.String) or\
-                    isinstance(field, graphene.types.scalars.Int):
+                    isinstance(field, graphene.types.scalars.Int) or\
+                    isinstance(field, ChoiceScalar):
                     input_field = type(field)
                     input_fields[name] = input_field
                 elif isinstance(field, graphene.types.structures.List):
