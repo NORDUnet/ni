@@ -6,7 +6,9 @@ import norduniclient as nc
 
 from apps.noclook import activitylog, helpers
 from apps.noclook.forms import *
-from apps.noclook.models import Dropdown as DropdownModel, Role, DEFAULT_ROLES
+from apps.noclook.models import Dropdown as DropdownModel, Role as RoleModel, DEFAULT_ROLES
+from graphene_django.forms.mutation import DjangoModelFormMutation
+from django.core.exceptions import ObjectDoesNotExist
 
 from .core import NIMutationFactory, CreateNIMutation
 from .types import *
@@ -154,6 +156,52 @@ class DeleteRelationship(relay.ClientIDMutation):
         return DeleteRelationship(success=success, relation_id=relation_id)
 
 
+class CreateRole(DjangoModelFormMutation):
+    class Meta:
+        form_class = NewRoleForm
+
+
+class UpdateRole(DjangoModelFormMutation):
+    class Input:
+        handle_id = graphene.Int(required=True)
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        kwargs = {"data": input}
+
+        pk = input.pop("handle_id", None)
+        if pk:
+            instance = cls._meta.model._default_manager.get(pk=pk)
+            kwargs["instance"] = instance
+
+        return kwargs
+
+    class Meta:
+        form_class = EditRoleForm
+
+
+class DeleteRole(relay.ClientIDMutation):
+    class Input:
+        handle_id = graphene.Int(required=True)
+
+    success = graphene.Boolean(required=True)
+    handle_id = graphene.Int(required=True)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        handle_id = input.get("handle_id", None)
+        success = False
+
+        try:
+            role = RoleModel.objects.get(handle_id=handle_id)
+            role.delete()
+            success = True
+        except ObjectDoesNotExist:
+            success = False
+
+        return DeleteRole(success=success, handle_id=handle_id)
+
+
 class NOCRootMutation(graphene.ObjectType):
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()
     update_group        = NIGroupMutationFactory.get_update_mutation().Field()
@@ -170,5 +218,9 @@ class NOCRootMutation(graphene.ObjectType):
     create_organization = NIOrganizationMutationFactory.get_create_mutation().Field()
     update_organization = UpdateNIOrganizationMutation.Field()
     delete_organization = NIOrganizationMutationFactory.get_delete_mutation().Field()
+
+    create_role = CreateRole.Field()
+    update_role = UpdateRole.Field()
+    delete_role = DeleteRole.Field()
 
     delete_relationship = DeleteRelationship.Field()
