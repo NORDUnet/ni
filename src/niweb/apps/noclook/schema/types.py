@@ -7,7 +7,7 @@ from norduniclient.models import RoleRelationship
 from django.contrib.auth.models import User
 from graphene import relay
 from .core import *
-from ..models import *
+from ..models import Dropdown, Choice, Role as RoleModel
 
 # further centralization?
 NIMETA_LOGICAL  = 'logical'
@@ -49,7 +49,7 @@ class Role(DjangoObjectType):
     This class represents a Role in the relational db
     '''
     class Meta:
-        model = Role
+        model = RoleModel
 
 class Group(NIObjectType):
     '''
@@ -91,9 +91,15 @@ class Organization(NIObjectType):
 class RoleRelation(NIRelationType):
     name = graphene.String()
     end_node = graphene.Field(Organization)
+    role_data = graphene.Field(Role)
 
     def resolve_name(self, info, **kwargs):
         return getattr(self, 'name', None)
+
+    def resolve_role_data(self, info, **kwargs):
+        name = getattr(self, 'name', None)
+        role_data = RoleModel.objects.get(name=name)
+        return role_data
 
     class NIMetaType:
         nimodel = RoleRelationship
