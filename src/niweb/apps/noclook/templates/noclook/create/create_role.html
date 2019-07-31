@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Create new organization</h1>
+    <h1>Create new role</h1>
     {% if form.errors %}
          <div class="alert alert-error">
             <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
@@ -17,22 +17,6 @@
             <br />
             <label>Description</label>
             {{ form.description }}
-            <br />
-            <h3>Additional info (optional)</h3>
-            <label>Phone</label>
-            {{ form.phone }}
-            <br />
-            <label>Website</label>
-            {{ form.website }}
-            <br />
-            <label>Customer Id</label>
-            {{ form.customer_id }}
-            <br />
-            <label>Type</label>
-            {{ form.type }}
-            <br />
-            <label>Additional info for Incident Mgmt</label>
-            {{ form.incident_management_info }}
             <br />
             <input type="submit" value="Save" class="btn btn-primary" />
             <a href="/new/" class="btn">Cancel</a>

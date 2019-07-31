@@ -10,11 +10,11 @@ from actstream import action
 try:
     from neo4j.exceptions import CypherError
 except ImportError:
-    try: 
+    try:
         # pre neo4j 1.4
         from neo4j.v1.exceptions import CypherError
     except ImportError:
-        # neo4j 1.1 
+        # neo4j 1.1
         from neo4j.v1.api import CypherError
 
 
@@ -128,6 +128,66 @@ class NodeHandle(models.Model):
         super(NodeHandle, self).delete()
 
     delete.alters_data = True
+
+
+DEFAULT_ROLEGROUP_NAME = 'default'
+DEFAULT_ROLE_KEY = 'employee'
+DEFAULT_ROLES = {
+    'abuse_contact': { 'name': 'Abuse', 'description': '' },
+    'primary_contact': { 'name': 'Primary contact at incidents', 'description': '' },
+    'secondary_contact': { 'name': 'Secondary contact at incidents', 'description': '' },
+    'it_technical_contact': { 'name': 'IT-technical', 'description': '' },
+    'it_security_contact': { 'name': 'IT-security', 'description': '' },
+    'it_manager_contact': { 'name': 'IT-manager', 'description': '' },
+    DEFAULT_ROLE_KEY: { 'name': nc.models.RoleRelationship.DEFAULT_ROLE_NAME, 'description': '' },
+}
+
+
+@python_2_unicode_compatible
+class RoleGroup(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    hidden = models.BooleanField(default=False, blank=True)
+
+    def __str__(self):
+        return 'RoleGroup %s' % (self.name)
+
+
+@python_2_unicode_compatible
+class Role(models.Model):
+    # Data shared with the relationship
+    handle_id = models.AutoField(primary_key=True) # Handle <-> Node data
+    name = models.CharField(max_length=200, unique=True)
+    slug = models.CharField(max_length=200, unique=True)
+    # Data only present in the relational database
+    description = models.TextField(blank=True, null=True)
+    role_group = models.ForeignKey(RoleGroup, models.SET_NULL, blank=True, null=True)
+
+    def __str__(self):
+        return 'Role %s' % (self.name)
+
+    def get_absolute_url(self):
+        return self.url()
+
+    def url(self):
+        return '/role/{}'.format(self.handle_id)
+
+    def save(self, **kwargs):
+        # set slug value if empty
+        if not self.slug:
+            self.slug = self.name.replace(' ', '_').lower()
+
+        super(Role, self).save()
+        return self
+
+    def delete(self, **kwargs):
+        """
+        Propagate the changes over the graph db
+        """
+        default_rolegroup = RoleGroup.objects.get(name=DEFAULT_ROLEGROUP_NAME)
+        
+        if self.role_group != default_rolegroup:
+            nc.models.RoleRelationship.delete_roles_withname(self.name)
+            super(Role, self).delete()
 
 
 @python_2_unicode_compatible

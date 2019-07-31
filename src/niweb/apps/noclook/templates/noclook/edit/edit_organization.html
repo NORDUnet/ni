@@ -24,9 +24,7 @@ $(document).ready(
             select#id_secondary_contact,\
             select#id_it_technical_contact,\
             select#id_it_security_contact,\
-            select#id_it_manager_contact").select2({
-            tags: true,
-        });
+            select#id_it_manager_contact").select2();
     }
 );
 </script>
@@ -44,16 +42,16 @@ $(document).ready(
         {{ form.website | as_crispy_field}}
         {{ form.customer_id | as_crispy_field}}
         {{ form.type | as_crispy_field}}
-        {{ form.additional_info | as_crispy_field}}
+        {{ form.incident_management_info | as_crispy_field}}
       {% endaccordion %}
       {% accordion 'Contacts (optional)' 'contacts-edit' '#edit-contacts' %}
-        {{ form.abuse_contact | as_crispy_field}}
-        {{ form.primary_contact | as_crispy_field}}
-        {{ form.secondary_contact | as_crispy_field}}
-        {{ form.it_technical_contact | as_crispy_field}}
-        {{ form.it_security_contact | as_crispy_field}}
-        {{ form.it_manager_contact | as_crispy_field}}
-      {% endaccordion %}
+          {{ form.abuse_contact | as_crispy_field}}
+          {{ form.primary_contact | as_crispy_field}}
+          {{ form.secondary_contact | as_crispy_field}}
+          {{ form.it_technical_contact | as_crispy_field}}
+          {{ form.it_security_contact | as_crispy_field}}
+          {{ form.it_manager_contact | as_crispy_field}}
+        {% endaccordion %}
       {% include "noclook/edit/includes/parent_of_group.html" %}
       {% include "noclook/edit/includes/uses_a_group.html" %}
 {% endblock %}

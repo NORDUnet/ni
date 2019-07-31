@@ -1,7 +1,7 @@
 {% load noclook_tags %}
 {% load crispy_forms_tags %}
 {% blockvar organization_title %}
-   {{ node_handle.node_type }} Parent Organization (optional)
+   Parent Organization (optional)
 {% endblockvar %}
 {% accordion organization_title 'organization-edit' '#edit-accordion' %}
   {% if relations.Parent_of %}

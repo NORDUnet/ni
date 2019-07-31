@@ -13,7 +13,7 @@ from django.http import Http404, JsonResponse
 from django.utils import six
 from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle, Dropdown
+from apps.noclook.models import NodeHandle, Role, RoleGroup, Dropdown, DEFAULT_ROLES
 from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
@@ -964,20 +964,27 @@ def edit_organization(request, handle_id):
             # Generic node update
             # use property keys to avoid inserting contacts as a string property of the node
             property_keys = [
-                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
+                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'incident_management_info',
             ]
             helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
-            # Set contacts
-            contact_fields = Dropdown.get('organization_contact_types').as_choices(empty=False)
-            for field in contact_fields:
-                if field[0] in form.cleaned_data:
-                    contact_data = form.cleaned_data[field[0]]
-                    if contact_data:
-                        if isinstance(contact_data, six.string_types):
-                            if contact_data:
-                                helpers.create_contact_role_for_organization(request.user, organization, contact_data, field[1])
+
+            # specific role setting
+            for field, roledict in DEFAULT_ROLES.items():
+                if field in form.cleaned_data:
+                    contact_id = form.cleaned_data[field]
+                    role = Role.objects.get(slug=field)
+                    set_contact = helpers.get_contact_for_orgrole(organization.handle_id, role)
+
+                    if contact_id:
+                        if set_contact:
+                            if set_contact.handle_id != contact_id:
+                                helpers.unlink_contact_with_role_from_org(request.user, organization, role)
+                                helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
                         else:
-                            helpers.link_contact_role_for_organization(request.user, organization, contact_data, field[1])
+                            helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
+                    elif set_contact:
+                        helpers.unlink_contact_and_role_from_org(request.user, organization, set_contact.handle_id, role)
+
 
             # Set child organizations
             if form.cleaned_data['relationship_parent_of']:
@@ -1008,8 +1015,9 @@ def edit_contact(request, handle_id):
             # Set relationships
             if form.cleaned_data['relationship_works_for']:
                 organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_works_for'])
-                role_name = form.cleaned_data['role_name']
-                helpers.set_works_for(request.user, contact, organization_nh.handle_id, role_name)
+                role_handle_id = form.cleaned_data['role']
+                role = Role.objects.get(handle_id=role_handle_id)
+                helpers.set_works_for(request.user, contact, organization_nh.handle_id, role.name)
             if form.cleaned_data['relationship_member_of']:
                 group_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_member_of'])
                 helpers.set_member_of(request.user, contact, group_nh.handle_id)
@@ -1061,8 +1069,45 @@ def edit_group(request, handle_id):
                 return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditGroupForm(group.data)
+
+    contacts = []
+
+    if 'Member_of' in relations:
+        contacts = [x['node'] for x in relations['Member_of']]
+        contacts = sorted(contacts, key=lambda x: x.data['name'], reverse=False)
+
     return render(request, 'noclook/edit/edit_group.html',
-                  {'node_handle': nh, 'form': form, 'node': group, 'relations': relations})
+                  {'node_handle': nh, 'form': form, 'node': group, 'relations': relations, 'contacts': contacts })
+
+
+@staff_member_required
+def edit_role(request, handle_id):
+    # Get needed data from node
+    role = get_object_or_404(Role, pk=handle_id)
+
+    if request.POST:
+        form = forms.EditRoleForm(request.POST, instance=role)
+        if form.is_valid():
+            role = form.save()
+            return redirect(role.get_absolute_url())
+        else:
+            return redirect('%s/edit' % role.get_absolute_url())
+    else:
+        form = forms.EditRoleForm(instance=role)
+    return render(request, 'noclook/edit/edit_role.html',
+                  {'form': form, 'role': role})
+
+
+@staff_member_required
+def delete_role(request, handle_id):
+    """
+    Removes the role and all the relationships with its handle_id.
+    """
+    redirect_url = '/role/'
+    role = get_object_or_404(Role, handle_id=handle_id)
+    role.delete()
+    return redirect(redirect_url)
+
 
 EDIT_FUNC = {
     'cable': edit_cable,
@@ -1087,6 +1132,7 @@ EDIT_FUNC = {
     'provider': edit_provider,
     'procedure': edit_procedure,
     'rack': edit_rack,
+    'role': edit_role,
     'router': edit_router,
     'site': edit_site,
     'site-owner': edit_site_owner,

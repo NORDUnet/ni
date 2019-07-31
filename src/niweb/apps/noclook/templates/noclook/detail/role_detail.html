@@ -1,8 +1,126 @@
-{% extends "noclook/detail/detail.html" %}
+{% extends "noclook/detail/base_detail.html" %}
 {% load table_tags %}
+{% load noclook_tags %}
 
-{% block edit_link %}
+{% block js %}
+    {{ block.super }}
+    <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery.tabletojson.min.js"></script>
+    <script type="text/javascript">
+        // Get CSV or Excel representation of the table
+        function postJSONTable(format, elem, header, table) {
+            $('#form-file-format').val(format);
+            $('#form-json-header').val(header);
+            $('#form-json-data').val(table);
+            $('#json-table-form').submit();
+            elem.css('cursor','pointer');
+        }
+
+        function buildJSONTable(table) {
+            var data = JSON.stringify(table.tableToJSON());
+            // Gather headings
+            var headings = [];
+            table.find("tr > th").each(function(colIndex, col) {
+                if($(col).data("column-name") !== undefined && $(col).data("column-name") != null) {
+                    headings[colIndex] = $(col).data("column-name");
+                } else {
+                    headings[colIndex] = $.trim($(col).text());
+                }
+            });
+            var header = JSON.stringify(headings);
+            return {header: header, data: data}
+        }
+    </script>
+    {% block js_table_covert %}
+    <script type="text/javascript">
+        $(document).ready(
+            function(){
+                $("span.table-to-csv").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set data-table attribute to table id
+                    var table = buildJSONTable($("table[data-tablesort]"));
+                    postJSONTable('csv', elem, table.header, table.data)
+
+                });
+                $("span.table-to-xls").click(function() {
+                    var elem = $(this);
+                    elem.css('cursor','wait');
+                    // Set data-table attribute to table id
+                    var table = buildJSONTable($("table[data-tablesort]"));
+                    postJSONTable('xls', elem, table.header, table.data)
+                });
+            }
+        );
+    </script>
+    {% endblock %}
+{% endblock %}
+
+{% block title %}Role {{ node_handle.name }}{% endblock %}
+
+{% block before_table %}
+
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <h1><a href="{% url 'generic_list' slug %}">Role</a> {{name}}</h1>
+    {% if node_handle.description %}
+    <table class="table">
+        <tr>
+            <td><strong>description</strong></td><td>{{ node_handle.description }}</td>
+        </tr>
+    </table>
+    {% endif %}
+    <div class="pull-right">
+        {% if table.no_badges %}
+            {# Nothing to show #}
+        {% elif table.badges %}
+          {% for badge, name in table.badges %}
+              <span class="badge {{badge}}">{{name}}</span>
+          {% endfor %}
+        {% elif table.filters %}
+          {% for badge, name, link, active in table.filters %}
+              <a href="{{link}}"><span class="badge {{badge}}">{% if active %}<i class="icon-white icon-ok"></i> {% endif %}{{name}}</span></a>
+          {% endfor %}
+        {% else %}
+          {{block.super}}
+        {% endif %}
+        {% table_search %}
+    </div>
+    <table id="{% block table_id %}{% endblock %}" data-order="{% block table_order %}[[0,&quot;asc&quot;]]{% endblock %}" class="table table-condensed table-striped table-hover compact" data-tablesort cellspacing="1">
+        <thead>
+            <tr>
+                {% for header in table.headers %}
+                  <th>{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in table.rows %}
+              <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
+                {% for col in row.cols %}
+                  <td>{% table_column col %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- Hidden table to post json data to download table as a file -->
+    <div class="hidden">
+        <form id="json-table-form" action="/download/tabletofile/" method="post">{% csrf_token %}
+            <input id="form-file-format" name="format" type="text">
+            <input id="form-json-header" name="header" type="text">
+            <input id="form-json-data" name="data" type="text">
+            <button type="submit"></button>
+        </form>
+    </div>
+{% endblock %}
+
+
+{% block content_footer %}
+<div class="section top-space">
     {% if user.is_staff %}
         <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
     {% endif %}
+</div>
 {% endblock %}
