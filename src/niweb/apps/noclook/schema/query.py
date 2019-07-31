@@ -13,7 +13,7 @@ class NOCRootQuery(NOCAutoQuery):
     getChoicesForDropdown = graphene.List(KeyValue, name=graphene.String(required=True))
     getRelationById = graphene.Field(NIRelationType, relation_id=graphene.Int(required=True))
     getRoleRelationById = graphene.Field(RoleRelation, relation_id=graphene.Int(required=True))
-    roles = relay.ConnectionField(RoleConnection)
+    roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -45,7 +45,29 @@ class NOCRootQuery(NOCAutoQuery):
         return rel
 
     def resolve_roles(self, info, **kwargs):
-        return RoleModel.objects.all()
+        filter = kwargs.get('filter')
+        order_by = kwargs.get('orderBy')
+
+        qs = RoleModel.objects.all()
+
+        if order_by:
+            if order_by == RoleOrderBy.handle_id_ASC:
+                qs = qs.order_by('handle_id')
+            elif order_by == RoleOrderBy.handle_id_DESC:
+                qs = qs.order_by('-handle_id')
+            elif order_by == RoleOrderBy.name_ASC:
+                qs = qs.order_by('name')
+            elif order_by == RoleOrderBy.name_DESC:
+                qs = qs.order_by('-name')
+
+        if filter:
+            if filter.handle_id:
+                qs = qs.filter(handle_id=filter.handle_id)
+
+            if filter.name:
+                qs = qs.filter(name=filter.name)
+
+        return qs
 
     class NIMeta:
         graphql_types = [ Group, Contact, Organization, Procedure, Host ]

@@ -151,3 +151,15 @@ class Host(NIObjectType):
 class RoleConnection(relay.Connection):
     class Meta:
         node = Role
+
+
+class RoleFilter(graphene.InputObjectType):
+    name = graphene.String()
+    handle_id = graphene.Int()
+
+
+class RoleOrderBy(graphene.Enum):
+    name_ASC='name_ASC'
+    name_DESC='name_DESC'
+    handle_id_ASC='handle_id_ASC'
+    handle_id_DESC='handle_id_DESC'
