@@ -1612,7 +1612,7 @@ class NIMutationFactory():
             update_form = form
 
         # create mutations
-        class_name = 'CreateNI{}Mutation'.format(node_type.capitalize())
+        class_name = 'Create{}'.format(node_type.capitalize())
         attr_dict = {
             'django_form': create_form,
             'request_path': request_path,
@@ -1632,7 +1632,7 @@ class NIMutationFactory():
             },
         )
 
-        class_name = 'UpdateNI{}Mutation'.format(node_type.capitalize())
+        class_name = 'Update{}'.format(node_type.capitalize())
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
         attr_dict['include']       = update_include
@@ -1651,7 +1651,7 @@ class NIMutationFactory():
             },
         )
 
-        class_name = 'DeleteNI{}Mutation'.format(node_type.capitalize())
+        class_name = 'Delete{}'.format(node_type.capitalize())
         del attr_dict['django_form']
         del attr_dict['include']
         del attr_dict['exclude']

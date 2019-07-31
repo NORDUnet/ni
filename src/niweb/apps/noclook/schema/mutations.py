@@ -72,7 +72,7 @@ class NIOrganizationMutationFactory(NIMutationFactory):
         abstract = False
 
 
-class UpdateNIOrganizationMutation(UpdateNIMutation):
+class UpdateOrganization(UpdateNIMutation):
     @classmethod
     def do_request(cls, request, **kwargs):
         form_class     = kwargs.get('form_class')
@@ -216,7 +216,7 @@ class NOCRootMutation(graphene.ObjectType):
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
 
     create_organization = NIOrganizationMutationFactory.get_create_mutation().Field()
-    update_organization = UpdateNIOrganizationMutation.Field()
+    update_organization = UpdateOrganization.Field()
     delete_organization = NIOrganizationMutationFactory.get_delete_mutation().Field()
 
     create_role = CreateRole.Field()
