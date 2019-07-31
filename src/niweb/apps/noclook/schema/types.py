@@ -146,3 +146,8 @@ class Host(NIObjectType):
     class NIMetaType:
         ni_type = 'Host'
         ni_metatype = NIMETA_LOGICAL
+
+
+class RoleConnection(relay.Connection):
+    class Meta:
+        node = Role
