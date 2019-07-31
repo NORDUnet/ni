@@ -989,7 +989,7 @@ class EditGroupForm(NewGroupForm):
 class NewRoleForm(forms.ModelForm):
     class Meta:
         model = Role
-        fields = '__all__'
+        fields = ['name', 'description']
 
 class EditRoleForm(forms.ModelForm):
     def save(self, commit=True):
