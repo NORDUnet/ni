@@ -5,7 +5,7 @@ import graphene
 import norduniclient as nc
 
 from graphql import GraphQLError
-from ..models import Dropdown as DropdownModel, Role as RoleModel
+from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown
 from .types import *
 
 class NOCRootQuery(NOCAutoQuery):

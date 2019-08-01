@@ -8,7 +8,7 @@ from . import Neo4jGraphQLTest
 
 class QueryTest(Neo4jGraphQLTest):
     def test_get_contacts(self):
-        # test contacts
+        # test contacts: slicing and ordering
         query = '''
         query getLastTwoContacts {
           contacts(first: 2, orderBy: handle_id_DESC) {
@@ -57,7 +57,7 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
-        # subquery test
+        # AND filter with subentities
         query = '''
         query {
           contacts(filter: {AND: [
@@ -180,6 +180,66 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
 
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        # filter by ScalarChoice
+        query = '''
+        {
+          getAvailableDropdowns
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert 'organization_types' in result.data['getAvailableDropdowns'], pformat(result.data, indent=1)
+
+        query = '''
+        {
+          getChoicesForDropdown(name: "organization_types"){
+            name
+            value
+          }
+        }
+        '''
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        found = False
+        for pair in result.data['getChoicesForDropdown']:
+            if pair['value'] == 'provider':
+                found = True
+                break
+
+        assert found, pformat(result.data, indent=1)
+
+        query = '''
+        {
+        	organizations(filter:{
+            AND: [
+              { type: "provider" }
+            ]
+          }){
+            edges{
+              node{
+                name
+                type
+              }
+            }
+          }
+        }
+        '''
+
+        expected = OrderedDict([('organizations',
+                    OrderedDict([('edges',
+                        [OrderedDict([('node',
+                            OrderedDict([
+                                ('name',
+                                 'organization1'),
+                                ('type',
+                                 'provider')]))])])]))])
+
+        result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
