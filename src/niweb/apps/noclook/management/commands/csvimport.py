@@ -276,16 +276,6 @@ class Command(BaseCommand):
                 role = Role(name=role_name)
                 role.save()
 
-            # update the relation in neo4j using the relation_id to add the handle_id
-            q = """
-                MATCH (c:Contact)-[r:Works_for]->(o:Organization)
-                WHERE r.name = "{role_name}"
-                SET r.handle_id = {handle_id}
-                RETURN r
-                """.format(role_name=role_name, handle_id=role.handle_id)
-
-            ret = nc.core.query_to_list(nc.graphdb.manager, q)
-
     def count_lines(self, file):
         '''
         Counts lines in a file
