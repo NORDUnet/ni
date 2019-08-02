@@ -198,6 +198,24 @@ class QueryTest(Neo4jGraphQLTest):
         group_handle_id = result.data['groups']['edges'][0]['node']['handle_id']
         group_handle_id = int(group_handle_id)
 
+        # get IT-manager role
+        query = '''
+        {
+          roles(filter: {name: "IT-manager"}){
+            edges{
+              node{
+                handle_id
+                name
+              }
+            }
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        role_handle_id = result.data['roles']['edges'][0]['node']['handle_id']
+
         query = """
         mutation update_test_contact {{
           update_contact(
@@ -207,7 +225,7 @@ class QueryTest(Neo4jGraphQLTest):
               last_name: "Doe"
               contact_type: "person"
               relationship_works_for: {organization_id}
-              role: 6
+              role: {role_handle_id}
               relationship_member_of: {group_handle_id}
             }}
           ){{
@@ -235,7 +253,8 @@ class QueryTest(Neo4jGraphQLTest):
             }}
           }}
         }}
-        """.format(organization_id=organization_id, group_handle_id=group_handle_id)
+        """.format(organization_id=organization_id,
+                    role_handle_id=role_handle_id, group_handle_id=group_handle_id)
 
         expected = OrderedDict([('update_contact',
               OrderedDict([('contact',
