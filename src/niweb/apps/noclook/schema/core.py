@@ -16,7 +16,7 @@ from django.utils import six
 from graphene import relay
 from graphene.types import Scalar
 from graphene_django import DjangoObjectType
-from graphene_django.types import DjangoObjectTypeOptions
+from graphene_django.types import DjangoObjectTypeOptions, ErrorType
 from graphql import GraphQLError
 from graphql.language.ast import IntValue, StringValue
 from io import StringIO
@@ -1277,6 +1277,8 @@ class NodeHandler(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
 class AbstractNIMutation(relay.ClientIDMutation):
+    errors = graphene.List(ErrorType)
+
     @classmethod
     def __init_subclass_with_meta__(
         cls, output=None, input_fields=None, arguments=None, name=None, **options
@@ -1441,12 +1443,16 @@ class AbstractNIMutation(relay.ClientIDMutation):
             raise GraphQLAuthException()
 
         reqinput = cls.from_input_to_request(info.context.user, **input)
-        ret = cls.do_request(reqinput[0], **reqinput[1])
+        has_error, ret = cls.do_request(reqinput[0], **reqinput[1])
 
         graphql_type = cls.get_graphql_type()
         init_params = {}
-        for key, value in ret.items():
-            init_params[key] = value
+
+        if not has_error:
+            for key, value in ret.items():
+                init_params[key] = value
+        else:
+            init_params['errors'] = ret
 
         return cls(**init_params)
 
@@ -1456,6 +1462,15 @@ class AbstractNIMutation(relay.ClientIDMutation):
         graphql_type  = getattr(ni_metaclass, 'graphql_type', None)
 
         return graphql_type
+
+    @classmethod
+    def format_error_array(cls, errordict):
+        errors = [
+                ErrorType(field=key, messages=value)
+                for key, value in errordict.items()
+            ]
+
+        return errors
 
     class Meta:
         abstract = True
@@ -1480,6 +1495,7 @@ class CreateNIMutation(AbstractNIMutation):
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        has_error      = False
 
         ## code from role creation
         form = form_class(request.POST)
@@ -1488,14 +1504,16 @@ class CreateNIMutation(AbstractNIMutation):
                 nh = helpers.form_to_unique_node_handle(request, form,
                         node_type, node_meta_type)
             except UniqueNodeError:
-                raise GraphQLError(
-                    'A {} with that name already exists.'.format(node_type)
-                )
+                has_error = True
+                return has_error, [ErrorType(field="_", messages="A {} with that name already exists.")]
+
             helpers.form_update_node(request.user, nh.handle_id, form)
-            return { graphql_type.__name__.lower(): nh }
+            return has_error, { graphql_type.__name__.lower(): nh }
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form.errors))
+            has_error = True
+            errordict = cls.format_error_array(form.errors)
+            return has_error, errordict
 
 class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -1513,6 +1531,7 @@ class UpdateNIMutation(AbstractNIMutation):
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
         handle_id      = request.POST.get('handle_id')
+        has_error      = False
 
         nh, nodehandler = helpers.get_nh_node(handle_id)
         if request.POST:
@@ -1524,12 +1543,16 @@ class UpdateNIMutation(AbstractNIMutation):
                 # process relations if implemented
                 cls.process_relations(request, form, nodehandler)
 
-                return { graphql_type.__name__.lower(): nh }
+                return has_error, { graphql_type.__name__.lower(): nh }
             else:
-                raise GraphQLError('Form is not valid: {}'.format(form.errors))
+                has_error = True
+                errordict = cls.format_error_array(form.errors)
+                return has_error, errordict
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form.errors))
+            has_error = True
+            errordict = cls.format_error_array(form.errors)
+            return has_error, errordict
 
     @classmethod
     def process_relations(cls, request, form, nodehandler):
@@ -1551,12 +1574,12 @@ class DeleteNIMutation(AbstractNIMutation):
 
     @classmethod
     def do_request(cls, request, **kwargs):
-        handle_id      = request.POST.get('handle_id')
+        handle_id = request.POST.get('handle_id')
 
         nh, node = helpers.get_nh_node(handle_id)
         success = helpers.delete_node(request.user, node.handle_id)
 
-        return {'success': success}
+        return not success, {'success': success}
 
 class NIMutationFactory():
     '''

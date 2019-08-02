@@ -264,6 +264,30 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
+        # test error output
+        query = '''
+        mutation{
+          update_contact(input:{
+            handle_id: 14,
+            first_name: "Janet"
+            last_name: "Janet"
+            contact_type: "doesnt_exists"
+          }){
+            contact{
+              handle_id
+              name
+            }
+            errors{
+              field
+              messages
+            }
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert 'errors' in result.data['update_contact'], pformat(result.data, indent=1)
+
         ## delete ##
         query = """
         mutation delete_test_contact {

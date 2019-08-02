@@ -83,6 +83,7 @@ class UpdateOrganization(UpdateNIMutation):
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
         handle_id      = request.POST.get('handle_id')
+        has_error      = False
 
         # Get needed data from node
         nh, organization = helpers.get_nh_node(handle_id)
@@ -123,10 +124,12 @@ class UpdateOrganization(UpdateNIMutation):
                     procedure_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_uses_a'])
                     helpers.set_uses_a(request.user, organization, procedure_nh.handle_id)
 
-                return { graphql_type.__name__.lower(): nh }
+                return has_error, { graphql_type.__name__.lower(): nh }
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form.errors))
+            has_error = True
+            errordict = cls.format_error_array(form.errors)
+            return has_error, errordict
 
     class NIMetaClass:
         django_form = EditOrganizationForm
