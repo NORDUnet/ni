@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.forms.utils import ValidationError
 from django.test import RequestFactory
 from django.utils import six
+from django_comments.models import Comment
 from graphene import relay
 from graphene.types import Scalar
 from graphene_django import DjangoObjectType
@@ -742,6 +743,10 @@ class DictRelationType(graphene.ObjectType):
     name = graphene.String(required=True)
     relation = graphene.Field(NIRelationType, required=True)
 
+class CommentType(DjangoObjectType):
+    class Meta:
+        model = Comment
+
 class NIObjectType(DjangoObjectType):
     '''
     This class expands graphene_django object type adding the defined fields in
@@ -822,6 +827,7 @@ class NIObjectType(DjangoObjectType):
 
     incoming = graphene.List(DictRelationType)
     outgoing = graphene.List(DictRelationType)
+    comments = graphene.List(CommentType)
 
     def resolve_incoming(self, info, **kwargs):
         '''
@@ -850,6 +856,10 @@ class NIObjectType(DjangoObjectType):
                 ret.append(DictRelationType(name=rel_name, relation=rel))
 
         return ret
+
+    def resolve_comments(self, info, **kwargs):
+        handle_id = self.handle_id
+        return Comment.objects.filter(object_pk=handle_id)
 
     @classmethod
     def get_from_nimetatype(cls, attr):
