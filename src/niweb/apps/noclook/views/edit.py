@@ -821,6 +821,7 @@ def edit_service(request, handle_id):
                              'odf',
                              'optical-node',
                              'optical-path',
+                             'optical-filter',
                              'router',
                              'service',
                              'switch',
