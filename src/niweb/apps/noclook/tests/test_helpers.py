@@ -17,7 +17,6 @@ class Neo4jHelpersTest(NeoTestCase):
         helpers.delete_node(self.user, nh.handle_id)
         activities = actor_stream(self.user)
         self.assertEqual(1, len(activities))
-        print('activities 1:', activities[0], 'first data:', activities[0].data.get('noclook'))
         self.assertEqual(u'Site æøå-ftw', activities[0].data.get('noclook', {}).get('object_name'))
 
     def test_create_unique_node_handle_case_insensitive(self):
