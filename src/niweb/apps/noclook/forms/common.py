@@ -642,7 +642,7 @@ class NewOpticalLinkForm(forms.Form):
             try:
                 unique_ids.register_unique_id(self.Meta.id_collection, name)
             except IntegrityError as e:
-                self.add_error('name', e.message)
+                self.add_error('name', str(e))
         return cleaned_data
 
 
@@ -730,9 +730,7 @@ class NewOpticalPathForm(forms.Form):
             try:
                 unique_ids.register_unique_id(self.Meta.id_collection, name)
             except IntegrityError as e:
-                self._errors = ErrorDict()
-                self._errors['name'] = ErrorList()
-                self._errors['name'].append(e.message)
+                self.add_error('name', str(e))
         return cleaned_data
 
 
