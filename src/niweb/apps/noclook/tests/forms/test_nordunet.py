@@ -16,8 +16,8 @@ class NordunetFormTest(NeoTestCase):
             node_name='cable1',
             node_type=cable_type,
             node_meta_type='Physical',
-            creator_id=1,
-            modifier_id=1)
+            creator=self.user,
+            modifier=self.user)
 
         form_data = {
             'name': 'cable1',
