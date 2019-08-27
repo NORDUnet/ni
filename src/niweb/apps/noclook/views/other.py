@@ -168,6 +168,35 @@ def search_port_typeahead(request):
 
 
 @login_required
+def search_location_typeahead(request):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        match_q = neo4j_escape(to_find.split())
+        try:
+            q = """
+                MATCH (l:Node)
+                WHERE l:Site or l:Rack
+                OPTIONAL MATCH (s:Node)-[:Has]->(l)
+                WITH l.handle_id as handle_id,
+                    CASE WHEN s IS null THEN
+                      ""
+                    ELSE
+                        s.name + " "
+                    END + l.name as name
+                WHERE name =~ '(?i).*{}.*'
+                 RETURN name, handle_id
+                """.format(".*".join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q)
+        except Exception as e:
+            raise e
+    json.dump(result, response)
+    return response
+
+
+@login_required
 def find_all(request, slug=None, key=None, value=None, form=None):
     """
     Search through nodes either from a POSTed search query or through an
