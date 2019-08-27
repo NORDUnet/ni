@@ -345,6 +345,18 @@ def json_combo(form_field, urls, initial=None, skip_field=False):
     }
 
 
+@register.inclusion_tag('noclook/tags/typeahead.html')
+def typeahead(form_field, url, placeholder=None, has_parent=False, min_length=3):
+
+    return {
+        'url': url,
+        'placeholder': placeholder,
+        'field': form_field,
+        'has_parent': has_parent,
+        'min_length': min_length,
+    }
+
+
 def _equipment_spacer(units):
     return {'units': units, 'spacer': True, 'height': "{}px".format(units * 18)}
 
