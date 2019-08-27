@@ -67,7 +67,7 @@ def visualize_maximize(request, slug, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     node = nh.get_node()
     return render(request, 'noclook/visualize/visualize_maximize.html',
-                              {'node_handle': nh, 'node': node, 'slug': slug})
+                  {'node_handle': nh, 'node': node, 'slug': slug})
 
 
 # Search views
@@ -148,7 +148,7 @@ def search_port_typeahead(request):
                 MATCH (port:Port)<-[:Has]-(n:Node)
                 OPTIONAL MATCH (n)-[:Located_in]->(n2:Node)
                 OPTIONAL MATCH (n2)<-[:Has]-(s:Site)
-                WITH port.handle_id as handle_id, 
+                WITH port.handle_id as handle_id,
                 n.handle_id as parent_id,
                 CASE WHEN n2 IS null THEN
                   ""
@@ -212,8 +212,8 @@ def find_all(request, slug=None, key=None, value=None, form=None):
             label = node_type.get_label()
         except Http404:
             return render(request, 'noclook/search_result.html',
-                                      {'node_type': slug, 'key': key, 'value': value, 'result': None,
-                                       'node_meta_type': None})
+                          {'node_type': slug, 'key': key, 'value': value, 'result': None,
+                           'node_meta_type': None})
     if value:
         nodes = nc.search_nodes_by_value(nc.graphdb.manager, value, key, label)
     else:
@@ -228,7 +228,7 @@ def find_all(request, slug=None, key=None, value=None, form=None):
         item = {'node': node, 'nh': nh}
         result.append(item)
     return render(request, 'noclook/search_result.html',
-                              {'node_type': node_type, 'key': key, 'value': value, 'result': result})
+                  {'node_type': node_type, 'key': key, 'value': value, 'result': result})
 
 
 # Google maps views
