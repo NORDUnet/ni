@@ -127,7 +127,6 @@ class QueryTest(Neo4jGraphQLTest):
             }
           ){
             contact{
-              handle_id
               name
               first_name
               last_name
@@ -144,8 +143,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected = OrderedDict([('create_contact',
                       OrderedDict([('contact',
-                        OrderedDict([('handle_id', '14'),
-                                     ('name', 'Jane Smith'),
+                        OrderedDict([('name', 'Jane Smith'),
                                      ('first_name', 'Jane'),
                                      ('last_name', 'Smith'),
                                      ('title', None),
@@ -321,6 +319,107 @@ class QueryTest(Neo4jGraphQLTest):
                 OrderedDict([
                     ('success', True),
                 ])
+            )
+        ])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        ### Comments tests ###
+
+        ## create ##
+        query = """
+        mutation{{
+          create_comment(
+            input:{{
+              object_pk: {organization_id},
+              comment: "This comment was added using the graphql api"
+            }}
+          ){{
+            comment{{
+              object_pk
+              comment
+              is_public
+            }}
+          }}
+        }}
+        """.format(organization_id=organization_id)
+
+        expected =  OrderedDict([('create_comment',
+              OrderedDict([('comment',
+                            OrderedDict([('object_pk', str(organization_id)),
+                                         ('comment',
+                                          'This comment was added using the '
+                                          'graphql api'),
+                                         ('is_public', True)]))]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        ## read ##
+        query = """
+        {{
+          getOrganizationById(handle_id: {organization_id}){{
+            comments{{
+              id
+              comment
+            }}
+          }}
+        }}
+        """.format(organization_id=organization_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        comment_id = result.data['getOrganizationById']['comments'][0]['id']
+
+        ## update ##
+        query = """
+        mutation{{
+          update_comment(
+            input:{{
+              id: {comment_id},
+              comment: "This comment was added using SRI's graphql api"
+            }}
+          ){{
+            comment{{
+              id
+              comment
+              is_public
+            }}
+          }}
+        }}
+        """.format(comment_id=comment_id)
+
+        expected = OrderedDict([('update_comment',
+              OrderedDict([('comment',
+                            OrderedDict([('id', comment_id),
+                                         ('comment',
+                                          'This comment was added using SRI\'s '
+                                          'graphql api'),
+                                         ('is_public', True)]))]))])
+
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        ## delete ##
+        query = """
+        mutation{{
+          delete_comment(input:{{
+            id: {comment_id}
+          }}){{
+            success
+            id
+          }}
+        }}
+        """.format(comment_id=comment_id)
+
+        expected = OrderedDict([
+            ('delete_comment',
+                OrderedDict([('success', True), ('id', int(comment_id))])
             )
         ])
 
