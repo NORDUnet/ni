@@ -7,7 +7,7 @@ from norduniclient.models import RoleRelationship
 from django.contrib.auth.models import User
 from graphene import relay
 from .core import *
-from ..models import *
+from ..models import Dropdown, Choice, Role as RoleModel
 
 # further centralization?
 NIMETA_LOGICAL  = 'logical'
@@ -44,6 +44,13 @@ class Neo4jChoice(graphene.ObjectType):
     class Meta:
         interfaces = (KeyValue, )
 
+class Role(DjangoObjectType):
+    '''
+    This class represents a Role in the relational db
+    '''
+    class Meta:
+        model = RoleModel
+
 class Group(NIObjectType):
     '''
     The group type is used to group contacts
@@ -75,23 +82,24 @@ class Organization(NIObjectType):
     website = NIStringField()
     customer_id = NIStringField()
     additional_info = NIStringField()
+    type = NIChoiceField()
 
     class NIMetaType:
         ni_type = 'Organization'
         ni_metatype = NIMETA_RELATION
 
-class Role(NIRelationType):
-    name = graphene.String(required=True)
-    organization = graphene.Field(Organization)
+class RoleRelation(NIRelationType):
+    name = graphene.String()
+    end_node = graphene.Field(Organization)
+    role_data = graphene.Field(Role)
 
     def resolve_name(self, info, **kwargs):
-        if self.name:
-            return self.name
-        else:
-            raise Exception('This must not be a role relationship')
+        return getattr(self, 'name', None)
 
-    def resolve_organization(self, info, **kwargs):
-        return NodeHandle.objects.get(handle_id=self.end)
+    def resolve_role_data(self, info, **kwargs):
+        name = getattr(self, 'name', None)
+        role_data = RoleModel.objects.get(name=name)
+        return role_data
 
     class NIMetaType:
         nimodel = RoleRelationship
@@ -113,7 +121,7 @@ class Contact(NIObjectType):
     other_email = NIStringField()
     PGP_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
-    roles = NIRelationField(rel_name='Works_for', type_args=(Role, ))
+    roles = NIRelationField(rel_name=RoleRelationship.RELATION_NAME, type_args=(RoleRelation, ))
 
     class NIMetaType:
         ni_type = 'Contact'
@@ -144,3 +152,20 @@ class Host(NIObjectType):
     class NIMetaType:
         ni_type = 'Host'
         ni_metatype = NIMETA_LOGICAL
+
+
+class RoleConnection(relay.Connection):
+    class Meta:
+        node = Role
+
+
+class RoleFilter(graphene.InputObjectType):
+    name = graphene.String()
+    handle_id = graphene.Int()
+
+
+class RoleOrderBy(graphene.Enum):
+    name_ASC='name_ASC'
+    name_DESC='name_DESC'
+    handle_id_ASC='handle_id_ASC'
+    handle_id_DESC='handle_id_DESC'

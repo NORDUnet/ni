@@ -12,11 +12,14 @@ from django import forms
 from django.db.models import Q
 from django.forms.utils import ValidationError
 from django.test import RequestFactory
+from django.utils import six
+from django_comments.models import Comment
 from graphene import relay
 from graphene.types import Scalar
 from graphene_django import DjangoObjectType
-from graphene_django.types import DjangoObjectTypeOptions
+from graphene_django.types import DjangoObjectTypeOptions, ErrorType
 from graphql import GraphQLError
+from graphql.language.ast import IntValue, StringValue
 from io import StringIO
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
@@ -120,6 +123,38 @@ class RoleScalar(Scalar):
 
         return ret
 
+class ChoiceScalar(Scalar):
+    '''This scalar represents a choice field in query/mutation'''
+    @staticmethod
+    def coerce_choice(value):
+        num = None
+        try:
+            num = int(value)
+        except ValueError:
+            try:
+                num = int(float(value))
+            except ValueError:
+                pass
+        if num:
+            return graphene.Int.coerce_int(value)
+        else:
+            return graphene.String.coerce_string(value)
+
+
+    serialize = coerce_choice
+    parse_value = coerce_choice
+
+    @staticmethod
+    def parse_literal(ast):
+        if isinstance(ast, IntValue):
+            return graphene.Int.parse_literal(ast)
+        elif isinstance(ast, StringValue):
+            return graphene.String.parse_literal(ast)
+
+    @classmethod
+    def get_roles_dropdown(cls):
+        pass
+
 ########## END CUSTOM SCALARS FOR FORM FIELD CONVERSION
 
 ########## CONNECTION FILTER BUILD FUNCTIONS
@@ -208,9 +243,9 @@ class AbstractQueryBuilder:
 
 class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
-    def build_match_predicate(field, value, type):
+    def build_match_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} = {value}""".format(field=field, value=value)
@@ -218,9 +253,9 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
         return ret
 
     @staticmethod
-    def build_not_predicate(field, value, type):
+    def build_not_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} <> {value}""".format(field=field, value=value)
@@ -228,22 +263,21 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
         return ret
 
     @staticmethod
-    def build_in_predicate(field, values, type): # a list predicate builder
-        #raise Exception(values)
+    def build_in_predicate(field, values, type, **kwargs): # a list predicate builder
         in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
         ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
         return ret
 
     @staticmethod
-    def build_not_in_predicate(field, values, type): # a list predicate builder
+    def build_not_in_predicate(field, values, type, **kwargs): # a list predicate builder
         in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
         ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
         return ret
 
     @staticmethod
-    def build_lt_predicate(field, value, type):
+    def build_lt_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} < {value}""".format(field=field, value=value)
@@ -251,9 +285,9 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
         return ret
 
     @staticmethod
-    def build_lte_predicate(field, value, type):
+    def build_lte_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} <= {value}""".format(field=field, value=value)
@@ -261,9 +295,9 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
         return ret
 
     @staticmethod
-    def build_gt_predicate(field, value, type):
+    def build_gt_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} > {value}""".format(field=field, value=value)
@@ -271,9 +305,9 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
         return ret
 
     @staticmethod
-    def build_gte_predicate(field, value, type):
+    def build_gte_predicate(field, value, type, **kwargs):
         # string quoting
-        if isinstance(type, graphene.String):
+        if isinstance(value, six.string_types):
             value = "'{}'".format(value)
 
         ret = """n.{field} >= {value}""".format(field=field, value=value)
@@ -281,51 +315,203 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
         return ret
 
     @staticmethod
-    def build_contains_predicate(field, value, type):
+    def build_contains_predicate(field, value, type, **kwargs):
         return """n.{field} CONTAINS '{value}'""".format(field=field, value=value)
 
     @staticmethod
-    def build_not_contains_predicate(field, value, type):
+    def build_not_contains_predicate(field, value, type, **kwargs):
         return """NOT n.{field} CONTAINS '{value}'""".format(field=field, value=value)
 
     @staticmethod
-    def build_starts_with_predicate(field, value, type):
+    def build_starts_with_predicate(field, value, type, **kwargs):
         return """n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
 
     @staticmethod
-    def build_not_starts_with_predicate(field, value, type):
+    def build_not_starts_with_predicate(field, value, type, **kwargs):
         return """NOT n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
 
     @staticmethod
-    def build_ends_with_predicate(field, value, type):
+    def build_ends_with_predicate(field, value, type, **kwargs):
         return """n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
 
     @staticmethod
-    def build_not_ends_with_predicate(field, value, type):
+    def build_not_ends_with_predicate(field, value, type, **kwargs):
         return """NOT n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
 
 class InputFieldQueryBuilder(AbstractQueryBuilder):
-    @classmethod
-    def build_match_predicate(cls, field, value, type):
-        pass
+    standard_expression = """{neo4j_var}.{field} {op} {value}"""
+    id_expression = """ID({neo4j_var}) {op} {value}"""
 
     @classmethod
-    def build_in_predicate(cls, field, values, type): # a list predicate builder
-        subqueries = []
-        for element in values:
-            for name, field in element.__dict__:
-                pass
+    def format_expression(cls, key, value, neo4j_var, op, add_quotes=True):
+        # string quoting
+        if isinstance(value, str) and add_quotes:
+            value = "'{}'".format(value)
 
-        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
-        ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        if key is 'relation_id':
+            ret = cls.id_expression.format(
+                neo4j_var=neo4j_var,
+                op=op,
+                value=value,
+            )
+        else:
+            ret = cls.standard_expression.format(
+                neo4j_var=neo4j_var,
+                field=key,
+                op=op,
+                value=value,
+            )
+
+        return ret
+
+    @staticmethod
+    def single_value_predicate(field, value, type, op, not_in=False, **kwargs):
+        neo4j_var = kwargs.get('neo4j_var')
+        ret = ""
+
+        for k, v in value.items():
+            ret = InputFieldQueryBuilder.format_expression(k, v, neo4j_var, op)
+
+        if not_in:
+            ret = 'NOT {}'.format(ret)
+
         return ret
 
     @classmethod
-    def build_not_in_predicate(cls, field, values, type): # a list predicate builder
-        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
-        ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+    def multiple_value_predicate(cls, field, values, type, op, not_in=False, **kwargs): # a list predicate builder
+        neo4j_var = kwargs.get('neo4j_var')
+
+        all_values = []
+        field_name = ""
+
+        for value in values:
+            for k, v in value.items():
+                if isinstance(v, str):
+                    v = "'{}'".format(v)
+
+                field_name = k
+                all_values.append(v)
+
+        the_value = "[{}]".format(', '.join([str(x) for x in all_values]))
+
+        ret = InputFieldQueryBuilder.format_expression(field_name, the_value, neo4j_var, op, False)
+
+        if not_in:
+            ret = 'NOT {}'.format(ret)
+
         return ret
 
+    @staticmethod
+    def build_match_predicate(field, value, type, **kwargs):
+        op = "="
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_not_predicate(field, value, type, **kwargs):
+        op = "<>"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @classmethod
+    def build_in_predicate(cls, field, values, type, **kwargs): # a list predicate builder
+        op = "IN"
+        ret = InputFieldQueryBuilder.multiple_value_predicate(
+            field, values, type, op, **kwargs
+        )
+        return ret
+
+    @classmethod
+    def build_not_in_predicate(cls, field, values, type, **kwargs): # a list predicate builder
+        op = "IN"
+        ret = InputFieldQueryBuilder.multiple_value_predicate(
+            field, values, type, op, True, **kwargs
+        )
+        return ret
+
+    @staticmethod
+    def build_lt_predicate(field, value, type, **kwargs):
+        op = "<"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_lte_predicate(field, value, type, **kwargs):
+        op = "<="
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_gt_predicate(field, value, type, **kwargs):
+        op = ">"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_gte_predicate(field, value, type, **kwargs):
+        op = ">="
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_contains_predicate(field, value, type):
+        op = "CONTAINS"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_not_contains_predicate(field, value, type):
+        op = "CONTAINS"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, True, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_starts_with_predicate(field, value, type):
+        op = "STARTS WITH"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_not_starts_with_predicate(field, value, type):
+        op = "STARTS WITH"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, True, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_ends_with_predicate(field, value, type):
+        op = "ENDS WITH"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, **kwargs)
+
+        return ret
+
+    @staticmethod
+    def build_not_ends_with_predicate(field, value, type):
+        op = "ENDS WITH"
+        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+                                                                op, True, **kwargs)
+
+        return ret
 ########## END CONNECTION FILTER BUILD FUNCTIONS
 
 ########## KEYVALUE TYPES
@@ -399,6 +585,16 @@ class NIIntField(NIBasicField):
         super(NIIntField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
 
+class NIChoiceField(NIBasicField):
+    '''
+    Choice type
+    '''
+    def __init__(self, field_type=ChoiceScalar, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIChoiceField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+
 class NIListField(NIBasicField):
     '''
     Object list type
@@ -462,7 +658,6 @@ class NIRelationType(graphene.ObjectType):
 
     def resolve_relation_id(self, info, **kwargs):
         self.relation_id = self.id
-        self.id = None
 
         return self.relation_id
 
@@ -478,6 +673,12 @@ class NIRelationType(graphene.ObjectType):
                 ret.append(DictEntryType(name=key, value=value))
 
         return ret
+
+    def resolve_start_node(self, info, **kwargs):
+        return NodeHandle.objects.get(handle_id=self.start)
+
+    def resolve_end_node(self, info, **kwargs):
+        return NodeHandle.objects.get(handle_id=self.end)
 
     @classmethod
     def get_filter_input_fields(cls):
@@ -519,7 +720,17 @@ class NIRelationType(graphene.ObjectType):
 
     @classproperty
     def match_additional_clause(cls):
-        return "[r{}:{}]".format('{}',cls)
+        nimetatype = getattr(cls, 'NIMetaType', None)
+        relation_name = ''
+        if nimetatype:
+            relation_name = nimetatype.nimodel.RELATION_NAME
+
+        if relation_name:
+            relation_name = ':{}'.format(relation_name)
+
+        return "({})-[{}{}{}]-({})".format('{}', cls.neo4j_var_name, '{}', relation_name, '{}')
+
+    neo4j_var_name = "r"
 
     class Meta:
         interfaces = (relay.Node, )
@@ -531,6 +742,10 @@ class DictRelationType(graphene.ObjectType):
     '''
     name = graphene.String(required=True)
     relation = graphene.Field(NIRelationType, required=True)
+
+class CommentType(DjangoObjectType):
+    class Meta:
+        model = Comment
 
 class NIObjectType(DjangoObjectType):
     '''
@@ -612,6 +827,7 @@ class NIObjectType(DjangoObjectType):
 
     incoming = graphene.List(DictRelationType)
     outgoing = graphene.List(DictRelationType)
+    comments = graphene.List(CommentType)
 
     def resolve_incoming(self, info, **kwargs):
         '''
@@ -641,6 +857,10 @@ class NIObjectType(DjangoObjectType):
 
         return ret
 
+    def resolve_comments(self, info, **kwargs):
+        handle_id = self.handle_id
+        return Comment.objects.filter(object_pk=handle_id)
+
     @classmethod
     def get_from_nimetatype(cls, attr):
         ni_metatype = getattr(cls, 'NIMetaType')
@@ -667,7 +887,8 @@ class NIObjectType(DjangoObjectType):
             # string or string like fields
             if field:
                 if isinstance(field, graphene.types.scalars.String) or\
-                    isinstance(field, graphene.types.scalars.Int):
+                    isinstance(field, graphene.types.scalars.Int) or\
+                    isinstance(field, ChoiceScalar):
                     input_field = type(field)
                     input_fields[name] = input_field
                 elif isinstance(field, graphene.types.structures.List):
@@ -684,6 +905,8 @@ class NIObjectType(DjangoObjectType):
                     filter_attrib = {}
                     for a, b in field_of_type.get_filter_input_fields().items():
                         filter_attrib[a] = b()
+
+                    filter_attrib['_of_type'] = field._of_type
 
                     binput_field = type('{}InputField'.format(name_fot), (graphene.InputObjectType, ), filter_attrib)
                     input_fields[name] = binput_field, field._of_type
@@ -776,7 +999,11 @@ class NIObjectType(DjangoObjectType):
 
             if info.context and info.context.user.is_authenticated:
                 if handle_id:
-                    ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+                    try:
+                        int_id = str(handle_id)
+                        ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=int_id)
+                    except ValueError:
+                        ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
                 else:
                     raise GraphQLError('A handle_id must be provided')
 
@@ -823,7 +1050,10 @@ class NIObjectType(DjangoObjectType):
                         handle_ids = [ node['handle_id'] for node in nodes ]
                         node_type = NodeType.objects.get(type=type_name)
 
-                    ret = [ NodeHandle.objects.get(handle_id=handle_id) for handle_id in handle_ids ]
+                    ret = []
+
+                    for handle_id in handle_ids:
+                        ret.append(NodeHandle.objects.get(handle_id=handle_id))
 
                 if not ret:
                     ret = []
@@ -842,64 +1072,118 @@ class NIObjectType(DjangoObjectType):
         and_filters = filter.get('AND', [])
         and_predicates = []
 
-        # iterate through the nested filters
-        for and_filter in and_filters:
-            # iterate though values of a nested filter
-            for filter_key, filter_value in and_filter.items():
-                # choose filter array for query building
-                if isinstance(filter_value, int) or isinstance(filter_value, str):
-                    filter_array = ScalarQueryBuilder.filter_array
-                else:
-                    filter_array = InputFieldQueryBuilder.filter_array
-
-                filter_field = cls.filter_names[filter_key]
-                field  = filter_field['field']
-                suffix = filter_field['suffix']
-                field_type = filter_field['field_type']
-
-                # iterate through the keys of the filter array and extracts
-                # the predicate building function
-                for fa_suffix, fa_value in filter_array.items():
-                    if fa_suffix != '':
-                         fa_suffix = '_{}'.format(fa_suffix)
-
-                    # get the predicate
-                    if suffix == fa_suffix:
-                        build_preficate_func = fa_value['qpredicate']
-                        predicate = build_preficate_func(field, filter_value, field_type)
-                        if predicate:
-                            and_predicates.append(predicate)
-
         # build OR block
         or_filters = filter.get('OR', [])
         or_predicates = []
 
-        for or_filter in or_filters:
-            # iterate though values of a nested filter
-            for filter_key, filter_value in or_filter.items():
-                # choose filter array for query building
-                filter_array = ScalarQueryBuilder.filter_array
+        # additional clauses
+        match_additional_nodes = []
+        match_additional_rels  = []
 
-                filter_field = cls.filter_names[filter_key]
-                field  = filter_field['field']
-                suffix = filter_field['suffix']
-                field_type = filter_field['field_type']
+        and_node_predicates = []
+        and_rels_predicates = []
 
-                # iterate through the keys of the filter array and extracts
-                # the predicate building function
-                for fa_suffix, fa_value in filter_array.items():
-                    if fa_suffix != '':
-                         fa_suffix = '_{}'.format(fa_suffix)
+        # embed entity index
+        idxdict = {
+            'rel_idx': 1,
+            'node_idx': 1,
+            'subnode_idx': 1,
+            'subrel_idx': 1,
+        }
 
-                    # get the predicate
-                    if suffix == fa_suffix:
-                        build_preficate_func = fa_value['qpredicate']
-                        predicate = build_preficate_func(field, filter_value, field_type)
-                        if predicate:
-                            or_predicates.append(predicate)
+        operations = {
+            'AND': {
+                'filters': filter.get('AND', []),
+                'predicates': [],
+            },
+            'OR': {
+                'filters': filter.get('OR', []),
+                'predicates': [],
+            },
+        }
 
-        and_query = ' AND '.join(and_predicates)
-        or_query = ' OR '.join(or_predicates)
+        for operation in operations.keys():
+            filters = operations[operation]['filters']
+            predicates = operations[operation]['predicates']
+
+            # iterate through the nested filters
+            for a_filter in filters:
+                # iterate though values of a nested filter
+                for filter_key, filter_value in a_filter.items():
+                    # choose filter array for query building
+                    filter_array, queryBuilder = None, None
+                    is_nested_query = False
+                    neo4j_var = ''
+
+                    if isinstance(filter_value, int) or isinstance(filter_value, str):
+                        filter_array = ScalarQueryBuilder.filter_array
+                        queryBuilder = ScalarQueryBuilder
+                    elif isinstance(filter_value, list) and not (\
+                            isinstance(filter_value[0], str) or isinstance(filter_value[0], int))\
+                            or issubclass(type(filter_value), graphene.InputObjectType):
+                        # set of type
+                        is_nested_query = True
+                        of_type = None
+
+                        if isinstance(filter_value, list):
+                            of_type = filter_value[0]._of_type
+                        else:
+                            of_type = filter_value._of_type
+
+                        filter_array = InputFieldQueryBuilder.filter_array
+                        queryBuilder = InputFieldQueryBuilder
+                        additional_clause = of_type.match_additional_clause
+
+                        if additional_clause:
+                            # format var name and additional match
+                            if issubclass(of_type, NIObjectType):
+                                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
+                                additional_clause = additional_clause.format(
+                                    'n:{}'.format(nodetype),
+                                    'l{}'.format(idxdict['subrel_idx']),
+                                    idxdict['node_idx']
+                                )
+                                idxdict['node_idx'] = idxdict['node_idx'] + 1
+                                idxdict['subrel_idx'] = idxdict['subrel_idx'] + 1
+                                match_additional_nodes.append(additional_clause)
+                            elif issubclass(of_type, NIRelationType):
+                                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
+                                additional_clause = additional_clause.format(
+                                    'n:{}'.format(nodetype),
+                                    idxdict['rel_idx'],
+                                    'z{}'.format(idxdict['subnode_idx'])
+                                )
+                                idxdict['rel_idx'] = idxdict['rel_idx'] + 1
+                                idxdict['subnode_idx'] = idxdict['subnode_idx'] + 1
+                                match_additional_rels.append(additional_clause)
+                    else:
+                        filter_array = ScalarQueryBuilder.filter_array
+                        queryBuilder = ScalarQueryBuilder
+
+                    filter_field = cls.filter_names[filter_key]
+                    field  = filter_field['field']
+                    suffix = filter_field['suffix']
+                    field_type = filter_field['field_type']
+
+                    # iterate through the keys of the filter array and extracts
+                    # the predicate building function
+                    for fa_suffix, fa_value in filter_array.items():
+                        if fa_suffix != '':
+                            fa_suffix = '_{}'.format(fa_suffix)
+
+                        # get the predicate
+                        if suffix == fa_suffix:
+                            build_predicate_func = fa_value['qpredicate']
+
+                            predicate = build_predicate_func(field, filter_value, field_type, neo4j_var=neo4j_var)
+
+                            if predicate:
+                                predicates.append(predicate)
+
+            operations[operation]['predicates'] = predicates
+
+        and_query = ' AND '.join(operations['AND']['predicates'])
+        or_query = ' OR '.join(operations['OR']['predicates'])
 
         if and_query and or_query:
             build_query = '{} OR {}'.format(
@@ -915,29 +1199,39 @@ class NIObjectType(DjangoObjectType):
         if build_query != '':
             build_query = 'WHERE {}'.format(build_query)
 
-        # additional clauses
-        match_additional_clauses = []
+        # remove redundant additional clauses
+        match_additional_nodes = list(set(match_additional_nodes))
+        match_additional_rels = list(set(match_additional_rels))
 
-        # remove redundant
-        match_additional_clauses = list(set(match_additional_clauses))
-        match_additional = ', '.join(match_additional_clauses)
+        # prepare match clause
+        node_match_clause = "(n:{label})".format(label=nodetype)
+        additional_match_str = ', '.join( match_additional_nodes + match_additional_rels)
+
+        if additional_match_str:
+            node_match_clause = '{}, {}'.format(node_match_clause, additional_match_str)
 
         q = """
-            MATCH (n:{label}){match_additional}
+            MATCH {node_match_clause}
             {build_query}
             RETURN distinct n
-            """.format(label=nodetype, match_additional="",
-                        build_query=build_query)
+            """.format(node_match_clause=node_match_clause, build_query=build_query)
 
         return q
 
     @classproperty
     def match_additional_clause(cls):
-        return "[m{}:{}]".format('{}',cls.NIMetaType.ni_type)
+        return "({})-[{}]-({}{}:{})".format('{}', '{}', cls.neo4j_var_name, '{}',
+                                        cls.NIMetaType.ni_type)
+
+    neo4j_var_name = "m"
 
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
+
+## add start and end fields
+setattr(NIRelationType, 'start_node', graphene.Field(NIObjectType))
+setattr(NIRelationType, 'end_node', graphene.Field(NIObjectType))
 ########## END RELATION AND NODE TYPES
 
 
@@ -993,6 +1287,8 @@ class NodeHandler(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
 class AbstractNIMutation(relay.ClientIDMutation):
+    errors = graphene.List(ErrorType)
+
     @classmethod
     def __init_subclass_with_meta__(
         cls, output=None, input_fields=None, arguments=None, name=None, **options
@@ -1082,7 +1378,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
             elif isinstance(form_field, forms.CharField):
                 graphene_field = graphene.String(**graph_kwargs)
             elif isinstance(form_field, forms.ChoiceField):
-                graphene_field = graphene.String(**graph_kwargs)
+                graphene_field = ChoiceScalar(**graph_kwargs)
             elif isinstance(form_field, forms.FloatField):
                 graphene_field = graphene.Float(**graph_kwargs)
             elif isinstance(form_field, forms.IntegerField):
@@ -1157,12 +1453,16 @@ class AbstractNIMutation(relay.ClientIDMutation):
             raise GraphQLAuthException()
 
         reqinput = cls.from_input_to_request(info.context.user, **input)
-        ret = cls.do_request(reqinput[0], **reqinput[1])
+        has_error, ret = cls.do_request(reqinput[0], **reqinput[1])
 
         graphql_type = cls.get_graphql_type()
         init_params = {}
-        for key, value in ret.items():
-            init_params[key] = value
+
+        if not has_error:
+            for key, value in ret.items():
+                init_params[key] = value
+        else:
+            init_params['errors'] = ret
 
         return cls(**init_params)
 
@@ -1172,6 +1472,15 @@ class AbstractNIMutation(relay.ClientIDMutation):
         graphql_type  = getattr(ni_metaclass, 'graphql_type', None)
 
         return graphql_type
+
+    @classmethod
+    def format_error_array(cls, errordict):
+        errors = [
+                ErrorType(field=key, messages=value)
+                for key, value in errordict.items()
+            ]
+
+        return errors
 
     class Meta:
         abstract = True
@@ -1196,6 +1505,7 @@ class CreateNIMutation(AbstractNIMutation):
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        has_error      = False
 
         ## code from role creation
         form = form_class(request.POST)
@@ -1204,14 +1514,16 @@ class CreateNIMutation(AbstractNIMutation):
                 nh = helpers.form_to_unique_node_handle(request, form,
                         node_type, node_meta_type)
             except UniqueNodeError:
-                raise GraphQLError(
-                    'A {} with that name already exists.'.format(node_type)
-                )
+                has_error = True
+                return has_error, [ErrorType(field="_", messages="A {} with that name already exists.")]
+
             helpers.form_update_node(request.user, nh.handle_id, form)
-            return { graphql_type.__name__.lower(): nh }
+            return has_error, { graphql_type.__name__.lower(): nh }
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form.errors))
+            has_error = True
+            errordict = cls.format_error_array(form.errors)
+            return has_error, errordict
 
 class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -1229,6 +1541,7 @@ class UpdateNIMutation(AbstractNIMutation):
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
         handle_id      = request.POST.get('handle_id')
+        has_error      = False
 
         nh, nodehandler = helpers.get_nh_node(handle_id)
         if request.POST:
@@ -1240,12 +1553,16 @@ class UpdateNIMutation(AbstractNIMutation):
                 # process relations if implemented
                 cls.process_relations(request, form, nodehandler)
 
-                return { graphql_type.__name__.lower(): nh }
+                return has_error, { graphql_type.__name__.lower(): nh }
             else:
-                raise GraphQLError('Form is not valid: {}'.format(form.errors))
+                has_error = True
+                errordict = cls.format_error_array(form.errors)
+                return has_error, errordict
         else:
             # get the errors and return them
-            raise GraphQLError('Form errors: {}'.format(form.errors))
+            has_error = True
+            errordict = cls.format_error_array(form.errors)
+            return has_error, errordict
 
     @classmethod
     def process_relations(cls, request, form, nodehandler):
@@ -1267,12 +1584,12 @@ class DeleteNIMutation(AbstractNIMutation):
 
     @classmethod
     def do_request(cls, request, **kwargs):
-        handle_id      = request.POST.get('handle_id')
+        handle_id = request.POST.get('handle_id')
 
         nh, node = helpers.get_nh_node(handle_id)
         success = helpers.delete_node(request.user, node.handle_id)
 
-        return {'success': success}
+        return not success, {'success': success}
 
 class NIMutationFactory():
     '''
@@ -1328,7 +1645,7 @@ class NIMutationFactory():
             update_form = form
 
         # create mutations
-        class_name = 'CreateNI{}Mutation'.format(node_type.capitalize())
+        class_name = 'Create{}'.format(node_type.capitalize())
         attr_dict = {
             'django_form': create_form,
             'request_path': request_path,
@@ -1348,7 +1665,7 @@ class NIMutationFactory():
             },
         )
 
-        class_name = 'UpdateNI{}Mutation'.format(node_type.capitalize())
+        class_name = 'Update{}'.format(node_type.capitalize())
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
         attr_dict['include']       = update_include
@@ -1367,7 +1684,7 @@ class NIMutationFactory():
             },
         )
 
-        class_name = 'DeleteNI{}Mutation'.format(node_type.capitalize())
+        class_name = 'Delete{}'.format(node_type.capitalize())
         del attr_dict['django_form']
         del attr_dict['include']
         del attr_dict['exclude']

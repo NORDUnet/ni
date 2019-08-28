@@ -8,13 +8,12 @@ from . import Neo4jGraphQLTest
 
 class QueryTest(Neo4jGraphQLTest):
     def test_get_contacts(self):
-        # test contacts
+        # test contacts: slicing and ordering
         query = '''
         query getLastTwoContacts {
           contacts(first: 2, orderBy: handle_id_DESC) {
             edges {
               node {
-                handle_id
                 name
                 first_name
                 last_name
@@ -33,8 +32,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('contacts',
                       OrderedDict([('edges',
                         [OrderedDict([('node',
-                           OrderedDict([('handle_id', '29'),
-                            ('name', 'John Smith'),
+                           OrderedDict([('name', 'John Smith'),
                             ('first_name', 'John'),
                             ('last_name', 'Smith'),
                             ('member_of_groups',
@@ -44,8 +42,7 @@ class QueryTest(Neo4jGraphQLTest):
                              [OrderedDict([('name',
                                 'role2')])])]))]),
                          OrderedDict([('node',
-                           OrderedDict([('handle_id', '28'),
-                            ('name', 'Jane Doe'),
+                           OrderedDict([('name', 'Jane Doe'),
                             ('first_name', 'Jane'),
                             ('last_name', 'Doe'),
                             ('member_of_groups',
@@ -60,17 +57,208 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
-        # getNodeById
+        # AND filter with subentities
         query = '''
         query {
-          getNodeById(handle_id: 29){
-            handle_id
+          contacts(filter: {AND: [
+            {
+              member_of_groups: { name: "group2" },
+              roles: { name: "role2"}
+            }
+          ]}){
+            edges{
+              node{
+                name
+                roles{
+                  name
+                }
+                member_of_groups{
+                  name
+                }
+              }
+            }
           }
+        }
+        '''
+        expected = OrderedDict([('contacts',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([('name', 'John Smith'),
+                            ('roles',
+                             [OrderedDict([('name',
+                                'role2')])]),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group2')])])]))])])]))])
+
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        query = '''
+        query {
+          contacts(orderBy: handle_id_DESC, filter: {AND: [
+            {
+              member_of_groups_in: [{ name: "group1" }, { name: "group2" }],
+              roles_in: [{ name: "role1" }, { name: "role2" }]
+            }
+          ]}){
+            edges{
+              node{
+                name
+                member_of_groups{
+                  name
+                }
+                roles{
+                  name
+                }
+              }
+            }
+          }
+        }
+        '''
+        expected = OrderedDict([('contacts',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([('name', 'John Smith'),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group2')])]),
+                            ('roles',
+                             [OrderedDict([('name',
+                                'role2')])])]))]),
+                         OrderedDict([('node',
+                           OrderedDict([('name', 'Jane Doe'),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group1')])]),
+                            ('roles',
+                             [OrderedDict([('name',
+                                'role1')])])]))])])]))])
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        query = '''
+        query {
+          contacts(filter: {AND: [
+            {
+              member_of_groups: { name: "group2" },
+              roles: { name: "role2" }
+            }
+          ]}){
+            edges{
+              node{
+                name
+                roles{
+                  name
+                }
+                member_of_groups{
+                  name
+                }
+              }
+            }
+          }
+        }
+        '''
+        expected = OrderedDict([('contacts',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([
+                            ('name', 'John Smith'),
+                            ('roles',
+                             [OrderedDict([('name',
+                                'role2')])]),
+                            ('member_of_groups',
+                             [OrderedDict([('name',
+                                'group2')])])]))])])]))])
+
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        # filter by ScalarChoice
+        query = '''
+        {
+          getAvailableDropdowns
         }
         '''
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
+        assert 'organization_types' in result.data['getAvailableDropdowns'], pformat(result.data, indent=1)
+
+        query = '''
+        {
+          getChoicesForDropdown(name: "organization_types"){
+            name
+            value
+          }
+        }
+        '''
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        found = False
+        for pair in result.data['getChoicesForDropdown']:
+            if pair['value'] == 'provider':
+                found = True
+                break
+
+        assert found, pformat(result.data, indent=1)
+
+        query = '''
+        {
+        	organizations(filter:{
+            AND: [
+              { type: "provider" }
+            ]
+          }){
+            edges{
+              node{
+                name
+                type
+              }
+            }
+          }
+        }
+        '''
+
+        expected = OrderedDict([('organizations',
+                    OrderedDict([('edges',
+                        [OrderedDict([('node',
+                            OrderedDict([
+                                ('name',
+                                 'organization1'),
+                                ('type',
+                                 'provider')]))])])]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        # getNodeById
+        query = '''
+        query {
+          getNodeById(handle_id: 23){
+            handle_id
+          }
+        }
+        '''
+
+        expected = OrderedDict([
+                    ('getNodeById', OrderedDict([('handle_id', '23')]))
+                ])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
 
         # filter tests
         query = '''
@@ -83,7 +271,6 @@ class QueryTest(Neo4jGraphQLTest):
           }, orderBy: handle_id_ASC){
             edges{
               node{
-                handle_id
                 name
               }
             }
@@ -93,8 +280,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('groups',
                         OrderedDict([('edges',
                             [OrderedDict([('node',
-                                   OrderedDict([('handle_id', '32'),
-                                        ('name',
+                                   OrderedDict([('name',
                                          'group1')]
                                     ))])]
                             )]))
@@ -110,7 +296,6 @@ class QueryTest(Neo4jGraphQLTest):
         {
           groups(first: 10, filter:{
             OR:[{
-              name: "group1",
               name_in: ["group1", "group2"]
             },{
               name: "group2",
@@ -118,7 +303,6 @@ class QueryTest(Neo4jGraphQLTest):
           }, orderBy: handle_id_ASC){
             edges{
               node{
-                handle_id
                 name
               }
             }
@@ -128,11 +312,9 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('groups',
                       OrderedDict([('edges',
                         [OrderedDict([('node',
-                           OrderedDict([('handle_id', '32'),
-                            ('name', 'group1')]))]),
+                           OrderedDict([('name', 'group1')]))]),
                          OrderedDict([('node',
-                           OrderedDict([('handle_id', '33'),
-                                ('name',
+                           OrderedDict([('name',
                                  'group2')]))])])]))])
 
         result = schema.execute(query, context=self.context)
@@ -140,19 +322,17 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
-    def test_getnodebyhandle_id(self):
+    def test_dropdown(self):
         query = '''
-        query {
-          getNodeById(handle_id: 1){
-            handle_id
-          }
+        {
+          getAvailableDropdowns
         }
         '''
 
         result = schema.execute(query, context=self.context)
-        #assert not result.errors, result.errors
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert 'contact_type' in result.data['getAvailableDropdowns'], pformat(result.data, indent=1)
 
-    def test_dropdown(self):
         query = '''
         query{
           getChoicesForDropdown(name:"contact_type"){
