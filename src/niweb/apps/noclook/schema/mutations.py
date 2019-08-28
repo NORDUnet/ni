@@ -36,14 +36,18 @@ class NIProcedureMutationFactory(NIMutationFactory):
 
 
 def process_works_for(request, form, nodehandler, relation_name):
-    organization_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
-    role_handle_id = form.cleaned_data['role']
-    role = RoleModel.objects.get(handle_id=role_handle_id)
-    helpers.set_works_for(request.user, nodehandler, organization_nh.handle_id, role.name)
+    if relation_name in form.cleaned_data and 'role' in form.cleaned_data and \
+        form.cleaned_data[relation_name] and form.cleaned_data['role']:
+
+        organization_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
+        role_handle_id = form.cleaned_data['role']
+        role = RoleModel.objects.get(handle_id=role_handle_id)
+        helpers.set_works_for(request.user, nodehandler, organization_nh.handle_id, role.name)
 
 def process_member_of(request, form, nodehandler, relation_name):
-    group_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
-    helpers.set_member_of(request.user, nodehandler, group_nh.handle_id)
+    if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+        group_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
+        helpers.set_member_of(request.user, nodehandler, group_nh.handle_id)
 
 
 class NIContactMutationFactory(NIMutationFactory):
