@@ -1475,10 +1475,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
     @classmethod
     def format_error_array(cls, errordict):
-        errors = [
-                ErrorType(field=key, messages=value)
-                for key, value in errordict.items()
-            ]
+        errors = []
+
+        for key, value in errordict.items():
+            errors.append(ErrorType(field=key, messages=[value.as_data()[0].messages[0]]))
 
         return errors
 
@@ -1515,7 +1515,7 @@ class CreateNIMutation(AbstractNIMutation):
                         node_type, node_meta_type)
             except UniqueNodeError:
                 has_error = True
-                return has_error, [ErrorType(field="_", messages="A {} with that name already exists.")]
+                return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]
 
             helpers.form_update_node(request.user, nh.handle_id, form)
             return has_error, { graphql_type.__name__.lower(): nh }
