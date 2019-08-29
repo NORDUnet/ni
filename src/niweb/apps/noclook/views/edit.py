@@ -1073,7 +1073,11 @@ def edit_group(request, handle_id):
     contacts = []
 
     if 'Member_of' in relations:
-        contacts = [x['node'] for x in relations['Member_of']]
+        for x in relations['Member_of']:
+            contact = x['node']
+            contact.relationship_id = x['relationship_id']
+            contacts.append(contact)
+
         contacts = sorted(contacts, key=lambda x: x.data['name'], reverse=False)
 
     return render(request, 'noclook/edit/edit_group.html',
