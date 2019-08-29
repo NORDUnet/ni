@@ -7,10 +7,16 @@ import norduniclient as nc
 from apps.noclook import activitylog, helpers
 from apps.noclook.forms import *
 from apps.noclook.models import Dropdown as DropdownModel, Role as RoleModel, DEFAULT_ROLES
-from graphene_django.forms.mutation import DjangoModelFormMutation
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.shortcuts import get_current_site
+from django.test import RequestFactory
+from django_comments.forms import CommentForm
+from django_comments.models import Comment
+from graphene import Field
+from graphene_django.forms.mutation import DjangoModelFormMutation, BaseDjangoFormMutation
 from django.core.exceptions import ObjectDoesNotExist
 
-from .core import NIMutationFactory, CreateNIMutation
+from .core import NIMutationFactory, CreateNIMutation, CommentType
 from .types import *
 
 class NIGroupMutationFactory(NIMutationFactory):
@@ -210,6 +216,92 @@ class DeleteRole(relay.ClientIDMutation):
         return DeleteRole(success=success, handle_id=handle_id)
 
 
+class CreateComment(relay.ClientIDMutation):
+    class Input:
+        object_pk = graphene.Int(required=True)
+        comment = graphene.String(required=True)
+
+    comment = Field(CommentType)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        object_pk = input.get("object_pk",)
+        comment = input.get("comment")
+        content_type = ContentType.objects.get(app_label="noclook", model="nodehandle")
+
+        request_factory = RequestFactory()
+        request = request_factory.post('/', data={})
+        site = get_current_site(request)
+
+        comment = Comment(
+            content_type=content_type,
+            object_pk=object_pk,
+            site=site,
+            user=info.context.user,
+            comment=comment,
+        )
+        comment.save()
+
+        return CreateComment(comment=comment)
+
+class UpdateComment(relay.ClientIDMutation):
+    class Input:
+        id = graphene.Int(required=True)
+        comment = graphene.String(required=True)
+
+    comment = Field(CommentType)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        id = input.get("id",)
+        comment_txt = input.get("comment")
+
+        comment = Comment.objects.get(id=id)
+        comment.comment = comment_txt
+        comment.save()
+
+        return UpdateComment(comment=comment)
+
+class DeleteComment(relay.ClientIDMutation):
+    class Input:
+        id = graphene.Int(required=True)
+
+    success = graphene.Boolean(required=True)
+    id = graphene.Int(required=True)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        id = input.get("id", None)
+        success = False
+
+        try:
+            comment = Comment.objects.get(id=id)
+            comment.delete()
+            success = True
+        except ObjectDoesNotExist:
+            success = False
+
+        return DeleteComment(success=success, id=id)
+
+"""class EditComment(DjangoFormMutation):
+    class Input:
+        handle_id = graphene.Int(required=True)
+
+    @classmethod
+    def get_form_kwargs(cls, root, info, **input):
+        kwargs = {"data": input}
+
+        pk = input.pop("handle_id", None)
+        if pk:
+            instance = cls._meta.model._default_manager.get(pk=pk)
+            kwargs["instance"] = instance
+
+        return kwargs
+
+    class Meta:
+        form_class = CommentForm"""
+
+
 class NOCRootMutation(graphene.ObjectType):
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()
     update_group        = NIGroupMutationFactory.get_update_mutation().Field()
@@ -230,5 +322,9 @@ class NOCRootMutation(graphene.ObjectType):
     create_role = CreateRole.Field()
     update_role = UpdateRole.Field()
     delete_role = DeleteRole.Field()
+
+    create_comment = CreateComment.Field()
+    update_comment = UpdateComment.Field()
+    delete_comment = DeleteComment.Field()
 
     delete_relationship = DeleteRelationship.Field()

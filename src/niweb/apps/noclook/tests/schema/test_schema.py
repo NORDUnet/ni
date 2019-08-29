@@ -243,23 +243,6 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
-        # getNodeById
-        query = '''
-        query {
-          getNodeById(handle_id: 23){
-            handle_id
-          }
-        }
-        '''
-
-        expected = OrderedDict([
-                    ('getNodeById', OrderedDict([('handle_id', '23')]))
-                ])
-
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-        assert result.data == expected, pformat(result.data, indent=1)
-
         # filter tests
         query = '''
         {
