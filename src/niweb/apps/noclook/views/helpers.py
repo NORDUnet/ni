@@ -1,4 +1,3 @@
-from django.utils.http import urlencode
 
 class Table(object):
     def __init__(self, *args):

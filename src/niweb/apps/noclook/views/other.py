@@ -197,6 +197,60 @@ def search_location_typeahead(request):
 
 
 @login_required
+def search_non_location_typeahead(request):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        match_q = neo4j_escape(to_find.split())
+        try:
+            q = """
+                MATCH (n:Node)
+                WHERE not n:Location
+                OPTIONAL MATCH (n)<-[:Has]-(e:Node)
+                WITH n.handle_id as handle_id,
+                     coalesce(e.name, "") + " "+ n.name as name,
+                     labels(n) as labels
+                WHERE name =~ '(?i).*{}.*'
+                RETURN handle_id, trim(name) as name, labels
+                """.format(".*".join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q)
+        except Exception as e:
+            raise e
+    # TODO: do stuff with labels
+    json.dump(result, response)
+    return response
+
+
+@login_required
+def typeahead_slug(request, slug='Node'):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        match_q = neo4j_escape(to_find.split())
+        # TODO: optical-node => Optical_Node
+        label = slug.replace('-', '_').title()
+        try:
+            q = """
+                MATCH (n:{})
+                OPTIONAL MATCH (n)<-[:Has]-(e:Node)
+                WITH n.handle_id as handle_id,
+                     coalesce(e.name, "") + " "+ n.name as name
+                WHERE name =~ '(?i).*{}.*'
+                RETURN handle_id, trim(name) as name
+                """.format(label, ".*".join(match_q),)
+            result = nc.query_to_list(nc.graphdb.manager, q)
+        except Exception as e:
+            raise e
+    # TODO: do stuff with labels
+    json.dump(result, response)
+    return response
+
+
+@login_required
 def find_all(request, slug=None, key=None, value=None, form=None):
     """
     Search through nodes either from a POSTed search query or through an

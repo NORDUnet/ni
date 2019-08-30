@@ -29,6 +29,7 @@ urlpatterns = [
     url(r'^search/autocomplete$', other.search_autocomplete),
     url(r'^search/typeahead/ports$', other.search_port_typeahead),
     url(r'^search/typeahead/locations$', other.search_location_typeahead),
+    url(r'^search/typeahead/(?P<slug>[-\w]+)$', other.typeahead_slug),
     url(r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.search),
     # QR lookup
     url(r'^lu/(?P<name>[-\w]+)/$', other.qr_lookup),
