@@ -36,9 +36,6 @@ DEBUG = True
 
 ########## END DEBUG CONFIGURATION
 
-SESSION_COOKIE_DOMAIN = '.localni.info'
-LOGIN_REDICRECT_URL = 'http://react.localni.info'
-
 ########## EMAIL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
