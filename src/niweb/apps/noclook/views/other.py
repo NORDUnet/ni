@@ -213,11 +213,15 @@ def search_non_location_typeahead(request):
                      coalesce(e.name, "") + " "+ n.name as name,
                      labels(n) as labels
                 WHERE name =~ '(?i).*{}.*'
-                RETURN handle_id, trim(name) as name, labels
+                RETURN handle_id, trim(name) as name, labels ORDER BY name
                 """.format(".*".join(match_q))
             result = nc.query_to_list(nc.graphdb.manager, q)
         except Exception as e:
             raise e
+    for r in result:
+        _type = [l for l in r['labels'] if l not in ['Node', 'Physical', 'Logical', 'Relation']]
+        if _type:
+            r['name'] = u'{} [{}]'.format(r['name'], _type[0])
     # TODO: do stuff with labels
     json.dump(result, response)
     return response

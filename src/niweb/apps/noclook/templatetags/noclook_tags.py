@@ -346,7 +346,7 @@ def json_combo(form_field, urls, initial=None, skip_field=False):
 
 
 @register.inclusion_tag('noclook/tags/typeahead.html')
-def typeahead(form_field, url, placeholder=None, has_parent=False, min_length=3):
+def typeahead(form_field, url, placeholder=None, has_parent=False, min_length=3, node_types=None):
 
     return {
         'url': url,
@@ -354,6 +354,7 @@ def typeahead(form_field, url, placeholder=None, has_parent=False, min_length=3)
         'field': form_field,
         'has_parent': has_parent,
         'min_length': min_length,
+        'node_types': node_types,
     }
 
 

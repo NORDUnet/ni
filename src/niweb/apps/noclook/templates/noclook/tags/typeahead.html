@@ -41,6 +41,14 @@
   {{ field }}
   <div class="control-group">
     <label for="{{ field.id_for_label }}_typeahead" class="control-label">{{ field.label }}</label>
+
+    {% if node_types %}
+      <select>
+        {% for nt in node_types %}
+        <option>{{nt}}</option>
+        {% endfor %}
+      </select>
+    {% endif %}
     <div class="controls">
       <input type="text" id="{{ field.id_for_label}}_typeahead" placeholder="{{ placeholder }}" />
     </div>
