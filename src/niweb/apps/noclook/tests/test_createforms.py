@@ -62,6 +62,10 @@ class FormTestCase(TestCase):
             modifier=self.user,
         )
 
+        contact_node_type, created = NodeType.objects.get_or_create(type='Contact', slug="contact")
+        organization_node_type, created = NodeType.objects.get_or_create(type='Organization', slug="organization")
+        group_node_type, created = NodeType.objects.get_or_create(type='Group', slug="group")
+
     def tearDown(self):
         with nc.graphdb.manager.session as s:
             s.run("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r")
@@ -289,7 +293,6 @@ class CommonNewForms(FormTestCase):
             'contact_type': 'person',
             'mobile': '+46733023915',
             'phone': '+46733023915',
-            'salutation': 'Mr',
             'email': 'steli@sunet.se',
         }
         resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)

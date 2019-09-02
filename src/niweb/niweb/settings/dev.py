@@ -78,13 +78,13 @@ INSTALLED_APPS += (
 INTERNAL_IPS = ('127.0.0.1',)
 
 # See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'debug_toolbar.middleware.DebugToolbarMiddleware',
-) + MIDDLEWARE_CLASSES
+) + MIDDLEWARE
 
 DEBUG_TOOLBAR_CONFIG = {
     'INTERCEPT_REDIRECTS': False,
-    'SHOW_TOOLBAR_CALLBACK': lambda x: True,
+    'SHOW_TOOLBAR_CALLBACK': lambda x: False,
 }
 ########## END TOOLBAR CONFIGURATION
 
@@ -97,3 +97,4 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 ########## END TESTING
 
 GOOGLE_MAPS_API_KEY = environ.get('GOOGLE_MAPS_API_KEY', 'no-apikey')
+CORS_ORIGIN_ALLOW_ALL = True
