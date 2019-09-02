@@ -39,6 +39,9 @@
     {% for loc in location_path.location_path %}
         <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
     {% endfor %}
+    {% if node.data.rack_position %}
+      U{{node.data.rack_position}}
+    {% endif %}
     </h5>
 {% elif node.get_placement_path.placement_path %}
     <h5 class="site">Located in
