@@ -925,7 +925,7 @@ def set_works_for(user, node, organization_id, role_name):
     relationship = nc.models.RoleRelationship.link_contact_organization(contact_id, organization_id, role_name)
 
     if not relationship:
-        relationship = RoleRelationship()
+        relationship = nc.models.RoleRelationship(nc.graphdb.manager)
         relationship.load_from_nodes(contact_id, organization_id)
 
     node = node.reload()
