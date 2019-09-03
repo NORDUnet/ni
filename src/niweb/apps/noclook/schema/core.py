@@ -675,10 +675,10 @@ class NIRelationType(graphene.ObjectType):
         return ret
 
     def resolve_start_node(self, info, **kwargs):
-        return NodeHandle.objects.get(handle_id=self.start)
+        return NodeHandle.objects.get(handle_id=self.start['handle_id'])
 
     def resolve_end_node(self, info, **kwargs):
-        return NodeHandle.objects.get(handle_id=self.end)
+        return NodeHandle.objects.get(handle_id=self.end['handle_id'])
 
     @classmethod
     def get_filter_input_fields(cls):
