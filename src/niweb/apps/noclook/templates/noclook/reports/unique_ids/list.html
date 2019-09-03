@@ -2,10 +2,10 @@
 {% load crispy_forms_tags %}
 {% load noclook_tags %}
 {% load url_tags %}
-{% block title %}{{ block.super }} {{ organisation }} reserved ID list{% endblock %}
+{% block title %}{{ block.super }} {{ noclook.brand }} reserved ID list{% endblock %}
 
 {% block before_table %}
-  <h1>{{ organisation }} unique IDs</h1>
+  <h1>{{ noclook.brand }} unique IDs</h1>
   <div class="well">
     <form action="" method="get" class="form-horizontal">
       {{ search_form | crispy }}

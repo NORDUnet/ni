@@ -517,7 +517,8 @@ def new_optical_node(request, slug=None):
 @staff_member_required
 def reserve_id_sequence(request, slug=None):
     if not slug:
-        return render(request, 'noclook/edit/reserve_id.html', {})
+        links = unique_ids.generator_links()
+        return render(request, 'noclook/edit/reserve_id.html', {'links': links})
     if request.POST:
         form = forms.ReserveIdForm(request.POST)
         if form.is_valid():

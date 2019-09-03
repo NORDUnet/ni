@@ -76,6 +76,9 @@ function duration {
 
 SECONDS=0
 
+msg "Stopping norduni"
+docker-compose -f $SCRIPT_DIR/compose-dev.yml stop norduni
+
 set +e
 msg "Stopping neo4j"
 docker-compose -f $SCRIPT_DIR/compose-dev.yml stop neo4j
@@ -98,8 +101,11 @@ GRANT ALL PRIVILEGES ON DATABASE norduni to ni;
 ALTER USER ni CREATEDB;
 EOM
 
+msg "Copy db-dump to postgres"
+docker cp $SQL_DUMP $postgres_id:/sqldump.sql.gz
+
 msg "Import DB from $SQL_DUMP"
-gunzip -c $SQL_DUMP | docker exec -i $postgres_id psql -q -o /dev/null norduni ni
+docker exec -i $postgres_id bash -c "gunzip /sqldump.sql.gz; psql -q -o /dev/null norduni ni -f /sqldump.sql; rm /sqldump.*"
 
 msg "Django migrate"
 docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage migrate
@@ -147,5 +153,6 @@ if [ -z "$NI_DATA_CONF" ]; then
 fi
 
 msg "Create superuser"
+echo -e "\a" # play bell
 docker-compose -f $SCRIPT_DIR/compose-dev.yml  run --rm norduni manage createsuperuser
 

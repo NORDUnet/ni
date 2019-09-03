@@ -46,6 +46,8 @@ def handle_id2resource_uri(handle_id):
     """
     Returns a NodeHandleResource URI from a Neo4j node.
     """
+    if not isinstance(handle_id, int):
+        handle_id = handle_id['handle_id']
     nh = NodeHandle.objects.get(pk=handle_id)
     view = 'api_dispatch_detail'
     nhr = NodeHandleResource()

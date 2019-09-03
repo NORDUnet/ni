@@ -1,0 +1,59 @@
+{% load crispy_forms_tags %}
+{% if field.is_hidden %}
+  <script type="text/javascript">
+  $(document).ready(
+      function(){
+        //Typeahed.js
+        var bhTypeahead = new Bloodhound({
+          datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+          queryTokenizer: Bloodhound.tokenizers.whitespace,
+          remote: {
+            url: '{{url}}?query=%Q',
+              wildcard: '%Q'
+          }
+        });
+        bhTypeahead.initialize();
+
+        $("#{{ field.id_for_label}}_typeahead").typeahead({
+          minLength: {{min_length}},
+            highlight: true
+          },{
+          displayKey: 'name',
+          source: bhTypeahead.ttAdapter(),
+          limit: 10
+        }).on('click', function (e){
+          e.preventDefault()
+        }).on('typeahead:open', function() {
+            $(this).closest('.accordion-body').css('overflow','visible');
+        }).on('typeahead:close', function() {
+            $(this).closest('.accordion-body').css('overflow','hidden');
+        });
+
+        $("#{{ field.id_for_label}}_typeahead").on('typeahead:selected', function(event, data){
+          $("#{{ field.id_for_label}}").val(data.handle_id);
+          {% if has_parent %}
+          $("#{{ field.id_for_label}}_parent").val(data.parent_id);
+          {% endif %}
+        });
+      });
+  </script>
+
+  {{ field }}
+  <div class="control-group">
+    <label for="{{ field.id_for_label }}_typeahead" class="control-label">{{ field.label }}</label>
+
+    {% if node_types %}
+      <select>
+        {% for nt in node_types %}
+        <option>{{nt}}</option>
+        {% endfor %}
+      </select>
+    {% endif %}
+    <div class="controls">
+      <input type="text" id="{{ field.id_for_label}}_typeahead" placeholder="{{ placeholder }}" />
+    </div>
+  </div>
+{% else %}
+  {{ field | as_crispy_field }}
+{% endif %}
+

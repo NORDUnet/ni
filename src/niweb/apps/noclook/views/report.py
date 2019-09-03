@@ -8,6 +8,7 @@ Created on 2012-06-11 5:48 PM
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import Http404
+from django.conf import settings
 
 
 from apps.noclook.forms import get_node_type_tuples, SearchIdForm
@@ -124,37 +125,31 @@ def host_services(request, status=None):
 
 
 @login_required
-def unique_ids(request, organisation=None):
-    if not organisation:
-        return render(request, 'noclook/reports/unique_ids/choose_organization.html', {})
-    if organisation == 'NORDUnet':
-        id_list = get_id_list(request.GET or None)
-        id_list = helpers.paginate(id_list, request.GET.get('page'))
-    else:
-        raise Http404
+def unique_ids(request):
+    id_list = get_id_list(request.GET or None)
+    id_list = helpers.paginate(id_list, request.GET.get('page'))
     search_form = SearchIdForm(request.GET or None)
     return render(request, 'noclook/reports/unique_ids/list.html',
-        {'id_list': id_list, 'organisation': organisation, 'search_form': search_form})
+        {'id_list': id_list, 'search_form': search_form})
 
 
 @login_required
-def download_unique_ids(request, organisation=None, file_format=None):
+def download_unique_ids(request, file_format=None):
     header = ["ID", "Reserved", "Reserve message", "Site", "Reserver", "Created"]
     table = None
-    if organisation == 'NORDUnet':
-        id_list = get_id_list(request.GET or None)
-        get_site = lambda uid : uid.site.node_name if uid.site else ""
-        create_dict = lambda uid : {
-            'ID': uid.unique_id,
-            'Reserve message': uid.reserve_message,
-            'Reserved': uid.reserved,
-            'Site': get_site(uid),
-            'Reserver': str(uid.reserver),
-            'Created': uid.created
-        }
-        table = [create_dict(uid) for uid in id_list]
-        # using values is faster, a lot, but no nice header :( and no username
-        # table = id_list.values()
+    id_list = get_id_list(request.GET or None)
+    get_site = lambda uid : uid.site.node_name if uid.site else ""
+    create_dict = lambda uid : {
+        'ID': uid.unique_id,
+        'Reserve message': uid.reserve_message,
+        'Reserved': uid.reserved,
+        'Site': get_site(uid),
+        'Reserver': str(uid.reserver),
+        'Created': uid.created
+    }
+    table = [create_dict(uid) for uid in id_list]
+    # using values is faster, a lot, but no nice header :( and no username
+    # table = id_list.values()
     if table and file_format == 'xls':  
         return helpers.dicts_to_xls_response(table, header)
     elif table and file_format == 'csv':

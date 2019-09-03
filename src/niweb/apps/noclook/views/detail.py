@@ -97,10 +97,23 @@ def external_equipment_detail(request, handle_id):
     location_path = external_equipment.get_location_path()
     # Get owner
     relations = external_equipment.get_relations()
-    return render(request, 'noclook/detail/external_equipment_detail.html',
-                  {'node': external_equipment, 'node_handle': nh, 'last_seen': last_seen,
-                   'expired': expired, 'connections': connections, 'relations': relations,
-                   'location_path': location_path, 'history': True})
+    # Get dependents
+    dependent = external_equipment.get_dependent_as_types()
+    print(dependent)
+
+    return render(
+        request,
+        'noclook/detail/external_equipment_detail.html',
+        {
+            'node': external_equipment,
+            'node_handle': nh,
+            'last_seen': last_seen,
+            'expired': expired,
+            'connections': connections,
+            'relations': relations,
+            'dependent': dependent,
+            'location_path': location_path,
+            'history': True})
 
 
 @login_required
@@ -456,6 +469,10 @@ def provider_detail(request, handle_id):
                    'history': True, 'urls': urls})
 
 
+def _nodes_without(nodes, what, excludes):
+    return [n for n in nodes if n.get('node').data.get(what, '').lower() not in excludes]
+
+
 @login_required
 def rack_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -464,7 +481,10 @@ def rack_detail(request, handle_id):
     last_seen, expired = helpers.neo4j_data_age(rack.data)
     location_path = rack.get_location_path()
     # Get equipment in rack
-    physical_relationships = rack.get_located_in()
+    _located_in = rack.get_located_in().get('Located_in', [])
+    physical_relationships = {
+        "Located_in": _nodes_without(_located_in, 'operational_state', ['decommissioned'])
+    }
 
     urls = helpers.get_node_urls(rack, physical_relationships, location_path)
     return render(request, 'noclook/detail/rack_detail.html',
@@ -480,7 +500,7 @@ def _zip_modules(chain, out):
         out_part = next((p for p in out if p['name'] == name), None)
         if not out_part:
             out_part = part
-            out_part.properties['modules'] = []
+            out_part['modules'] = []
             out.append(out_part)
         # process rest of chain
         _zip_modules(chain[1:], out_part['modules'])
@@ -559,15 +579,35 @@ def site_detail(request, handle_id):
     site = nh.get_node()
     last_seen, expired = helpers.neo4j_data_age(site.data)
     relations = site.get_relations()
-    equipment_relationships = site.get_located_in()
-    location_relationships = site.get_has()
 
-    urls = helpers.get_node_urls(site, equipment_relationships, relations, location_relationships)
+    # Direct equipment (aka not racked)
+    equipment_relationships = _nodes_without(site.get_located_in().get('Located_in', []), 'operational_state', ['decommissioned'])
+
+    # Racked equipment
+    q = """
+    MATCH (site:Site {handle_id: {handle_id}})-[:Has]->(rack:Node)
+    OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
+    WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
+    RETURN rack, item order by toLower(rack.name), toLower(item.name)
+    """
+    rack_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
+
+    # Create racked equipment table
+    racks_table = Table('Rack', 'Equipment')
+    racks_table.rows = [TableRow(r.get('rack'), r.get('item')) for r in rack_list]
+
+    urls = helpers.get_node_urls(site, equipment_relationships, relations, rack_list)
     return render(request, 'noclook/detail/site_detail.html',
-                  {'node_handle': nh, 'node': site, 'last_seen': last_seen, 'expired': expired,
-                   'equipment_relationships': equipment_relationships, 'relations': relations,
-                   'location_relationships': location_relationships,
-                   'history': True, 'urls': urls})
+                  {'node_handle': nh,
+                   'node': site,
+                   'last_seen': last_seen,
+                   'expired': expired,
+                   'equipment_relationships': equipment_relationships,
+                   'relations': relations,
+                   'racks_table': racks_table,
+                   'history': True,
+                   'urls': urls,
+                   })
 
 
 @login_required

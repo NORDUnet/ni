@@ -11,7 +11,7 @@
       {% for item in depends_on.Depends_on %}
           <div class="row">
               <div class="span5">
-                  Depends on <a href="{% noclook_node_to_url item.node.handle_id %}">{% for place in item.node.get_placement_path.placement_path %}{{ place.name }} {% endfor %}{{ item.node.data.name }}</a>
+                Depends on <a href="{% noclook_node_to_url item.node.handle_id %}">{% for place in item.node.get_placement_path.placement_path %}{{ place.name }} {% endfor %}{{ item.node.data.name }} [{{item.node.labels.0}}]</a>
               </div>
               <div class="span1">
                   <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
@@ -22,9 +22,7 @@
   {% endif %}
   {% if dependency_categories %}
   <h4>Add depends on relationship</h4>
-  <div class="span4">
-    {% json_combo form.relationship_depends_on '/formdata/{id}/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/' dependency_categories %}
+    {% typeahead form.relationship_depends_on '/search/typeahead/non-locations' placeholder='dk-ore xe-1' min_length=3 %}
     <span class="help-block">Choose a dependency</span>
-  </div>
   {% endif %}
 {% endaccordion %}

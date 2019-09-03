@@ -12,18 +12,20 @@ $(document).ready(
         var name_field = $('#id_name');
         var project_end_date = $('#project_end_date');
         var service_type = $("#id_service_type");
-        if (service_type.val()!="External") {
+        var service_text = service_type.find("option:selected").text();
+        if (service_type.val()!="External" && service_text.indexOf("External") == -1) {
             name_field.prop("disabled", true);
         }
         if (service_type.val()=="Project") {
             project_end_date.show();
         }
         service_type.change(function(e){
-            if ($(this).val()!="External") {
+            var text = this.options[this.selectedIndex].text;
+            if ($(this).val() =="External" || text.indexOf("External") != -1 ) {
+                name_field.prop("disabled", false);
+            } else {
                 name_field.prop("disabled", true);
                 name_field.val("");
-            } else {
-                name_field.prop("disabled", false);
             }
             if ($(this).val()=="Project") {
                 project_end_date.show();

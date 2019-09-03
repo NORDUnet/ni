@@ -12,9 +12,10 @@ import urllib
 __author__ = 'lundberg'
 
 OPERATIONAL_BADGES = [
-        ('badge-info', 'Testing'),
-        ('badge-warning', 'Reserved'),
-        ('badge-important', 'Decommissioned')]
+    ('badge-info', 'Testing'),
+    ('badge-warning', 'Reserved'),
+    ('badge-important', 'Decommissioned'),
+]
 
 
 def is_expired(node):
@@ -72,7 +73,6 @@ def _filter_operational_state(nodes, request, select=lambda n: n):
     if 'hide_in_service' in request.GET:
         exclude.append('in service')
     return [n for n in nodes if select(n).get('operational_state', '').lower() not in exclude]
-
 
 
 def _type_table(wrapped_node):
@@ -162,6 +162,7 @@ def _customer_table(wrapped_customer):
     customer = wrapped_customer.get('customer')
     return TableRow(customer, customer.get('description'))
 
+
 @login_required
 def list_customers(request):
     q = """
@@ -173,11 +174,12 @@ def list_customers(request):
     urls = get_node_urls(customer_list)
 
     table = Table('Name', 'Description')
-    table.rows = [ _customer_table(customer) for customer in customer_list ]
-    table.no_badges=True
+    table.rows = [_customer_table(customer) for customer in customer_list]
+    table.no_badges = True
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Customers', 'urls': urls})
+                  {'table': table, 'name': 'Customers', 'urls': urls})
+
 
 def _host_table(host, users):
     ip_addresses = host.get('ip_addresses', ['No address'])
@@ -185,6 +187,7 @@ def _host_table(host, users):
     os_version = host.get('os_version')
     row = TableRow(host, ip_addresses, os, os_version, users)
     _set_expired(row, host)
+    _set_operational_state(row, host)
     return row
 
 
@@ -199,14 +202,16 @@ def list_hosts(request):
 
     host_list = nc.query_to_list(nc.graphdb.manager, q)
     host_list = _filter_expired(host_list, request, select=lambda n: n.get('host'))
+    host_list = _filter_operational_state(host_list, request, select=lambda n: n.get('host'))
     urls = get_node_urls(host_list)
 
     table = Table('Host', 'Address', 'OS', 'OS version', 'User')
     table.rows = [_host_table(item['host'], item['users']) for item in host_list]
     _set_filters_expired(table, request)
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Hosts', 'urls': urls})
+                  {'table': table, 'name': 'Hosts', 'urls': urls})
 
 
 def _switch_table(switch, users):
@@ -261,6 +266,7 @@ def list_firewalls(request):
 
 def _odf_table(item):
     location = item.get('location')
+    location_view = None
     odf = item.get('odf')
     site = item.get('site')
     # manipulate location name to include site name
@@ -270,9 +276,9 @@ def _odf_table(item):
     if location:
         if location.get('name'):
             location_names.append(location.get('name'))
-        location.properties['name'] = ' '.join(location_names)
-    row = TableRow(location, odf)
-    _set_expired(row, odf)
+        location_view = {'name': ' '.join(location_names), 'handle_id': location.get('handle_id')}
+    row = TableRow(location_view, odf)
+    _set_operational_state(row, odf)
     return row
 
 
@@ -286,23 +292,29 @@ def list_odfs(request):
         ORDER BY site.name, location.name, odf.name
         """
     odf_list = nc.query_to_list(nc.graphdb.manager, q)
+    odf_list = _filter_operational_state(odf_list, request, select=lambda n: n.get('odf'))
     urls = get_node_urls(odf_list)
 
     table = Table("Location", "Name")
     table.rows = [_odf_table(item) for item in odf_list]
+    # Filter out
+    _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'ODFs', 'urls': urls})
 
 
 def _optical_link_table(link, dependencies):
+    dependencies_view = []
     for deps in dependencies:
-        node = deps[0]
+        if deps[0] is None:
+            continue
+        node = {'name': deps[0], 'handle_id': deps[0]['handle_id']}
         if node and len(deps) > 1:
             name = [n.get('name') for n in reversed(deps) if n]
-            node.properties['name'] = u' '.join(name)
-    dependencies = [deps[0] for deps in dependencies]
-    row = TableRow(link, link.get('link_type'), link.get('description'), dependencies)
+            node['name'] = u' '.join(name)
+        dependencies_view.append(node)
+    row = TableRow(link, link.get('link_type'), link.get('description'), dependencies_view)
     _set_operational_state(row, link)
     return row
 
@@ -325,7 +337,7 @@ def list_optical_links(request):
 
     urls = get_node_urls(optical_link_list)
     return render(request, 'noclook/list/list_generic.html',
-            {'table': table, 'name': 'Optical Links', 'urls': urls})
+                  {'table': table, 'name': 'Optical Links', 'urls': urls})
 
 
 def _oms_table(oms, dependencies):
@@ -383,11 +395,12 @@ def list_optical_nodes(request):
 
 def _optical_path_table(path):
     row = TableRow(
-            path,
-            path.get('framing'),
-            path.get('capacity'),
-            path.get('description'),
-            ", ".join(path.get('enrs',[])))
+        path,
+        path.get('framing'),
+        path.get('capacity'),
+        path.get('wavelength'),
+        path.get('description'),
+        ", ".join(path.get('enrs', [])))
     _set_operational_state(row, path)
     return row
 
@@ -404,7 +417,7 @@ def list_optical_paths(request):
     optical_path_list = _filter_operational_state(optical_path_list, request, select=lambda n: n.get('path'))
     urls = get_node_urls(optical_path_list)
 
-    table = Table('Optical Path', 'Framing', 'Capacity', 'Description', 'ENRs')
+    table = Table('Optical Path', 'Framing', 'Capacity', 'Wavelength', 'Description', 'ENRs')
     table.rows = [_optical_path_table(item['path']) for item in optical_path_list]
     _set_filters_operational_state(table, request)
 
@@ -436,7 +449,7 @@ def list_peering_partners(request):
     table.rows = [_peering_partner_table(item['peer'], item['peering_groups']) for item in partner_list]
     _set_filters_expired(table, request)
 
-    return render(request,'noclook/list/list_generic.html',
+    return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Peering Partners', 'urls': urls})
 
 
@@ -457,7 +470,7 @@ def list_racks(request):
     table.no_badges = True
 
     return render(request, 'noclook/list/list_generic.html',
-                  {'table': table, 'name': 'Racks',  'urls':urls})
+                  {'table': table, 'name': 'Racks', 'urls': urls})
 
 
 def _router_table(router):
@@ -489,10 +502,10 @@ def list_routers(request):
 def _service_table(service, customers, end_users):
     row = TableRow(service,
                    service.get('service_class'),
-                service.get('service_type'),
-                service.get('description'),
-                customers,
-                end_users)
+                   service.get('service_type'),
+                   service.get('description'),
+                   customers,
+                   end_users)
     _set_operational_state(row, service)
     return row
 
@@ -534,9 +547,9 @@ def list_services(request, service_class=None):
 
 def _site_table(site):
     country_link = {
-            'url': u'/findin/site/country_code/{}/'.format(site.get('country_code')),
-            'name': u'{}'.format(site.get('country', ''))
-            }
+        'url': u'/findin/site/country_code/{}/'.format(site.get('country_code')),
+        'name': u'{}'.format(site.get('country', '')),
+    }
     area = site.get('area') or site.get('postarea')
     row = TableRow(country_link, site, area)
     return row
@@ -555,7 +568,7 @@ def list_sites(request):
 
     table = Table('Country', 'Site name', 'Area')
     table.rows = [_site_table(item['site']) for item in site_list]
-    table.no_badges=True
+    table.no_badges = True
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Sites', 'urls': urls})

@@ -66,27 +66,6 @@ CACHES = {
 }
 ########## END CACHE CONFIGURATION
 
-########## TOOLBAR CONFIGURATION
-# See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
-INSTALLED_APPS += (
-    'debug_toolbar',
-    'django_nose',
-    'django_extensions'
-)
-
-# See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
-INTERNAL_IPS = ('127.0.0.1',)
-
-# See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
-MIDDLEWARE = (
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-) + MIDDLEWARE
-
-DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': False,
-    'SHOW_TOOLBAR_CALLBACK': lambda x: False,
-}
-########## END TOOLBAR CONFIGURATION
 
 ########## SECRET CONFIGURATION
 SECRET_KEY = environ.get('SECRET_KEY', 'development')
