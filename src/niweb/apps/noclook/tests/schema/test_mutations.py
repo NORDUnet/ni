@@ -199,7 +199,7 @@ class QueryTest(Neo4jGraphQLTest):
         # get IT-manager role
         query = '''
         {
-          roles(filter: {name: "IT-manager"}){
+          roles(filter: {name: "NOC Manager"}){
             edges{
               node{
                 handle_id
@@ -267,7 +267,7 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('email', None),
                                          ('other_email', None),
                                          ('roles',
-                                          [OrderedDict([('name', 'IT-manager'),
+                                          [OrderedDict([('name', 'NOC Manager'),
                                             ('end_node',
                                              OrderedDict([('handle_id',
                                                str(organization_id)),
