@@ -292,9 +292,9 @@ def edit_external_equipment(request, handle_id):
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
                 helpers.set_owner(request.user, external_equipment, owner_nh.handle_id)
-            if form.cleaned_data['relationship_location']:
-                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                helpers.set_location(request.user, external_equipment, location_nh.handle_id)
+            _handle_location(request.user,
+                             external_equipment,
+                             form.cleaned_data['relationship_location'])
             _handle_ports(external_equipment,
                           form.cleaned_data['relationship_ports'],
                           request.user)
@@ -307,6 +307,16 @@ def edit_external_equipment(request, handle_id):
     return render(request, 'noclook/edit/edit_external_equipment.html',
                   {'node_handle': nh, 'node': external_equipment, 'form': form, 'relations': relations,
                    'location': location, 'ports': ports})
+
+
+def _handle_location(user, node, location_id):
+    if location_id:
+        location_nh = _nh_safe_get(location_id)
+        if location_nh:
+            # Remove old.
+            helpers.remove_locations(user, node)
+            # Set new location
+            helpers.set_location(user, node, location_nh.handle_id)
 
 
 @staff_member_required
@@ -329,9 +339,9 @@ def edit_firewall(request, handle_id):
             if form.cleaned_data['relationship_owner']:
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
                 helpers.set_owner(request.user, firewall, owner_nh.handle_id)
-            if form.cleaned_data['relationship_location']:
-                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                helpers.set_location(request.user, firewall, location_nh.handle_id)
+            _handle_location(request.user,
+                             firewall,
+                             form.cleaned_data['relationship_location'])
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, firewall.handle_id)
             _handle_ports(firewall,
@@ -379,9 +389,9 @@ def edit_host(request, handle_id):
                 if depends_on_nh:
                     helpers.set_depends_on(request.user, host, depends_on_nh.handle_id)
             elif form.cleaned_data['relationship_location']:
-                location_nh = _nh_safe_get(form.cleaned_data['relationship_location'])
-                if location_nh:
-                    helpers.set_location(request.user, host, location_nh.handle_id)
+                _handle_location(request.user,
+                                 host,
+                                 form.cleaned_data['relationship_location'])
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, host.handle_id)
             _handle_ports(host,
@@ -421,9 +431,9 @@ def edit_odf(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, odf.handle_id, form)
             # ODF specific updates
-            if form.cleaned_data['relationship_location']:
-                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                helpers.set_location(request.user, odf, location_nh.handle_id)
+            _handle_location(request.user,
+                             odf,
+                             form.cleaned_data['relationship_location'])
             _handle_ports(odf,
                           form.cleaned_data['relationship_ports'],
                           request.user)
@@ -446,10 +456,10 @@ def edit_optical_fillter(request, handle_id):
     if request.POST and form.is_valid():
         # Generic node update
         helpers.form_update_node(request.user, of.handle_id, form)
-        # ODF specific updates
-        if form.cleaned_data['relationship_location']:
-            location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-            helpers.set_location(request.user, of, location_nh.handle_id)
+        # Optical Filter specific updates
+        _handle_location(request.user,
+                         of,
+                         form.cleaned_data['relationship_location'])
         _handle_ports(of,
                       form.cleaned_data['relationship_ports'],
                       request.user)
@@ -537,9 +547,9 @@ def edit_optical_node(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, optical_node.handle_id, form)
             # Optical Node specific updates
-            if form.cleaned_data['relationship_location']:
-                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                helpers.set_location(request.user, optical_node, location_nh.handle_id)
+            _handle_location(request.user,
+                             optical_node,
+                             form.cleaned_data['relationship_location'])
             _handle_ports(optical_node,
                           form.cleaned_data['relationship_ports'],
                           request.user)
@@ -612,8 +622,9 @@ def edit_pdu(request, handle_id):
                 depends_on_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_depends_on'])
                 helpers.set_depends_on(request.user, pdu, depends_on_nh.handle_id)
             elif form.cleaned_data['relationship_location']:
-                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                helpers.set_location(request.user, pdu, location_nh.handle_id)
+                _handle_location(request.user,
+                                 pdu,
+                                 form.cleaned_data['relationship_location'])
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, pdu.handle_id)
             if ports_form.is_valid() and not ports_form.cleaned_data['no_ports']:
@@ -789,9 +800,9 @@ def edit_router(request, handle_id):
             # Generic node update
             helpers.form_update_node(request.user, router.handle_id, form)
             # Router specific updates
-            if form.cleaned_data['relationship_location']:
-                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                helpers.set_location(request.user, router, location_nh.handle_id)
+            _handle_location(request.user,
+                             router,
+                             form.cleaned_data['relationship_location'])
             _handle_ports(router,
                           form.cleaned_data['relationship_ports'],
                           request.user)
@@ -916,9 +927,9 @@ def edit_switch(request, handle_id):
                 owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_owner'])
                 helpers.set_owner(request.user, switch, owner_nh.handle_id)
             # You can not set location and depends on at the same time
-            if form.cleaned_data['relationship_location']:
-                location_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
-                helpers.set_location(request.user, switch, location_nh.handle_id)
+            _handle_location(request.user,
+                             switch,
+                             form.cleaned_data['relationship_location'])
             if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
                 helpers.remove_rogue_service_marker(request.user, switch.handle_id)
             _handle_ports(switch,
