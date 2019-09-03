@@ -156,7 +156,7 @@ TEMPLATES = [
             normpath(join(DJANGO_ROOT, 'templates')),
         ],
         'APP_DIRS': True,
-        'OPTIONS': { 
+        'OPTIONS': {
             'context_processors': [
                 'django.contrib.auth.context_processors.auth',
                 'django.template.context_processors.debug',
@@ -183,7 +183,7 @@ SAML_ENABLED = environ.get('SAML_ENABLED', False)
 
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
