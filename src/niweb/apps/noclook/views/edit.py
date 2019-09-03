@@ -119,7 +119,7 @@ def get_unlocated_node_type(request, slug):
     with nc.graphdb.manager.session as s:
         result = s.run(q)
         for record in result:
-            result_list.append([record['n']['name'], record['n']['handle_id']])
+            result_list.append(record)
     return JsonResponse(result_list, safe=False)
 
 
