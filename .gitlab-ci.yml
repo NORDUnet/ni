@@ -1,0 +1,39 @@
+---
+image: python:3
+
+services:
+  - postgres:latest
+  - neo4j:latest
+
+variables:
+  POSTGRES_DB: norduni
+  POSTGRES_PASSWORD: docker
+  POSTGRES_USER: ni
+  NEO4J_AUTH: neo4j/docker
+
+
+cache:
+  paths:
+    - ~/.cache/pip/
+
+
+before_script:
+  - python -V
+  - pip install -q -r requirements/testing.txt
+  - pip freeze
+  - apt-get update
+  - apt-get install -y -qq netcat
+
+
+test:
+  tags:
+    - docker
+  variables:
+    TEST_NEO4J_URI: bolt://neo4j:7687
+    DB_HOST: postgres
+    DJANGO_SETTINGS_MODULE: niweb.settings.dev
+    REPORTS_TO: markus@nordu.net
+  script:
+    - for i in $(seq 1 60); do if nc -z neo4j 7474; then break; fi; sleep 1; done
+    - cd src/niweb
+    - python manage.py test

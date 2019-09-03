@@ -18,6 +18,14 @@
                     <th>Capacity:</th><td>{{ node.data.capacity }}</td>
                 </tr>
                 <tr>
+                    <th>Wavelength:</th>
+                    <td>
+                      {% if node.data.wavelength %}
+                        {{ node.data.wavelength }} GHz
+                      {% endif %}
+                    </td>
+                </tr>
+                <tr>
                     <th>Operational State:</th><td>{{ node.data.operational_state }}</td>
                 </tr>
                 <tr>

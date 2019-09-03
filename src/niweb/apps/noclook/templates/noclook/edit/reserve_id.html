@@ -48,7 +48,9 @@
     {% if not slug %}
         <h1>Reserve IDs</h1>
         <ul class="menu">
-            <li><a href="nordunet-cable">NORDUnet Cable IDs</a></li>
+          {% for link in links %}
+          <li><a href="{{link.slug}}">{{ link.title }}</a></li>
+          {% endfor %}
         </ul>
     {% endif %}
     {% if slug and not reserved_list %}

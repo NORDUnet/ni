@@ -6,81 +6,47 @@ Created on Thu Nov 10 14:52:53 2011
 """
 
 import json
-from .helpers import get_node_url
+from .helpers import labels_to_node_type, get_node_urls
 import norduniclient as nc
+from collections import defaultdict
+import logging
+logger = logging.getLogger(__name__)
 
 # Color and shape settings for know node types
 # http://thejit.org/static/v20/Docs/files/Options/Options-Node-js.html
 # Meta nodes
-META = {'color': '#000000'}
-# Physical
-PHYSICAL = {'color': '#00CC00'}
-# Logical
-LOGICAL = {'color': '#007FFF'}
-# Organisations
-RELATION = {'color': '#FF9900'}
-# Locations
-LOCATION = {'color': '#FF4040'}
+COLOR_MAP = {
+    'Meta:': '#000000',
+    'Physical': '#00CC00',
+    'Logical': '#007FFF',
+    'Relation': '#FF9900',
+    'Location': '#FF4040',
+}
 
 
-def get_arbor_node(node):
+def to_arbor_node(raw_node, fixed=False):
     """
-    Creates the data structure for JSON export from a neo4j node.
+    Creates the data structure for JSON export from a raw neo4j node.
 
     Return None for nodes that should not be part of the visualization.
 
     {id: {
-        "color": "", 
-        "label": "", 
-        "mass": 0,
+        "color": "",
+        "label": "",
     }}
     """
+    handle_id = raw_node['handle_id']
+    meta_type = next(l for l in raw_node.labels if l in nc.core.META_TYPES)
+    node_type = labels_to_node_type(raw_node.labels)
+    node_name = raw_node['name']
     structure = {
-        node.handle_id: {
-            'color': '',
-            'label': '%s %s' % (node.labels[0], node.data['name']),
-            'url': '%s' % get_node_url(node.handle_id)
-            #'mass': len(node.relationships),
+        handle_id: {
+            'color': COLOR_MAP.get(meta_type, ''),
+            'label': '%s %s' % (node_type, node_name),
         }
     }
-    # Set node specific apperance
-    meta_type = node.meta_type
-    if meta_type == 'Physical':
-        structure[node.handle_id].update(PHYSICAL)
-    elif meta_type == 'Logical':
-        structure[node.handle_id].update(LOGICAL)
-    elif meta_type == 'Relation':
-        structure[node.handle_id].update(RELATION)
-        #structure[node.id].update({'x': 0, 'y': 0, 'fixed': True})
-    elif meta_type == 'Location':
-        structure[node.handle_id].update(LOCATION)
-    return structure
-
-
-def get_directed_adjacency(relationship):
-    """
-    Creates the data structure for JSON export from the relationship.
-
-    {id: {
-        "other_id": {
-            "directed": true, 
-            "label": ""
-        }
-        "other_id": {
-            "directed": true, 
-            "label": ""
-        }
-    }}
-    """
-    structure = {
-        relationship.start: {
-            relationship.end: {
-                'directed': True,
-                'label': relationship.type.replace('_', ' '),
-                #'lenght': 1
-            }
-        }
-    }
+    if fixed:
+        structure[handle_id]['fixed'] = fixed
     return structure
 
 
@@ -98,34 +64,49 @@ def create_generic_graph(root_node, graph_dict=None):
     "edges": {
         id: {
             "other_id": {
-                "directed": true, 
+                "directed": true,
                 "label": ""
             }
         }
     }
     """
     if not graph_dict:
-        graph_dict = {'nodes': {}, 'edges': {}}
+        graph_dict = {'nodes': defaultdict(dict), 'edges': defaultdict(dict)}
     # Generic graph dict
-    arbor_root = get_arbor_node(root_node)
-    graph_dict['nodes'].update(arbor_root)
-    relationships = root_node.relationships
-    for rel_type in relationships:
-        for item in relationships[rel_type]:
-            relationship = nc.get_relationship_model(nc.graphdb.manager, item['relationship_id'])
-            if relationship.start == root_node.handle_id:
-                end_node = nc.get_node_model(nc.graphdb.manager, relationship.end)
-                arbor_node = get_arbor_node(end_node)
-            else:
-                start_node = nc.get_node_model(nc.graphdb.manager, relationship.start)
-                arbor_node = get_arbor_node(start_node)
-            graph_dict['nodes'].update(arbor_node)
-            arbor_edge = get_directed_adjacency(relationship)
-            key = list(arbor_edge.keys())[0]  # The only key in arbor_edge
-            if key in graph_dict['edges']:
-                graph_dict['edges'][key].update(arbor_edge[key])
-            else:
-                graph_dict['edges'].update(arbor_edge)
+    graph_dict['nodes'].update({
+        root_node.handle_id: {
+            'color': COLOR_MAP[root_node.meta_type],
+            'label': '{} {}'.format(labels_to_node_type(root_node.labels), root_node.data['name']),
+            'fixed': True,
+        }
+    })
+
+    q = """
+        MATCH (n:Node {handle_id: {handle_id}})-[r]->(end)
+        WHERE NOT end.operational_state IN ['Decommissioned'] OR NOT exists(end.operational_state)
+        RETURN type(r) as relation, collect(distinct end) as nodes
+        """
+    relations = nc.query_to_list(nc.graphdb.manager, q, handle_id=root_node.handle_id)
+    q = """
+        MATCH (n:Node {handle_id: {handle_id}})<-[r]-(start)
+        WHERE NOT start.operational_state IN ['Decommissioned'] OR NOT exists(start.operational_state)
+        RETURN type(r) as relation, collect(distinct start) as nodes
+        """
+    dependencies = nc.query_to_list(nc.graphdb.manager, q, handle_id=root_node.handle_id)
+    for rel in relations:
+        rel_type = rel['relation'].replace('_', ' ')
+        for node in rel['nodes']:
+            graph_dict['nodes'].update(to_arbor_node(node))
+        graph_dict['edges'][root_node.handle_id].update({n['handle_id']: {"directed": True, "label": rel_type} for n in rel['nodes']})
+
+    for dep in dependencies:
+        rel_type = dep['relation'].replace('_', ' ')
+        for node in dep['nodes']:
+            graph_dict['nodes'].update(to_arbor_node(node))
+            graph_dict['edges'][node['handle_id']].update({root_node.handle_id: {"directed": True, "label": rel_type}})
+    urls = get_node_urls(root_node, relations, dependencies)
+    for node in graph_dict['nodes']:
+        graph_dict['nodes'][node]['url'] = urls.get(node)
     return graph_dict
 
 
@@ -133,5 +114,4 @@ def get_json(graph_dict):
     """
     Converts a graph_list to JSON and returns the JSON string.
     """
-    #return json.dumps(graph_dict)
     return json.dumps(graph_dict, indent=4)
