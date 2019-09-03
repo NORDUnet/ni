@@ -67,7 +67,7 @@ def visualize_maximize(request, slug, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     node = nh.get_node()
     return render(request, 'noclook/visualize/visualize_maximize.html',
-                              {'node_handle': nh, 'node': node, 'slug': slug})
+                  {'node_handle': nh, 'node': node, 'slug': slug})
 
 
 # Search views
@@ -148,7 +148,7 @@ def search_port_typeahead(request):
                 MATCH (port:Port)<-[:Has]-(n:Node)
                 OPTIONAL MATCH (n)-[:Located_in]->(n2:Node)
                 OPTIONAL MATCH (n2)<-[:Has]-(s:Site)
-                WITH port.handle_id as handle_id, 
+                WITH port.handle_id as handle_id,
                 n.handle_id as parent_id,
                 CASE WHEN n2 IS null THEN
                   ""
@@ -163,6 +163,93 @@ def search_port_typeahead(request):
             result = nc.query_to_list(nc.graphdb.manager, q)
         except Exception as e:
             raise e
+    json.dump(result, response)
+    return response
+
+
+@login_required
+def search_location_typeahead(request):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        match_q = neo4j_escape(to_find.split())
+        try:
+            q = """
+                MATCH (l:Node)
+                WHERE l:Site or l:Rack
+                OPTIONAL MATCH (s:Node)-[:Has]->(l)
+                WITH l.handle_id as handle_id,
+                    CASE WHEN s IS null THEN
+                      ""
+                    ELSE
+                        s.name + " "
+                    END + l.name as name
+                WHERE name =~ '(?i).*{}.*'
+                 RETURN name, handle_id
+                """.format(".*".join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q)
+        except Exception as e:
+            raise e
+    json.dump(result, response)
+    return response
+
+
+@login_required
+def search_non_location_typeahead(request):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        match_q = neo4j_escape(to_find.split())
+        try:
+            q = """
+                MATCH (n:Node)
+                WHERE not n:Location
+                OPTIONAL MATCH (n)<-[:Has]-(e:Node)
+                WITH n.handle_id as handle_id,
+                     coalesce(e.name, "") + " "+ n.name as name,
+                     labels(n) as labels
+                WHERE name =~ '(?i).*{}.*'
+                RETURN handle_id, trim(name) as name, labels ORDER BY name
+                """.format(".*".join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q)
+        except Exception as e:
+            raise e
+    for r in result:
+        _type = [l for l in r['labels'] if l not in ['Node', 'Physical', 'Logical', 'Relation']]
+        if _type:
+            r['name'] = u'{} [{}]'.format(r['name'], _type[0])
+    # TODO: do stuff with labels
+    json.dump(result, response)
+    return response
+
+
+@login_required
+def typeahead_slug(request, slug='Node'):
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        match_q = neo4j_escape(to_find.split())
+        # TODO: optical-node => Optical_Node
+        label = slug.replace('-', '_').title()
+        try:
+            q = """
+                MATCH (n:{})
+                OPTIONAL MATCH (n)<-[:Has]-(e:Node)
+                WITH n.handle_id as handle_id,
+                     coalesce(e.name, "") + " "+ n.name as name
+                WHERE name =~ '(?i).*{}.*'
+                RETURN handle_id, trim(name) as name
+                """.format(label, ".*".join(match_q),)
+            result = nc.query_to_list(nc.graphdb.manager, q)
+        except Exception as e:
+            raise e
+    # TODO: do stuff with labels
     json.dump(result, response)
     return response
 
@@ -183,8 +270,8 @@ def find_all(request, slug=None, key=None, value=None, form=None):
             label = node_type.get_label()
         except Http404:
             return render(request, 'noclook/search_result.html',
-                                      {'node_type': slug, 'key': key, 'value': value, 'result': None,
-                                       'node_meta_type': None})
+                          {'node_type': slug, 'key': key, 'value': value, 'result': None,
+                           'node_meta_type': None})
     if value:
         nodes = nc.search_nodes_by_value(nc.graphdb.manager, value, key, label)
     else:
@@ -199,7 +286,7 @@ def find_all(request, slug=None, key=None, value=None, form=None):
         item = {'node': node, 'nh': nh}
         result.append(item)
     return render(request, 'noclook/search_result.html',
-                              {'node_type': node_type, 'key': key, 'value': value, 'result': result})
+                  {'node_type': node_type, 'key': key, 'value': value, 'result': result})
 
 
 # Google maps views

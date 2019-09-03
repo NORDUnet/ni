@@ -62,6 +62,10 @@ class FormTestCase(TestCase):
             modifier=self.user,
         )
 
+        contact_node_type, created = NodeType.objects.get_or_create(type='Contact', slug="contact")
+        organization_node_type, created = NodeType.objects.get_or_create(type='Organization', slug="organization")
+        group_node_type, created = NodeType.objects.get_or_create(type='Group', slug="group")
+
     def tearDown(self):
         with nc.graphdb.manager.session as s:
             s.run("MATCH (a:Node) OPTIONAL MATCH (a)-[r]-(b) DELETE a, b, r")

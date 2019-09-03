@@ -667,7 +667,7 @@ class NewOpticalLinkForm(forms.Form):
             try:
                 unique_ids.register_unique_id(self.Meta.id_collection, name)
             except IntegrityError as e:
-                self.add_error('name', e.message)
+                self.add_error('name', str(e))
         return cleaned_data
 
 
@@ -755,9 +755,7 @@ class NewOpticalPathForm(forms.Form):
             try:
                 unique_ids.register_unique_id(self.Meta.id_collection, name)
             except IntegrityError as e:
-                self._errors = ErrorDict()
-                self._errors['name'] = ErrorList()
-                self._errors['name'].append(e.message)
+                self.add_error('name', str(e))
         return cleaned_data
 
 
@@ -880,9 +878,9 @@ class EditOrganizationForm(NewOrganizationForm):
     abuse_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Abuse")
     primary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Primary contact at incidents") # Primary contact at incidents
     secondary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Secondary contact at incidents") # Secondary contact at incidents
-    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-technical") # IT-technical
-    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-security") # IT-security
-    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-manager") # IT-manager
+    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Technical") # NOC Technical
+    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Security") # NOC Security
+    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Manager") # NOC Manager
 
     def clean(self):
         """

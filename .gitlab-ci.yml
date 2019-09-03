@@ -19,9 +19,10 @@ cache:
 
 before_script:
   - python -V
-  - pip install -r requirements/testing.txt
+  - pip install -q -r requirements/testing.txt
+  - pip freeze
   - apt-get update
-  - apt-get install -y netcat
+  - apt-get install -y -qq netcat
 
 
 test:

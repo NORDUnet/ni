@@ -178,6 +178,18 @@ def noclook_report_age(item, old, very_old):
 
 
 @register.assignment_tag
+def noclook_as_dict(obj):
+    """
+    :param obj: Neo4j object
+    :return: dict
+    """
+    try:
+        return dict(obj.items())
+    except TypeError:
+        return dict()
+
+
+@register.assignment_tag
 def noclook_has_rogue_ports(handle_id):
     """
     :param handle_id: unique id
@@ -353,6 +365,19 @@ def json_combo(form_field, urls, initial=None, skip_field=False):
         'urls': urls,
         'field': form_field,
         'skip_field': skip_field,
+    }
+
+
+@register.inclusion_tag('noclook/tags/typeahead.html')
+def typeahead(form_field, url, placeholder=None, has_parent=False, min_length=3, node_types=None):
+
+    return {
+        'url': url,
+        'placeholder': placeholder,
+        'field': form_field,
+        'has_parent': has_parent,
+        'min_length': min_length,
+        'node_types': node_types,
     }
 
 
