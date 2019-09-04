@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{% static 'css/bootstrap-datepicker.min.css' %}" type="text/css" />
 <script type="text/javascript" src="{% static 'js/jquery/bootstrap-datepicker.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
 <script type="text/javascript">
     $(document).ready(
         function(){
@@ -16,6 +17,8 @@
                 e.preventDefault();
                 var theHREF = $(this).attr("href");
                 var modalDialog = $("#dialog-relationship-confirm");
+                var what = this.parentNode.previousElementSibling.querySelector("a").textContent;
+                document.getElementById("relationship-confirm-name").textContent = what;
                 // non jquery to avoid event handling
                 var btn_confirm = document.getElementById("relationship-confirm");
                 btn_confirm.onclick = function() {
@@ -102,7 +105,7 @@
   <div id="dialog-relationship-confirm" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-      <h3 id="myModalLabel">Remove relationship?</h3>
+      <h3 id="myModalLabel">Remove relationship to <span id="relationship-confirm-name"></span>?</h3>
     </div>
     <div class="modal-body">
       <p><i class="icon-warning-sign"></i> The relationship will be permanently deleted and cannot be recovered. Are you sure?</p>
@@ -127,17 +130,12 @@
 {% block content_footer %}
         <br><br>
         <div class="row">
-            <div class="span3">
+            <div class="span5">
                 <div class="btn-toolbar">
                     <div class="btn-group">
                         <input type="submit" name="saveanddone" class="btn btn-primary" value="Save">
-                        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
-                        <ul class="dropdown-menu">
-                            <li><a href="#" onclick="$(this).closest('form').submit()">Save and continue editing</a></li>
-                        </ul>
-                    </div>
-                    <div class="btn-group">
-                        <a href="{{ node_handle.get_absolute_url }}" class="btn pull-right">Cancel</a>
+                        <input type="submit" name="save" class="btn btn-primary" value="continue editing">
+                        <a href="{{ node_handle.get_absolute_url }}" class="btn">Cancel</a>
                     </div>
                 </div>
             </div>

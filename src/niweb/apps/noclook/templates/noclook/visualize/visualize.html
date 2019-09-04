@@ -8,7 +8,7 @@
 <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/arbor/arbor.js"></script>
 <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/arbor/arbor-graphics.js"></script>
 <script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/arbor/arbor-tween.js"></script>
-<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/arbor/renderer.js"></script>
+<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/arbor/renderer.js?v2"></script>
 <!-- First initialize -->
 <script type="text/javascript">
 window.onload = function(){
@@ -20,11 +20,15 @@ window.onload = function(){
     $.getJSON('/visualize/{{ node_handle.handle_id }}.json', function(json) {
         sys.graft(json);
     });
-    $('a#undo').click(function(e)
-        {
+    $('a#undo').click(function(e) {
             e.preventDefault();
             sys.renderer.undo();
         });
+    $('a#cleanup').click(function(e)
+    {
+        e.preventDefault();
+        sys.renderer.cleanup();
+    });
 };
 </script>
 
@@ -35,9 +39,10 @@ window.onload = function(){
 <div class="section">
     <canvas id="viewport" width="900" height="600"></canvas>
     <div class="row">
-        <div class="span6" id="clicked_node">If you click a node a link to the detailed view will be shown here.</div>
-        <div class="span3 pull-right">
+        <div class="span5" id="clicked_node">If you click a node a link to the detailed view will be shown here.</div>
+        <div class="span4 pull-right">
             <a id="undo" class="btn btn-danger"><i class="icon-backward icon-white"></i> Undo</a>
+            <a id="cleanup" class="btn btn-warning"><i class="icon-trash icon-white"></i> Cleanup</a>
             {% noclook_get_type node_handle.handle_id as node_type %}
             <a href="/visualize/{{ node_type|slugify }}/{{ node_handle.handle_id }}/maximized/" target="_blank" class="btn btn-info"><i class="icon-resize-full icon-white"></i> Maximize</a>
         </div>

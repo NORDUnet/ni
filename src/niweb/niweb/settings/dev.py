@@ -36,6 +36,7 @@ DEBUG = True
 
 ########## END DEBUG CONFIGURATION
 
+<<<<<<< HEAD
 # SESSION_COOKIE_DOMAIN = 'localni.info'
 LOGIN_REDICRECT_URL = 'react.localni.info'
 SESSION_COOKIE_HTTPONLY = False
@@ -45,6 +46,8 @@ CORS_ALLOW_CREDENTIALS = True
 #
 # CSRF_TRUSTED_ORIGINS = ('react.localni.info',)
 
+=======
+>>>>>>> 2fdc8ff5a9b9a0c143e46b0e69e7abf863ae29a2
 ########## EMAIL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -75,27 +78,6 @@ CACHES = {
 }
 ########## END CACHE CONFIGURATION
 
-########## TOOLBAR CONFIGURATION
-# See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
-INSTALLED_APPS += (
-    'debug_toolbar',
-    'django_nose',
-    'django_extensions'
-)
-
-# See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
-INTERNAL_IPS = ('127.0.0.1',)
-
-# See: https://github.com/django-debug-toolbar/django-debug-toolbar#installation
-MIDDLEWARE_CLASSES = (
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-) + MIDDLEWARE_CLASSES
-
-DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': False,
-    'SHOW_TOOLBAR_CALLBACK': lambda x: False,
-}
-########## END TOOLBAR CONFIGURATION
 
 ########## SECRET CONFIGURATION
 SECRET_KEY = environ.get('SECRET_KEY', 'development')

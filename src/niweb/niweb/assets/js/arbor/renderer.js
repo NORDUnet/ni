@@ -6,6 +6,7 @@
         var particleSystem = null;
         var clickPath = [];
         var undoStack = [];
+        var orgColor = {};
 
         var that = {
             init: function(system) {
@@ -146,17 +147,45 @@
                 undoStack.push(data);
             },
             undo: function() {
-                clickPath.pop();
                 var data = undoStack.pop();
-                particleSystem.prune(function(node, from, to) {
-                    try {
-                        if(data.nodes.indexOf(node._id) === -1) {
-                            return true
-                        }
-                    } catch(ex) {
-                        console.log("No previous state saved.")
-                    }
+                if (!data) {
+                  console.log("Already at oldest state");
+                }else if (data.hasOwnProperty('cleanup')) {
+                  particleSystem.graft(data);
+                }else{
+                  clickPath.pop();
+                  particleSystem.prune(function(node, from, to) {
+                      try {
+                          if(data.nodes.indexOf(node._id) === -1) {
+                              return true
+                          }
+                      } catch(ex) {
+                          console.log("No previous state saved.")
+                      }
+                  });
+                }
+            },
+            cleanup: function() {
+              var data = {
+                nodes: {},
+                edges: {},
+                cleanup: true,
+              }
+              particleSystem.prune(function(node, from, to) {
+                // save state
+                data.nodes[node.name] = node.data;
+                data.edges[node.name] = {};
+                from.from.forEach(function(edg) {
+                  data.edges[node.name][edg.target.name] = edg.data;
                 });
+                // Restore colors
+                if (orgColor[node.name]) {
+                  particleSystem.tweenNode(node, 2, {color: orgColor[node.name]});
+                }
+                // check if node should be removed
+                return ! node.fixed;
+              });
+              undoStack.push(data);
             },
             initMouseHandling: function() {
                 // no-nonsense drag and drop (thanks springy.js)
@@ -171,6 +200,9 @@
                         _mouseP = arbor.Point(e.pageX - pos.left, e.pageY - pos.top);
                         selected = particleSystem.nearest(_mouseP);
                         clickPath.push(selected.node.name);
+                        if (!orgColor[selected.node.name]) {
+                          orgColor[selected.node.name] = selected.node.data.color;
+                        }
                         if (selected.node !== null) {
                             that.undoSavePoint();
                             $.getJSON('/visualize/' + selected.node.name + '.json', function(json) {

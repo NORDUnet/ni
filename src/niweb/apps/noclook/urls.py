@@ -29,6 +29,9 @@ urlpatterns = [
     url(r'^search/$', other.search),
     url(r'^search/autocomplete$', other.search_autocomplete),
     url(r'^search/typeahead/ports$', other.search_port_typeahead),
+    url(r'^search/typeahead/locations$', other.search_location_typeahead),
+    url(r'^search/typeahead/non-locations$', other.search_non_location_typeahead),
+    url(r'^search/typeahead/(?P<slug>[-\w]+)$', other.typeahead_slug),
     url(r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.search),
     # QR lookup
     url(r'^lu/(?P<name>[-\w]+)/$', other.qr_lookup),
@@ -73,8 +76,7 @@ urlpatterns = [
     url(r'^reports/hosts/host-security-class/(?P<status>[-\w]+)/$', report.host_security_class),
     url(r'^reports/hosts/host-services/$', report.host_services),
     url(r'^reports/hosts/host-services/(?P<status>[-\w]+)/$', report.host_services),
-    url(r'^reports/unique-ids/(?P<organisation>[-\w]+)\.(?P<file_format>xls|csv)$', report.download_unique_ids),
-    url(r'^reports/unique-ids/(?P<organisation>[-\w]+)/$', report.unique_ids),
+    url(r'^reports/unique-ids\.(?P<file_format>xls|csv)$', report.download_unique_ids),
     url(r'^reports/unique-ids/$', report.unique_ids),
 
     # -- list views

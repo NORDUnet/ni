@@ -53,6 +53,10 @@ DEBUG = False
 
 ########## END DEBUG CONFIGURATION
 
+########## BRAND / HOME ORGANISATION
+BRAND = environ.get('BRAND', 'NORDUnet')
+########## END BRAND / HOME ORGANISATION
+
 ########## ALLOWED HOSTS CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = "*"
@@ -168,6 +172,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'dynamic_preferences.processors.global_preferences',
                 'apps.noclook.announcements.page_flash',
+                'apps.noclook.context_processors.brand',
             ]
         }
     }
@@ -183,7 +188,7 @@ SAML_ENABLED = environ.get('SAML_ENABLED', False)
 
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

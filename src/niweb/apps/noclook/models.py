@@ -31,8 +31,7 @@ NODE_META_TYPE_CHOICES = zip(nc.META_TYPES, nc.META_TYPES)
 @python_2_unicode_compatible
 class NodeType(models.Model):
     type = models.CharField(unique=True, max_length=255)
-    slug = models.SlugField(unique=True, help_text='Suggested value \
-        #automatically generated from type. Must be unique.')
+    slug = models.SlugField(unique=True, help_text='Automatically generated from type. Must be unique.')
     hidden = models.BooleanField(default=False, help_text="Hide from menus")
 
     def __str__(self):
@@ -136,9 +135,9 @@ DEFAULT_ROLES = {
     'abuse_contact': { 'name': 'Abuse', 'description': '' },
     'primary_contact': { 'name': 'Primary contact at incidents', 'description': '' },
     'secondary_contact': { 'name': 'Secondary contact at incidents', 'description': '' },
-    'it_technical_contact': { 'name': 'IT-technical', 'description': '' },
-    'it_security_contact': { 'name': 'IT-security', 'description': '' },
-    'it_manager_contact': { 'name': 'IT-manager', 'description': '' },
+    'it_technical_contact': { 'name': 'NOC Technical', 'description': '' },
+    'it_security_contact': { 'name': 'NOC Security', 'description': '' },
+    'it_manager_contact': { 'name': 'NOC Manager', 'description': '' },
     DEFAULT_ROLE_KEY: { 'name': nc.models.RoleRelationship.DEFAULT_ROLE_NAME, 'description': '' },
 }
 
@@ -184,7 +183,7 @@ class Role(models.Model):
         Propagate the changes over the graph db
         """
         default_rolegroup = RoleGroup.objects.get(name=DEFAULT_ROLEGROUP_NAME)
-        
+
         if self.role_group != default_rolegroup:
             nc.models.RoleRelationship.delete_roles_withname(self.name)
             super(Role, self).delete()

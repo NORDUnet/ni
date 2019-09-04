@@ -42,7 +42,7 @@ class NewCableForm(common.NewCableForm):
                     unique_ids.register_unique_id(self.Meta.id_collection, name)
                 except IntegrityError as e:
                     if NodeHandle.objects.filter(node_name=name):
-                        self.add_error('name', e.message)
+                        self.add_error('name', str(e))
         return cleaned_data
 
 

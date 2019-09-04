@@ -26,7 +26,7 @@
       {% endfor %}
   {% endif %}
   <hr>
-  {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' %}
+  {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='dk-ore' min_length=2 %}
   <hr>
   {{ form.rack_units | as_crispy_field }}
   {{ form.rack_position | as_crispy_field }}

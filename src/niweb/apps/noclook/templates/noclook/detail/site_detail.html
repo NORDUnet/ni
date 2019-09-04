@@ -109,26 +109,22 @@
     </div>
     <h3>Racks and equipment</h3>
     {% blockvar th %}
-        <th>Rack</th><th>Equipment</th>
+      {% for header in racks_table.headers %}
+        <th>{{header}}</th>
+      {% endfor %}
     {% endblockvar %}
+    {% load table_tags %}
     {% blockvar tbody %}
-            {% for rack in location_relationships.Has %}
-                {% for item in rack.node.get_located_in.Located_in %}
-                <tr>
-                    <td><a href="{% noclook_node_to_url rack.node.handle_id %}">{{ rack.node.data.name }}</a></td>
-                    {% noclook_get_type item.node.handle_id as node_type %}
-                    <td><a href="/{{ node_type|slugify }}/">{{ node_type }}</a> <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td><a href="{% noclook_node_to_url rack.node.handle_id %}">{{ rack.node.data.name }}</a></td>
-                    <td></td>
-                </tr>
+            {% for row in racks_table.rows %}
+              <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
+                {% for col in row.cols %}
+                  <td>{% table_column col %}</td>
                 {% endfor %}
+              </tr>
             {% endfor %}
     {% endblockvar %}
     {% table th tbody id="locations" %}
 </div>
-{% include "noclook/detail/includes/equipment.html" with equipment=equipment_relationships.Located_in title="Unracked equipment" %}
+{% include "noclook/detail/includes/equipment.html" with equipment=equipment_relationships title="Unracked equipment" %}
 {% endblock %}
 

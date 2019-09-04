@@ -17,3 +17,4 @@ env
 src/niweb/sitestatic
 tools/nerds
 docker/data
+.DS_Store

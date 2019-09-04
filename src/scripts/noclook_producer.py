@@ -87,7 +87,7 @@ def nodes_to_json():
         """
     for item in nc.query_to_iterator(nc.graphdb.manager, q):
         labels = list(item['n'].labels)
-        data = item['n'].properties
+        data = {k: v for k, v in item['n'].items()}
         json_list.append(
             {'host': {
                 'name': 'node_%d' % data['handle_id'],
@@ -114,6 +114,7 @@ def relationships_to_json():
         relationship = item['r']
         start = item['start']
         end = item['end']
+        data = {k: v for k, v in relationship.items()}
         json_list.append(
             {'host': {
                 'name': 'relationship_{!s}'.format(relationship.id),
@@ -123,7 +124,7 @@ def relationships_to_json():
                     'type': relationship.type,
                     'start': start,
                     'end': end,
-                    'properties': relationship.properties
+                    'properties': data
                 }
             }})
     return json_list

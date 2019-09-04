@@ -403,9 +403,12 @@ class NewOdfForm(forms.Form):
         max_num_of_ports = 48
         choices = [(x, x) for x in range(1, max_num_of_ports + 1) if x]
         self.fields['max_number_of_ports'].choices = choices
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
 
     name = forms.CharField()
+    description = description_field('ODF')
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_location = relationship_field('location')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
@@ -425,10 +428,16 @@ class BulkPortsForm(forms.Form):
 
 
 class EditOdfForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditOdfForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
     name = forms.CharField()
+    description = description_field('ODF')
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
 
@@ -528,6 +537,7 @@ class NewServiceForm(forms.Form):
     class Meta:
         id_generator_property = 'id_generators__services'
         manually_named_services = ['External']  # service_type of manually named services
+        manually_named_services_class = ['External']
 
     def clean(self):
         """
@@ -543,7 +553,8 @@ class NewServiceForm(forms.Form):
         name = cleaned_data.get("name")
         service_type = cleaned_data.get("service_type")
         if self.is_valid():
-            if not name and service_type not in self.Meta.manually_named_services:
+            is_maunal_name = service_type in self.Meta.manually_named_services or cleaned_data['service_class'] in self.Meta.manually_named_services_class
+            if not name and not is_maunal_name:
                 try:
                     global_preferences = global_preferences_registry.manager()
                     id_generator_name = global_preferences[self.Meta.id_generator_property]
@@ -656,7 +667,7 @@ class NewOpticalLinkForm(forms.Form):
             try:
                 unique_ids.register_unique_id(self.Meta.id_collection, name)
             except IntegrityError as e:
-                self.add_error('name', e.message)
+                self.add_error('name', str(e))
         return cleaned_data
 
 
@@ -716,6 +727,7 @@ class NewOpticalPathForm(forms.Form):
     name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
+    wavelength = forms.IntegerField(required=False, help_text='Measured in GHz')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
     relationship_provider = relationship_field('provider', True)
@@ -743,9 +755,7 @@ class NewOpticalPathForm(forms.Form):
             try:
                 unique_ids.register_unique_id(self.Meta.id_collection, name)
             except IntegrityError as e:
-                self._errors = ErrorDict()
-                self._errors['name'] = ErrorList()
-                self._errors['name'].append(e.message)
+                self.add_error('name', str(e))
         return cleaned_data
 
 
@@ -761,6 +771,7 @@ class EditOpticalPathForm(forms.Form):
     name = forms.CharField(required=True)
     framing = forms.ChoiceField(widget=forms.widgets.Select)
     capacity = forms.ChoiceField(widget=forms.widgets.Select)
+    wavelength = forms.IntegerField(required=False, help_text='Measured in GHz')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('optical path')
     enrs = JSONField(required=False, widget=JSONInput)
@@ -867,9 +878,9 @@ class EditOrganizationForm(NewOrganizationForm):
     abuse_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Abuse")
     primary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Primary contact at incidents") # Primary contact at incidents
     secondary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Secondary contact at incidents") # Secondary contact at incidents
-    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-technical") # IT-technical
-    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-security") # IT-security
-    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="IT-manager") # IT-manager
+    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Technical") # NOC Technical
+    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Security") # NOC Security
+    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Manager") # NOC Manager
 
     def clean(self):
         """

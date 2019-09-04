@@ -15,7 +15,7 @@ from django.test import RequestFactory
 from django.utils import six
 from django_comments.models import Comment
 from graphene import relay
-from graphene.types import Scalar
+from graphene.types import Scalar, DateTime
 from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions, ErrorType
 from graphql import GraphQLError
@@ -73,7 +73,7 @@ class JSON(Scalar):
             raise ValidationError(self.error_messages['invalid'], code='invalid')
         return value
 
-class DateTime(Scalar):
+"""class DateTime(Scalar):
     # http://docs.graphene-python.org/en/latest/types/scalars/#custom-scalars
     '''DateTime Scalar Description'''
 
@@ -89,7 +89,7 @@ class DateTime(Scalar):
 
     @staticmethod
     def parse_value(value):
-        return datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f")
+        return datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f")"""
 
 class RoleScalar(Scalar):
     '''This is a POC scalar that may be used in the contact mutation input'''
@@ -675,10 +675,10 @@ class NIRelationType(graphene.ObjectType):
         return ret
 
     def resolve_start_node(self, info, **kwargs):
-        return NodeHandle.objects.get(handle_id=self.start)
+        return NodeHandle.objects.get(handle_id=self.start['handle_id'])
 
     def resolve_end_node(self, info, **kwargs):
-        return NodeHandle.objects.get(handle_id=self.end)
+        return NodeHandle.objects.get(handle_id=self.end['handle_id'])
 
     @classmethod
     def get_filter_input_fields(cls):
