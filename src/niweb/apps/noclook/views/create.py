@@ -10,6 +10,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import render, redirect
+from dynamic_preferences.registries import global_preferences_registry
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
 from apps.noclook.models import NodeHandle, Dropdown
@@ -17,12 +18,42 @@ from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
-TYPES = [
-    ("contact", "Contact"),
-    ("organization", "Organization"),
-    ("group", "Group"),
-    ("role", "Role"),
-]
+
+global_preferences = global_preferences_registry.manager()
+menu_mode = global_preferences['general__menu_mode']
+
+if menu_mode == 'ni':
+    TYPES = [
+        ("customer", "Customer"),
+        ("cable", "Cable"),
+        ("end-user", "End User"),
+        ("external-cable", "External Cable"),
+        ("external-equipment", "External Equipment"),
+        ("host", "Host"),
+        ("optical-link", "Optical Link"),
+        ("optical-path", "Optical Path"),
+        ("service", "Service"),
+        ("odf", "ODF"),
+        ("optical-filter", "Optical Filter"),
+        ("optical-multiplex-section", "Optical Multiplex Section"),
+        ("optical-node", "Optical Node"),
+        ("port", "Port"),
+        ("provider", "Provider"),
+        ("rack", "Rack"),
+        ("site", "Site"),
+        ("site-owner", "Site Owner"),
+    ]
+    if helpers.app_enabled("apps.scan"):
+        TYPES.append(("/scan/queue", "Host scan"))
+elif menu_mode == 'sri':
+    TYPES = [
+        ("contact", "Contact"),
+        ("organization", "Organization"),
+        ("group", "Group"),
+        ("role", "Role"),
+    ]
+else:
+    raise NotImplementedError('menu mode {} not implemented'.format(menu_mode))
 
 
 # Create functions
