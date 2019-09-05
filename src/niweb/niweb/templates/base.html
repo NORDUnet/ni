@@ -1,138 +1,138 @@
 <!DOCTYPE html>
 {% load static %}
-{% load noclook_tags %}
 <html>
 <head>
-    <meta http-equiv="Content-Type" content="text/html; chaset=utf-8" />
-    <meta name="viewpot" content="width=device-width, initial-scale=1.0">
-    <link el="stylesheet" href="{% static "css/jquery.dataTables.css" %}" type="text/css" media="screen" title="NOCLook"/>
-    <link el="stylesheet" href="{% static "css/bootstrap.min.css" %}" type="text/css" />
-    <link el="stylesheet" href="{% static "css/bootstrap-responsive.min.css" %}" type="text/css" />
-    <link el="stylesheet" href="{% static "css/style.css" %}?v=2" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static "css/jquery.dataTables.css" %}" type="text/css" media="screen" title="NOCLook"/>
+    <link rel="stylesheet" href="{% static "css/bootstrap.min.css" %}" type="text/css" />
+    <link rel="stylesheet" href="{% static "css/bootstrap-responsive.min.css" %}" type="text/css" />
+    <link rel="stylesheet" href="{% static "css/style.css" %}?v=2" type="text/css"/>
     <title>NOCLook{% block title %}{% endblock %}</title>
-    <scipt type="text/javascript" src="{% static "js/jquery/jquery-3.3.1.min.js" %}"></script>
-    <scipt type="text/javascript" src="{% static "js/jquery/jquery.autocomplete-min.js" %}"></script>
-    <scipt type="text/javascript" src="{% static "js/jquery/jquery.dataTables.min.js" %}"></script>
-    <scipt type="text/javascript" src="{% static "js/jquery/dataTables-naturalSort.js" %}"></script>
-    <scipt type="text/javascript" src="{% static "js/bootstrap/bootstrap.min.js" %}"></script>
-    <scipt type="text/javascript" src="{% static "js/main.js" %}?v=2"></script>
-    <scipt type="text/javascript">
-    $(document).eady(function() {
-        va options, a, b, c;
-        jQuey(function(){
+    <script type="text/javascript" src="{% static "js/jquery/jquery-3.3.1.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery/jquery.autocomplete-min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery/jquery.dataTables.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/jquery/dataTables-naturalSort.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/bootstrap/bootstrap.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/main.js" %}?v=2"></script>
+    <script type="text/javascript">
+    $(document).ready(function() {
+        var options, a, b, c;
+        jQuery(function(){
             options = {
-                seviceUrl: '/search/autocomplete',
-                minChas: 2,
+                serviceUrl: '/search/autocomplete',
+                minChars: 2,
                 onSelect: function(suggestion) {
-                    $(this).closest("fom").submit();
+                    $(this).closest("form").submit();
                 }
             };
             a = $("#main").autocomplete(options);
             b = $("#index").autocomplete(options);
             c = $("#mobile").autocomplete(options);
         });
-        $(".dopdown-toggle").dropdown();
+        $(".dropdown-toggle").dropdown();
         $(".debug-toggle").collapse();
         $('#add_comment').toggle(false);
-        $('#add_comment_btn').toggle(tue);
+        $('#add_comment_btn').toggle(true);
         // AJAX setup
         function getCookie(name) {
-            va cookieValue = null;
+            var cookieValue = null;
             if (document.cookie && document.cookie != '') {
-                va cookies = document.cookie.split(';');
-                fo (var i = 0; i < cookies.length; i++) {
-                    va cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie sting begin with the name we want?
-                    if (cookie.substing(0, name.length + 1) == (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substing(name.length + 1));
-                        beak;
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
                     }
                 }
             }
-            eturn cookieValue;
+            return cookieValue;
         }
-        va csrftoken = getCookie('csrftoken');
-        function csfSafeMethod(method) {
-            // these HTTP methods do not equire CSRF protection
-            eturn (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        var csrftoken = getCookie('csrftoken');
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
         }
         $.ajaxSetup({
-            cossDomain: false, // obviates need for sameOrigin test
-            befoeSend: function(xhr, settings) {
-                if (!csfSafeMethod(settings.type)) {
-                    xh.setRequestHeader("X-CSRFToken", csrftoken);
+            crossDomain: false, // obviates need for sameOrigin test
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type)) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
                 }
             }
         });
     });
-    </scipt>
+    </script>
     {% block js %}{% endblock %}
-
-    {% if noclook.link_colo %}
-    <style type="text/css" media="all">
-      a { colo: {{noclook.link_color}}; }
-      a:hove { color: {{noclook.link_hover}}; }
+    {% if noclook.link_color %}
+      <style type="text/css" media="all">
+        a { color: {{noclook.link_color}}; }
+        a:hover { color: {{noclook.link_hover}}; }
     </style>
     {% endif %}
+
 </head>
 <body>
-    <b>
-    <div class="containe-fluid">
-        <div class="navba navbar-fixed-top hidden-desktop">
-            <div class="navba-inner">
-                <div class="containe">
+    <br>
+    {% load noclook_tags %}
+    <div class="container-fluid">
+        <div class="navbar navbar-fixed-top hidden-desktop">
+            <div class="navbar-inner">
+                <div class="container">
 
-                    <!-- .btn-navba is used as the toggle for collapsed navbar content -->
-                    <a class="btn btn-navba" data-toggle="collapse" data-target=".nav-collapse">
-                        <span class="icon-ba"></span>
-                        <span class="icon-ba"></span>
-                        <span class="icon-ba"></span>
+                    <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
                     </a>
 
-                    <!-- Be sue to leave the brand out there if you want it shown -->
-                    <a class="band" href="/">NOCLook</a>
+                    <!-- Be sure to leave the brand out there if you want it shown -->
+                    <a class="brand" href="/">NOCLook</a>
 
-                    <!-- Eveything you want hidden at 940px or less, place within here -->
+                    <!-- Everything you want hidden at 940px or less, place within here -->
                     <div class="nav-collapse collapse">
                         <ul class="nav">
-                            <li class="dopdown">
-                                <a hef="#" class="dropdown-toggle" data-toggle="dropdown">Browse <b class="caret"></b></a>
-                                <ul class="dopdown-menu">
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Browse <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
                                     {% type_menu %}
                                 </ul>
                             </li>
-                            <li class="dopdown">
-                                <a hef="#" class="dropdown-toggle" data-toggle="dropdown">Reports <b class="caret"></b></a>
-                                <ul class="dopdown-menu">
-                                    <li><a hef="/reports/hosts/">Host reports</a></li>
-                                    <li><a hef="/reports/unique-ids/">Unique IDs</a></li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Reports <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/reports/hosts/">Host reports</a></li>
+                                    <li><a href="/reports/unique-ids/">Unique IDs</a></li>
                                 </ul>
                             </li>
-                            <li class="dopdown">
-                                <a hef="#" class="dropdown-toggle" data-toggle="dropdown">Maps <b class="caret"></b></a>
-                                <ul class="dopdown-menu">
-                                    <li><a hef="/gmaps/sites/">Site map</a></li>
-                                    <li><a hef="/gmaps/optical-nodes/">Optical node map</a></li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Maps <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/gmaps/sites/">Site map</a></li>
+                                    <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
                                 </ul>
                             </li>
-                            {% if use.is_staff %}
-                                <li><a hef="/new/">Create new</a></li>
-                                <li><a hef="/reserve-id/">Reserve IDs</a></li>
-                                <li><a hef="/userprofile/">Users</a></li>
+                            {% if user.is_staff %}
+                                <li><a href="/new/">Create new</a></li>
+                                <li><a href="/reserve-id/">Reserve IDs</a></li>
+                                <li><a href="/userprofile/">Users</a></li>
                             {% endif %}
-                            <li class="divide-vertical"></li>
-                            {% if use.is_authenticated %}
+                            <li class="divider-vertical"></li>
+                            {% if user.is_authenticated %}
                             <li class="pull-left">
-                                <fom action="/search/" method="post" class="navbar-search">{% csrf_token %}
-                                    <input class="xlage search-query" type="search" id="mobile" name="q" placeholder="Search" />
-                                </fom>
+                                <form action="/search/" method="post" class="navbar-search">{% csrf_token %}
+                                    <input class="xlarge search-query" type="search" id="mobile" name="q" placeholder="Search" />
+                                </form>
                              </li>
                             {% endif %}
                         </ul>
-                        {% if use.is_authenticated %}
-                            <ul class="nav pull-ight">
+                        {% if user.is_authenticated %}
+                            <ul class="nav pull-right">
                                 <li>
-                                    <a hef="/logout/"><i class="icon-user icon-white"></i> Log out</a>
+                                    <a href="/logout/"><i class="icon-user icon-white"></i> Log out</a>
                                 </li>
                             </ul>
                         {% endif %}
@@ -140,82 +140,82 @@
                 </div>
             </div>
         </div>
-        <div class="ow">
+        <div class="row">
             <div class="span2 well visible-desktop">
-              <a hef="/">
-                <!-- <img class="logo" sc="{% static "img/noclook_logo.png" %}"> -->
+              <a href="/">
                 {% include "logo.svg" %}
               </a>
                 {% block menu %}
+                    {% load noclook_tags %}
                     <ul class="nav nav-list">
-                        <li class="divide"></li>
-                        <li class="nav-heade"><i class="icon-list"></i> Browse types</li>
+                        <li class="divider"></li>
+                        <li class="nav-header"><i class="icon-list"></i> Browse types</li>
                         {% type_menu %}
-                        <li class="divide"></li>
-                        <li class="nav-heade"><i class="icon-briefcase"></i> Reports</li>
-                        <li><a hef="/reports/hosts/">Host reports</a></li>
-                        <li><a hef="/reports/unique-ids/">Unique IDs</a></li>
-                        <li class="divide"></li>
-                        <li class="nav-heade"><i class="icon-map-marker"></i> Maps</li>
-                        <li><a hef="/gmaps/sites/">Site map</a></li>
-                        <li><a hef="/gmaps/optical-nodes/">Optical node map</a></li>
-                        {% if use.is_authenticated %}
-                            <li class="divide"></li>
-                            <li class="nav-heade"><i class="icon-wrench"></i> Admin</li>
-                            {% if use.is_staff %}
-                                <li><a hef="/new/">Create new</a></li>
-                                <li><a hef="/reserve-id/">Reserve IDs</a></li>
-                                <li><a hef="/userprofile/">Users</a></li>
+                        <li class="divider"></li>
+                        <li class="nav-header"><i class="icon-briefcase"></i> Reports</li>
+                        <li><a href="/reports/hosts/">Host reports</a></li>
+                        <li><a href="/reports/unique-ids/">Unique IDs</a></li>
+                        <li class="divider"></li>
+                        <li class="nav-header"><i class="icon-map-marker"></i> Maps</li>
+                        <li><a href="/gmaps/sites/">Site map</a></li>
+                        <li><a href="/gmaps/optical-nodes/">Optical node map</a></li>
+                        {% if user.is_authenticated %}
+                            <li class="divider"></li>
+                            <li class="nav-header"><i class="icon-wrench"></i> Admin</li>
+                            {% if user.is_staff %}
+                                <li><a href="/new/">Create new</a></li>
+                                <li><a href="/reserve-id/">Reserve IDs</a></li>
+                                <li><a href="/userprofile/">Users</a></li>
                             {% endif %}
-                            <li><a hef="/logout/">Log out</a></li>
+                            <li><a href="/logout/">Log out</a></li>
                         {% endif %}
                     </ul>
                 {% endblock %}
             </div>
             <div class="span9 content">
-                <div class="ow visible-desktop">
+                <div class="row visible-desktop">
                     <div class="span5">
-                        {% if use.is_authenticated %}
-                            <fom id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
-                                <input class="xlage search-query" type="search" id="main" name="q" /> <button class="btn primary" type="submit">Search</button>
-                            </fom>
+                        {% if user.is_authenticated %}
+                            <form id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
+                                <input class="xlarge search-query" type="search" id="main" name="q" /> <button class="btn primary" type="submit">Search</button>
+                            </form>
                         {% endif %}
                     </div>
                     <div class="span4">
-                        {% if use.is_authenticated %}
-                            <div class="pull-ight">Logged in as <a href="{{ user.get_profile.get_absolute_url }}">{{ user }}</a> <a href="/logout/" class="btn btn-small btn-info"><i class="icon-user icon-white"></i> Log out</a></div>
+                        {% if user.is_authenticated %}
+                            <div class="pull-right">Logged in as <a href="{{ user.get_profile.get_absolute_url }}">{{ user }}</a> <a href="/logout/" class="btn btn-small btn-info"><i class="icon-user icon-white"></i> Log out</a></div>
                         {% endif %}
                     </div>
                 </div>
                 {% if page_flash.message %}
-                    <div id="page_flash" class="alet alert-{{ page_flash.level }}">{{ page_flash.message }}</div>
+                    <div id="page_flash" class="alert alert-{{ page_flash.level }}">{{ page_flash.message }}</div>
                 {% endif %}
 
                 {% if messages %}
-                  {% fo message in messages %}
-                    <div class="alet alert-{{ message.tags }}">{{ message }}</div>
-                  {% endfo %}
+                  {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                  {% endfor %}
                 {% endif %}
 
                 {% block content %}{% endblock %}
 
-                {% block content_foote %}{% endblock %}
+                {% block content_footer %}{% endblock %}
 
                 {% if node %}
                     <!-- DEBUG START -->
                     <div class="section visible-desktop">
-                        <b><br><br>
-                        <div class="accodion" id="debug-accordion">
-                            <div class="accodion-group">
-                                <div class="accodion-heading">
-                                    <a class="accodion-toggle btn" data-toggle="collapse" data-parent="#debug-accordion" href="#collapseDebug" data-async-load="/nodes/{{node.handle_id}}/debug" data-async-load-target="#collapseDebug .accordion-inner">
+                        <br><br><br>
+                        <div class="accordion" id="debug-accordion">
+                            <div class="accordion-group">
+                                <div class="accordion-heading">
+                                    <a class="accordion-toggle btn" data-toggle="collapse" data-parent="#debug-accordion" href="#collapseDebug" data-async-load="/nodes/{{node.handle_id}}/debug" data-async-load-target="#collapseDebug .accordion-inner">
                                         Debug
                                     </a>
                                 </div>
-                                <div id="collapseDebug" class="accodion-body collapse" style="height: 0px; ">
-                                    <div class="accodion-inner">
+                                <div id="collapseDebug" class="accordion-body collapse" style="height: 0px; ">
+                                    <div class="accordion-inner">
                                         <h2>Debug</h2>
-                                        <img sc="{% static "img/spinner.gif" %}" alt="loading"> Loading debug info...
+                                        <img src="{% static "img/spinner.gif" %}" alt="loading"> Loading debug info...
                                     </div>
                                 </div>
                             </div>
