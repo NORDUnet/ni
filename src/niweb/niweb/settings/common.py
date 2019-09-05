@@ -55,6 +55,12 @@ DEBUG = False
 
 ########## BRAND / HOME ORGANISATION
 BRAND = environ.get('BRAND', 'NORDUnet')
+
+LOGO_COLOR = environ.get('LOGO_COLOR', '')
+LOGO_SUBTEXT = environ.get('LOGO_SUBTEXT', '')
+LINK_COLOR = environ.get('LINK_COLOR', '')
+LINK_HOVER = environ.get('LINK_HOVER', '')
+
 ########## END BRAND / HOME ORGANISATION
 
 ########## ALLOWED HOSTS CONFIGURATION
