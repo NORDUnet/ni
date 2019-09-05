@@ -25,27 +25,22 @@ def type_menu():
 
 
 @register.simple_tag(takes_context=True)
-def noclook_node_to_url(context,handle_id):
+def noclook_node_to_url(context, handle_id):
     """G
     Takes a node id as a string and returns the absolute url for a node.
     """
-    #handle fallback
+    # handle fallback
     urls = context.get('urls')
     if urls and handle_id in urls:
-      return urls.get(handle_id)
+        return urls.get(handle_id)
     else:
-      return "/nodes/%s" % handle_id
-   #else:
-      #
-      #try: 
-      #  return get_node_url(handle_id)
-      #except ObjectDoesNotExist:
-      #  return ''
+        return "/nodes/%s" % handle_id
 
 
 @register.simple_tag(takes_context=True)
 def noclook_node_to_link(context, node):
-    if "handle_id" in node:
+
+    if node and "handle_id" in node:
         url = noclook_node_to_url(context, node.get("handle_id"))
         result = format_html(u'<a class="handle" href="{}" title="{}">{}</a>', url, node.get("name"), node.get("name"))
     else:
