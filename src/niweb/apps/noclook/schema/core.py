@@ -549,52 +549,44 @@ class DateQueryBuilder(AbstractQueryBuilder):
         return ret
 
     @staticmethod
-    def build_match_predicate(field, value, qs):
+    def build_match_predicate(field, value):
         kwargs = { '{}__date'.format(field) : value }
-        qs = qs.filter(**kwargs)
-        return qs
+        return Q(**kwargs)
 
     @staticmethod
-    def build_not_predicate(field, value, qs):
+    def build_not_predicate(field, value):
         kwargs = { '{}__date'.format(field) : value }
-        qs = qs.exclude(**kwargs)
-        return qs
+        return ~Q(**kwargs)
 
     @staticmethod
-    def build_in_predicate(field, value, qs):
+    def build_in_predicate(field, value):
         kwargs = { '{}__date__in'.format(field) : value }
-        qs = qs.filter(**kwargs)
-        return qs
+        return Q(**kwargs)
 
     @staticmethod
-    def build_not_in_predicate(field, value, qs):
+    def build_not_in_predicate(field, value):
         kwargs = { '{}__date__in'.format(field) : value }
-        qs = qs.exclude(**kwargs)
-        return qs
+        return ~Q(**kwargs)
 
     @staticmethod
-    def build_lt_predicate(field, value, qs):
+    def build_lt_predicate(field, value):
         kwargs = { '{}__date__lt'.format(field) : value }
-        qs = qs.filter(**kwargs)
-        return qs
+        return Q(**kwargs)
 
     @staticmethod
-    def build_lte_predicate(field, value, qs):
+    def build_lte_predicate(field, value):
         kwargs = { '{}__date__lte'.format(field) : value }
-        qs = qs.filter(**kwargs)
-        return qs
+        return Q(**kwargs)
 
     @staticmethod
-    def build_gt_predicate(field, value, qs):
+    def build_gt_predicate(field, value):
         kwargs = { '{}__date__gt'.format(field) : value }
-        qs = qs.filter(**kwargs)
-        return qs
+        return Q(**kwargs)
 
     @staticmethod
-    def build_gte_predicate(field, value, qs):
+    def build_gte_predicate(field, value):
         kwargs = { '{}__date__gte'.format(field) : value }
-        qs = qs.filter(**kwargs)
-        return qs
+        return Q(**kwargs)
 
     @classproperty
     def search_fields_list(cls):
@@ -619,24 +611,55 @@ class DateQueryBuilder(AbstractQueryBuilder):
         import copy
 
         cfilter_values = copy.deepcopy(filter_values)
+        qobj_dict = {
+            'AND': [],
+            'OR': []
+        }
 
-        for and_or_op, op_filter_list in cfilter_values.items(): # iterate operations (AND/OR) and its array of values
+        # iterate operations (AND/OR) and its array of values
+        for and_or_op, op_filter_list in cfilter_values.items():
             array_idx = 0
 
-            for op_filter_values in op_filter_list: # iterate through the array of dicts of the operation
-                for filter_name, filter_value in op_filter_values.items(): # iterate through the fields and values in these dicts
+            # iterate through the array of dicts of the operation
+            for op_filter_values in op_filter_list:
+
+                # iterate through the fields and values in these dicts
+                for filter_name, filter_value in op_filter_values.items():
                     if filter_name in cls.search_fields_list:
                         # extract values
                         func = cls.search_fields_list[filter_name]['function']
                         field_name = cls.search_fields_list[filter_name]['field']
 
-                        # call function and filter queryset
-                        qs = func(field_name, filter_value, qs)
+                        # call function and add q object
+                        qobj = func(field_name, filter_value)
+                        qobj_dict[and_or_op].append(qobj)
 
                         # delete value from filter
                         del filter_values[and_or_op][array_idx][filter_name]
 
                 array_idx = array_idx + 1
+
+        # filter the queryset with the q objects
+        # do AND
+        qand = None
+        for qobj in qobj_dict['AND']:
+            if not qand:
+                qand = qobj
+            else:
+                qand = qand & qobj
+
+        if qand:
+            qs = qs.filter(qand)
+
+        # do OR
+        qor = None
+        for qobj in qobj_dict['OR']:
+            if not qor:
+                qor = qobj
+            else:
+                qor = qor & qobj
+        if qor:
+            qs = qs.filter(qor)
 
         return qs
 
