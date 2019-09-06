@@ -1040,8 +1040,10 @@ class NIObjectType(DjangoObjectType):
                     input_fields[name] = binput_field, field._of_type
 
         input_fields['handle_id'] = graphene.Int
-        input_fields['created'] = DateTime
-        input_fields['modified'] = DateTime
+
+        # add 'created' and 'modified' datetime fields
+        for date_ffield in DateQueryBuilder.fields:
+            input_fields[date_ffield] = DateTime
 
         return input_fields
 
@@ -1174,13 +1176,24 @@ class NIObjectType(DjangoObjectType):
 
                 if nodes:
                     handle_ids = []
+                    qs_order_prop = None
+                    qs_order_order = None
+
                     # ordering
                     if orderBy:
+                        # extract field and order
                         m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
                         prop = m[1]
                         order = m[2]
-                        reverse = True if order == 'DESC' else False
-                        nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
+
+                        if prop not in DateQueryBuilder.fields:
+                            # node property ordering
+                            reverse = True if order == 'DESC' else False
+                            nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
+                        else: # set model attribute ordering
+                            qs_order_prop  = prop
+                            qs_order_order = order
+
                         handle_ids = [ node['handle_id'] for node in nodes ]
                     else:
                         handle_ids = [ node['handle_id'] for node in nodes ]
@@ -1192,6 +1205,12 @@ class NIObjectType(DjangoObjectType):
                         nodeqs = qs.filter(handle_id=handle_id)
                         if nodeqs and len(nodeqs) == 1:
                             ret.append(nodeqs.first())
+
+                    # do nodehandler attributes ordering now that we have
+                    # the nodes set, if this order is requested
+                    if qs_order_prop and qs_order_order:
+                        reverse = True if qs_order_order == 'DESC' else False
+                        ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
 
                 if not ret:
                     ret = []
