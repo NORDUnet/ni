@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+import datetime
 import graphene
 import norduniclient as nc
 import re
@@ -223,23 +224,23 @@ class AbstractQueryBuilder:
 
     @classproperty
     def filter_array(cls):
-        return {
-            '':       { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_match_predicate },
-            'not':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_not_predicate },
-            'in':     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': cls.build_in_predicate },
-            'not_in': { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': cls.build_not_in_predicate },
-            'lt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_lt_predicate },
-            'lte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_lte_predicate },
-            'gt':     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_gt_predicate },
-            'gte':    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_gte_predicate },
+        return OrderedDict([
+            ('',       { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_match_predicate }),
+            ('not',    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_not_predicate }),
+            ('in',     { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': cls.build_in_predicate }),
+            ('not_in', { 'wrapper_field': [graphene.NonNull, graphene.List], 'only_strings': False, 'qpredicate': cls.build_not_in_predicate }),
+            ('lt',     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_lt_predicate }),
+            ('lte',    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_lte_predicate }),
+            ('gt',     { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_gt_predicate }),
+            ('gte',    { 'wrapper_field': None, 'only_strings': False, 'qpredicate': cls.build_gte_predicate }),
 
-            'contains':        { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_contains_predicate },
-            'not_contains':    { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_contains_predicate },
-            'starts_with':     { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_starts_with_predicate },
-            'not_starts_with': { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_starts_with_predicate },
-            'ends_with':       { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_ends_with_predicate },
-            'not_ends_with':   { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_ends_with_predicate },
-        }
+            ('contains',        { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_contains_predicate }),
+            ('not_contains',    { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_contains_predicate }),
+            ('starts_with',     { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_starts_with_predicate }),
+            ('not_starts_with', { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_starts_with_predicate }),
+            ('ends_with',       { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_ends_with_predicate }),
+            ('not_ends_with',   { 'wrapper_field': None, 'only_strings': True, 'qpredicate': cls.build_not_ends_with_predicate }),
+        ])
 
 class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
@@ -512,6 +513,133 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
                                                                 op, True, **kwargs)
 
         return ret
+
+
+class DateQueryBuilder(AbstractQueryBuilder):
+    fields = [ 'created', 'modified' ]
+
+    @classproperty
+    def suffixes(cls):
+        '''
+        The advantage of this over a static dict is that if the filter_array
+        is changed in the superclass this would
+        '''
+        ret = OrderedDict()
+
+        thekeys = list(cls.filter_array.keys())[:8]
+
+        for akey in thekeys:
+            if akey == '':
+                ret[akey] = cls.build_match_predicate
+            elif akey == 'not':
+                ret[akey] = cls.build_not_predicate
+            elif akey == 'in':
+                ret[akey] = cls.build_in_predicate
+            elif akey == 'not_in':
+                ret[akey] = cls.build_not_in_predicate
+            elif akey == 'lt':
+                ret[akey] = cls.build_lt_predicate
+            elif akey == 'lte':
+                ret[akey] = cls.build_lte_predicate
+            elif akey == 'gt':
+                ret[akey] = cls.build_gt_predicate
+            elif akey == 'gte':
+                ret[akey] = cls.build_gte_predicate
+
+        return ret
+
+    @staticmethod
+    def build_match_predicate(field, value, qs):
+        kwargs = { '{}__date'.format(field) : value }
+        qs = qs.filter(**kwargs)
+        return qs
+
+    @staticmethod
+    def build_not_predicate(field, value, qs):
+        kwargs = { '{}__date'.format(field) : value }
+        qs = qs.exclude(**kwargs)
+        return qs
+
+    @staticmethod
+    def build_in_predicate(field, value, qs):
+        kwargs = { '{}__date__in'.format(field) : value }
+        qs = qs.filter(**kwargs)
+        return qs
+
+    @staticmethod
+    def build_not_in_predicate(field, value, qs):
+        kwargs = { '{}__date__in'.format(field) : value }
+        qs = qs.exclude(**kwargs)
+        return qs
+
+    @staticmethod
+    def build_lt_predicate(field, value, qs):
+        kwargs = { '{}__date__lt'.format(field) : value }
+        qs = qs.filter(**kwargs)
+        return qs
+
+    @staticmethod
+    def build_lte_predicate(field, value, qs):
+        kwargs = { '{}__date__lte'.format(field) : value }
+        qs = qs.filter(**kwargs)
+        return qs
+
+    @staticmethod
+    def build_gt_predicate(field, value, qs):
+        kwargs = { '{}__date__gt'.format(field) : value }
+        qs = qs.filter(**kwargs)
+        return qs
+
+    @staticmethod
+    def build_gte_predicate(field, value, qs):
+        kwargs = { '{}__date__gte'.format(field) : value }
+        qs = qs.filter(**kwargs)
+        return qs
+
+    @classproperty
+    def search_fields_list(cls):
+        search_fields_list = {}
+
+        for field_name in cls.fields:
+            for suffix, func in cls.suffixes.items():
+                field_wsuffix = field_name
+
+                if suffix != '':
+                    field_wsuffix = '{}_{}'.format(field_name, suffix)
+
+                search_fields_list[field_wsuffix] = {
+                    'function': func,
+                    'field': field_name
+                }
+
+        return search_fields_list
+
+    @classmethod
+    def filter_queryset(cls, filter_values, qs):
+        import copy
+
+        cfilter_values = copy.deepcopy(filter_values)
+
+        for and_or_op, op_filter_list in cfilter_values.items(): # iterate operations (AND/OR) and its array of values
+            array_idx = 0
+
+            for op_filter_values in op_filter_list: # iterate through the array of dicts of the operation
+                for filter_name, filter_value in op_filter_values.items(): # iterate through the fields and values in these dicts
+                    if filter_name in cls.search_fields_list:
+                        # extract values
+                        func = cls.search_fields_list[filter_name]['function']
+                        field_name = cls.search_fields_list[filter_name]['field']
+
+                        # call function and filter queryset
+                        qs = func(field_name, filter_value, qs)
+
+                        # delete value from filter
+                        del filter_values[and_or_op][array_idx][filter_name]
+
+                array_idx = array_idx + 1
+
+        return qs
+
 ########## END CONNECTION FILTER BUILD FUNCTIONS
 
 ########## KEYVALUE TYPES
@@ -912,6 +1040,8 @@ class NIObjectType(DjangoObjectType):
                     input_fields[name] = binput_field, field._of_type
 
         input_fields['handle_id'] = graphene.Int
+        input_fields['created'] = DateTime
+        input_fields['modified'] = DateTime
 
         return input_fields
 
@@ -1028,7 +1158,13 @@ class NIObjectType(DjangoObjectType):
             if info.context and info.context.user.is_authenticated:
                 # filtering will take a different approach
                 nodes = None
+                qs = NodeHandle.objects.all()
+
                 if filter:
+                    # check for queryset date filter
+                    qs = DateQueryBuilder.filter_queryset(filter, qs)
+
+                    # create query
                     q = cls.build_filter_query(filter, type_name)
                     nodes = nc.query_to_list(nc.graphdb.manager, q)
                     nodes = [ node['n'].properties for node in nodes]
@@ -1053,7 +1189,9 @@ class NIObjectType(DjangoObjectType):
                     ret = []
 
                     for handle_id in handle_ids:
-                        ret.append(NodeHandle.objects.get(handle_id=handle_id))
+                        nodeqs = qs.filter(handle_id=handle_id)
+                        if nodeqs and len(nodeqs) == 1:
+                            ret.append(nodeqs.first())
 
                 if not ret:
                     ret = []
