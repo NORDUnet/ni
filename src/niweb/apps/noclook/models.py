@@ -60,18 +60,6 @@ class NodeType(models.Model):
     delete.alters_data = True
 
 
-# XXX: Does not handle slug renaming
-slug_cache = {}
-
-
-def get_slug(slug_id):
-    if slug_id in slug_cache:
-        return slug_cache[slug_id]
-    else:
-        slug_cache[slug_id] = NodeType.objects.get(pk=slug_id).get_slug()
-    return slug_cache[slug_id]
-
-
 @python_2_unicode_compatible
 class NodeHandle(models.Model):
     # Handle <-> Node data
@@ -99,7 +87,7 @@ class NodeHandle(models.Model):
         return self.url()
 
     def url(self):
-        return reverse('generic_detail', args=[get_slug(self.node_type_id), self.handle_id])
+        return reverse('generic_detail', args=[self.node_type.get_slug(), self.handle_id])
 
     def save(self, *args, **kwargs):
         """

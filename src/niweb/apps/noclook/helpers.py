@@ -809,10 +809,10 @@ def find_recursive(key, target):
 
 
 def get_node_urls(*args):
-    ids = []
+    ids = set()
     for arg in args:
-        ids += set(find_recursive("handle_id", arg))
-    nodes = NodeHandle.objects.filter(handle_id__in=ids)
+        ids.update(find_recursive("handle_id", arg))
+    nodes = NodeHandle.objects.filter(handle_id__in=ids).select_related('node_type')
     urls = {}
     for n in nodes:
         urls[n.handle_id] = n.get_absolute_url()
