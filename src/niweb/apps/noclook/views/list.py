@@ -102,21 +102,33 @@ def list_by_type(request, slug):
                   {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
 
 
+def _cable_end(end):
+    equpment = end.get('equipment') or ''
+    port_name = end.get('port') or ''
+    return {
+        'name': '{} - {}'.format(equpment, port_name),
+        'handle_id': end.get('handle_id')
+    }
+
+
 def _cable_table(wrapped_cable):
     cable = wrapped_cable.get('cable')
-    row = TableRow(cable, cable.get('cable_type'), wrapped_cable.get('end'))
+    ends = [_cable_end(e) for e in wrapped_cable.get('end', []) if e.get('handle_id')]
+    row = TableRow(cable, cable.get('cable_type'), ends)
     _set_expired(row, cable)
     return row
 
 
 @login_required
 def list_cables(request):
+    # MK: not 100% sure this gives the correct end+port pairs
+    # Due to the <-[:Has*1..10]
     q = """
         MATCH (cable:Cable)
         OPTIONAL MATCH (cable)-[r:Connected_to]->(port:Port)
         OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
         WHERE NOT((end)<-[:Has]-())
-        RETURN cable, collect(end) as end order by cable.name
+        RETURN cable, collect({equipment: end.name, port: port.name, handle_id: end.handle_id}) as end order by cable.name
         """
     cable_list = nc.query_to_list(nc.graphdb.manager, q)
     cable_list = _filter_expired(cable_list, request, select=lambda n: n.get('cable'))
