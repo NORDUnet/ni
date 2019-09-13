@@ -4,7 +4,6 @@ __author__ = 'ffuentes'
 import graphene
 
 from norduniclient.models import RoleRelationship
-from django.contrib.auth.models import User
 from graphene import relay
 from .core import *
 from ..models import Dropdown, Choice, Role as RoleModel
@@ -15,13 +14,6 @@ NIMETA_RELATION = 'relation'
 NIMETA_PHYSICAL = 'physical'
 NIMETA_LOCATION = 'location'
 
-class User(DjangoObjectType):
-    '''
-    The django user type
-    '''
-    class Meta:
-        model = User
-        exclude_fields = ['creator', 'modifier']
 
 class Dropdown(DjangoObjectType):
     '''

@@ -10,6 +10,7 @@ from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle
 from collections import OrderedDict, Iterable
 from django import forms
+from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Q
 from django.forms.utils import ValidationError
 from django.test import RequestFactory
@@ -663,6 +664,49 @@ class DateQueryBuilder(AbstractQueryBuilder):
 
         return qs
 
+class UserQueryBuilder(DateQueryBuilder):
+    fields = [ 'creator', 'modifier']
+
+    @staticmethod
+    def build_match_predicate(field, value):
+        kwargs = { '{}'.format(field) : value }
+        return Q(**kwargs)
+
+    @staticmethod
+    def build_not_predicate(field, value):
+        kwargs = { '{}'.format(field) : value }
+        return ~Q(**kwargs)
+
+    @staticmethod
+    def build_in_predicate(field, value):
+        kwargs = { '{}__in'.format(field) : value }
+        return Q(**kwargs)
+
+    @staticmethod
+    def build_not_in_predicate(field, value):
+        kwargs = { '{}__in'.format(field) : value }
+        return ~Q(**kwargs)
+
+    @staticmethod
+    def build_lt_predicate(field, value):
+        kwargs = { '{}__lt'.format(field) : value }
+        return Q(**kwargs)
+
+    @staticmethod
+    def build_lte_predicate(field, value):
+        kwargs = { '{}__lte'.format(field) : value }
+        return Q(**kwargs)
+
+    @staticmethod
+    def build_gt_predicate(field, value):
+        kwargs = { '{}__gt'.format(field) : value }
+        return Q(**kwargs)
+
+    @staticmethod
+    def build_gte_predicate(field, value):
+        kwargs = { '{}__gte'.format(field) : value }
+        return Q(**kwargs)
+
 ########## END CONNECTION FILTER BUILD FUNCTIONS
 
 ########## KEYVALUE TYPES
@@ -788,6 +832,17 @@ class NIListField(NIBasicField):
 
 
 ########## RELATION AND NODE TYPES
+class User(DjangoObjectType):
+    '''
+    The django user type
+    '''
+    class Meta:
+        model = DjangoUser
+        only_fields = ['id', 'username', 'first_name', 'last_name']
+
+class UserInputType(graphene.InputObjectType):
+    username = graphene.String(required=True)
+
 class NIRelationType(graphene.ObjectType):
     '''
     This class represents a relationship and its properties
@@ -1068,6 +1123,10 @@ class NIObjectType(DjangoObjectType):
         for date_ffield in DateQueryBuilder.fields:
             input_fields[date_ffield] = DateTime
 
+        # add 'creator' and 'modifier' user fields
+        for user_ffield in UserQueryBuilder.fields:
+            input_fields[user_ffield] = UserInputType
+
         return input_fields
 
     @classmethod
@@ -1186,8 +1245,9 @@ class NIObjectType(DjangoObjectType):
                 qs = NodeHandle.objects.all()
 
                 if filter:
-                    # check for queryset date filter
+                    # filter queryset with dates and users
                     qs = DateQueryBuilder.filter_queryset(filter, qs)
+                    qs = UserQueryBuilder.filter_queryset(filter, qs)
 
                     # create query
                     q = cls.build_filter_query(filter, type_name)

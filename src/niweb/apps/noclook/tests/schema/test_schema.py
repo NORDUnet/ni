@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+from apps.noclook.models import NodeHandle
 from collections import OrderedDict
+from django.utils.dateparse import parse_datetime
 from niweb.schema import schema
 from pprint import pformat
 from . import Neo4jGraphQLTest
+
+from datetime import datetime
 
 class QueryTest(Neo4jGraphQLTest):
     def test_get_contacts(self):
@@ -299,6 +303,167 @@ class QueryTest(Neo4jGraphQLTest):
                          OrderedDict([('node',
                            OrderedDict([('name',
                                  'group2')]))])])]))])
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        # test date and user filters
+
+        # but first get the user and date
+        query = '''
+        {
+        	groups(first:2){
+            edges{
+              node{
+                handle_id
+                node_name
+                created
+                modified
+                creator{
+                  username
+                }
+              }
+            }
+          }
+        }
+        '''
+        result = schema.execute(query, context=self.context)
+
+        node = result.data['groups']['edges'][0]['node']
+        username = node['creator']['username']
+        created = node['created']
+        modified = node['modified']
+        created_dt = parse_datetime(created)
+        modified_dt = parse_datetime(modified)
+        handle_id = int(node['handle_id'])
+
+        # modify the second group to add an hour so it can be filtered
+        node2 = result.data['groups']['edges'][1]['node']
+        handle_id2 = int(node2['handle_id'])
+        group2 = NodeHandle.objects.get(handle_id=handle_id2)
+
+        query = '''
+        {
+        	groups(first:2){
+            edges{
+              node{
+                handle_id
+                node_name
+                created
+                modified
+                creator{
+                  username
+                }
+              }
+            }
+          }
+        }
+        '''
+        result = schema.execute(query, context=self.context)
+
+        node2 = result.data['groups']['edges'][1]['node']
+        created2 = node2['created']
+        modified2 = node2['modified']
+
+        # test date filters: AND
+        query = '''
+        {{
+          groups(first: 10, filter:{{
+            AND:[{{
+              created: "{adate}",
+              created_in: ["{adate}"]
+            }}]
+          }}, orderBy: handle_id_ASC){{
+            edges{{
+              node{{
+                name
+              }}
+            }}
+          }}
+        }}
+        '''.format(adate=created, nodate=created2)
+        expected = OrderedDict([('groups',
+                        OrderedDict([('edges',
+                            [OrderedDict([('node',
+                                   OrderedDict([('name',
+                                         'group1')]
+                                    ))]),
+                            OrderedDict([('node',
+                                   OrderedDict([('name',
+                                         'group2')]
+                                    ))]),]
+                            )]))
+                    ])
+
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        query = '''
+        {{
+          groups(first: 10, filter:{{
+            AND:[{{
+              modified: "{adate}",
+              modified_in: ["{adate}"]
+            }}]
+          }}, orderBy: handle_id_ASC){{
+            edges{{
+              node{{
+                name
+              }}
+            }}
+          }}
+        }}
+        '''.format(adate=created)
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        # test date filters: OR
+        query = '''
+        {{
+          groups(first: 10, filter:{{
+            OR:[{{
+              created: "{adate}",
+              created_in: ["{adate}"]
+            }}]
+          }}, orderBy: handle_id_ASC){{
+            edges{{
+              node{{
+                name
+              }}
+            }}
+          }}
+        }}
+        '''.format(adate=created)
+
+        result = schema.execute(query, context=self.context)
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        query = '''
+        {{
+          groups(first: 10, filter:{{
+            OR:[{{
+              modified: "{adate}",
+              modified_in: ["{adate}"]
+            }}]
+          }}, orderBy: handle_id_ASC){{
+            edges{{
+              node{{
+                name
+              }}
+            }}
+          }}
+        }}
+        '''.format(adate=created)
 
         result = schema.execute(query, context=self.context)
 
