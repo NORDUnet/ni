@@ -178,6 +178,18 @@ def noclook_report_age(item, old, very_old):
 
 
 @register.assignment_tag
+def noclook_as_dict(obj):
+    """
+    :param obj: Neo4j object
+    :return: dict
+    """
+    try:
+        return dict(obj.items())
+    except TypeError:
+        return dict()
+
+
+@register.assignment_tag
 def noclook_has_rogue_ports(handle_id):
     """
     :param handle_id: unique id
