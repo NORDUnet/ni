@@ -73,7 +73,7 @@ class Organization(NIObjectType):
     phone = NIStringField()
     website = NIStringField()
     customer_id = NIStringField()
-    additional_info = NIStringField()
+    incident_management_info = NIStringField()
     type = NIChoiceField()
 
     class NIMetaType:

@@ -81,6 +81,74 @@ class NIOrganizationMutationFactory(NIMutationFactory):
     class Meta:
         abstract = False
 
+class CreateOrganization(CreateNIMutation):
+    @classmethod
+    def do_request(cls, request, **kwargs):
+        form_class     = kwargs.get('form_class')
+        nimetaclass    = getattr(cls, 'NIMetaClass')
+        graphql_type   = getattr(nimetaclass, 'graphql_type')
+        nimetatype     = getattr(graphql_type, 'NIMetaType')
+        node_type      = getattr(nimetatype, 'ni_type').lower()
+        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        has_error      = False
+
+        # Get needed data from node
+        if request.POST:
+            form = form_class(request.POST.copy())
+            if form.is_valid():
+                try:
+                    nh = helpers.form_to_unique_node_handle(request, form,
+                            node_type, node_meta_type)
+                except UniqueNodeError:
+                    has_error = True
+                    return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]
+
+                # Generic node update
+                # use property keys to avoid inserting contacts as a string property of the node
+                property_keys = [
+                    'name', 'description', 'phone', 'website', 'customer_id', 'type', 'incident_management_info',
+                ]
+                helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
+                nh_reload, organization = helpers.get_nh_node(nh.handle_id)
+
+                # specific role setting
+                for field, roledict in DEFAULT_ROLES.items():
+                    if field in form.cleaned_data:
+                        contact_id = form.cleaned_data[field]
+                        role = RoleModel.objects.get(slug=field)
+                        set_contact = helpers.get_contact_for_orgrole(organization.handle_id, role)
+
+                        if contact_id:
+                            if set_contact:
+                                if set_contact.handle_id != contact_id:
+                                    helpers.unlink_contact_with_role_from_org(request.user, organization, role)
+                                    helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
+                            else:
+                                helpers.link_contact_role_for_organization(request.user, organization, contact_id, role)
+                        elif set_contact:
+                            helpers.unlink_contact_and_role_from_org(request.user, organization, set_contact.handle_id, role)
+
+                # Set child organizations
+                if form.cleaned_data['relationship_parent_of']:
+                    organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
+                    helpers.set_parent_of(request.user, organization, organization_nh.handle_id)
+                if form.cleaned_data['relationship_uses_a']:
+                    procedure_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_uses_a'])
+                    helpers.set_uses_a(request.user, organization, procedure_nh.handle_id)
+
+                return has_error, { graphql_type.__name__.lower(): nh }
+        else:
+            # get the errors and return them
+            has_error = True
+            errordict = cls.format_error_array(form.errors)
+            return has_error, errordict
+
+    class NIMetaClass:
+        django_form = EditOrganizationForm
+        request_path   = '/'
+        graphql_type   = Organization
+        is_create = True
+
 
 class UpdateOrganization(UpdateNIMutation):
     @classmethod
@@ -112,7 +180,7 @@ class UpdateOrganization(UpdateNIMutation):
                 for field, roledict in DEFAULT_ROLES.items():
                     if field in form.cleaned_data:
                         contact_id = form.cleaned_data[field]
-                        role = Role.objects.get(slug=field)
+                        role = RoleModel.objects.get(slug=field)
                         set_contact = helpers.get_contact_for_orgrole(organization.handle_id, role)
 
                         if contact_id:
@@ -282,24 +350,6 @@ class DeleteComment(relay.ClientIDMutation):
 
         return DeleteComment(success=success, id=id)
 
-"""class EditComment(DjangoFormMutation):
-    class Input:
-        handle_id = graphene.Int(required=True)
-
-    @classmethod
-    def get_form_kwargs(cls, root, info, **input):
-        kwargs = {"data": input}
-
-        pk = input.pop("handle_id", None)
-        if pk:
-            instance = cls._meta.model._default_manager.get(pk=pk)
-            kwargs["instance"] = instance
-
-        return kwargs
-
-    class Meta:
-        form_class = CommentForm"""
-
 
 class NOCRootMutation(graphene.ObjectType):
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()
@@ -314,7 +364,7 @@ class NOCRootMutation(graphene.ObjectType):
     update_contact      = NIContactMutationFactory.get_update_mutation().Field()
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
 
-    create_organization = NIOrganizationMutationFactory.get_create_mutation().Field()
+    create_organization = CreateOrganization.Field()
     update_organization = UpdateOrganization.Field()
     delete_organization = NIOrganizationMutationFactory.get_delete_mutation().Field()
 

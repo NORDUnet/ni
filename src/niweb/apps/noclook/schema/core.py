@@ -838,7 +838,7 @@ class User(DjangoObjectType):
     '''
     class Meta:
         model = DjangoUser
-        only_fields = ['id', 'username', 'first_name', 'last_name']
+        only_fields = ['id', 'username', 'first_name', 'last_name', 'email']
 
 class UserInputType(graphene.InputObjectType):
     username = graphene.String(required=True)
@@ -1770,7 +1770,8 @@ class CreateNIMutation(AbstractNIMutation):
 
             # process relations if implemented
             if not has_error:
-                cls.process_relations(request, form, nh.get_node())
+                nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
+                cls.process_relations(request, form, nodehandler)
 
             return has_error, { graphql_type.__name__.lower(): nh }
         else:

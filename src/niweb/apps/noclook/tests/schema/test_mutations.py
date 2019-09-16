@@ -110,7 +110,7 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected
 
-        ### Composite entities ###
+        ### Composite entities (Contact) ###
         # get the first organization
         query= """
         {
@@ -345,6 +345,93 @@ class QueryTest(Neo4jGraphQLTest):
                 ])
             )
         ])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        ### Composite entities (Organization) ###
+        # get the first organization
+        query= """
+        {
+          organizations(orderBy: handle_id_ASC, first: 1) {
+            edges {
+              node {
+                handle_id
+              }
+            }
+          }
+        }
+        """
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        organization_id = result.data['organizations']['edges'][0]['node']['handle_id']
+        organization_id = int(organization_id)
+
+        # get the first two contacts
+        query= """
+        {
+          contacts(orderBy: handle_id_ASC, first: 2){
+            edges{
+              node{
+                handle_id
+              }
+            }
+          }
+        }
+        """
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        contact_1_id = result.data['contacts']['edges'][0]['node']['handle_id']
+        contact_1_id = int(contact_1_id)
+        contact_2_id = result.data['contacts']['edges'][1]['node']['handle_id']
+        contact_2_id = int(contact_2_id)
+
+        incident_management_info = "Nullam eleifend ultrices risus, ac dignissim sapien mollis id. Aenean ante nibh, pharetra ac accumsan eget, suscipit eget purus. Ut sit amet diam in arcu dapibus ultricies. Phasellus a consequat eros. Proin cursus commodo consequat. Fusce nisl metus, egestas eu blandit sit amet, condimentum vitae felis."
+
+        query = """
+        mutation{{
+          create_organization(
+            input: {{
+              name: "Another org",
+              description: "This is the description of the new organization",
+              phone: "34600000000",
+              website: "www.sunet.se"
+              incident_management_info: "{incident_management_info}",
+              relationship_parent_of: {organization_id},
+              abuse_contact: {contact_1_id},
+              primary_contact: {contact_2_id},
+              secondary_contact: {contact_1_id},
+              it_technical_contact: {contact_2_id},
+              it_security_contact: {contact_1_id},
+              it_manager_contact: {contact_2_id}
+            }}
+          ){{
+            organization{{
+              name
+              description
+              phone
+              website
+              incident_management_info
+            }}
+          }}
+        }}
+        """.format(organization_id=organization_id,
+                    contact_1_id=contact_1_id, contact_2_id=contact_2_id,
+                    incident_management_info=incident_management_info)
+
+        expected = OrderedDict([('create_organization',
+              OrderedDict([('organization',
+                            OrderedDict([('name', 'Another org'),
+                                         ('description',
+                                          'This is the description of the new '
+                                          'organization'),
+                                         ('phone', '34600000000'),
+                                         ('website', 'www.sunet.se'),
+                                         ('incident_management_info',
+                                          incident_management_info)]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
