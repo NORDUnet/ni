@@ -111,54 +111,6 @@ class QueryTest(Neo4jGraphQLTest):
         assert result.data == expected
 
         ### Composite entities ###
-        ## create ##
-        query = """
-        mutation create_test_contact {
-          create_contact(
-            input: {
-              first_name: "Jane"
-              last_name: "Smith"
-              title: ""
-              contact_type: "person"
-              phone: "	823-971-5606"
-              mobile: "617-372-0822"
-              email: "jsmith@mashable.com"
-              other_email: "jsmith1@mashable.com"
-            }
-          ){
-            contact{
-              name
-              first_name
-              last_name
-              title
-              contact_type
-              phone
-              mobile
-              email
-              other_email
-            }
-          }
-        }
-        """
-
-        expected = OrderedDict([('create_contact',
-                      OrderedDict([('contact',
-                        OrderedDict([('name', 'Jane Smith'),
-                                     ('first_name', 'Jane'),
-                                     ('last_name', 'Smith'),
-                                     ('title', None),
-                                     ('contact_type', 'person'),
-                                     ('phone', '823-971-5606'),
-                                     ('mobile', '617-372-0822'),
-                                     ('email', 'jsmith@mashable.com'),
-                                     ('other_email',
-                                      'jsmith1@mashable.com')]))]))])
-
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-        assert result.data == expected, pformat(result.data, indent=1)
-
-        ## update ##
         # get the first organization
         query= """
         {
@@ -214,6 +166,78 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         role_handle_id = result.data['roles']['edges'][0]['node']['handle_id']
 
+        ## create ##
+        query = """
+        mutation create_test_contact {{
+          create_contact(
+            input: {{
+              first_name: "Jane"
+              last_name: "Smith"
+              title: ""
+              contact_type: "person"
+              phone: "	823-971-5606"
+              mobile: "617-372-0822"
+              email: "jsmith@mashable.com"
+              other_email: "jsmith1@mashable.com"
+              relationship_works_for: {organization_id}
+              role: {role_handle_id}
+              relationship_member_of: {group_handle_id}
+            }}
+          ){{
+            contact{{
+              name
+              first_name
+              last_name
+              title
+              contact_type
+              phone
+              mobile
+              email
+              other_email
+              roles{{
+                name
+                end_node{{
+                  handle_id
+                  name
+                }}
+              }}
+              member_of_groups{{
+                name
+              }}
+            }}
+          }}
+        }}
+        """.format(organization_id=organization_id,
+                    role_handle_id=role_handle_id, group_handle_id=group_handle_id)
+
+        expected = OrderedDict([('create_contact',
+                      OrderedDict([('contact',
+                        OrderedDict([('name', 'Jane Smith'),
+                                     ('first_name', 'Jane'),
+                                     ('last_name', 'Smith'),
+                                     ('title', None),
+                                     ('contact_type', 'person'),
+                                     ('phone', '823-971-5606'),
+                                     ('mobile', '617-372-0822'),
+                                     ('email', 'jsmith@mashable.com'),
+                                     ('other_email',
+                                      'jsmith1@mashable.com'),
+                                      ('roles',
+                                       [OrderedDict([('name', 'NOC Manager'),
+                                         ('end_node',
+                                          OrderedDict([('handle_id',
+                                            str(organization_id)),
+                                           ('name',
+                                            'organization1')]))])]),
+                                      ('member_of_groups',
+                                       [OrderedDict([('name',
+                                          'group1')])])]))]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        ## update ##
         query = """
         mutation update_test_contact {{
           update_contact(

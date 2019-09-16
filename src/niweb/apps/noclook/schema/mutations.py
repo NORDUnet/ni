@@ -58,8 +58,7 @@ def process_member_of(request, form, nodehandler, relation_name):
 
 class NIContactMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        create_form    = NewContactForm
-        update_form    = EditContactForm
+        form = EditContactForm
         request_path   = '/'
         graphql_type   = Contact
         relations_processors = {

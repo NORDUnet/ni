@@ -1722,6 +1722,15 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
         return errors
 
+    @classmethod
+    def process_relations(cls, request, form, nodehandler):
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        relations_processors = getattr(nimetaclass, 'relations_processors', None)
+
+        if relations_processors:
+            for relation_name, relation_f in relations_processors.items():
+                relation_f(request, form, nodehandler, relation_name)
+
     class Meta:
         abstract = True
 
@@ -1758,6 +1767,11 @@ class CreateNIMutation(AbstractNIMutation):
                 return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]
 
             helpers.form_update_node(request.user, nh.handle_id, form)
+
+            # process relations if implemented
+            if not has_error:
+                cls.process_relations(request, form, nh.get_node())
+
             return has_error, { graphql_type.__name__.lower(): nh }
         else:
             # get the errors and return them
@@ -1804,14 +1818,6 @@ class UpdateNIMutation(AbstractNIMutation):
             errordict = cls.format_error_array(form.errors)
             return has_error, errordict
 
-    @classmethod
-    def process_relations(cls, request, form, nodehandler):
-        nimetaclass = getattr(cls, 'NIMetaClass')
-        relations_processors = getattr(nimetaclass, 'relations_processors', None)
-
-        if relations_processors:
-            for relation_name, relation_f in relations_processors.items():
-                relation_f(request, form, nodehandler, relation_name)
 
 class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
@@ -1894,6 +1900,9 @@ class NIMutationFactory():
             'include': create_include,
             'exclude': create_exclude,
         }
+
+        if relations_processors:
+            attr_dict['relations_processors'] = relations_processors
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
 
