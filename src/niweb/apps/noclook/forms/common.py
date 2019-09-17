@@ -916,6 +916,7 @@ class NewContactForm(forms.Form):
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     title = forms.CharField(required=False)
     pgp_fingerprint = forms.CharField(required=False, label='PGP fingerprint')
+    notes = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Notes")
 
     def clean(self, is_create=True):
         """

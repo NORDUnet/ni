@@ -167,6 +167,8 @@ class QueryTest(Neo4jGraphQLTest):
         role_handle_id = result.data['roles']['edges'][0]['node']['handle_id']
 
         ## create ##
+        note_txt = "Lorem ipsum dolor sit amet"
+
         query = """
         mutation create_test_contact {{
           create_contact(
@@ -182,6 +184,7 @@ class QueryTest(Neo4jGraphQLTest):
               relationship_works_for: {organization_id}
               role: {role_handle_id}
               relationship_member_of: {group_handle_id}
+              notes: "{note_txt}"
             }}
           ){{
             contact{{
@@ -194,6 +197,7 @@ class QueryTest(Neo4jGraphQLTest):
               mobile
               email
               other_email
+              notes
               roles{{
                 name
                 end{{
@@ -208,7 +212,8 @@ class QueryTest(Neo4jGraphQLTest):
           }}
         }}
         """.format(organization_id=organization_id,
-                    role_handle_id=role_handle_id, group_handle_id=group_handle_id)
+                    role_handle_id=role_handle_id, group_handle_id=group_handle_id,
+                    note_txt=note_txt)
 
         expected = OrderedDict([('create_contact',
                       OrderedDict([('contact',
@@ -222,6 +227,7 @@ class QueryTest(Neo4jGraphQLTest):
                                      ('email', 'jsmith@mashable.com'),
                                      ('other_email',
                                       'jsmith1@mashable.com'),
+                                     ('notes', note_txt),
                                       ('roles',
                                        [OrderedDict([('name', 'NOC Manager'),
                                          ('end',

@@ -114,6 +114,7 @@ class Contact(NIObjectType):
     PGP_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
     roles = NIRelationField(rel_name=RoleRelationship.RELATION_NAME, type_args=(RoleRelation, ))
+    notes = NIStringField()
 
     class NIMetaType:
         ni_type = 'Contact'
