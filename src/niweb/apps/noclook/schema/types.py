@@ -110,7 +110,7 @@ class Contact(NIObjectType):
     mobile = NIStringField()
     email = NIStringField()
     other_email = NIStringField()
-    PGP_fingerprint = NIStringField()
+    pgp_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
     roles = NIRelationField(rel_name=RoleRelationship.RELATION_NAME, type_args=(RoleRelation, ))
     notes = NIStringField()
