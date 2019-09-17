@@ -843,6 +843,11 @@ class User(DjangoObjectType):
 class UserInputType(graphene.InputObjectType):
     username = graphene.String(required=True)
 
+class NINodeHandlerType(DjangoObjectType):
+    class Meta:
+        model = NodeHandle
+        interfaces = (relay.Node, )
+
 class NIRelationType(graphene.ObjectType):
     '''
     This class represents a relationship and its properties
@@ -858,8 +863,8 @@ class NIRelationType(graphene.ObjectType):
 
     relation_id = graphene.Int(required=True)
     type = graphene.String(required=True) # this may be set to an Enum
-    start = graphene.Field(graphene.Int, required=True)
-    end = graphene.Field(graphene.Int, required=True)
+    start = graphene.Field(NINodeHandlerType, required=True)
+    end = graphene.Field(NINodeHandlerType, required=True)
     nidata = graphene.List(DictEntryType)
 
     def resolve_relation_id(self, info, **kwargs):
@@ -880,10 +885,10 @@ class NIRelationType(graphene.ObjectType):
 
         return ret
 
-    def resolve_start_node(self, info, **kwargs):
+    def resolve_start(self, info, **kwargs):
         return NodeHandle.objects.get(handle_id=self.start['handle_id'])
 
-    def resolve_end_node(self, info, **kwargs):
+    def resolve_end(self, info, **kwargs):
         return NodeHandle.objects.get(handle_id=self.end['handle_id'])
 
     @classmethod
@@ -1044,8 +1049,8 @@ class NIObjectType(DjangoObjectType):
         for rel_name, rel_list in incoming_rels.items():
             for rel in rel_list:
                 relation_id = rel['relationship_id']
-                rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
-                ret.append(DictRelationType(name=rel_name, relation=rel))
+                relation_model = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
+                ret.append(DictRelationType(name=rel_name, relation=relation_model))
 
         return ret
 
@@ -1469,9 +1474,6 @@ class NIObjectType(DjangoObjectType):
         model = NodeHandle
         interfaces = (relay.Node, )
 
-## add start and end fields
-setattr(NIRelationType, 'start_node', graphene.Field(NIObjectType))
-setattr(NIRelationType, 'end_node', graphene.Field(NIObjectType))
 ########## END RELATION AND NODE TYPES
 
 
