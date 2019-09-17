@@ -28,7 +28,6 @@ class Choice(DjangoObjectType):
     This class is used for the choices available in a dropdown
     '''
     class Meta:
-        only_fields = ('name', 'value')
         model = Choice
         interfaces = (KeyValue, )
 

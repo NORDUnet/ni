@@ -10,7 +10,7 @@ from .types import *
 
 class NOCRootQuery(NOCAutoQuery):
     getAvailableDropdowns = graphene.List(graphene.String)
-    getChoicesForDropdown = graphene.List(KeyValue, name=graphene.String(required=True))
+    getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
     getRelationById = graphene.Field(NIRelationType, relation_id=graphene.Int(required=True))
     getRoleRelationById = graphene.Field(RoleRelation, relation_id=graphene.Int(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
