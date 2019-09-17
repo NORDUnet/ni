@@ -82,7 +82,7 @@ class Organization(NIObjectType):
 
 class RoleRelation(NIRelationType):
     name = graphene.String()
-    end_node = graphene.Field(Organization)
+    end = graphene.Field(Organization)
     role_data = graphene.Field(Role)
 
     def resolve_name(self, info, **kwargs):
