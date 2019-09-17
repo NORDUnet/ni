@@ -196,9 +196,9 @@ class QueryTest(Neo4jGraphQLTest):
               other_email
               roles{{
                 name
-                end_node{{
+                end{{
                   handle_id
-                  name
+                  node_name
                 }}
               }}
               member_of_groups{{
@@ -224,10 +224,10 @@ class QueryTest(Neo4jGraphQLTest):
                                       'jsmith1@mashable.com'),
                                       ('roles',
                                        [OrderedDict([('name', 'NOC Manager'),
-                                         ('end_node',
+                                         ('end',
                                           OrderedDict([('handle_id',
                                             str(organization_id)),
-                                           ('name',
+                                           ('node_name',
                                             'organization1')]))])]),
                                       ('member_of_groups',
                                        [OrderedDict([('name',
@@ -264,9 +264,9 @@ class QueryTest(Neo4jGraphQLTest):
               other_email
               roles{{
                 name
-                end_node{{
+                end{{
                   handle_id
-                  name
+                  node_name
                 }}
               }}
               member_of_groups{{
@@ -292,10 +292,10 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('other_email', None),
                                          ('roles',
                                           [OrderedDict([('name', 'NOC Manager'),
-                                            ('end_node',
+                                            ('end',
                                              OrderedDict([('handle_id',
                                                str(organization_id)),
-                                              ('name',
+                                              ('node_name',
                                                'organization1')]))])]),
                                          ('member_of_groups',
                                           [OrderedDict([('name',
