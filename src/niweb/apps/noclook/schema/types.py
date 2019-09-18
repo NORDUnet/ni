@@ -111,6 +111,9 @@ class Phone(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
     type = NIChoiceField(type_kwargs={ 'required': True })
 
+    class Meta:
+        only_fields = ('handle_id',)
+
     class NIMetaType:
         ni_type = 'Phone'
         ni_metatype = NIMETA_LOGICAL
@@ -122,6 +125,9 @@ class Email(NIObjectType):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     type = NIChoiceField(type_kwargs={ 'required': True })
+
+    class Meta:
+        only_fields = ('handle_id',)
 
     class NIMetaType:
         ni_type = 'Email'
