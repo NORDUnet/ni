@@ -1044,3 +1044,36 @@ def get_contact_for_orgrole(organization_id, role):
         contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
         return contact
+
+
+def add_phone_contact(user, node, phone_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model (contact)
+    :param phone_id: unique id
+    :return: norduniclient model, boolean
+    """
+    result = node.add_phone(phone_id)
+    relationship_id = result.get('Has_phone')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_phone')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+
+
+def add_email_contact(user, node, email_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model (contact)
+    :param email_id: unique id
+    :return: norduniclient model, boolean
+    """
+    result = node.add_phone(email_id)
+    relationship_id = result.get('Has_phone')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_phone')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
