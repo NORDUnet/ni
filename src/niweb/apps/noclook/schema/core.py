@@ -1749,10 +1749,16 @@ class CreateNIMutation(AbstractNIMutation):
         exclude        = None
 
     @classmethod
+    def get_form_to_nodehandle_func(cls):
+        return helpers.form_to_generic_node_handle
+
+    @classmethod
     def do_request(cls, request, **kwargs):
         form_class     = kwargs.get('form_class')
         nimetaclass    = getattr(cls, 'NIMetaClass')
         graphql_type   = getattr(nimetaclass, 'graphql_type')
+        property_update = getattr(nimetaclass, 'property_update', None)
+
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
@@ -1762,13 +1768,14 @@ class CreateNIMutation(AbstractNIMutation):
         form = form_class(request.POST)
         if form.is_valid():
             try:
-                nh = helpers.form_to_unique_node_handle(request, form,
+                form_to_nodehandle = cls.get_form_to_nodehandle_func()
+                nh = form_to_nodehandle(request, form,
                         node_type, node_meta_type)
             except UniqueNodeError:
                 has_error = True
                 return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]
 
-            helpers.form_update_node(request.user, nh.handle_id, form)
+            helpers.form_update_node(request.user, nh.handle_id, form, property_update)
 
             # process relations if implemented
             if not has_error:
@@ -1782,6 +1789,18 @@ class CreateNIMutation(AbstractNIMutation):
             errordict = cls.format_error_array(form.errors)
             return has_error, errordict
 
+
+class CreateUniqueNIMutation(CreateNIMutation):
+    '''
+    This class is used by the Mutation factory but it could be used as the
+    superclass of a manualy coded class in case it's needed.
+    '''
+
+    @classmethod
+    def get_form_to_nodehandle_func(cls):
+        return helpers.form_to_generic_node_handle
+
+
 class UpdateNIMutation(AbstractNIMutation):
     class NIMetaClass:
         request_path   = None
@@ -1791,21 +1810,23 @@ class UpdateNIMutation(AbstractNIMutation):
 
     @classmethod
     def do_request(cls, request, **kwargs):
-        form_class     = kwargs.get('form_class')
-        nimetaclass    = getattr(cls, 'NIMetaClass')
-        graphql_type   = getattr(nimetaclass, 'graphql_type')
-        nimetatype     = getattr(graphql_type, 'NIMetaType')
-        node_type      = getattr(nimetatype, 'ni_type').lower()
-        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
-        handle_id      = request.POST.get('handle_id')
-        has_error      = False
+        form_class      = kwargs.get('form_class')
+        nimetaclass     = getattr(cls, 'NIMetaClass')
+        graphql_type    = getattr(nimetaclass, 'graphql_type')
+        property_update = getattr(nimetaclass, 'property_update', None)
+
+        nimetatype      = getattr(graphql_type, 'NIMetaType')
+        node_type       = getattr(nimetatype, 'ni_type').lower()
+        node_meta_type  = getattr(nimetatype, 'ni_metatype').capitalize()
+        handle_id       = request.POST.get('handle_id')
+        has_error       = False
 
         nh, nodehandler = helpers.get_nh_node(handle_id)
         if request.POST:
             form = form_class(request.POST)
             if form.is_valid():
                 # Generic node update
-                helpers.form_update_node(request.user, nodehandler.handle_id, form)
+                helpers.form_update_node(request.user, nodehandler.handle_id, form, property_update)
 
                 # process relations if implemented
                 cls.process_relations(request, form, nodehandler)
@@ -1865,16 +1886,17 @@ class NIMutationFactory():
         cls._delete_mutation = None
 
         # check defined form attributes
-        ni_metaclass   = getattr(cls, metaclass_name)
-        form           = getattr(ni_metaclass, 'form', None)
-        create_form    = getattr(ni_metaclass, 'create_form', None)
-        update_form    = getattr(ni_metaclass, 'update_form', None)
-        request_path   = getattr(ni_metaclass, 'request_path', None)
-        graphql_type   = getattr(ni_metaclass, 'graphql_type', NodeHandler)
-        create_include = getattr(ni_metaclass, 'create_include', None)
-        create_exclude = getattr(ni_metaclass, 'create_exclude', None)
-        update_include = getattr(ni_metaclass, 'update_include', None)
-        update_exclude = getattr(ni_metaclass, 'update_exclude', None)
+        ni_metaclass    = getattr(cls, metaclass_name)
+        form            = getattr(ni_metaclass, 'form', None)
+        create_form     = getattr(ni_metaclass, 'create_form', None)
+        update_form     = getattr(ni_metaclass, 'update_form', None)
+        request_path    = getattr(ni_metaclass, 'request_path', None)
+        graphql_type    = getattr(ni_metaclass, 'graphql_type', NodeHandler)
+        create_include  = getattr(ni_metaclass, 'create_include', None)
+        create_exclude  = getattr(ni_metaclass, 'create_exclude', None)
+        update_include  = getattr(ni_metaclass, 'update_include', None)
+        update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
+        property_update = getattr(ni_metaclass, 'property_update', None)
 
         # check for relationship processors
         relations_processors = getattr(ni_metaclass, 'relations_processors', None)
@@ -1902,6 +1924,7 @@ class NIMutationFactory():
             'graphql_type': graphql_type,
             'include': create_include,
             'exclude': create_exclude,
+            'property_update': property_update,
         }
 
         if relations_processors:
@@ -1940,6 +1963,7 @@ class NIMutationFactory():
         del attr_dict['django_form']
         del attr_dict['include']
         del attr_dict['exclude']
+        del attr_dict['property_update']
 
         if relations_processors:
             del attr_dict['relations_processors']

@@ -24,6 +24,14 @@ def country_codes():
     return zip(codes, codes)
 
 
+def email_choices():
+    return Dropdown.get('email_type').as_choices()
+
+
+def phone_choices():
+    return Dropdown.get('phone_type').as_choices()
+
+
 def countries():
     choices = Dropdown.get('countries').as_choices()
     codes, countries = zip(*choices)
@@ -1003,6 +1011,7 @@ class NewRoleForm(forms.ModelForm):
         model = Role
         fields = ['name', 'description']
 
+
 class EditRoleForm(forms.ModelForm):
     def save(self, commit=True):
         initial_name = self.initial['name']
@@ -1018,3 +1027,25 @@ class EditRoleForm(forms.ModelForm):
     class Meta:
         model = Role
         fields = ['name', 'description']
+
+
+class PhoneForm(forms.Form):
+    contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Contact")
+    name = forms.CharField()
+    type = forms.ChoiceField(widget=forms.widgets.Select)
+
+    def __init__(self, *args, **kwargs):
+        super(PhoneForm, self).__init__(*args, **kwargs)
+        self.fields['contact'].choices = get_node_type_tuples('Contact')
+        self.fields['type'].choices = phone_choices()
+
+
+class EmailForm(forms.Form):
+    contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Contact")
+    name = forms.CharField()
+    type = forms.ChoiceField(widget=forms.widgets.Select)
+
+    def __init__(self, *args, **kwargs):
+        super(EmailForm, self).__init__(*args, **kwargs)
+        self.fields['contact'].choices = get_node_type_tuples('Contact')
+        self.fields['type'].choices = email_choices()

@@ -23,6 +23,7 @@ class Dropdown(DjangoObjectType):
         only_fields = ('id', 'name')
         model = Dropdown
 
+
 class Choice(DjangoObjectType):
     '''
     This class is used for the choices available in a dropdown
@@ -31,9 +32,11 @@ class Choice(DjangoObjectType):
         model = Choice
         interfaces = (KeyValue, )
 
+
 class Neo4jChoice(graphene.ObjectType):
     class Meta:
         interfaces = (KeyValue, )
+
 
 class Role(DjangoObjectType):
     '''
@@ -41,6 +44,7 @@ class Role(DjangoObjectType):
     '''
     class Meta:
         model = RoleModel
+
 
 class Group(NIObjectType):
     '''
@@ -52,6 +56,7 @@ class Group(NIObjectType):
         ni_type = 'Group'
         ni_metatype = NIMETA_LOGICAL
 
+
 class Procedure(NIObjectType):
     '''
     The group type is used to group contacts
@@ -62,6 +67,7 @@ class Procedure(NIObjectType):
     class NIMetaType:
         ni_type = 'Procedure'
         ni_metatype = NIMETA_LOGICAL
+
 
 class Organization(NIObjectType):
     '''
@@ -78,6 +84,7 @@ class Organization(NIObjectType):
     class NIMetaType:
         ni_type = 'Organization'
         ni_metatype = NIMETA_RELATION
+
 
 class RoleRelation(NIRelationType):
     name = graphene.String()
@@ -96,6 +103,31 @@ class RoleRelation(NIRelationType):
         nimodel = RoleRelationship
         filter_exclude = ('type')
 
+
+class Phone(NIObjectType):
+    '''
+    Phone entity to be used inside contact
+    '''
+    name = NIStringField(type_kwargs={ 'required': True })
+    type = NIChoiceField(type_kwargs={ 'required': True })
+
+    class NIMetaType:
+        ni_type = 'Phone'
+        ni_metatype = NIMETA_LOGICAL
+
+
+class Email(NIObjectType):
+    '''
+    Email entity to be used inside contact
+    '''
+    name = NIStringField(type_kwargs={ 'required': True })
+    type = NIChoiceField(type_kwargs={ 'required': True })
+
+    class NIMetaType:
+        ni_type = 'Email'
+        ni_metatype = NIMETA_LOGICAL
+
+
 class Contact(NIObjectType):
     '''
     A contact in the SRI system
@@ -110,6 +142,8 @@ class Contact(NIObjectType):
     mobile = NIStringField()
     email = NIStringField()
     other_email = NIStringField()
+    phones = NIListField(type_args=(Phone,), rel_name='Has_phone', rel_method='get_outgoing_relations')
+    emails = NIListField(type_args=(Email,), rel_name='Has_email', rel_method='get_outgoing_relations')
     pgp_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
     roles = NIRelationField(rel_name=RoleRelationship.RELATION_NAME, type_args=(RoleRelation, ))
@@ -118,6 +152,7 @@ class Contact(NIObjectType):
     class NIMetaType:
         ni_type = 'Contact'
         ni_metatype = NIMETA_RELATION
+
 
 class Host(NIObjectType):
     '''

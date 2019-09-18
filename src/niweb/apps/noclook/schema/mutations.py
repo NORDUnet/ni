@@ -19,6 +19,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from .core import NIMutationFactory, CreateNIMutation, CommentType
 from .types import *
 
+
 class NIGroupMutationFactory(NIMutationFactory):
     class NIMetaClass:
         create_form    = NewGroupForm
@@ -50,10 +51,52 @@ def process_works_for(request, form, nodehandler, relation_name):
         role = RoleModel.objects.get(handle_id=role_handle_id)
         helpers.set_works_for(request.user, nodehandler, organization_nh.handle_id, role.name)
 
+
 def process_member_of(request, form, nodehandler, relation_name):
     if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
         group_nh = NodeHandle.objects.get(pk=form.cleaned_data[relation_name])
         helpers.set_member_of(request.user, nodehandler, group_nh.handle_id)
+
+
+def process_has_phone(request, form, nodehandler, relation_name):
+    if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+        contact_id = form.cleaned_data[relation_name]
+        helpers.add_phone_contact(request.user, nodehandler, contact_id)
+
+
+def process_has_email(request, form, nodehandler, relation_name):
+    if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+        contact_id = form.cleaned_data[relation_name]
+        helpers.add_email_contact(request.user, nodehandler, contact_id)
+
+
+class NIPhoneMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form            = PhoneForm
+        request_path    = '/'
+        graphql_type    = Phone
+        relations_processors = {
+            'contact': process_has_phone,
+        }
+        property_update = ['name', 'type']
+
+    class Meta:
+        abstract = False
+
+
+class NIEmailMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form            = EmailForm
+        request_path    = '/'
+        graphql_type    = Email
+
+        relations_processors = {
+            'contact': process_has_email,
+        }
+        property_update = ['name', 'type']
+
+    class Meta:
+        abstract = False
 
 
 class NIContactMutationFactory(NIMutationFactory):
@@ -384,6 +427,14 @@ class NOCRootMutation(graphene.ObjectType):
     create_procedure    = NIProcedureMutationFactory.get_create_mutation().Field()
     update_procedure    = NIProcedureMutationFactory.get_update_mutation().Field()
     delete_procedure    = NIProcedureMutationFactory.get_delete_mutation().Field()
+
+    create_phone        = NIPhoneMutationFactory.get_create_mutation().Field()
+    update_phone        = NIPhoneMutationFactory.get_update_mutation().Field()
+    delete_phone        = NIPhoneMutationFactory.get_delete_mutation().Field()
+
+    create_email        = NIEmailMutationFactory.get_create_mutation().Field()
+    update_email        = NIEmailMutationFactory.get_update_mutation().Field()
+    delete_email        = NIEmailMutationFactory.get_delete_mutation().Field()
 
     create_contact      = NIContactMutationFactory.get_create_mutation().Field()
     update_contact      = NIContactMutationFactory.get_update_mutation().Field()

@@ -443,6 +443,39 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
+        ### Phone/Email tests ###
+        phone_num = "+34600666006"
+        phone_type = "work"
+        query = """
+        mutation{{
+        	create_phone(input:{{
+            type: "{phone_type}",
+            name: "{phone_num}",
+            contact: {contact_id}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            phone{{
+              name
+              type
+            }}
+          }}
+        }}
+        """.format(phone_type=phone_type, phone_num=phone_num,
+                    contact_id=contact_1_id)
+
+        expected = OrderedDict([('create_phone',
+                      OrderedDict([('errors', None),
+                                   ('phone',
+                                    OrderedDict([('name', phone_num),
+                                                 ('type', phone_type)]))]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
         ### Comments tests ###
 
         ## create ##
