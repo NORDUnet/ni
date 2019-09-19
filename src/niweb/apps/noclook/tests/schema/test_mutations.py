@@ -177,10 +177,6 @@ class QueryTest(Neo4jGraphQLTest):
               last_name: "Smith"
               title: ""
               contact_type: "person"
-              phone: "	823-971-5606"
-              mobile: "617-372-0822"
-              email: "jsmith@mashable.com"
-              other_email: "jsmith1@mashable.com"
               relationship_works_for: {organization_id}
               role: {role_handle_id}
               relationship_member_of: {group_handle_id}
@@ -193,10 +189,6 @@ class QueryTest(Neo4jGraphQLTest):
               last_name
               title
               contact_type
-              phone
-              mobile
-              email
-              other_email
               notes
               roles{{
                 name
@@ -222,11 +214,6 @@ class QueryTest(Neo4jGraphQLTest):
                                      ('last_name', 'Smith'),
                                      ('title', None),
                                      ('contact_type', 'person'),
-                                     ('phone', '823-971-5606'),
-                                     ('mobile', '617-372-0822'),
-                                     ('email', 'jsmith@mashable.com'),
-                                     ('other_email',
-                                      'jsmith1@mashable.com'),
                                      ('notes', note_txt),
                                       ('roles',
                                        [OrderedDict([('name', 'NOC Manager'),
@@ -264,10 +251,6 @@ class QueryTest(Neo4jGraphQLTest):
               last_name
               title
               contact_type
-              phone
-              mobile
-              email
-              other_email
               roles{{
                 name
                 end{{
@@ -292,10 +275,6 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('last_name', 'Doe'),
                                          ('title', None),
                                          ('contact_type', 'person'),
-                                         ('phone', None),
-                                         ('mobile', None),
-                                         ('email', None),
-                                         ('other_email', None),
                                          ('roles',
                                           [OrderedDict([('name', 'NOC Manager'),
                                             ('end',
@@ -444,37 +423,278 @@ class QueryTest(Neo4jGraphQLTest):
         assert result.data == expected, pformat(result.data, indent=1)
 
         ### Phone/Email tests ###
-        phone_num = "+34600666006"
+
+        ## create ##
+        phone_num = "823-971-5606"
         phone_type = "work"
         query = """
-        mutation{{
+          mutation{{
         	create_phone(input:{{
-            type: "{phone_type}",
-            name: "{phone_num}",
-            contact: {contact_id}
-          }}){{
-            errors{{
-              field
-              messages
-            }}
-            phone{{
-              name
-              type
+              type: "{phone_type}",
+              name: "{phone_num}",
+              contact: {contact_id}
+            }}){{
+              errors{{
+                field
+                messages
+              }}
+              phone{{
+                handle_id
+                name
+                type
+              }}
             }}
           }}
-        }}
         """.format(phone_type=phone_type, phone_num=phone_num,
                     contact_id=contact_1_id)
 
         expected = OrderedDict([('create_phone',
                       OrderedDict([('errors', None),
                                    ('phone',
-                                    OrderedDict([('name', phone_num),
+                                    OrderedDict([('handle_id', None),
+                                                 ('name', phone_num),
                                                  ('type', phone_type)]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        assert result.data == expected, pformat(result.data, indent=1)
+
+        phone_id_str = result.data['create_phone']['phone']['handle_id']
+        expected['create_phone']['phone']['handle_id'] = phone_id_str
+
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## read ##
+        query = """
+        {{
+          getContactById(handle_id: {contact_id}){{
+            handle_id
+            phones{{
+              handle_id
+              name
+              type
+            }}
+          }}
+        }}
+        """.format(contact_id=contact_1_id)
+
+        expected = OrderedDict([('getContactById',
+                      OrderedDict([('handle_id', '9'),
+                                   ('phones',
+                                    [OrderedDict([('handle_id', phone_id_str),
+                                                  ('name', phone_num),
+                                                  ('type', phone_type)])])]))])
+
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## update ##
+        new_phone_num = "617-372-0822"
+        query = """
+          mutation{{
+        	update_phone(input:{{
+              handle_id: {phone_id}
+              type: "{phone_type}",
+              name: "{phone_num}",
+              contact: {contact_id}
+            }}){{
+              errors{{
+                field
+                messages
+              }}
+              phone{{
+                handle_id
+                name
+                type
+              }}
+            }}
+          }}
+        """.format(phone_id=phone_id_str, phone_type=phone_type,
+                    phone_num=new_phone_num, contact_id=contact_1_id)
+
+        expected = OrderedDict([('update_phone',
+                      OrderedDict([('errors', None),
+                                   ('phone',
+                                    OrderedDict([('handle_id', phone_id_str),
+                                                 ('name', new_phone_num),
+                                                 ('type', phone_type)]))]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## delete ##
+        query = """
+        mutation{{
+          delete_phone(input: {{
+            handle_id: {phone_id}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            success
+          }}
+        }}
+        """.format(phone_id=phone_id_str)
+
+        expected = OrderedDict([('delete_phone',
+                      OrderedDict([('errors', None),
+                                   ('success', True)
+                                   ]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## create ##
+        email_str = "ssvensson@sunet.se"
+        email_type = "work"
+        query = """
+          mutation{{
+        	create_email(input:{{
+              type: "{email_type}",
+              name: "{email_str}",
+              contact: {contact_id}
+            }}){{
+              errors{{
+                field
+                messages
+              }}
+              email{{
+                handle_id
+                name
+                type
+              }}
+            }}
+          }}
+        """.format(email_type=email_type, email_str=email_str,
+                    contact_id=contact_1_id)
+
+        expected = OrderedDict([('create_email',
+                      OrderedDict([('errors', None),
+                                   ('email',
+                                    OrderedDict([('handle_id', None),
+                                                 ('name', email_str),
+                                                 ('type', email_type)]))]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        email_id_str = result.data['create_email']['email']['handle_id']
+        expected['create_email']['email']['handle_id'] = email_id_str
+
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## read ##
+        query = """
+        {{
+          getContactById(handle_id: {contact_id}){{
+            handle_id
+            emails{{
+              handle_id
+              name
+              type
+            }}
+          }}
+        }}
+        """.format(contact_id=contact_1_id)
+
+        expected = OrderedDict([('getContactById',
+                      OrderedDict([('handle_id', '9'),
+                                   ('emails',
+                                    [OrderedDict([('handle_id', email_id_str),
+                                                  ('name', email_str),
+                                                  ('type', email_type)])])]))])
+
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## update ##
+        new_email = "617-372-0822"
+        query = """
+          mutation{{
+        	update_email(input:{{
+              handle_id: {email_id}
+              type: "{email_type}",
+              name: "{email_str}",
+              contact: {contact_id}
+            }}){{
+              errors{{
+                field
+                messages
+              }}
+              email{{
+                handle_id
+                name
+                type
+              }}
+            }}
+          }}
+        """.format(email_id=email_id_str, email_type=email_type,
+                    email_str=new_email, contact_id=contact_1_id)
+
+        expected = OrderedDict([('update_email',
+                      OrderedDict([('errors', None),
+                                   ('email',
+                                    OrderedDict([('handle_id', email_id_str),
+                                                 ('name', new_email),
+                                                 ('type', email_type)]))]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## delete ##
+        query = """
+        mutation{{
+          delete_email(input: {{
+            handle_id: {email_id}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            success
+          }}
+        }}
+        """.format(email_id=email_id_str)
+
+        expected = OrderedDict([('delete_email',
+                      OrderedDict([('errors', None),
+                                   ('success', True)
+                                   ]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
 
         ### Comments tests ###
 
