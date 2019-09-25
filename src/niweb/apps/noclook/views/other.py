@@ -405,7 +405,7 @@ def gmaps_optical_nodes(request):
         else:
             edges[item['cable']['name']] = edge
     response = HttpResponse(content_type='application/json')
-    json.dump({'nodes': nodes.values(), 'edges': edges.values()}, response)
+    json.dump({'nodes': list(nodes.values()), 'edges': list(edges.values())}, response)
     return response
 
 
