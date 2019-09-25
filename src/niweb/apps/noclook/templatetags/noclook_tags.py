@@ -371,7 +371,7 @@ def _equipment(item):
     return {
         'units': units,
         'position': data.get('rack_position'),
-        'position_end': units + data.get('rack_position', 1) - 1,
+        'position_end': units + int(data.get('rack_position', 1)) - 1,
         'height': "{}px".format(units * RACK_SIZE_PX),
         'sub_equipment': [],
         'data': data,
