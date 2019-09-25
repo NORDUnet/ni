@@ -34,14 +34,18 @@
                 );
             });
             json.edges.forEach(function(edge) {
-                addLine(
+                if (edge.endpoints.length == 2) {
+                  addLine(
                         edge.end_points[0].lat,
                         edge.end_points[0].lng,
                         edge.end_points[1].lat,
                         edge.end_points[1].lng,
                         edge.name,
                         edge.url
-                );
+                  );
+                }else{
+                  console.log('Edge', edge.name, 'does not have two endpoints', edge)
+                }
             });
 
             function addMarker(lat,lng,label,url){
