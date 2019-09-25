@@ -367,7 +367,7 @@ RACK_SIZE_PX=20
 
 def _equipment(item):
     data = item.get('node').data
-    units = data.get('rack_units', 1)
+    units = int(data.get('rack_units', 1))
     return {
         'units': units,
         'position': data.get('rack_position'),
