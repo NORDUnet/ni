@@ -358,8 +358,8 @@ def _equipment_spacer(units):
 
 
 def _rack_sort(item):
-    pos = item.get('node').data.get('rack_position', -1)
-    size = item.get('node').data.get('rack_units', 0) * -1
+    pos = int(item.get('node').data.get('rack_position', -1))
+    size = int(item.get('node').data.get('rack_units', 0)) * -1
 
     return (pos, size)
 
