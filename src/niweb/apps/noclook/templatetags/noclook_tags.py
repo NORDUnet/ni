@@ -390,8 +390,8 @@ def noclook_rack(rack, equipment):
     for item in equipment:
         view_data = _equipment(item)
         ridx = view_data.get('position')
-        if ridx and ridx > 0:
-            spacing = ridx - idx
+        if ridx and int(ridx) > 0:
+            spacing = int(ridx) - idx
             if spacing < 0:
                 # Equipment overlaps with previous
                 last_eq['sub_equipment'].append(view_data)
