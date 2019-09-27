@@ -16,3 +16,4 @@ django-attachments<2.0
 configparser
 graphene-django>=2.0
 django-cors-headers
+vakt
