@@ -15,23 +15,12 @@ def add_defaults_from_csv(model, csv_file):
             obj, created = model.objects.get_or_create(name=line['name'])
 
 
-def remove_all_models(model):
-    model.objects.all().delete()
-
-
 def forwards_func(apps, schema_editor):
     AuthzAction = apps.get_model('noclook', 'AuthzAction')
     Context = apps.get_model('noclook', 'Context')
 
     add_defaults_from_csv(AuthzAction, 'default_authzactions.csv')
     add_defaults_from_csv(Context, 'default_contexts.csv')
-
-def reverse_func(apps, schema_editor):
-    AuthzAction = apps.get_model('noclook', 'AuthzAction')
-    Context = apps.get_model('noclook', 'Context')
-
-    #remove_all_models(AuthzAction)
-    #remove_all_models(Context)
 
 
 class Migration(migrations.Migration):
