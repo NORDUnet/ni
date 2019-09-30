@@ -51,6 +51,7 @@ class Group(NIObjectType):
     The group type is used to group contacts
     '''
     name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
 
     class NIMetaType:
         ni_type = 'Group'
@@ -69,17 +70,35 @@ class Procedure(NIObjectType):
         ni_metatype = NIMETA_LOGICAL
 
 
+class Address(NIObjectType):
+    '''
+    Phone entity to be used inside contact
+    '''
+    name = NIStringField(type_kwargs={ 'required': True })
+    website = NIStringField()
+    phone = NIStringField()
+    street = NIStringField()
+    postal_code = NIStringField()
+    postal_area = NIStringField()
+
+    class Meta:
+        only_fields = ('handle_id',)
+
+    class NIMetaType:
+        ni_type = 'Address'
+        ni_metatype = NIMETA_LOGICAL
+
+
 class Organization(NIObjectType):
     '''
     The group type is used to group contacts
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField(type_kwargs={ 'required': True })
-    phone = NIStringField()
-    website = NIStringField()
     customer_id = NIStringField()
     incident_management_info = NIStringField()
     type = NIChoiceField()
+    addresses = NIListField(type_args=(Address,), rel_name='Has_address', rel_method='get_outgoing_relations')
 
     class NIMetaType:
         ni_type = 'Organization'

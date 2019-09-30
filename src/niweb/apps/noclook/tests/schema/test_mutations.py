@@ -382,8 +382,6 @@ class QueryTest(Neo4jGraphQLTest):
             input: {{
               name: "Another org",
               description: "This is the description of the new organization",
-              phone: "34600000000",
-              website: "www.sunet.se"
               incident_management_info: "{incident_management_info}",
               relationship_parent_of: {organization_id},
               abuse_contact: {contact_1_id},
@@ -397,8 +395,6 @@ class QueryTest(Neo4jGraphQLTest):
             organization{{
               name
               description
-              phone
-              website
               incident_management_info
             }}
           }}
@@ -413,8 +409,6 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('description',
                                           'This is the description of the new '
                                           'organization'),
-                                         ('phone', '34600000000'),
-                                         ('website', 'www.sunet.se'),
                                          ('incident_management_info',
                                           incident_management_info)]))]))])
 
@@ -560,6 +554,7 @@ class QueryTest(Neo4jGraphQLTest):
                                                 pformat(expected, indent=1)
                                             )
 
+        ## Email ##
         ## create ##
         email_str = "ssvensson@sunet.se"
         email_type = "work"
@@ -685,6 +680,189 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(email_id=email_id_str)
 
         expected = OrderedDict([('delete_email',
+                      OrderedDict([('errors', None),
+                                   ('success', True)
+                                   ]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## Address ##
+        ## create ##
+        address_name = "New address"
+        address_website = "emergya.com"
+        address_phone = "617-372-0822"
+        address_street = "Fake st 123"
+        address_postal_code = "12345"
+        address_postal_area = "Sevilla"
+
+        query = """
+          mutation{{
+        	create_address(input:{{
+              organization: {organization_id},
+              name: "{address_name}",
+              website: "{address_website}",
+              phone: "{address_phone}",
+              street: "{address_street}",
+              postal_code: "{address_postal_code}",
+              postal_area: "{address_postal_area}"
+            }}){{
+              errors{{
+                field
+                messages
+              }}
+              address{{
+                handle_id
+                name
+                website
+                phone
+                street
+                postal_code
+                postal_area
+              }}
+            }}
+          }}
+        """.format(organization_id=organization_id, address_name=address_name,
+                    address_website=address_website, address_phone=address_phone,
+                    address_street=address_street,
+                    address_postal_code=address_postal_code,
+                    address_postal_area=address_postal_area)
+
+        expected = OrderedDict([('create_address',
+                      OrderedDict([('errors', None),
+                                   ('address',
+                                    OrderedDict([('handle_id', None),
+                                                 ('name', address_name),
+                                                 ('website', address_website),
+                                                 ('phone', address_phone),
+                                                 ('street', address_street),
+                                                 ('postal_code', address_postal_code),
+                                                 ('postal_area', address_postal_area),
+                                                 ]))]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        address_id_str = result.data['create_address']['address']['handle_id']
+        expected['create_address']['address']['handle_id'] = address_id_str
+
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## read ##
+        query = """
+        {{
+          getOrganizationById(handle_id: {organization_id}){{
+            handle_id
+            addresses{{
+              handle_id
+              name
+              website
+              phone
+              street
+              postal_code
+              postal_area
+            }}
+          }}
+        }}
+        """.format(organization_id=organization_id)
+
+        expected = OrderedDict([('getOrganizationById',
+                      OrderedDict([('handle_id', str(organization_id)),
+                                   ('addresses',
+                                    [OrderedDict([('handle_id', address_id_str),
+                                                  ('name', address_name),
+                                                  ('website', address_website),
+                                                  ('phone', address_phone),
+                                                  ('street', address_street),
+                                                  ('postal_code', address_postal_code),
+                                                  ('postal_area', address_postal_area)
+                                                  ])])]))])
+
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## update ##
+        new_website = "www.emergyadigital.com"
+        query = """
+          mutation{{
+        	update_address(input:{{
+              handle_id: {address_id},
+              organization: {organization_id},
+              name: "{address_name}",
+              website: "{address_website}",
+              phone: "{address_phone}",
+              street: "{address_street}",
+              postal_code: "{address_postal_code}",
+              postal_area: "{address_postal_area}"
+            }}){{
+              errors{{
+                field
+                messages
+              }}
+              address{{
+                handle_id
+                name
+                website
+                phone
+                street
+                postal_code
+                postal_area
+              }}
+            }}
+          }}
+        """.format(address_id=address_id_str,
+                    organization_id=organization_id, address_name=address_name,
+                    address_website=new_website, address_phone=address_phone,
+                    address_street=address_street,
+                    address_postal_code=address_postal_code,
+                    address_postal_area=address_postal_area)
+
+        expected = OrderedDict([('update_address',
+                      OrderedDict([('errors', None),
+                                   ('address',
+                                    OrderedDict([('handle_id', address_id_str),
+                                                 ('name', address_name),
+                                                 ('website', new_website),
+                                                 ('phone', address_phone),
+                                                 ('street', address_street),
+                                                 ('postal_code', address_postal_code),
+                                                 ('postal_area', address_postal_area)]))]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        ## delete ##
+        query = """
+        mutation{{
+          delete_address(input: {{
+            handle_id: {address_id}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            success
+          }}
+        }}
+        """.format(address_id=address_id_str)
+
+        expected = OrderedDict([('delete_address',
                       OrderedDict([('errors', None),
                                    ('success', True)
                                    ]))])

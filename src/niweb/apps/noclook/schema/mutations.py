@@ -70,6 +70,12 @@ def process_has_email(request, form, nodehandler, relation_name):
         helpers.add_email_contact(request.user, nodehandler, contact_id)
 
 
+def process_has_address(request, form, nodehandler, relation_name):
+    if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+        organization_id = form.cleaned_data[relation_name]
+        helpers.add_address_organization(request.user, nodehandler, organization_id)
+
+
 class NIPhoneMutationFactory(NIMutationFactory):
     class NIMetaClass:
         form            = PhoneForm
@@ -94,6 +100,21 @@ class NIEmailMutationFactory(NIMutationFactory):
             'contact': process_has_email,
         }
         property_update = ['name', 'type']
+
+    class Meta:
+        abstract = False
+
+
+class NIAddressMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form            = AddressForm
+        request_path    = '/'
+        graphql_type    = Address
+
+        relations_processors = {
+            'organization': process_has_address,
+        }
+        property_update = ['name', 'website', 'phone', 'street', 'postal_code', 'postal_area']
 
     class Meta:
         abstract = False
@@ -435,6 +456,10 @@ class NOCRootMutation(graphene.ObjectType):
     create_email        = NIEmailMutationFactory.get_create_mutation().Field()
     update_email        = NIEmailMutationFactory.get_update_mutation().Field()
     delete_email        = NIEmailMutationFactory.get_delete_mutation().Field()
+
+    create_address      = NIAddressMutationFactory.get_create_mutation().Field()
+    update_address      = NIAddressMutationFactory.get_update_mutation().Field()
+    delete_address      = NIAddressMutationFactory.get_delete_mutation().Field()
 
     create_contact      = NIContactMutationFactory.get_create_mutation().Field()
     update_contact      = NIContactMutationFactory.get_update_mutation().Field()
