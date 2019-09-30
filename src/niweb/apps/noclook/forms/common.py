@@ -836,8 +836,6 @@ class NewOrganizationForm(forms.Form):
     account_id = forms.CharField(required=False)
     name = forms.CharField()
     description = description_field('organization')
-    phone = forms.CharField(required=False)
-    website = forms.CharField(required=False)
     customer_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     incident_management_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
@@ -1045,3 +1043,17 @@ class EmailForm(forms.Form):
         super(EmailForm, self).__init__(*args, **kwargs)
         self.fields['contact'].choices = get_node_type_tuples('Contact')
         self.fields['type'].choices = email_choices()
+
+
+class AddressForm(forms.Form):
+    organization = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Organizations")
+    name = forms.CharField()
+    website = forms.CharField(required=False)
+    phone = forms.CharField(required=False)
+    street = forms.CharField(required=False)
+    postal_code = forms.CharField(required=False)
+    postal_area = forms.CharField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(AddressForm, self).__init__(*args, **kwargs)
+        self.fields['organization'].choices = get_node_type_tuples('Organization')

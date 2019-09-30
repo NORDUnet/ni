@@ -31,6 +31,8 @@ class Command(BaseCommand):
                     action='store_true', help="regenerate roles in intermediate setup")
         parser.add_argument("-m", "--emailphones",
                     action='store_true', help="regenerate emails and phones to separate models")
+        parser.add_argument("-a", "--addressfix",
+                    action='store_true', help="regenerate organizations' address to the new SRI")
         parser.add_argument('-d', "--delimiter", nargs='?', default=';',
                             help='Delimiter to use use. Default ";".')
 
@@ -40,9 +42,14 @@ class Command(BaseCommand):
             self.fix_roles()
             return
 
-        # check if the fixroles option has been called, do it and exit
+        # check if the emailphones option has been called, do it and exit
         if options['emailphones']:
             self.fix_emails_phones()
+            return
+
+        # check if the addressfix option has been called, do it and exit
+        if options['addressfix']:
+            self.fix_organizations_address()
             return
 
         relation_meta_type = 'Relation'
@@ -284,8 +291,6 @@ class Command(BaseCommand):
                 role.save()
 
     def fix_emails_phones(self):
-        import inspect
-
         self.user = get_user()
 
         work_type_str = 'work'
@@ -343,6 +348,42 @@ class Command(BaseCommand):
                     contact_node.add_email(new_email.handle_id)
                     contact_node.remove_property(old_email_field)
                     new_email.get_node().add_property('type', assigned_type)
+
+    def fix_organizations_address(self):
+        self.user = get_user()
+        address_type = NodeType.objects.get_or_create(type='Address')[0] # address
+        organization_type = NodeType.objects.get_or_create(type='Organization')[0] # organization
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+        logical_meta_type = 'Logical'
+
+        phone_field = 'phone'
+        website_field = 'website'
+
+        for organization in all_organizations:
+            organization_node = organization.get_node()
+            address_name = 'Address: {}'.format(organization.node_name)
+
+            old_website = organization_node.data.get(website_field, None)
+            old_phone = organization_node.data.get(phone_field, None)
+
+            if old_website:
+                # create an Address and asociate it to the Organization
+                new_address = NodeHandle.objects.get_or_create(
+                    node_name=address_name,
+                    node_type=address_type,
+                    node_meta_type=logical_meta_type,
+                    creator=self.user,
+                    modifier=self.user,
+                )[0]
+
+                new_address.get_node().add_property(website_field, old_website)
+                organization_node.remove_property(website_field)
+
+                if old_phone:
+                    new_address.get_node().add_property(phone_field, old_phone)
+                    organization_node.remove_property(phone_field)
+
+                organization_node.add_address(new_address.handle_id)
 
     def count_lines(self, file):
         '''

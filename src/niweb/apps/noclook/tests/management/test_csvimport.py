@@ -127,6 +127,66 @@ class CsvImportTest(NeoTestCase):
         relations = contact_employee.get_node().get_outgoing_relations()
         self.assertEquals(employee_role.name, relations['Works_for'][0]['relationship']['name'])
 
+    def test_fix_addresss(self):
+        # call csvimport command (verbose 0) to import test contacts
+        call_command(
+            self.cmd_name,
+            organizations=self.organizations_file,
+            verbosity=0,
+        )
+
+        # check one of the contacts is present
+        org_name = "Tazz"
+        qs = NodeHandle.objects.filter(node_name=org_name)
+        self.assertIsNotNone(qs)
+        organization1 = qs.first()
+        self.assertIsNotNone(organization1)
+        self.assertIsInstance(organization1.get_node(), ncmodels.OrganizationModel)
+        organization1_node = organization1.get_node()
+
+        # check organization's website and phone
+        phone1_test = '453-896-3068'
+        has_phone1 = 'phone' in organization1_node.data
+        self.assertTrue(has_phone1)
+        self.assertEquals(organization1_node.data['phone'], phone1_test)
+
+        website1_test = 'https://studiopress.com'
+        has_website1 = 'website' in organization1_node.data
+        self.assertTrue(has_website1)
+        self.assertEquals(organization1_node.data['website'], website1_test)
+
+        call_command(
+            self.cmd_name,
+            addressfix=True,
+            verbosity=0,
+        )
+
+        # check the old fields are not present anymore
+        qs = NodeHandle.objects.filter(node_name=org_name)
+        self.assertIsNotNone(qs)
+        organization1 = qs.first()
+        self.assertIsNotNone(organization1)
+        self.assertIsInstance(organization1.get_node(), ncmodels.OrganizationModel)
+        organization1_node = organization1.get_node()
+
+        has_phone = 'phone' in organization1_node.data
+        self.assertFalse(has_phone)
+        has_website = 'website' in organization1_node.data
+        self.assertFalse(has_website)
+
+        relations = organization1_node.get_outgoing_relations()
+        relation_keys = list(relations.keys())
+        has_address = 'Has_address' in relation_keys
+        self.assertTrue(has_address)
+
+        address_node = relations['Has_address'][0]['node']
+        self.assertIsInstance(address_node, ncmodels.AddressModel)
+
+        has_phone = 'phone' in address_node.data
+        has_website = 'website' in address_node.data
+        self.assertTrue(has_phone)
+        self.assertTrue(has_website)
+
     def test_fix_emails_phones(self):
         # call csvimport command (verbose 0) to import test contacts
         call_command(

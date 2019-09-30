@@ -1085,3 +1085,22 @@ def add_email_contact(user, email, contact_id):
         activitylog.create_relationship(user, relationship)
 
     return relationship, created
+
+def add_address_organization(user, address, organization_id):
+    """
+    :param user: Django user
+    :param address: norduniclient model (address)
+    :param organization_id: organization id to associate to the address instance
+    :return: norduniclient model, boolean
+    """
+    organization = NodeHandle.objects.get(handle_id=organization_id)
+    result = organization.get_node().add_address(address.handle_id)
+
+    relationship_id = result.get('Has_address')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_address')[0].get('created')
+
+    if created:
+        activitylog.create_relationship(user, relationship)
+
+    return relationship, created
