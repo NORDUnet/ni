@@ -51,6 +51,7 @@ class Group(NIObjectType):
     The group type is used to group contacts
     '''
     name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
 
     class NIMetaType:
         ni_type = 'Group'
