@@ -247,6 +247,7 @@ LOCAL_APPS = (
     'apps.noclook',
     'apps.scan',
     'apps.nerds',
+    'djangovakt',
 )
 
 OPTIONAL_APPS = environ.get('OPTIONAL_APPS', '').split()
