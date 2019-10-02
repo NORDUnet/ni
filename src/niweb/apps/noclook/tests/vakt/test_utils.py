@@ -127,36 +127,36 @@ class SRIVaktUtilsTest(NeoTestCase):
 
     def test_read_resource(self):
         # check if the three users can read the organization1
-        result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.organization1)
-        result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.organization1)
-        result_auth_u3 = sriutils.authorice_read_resource(self.user3, self.organization1)
+        result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.organization1.handle_id)
+        result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.organization1.handle_id)
+        result_auth_u3 = sriutils.authorice_read_resource(self.user3, self.organization1.handle_id)
 
         self.assertTrue(result_auth_u1)
         self.assertTrue(result_auth_u2)
         self.assertTrue(result_auth_u3)
 
         # check if the three users can read the organization2
-        result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.organization2)
-        result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.organization2)
-        result_auth_u3 = sriutils.authorice_read_resource(self.user3, self.organization2)
+        result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.organization2.handle_id)
+        result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.organization2.handle_id)
+        result_auth_u3 = sriutils.authorice_read_resource(self.user3, self.organization2.handle_id)
 
         self.assertTrue(result_auth_u1)
         self.assertTrue(result_auth_u2)
         self.assertTrue(result_auth_u3)
 
         # check if the three users can read the contact1
-        result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.contact1)
-        result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.contact1)
-        result_auth_u3 = sriutils.authorice_read_resource(self.user3, self.contact1)
+        result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.contact1.handle_id)
+        result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.contact1.handle_id)
+        result_auth_u3 = sriutils.authorice_read_resource(self.user3, self.contact1.handle_id)
 
         self.assertTrue(result_auth_u1)
         self.assertTrue(result_auth_u2)
         self.assertTrue(result_auth_u3)
 
         # check if the three users can read the contact2
-        result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.contact2)
-        result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.contact2)
-        result_auth_u3 = sriutils.authorice_read_resource(self.user3, self.contact2)
+        result_auth_u1 = sriutils.authorice_read_resource(self.user1, self.contact2.handle_id)
+        result_auth_u2 = sriutils.authorice_read_resource(self.user2, self.contact2.handle_id)
+        result_auth_u3 = sriutils.authorice_read_resource(self.user3, self.contact2.handle_id)
 
         self.assertTrue(result_auth_u1)
         self.assertTrue(result_auth_u2)
@@ -165,39 +165,69 @@ class SRIVaktUtilsTest(NeoTestCase):
 
     def test_write_resource(self):
         # check that only user1 and user2 (from the group2) can write for the resource
-        result_auth_u1 = sriutils.authorice_write_resource(self.user1, self.organization1)
-        result_auth_u2 = sriutils.authorice_write_resource(self.user2, self.organization1)
-        result_auth_u3 = sriutils.authorice_write_resource(self.user3, self.organization1)
+        result_auth_u1 = sriutils.authorice_write_resource(self.user1, self.organization1.handle_id)
+        result_auth_u2 = sriutils.authorice_write_resource(self.user2, self.organization1.handle_id)
+        result_auth_u3 = sriutils.authorice_write_resource(self.user3, self.organization1.handle_id)
 
         self.assertTrue(result_auth_u1)
         self.assertTrue(result_auth_u2)
         self.assertFalse(result_auth_u3)
 
         # check that nobody can write the resource since it's in the network module
-        result_auth_u1 = sriutils.authorice_write_resource(self.user1, self.organization2)
-        result_auth_u2 = sriutils.authorice_write_resource(self.user2, self.organization2)
-        result_auth_u3 = sriutils.authorice_write_resource(self.user3, self.organization2)
+        result_auth_u1 = sriutils.authorice_write_resource(self.user1, self.organization2.handle_id)
+        result_auth_u2 = sriutils.authorice_write_resource(self.user2, self.organization2.handle_id)
+        result_auth_u3 = sriutils.authorice_write_resource(self.user3, self.organization2.handle_id)
 
         self.assertFalse(result_auth_u1)
         self.assertFalse(result_auth_u2)
         self.assertFalse(result_auth_u3)
 
         # check that only user1 and user2 (from the group2) can write for the resource
-        result_auth_u1 = sriutils.authorice_write_resource(self.user1, self.contact1)
-        result_auth_u2 = sriutils.authorice_write_resource(self.user2, self.contact1)
-        result_auth_u3 = sriutils.authorice_write_resource(self.user3, self.contact1)
+        result_auth_u1 = sriutils.authorice_write_resource(self.user1, self.contact1.handle_id)
+        result_auth_u2 = sriutils.authorice_write_resource(self.user2, self.contact1.handle_id)
+        result_auth_u3 = sriutils.authorice_write_resource(self.user3, self.contact1.handle_id)
 
         self.assertTrue(result_auth_u1)
         self.assertTrue(result_auth_u2)
         self.assertFalse(result_auth_u3)
 
         # check that only user1 and user2 (from the group2) can write for the resource
-        result_auth_u1 = sriutils.authorice_write_resource(self.user1, self.contact2)
-        result_auth_u2 = sriutils.authorice_write_resource(self.user2, self.contact2)
-        result_auth_u3 = sriutils.authorice_write_resource(self.user3, self.contact2)
+        result_auth_u1 = sriutils.authorice_write_resource(self.user1, self.contact2.handle_id)
+        result_auth_u2 = sriutils.authorice_write_resource(self.user2, self.contact2.handle_id)
+        result_auth_u3 = sriutils.authorice_write_resource(self.user3, self.contact2.handle_id)
 
         self.assertTrue(result_auth_u1)
         self.assertTrue(result_auth_u2)
+        self.assertFalse(result_auth_u3)
+
+
+    def test_create_resource(self):
+        # check that only user1 and user2 (from the group2) can create resources in the community module
+        result_auth_u1 = sriutils.authorize_create_resource(self.user1, self.community_ctxt)
+        result_auth_u2 = sriutils.authorize_create_resource(self.user2, self.community_ctxt)
+        result_auth_u3 = sriutils.authorize_create_resource(self.user3, self.community_ctxt)
+
+        self.assertTrue(result_auth_u1)
+        self.assertTrue(result_auth_u2)
+        self.assertFalse(result_auth_u3)
+
+        # check that only user1 and user2 (from the group2) can create resources in the contracts modules
+        result_auth_u1 = sriutils.authorize_create_resource(self.user1, self.contracts_ctxt)
+        result_auth_u2 = sriutils.authorize_create_resource(self.user2, self.contracts_ctxt)
+        result_auth_u3 = sriutils.authorize_create_resource(self.user3, self.contracts_ctxt)
+
+        self.assertTrue(result_auth_u1)
+        self.assertTrue(result_auth_u2)
+        self.assertFalse(result_auth_u3)
+
+
+        # check that none of them can create resources in the network module
+        result_auth_u1 = sriutils.authorize_create_resource(self.user1, self.network_ctxt)
+        result_auth_u2 = sriutils.authorize_create_resource(self.user2, self.network_ctxt)
+        result_auth_u3 = sriutils.authorize_create_resource(self.user3, self.network_ctxt)
+
+        self.assertFalse(result_auth_u1)
+        self.assertFalse(result_auth_u2)
         self.assertFalse(result_auth_u3)
 
 

@@ -270,6 +270,12 @@ class SRIVaktRulesTest(NeoTestCase):
         self.assertFalse(rule1_satisfied)
         self.assertTrue(rule2_satisfied)
 
+        # final check: an empty nodehandle should return true
+        # because that's how we'll check for a creation of a resource
+        rule1_satisfied = self.resource_rule1.satisfied(None)
+        self.assertTrue(rule1_satisfied)
+
+
     def test_contains_rule(self):
         contains_1 = srirules.ContainsElement('needle')
 

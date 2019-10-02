@@ -54,11 +54,14 @@ def get_contracts_context():
     return get_context_by_name(CONTRACTS_CTX_NAME)
 
 
-def authorize_aa_resource(user, nodehandle, get_aa_func):
+def authorize_aa_resource(user, handle_id, get_aa_func):
     ret = False # deny by default
 
     # get storage and guard
     storage, guard = get_vakt_storage_and_guard()
+
+    # get nodehandle
+    nodehandle = NodeHandle.objects.get(handle_id=handle_id)
 
     # get authaction
     authaction = get_aa_func()
@@ -82,12 +85,34 @@ def authorize_aa_resource(user, nodehandle, get_aa_func):
     return ret
 
 
-def authorice_read_resource(user, nodehandle):
-    return authorize_aa_resource(user, nodehandle, get_read_authaction)
+def authorice_read_resource(user, handle_id):
+    return authorize_aa_resource(user, handle_id, get_read_authaction)
 
 
-def authorice_write_resource(user, nodehandle):
-    return authorize_aa_resource(user, nodehandle, get_write_authaction)
+def authorice_write_resource(user, handle_id):
+    return authorize_aa_resource(user, handle_id, get_write_authaction)
+
+
+def authorize_create_resource(user, context):
+    ret = False # deny by default
+
+    # get storage and guard
+    storage, guard = get_vakt_storage_and_guard()
+
+    # get authaction
+    authaction = get_write_authaction()
+
+    # forge read resource inquiry
+    inquiry = Inquiry(
+        action=authaction,
+        resource=None,
+        subject=user,
+        context={'module': (context,)}
+    )
+
+    ret = guard.is_allowed(inquiry)
+
+    return ret
 
 
 def authorize_admin_module(user, context):
