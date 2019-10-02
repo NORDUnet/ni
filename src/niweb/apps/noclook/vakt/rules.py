@@ -35,12 +35,17 @@ class BelongsContext(Rule):
     def satisfied(self, nodehandle, inquiry=None):
         satisfied = False
 
-        nhctxs = NodeHandleContext.objects.filter(
-            nodehandle=nodehandle,
-            context=self.context,
-        )
+        if nodehandle:
+            nhctxs = NodeHandleContext.objects.filter(
+                nodehandle=nodehandle,
+                context=self.context,
+            )
 
-        if nhctxs:
+            if nhctxs:
+                satisfied = True
+        else:
+            # if the nodehandle comes empty it is a node creation request
+            # so other rules may apply but not this one
             satisfied = True
 
         return satisfied
@@ -52,4 +57,5 @@ class ContainsElement(Rule):
 
     def satisfied(self, list, inquiry=None):
         satisfied = self.elem in list
+
         return satisfied
