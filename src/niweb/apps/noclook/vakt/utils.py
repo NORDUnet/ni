@@ -20,8 +20,8 @@ def get_vakt_storage_and_guard():
     return storage, guard
 
 
-def get_authaction_by_name(name):
-    authzaction = AuthzAction.objects.get(name=name)
+def get_authaction_by_name(name, aamodel=AuthzAction):
+    authzaction = aamodel.objects.get(name=name)
     return authzaction
 
 
@@ -37,25 +37,25 @@ def get_admin_authaction():
     return get_authaction_by_name(ADMIN_AA_NAME)
 
 
-def get_context_by_name(name):
-    context = Context.objects.get(name=name)
+def get_context_by_name(name, cmodel=Context):
+    context = cmodel.objects.get(name=name)
     return context
 
 
-def get_network_context():
-    return get_context_by_name(NETWORK_CTX_NAME)
+def get_network_context(cmodel=Context):
+    return get_context_by_name(NETWORK_CTX_NAME, cmodel)
 
 
-def get_community_context():
-    return get_context_by_name(COMMUNITY_CTX_NAME)
+def get_community_context(cmodel=Context):
+    return get_context_by_name(COMMUNITY_CTX_NAME, cmodel)
 
 
-def get_contracts_context():
-    return get_context_by_name(CONTRACTS_CTX_NAME)
+def get_contracts_context(cmodel=Context):
+    return get_context_by_name(CONTRACTS_CTX_NAME, cmodel)
 
 
-def get_default_context():
-    return get_community_context()
+def get_default_context(cmodel=Context):
+    return get_community_context(cmodel)
 
 def authorize_aa_resource(user, handle_id, get_aa_func):
     ret = False # deny by default
