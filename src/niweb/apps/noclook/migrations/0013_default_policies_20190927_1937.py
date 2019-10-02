@@ -44,7 +44,7 @@ def forwards_func(apps, schema_editor):
                 actions=[vakt_rules.Eq(authzaction)],
                 resources=[srirules.BelongsContext(context)],
                 subjects=[srirules.HasAuthAction(authzaction, context)],
-                context={ 'module': vakt_rules.Eq(context) },
+                context={ 'module': srirules.ContainsElement(context) },
                 effect=ALLOW_ACCESS,
                 description='Automatically created policy'
             )
