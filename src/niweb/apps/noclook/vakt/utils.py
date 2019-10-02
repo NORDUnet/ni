@@ -54,6 +54,9 @@ def get_contracts_context():
     return get_context_by_name(CONTRACTS_CTX_NAME)
 
 
+def get_default_context():
+    return get_community_context()
+
 def authorize_aa_resource(user, handle_id, get_aa_func):
     ret = False # deny by default
 
