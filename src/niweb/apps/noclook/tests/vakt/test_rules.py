@@ -269,3 +269,15 @@ class SRIVaktRulesTest(NeoTestCase):
 
         self.assertFalse(rule1_satisfied)
         self.assertTrue(rule2_satisfied)
+
+    def test_contains_rule(self):
+        contains_1 = srirules.ContainsElement('needle')
+
+        haystack1 = ('hay', 'fork', 'needle', 'grass')
+        haystack2 = ('sand', 'water', 'sun', 'sky')
+
+        rule_satisfied1 = contains_1.satisfied(haystack1)
+        rule_satisfied2 = contains_1.satisfied(haystack2)
+
+        self.assertTrue(rule_satisfied1)
+        self.assertFalse(rule_satisfied2)

@@ -44,3 +44,12 @@ class BelongsContext(Rule):
             satisfied = True
 
         return satisfied
+
+
+class ContainsElement(Rule):
+    def __init__(self, elem):
+        self.elem = elem
+
+    def satisfied(self, list, inquiry=None):
+        satisfied = self.elem in list
+        return satisfied
