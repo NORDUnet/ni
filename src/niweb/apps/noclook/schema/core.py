@@ -9,7 +9,7 @@ import re
 import apps.noclook.vakt.utils as sriutils
 
 from apps.noclook import helpers
-from apps.noclook.models import NodeType, NodeHandle
+from apps.noclook.models import NodeType, NodeHandle, NodeHandleContext
 from collections import OrderedDict, Iterable
 from django import forms
 from django.contrib.auth.models import User as DjangoUser
@@ -494,9 +494,14 @@ class NIObjectType(DjangoObjectType):
                     ret = []
 
                     for handle_id in handle_ids:
-                        nodeqs = qs.filter(handle_id=handle_id)
-                        if nodeqs and len(nodeqs) == 1:
-                            ret.append(nodeqs.first())
+                        authorized = sriutils.authorice_read_resource(
+                            info.context.user, handle_id
+                        )
+
+                        if authorized:
+                            nodeqs = qs.filter(handle_id=handle_id)
+                            if nodeqs and len(nodeqs) == 1:
+                                ret.append(nodeqs.first())
 
                     # do nodehandler attributes ordering now that we have
                     # the nodes set, if this order is requested
@@ -968,6 +973,14 @@ class CreateNIMutation(AbstractNIMutation):
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
         has_error      = False
 
+        default_context = sriutils.get_default_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(request.user, default_context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         ## code from role creation
         form = form_class(request.POST)
         if form.is_valid():
@@ -980,6 +993,9 @@ class CreateNIMutation(AbstractNIMutation):
                 return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]
 
             helpers.form_update_node(request.user, nh.handle_id, form, property_update)
+
+            # add default context
+            NodeHandleContext(nodehandle=nh, context=default_context).save()
 
             # process relations if implemented
             if not has_error:
@@ -1025,6 +1041,12 @@ class UpdateNIMutation(AbstractNIMutation):
         handle_id       = request.POST.get('handle_id')
         has_error       = False
 
+        # check authorization
+        authorized = sriutils.authorice_write_resource(request.user, handle_id)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         nh, nodehandler = helpers.get_nh_node(handle_id)
         if request.POST:
             form = form_class(request.POST)
@@ -1059,6 +1081,12 @@ class DeleteNIMutation(AbstractNIMutation):
     @classmethod
     def do_request(cls, request, **kwargs):
         handle_id = request.POST.get('handle_id')
+
+        # check authorization
+        authorized = sriutils.authorice_write_resource(request.user, handle_id)
+
+        if not authorized:
+            raise GraphQLAuthException()
 
         nh, node = helpers.get_nh_node(handle_id)
         success = helpers.delete_node(request.user, node.handle_id)
