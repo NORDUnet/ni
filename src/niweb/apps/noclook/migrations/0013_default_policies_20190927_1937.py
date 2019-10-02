@@ -7,6 +7,7 @@ from vakt import Policy, ALLOW_ACCESS, DENY_ACCESS
 from apps.noclook.vakt.utils import get_vakt_storage_and_guard
 
 import apps.noclook.vakt.rules as srirules
+import apps.noclook.vakt.utils as sriutils
 import uuid
 import vakt.rules as vakt_rules
 
@@ -23,22 +24,11 @@ def forwards_func(apps, schema_editor):
     # iterate over all existent contexts and authzactions
     # and create policies for each of them
     all_contexts = Context.objects.all()
-    all_authzactions = AuthzAction.objects.all()
+    rw_authzactions = AuthzAction.objects.exclude(name=sriutils.ADMIN_AA_NAME)
 
-    # deny everything else policy
-    policy = Policy(
-        uuid.uuid4(),
-        actions=[vakt_rules.Any()],
-        resources=[vakt_rules.Any()],
-        subjects=[vakt_rules.Any()],
-        context={ 'module': vakt_rules.Any() },
-        effect=DENY_ACCESS,
-        description='Deny all policy'
-    )
-    storage.add(policy)
-
+    # add read and write policies
     for context in all_contexts:
-        for authzaction in all_authzactions:
+        for authzaction in rw_authzactions:
             policy = Policy(
                 uuid.uuid4(),
                 actions=[vakt_rules.Eq(authzaction)],
@@ -49,6 +39,20 @@ def forwards_func(apps, schema_editor):
                 description='Automatically created policy'
             )
             storage.add(policy)
+
+    # add admin policies
+    admin_aa = AuthzAction.objects.get(name=sriutils.ADMIN_AA_NAME)
+    for context in all_contexts:
+        policy = Policy(
+            uuid.uuid4(),
+            actions=[vakt_rules.Eq(admin_aa)],
+            resources=[vakt_rules.Any()],
+            subjects=[srirules.HasAuthAction(admin_aa, context)],
+            context={ 'module': srirules.ContainsElement(context) },
+            effect=ALLOW_ACCESS,
+            description='Automatically created policy'
+        )
+        storage.add(policy)
 
 def backwards_func(apps, schema_editor):
     # delete all stored policies
