@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 
 from django.db import migrations
 from vakt import Policy, ALLOW_ACCESS, DENY_ACCESS
-from apps.noclook.vakt.utils import get_vakt_storage_and_guard
 
 import apps.noclook.vakt.rules as srirules
 import apps.noclook.vakt.utils as sriutils
@@ -14,10 +13,9 @@ import vakt.rules as vakt_rules
 
 def forwards_func(apps, schema_editor):
     # get storage and guard
-    storage, guard = get_vakt_storage_and_guard()
+    storage, guard = sriutils.get_vakt_storage_and_guard()
 
     # create policies using storage instead
-    DjPolicy = apps.get_model('djangovakt', 'Policy')
     Context = apps.get_model('noclook', 'Context')
     AuthzAction = apps.get_model('noclook', 'AuthzAction')
 
