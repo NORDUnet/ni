@@ -6,6 +6,8 @@ import graphene
 import norduniclient as nc
 import re
 
+import apps.noclook.vakt.utils as sriutils
+
 from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle
 from collections import OrderedDict, Iterable
@@ -413,11 +415,18 @@ class NIObjectType(DjangoObjectType):
 
             if info.context and info.context.user.is_authenticated:
                 if handle_id:
-                    try:
-                        int_id = str(handle_id)
-                        ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=int_id)
-                    except ValueError:
-                        ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+                    authorized = sriutils.authorice_read_resource(
+                        info.context.user, handle_id
+                    )
+
+                    if authorized:
+                        try:
+                            int_id = str(handle_id)
+                            ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=int_id)
+                        except ValueError:
+                            ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+                    else:
+                        raise GraphQLAuthException()
                 else:
                     raise GraphQLError('A handle_id must be provided')
 

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+import apps.noclook.vakt.utils as sriutils
+
 from django.db import connection
 
 from apps.noclook import helpers
-from apps.noclook.models import NodeHandle, Dropdown, Choice, Role
+from apps.noclook.models import NodeHandle, Dropdown, Choice, Role, Group, GroupContextAuthzAction, NodeHandleContext
 from ..neo4j_base import NeoTestCase
 
 class TestContext():
@@ -15,6 +17,39 @@ class Neo4jGraphQLTest(NeoTestCase):
     def setUp(self):
         super(Neo4jGraphQLTest, self).setUp()
         self.context = TestContext(self.user)
+
+        # create group for read in community context
+        self.group_read  = Group( name="Group can read the community context" )
+        self.group_read.save()
+
+        # create group for write in community context
+        self.group_write = Group( name="Group can write for the community context" )
+        self.group_write.save()
+
+        # add user to this group
+        self.group_read.user_set.add(self.user)
+        self.group_write.user_set.add(self.user)
+
+        # get read aa
+        self.get_read_authaction  = sriutils.get_read_authaction()
+        self.get_write_authaction = sriutils.get_write_authaction()
+
+        # get default context
+        self.community_ctxt = sriutils.get_default_context()
+
+        # add contexts and profiles
+        GroupContextAuthzAction(
+            group = self.group_read,
+            authzprofile = self.get_read_authaction,
+            context = self.community_ctxt
+        ).save()
+
+        GroupContextAuthzAction(
+            group = self.group_write,
+            authzprofile = self.get_write_authaction,
+            context = self.community_ctxt
+        ).save()
+
         # create nodes
         self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
         self.organization2 = self.create_node('organization2', 'organization', meta='Logical')
@@ -24,6 +59,14 @@ class Neo4jGraphQLTest(NeoTestCase):
         self.group2 = self.create_node('group2', 'group', meta='Logical')
         self.role1 = Role(name='role1').save()
         self.role2 = Role(name='role2').save()
+
+        # add nodes to the appropiate context
+        NodeHandleContext(nodehandle=self.organization1, context=self.community_ctxt).save()
+        NodeHandleContext(nodehandle=self.organization2, context=self.community_ctxt).save()
+        NodeHandleContext(nodehandle=self.contact1, context=self.community_ctxt).save()
+        NodeHandleContext(nodehandle=self.contact2, context=self.community_ctxt).save()
+        NodeHandleContext(nodehandle=self.group1, context=self.community_ctxt).save()
+        NodeHandleContext(nodehandle=self.group2, context=self.community_ctxt).save()
 
         # add some data
         contact1_data = {
