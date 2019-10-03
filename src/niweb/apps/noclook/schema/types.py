@@ -4,7 +4,7 @@ __author__ = 'ffuentes'
 import graphene
 
 from norduniclient.models import RoleRelationship
-from graphene import relay
+from graphene import relay, ObjectType, String, Field
 from .core import *
 from ..models import Dropdown, Choice, Role as RoleModel
 
@@ -173,6 +173,11 @@ class Contact(NIObjectType):
     class NIMetaType:
         ni_type = 'Contact'
         ni_metatype = NIMETA_RELATION
+
+
+class ContactWithRolename(ObjectType):
+    contact = Field(Contact)
+    role = Field(Role)
 
 
 class Host(NIObjectType):

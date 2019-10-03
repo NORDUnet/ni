@@ -374,6 +374,8 @@ class QueryTest(Neo4jGraphQLTest):
         contact_2_id = result.data['contacts']['edges'][1]['node']['handle_id']
         contact_2_id = int(contact_2_id)
 
+        assert contact_1_id != contact_2_id, 'The contact ids are equal'
+
         incident_management_info = "Nullam eleifend ultrices risus, ac dignissim sapien mollis id. Aenean ante nibh, pharetra ac accumsan eget, suscipit eget purus. Ut sit amet diam in arcu dapibus ultricies. Phasellus a consequat eros. Proin cursus commodo consequat. Fusce nisl metus, egestas eu blandit sit amet, condimentum vitae felis."
 
         query = """
@@ -393,6 +395,7 @@ class QueryTest(Neo4jGraphQLTest):
             }}
           ){{
             organization{{
+              handle_id
               name
               description
               incident_management_info
@@ -403,14 +406,55 @@ class QueryTest(Neo4jGraphQLTest):
                     contact_1_id=contact_1_id, contact_2_id=contact_2_id,
                     incident_management_info=incident_management_info)
 
+        result = schema.execute(query, context=self.context)
+        organization_id_2 = result.data['create_organization']['organization']['handle_id']
+
         expected = OrderedDict([('create_organization',
               OrderedDict([('organization',
-                            OrderedDict([('name', 'Another org'),
+                            OrderedDict([('handle_id', organization_id_2),
+                                         ('name', 'Another org'),
                                          ('description',
                                           'This is the description of the new '
                                           'organization'),
                                          ('incident_management_info',
                                           incident_management_info)]))]))])
+
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        ## get contacts that works for an organization
+        query = """
+        {{
+          getOrganizationContacts(handle_id: {organization_id}){{
+            contact{{
+              handle_id
+            }}
+            role{{
+              name
+            }}
+          }}
+        }}
+        """.format(organization_id=organization_id_2)
+
+        expected = OrderedDict([('getOrganizationContacts',
+              [OrderedDict([('contact', OrderedDict([('handle_id', str(contact_2_id))])),
+                            ('role', OrderedDict([('name', 'NOC Manager')]))]),
+               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_1_id))])),
+                            ('role', OrderedDict([('name', 'NOC Security')]))]),
+               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_2_id))])),
+                            ('role',
+                             OrderedDict([('name', 'NOC Technical')]))]),
+               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_1_id))])),
+                            ('role',
+                             OrderedDict([('name',
+                                           'Secondary contact at '
+                                           'incidents')]))]),
+               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_2_id))])),
+                            ('role',
+                             OrderedDict([('name',
+                                           'Primary contact at incidents')]))]),
+               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_1_id))])),
+                            ('role', OrderedDict([('name', 'Abuse')]))])])])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)

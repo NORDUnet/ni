@@ -93,6 +93,7 @@ class NOCRootQuery(NOCAutoQuery):
     getRelationById = graphene.Field(NIRelationType, relation_id=graphene.Int(required=True))
     getRoleRelationById = graphene.Field(RoleRelation, relation_id=graphene.Int(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
+    getOrganizationContacts = graphene.List(ContactWithRolename, handle_id=graphene.Int(required=True))
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -175,6 +176,42 @@ class NOCRootQuery(NOCAutoQuery):
                 qs = qs.filter(name=filter.name)
 
         return qs
+
+    def resolve_getOrganizationContacts(self, info, **kwargs):
+        ret = []
+
+        handle_id = kwargs.get('handle_id')
+
+        # check read permissions
+        authorized = sriutils.authorice_read_resource(
+            info.context.user, handle_id
+        )
+
+        if not authorized:
+            raise GraphQLAuthException()
+
+        organization_nh = NodeHandle.objects.get(handle_id=handle_id)
+        relations = organization_nh.get_node().get_relations()['Works_for']
+
+        for relation in relations:
+            # resolve contact
+            contact_node = relation['node']
+            contact_id = contact_node.handle_id
+            contact_nh = NodeHandle.objects.get(handle_id=contact_id)
+
+            # resolve role object
+            relationship = relation['relationship']
+            role_name = relation['relationship']._properties['name']
+            role_obj = RoleModel.objects.get(name=role_name)
+
+            contact_wrn = {
+                'contact': contact_nh,
+                'role': role_obj
+            }
+
+            ret.append(contact_wrn)
+
+        return ret
 
     class NIMeta:
         graphql_types = [ Group, Contact, Organization, Procedure, Host ]
