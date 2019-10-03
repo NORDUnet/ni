@@ -87,6 +87,33 @@ class NIChoiceField(NIBasicField):
                         type_kwargs, **kwargs)
 
 
+class NIBooleanField(NIBasicField):
+    '''
+    Boolean type
+    '''
+    def __init__(self, field_type=graphene.Boolean, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIBooleanField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_value(self, info, **kwargs):
+            possible_value = self.get_node().data.get(field_name)
+            if possible_value == None:
+                possible_value = False
+
+            return possible_value
+
+        return resolve_node_value
+
+
 class NIListField(NIBasicField):
     '''
     Object list type

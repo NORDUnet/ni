@@ -179,7 +179,9 @@ class CreateOrganization(CreateNIMutation):
                 # Generic node update
                 # use property keys to avoid inserting contacts as a string property of the node
                 property_keys = [
-                    'name', 'description', 'phone', 'website', 'customer_id', 'type', 'incident_management_info',
+                    'name', 'description', 'customer_id', 'type', 'incident_management_info',
+                    'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
+                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner'
                 ]
                 helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
                 nh_reload, organization = helpers.get_nh_node(nh.handle_id)
@@ -254,7 +256,9 @@ class UpdateOrganization(UpdateNIMutation):
                 # Generic node update
                 # use property keys to avoid inserting contacts as a string property of the node
                 property_keys = [
-                    'name', 'description', 'phone', 'website', 'customer_id', 'type', 'additional_info',
+                    'name', 'description', 'customer_id', 'type', 'incident_management_info',
+                    'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
+                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner'
                 ]
                 helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
 

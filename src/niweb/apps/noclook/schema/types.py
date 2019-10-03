@@ -99,6 +99,12 @@ class Organization(NIObjectType):
     incident_management_info = NIStringField()
     type = NIChoiceField()
     addresses = NIListField(type_args=(Address,), rel_name='Has_address', rel_method='get_outgoing_relations')
+    affiliation_customer = NIBooleanField()
+    affiliation_end_customer = NIBooleanField()
+    affiliation_provider = NIBooleanField()
+    affiliation_partner = NIBooleanField()
+    affiliation_host_user = NIBooleanField()
+    affiliation_site_owner = NIBooleanField()
 
     class NIMetaType:
         ni_type = 'Organization'

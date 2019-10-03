@@ -839,6 +839,12 @@ class NewOrganizationForm(forms.Form):
     customer_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     incident_management_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
+    affiliation_customer = forms.BooleanField(required=False)
+    affiliation_end_customer = forms.BooleanField(required=False)
+    affiliation_provider = forms.BooleanField(required=False)
+    affiliation_partner = forms.BooleanField(required=False)
+    affiliation_host_user = forms.BooleanField(required=False)
+    affiliation_site_owner = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(NewOrganizationForm, self).__init__(*args, **kwargs)
@@ -890,7 +896,7 @@ class EditOrganizationForm(NewOrganizationForm):
 
     def clean(self):
         """
-        Sets name from first and second name
+        Sets the default roles
         """
         cleaned_data = super(EditOrganizationForm, self).clean()
         for field, roledict in DEFAULT_ROLES.items():

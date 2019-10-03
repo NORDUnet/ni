@@ -391,7 +391,8 @@ class QueryTest(Neo4jGraphQLTest):
               secondary_contact: {contact_1_id},
               it_technical_contact: {contact_2_id},
               it_security_contact: {contact_1_id},
-              it_manager_contact: {contact_2_id}
+              it_manager_contact: {contact_2_id},
+              affiliation_provider: true
             }}
           ){{
             organization{{
@@ -399,6 +400,7 @@ class QueryTest(Neo4jGraphQLTest):
               name
               description
               incident_management_info
+              affiliation_provider
             }}
           }}
         }}
@@ -417,8 +419,58 @@ class QueryTest(Neo4jGraphQLTest):
                                           'This is the description of the new '
                                           'organization'),
                                          ('incident_management_info',
-                                          incident_management_info)]))]))])
+                                          incident_management_info),
+                                          ('affiliation_provider', True)]))]))])
 
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, pformat(result.data, indent=1)
+
+        ## edit organization
+        query = """
+        mutation{{
+          update_organization(
+            input: {{
+              handle_id: {organization_id}
+              name: "Another org",
+              description: "This is the description of the new organization",
+              incident_management_info: "{incident_management_info}",
+              abuse_contact: {contact_1_id},
+              primary_contact: {contact_2_id},
+              secondary_contact: {contact_1_id},
+              it_technical_contact: {contact_2_id},
+              it_security_contact: {contact_1_id},
+              it_manager_contact: {contact_2_id},
+              affiliation_provider: false,
+              affiliation_partner: true
+            }}
+          ){{
+            organization{{
+              handle_id
+              name
+              description
+              incident_management_info
+              affiliation_provider
+              affiliation_partner
+            }}
+          }}
+        }}
+        """.format(organization_id=organization_id_2,
+                    contact_1_id=contact_1_id, contact_2_id=contact_2_id,
+                    incident_management_info=incident_management_info)
+
+        expected = OrderedDict([('update_organization',
+              OrderedDict([('organization',
+                            OrderedDict([('handle_id', organization_id_2),
+                                         ('name', 'Another org'),
+                                         ('description',
+                                          'This is the description of the new '
+                                          'organization'),
+                                         ('incident_management_info',
+                                          incident_management_info),
+                                          ('affiliation_provider', False),
+                                          ('affiliation_partner', True),]))]))])
+
+        result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
