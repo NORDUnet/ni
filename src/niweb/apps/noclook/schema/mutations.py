@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 import graphene
 import norduniclient as nc
+import apps.noclook.vakt.utils as sriutils
 
 from apps.noclook import activitylog, helpers
 from apps.noclook.forms import *
@@ -156,6 +157,14 @@ class CreateOrganization(CreateNIMutation):
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
         has_error      = False
 
+        default_context = sriutils.get_default_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(request.user, default_context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         # Get needed data from node
         if request.POST:
             form = form_class(request.POST.copy())
@@ -226,6 +235,12 @@ class UpdateOrganization(UpdateNIMutation):
         handle_id      = request.POST.get('handle_id')
         has_error      = False
 
+        # check authorization
+        authorized = sriutils.authorice_write_resource(request.user, handle_id)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         # Get needed data from node
         nh, organization = helpers.get_nh_node(handle_id)
         relations = organization.get_relations()
@@ -292,6 +307,22 @@ class DeleteRelationship(relay.ClientIDMutation):
 
         try:
             relationship = nc.get_relationship_model(nc.graphdb.manager, relation_id)
+
+            # check permissions before delete
+            start_id = relationship.start['handle_id']
+            end_id = relationship.end['handle_id']
+
+            authorized_start = sriutils.authorice_read_resource(
+                info.context.user, start_id
+            )
+
+            authorized_end = sriutils.authorice_read_resource(
+                info.context.user, end_id
+            )
+
+            if not (authorized_start and authorized_end):
+                raise GraphQLAuthException()
+
             activitylog.delete_relationship(info.context.user, relationship)
             relationship.delete()
             success = True
@@ -302,6 +333,28 @@ class DeleteRelationship(relay.ClientIDMutation):
 
 
 class CreateRole(DjangoModelFormMutation):
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        default_context = sriutils.get_default_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
+        form = cls.get_form(root, info, **input)
+
+        if form.is_valid():
+            return cls.perform_mutate(form, info)
+        else:
+            errors = [
+                ErrorType(field=key, messages=value)
+                for key, value in form.errors.items()
+            ]
+
+            return cls(errors=errors)
+
     class Meta:
         form_class = NewRoleForm
 
@@ -337,6 +390,14 @@ class DeleteRole(relay.ClientIDMutation):
         handle_id = input.get("handle_id", None)
         success = False
 
+        default_context = sriutils.get_default_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         try:
             role = RoleModel.objects.get(handle_id=handle_id)
             role.delete()
@@ -356,6 +417,14 @@ class CreateComment(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
+        default_context = sriutils.get_default_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         object_pk = input.get("object_pk",)
         comment = input.get("comment")
         content_type = ContentType.objects.get(app_label="noclook", model="nodehandle")
@@ -384,6 +453,14 @@ class UpdateComment(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
+        default_context = sriutils.get_default_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         id = input.get("id",)
         comment_txt = input.get("comment")
 
@@ -402,6 +479,14 @@ class DeleteComment(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
+        default_context = sriutils.get_default_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         id = input.get("id", None)
         success = False
 
@@ -425,6 +510,14 @@ class CreateOptionForDropdown(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
+        default_context = sriutils.get_default_context()
+        
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         dropdown_name = input.get("dropdown_name")
         name  = input.get("name")
         value = input.get("value")

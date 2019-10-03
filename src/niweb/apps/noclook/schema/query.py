@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 import graphene
 import norduniclient as nc
+import apps.noclook.vakt.utils as sriutils
 
 from graphql import GraphQLError
 from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown
@@ -113,12 +114,40 @@ class NOCRootQuery(NOCAutoQuery):
         rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
         rel.relation_id = rel.id
 
+        start_id = rel.start['handle_id']
+        end_id = rel.end['handle_id']
+
+        authorized_start = sriutils.authorice_read_resource(
+            info.context.user, start_id
+        )
+
+        authorized_end = sriutils.authorice_read_resource(
+            info.context.user, end_id
+        )
+
+        if not (authorized_start and authorized_end):
+            raise GraphQLAuthException()
+
         return rel
 
     def resolve_getRoleRelationById(self, info, **kwargs):
         relation_id = kwargs.get('relation_id')
         rel = nc.models.RoleRelationship.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
         rel.relation_id = rel.id
+
+        start_id = rel.start['handle_id']
+        end_id = rel.end['handle_id']
+
+        authorized_start = sriutils.authorice_read_resource(
+            info.context.user, start_id
+        )
+
+        authorized_end = sriutils.authorice_read_resource(
+            info.context.user, end_id
+        )
+
+        if not (authorized_start and authorized_end):
+            raise GraphQLAuthException()
 
         return rel
 
