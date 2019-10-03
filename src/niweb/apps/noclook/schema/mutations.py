@@ -184,6 +184,9 @@ class CreateOrganization(CreateNIMutation):
                 helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
                 nh_reload, organization = helpers.get_nh_node(nh.handle_id)
 
+                # add default context
+                NodeHandleContext(nodehandle=nh, context=default_context).save()
+
                 # specific role setting
                 for field, roledict in DEFAULT_ROLES.items():
                     if field in form.cleaned_data:
@@ -511,7 +514,7 @@ class CreateOptionForDropdown(relay.ClientIDMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
         default_context = sriutils.get_default_context()
-        
+
         # check it can write on this context
         authorized = sriutils.authorize_create_resource(info.context.user, default_context)
 
