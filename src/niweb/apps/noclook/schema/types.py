@@ -184,6 +184,7 @@ class Contact(NIObjectType):
 class ContactWithRolename(ObjectType):
     contact = Field(Contact)
     role = Field(Role)
+    relation_id = graphene.Int()
 
 
 class Host(NIObjectType):

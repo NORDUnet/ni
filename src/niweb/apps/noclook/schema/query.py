@@ -201,12 +201,14 @@ class NOCRootQuery(NOCAutoQuery):
 
             # resolve role object
             relationship = relation['relationship']
+            relation_id = relation['relationship_id']
             role_name = relation['relationship']._properties['name']
             role_obj = RoleModel.objects.get(name=role_name)
 
             contact_wrn = {
                 'contact': contact_nh,
-                'role': role_obj
+                'role': role_obj,
+                'relation_id': relation_id,
             }
 
             ret.append(contact_wrn)
