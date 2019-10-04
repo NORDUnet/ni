@@ -85,6 +85,11 @@ class NodeHandle(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modifier = models.ForeignKey(User, related_name='modifier')
     modified = models.DateTimeField(auto_now=True)
+    contexts = models.ManyToManyField(
+        'Context',
+        through='NodeHandleContext',
+        through_fields=('nodehandle', 'context'),
+    )
 
     def __str__(self):
         return '%s %s' % (self.node_type, self.node_name)

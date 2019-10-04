@@ -63,17 +63,12 @@ def authorize_aa_resource(user, handle_id, get_aa_func):
     # get storage and guard
     storage, guard = get_vakt_storage_and_guard()
 
-    # get nodehandle
-    nodehandle = NodeHandle.objects.get(handle_id=handle_id)
-
     # get authaction
     authaction = get_aa_func()
 
     # get contexts for this resource
-    nhctxs = NodeHandleContext.objects.filter(
-        nodehandle=nodehandle,
-    )
-    contexts = [ nhctx.context for nhctx in nhctxs ]
+    nodehandle = NodeHandle.objects.prefetch_related('contexts').get(handle_id=handle_id)
+    contexts = nodehandle.contexts.all()
 
     # forge read resource inquiry
     inquiry = Inquiry(

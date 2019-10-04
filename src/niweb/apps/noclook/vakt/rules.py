@@ -2,7 +2,7 @@
 __author__ = 'ffuentes'
 
 from vakt.rules.base import Rule
-from apps.noclook.models import GroupContextAuthzAction, NodeHandleContext
+from apps.noclook.models import NodeHandle, GroupContextAuthzAction, NodeHandleContext
 
 class HasAuthAction(Rule):
     def __init__(self, authzaction, context):
@@ -36,12 +36,7 @@ class BelongsContext(Rule):
         satisfied = False
 
         if nodehandle:
-            nhctxs = NodeHandleContext.objects.filter(
-                nodehandle=nodehandle,
-                context=self.context,
-            )
-
-            if nhctxs:
+            if self.context in nodehandle.contexts.all():
                 satisfied = True
         else:
             # if the nodehandle comes empty it is a node creation request
