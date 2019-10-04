@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from graphql.language.ast import IntValue, StringValue
+from graphql.language.ast import BooleanValue, IntValue, StringValue
 from graphene.types import Scalar
 from io import StringIO
 
@@ -119,3 +119,32 @@ class ChoiceScalar(Scalar):
     @classmethod
     def get_roles_dropdown(cls):
         pass
+
+
+class NullBoolean(graphene.Boolean):
+    """
+    Just like the `Boolean` graphene scalar but it could be set on null/None
+    """
+    @staticmethod
+    def serialize(value):
+        if value in (True, 'True', 'true', '1'):
+            return True
+        elif value in (False, 'False', 'false', '0'):
+            return False
+        else:
+            return None
+
+    @staticmethod
+    def parse_value(value):
+        if value != None:
+            return bool(value)
+
+        return None
+
+    @staticmethod
+    def parse_literal(ast):
+        ret = None
+        if isinstance(ast, BooleanValue):
+            ret = ast.value
+
+        return ret

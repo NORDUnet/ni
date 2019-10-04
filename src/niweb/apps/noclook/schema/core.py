@@ -23,7 +23,7 @@ from graphene_django.types import DjangoObjectTypeOptions, ErrorType
 from graphql import GraphQLError
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
-from .scalars import IPAddr
+from .scalars import *
 from .fields import *
 from .querybuilders import *
 from ..models import NodeType, NodeHandle
@@ -794,6 +794,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
         inner_class = type('Input', (object,), inner_fields)
         setattr(cls, 'Input', inner_class)
 
+        # add the converted fields to the metaclass so we can get them later
+        setattr(ni_metaclass, 'inner_fields', inner_fields)
+        setattr(cls, 'NIMetaClass', ni_metaclass)
+
         cls.add_return_type(graphql_type)
 
         super(AbstractNIMutation, cls).__init_subclass_with_meta__(
@@ -836,12 +840,13 @@ class AbstractNIMutation(relay.ClientIDMutation):
                 graphene_field = graphene.Int(**graph_kwargs)
             elif isinstance(form_field, forms.MultipleChoiceField):
                 graphene_field = graphene.String(**graph_kwargs)
-            elif isinstance(form_field, forms.NullBooleanField):
-                graphene_field = graphene.String(**graph_kwargs)
             elif isinstance(form_field, forms.URLField):
                 graphene_field = graphene.String(**graph_kwargs)
             else:
                 graphene_field = graphene.String(**graph_kwargs)
+
+            if isinstance(form_field, forms.NullBooleanField):
+                graphene_field = NullBoolean(**graph_kwargs)
 
             ### fields to be implement: ###
             # IPAddrField (CharField)
@@ -872,6 +877,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         form_class     = getattr(ni_metaclass, 'django_form', None)
         request_path   = getattr(ni_metaclass, 'request_path', '/')
         is_create      = getattr(ni_metaclass, 'is_create', False)
+        inner_fields   = getattr(ni_metaclass, 'inner_fields', [])
 
         graphql_type   = getattr(ni_metaclass, 'graphql_type')
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -879,16 +885,29 @@ class AbstractNIMutation(relay.ClientIDMutation):
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
 
         # get input values
+        noninput_fields = list(inner_fields.keys())
         input_class = getattr(cls, 'Input', None)
         input_params = {}
         if input_class:
             for attr_name, attr_field in input_class.__dict__.items():
                 attr_value = input.get(attr_name)
-                if attr_value:
-                    input_params[attr_name] = attr_value
 
+                if attr_value != None:
+                    input_params[attr_name] = attr_value
+                    noninput_fields.remove(attr_name)
+
+        # if it's an edit mutation add handle_id
+        # and also add the existent values in the request
         if not is_create:
             input_params['handle_id'] = input.get('handle_id')
+
+            # get previous instance
+            nh = NodeHandle.objects.get(handle_id=input_params['handle_id'])
+            node = nh.get_node()
+            for noninput_field in noninput_fields:
+                if noninput_field in node.data:
+                    input_params[noninput_field] = node.data.get(noninput_field)
+
 
         # forge request
         request_factory = RequestFactory()
