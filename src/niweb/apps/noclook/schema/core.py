@@ -894,7 +894,8 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
                 if attr_value != None:
                     input_params[attr_name] = attr_value
-                    noninput_fields.remove(attr_name)
+                    if attr_name in noninput_fields:
+                        noninput_fields.remove(attr_name)
 
         # if it's an edit mutation add handle_id
         # and also add the existent values in the request
