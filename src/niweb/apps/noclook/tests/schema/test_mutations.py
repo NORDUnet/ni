@@ -392,7 +392,8 @@ class QueryTest(Neo4jGraphQLTest):
               it_technical_contact: {contact_2_id},
               it_security_contact: {contact_1_id},
               it_manager_contact: {contact_2_id},
-              affiliation_provider: true
+              affiliation_provider: true,
+              affiliation_customer: true
             }}
           ){{
             organization{{
@@ -401,6 +402,7 @@ class QueryTest(Neo4jGraphQLTest):
               description
               incident_management_info
               affiliation_provider
+              affiliation_customer
             }}
           }}
         }}
@@ -420,7 +422,8 @@ class QueryTest(Neo4jGraphQLTest):
                                           'organization'),
                                          ('incident_management_info',
                                           incident_management_info),
-                                          ('affiliation_provider', True)]))]))])
+                                          ('affiliation_provider', True),
+                                          ('affiliation_customer', True)]))]))])
 
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
@@ -433,7 +436,6 @@ class QueryTest(Neo4jGraphQLTest):
               handle_id: {organization_id}
               name: "Another org",
               description: "This is the description of the new organization",
-              incident_management_info: "{incident_management_info}",
               abuse_contact: {contact_1_id},
               primary_contact: {contact_2_id},
               secondary_contact: {contact_1_id},
@@ -451,12 +453,12 @@ class QueryTest(Neo4jGraphQLTest):
               incident_management_info
               affiliation_provider
               affiliation_partner
+              affiliation_customer
             }}
           }}
         }}
         """.format(organization_id=organization_id_2,
-                    contact_1_id=contact_1_id, contact_2_id=contact_2_id,
-                    incident_management_info=incident_management_info)
+                    contact_1_id=contact_1_id, contact_2_id=contact_2_id)
 
         expected = OrderedDict([('update_organization',
               OrderedDict([('organization',
@@ -468,7 +470,8 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('incident_management_info',
                                           incident_management_info),
                                           ('affiliation_provider', False),
-                                          ('affiliation_partner', True),]))]))])
+                                          ('affiliation_partner', True),
+                                          ('affiliation_customer', True)]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
