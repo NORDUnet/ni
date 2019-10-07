@@ -13,7 +13,7 @@ class QueryTest(Neo4jGraphQLTest):
         test_username="test user"
         query = '''
         mutation{{
-          token_auth(username: "{user}", password: "{password}") {{
+          token_auth(input: {{ username: "{user}", password: "{password}" }}) {{
             token
           }}
         }}
@@ -25,7 +25,7 @@ class QueryTest(Neo4jGraphQLTest):
         ## verify token
         query = '''
         mutation{{
-          verify_token(token: "{token}") {{
+          verify_token(input: {{ token: "{token}" }}) {{
             payload
           }}
         }}
@@ -38,7 +38,7 @@ class QueryTest(Neo4jGraphQLTest):
         ## refresh token
         query = '''
         mutation{{
-          refresh_token(token: "{token}") {{
+          refresh_token(input: {{ token: "{token}" }}) {{
             token
             payload
           }}
