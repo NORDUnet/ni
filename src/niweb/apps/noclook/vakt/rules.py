@@ -36,7 +36,8 @@ class BelongsContext(Rule):
         satisfied = False
 
         if nodehandle:
-            if self.context in nodehandle.contexts.all():
+            possible_contexts = nodehandle.contexts.filter(pk=self.context.pk)
+            if possible_contexts:
                 satisfied = True
         else:
             # if the nodehandle comes empty it is a node creation request

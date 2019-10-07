@@ -68,11 +68,11 @@ def authorize_aa_resource(user, handle_id, get_aa_func):
 
     # get contexts for this resource
     nodehandle = NodeHandle.objects.prefetch_related('contexts').get(handle_id=handle_id)
-    contexts = nodehandle.contexts.all()
+    contexts = [ c.name for c in nodehandle.contexts.all() ]
 
     # forge read resource inquiry
     inquiry = Inquiry(
-        action=authaction,
+        action=authaction.name,
         resource=nodehandle,
         subject=user,
         context={'module': contexts}
@@ -102,10 +102,10 @@ def authorize_create_resource(user, context):
 
     # forge read resource inquiry
     inquiry = Inquiry(
-        action=authaction,
+        action=authaction.name,
         resource=None,
         subject=user,
-        context={'module': (context,)}
+        context={'module': (context.name,)}
     )
 
     ret = guard.is_allowed(inquiry)
@@ -124,10 +124,10 @@ def authorize_admin_module(user, context):
 
     # forge read resource inquiry
     inquiry = Inquiry(
-        action=authaction,
+        action=authaction.name,
         resource=None,
         subject=user,
-        context={'module': (context,)}
+        context={'module': (context.name,)}
     )
 
     ret = guard.is_allowed(inquiry)
