@@ -7,7 +7,50 @@ from pprint import pformat
 from . import Neo4jGraphQLTest
 
 class QueryTest(Neo4jGraphQLTest):
-    def test_group(self):
+    def test_mutations(self):
+        ### jwt mutations
+        ## get token
+        test_username="test user"
+        query = '''
+        mutation{{
+          token_auth(username: "{user}", password: "{password}") {{
+            token
+          }}
+        }}
+        '''.format(user=test_username, password="test")
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        token = result.data['token_auth']['token']
+
+        ## verify token
+        query = '''
+        mutation{{
+          verify_token(token: "{token}") {{
+            payload
+          }}
+        }}
+        '''.format(token=token)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data['verify_token']['payload']['username'] == test_username, \
+            "The username from the jwt token doesn't match"
+
+        ## refresh token
+        query = '''
+        mutation{{
+          refresh_token(token: "{token}") {{
+            token
+            payload
+          }}
+        }}
+        '''.format(token=token)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.data['refresh_token']['payload']
+        assert result.data['refresh_token']['payload']['username'] == test_username, \
+            "The username from the jwt token doesn't match"
+        assert result.data['refresh_token']['token'], result.data['refresh_token']['token']
+
+
         ### Simple entity ###
         ## create ##
         new_group_name = "New test group"

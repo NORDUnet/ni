@@ -203,6 +203,7 @@ MIDDLEWARE = (
 
 ########## AUTHENTICATION BACKENDS CONFIGURATION
 AUTHENTICATION_BACKENDS = (
+    'graphql_jwt.backends.JSONWebTokenBackend',
     'django.contrib.auth.backends.ModelBackend',
 )
 if SAML_ENABLED:
@@ -265,6 +266,9 @@ ACTSTREAM_SETTINGS = {
 
 GRAPHENE = {
     'SCHEMA': 'niweb.schema.schema',
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+    ],
 }
 ########## END APP CONFIGURATION
 

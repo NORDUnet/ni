@@ -1,4 +1,5 @@
 import graphene
+import graphql_jwt
 from apps.noclook.schema import NOCSCHEMA_QUERIES, NOCSCHEMA_MUTATIONS,\
                                     NOCSCHEMA_TYPES
 
@@ -10,7 +11,9 @@ class Query(*ALL_QUERIES, graphene.ObjectType):
     pass
 
 class Mutation(*ALL_MUTATIONS, graphene.ObjectType):
-    pass
+    token_auth = graphql_jwt.ObtainJSONWebToken.Field()
+    verify_token = graphql_jwt.Verify.Field()
+    refresh_token = graphql_jwt.Refresh.Field()
 
 schema = graphene.Schema(
             query=Query,
