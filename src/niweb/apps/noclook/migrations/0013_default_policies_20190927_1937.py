@@ -29,10 +29,10 @@ def forwards_func(apps, schema_editor):
         for authzaction in rw_authzactions:
             policy = Policy(
                 uuid.uuid4(),
-                actions=[vakt_rules.Eq(authzaction)],
+                actions=[vakt_rules.Eq(authzaction.name)],
                 resources=[srirules.BelongsContext(context)],
                 subjects=[srirules.HasAuthAction(authzaction, context)],
-                context={ 'module': srirules.ContainsElement(context) },
+                context={ 'module': srirules.ContainsElement(context.name) },
                 effect=ALLOW_ACCESS,
                 description='Automatically created policy'
             )
@@ -43,10 +43,10 @@ def forwards_func(apps, schema_editor):
     for context in all_contexts:
         policy = Policy(
             uuid.uuid4(),
-            actions=[vakt_rules.Eq(admin_aa)],
+            actions=[vakt_rules.Eq(admin_aa.name)],
             resources=[vakt_rules.Any()],
             subjects=[srirules.HasAuthAction(admin_aa, context)],
-            context={ 'module': srirules.ContainsElement(context) },
+            context={ 'module': srirules.ContainsElement(context.name) },
             effect=ALLOW_ACCESS,
             description='Automatically created policy'
         )
