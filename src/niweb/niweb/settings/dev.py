@@ -36,7 +36,6 @@ DEBUG = True
 
 ########## END DEBUG CONFIGURATION
 
-<<<<<<< HEAD
 # SESSION_COOKIE_DOMAIN = 'localni.info'
 LOGIN_REDICRECT_URL = 'react.localni.info'
 SESSION_COOKIE_HTTPONLY = False
@@ -46,8 +45,6 @@ CORS_ALLOW_CREDENTIALS = True
 #
 # CSRF_TRUSTED_ORIGINS = ('react.localni.info',)
 
-=======
->>>>>>> 2fdc8ff5a9b9a0c143e46b0e69e7abf863ae29a2
 ########## EMAIL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
