@@ -214,4 +214,4 @@ class NOCRootQuery(NOCAutoQuery):
         return ret
 
     class NIMeta:
-        graphql_types = [] if not apps.is_installed('noclook') else [ Group, Contact, Organization, Procedure, Host ]
+        graphql_types = [] if not apps.ready else [ Group, Contact, Organization, Procedure, Host ]

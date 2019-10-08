@@ -19,7 +19,7 @@ from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
-if apps.is_installed('noclook'):
+if apps.ready:
     global_preferences = global_preferences_registry.manager()
     menu_mode = global_preferences['general__menu_mode']
 else:
