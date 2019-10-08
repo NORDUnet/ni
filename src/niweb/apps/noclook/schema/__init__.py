@@ -20,6 +20,9 @@ NOCSCHEMA_TYPES = [
     Contact,
     Procedure,
     Host,
+    Address,
+    Phone,
+    Email,
 ]
 
 NOCSCHEMA_QUERIES = [

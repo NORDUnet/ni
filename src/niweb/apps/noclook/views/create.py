@@ -5,6 +5,7 @@ Created on 2012-11-07 4:43 PM
 @author: lundberg
 """
 
+from django.apps import apps
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
@@ -18,9 +19,11 @@ from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 
-
-global_preferences = global_preferences_registry.manager()
-menu_mode = global_preferences['general__menu_mode']
+if apps.ready:
+    global_preferences = global_preferences_registry.manager()
+    menu_mode = global_preferences['general__menu_mode']
+else:
+    menu_mode = 'ni'
 
 if menu_mode == 'ni':
     TYPES = [
