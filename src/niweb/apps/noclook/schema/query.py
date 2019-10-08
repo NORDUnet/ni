@@ -5,6 +5,7 @@ import graphene
 import norduniclient as nc
 import apps.noclook.vakt.utils as sriutils
 
+from django.apps import apps
 from graphql import GraphQLError
 from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown
 from .types import *
@@ -41,9 +42,6 @@ class NOCAutoQuery(graphene.ObjectType):
 
         _nimeta = getattr(cls, 'NIMeta')
         graphql_types = getattr(_nimeta, 'graphql_types')
-
-        assert graphql_types, \
-            'A tuple with the types should be set in the Meta class of {}'.format(cls.__name__)
 
         # add list with pagination resolver
         # add by id resolver
@@ -216,4 +214,4 @@ class NOCRootQuery(NOCAutoQuery):
         return ret
 
     class NIMeta:
-        graphql_types = [ Group, Contact, Organization, Procedure, Host ]
+        graphql_types = [] if not apps.is_installed('noclook') else [ Group, Contact, Organization, Procedure, Host ]
