@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 import datetime
 import graphene
+import logging
 import norduniclient as nc
 import re
 
@@ -28,6 +29,8 @@ from .fields import *
 from .querybuilders import *
 from ..models import NodeType, NodeHandle
 
+logger = logging.getLogger(__name__)
+
 ########## RELATION AND NODE TYPES
 class User(DjangoObjectType):
     '''
@@ -38,9 +41,15 @@ class User(DjangoObjectType):
         only_fields = ['id', 'username', 'first_name', 'last_name', 'email']
 
 class UserInputType(graphene.InputObjectType):
+    '''
+    This object represents an input for an user used in connections
+    '''
     username = graphene.String(required=True)
 
 class NINodeHandlerType(DjangoObjectType):
+    '''
+    Generic NodeHandler graphene type
+    '''
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
@@ -91,7 +100,7 @@ class NIRelationType(graphene.ObjectType):
     @classmethod
     def get_filter_input_fields(cls):
         '''
-        Method used by build_filter_and_order for a Relatio type
+        Method used by build_filter_and_order for a Relation type
         '''
         input_fields = {}
         classes = NIRelationType, cls
@@ -152,6 +161,10 @@ class DictRelationType(graphene.ObjectType):
     relation = graphene.Field(NIRelationType, required=True)
 
 class CommentType(DjangoObjectType):
+    '''
+    This type represents a comment in the API, it uses the comments model just
+    like the rest of noclook
+    '''
     class Meta:
         model = Comment
 
@@ -405,6 +418,9 @@ class NIObjectType(DjangoObjectType):
 
     @classmethod
     def get_byid_resolver(cls):
+        '''
+        This method returns a generic by id resolver for every nodetype in NOCAutoQuery
+        '''
         type_name = cls.get_type_name()
 
         def generic_byid_resolver(self, info, **args):
@@ -441,9 +457,21 @@ class NIObjectType(DjangoObjectType):
 
     @classmethod
     def get_connection_resolver(cls):
+        '''
+        This method returns a generic connection resolver for every nodetype in NOCAutoQuery
+        '''
         type_name = cls.get_type_name()
 
         def generic_list_resolver(self, info, **args):
+            '''
+            The idea for the connection resolver is to filter the whole NodeHandle
+            queryset using the date and users in the filter input, but also
+            the neo4j attributes exposed in the api.
+
+            Likewise, the ordering of it is based in neo4j attributes, so in
+            order to return an ordered node collection we have to query each
+            node by its handle_id and append to a list.
+            '''
             ret = None
             filter  = args.get('filter', None)
             orderBy = args.get('orderBy', None)
@@ -493,6 +521,8 @@ class NIObjectType(DjangoObjectType):
 
                     ret = []
 
+                    # instead of vakt here, we reduce the original qs
+                    # to only the ones the user has right to read
                     qs = sriutils.trim_readable_queryset(qs, info.context.user)
 
                     for handle_id in handle_ids:
@@ -666,6 +696,8 @@ class NIObjectType(DjangoObjectType):
             {build_query}
             RETURN distinct n
             """.format(node_match_clause=node_match_clause, build_query=build_query)
+
+        logger.debug('Neo4j connection filter query:\n{}\n'.format(q))
 
         return q
 
@@ -962,10 +994,14 @@ class AbstractNIMutation(relay.ClientIDMutation):
     class Meta:
         abstract = True
 
+'''
+This classes are used by the Mutation factory but it could be used as the
+superclass of a manualy coded class in case it's needed.
+'''
+
 class CreateNIMutation(AbstractNIMutation):
     '''
-    This class is used by the Mutation factory but it could be used as the
-    superclass of a manualy coded class in case it's needed.
+    Implements a creation mutation for a specific NodeType
     '''
     class NIMetaClass:
         request_path   = None
@@ -1029,8 +1065,8 @@ class CreateNIMutation(AbstractNIMutation):
 
 class CreateUniqueNIMutation(CreateNIMutation):
     '''
-    This class is used by the Mutation factory but it could be used as the
-    superclass of a manualy coded class in case it's needed.
+    Implements a creation mutation for a specific NodeType, the difference
+    between this and CreateNIMutation is that this mutation create unique nodes
     '''
 
     @classmethod
@@ -1039,6 +1075,9 @@ class CreateUniqueNIMutation(CreateNIMutation):
 
 
 class UpdateNIMutation(AbstractNIMutation):
+    '''
+    Implements an update mutation for a specific NodeType
+    '''
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
@@ -1087,6 +1126,9 @@ class UpdateNIMutation(AbstractNIMutation):
 
 
 class DeleteNIMutation(AbstractNIMutation):
+    '''
+    Implements an delete mutation for a specific NodeType
+    '''
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
