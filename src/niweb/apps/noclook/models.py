@@ -216,11 +216,22 @@ class GroupContextAuthzAction(models.Model):
     authzprofile = models.ForeignKey(AuthzAction, models.CASCADE)
     context = models.ForeignKey(Context, models.CASCADE)
 
+    def __str__(self):
+        return 'GroupContextAuthzAction {} / {} / {}'.format(
+                str(self.group),
+                self.authzprofile.name,
+                self.context.name
+            )
+
 
 @python_2_unicode_compatible
 class NodeHandleContext(models.Model):
     nodehandle = models.ForeignKey(NodeHandle, models.CASCADE)
     context = models.ForeignKey(Context, models.CASCADE)
+
+    def __str__(self):
+        return 'NodeHandleContext {} / {}'.format(self.nodehandle.node_name, self.context.name)
+
 
 @python_2_unicode_compatible
 class UniqueIdGenerator(models.Model):

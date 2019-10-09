@@ -5,9 +5,20 @@ import graphene
 import norduniclient as nc
 import apps.noclook.vakt.utils as sriutils
 
+from django.apps import apps
 from graphql import GraphQLError
 from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown
 from .types import *
+
+def can_load_models():
+    can_load = True
+
+    try:
+        NodeType.objects.all().first()
+    except:
+        can_load = False
+
+    return can_load
 
 class NOCAutoQuery(graphene.ObjectType):
     '''
@@ -42,9 +53,6 @@ class NOCAutoQuery(graphene.ObjectType):
         _nimeta = getattr(cls, 'NIMeta')
         graphql_types = getattr(_nimeta, 'graphql_types')
 
-        assert graphql_types, \
-            'A tuple with the types should be set in the Meta class of {}'.format(cls.__name__)
-
         # add list with pagination resolver
         # add by id resolver
         for graphql_type in graphql_types:
@@ -54,7 +62,7 @@ class NOCAutoQuery(graphene.ObjectType):
             ni_metatype = graphql_type.get_from_nimetatype('ni_metatype')
             assert ni_metatype, '{} has not set its ni_metatype attribute'.format(cls.__name__)
 
-            node_type     = NodeType.objects.filter(type=ni_type).first()
+            node_type     = NodeType.objects.filter(type=ni_type).first() if can_load_models() else None
 
             if node_type:
                 type_name     = node_type.type
@@ -87,6 +95,41 @@ class NOCAutoQuery(graphene.ObjectType):
                 setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
                 setattr(cls, resolver_name, graphql_type.get_byid_resolver())
 
+def get_node2node_relations_resolver(id1_name, id2_name, rel_type):
+    def resolve_getNode1Node2Relations(self, info, **kwargs):
+        group_id = kwargs.get(id1_name)
+        contact_id = kwargs.get(id2_name)
+
+        authorized_node1 = sriutils.authorice_read_resource(
+            info.context.user, group_id
+        )
+
+        authorized_node2 = sriutils.authorice_read_resource(
+            info.context.user, contact_id
+        )
+
+        if not (authorized_node1 and authorized_node2):
+            raise GraphQLAuthException()
+
+        relationships = nc.get_relationships(nc.graphdb.manager, handle_id1=group_id, handle_id2=contact_id, rel_type=rel_type)
+
+        output = []
+        for relationship in relationships:
+            rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relationship._id)
+            rel.relation_id = rel.id
+            output.append(rel)
+
+        return output
+
+    return resolve_getNode1Node2Relations
+
+
+resolve_getGroupContactRelations = get_node2node_relations_resolver('group_id', 'contact_id',  'Member_of')
+resolve_getContactEmailRelations = get_node2node_relations_resolver('contact_id', 'email_id',  'Has_email')
+resolve_getContactPhoneRelations = get_node2node_relations_resolver('contact_id', 'phone_id',  'Has_phone')
+resolve_getOrganizationAddressRelations = get_node2node_relations_resolver('organization_id', 'address_id',  'Has_address')
+
+
 class NOCRootQuery(NOCAutoQuery):
     getAvailableDropdowns = graphene.List(graphene.String)
     getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
@@ -94,6 +137,13 @@ class NOCRootQuery(NOCAutoQuery):
     getRoleRelationById = graphene.Field(RoleRelation, relation_id=graphene.Int(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
     getOrganizationContacts = graphene.List(ContactWithRolename, handle_id=graphene.Int(required=True))
+
+    # relationship lookups
+    getGroupContactRelations = graphene.List(NIRelationType, group_id=graphene.Int(required=True), contact_id=graphene.Int(required=True), resolver=resolve_getGroupContactRelations)
+    getContactEmailRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), email_id=graphene.Int(required=True), resolver=resolve_getContactEmailRelations)
+    getContactPhoneRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), phone_id=graphene.Int(required=True), resolver=resolve_getContactPhoneRelations)
+    getOrganizationAddressRelations = graphene.List(NIRelationType, organization_id=graphene.Int(required=True), address_id=graphene.Int(required=True), resolver=resolve_getOrganizationAddressRelations)
+
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -216,4 +266,4 @@ class NOCRootQuery(NOCAutoQuery):
         return ret
 
     class NIMeta:
-        graphql_types = [ Group, Contact, Organization, Procedure, Host ]
+        graphql_types = [ Group, Address, Phone, Email, Contact, Organization, Procedure, Host ]

@@ -311,9 +311,9 @@ class Command(BaseCommand):
             raise Exception('Work/Personal values are not available for the \
                                 Email/phone dropdown types')
 
-        contact_type = NodeType.objects.get_or_create(type='Contact')[0] # contact
-        email_type = NodeType.objects.get_or_create(type='Email')[0] # contact
-        phone_type = NodeType.objects.get_or_create(type='Phone')[0] # contact
+        contact_type = NodeType.objects.get_or_create(type='Contact', slug='contact')[0] # contact
+        email_type = NodeType.objects.get_or_create(type='Email', slug='email', hidden=True)[0] # contact
+        phone_type = NodeType.objects.get_or_create(type='Phone', slug='phone', hidden=True)[0] # contact
         all_contacts = NodeHandle.objects.filter(node_type=contact_type)
 
         for contact in all_contacts:
@@ -351,8 +351,8 @@ class Command(BaseCommand):
 
     def fix_organizations_address(self):
         self.user = get_user()
-        address_type = NodeType.objects.get_or_create(type='Address')[0] # address
-        organization_type = NodeType.objects.get_or_create(type='Organization')[0] # organization
+        address_type = NodeType.objects.get_or_create(type='Address', slug='address', hidden=True)[0] # address
+        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
         all_organizations = NodeHandle.objects.filter(node_type=organization_type)
         logical_meta_type = 'Logical'
 
