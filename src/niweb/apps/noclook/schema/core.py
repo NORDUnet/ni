@@ -494,13 +494,12 @@ class NIObjectType(DjangoObjectType):
                     ret = []
 
                     for handle_id in handle_ids:
-                        authorized = sriutils.authorice_read_resource(
-                            info.context.user, handle_id
-                        )
-
-                        if authorized:
-                            nodeqs = qs.filter(handle_id=handle_id)
-                            if nodeqs and len(nodeqs) == 1:
+                        nodeqs = qs.filter(handle_id=handle_id)
+                        if nodeqs and len(nodeqs) == 1:
+                            authorized = sriutils.authorice_read_resource(
+                                info.context.user, handle_id
+                            )
+                            if authorized:
                                 ret.append(nodeqs.first())
 
                     # do nodehandler attributes ordering now that we have

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from apps.noclook.models import NodeHandle, AuthzAction, NodeHandleContext, Context
+from apps.noclook.models import NodeHandle, AuthzAction, GroupContextAuthzAction, NodeHandleContext, Context
 from djangovakt.storage import DjangoStorage
 from vakt import Guard, RulesChecker, Inquiry
 
@@ -12,6 +12,38 @@ ADMIN_AA_NAME = 'admin'
 NETWORK_CTX_NAME = 'Network'
 COMMUNITY_CTX_NAME = 'Community'
 CONTRACTS_CTX_NAME = 'Contracts'
+
+
+def trim_readable_queryset(qs, user):
+    # get all readable contexts for this user
+    user_groups = user.groups.all()
+    read_aa = get_read_authaction()
+
+    gcaas = GroupContextAuthzAction.objects.filter(
+        group__in=user.groups.all(),
+        authzprofile=read_aa
+    )
+
+    readable_contexts = []
+    for gcaa in gcaas:
+        readable_contexts.append(gcaa.context)
+
+    # queryset only will match nodes that the user can read
+    if readable_contexts:
+        # the hard way
+        readable_ids = NodeHandleContext.objects.filter(
+            context__in=readable_contexts
+        ).values('nodehandle_id')
+
+        readable_ids = [ x['nodehandle_id'] for x in readable_ids ]
+
+        qs = qs.filter(handle_id__in=readable_ids)
+    else:
+        # the user doesn't have rights to any context
+        qs.none()
+
+    return qs
+
 
 def get_vakt_storage_and_guard():
     storage = DjangoStorage()
