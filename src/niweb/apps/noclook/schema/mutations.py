@@ -327,11 +327,10 @@ class DeleteRelationship(relay.ClientIDMutation):
                 info.context.user, end_id
             )
 
-            if not (authorized_start and authorized_end):
-                raise GraphQLAuthException()
-
-            activitylog.delete_relationship(info.context.user, relationship)
-            relationship.delete()
+            if authorized_start and authorized_end:
+                activitylog.delete_relationship(info.context.user, relationship)
+                relationship.delete()
+            
             success = True
         except nc.exceptions.RelationshipNotFound:
             success = True

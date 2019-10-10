@@ -17,3 +17,4 @@ configparser
 graphene-django>=2.0
 django-cors-headers
 vakt
+django-graphql-jwt

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from apps.noclook.models import NodeHandle, AuthzAction, NodeHandleContext, Context
+import logging
+
+from apps.noclook.models import NodeHandle, AuthzAction, GroupContextAuthzAction, NodeHandleContext, Context
 from djangovakt.storage import DjangoStorage
 from vakt import Guard, RulesChecker, Inquiry
 
@@ -12,6 +14,46 @@ ADMIN_AA_NAME = 'admin'
 NETWORK_CTX_NAME = 'Network'
 COMMUNITY_CTX_NAME = 'Community'
 CONTRACTS_CTX_NAME = 'Contracts'
+
+
+logger = logging.getLogger(__name__)
+
+def trim_readable_queryset(qs, user):
+    '''
+    This function trims a Queryset of nodes to keep only those the user has
+    rights to read
+    '''
+    logger.debug('Authorizing user to read a set of nodes')
+
+    # get all readable contexts for this user
+    user_groups = user.groups.all()
+    read_aa = get_read_authaction()
+
+    gcaas = GroupContextAuthzAction.objects.filter(
+        group__in=user.groups.all(),
+        authzprofile=read_aa
+    )
+
+    readable_contexts = []
+    for gcaa in gcaas:
+        readable_contexts.append(gcaa.context)
+
+    # queryset only will match nodes that the user can read
+    if readable_contexts:
+        # the hard way
+        readable_ids = NodeHandleContext.objects.filter(
+            context__in=readable_contexts
+        ).values('nodehandle_id')
+
+        readable_ids = [ x['nodehandle_id'] for x in readable_ids ]
+
+        qs = qs.filter(handle_id__in=readable_ids)
+    else:
+        # the user doesn't have rights to any context
+        qs.none()
+
+    return qs
+
 
 def get_vakt_storage_and_guard():
     storage = DjangoStorage()
@@ -58,6 +100,11 @@ def get_default_context(cmodel=Context):
     return get_community_context(cmodel)
 
 def authorize_aa_resource(user, handle_id, get_aa_func):
+    '''
+    This function checks if an user is authorized to do a specific action over
+    a node specified by its handle_id. It forges an inquiry and check it against
+    vakt's guard.
+    '''
     ret = False # deny by default
 
     # get storage and guard
@@ -84,14 +131,22 @@ def authorize_aa_resource(user, handle_id, get_aa_func):
 
 
 def authorice_read_resource(user, handle_id):
+    logger.debug('Authorizing user to read a node with id {}'.format(handle_id))
     return authorize_aa_resource(user, handle_id, get_read_authaction)
 
 
 def authorice_write_resource(user, handle_id):
+    logger.debug('Authorizing user to write a node with id {}'.format(handle_id))
     return authorize_aa_resource(user, handle_id, get_write_authaction)
 
 
 def authorize_create_resource(user, context):
+    '''
+    This function authorizes the creation of a resource within a particular
+    context, it checks if the user can write within this SRI module
+    '''
+    logger.debug('Authorizing user to create a node within the module {}'\
+        .format(context.name))
     ret = False # deny by default
 
     # get storage and guard
@@ -114,6 +169,11 @@ def authorize_create_resource(user, context):
 
 
 def authorize_admin_module(user, context):
+    '''
+    This function checks if the user can perform admin actions inside a module
+    '''
+    logger.debug('Authorizing user to admin the module {}'\
+        .format(context.name))
     ret = False # deny by default
 
     # get storage and guard

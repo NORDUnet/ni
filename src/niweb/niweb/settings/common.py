@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from datetime import timedelta
 from os.path import abspath, basename, dirname, join, normpath
 from os import environ
 from sys import path
@@ -203,6 +204,7 @@ MIDDLEWARE = (
 
 ########## AUTHENTICATION BACKENDS CONFIGURATION
 AUTHENTICATION_BACKENDS = (
+    'graphql_jwt.backends.JSONWebTokenBackend',
     'django.contrib.auth.backends.ModelBackend',
 )
 if SAML_ENABLED:
@@ -265,6 +267,9 @@ ACTSTREAM_SETTINGS = {
 
 GRAPHENE = {
     'SCHEMA': 'niweb.schema.schema',
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+    ],
 }
 ########## END APP CONFIGURATION
 
@@ -342,3 +347,11 @@ LOGGING = {
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
 WSGI_APPLICATION = 'wsgi.application'
 ########## END WSGI CONFIGURATION
+
+########## GRAPHQL JWT CONFIGURATION
+GRAPHQL_JWT = {
+    'JWT_VERIFY_EXPIRATION': True,
+    'JWT_EXPIRATION_DELTA': timedelta(minutes=5),
+    'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
+}
+########## END GRAPHQL JWT CONFIGURATION

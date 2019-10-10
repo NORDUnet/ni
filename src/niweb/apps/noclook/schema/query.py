@@ -10,6 +10,16 @@ from graphql import GraphQLError
 from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown
 from .types import *
 
+def can_load_models():
+    can_load = True
+
+    try:
+        NodeType.objects.all().first()
+    except:
+        can_load = False
+
+    return can_load
+
 class NOCAutoQuery(graphene.ObjectType):
     '''
     This class creates a connection and a getById method for each of the types
@@ -52,7 +62,7 @@ class NOCAutoQuery(graphene.ObjectType):
             ni_metatype = graphql_type.get_from_nimetatype('ni_metatype')
             assert ni_metatype, '{} has not set its ni_metatype attribute'.format(cls.__name__)
 
-            node_type     = NodeType.objects.filter(type=ni_type).first()
+            node_type     = NodeType.objects.filter(type=ni_type).first() if can_load_models() else None
 
             if node_type:
                 type_name     = node_type.type
@@ -256,4 +266,4 @@ class NOCRootQuery(NOCAutoQuery):
         return ret
 
     class NIMeta:
-        graphql_types = [] if not apps.ready else [ Group, Address, Phone, Email, Contact, Organization, Procedure, Host ]
+        graphql_types = [ Group, Address, Phone, Email, Contact, Organization, Procedure, Host ]
