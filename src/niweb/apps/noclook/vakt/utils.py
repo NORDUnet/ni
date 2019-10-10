@@ -43,9 +43,7 @@ def trim_readable_queryset(qs, user):
         # the hard way
         readable_ids = NodeHandleContext.objects.filter(
             context__in=readable_contexts
-        ).values('nodehandle_id')
-
-        readable_ids = [ x['nodehandle_id'] for x in readable_ids ]
+        ).values_list('nodehandle_id', flat=True)
 
         qs = qs.filter(handle_id__in=readable_ids)
     else:
