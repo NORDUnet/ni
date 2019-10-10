@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from graphene_django.views import GraphQLView
 
@@ -33,6 +33,6 @@ NOCSCHEMA_MUTATIONS = [
     NOCRootMutation,
 ]
 
-
-class AuthGraphQLView(LoginRequiredMixin, GraphQLView):
+@method_decorator(login_required, name='dispatch')
+class AuthGraphQLView(GraphQLView):
     pass
