@@ -199,6 +199,7 @@ MIDDLEWARE = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'apps.noclook.middleware.SRIJWTMiddleware',
 )
 ########## END MIDDLEWARE CONFIGURATION
 
