@@ -27,7 +27,7 @@ class SRIJWTMiddleware(object):
                 jwt_settings.JWT_COOKIE_NAME,
                 token,
                 expires=expires,
-                httponly=True,
+                httponly=False,
                 secure=jwt_settings.JWT_COOKIE_SECURE,
             )
         else:
