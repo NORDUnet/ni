@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from datetime import timedelta
 from os.path import abspath, basename, dirname, join, normpath
 from os import environ
 from sys import path
@@ -189,6 +190,7 @@ SAML_ENABLED = environ.get('SAML_ENABLED', False)
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
 MIDDLEWARE = (
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -197,11 +199,13 @@ MIDDLEWARE = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'apps.noclook.middleware.SRIJWTMiddleware',
 )
 ########## END MIDDLEWARE CONFIGURATION
 
 ########## AUTHENTICATION BACKENDS CONFIGURATION
 AUTHENTICATION_BACKENDS = (
+    'graphql_jwt.backends.JSONWebTokenBackend',
     'django.contrib.auth.backends.ModelBackend',
 )
 if SAML_ENABLED:
@@ -237,6 +241,8 @@ THIRD_PARTY_APPS = (
     'crispy_forms',
     'dynamic_preferences',
     'attachments',
+    'graphene_django',
+    'corsheaders',
 )
 
 LOCAL_APPS = (
@@ -244,6 +250,7 @@ LOCAL_APPS = (
     'apps.noclook',
     'apps.scan',
     'apps.nerds',
+    'djangovakt',
 )
 
 OPTIONAL_APPS = environ.get('OPTIONAL_APPS', '').split()
@@ -257,6 +264,13 @@ ACTSTREAM_SETTINGS = {
     'USE_PREFETCH': True,
     'USE_JSONFIELD': True,
     'GFK_FETCH_DEPTH': 1,
+}
+
+GRAPHENE = {
+    'SCHEMA': 'niweb.schema.schema',
+    'MIDDLEWARE': [
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+    ],
 }
 ########## END APP CONFIGURATION
 
@@ -334,3 +348,20 @@ LOGGING = {
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
 WSGI_APPLICATION = 'wsgi.application'
 ########## END WSGI CONFIGURATION
+
+########## GRAPHQL JWT CONFIGURATION
+GRAPHQL_JWT = {
+    'JWT_VERIFY_EXPIRATION': True,
+    'JWT_EXPIRATION_DELTA': timedelta(minutes=5),
+    'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
+}
+########## END GRAPHQL JWT CONFIGURATION
+
+########## SESSION_COOKIE_DOMAIN
+SESSION_COOKIE_HTTPONLY = False
+CORS_ALLOW_CREDENTIALS = True
+########## END SESSION_COOKIE_DOMAIN
+
+########## GRAPHQL CONFIGURATION
+USE_GRAPHIQL = False
+########## END GRAPHQL CONFIGURATION

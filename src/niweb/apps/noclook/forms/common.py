@@ -24,6 +24,14 @@ def country_codes():
     return zip(codes, codes)
 
 
+def email_choices():
+    return Dropdown.get('email_type').as_choices()
+
+
+def phone_choices():
+    return Dropdown.get('phone_type').as_choices()
+
+
 def countries():
     choices = Dropdown.get('countries').as_choices()
     codes, countries = zip(*choices)
@@ -828,11 +836,15 @@ class NewOrganizationForm(forms.Form):
     account_id = forms.CharField(required=False)
     name = forms.CharField()
     description = description_field('organization')
-    phone = forms.CharField(required=False)
-    website = forms.CharField(required=False)
     customer_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     incident_management_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
+    affiliation_customer = forms.BooleanField(required=False)
+    affiliation_end_customer = forms.BooleanField(required=False)
+    affiliation_provider = forms.BooleanField(required=False)
+    affiliation_partner = forms.BooleanField(required=False)
+    affiliation_host_user = forms.BooleanField(required=False)
+    affiliation_site_owner = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(NewOrganizationForm, self).__init__(*args, **kwargs)
@@ -884,7 +896,7 @@ class EditOrganizationForm(NewOrganizationForm):
 
     def clean(self):
         """
-        Sets name from first and second name
+        Sets the default roles
         """
         cleaned_data = super(EditOrganizationForm, self).clean()
         for field, roledict in DEFAULT_ROLES.items():
@@ -909,13 +921,10 @@ class NewContactForm(forms.Form):
     first_name = forms.CharField()
     last_name = forms.CharField()
     contact_type = forms.ChoiceField(widget=forms.widgets.Select)
-    mobile = forms.CharField(required=False)
-    phone = forms.CharField(required=False)
-    email = forms.CharField(required=False)
-    other_email = forms.CharField(required=False)
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     title = forms.CharField(required=False)
     pgp_fingerprint = forms.CharField(required=False, label='PGP fingerprint')
+    notes = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Notes")
 
     def clean(self, is_create=True):
         """
@@ -1002,6 +1011,7 @@ class NewRoleForm(forms.ModelForm):
         model = Role
         fields = ['name', 'description']
 
+
 class EditRoleForm(forms.ModelForm):
     def save(self, commit=True):
         initial_name = self.initial['name']
@@ -1017,3 +1027,39 @@ class EditRoleForm(forms.ModelForm):
     class Meta:
         model = Role
         fields = ['name', 'description']
+
+
+class PhoneForm(forms.Form):
+    contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Contact")
+    name = forms.CharField()
+    type = forms.ChoiceField(widget=forms.widgets.Select)
+
+    def __init__(self, *args, **kwargs):
+        super(PhoneForm, self).__init__(*args, **kwargs)
+        self.fields['contact'].choices = get_node_type_tuples('Contact')
+        self.fields['type'].choices = phone_choices()
+
+
+class EmailForm(forms.Form):
+    contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Contact")
+    name = forms.CharField()
+    type = forms.ChoiceField(widget=forms.widgets.Select)
+
+    def __init__(self, *args, **kwargs):
+        super(EmailForm, self).__init__(*args, **kwargs)
+        self.fields['contact'].choices = get_node_type_tuples('Contact')
+        self.fields['type'].choices = email_choices()
+
+
+class AddressForm(forms.Form):
+    organization = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Organizations")
+    name = forms.CharField()
+    website = forms.CharField(required=False)
+    phone = forms.CharField(required=False)
+    street = forms.CharField(required=False)
+    postal_code = forms.CharField(required=False)
+    postal_area = forms.CharField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(AddressForm, self).__init__(*args, **kwargs)
+        self.fields['organization'].choices = get_node_type_tuples('Organization')

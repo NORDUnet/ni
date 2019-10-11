@@ -2,7 +2,7 @@
 __author__ = 'ffuentes'
 
 from apps.noclook import helpers
-from apps.noclook.models import User, NodeType, NodeHandle, Role, NODE_META_TYPE_CHOICES, DEFAULT_ROLE_KEY
+from apps.noclook.models import User, NodeType, NodeHandle, Role, Dropdown, NODE_META_TYPE_CHOICES, DEFAULT_ROLE_KEY
 from apps.nerds.lib.consumer_util import get_user
 from django.core.management.base import BaseCommand, CommandError
 from pprint import pprint
@@ -29,6 +29,10 @@ class Command(BaseCommand):
                     type=argparse.FileType('r'))
         parser.add_argument("-f", "--fixroles",
                     action='store_true', help="regenerate roles in intermediate setup")
+        parser.add_argument("-m", "--emailphones",
+                    action='store_true', help="regenerate emails and phones to separate models")
+        parser.add_argument("-a", "--addressfix",
+                    action='store_true', help="regenerate organizations' address to the new SRI")
         parser.add_argument('-d', "--delimiter", nargs='?', default=';',
                             help='Delimiter to use use. Default ";".')
 
@@ -36,6 +40,16 @@ class Command(BaseCommand):
         # check if the fixroles option has been called, do it and exit
         if options['fixroles']:
             self.fix_roles()
+            return
+
+        # check if the emailphones option has been called, do it and exit
+        if options['emailphones']:
+            self.fix_emails_phones()
+            return
+
+        # check if the addressfix option has been called, do it and exit
+        if options['addressfix']:
+            self.fix_organizations_address()
             return
 
         relation_meta_type = 'Relation'
@@ -275,6 +289,101 @@ class Command(BaseCommand):
             elif role_name != '':
                 role = Role(name=role_name)
                 role.save()
+
+    def fix_emails_phones(self):
+        self.user = get_user()
+
+        work_type_str = 'work'
+        personal_type_str = 'personal'
+        logical_meta_type = 'Logical'
+
+        old_email_fields = { 'email': work_type_str,  'other_email': personal_type_str }
+        old_phone_fields = { 'phone': work_type_str,  'mobile': personal_type_str }
+
+        # check that the options are available
+        phone_type_val = Dropdown.objects.get(name="phone_type").as_values(False)
+        email_type_val = Dropdown.objects.get(name="email_type").as_values(False)
+
+        if not ((work_type_str in phone_type_val) and\
+            (personal_type_str in phone_type_val) and\
+            (personal_type_str in email_type_val) and\
+            (personal_type_str in email_type_val)):
+            raise Exception('Work/Personal values are not available for the \
+                                Email/phone dropdown types')
+
+        contact_type = NodeType.objects.get_or_create(type='Contact', slug='contact')[0] # contact
+        email_type = NodeType.objects.get_or_create(type='Email', slug='email', hidden=True)[0] # contact
+        phone_type = NodeType.objects.get_or_create(type='Phone', slug='phone', hidden=True)[0] # contact
+        all_contacts = NodeHandle.objects.filter(node_type=contact_type)
+
+        for contact in all_contacts:
+            contact_node = contact.get_node()
+
+            for old_phone_field, assigned_type in old_phone_fields.items():
+                # phones
+                if old_phone_field in contact_node.data:
+                    old_phone_value = contact_node.data.get(old_phone_field)
+                    new_phone = NodeHandle.objects.get_or_create(
+                        node_name=old_phone_value,
+                        node_type=phone_type,
+                        node_meta_type=logical_meta_type,
+                        creator=self.user,
+                        modifier=self.user,
+                    )[0]
+                    contact_node.add_phone(new_phone.handle_id)
+                    contact_node.remove_property(old_phone_field)
+                    new_phone.get_node().add_property('type', assigned_type)
+
+            for old_email_field, assigned_type in old_email_fields.items():
+                # emails
+                if old_email_field in contact_node.data:
+                    old_email_value = contact_node.data.get(old_email_field)
+                    new_email = NodeHandle.objects.get_or_create(
+                        node_name=old_email_value,
+                        node_type=email_type,
+                        node_meta_type=logical_meta_type,
+                        creator=self.user,
+                        modifier=self.user,
+                    )[0]
+                    contact_node.add_email(new_email.handle_id)
+                    contact_node.remove_property(old_email_field)
+                    new_email.get_node().add_property('type', assigned_type)
+
+    def fix_organizations_address(self):
+        self.user = get_user()
+        address_type = NodeType.objects.get_or_create(type='Address', slug='address', hidden=True)[0] # address
+        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+        logical_meta_type = 'Logical'
+
+        phone_field = 'phone'
+        website_field = 'website'
+
+        for organization in all_organizations:
+            organization_node = organization.get_node()
+            address_name = 'Address: {}'.format(organization.node_name)
+
+            old_website = organization_node.data.get(website_field, None)
+            old_phone = organization_node.data.get(phone_field, None)
+
+            if old_website:
+                # create an Address and asociate it to the Organization
+                new_address = NodeHandle.objects.get_or_create(
+                    node_name=address_name,
+                    node_type=address_type,
+                    node_meta_type=logical_meta_type,
+                    creator=self.user,
+                    modifier=self.user,
+                )[0]
+
+                new_address.get_node().add_property(website_field, old_website)
+                organization_node.remove_property(website_field)
+
+                if old_phone:
+                    new_address.get_node().add_property(phone_field, old_phone)
+                    organization_node.remove_property(phone_field)
+
+                organization_node.add_address(new_address.handle_id)
 
     def count_lines(self, file):
         '''

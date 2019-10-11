@@ -54,3 +54,7 @@ organization_types,provider,Service provider
 organization_types,supplier,Supplier
 contact_type,person,Person
 contact_type,group,Group
+phone_type,work,Work
+phone_type,personal,Personal
+email_type,work,Work
+email_type,personal,Personal

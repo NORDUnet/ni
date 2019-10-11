@@ -1044,3 +1044,63 @@ def get_contact_for_orgrole(organization_id, role):
         contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
         return contact
+
+
+def add_phone_contact(user, phone, contact_id):
+    """
+    :param user: Django user
+    :param phone: norduniclient model (phone)
+    :param contact_id: contact id to associate to the phone instance
+    :return: norduniclient model, boolean
+    """
+    contact = NodeHandle.objects.get(handle_id=contact_id)
+    result = contact.get_node().add_phone(phone.handle_id)
+
+    relationship_id = result.get('Has_phone')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_phone')[0].get('created')
+
+    if created:
+        activitylog.create_relationship(user, relationship)
+
+    return relationship, created
+
+
+
+def add_email_contact(user, email, contact_id):
+    """
+    :param user: Django user
+    :param email: norduniclient model (email)
+    :param contact_id: contact id to associate to the email instance
+    :return: norduniclient model, boolean
+    """
+    contact = NodeHandle.objects.get(handle_id=contact_id)
+    result = contact.get_node().add_email(email.handle_id)
+
+    relationship_id = result.get('Has_email')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_email')[0].get('created')
+
+    if created:
+        activitylog.create_relationship(user, relationship)
+
+    return relationship, created
+
+def add_address_organization(user, address, organization_id):
+    """
+    :param user: Django user
+    :param address: norduniclient model (address)
+    :param organization_id: organization id to associate to the address instance
+    :return: norduniclient model, boolean
+    """
+    organization = NodeHandle.objects.get(handle_id=organization_id)
+    result = organization.get_node().add_address(address.handle_id)
+
+    relationship_id = result.get('Has_address')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_address')[0].get('created')
+
+    if created:
+        activitylog.create_relationship(user, relationship)
+
+    return relationship, created

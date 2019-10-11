@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django_comments.signals import comment_was_posted, comment_was_flagged
 from django.dispatch import receiver
 from django_comments.models import Comment
@@ -85,6 +85,11 @@ class NodeHandle(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     modifier = models.ForeignKey(User, related_name='modifier')
     modified = models.DateTimeField(auto_now=True)
+    contexts = models.ManyToManyField(
+        'Context',
+        through='NodeHandleContext',
+        through_fields=('nodehandle', 'context'),
+    )
 
     def __str__(self):
         return '%s %s' % (self.node_type, self.node_name)
@@ -187,6 +192,45 @@ class Role(models.Model):
         if self.role_group != default_rolegroup:
             nc.models.RoleRelationship.delete_roles_withname(self.name)
             super(Role, self).delete()
+
+
+@python_2_unicode_compatible
+class AuthzAction(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return 'AuthzAction %s' % (self.name)
+
+
+@python_2_unicode_compatible
+class Context(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return 'Context %s' % (self.name)
+
+
+@python_2_unicode_compatible
+class GroupContextAuthzAction(models.Model):
+    group = models.ForeignKey(Group, models.CASCADE)
+    authzprofile = models.ForeignKey(AuthzAction, models.CASCADE)
+    context = models.ForeignKey(Context, models.CASCADE)
+
+    def __str__(self):
+        return 'GroupContextAuthzAction {} / {} / {}'.format(
+                str(self.group),
+                self.authzprofile.name,
+                self.context.name
+            )
+
+
+@python_2_unicode_compatible
+class NodeHandleContext(models.Model):
+    nodehandle = models.ForeignKey(NodeHandle, models.CASCADE)
+    context = models.ForeignKey(Context, models.CASCADE)
+
+    def __str__(self):
+        return 'NodeHandleContext {} / {}'.format(self.nodehandle.node_name, self.context.name)
 
 
 @python_2_unicode_compatible
