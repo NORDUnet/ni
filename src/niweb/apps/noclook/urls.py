@@ -4,6 +4,7 @@ from django.contrib.auth import views as auth_views
 from .views import other, create, edit, import_nodes, report, detail, redirect, debug, list as _list
 
 urlpatterns = [
+    url(r'^csrf/$', other.csrf),
     url(r'^login/$', auth_views.LoginView.as_view()),
     url(r'^$', other.index),
     # Log out

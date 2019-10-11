@@ -25,7 +25,7 @@ class CsvImportTest(NeoTestCase):
     """
 
     contacts_str = """"salutation";"first_name";"last_name";"title";"contact_role";"contact_type";"mailing_street";"mailing_city";"mailing_zip";"mailing_state";"mailing_country";"phone";"mobile";"fax";"email";"other_email";"PGP_fingerprint";"account_name"
-"Honorable";"Caesar";"Newby";;"Computer Systems Analyst III";"Person";;;;;"China";"897-979-7799";"501-503-1550";;"cnewby0@joomla.org";;;"Gabtune"
+"Honorable";"Caesar";"Newby";;"Computer Systems Analyst III";"Person";;;;;"China";"897-979-7799";"501-503-1550";;"cnewby0@joomla.org";"cnewby1@joomla.org";;"Gabtune"
 "Mr";"Zilvia";"Linnard";;"Analog Circuit Design manager";"Person";;;;;"Indonesia";"205-934-3477";"473-256-5648";;"zlinnard1@wunderground.com";;;"Babblestorm"
 "Honorable";"Reamonn";"Scriviner";;"Tax Accountant";"Person";;;;;"China";"200-111-4607";"419-639-2648";;"rscriviner2@moonfruit.com";;;"Babbleblab"
 "Mrs";"Jessy";"Bainton";;"Software Consultant";"Person";;;;;"China";"877-832-9647";"138-608-6235";;"fbainton3@si.edu";;;"Mudo"
@@ -126,6 +126,159 @@ class CsvImportTest(NeoTestCase):
         employee_role = Role.objects.get(slug=DEFAULT_ROLE_KEY)
         relations = contact_employee.get_node().get_outgoing_relations()
         self.assertEquals(employee_role.name, relations['Works_for'][0]['relationship']['name'])
+
+    def test_fix_addresss(self):
+        # call csvimport command (verbose 0) to import test contacts
+        call_command(
+            self.cmd_name,
+            organizations=self.organizations_file,
+            verbosity=0,
+        )
+
+        # check one of the contacts is present
+        org_name = "Tazz"
+        qs = NodeHandle.objects.filter(node_name=org_name)
+        self.assertIsNotNone(qs)
+        organization1 = qs.first()
+        self.assertIsNotNone(organization1)
+        self.assertIsInstance(organization1.get_node(), ncmodels.OrganizationModel)
+        organization1_node = organization1.get_node()
+
+        # check organization's website and phone
+        phone1_test = '453-896-3068'
+        has_phone1 = 'phone' in organization1_node.data
+        self.assertTrue(has_phone1)
+        self.assertEquals(organization1_node.data['phone'], phone1_test)
+
+        website1_test = 'https://studiopress.com'
+        has_website1 = 'website' in organization1_node.data
+        self.assertTrue(has_website1)
+        self.assertEquals(organization1_node.data['website'], website1_test)
+
+        call_command(
+            self.cmd_name,
+            addressfix=True,
+            verbosity=0,
+        )
+
+        # check the old fields are not present anymore
+        qs = NodeHandle.objects.filter(node_name=org_name)
+        self.assertIsNotNone(qs)
+        organization1 = qs.first()
+        self.assertIsNotNone(organization1)
+        self.assertIsInstance(organization1.get_node(), ncmodels.OrganizationModel)
+        organization1_node = organization1.get_node()
+
+        has_phone = 'phone' in organization1_node.data
+        self.assertFalse(has_phone)
+        has_website = 'website' in organization1_node.data
+        self.assertFalse(has_website)
+
+        relations = organization1_node.get_outgoing_relations()
+        relation_keys = list(relations.keys())
+        has_address = 'Has_address' in relation_keys
+        self.assertTrue(has_address)
+
+        address_node = relations['Has_address'][0]['node']
+        self.assertIsInstance(address_node, ncmodels.AddressModel)
+
+        has_phone = 'phone' in address_node.data
+        has_website = 'website' in address_node.data
+        self.assertTrue(has_phone)
+        self.assertTrue(has_website)
+
+    def test_fix_emails_phones(self):
+        # call csvimport command (verbose 0) to import test contacts
+        call_command(
+            self.cmd_name,
+            contacts=self.contacts_file,
+            verbosity=0,
+        )
+
+        # check one of the contacts is present
+        full_name = '{} {}'.format('Caesar', 'Newby')
+        qs = NodeHandle.objects.filter(node_name=full_name)
+        self.assertIsNotNone(qs)
+        contact1 = qs.first()
+        self.assertIsNotNone(contact1)
+        self.assertIsInstance(contact1.get_node(), ncmodels.ContactModel)
+        contact_node = contact1.get_node()
+
+        # check user emails in old fields
+        email1_test = 'cnewby0@joomla.org'
+        has_email1 = 'email' in contact_node.data
+        self.assertTrue(has_email1)
+        self.assertEquals(contact_node.data['email'], email1_test)
+
+        email2_test = 'cnewby1@joomla.org'
+        has_email2 = 'other_email' in contact_node.data
+        self.assertTrue(has_email2)
+        self.assertEquals(contact_node.data['other_email'], email2_test)
+
+        # check user phones in old fields
+        phone1_test = '897-979-7799'
+        has_phone1 = 'phone' in contact_node.data
+        self.assertTrue(has_phone1)
+        self.assertEquals(contact_node.data['phone'], phone1_test)
+
+        phone2_test = '501-503-1550'
+        has_phone2 = 'mobile' in contact_node.data
+        self.assertTrue(has_phone2)
+        self.assertEquals(contact_node.data['mobile'], phone2_test)
+
+        call_command(
+            self.cmd_name,
+            emailphones=True,
+            verbosity=0,
+        )
+
+        # check the old fields are not present anymore
+        qs = NodeHandle.objects.filter(node_name=full_name)
+        self.assertIsNotNone(qs)
+        contact1 = qs.first()
+        self.assertIsNotNone(contact1)
+        self.assertIsInstance(contact1.get_node(), ncmodels.ContactModel)
+        contact_node = contact1.get_node()
+
+        has_phone1 = 'phone' in contact_node.data
+        self.assertTrue(not has_phone1)
+        has_phone2 = 'mobile' in contact_node.data
+        self.assertTrue(not has_phone2)
+        has_email1 = 'email' in contact_node.data
+        self.assertTrue(not has_email1)
+        has_email2 = 'other_email' in contact_node.data
+        self.assertTrue(not has_email2)
+
+        relations = contact_node.get_outgoing_relations()
+        relation_keys = list(relations.keys())
+        has_phone = 'Has_phone' in relation_keys
+        has_emails = 'Has_email' in relation_keys
+
+        test_dict = {
+            'email': {
+                'work': email1_test,
+                'personal': email2_test,
+            },
+            'phone': {
+                'work': phone1_test,
+                'personal': phone2_test,
+            }
+        }
+
+        self.assertTrue(has_phone)
+        self.assertTrue(has_emails)
+
+        for phone_rel in relations['Has_phone']:
+            phone_node = phone_rel['node']
+            phone_type = phone_node.data['type']
+            check_phone = test_dict['phone'][phone_type]
+            self.assertEquals(check_phone, phone_node.data['name'])
+
+        for email_rel in relations['Has_email']:
+            email_node = email_rel['node']
+            email_type = email_node.data['type']
+            check_email = test_dict['email'][email_type]
+            self.assertEquals(check_email, email_node.data['name'])
 
     def test_secroles_import(self):
         # call csvimport command (verbose 0)

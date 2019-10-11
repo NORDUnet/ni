@@ -38,10 +38,6 @@ $(document).ready(
       {% accordion 'Additional info (optional)' 'additional-edit' '#edit-accordion' %}
           {{ form.title | as_crispy_field }}
           {{ form.contact_type | as_crispy_field }}
-          {{ form.phone | as_crispy_field }}
-          {{ form.mobile | as_crispy_field }}
-          {{ form.email | as_crispy_field }}
-          {{ form.other_email | as_crispy_field }}
           {{ form.pgp_fingerprint | as_crispy_field}}
       {% endaccordion %}
       {% include "noclook/edit/includes/works_for_group.html" %}
