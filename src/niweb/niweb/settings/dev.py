@@ -82,3 +82,7 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 GOOGLE_MAPS_API_KEY = environ.get('GOOGLE_MAPS_API_KEY', 'no-apikey')
 CORS_ORIGIN_ALLOW_ALL = True
+
+########## GRAPHQL CONFIGURATION
+USE_GRAPHIQL = True
+########## END GRAPHQL CONFIGURATION

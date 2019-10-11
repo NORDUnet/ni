@@ -82,7 +82,7 @@ urlpatterns += [
     url(r'^api/', include(v1_api.urls)),
 
     # GraphQL endpoint
-    url(r'^graphql/', csrf_exempt(jwt_cookie(AuthGraphQLView.as_view(graphiql=True)))),
+    url(r'^graphql/', csrf_exempt(jwt_cookie(AuthGraphQLView.as_view(graphiql=settings.USE_GRAPHIQL)))),
 
     # Django Generic Comments
     url(r'^comments/', include('django_comments.urls')),
