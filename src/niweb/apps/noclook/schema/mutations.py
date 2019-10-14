@@ -121,6 +121,16 @@ class NIAddressMutationFactory(NIMutationFactory):
         abstract = False
 
 
+def delete_outgoing_nodes(nodehandler, relation_name, user):
+    node = nodehandler.get_node()
+    relations = node.get_outgoing_relations()
+
+    for relname, link_nodes in relations.items():
+        for link_node in link_nodes:
+            link_node = link_node['node']
+            helpers.delete_node(user, link_node.handle_id)
+
+
 class NIContactMutationFactory(NIMutationFactory):
     class NIMetaClass:
         form = EditContactForm
@@ -129,6 +139,11 @@ class NIContactMutationFactory(NIMutationFactory):
         relations_processors = {
             'relationship_works_for': process_works_for,
             'relationship_member_of': process_member_of,
+        }
+
+        delete_nodes = {
+            'Has_email': delete_outgoing_nodes,
+            'Has_phone': delete_outgoing_nodes,
         }
 
     class Meta:
@@ -142,6 +157,10 @@ class NIOrganizationMutationFactory(NIMutationFactory):
         request_path   = '/'
         graphql_type   = Organization
         # create_include or create_exclude
+
+        delete_nodes = {
+            'Has_address': delete_outgoing_nodes,
+        }
 
     class Meta:
         abstract = False
@@ -330,7 +349,7 @@ class DeleteRelationship(relay.ClientIDMutation):
             if authorized_start and authorized_end:
                 activitylog.delete_relationship(info.context.user, relationship)
                 relationship.delete()
-            
+
             success = True
         except nc.exceptions.RelationshipNotFound:
             success = True

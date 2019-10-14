@@ -1148,9 +1148,23 @@ class DeleteNIMutation(AbstractNIMutation):
             raise GraphQLAuthException()
 
         nh, node = helpers.get_nh_node(handle_id)
+
+        # delete associated nodes
+        cls.delete_nodes(nh, request.user)
+
+        # delete node
         success = helpers.delete_node(request.user, node.handle_id)
 
         return not success, {'success': success}
+
+    @classmethod
+    def delete_nodes(cls, nodehandler, user):
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        delete_nodes = getattr(nimetaclass, 'delete_nodes', None)
+
+        if delete_nodes:
+            for relation_name, relation_f in delete_nodes.items():
+                relation_f(nodehandler, relation_name, user)
 
 class NIMutationFactory():
     '''
@@ -1189,8 +1203,9 @@ class NIMutationFactory():
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
 
-        # check for relationship processors
+        # check for relationship processors and delete associated nodes functions
         relations_processors = getattr(ni_metaclass, 'relations_processors', None)
+        delete_nodes         = getattr(ni_metaclass, 'delete_nodes', None)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -1258,6 +1273,9 @@ class NIMutationFactory():
 
         if relations_processors:
             del attr_dict['relations_processors']
+
+        if delete_nodes:
+            attr_dict['delete_nodes'] = delete_nodes
 
         delete_metaclass = type(metaclass_name, (object,), attr_dict)
 
