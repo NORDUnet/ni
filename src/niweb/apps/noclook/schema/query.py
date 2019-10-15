@@ -144,6 +144,11 @@ class NOCRootQuery(NOCAutoQuery):
     getContactPhoneRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), phone_id=graphene.Int(required=True), resolver=resolve_getContactPhoneRelations)
     getOrganizationAddressRelations = graphene.List(NIRelationType, organization_id=graphene.Int(required=True), address_id=graphene.Int(required=True), resolver=resolve_getOrganizationAddressRelations)
 
+    # parent of all contacts type
+    getGroupedContacts = graphene.Field(GroupedContacts)
+
+    def resolve_getGroupedContacts(self, info, **kwargs):
+        return GroupedContacts()
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         django_dropdowns = [d.name for d in DropdownModel.objects.all()]

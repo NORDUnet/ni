@@ -178,6 +178,9 @@ class NIObjectType(DjangoObjectType):
 
     filter_names = None
 
+    _connection_input = None
+    _connection_order = None
+
     @classmethod
     def __init_subclass_with_meta__(
         cls,
@@ -350,6 +353,9 @@ class NIObjectType(DjangoObjectType):
         This method generates a Filter and Order object from the class itself
         to be used in filtering connections
         '''
+        if cls._connection_input and cls._connection_order:
+            return cls._connection_input, cls._connection_order
+
         ni_type = cls.get_from_nimetatype('ni_type')
 
         # build filter input class and order enum
@@ -413,6 +419,10 @@ class NIObjectType(DjangoObjectType):
         filter_input = type('{}Filter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
 
         orderBy = graphene.Enum('{}OrderBy'.format(ni_type), enum_options)
+
+        # store the created objects
+        cls._connection_input = filter_input
+        cls._connection_order = orderBy
 
         return filter_input, orderBy
 
