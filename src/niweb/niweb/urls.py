@@ -6,6 +6,7 @@ from django.contrib.auth import views as auth_views
 from django.views.decorators.csrf import csrf_exempt
 from apps.noclook.schema import AuthGraphQLView
 from graphql_jwt.decorators import jwt_cookie
+from apps.noclook.views.redirect import redirect_back
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -80,6 +81,9 @@ if settings.SAML_ENABLED:
 urlpatterns += [
     # Tastypie URLs
     url(r'^api/', include(v1_api.urls)),
+
+    # Authn
+    url(r'^authn$', redirect_back, name='check_authn'),
 
     # GraphQL endpoint
     url(r'^graphql/', csrf_exempt(jwt_cookie(AuthGraphQLView.as_view(graphiql=settings.USE_GRAPHIQL)))),
