@@ -234,28 +234,3 @@ class RoleOrderBy(graphene.Enum):
     name_DESC='name_DESC'
     handle_id_ASC='handle_id_ASC'
     handle_id_DESC='handle_id_DESC'
-
-
-contact_input, contact_order = Contact.build_filter_and_order()
-contact_connection_resolver = Contact.get_connection_resolver()
-
-
-class ContactStaticConnection(graphene.relay.Connection):
-    class Meta:
-        node = Contact
-
-
-class GroupedContacts(ObjectType):
-    id = graphene.String()
-    contacts = graphene.relay.ConnectionField(
-                    ContactStaticConnection,
-                    filter=graphene.Argument(contact_input),
-                    orderBy=graphene.Argument(contact_order),
-                    resolver=contact_connection_resolver
-    )
-
-    def resolve_id(self, info, **kwargs):
-        return "group:contacts"
-"""
-    class Meta:
-        interfaces = (relay.Node, )"""
