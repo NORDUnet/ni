@@ -187,6 +187,11 @@ class ContactWithRolename(ObjectType):
     relation_id = graphene.Int()
 
 
+class ContactWithRelation(ObjectType):
+    contact = Field(Contact)
+    relation_id = graphene.Int()
+
+
 class Host(NIObjectType):
     '''
     A host in the SRI system
