@@ -94,7 +94,7 @@ class Organization(NIObjectType):
     The group type is used to group contacts
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    description = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
     customer_id = NIStringField()
     incident_management_info = NIStringField()
     type = NIChoiceField()
