@@ -178,6 +178,9 @@ class NIObjectType(DjangoObjectType):
 
     filter_names = None
 
+    _connection_input = None
+    _connection_order = None
+
     @classmethod
     def __init_subclass_with_meta__(
         cls,
@@ -350,6 +353,9 @@ class NIObjectType(DjangoObjectType):
         This method generates a Filter and Order object from the class itself
         to be used in filtering connections
         '''
+        if cls._connection_input and cls._connection_order:
+            return cls._connection_input, cls._connection_order
+
         ni_type = cls.get_from_nimetatype('ni_type')
 
         # build filter input class and order enum
@@ -413,6 +419,10 @@ class NIObjectType(DjangoObjectType):
         filter_input = type('{}Filter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
 
         orderBy = graphene.Enum('{}OrderBy'.format(ni_type), enum_options)
+
+        # store the created objects
+        cls._connection_input = filter_input
+        cls._connection_order = orderBy
 
         return filter_input, orderBy
 
@@ -1148,9 +1158,23 @@ class DeleteNIMutation(AbstractNIMutation):
             raise GraphQLAuthException()
 
         nh, node = helpers.get_nh_node(handle_id)
+
+        # delete associated nodes
+        cls.delete_nodes(nh, request.user)
+
+        # delete node
         success = helpers.delete_node(request.user, node.handle_id)
 
         return not success, {'success': success}
+
+    @classmethod
+    def delete_nodes(cls, nodehandler, user):
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        delete_nodes = getattr(nimetaclass, 'delete_nodes', None)
+
+        if delete_nodes:
+            for relation_name, relation_f in delete_nodes.items():
+                relation_f(nodehandler, relation_name, user)
 
 class NIMutationFactory():
     '''
@@ -1189,8 +1213,9 @@ class NIMutationFactory():
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
 
-        # check for relationship processors
+        # check for relationship processors and delete associated nodes functions
         relations_processors = getattr(ni_metaclass, 'relations_processors', None)
+        delete_nodes         = getattr(ni_metaclass, 'delete_nodes', None)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -1258,6 +1283,9 @@ class NIMutationFactory():
 
         if relations_processors:
             del attr_dict['relations_processors']
+
+        if delete_nodes:
+            attr_dict['delete_nodes'] = delete_nodes
 
         delete_metaclass = type(metaclass_name, (object,), attr_dict)
 

@@ -137,13 +137,13 @@ class NOCRootQuery(NOCAutoQuery):
     getRoleRelationById = graphene.Field(RoleRelation, relation_id=graphene.Int(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
     getOrganizationContacts = graphene.List(ContactWithRolename, handle_id=graphene.Int(required=True))
+    getGroupContacts = graphene.List(ContactWithRelation, handle_id=graphene.Int(required=True))
 
     # relationship lookups
     getGroupContactRelations = graphene.List(NIRelationType, group_id=graphene.Int(required=True), contact_id=graphene.Int(required=True), resolver=resolve_getGroupContactRelations)
     getContactEmailRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), email_id=graphene.Int(required=True), resolver=resolve_getContactEmailRelations)
     getContactPhoneRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), phone_id=graphene.Int(required=True), resolver=resolve_getContactPhoneRelations)
     getOrganizationAddressRelations = graphene.List(NIRelationType, organization_id=graphene.Int(required=True), address_id=graphene.Int(required=True), resolver=resolve_getOrganizationAddressRelations)
-
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -259,6 +259,40 @@ class NOCRootQuery(NOCAutoQuery):
                 'contact': contact_nh,
                 'role': role_obj,
                 'relation_id': relation_id,
+            }
+
+            ret.append(contact_wrn)
+
+        return ret
+
+    def resolve_getGroupContacts(self, info, **kwargs):
+        ret = []
+
+        handle_id = kwargs.get('handle_id')
+
+        # check read permissions
+        authorized = sriutils.authorice_read_resource(
+            info.context.user, handle_id
+        )
+
+        if not authorized:
+            raise GraphQLAuthException()
+
+        group_nh = NodeHandle.objects.get(handle_id=handle_id)
+        relations = group_nh.get_node().get_relations()['Member_of']
+
+        for relation in relations:
+            # resolve contact
+            contact_node = relation['node']
+            contact_id = contact_node.handle_id
+            contact_nh = NodeHandle.objects.get(handle_id=contact_id)
+
+            # resolve role object
+            relationship_id = relation['relationship_id']
+
+            contact_wrn = {
+                'contact': contact_nh,
+                'relation_id': relationship_id,
             }
 
             ret.append(contact_wrn)
