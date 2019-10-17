@@ -6,7 +6,7 @@ import graphene
 from norduniclient.models import RoleRelationship
 from graphene import relay, ObjectType, String, Field
 from .core import *
-from ..models import Dropdown, Choice, Role as RoleModel
+from ..models import Dropdown, Choice as DjChoice, Role as RoleModel
 
 # further centralization?
 NIMETA_LOGICAL  = 'logical'
@@ -29,8 +29,35 @@ class Choice(DjangoObjectType):
     This class is used for the choices available in a dropdown
     '''
     class Meta:
-        model = Choice
+        model = DjChoice
         interfaces = (KeyValue, )
+
+# choice field needs
+class NIChoiceField(NIBasicField, ComplexField):
+    '''
+    Choice type
+    '''
+    def __init__(self, field_type=Choice, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIChoiceField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+        
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_value(self, info, **kwargs):
+            node_value = self.get_node().data.get(field_name)
+            choice_val = DjChoice.objects.filter(name=node_value).first()
+
+            return choice_val
+
+        return resolve_node_value
 
 
 class Neo4jChoice(graphene.ObjectType):

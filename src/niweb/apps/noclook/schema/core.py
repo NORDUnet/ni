@@ -211,14 +211,35 @@ class NIObjectType(DjangoObjectType):
 
             # adding the field
             field_value = None
-            if type_kwargs:
-                field_value = field_type(**type_kwargs)
-            elif type_args:
-                field_value = field_type(*type_args)
-                if not_null_list:
-                    field_value = graphene.NonNull(field_type(*type_args))
+
+            if not isinstance(field, ComplexField):
+                if type_kwargs:
+                    field_value = field_type(**type_kwargs)
+                elif type_args:
+                    field_value = field_type(*type_args)
+                    if not_null_list:
+                        field_value = graphene.NonNull(field_type(*type_args))
+                else:
+                    field_value = field_type(**{})
             else:
-                field_value = field_type(**{})
+                if type_kwargs:
+                    field_value = graphene.Field(field.get_field_type(), **type_kwargs)
+                elif type_args:
+                    field_value = graphene.Field(field.get_field_type(), *type_args)
+                else:
+                    field_value = graphene.Field(field.get_field_type())
+
+            if not isinstance(field, ComplexField):
+                if type_kwargs:
+                    field_value = field_type(**type_kwargs)
+                elif type_args:
+                    field_value = field_type(*type_args)
+                    if not_null_list:
+                        field_value = graphene.NonNull(field_type(*type_args))
+                else:
+                    field_value = field_type(**{})
+            else:
+                field_value = graphene.Field(field.get_field_type())
 
             setattr(cls, name, field_value)
 

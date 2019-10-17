@@ -77,15 +77,6 @@ class NIIntField(NIBasicField):
         super(NIIntField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
 
-class NIChoiceField(NIBasicField):
-    '''
-    Choice type
-    '''
-    def __init__(self, field_type=ChoiceScalar, manual_resolver=False,
-                    type_kwargs=None, **kwargs):
-        super(NIChoiceField, self).__init__(field_type, manual_resolver,
-                        type_kwargs, **kwargs)
-
 
 class NIBooleanField(NIBasicField):
     '''
@@ -151,3 +142,8 @@ class NIListField(NIBasicField):
             return ret
 
         return resolve_relationship_list
+
+
+# convenience class
+class ComplexField():
+    pass
