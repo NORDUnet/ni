@@ -6,7 +6,7 @@ import graphene
 from norduniclient.models import RoleRelationship
 from graphene import relay, ObjectType, String, Field
 from .core import *
-from ..models import Dropdown, Choice as DjChoice, Role as RoleModel
+from ..models import Dropdown as DropdownModel, Choice as ChoiceModel, Role as RoleModel
 
 # further centralization?
 NIMETA_LOGICAL  = 'logical'
@@ -21,7 +21,7 @@ class Dropdown(DjangoObjectType):
     '''
     class Meta:
         only_fields = ('id', 'name')
-        model = Dropdown
+        model = DropdownModel
 
 
 class Choice(DjangoObjectType):
@@ -29,7 +29,7 @@ class Choice(DjangoObjectType):
     This class is used for the choices available in a dropdown
     '''
     class Meta:
-        model = DjChoice
+        model = ChoiceModel
         interfaces = (KeyValue, )
 
 # choice field needs
@@ -38,22 +38,40 @@ class NIChoiceField(NIBasicField, ComplexField):
     Choice type
     '''
     def __init__(self, field_type=Choice, manual_resolver=False,
-                    type_kwargs=None, **kwargs):
+                    dropdown_name=None, type_kwargs=None, **kwargs):
+        self.dropdown_name = dropdown_name
         super(NIChoiceField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
 
     def get_resolver(self, **kwargs):
         field_name = kwargs.get('field_name')
-        
+
         if not field_name:
             raise Exception(
                 'Field name for field {} should not be empty for a {}'.format(
                     field_name, self.__class__
                 )
             )
+
+        dropdown_name = kwargs.get('dropdown_name')
+
+        if not dropdown_name:
+            raise Exception(
+                'Dropdown name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+
         def resolve_node_value(self, info, **kwargs):
+            # resolve dropdown
+            dropdown = DropdownModel.objects.get(name=dropdown_name)
+
+            # resolve choice
             node_value = self.get_node().data.get(field_name)
-            choice_val = DjChoice.objects.filter(name=node_value).first()
+            choice_val = ChoiceModel.objects.filter(
+                dropdown=dropdown,
+                name=node_value
+            ).first()
 
             return choice_val
 
@@ -124,7 +142,7 @@ class Organization(NIObjectType):
     description = NIStringField()
     customer_id = NIStringField()
     incident_management_info = NIStringField()
-    type = NIChoiceField()
+    type = NIChoiceField(dropdown_name="organization_types")
     addresses = NIListField(type_args=(Address,), rel_name='Has_address', rel_method='get_outgoing_relations')
     affiliation_customer = NIBooleanField()
     affiliation_end_customer = NIBooleanField()
@@ -161,7 +179,7 @@ class Phone(NIObjectType):
     Phone entity to be used inside contact
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    type = NIChoiceField(type_kwargs={ 'required': True })
+    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="phone_type")
 
     class Meta:
         only_fields = ('handle_id',)
@@ -176,7 +194,7 @@ class Email(NIObjectType):
     Email entity to be used inside contact
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    type = NIChoiceField(type_kwargs={ 'required': True })
+    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="email_type")
 
     class Meta:
         only_fields = ('handle_id',)

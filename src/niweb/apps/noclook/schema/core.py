@@ -208,26 +208,10 @@ class NIObjectType(DjangoObjectType):
             rel_name        = field_fields.get('rel_name')
             rel_method      = field_fields.get('rel_method')
             not_null_list   = field_fields.get('not_null_list')
+            dropdown_name   = field_fields.get('dropdown_name')
 
             # adding the field
             field_value = None
-
-            if not isinstance(field, ComplexField):
-                if type_kwargs:
-                    field_value = field_type(**type_kwargs)
-                elif type_args:
-                    field_value = field_type(*type_args)
-                    if not_null_list:
-                        field_value = graphene.NonNull(field_type(*type_args))
-                else:
-                    field_value = field_type(**{})
-            else:
-                if type_kwargs:
-                    field_value = graphene.Field(field.get_field_type(), **type_kwargs)
-                elif type_args:
-                    field_value = graphene.Field(field.get_field_type(), *type_args)
-                else:
-                    field_value = graphene.Field(field.get_field_type())
 
             if not isinstance(field, ComplexField):
                 if type_kwargs:
@@ -250,6 +234,7 @@ class NIObjectType(DjangoObjectType):
                         field_name=name,
                         rel_name=rel_name,
                         rel_method=rel_method,
+                        dropdown_name=dropdown_name,
                     )
                 )
 
