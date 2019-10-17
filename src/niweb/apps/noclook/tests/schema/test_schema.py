@@ -227,7 +227,10 @@ class QueryTest(Neo4jGraphQLTest):
             edges{
               node{
                 name
-                type
+                type{
+                  name
+                  value
+                }
               }
             }
           }
@@ -241,7 +244,8 @@ class QueryTest(Neo4jGraphQLTest):
                                 ('name',
                                  'organization1'),
                                 ('type',
-                                 'provider')]))])])]))])
+                                     OrderedDict([('name','Service provider'),
+                                     ('value','provider')]))]))])])]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -596,7 +600,10 @@ class QueryTest(Neo4jGraphQLTest):
             phone{{
               handle_id
               name
-              type
+              type{{
+                name
+                value
+              }}
             }}
           }}
         }}
@@ -626,7 +633,10 @@ class QueryTest(Neo4jGraphQLTest):
             email{{
               handle_id
               name
-              type
+              type{{
+                name
+                value
+              }}
             }}
           }}
         }}

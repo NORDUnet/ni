@@ -24,14 +24,6 @@ class Dropdown(DjangoObjectType):
         model = DropdownModel
 
 
-class Choice(DjangoObjectType):
-    '''
-    This class is used for the choices available in a dropdown
-    '''
-    class Meta:
-        model = ChoiceModel
-        interfaces = (KeyValue, )
-
 # choice field needs
 class NIChoiceField(NIBasicField, ComplexField):
     '''
@@ -70,7 +62,7 @@ class NIChoiceField(NIBasicField, ComplexField):
             node_value = self.get_node().data.get(field_name)
             choice_val = ChoiceModel.objects.filter(
                 dropdown=dropdown,
-                name=node_value
+                value=node_value
             ).first()
 
             return choice_val

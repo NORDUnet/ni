@@ -27,7 +27,7 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 from .scalars import *
 from .fields import *
 from .querybuilders import *
-from ..models import NodeType, NodeHandle
+from ..models import NodeType, NodeHandle, Choice as ChoiceModel
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,15 @@ class NINodeHandlerType(DjangoObjectType):
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
+
+class Choice(DjangoObjectType):
+    '''
+    This class is used for the choices available in a dropdown
+    '''
+    class Meta:
+        model = ChoiceModel
+        interfaces = (KeyValue, )
+
 
 class NIRelationType(graphene.ObjectType):
     '''
@@ -317,8 +326,7 @@ class NIObjectType(DjangoObjectType):
             # string or string like fields
             if field:
                 if isinstance(field, graphene.types.scalars.String) or\
-                    isinstance(field, graphene.types.scalars.Int) or\
-                    isinstance(field, ChoiceScalar):
+                    isinstance(field, graphene.types.scalars.Int):
                     input_field = type(field)
                     input_fields[name] = input_field
                 elif isinstance(field, graphene.types.structures.List):
@@ -340,6 +348,9 @@ class NIObjectType(DjangoObjectType):
 
                     binput_field = type('{}InputField'.format(name_fot), (graphene.InputObjectType, ), filter_attrib)
                     input_fields[name] = binput_field, field._of_type
+                elif isinstance(field, graphene.types.field.Field) and\
+                    field.type == Choice:
+                    input_fields[name] = ChoiceScalar
 
         input_fields['handle_id'] = graphene.Int
 
