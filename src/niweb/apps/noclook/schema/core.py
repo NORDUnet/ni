@@ -489,7 +489,8 @@ class NIObjectType(DjangoObjectType):
             if info.context and info.context.user.is_authenticated:
                 # filtering will take a different approach
                 nodes = None
-                qs = NodeHandle.objects.all()
+                node_type = NodeType.objects.get(type=type_name)
+                qs = NodeHandle.objects.filter(node_type=node_type)
 
                 if filter:
                     # filter queryset with dates and users
@@ -527,7 +528,6 @@ class NIObjectType(DjangoObjectType):
                         handle_ids = [ node['handle_id'] for node in nodes ]
                     else:
                         handle_ids = [ node['handle_id'] for node in nodes ]
-                        node_type = NodeType.objects.get(type=type_name)
 
                     ret = []
 
@@ -537,8 +537,10 @@ class NIObjectType(DjangoObjectType):
 
                     for handle_id in handle_ids:
                         nodeqs = qs.filter(handle_id=handle_id)
-                        if nodeqs and len(nodeqs) == 1:
+                        try:
                             ret.append(nodeqs.first())
+                        except:
+                            pass # nothing to do if the qs doesn't have elements
 
                     # do nodehandler attributes ordering now that we have
                     # the nodes set, if this order is requested
