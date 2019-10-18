@@ -61,6 +61,8 @@ DATABASES = {
 }
 ########## END DATABASE CONFIGURATION
 
+# MIDDLEWARE += ('apps.sql_middleware.SqlPrintingMiddleware',)
+
 
 ########## CACHE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#caches
