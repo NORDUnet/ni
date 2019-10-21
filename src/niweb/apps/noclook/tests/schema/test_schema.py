@@ -1145,3 +1145,304 @@ class QueryTest(Neo4jGraphQLTest):
         assert not organization_addresses, "Address array should be empty \n{}".format(
             pformat(organization_addresses, indent=1)
         )
+
+    def test_cascade_delete(self):
+        ## get aux entities types
+        # get contact types
+        query = """
+        {
+          getChoicesForDropdown(name: "organization_types"){
+            value
+          }
+        }
+        """
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        organization_type = result.data['getChoicesForDropdown'][-1]['value']
+
+        # get contact types
+        query = """
+        {
+          getChoicesForDropdown(name: "contact_type"){
+            value
+          }
+        }
+        """
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        contact_type = result.data['getChoicesForDropdown'][-1]['value']
+
+        # get phone types
+        query = """
+        {
+          getChoicesForDropdown(name: "phone_type"){
+            value
+          }
+        }
+        """
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        phone_type = result.data['getChoicesForDropdown'][-1]['value']
+
+        # get email types
+        query = """
+        {
+          getChoicesForDropdown(name: "email_type"){
+            value
+          }
+        }
+        """
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        email_type = result.data['getChoicesForDropdown'][-1]['value']
+
+        # create new organization
+        query = """
+        mutation{
+          create_organization(
+            input:{
+              name: "Emergya"
+              description: "A test organization"
+            }
+          ){
+            errors{
+              field
+              messages
+            }
+            organization{
+              handle_id
+              name
+            }
+          }
+        }
+        """
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        organization3_id = result.data['create_organization']['organization']['handle_id']
+
+        # create a new contact for this organization
+        query = """
+        mutation{{
+          create_contact(input:{{
+            first_name: "Jasmine"
+            last_name: "Svensson"
+            contact_type: "person"
+            relationship_works_for: {organization_id}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            contact{{
+              handle_id
+              name
+            }}
+          }}
+        }}
+        """.format(organization_id=organization3_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        contact3_id = result.data['create_contact']['contact']['handle_id']
+
+        # add email and get id
+        query = """
+        mutation{{
+          create_email(input:{{
+            name: "jsvensson@emergya.com"
+            type: "work"
+            contact: {contact_id}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            email{{
+              handle_id
+              name
+            }}
+          }}
+        }}
+        """.format(contact_id=contact3_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        email3_id = result.data['create_email']['email']['handle_id']
+
+        # add phone and get id
+        query = """
+        mutation{{
+          create_phone(input:{{
+            name: "+34606000606"
+            type: "work"
+            contact: {contact_id}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            phone{{
+              handle_id
+              name
+            }}
+          }}
+        }}
+        """.format(contact_id=contact3_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        phone3_id = result.data['create_phone']['phone']['handle_id']
+
+        # delete contact
+        query = """
+        mutation{{
+          delete_contact(input:{{ handle_id: {contact_id} }}){{
+            errors{{
+              field
+              messages
+            }}
+            success
+          }}
+        }}
+        """.format(contact_id=contact3_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        errors = result.data['delete_contact']['errors']
+        success = result.data['delete_contact']['success']
+        assert not errors, pformat(errors, indent=1)
+        assert success, pformat(success, indent=1)
+
+        # check organization still exists
+        query = """
+        {{
+          organizations(filter:{{ AND:[{{ handle_id: {organization_id} }}] }}){{
+            edges{{
+              node{{
+                handle_id
+                name
+              }}
+            }}
+          }}
+        }}
+        """.format(organization_id=organization3_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        edges = result.data['organizations']['edges']
+        assert edges, \
+            "Organization query is empty:\n {}".format(pformat(edges, indent=1))
+        test_org_id = result.data['organizations']['edges'][0]['node']['handle_id']
+        assert int(test_org_id) == int(organization3_id), \
+            print("Organization doesn't exists")
+
+        # check email and phone are deleted
+        query = """
+        {{
+          emails(filter:{{ AND:[{{ handle_id: {email_id} }}] }}){{
+            edges{{
+              node{{
+                handle_id
+                name
+              }}
+            }}
+          }}
+        }}
+        """.format(email_id=email3_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        edges = result.data['emails']['edges']
+        assert not edges, pformat(edges, indent=1)
+
+        query = """
+        {{
+          phones(filter:{{ AND:[{{ handle_id: {phone_id} }}] }}){{
+            edges{{
+              node{{
+                handle_id
+                name
+              }}
+            }}
+          }}
+        }}
+        """.format(phone_id=phone3_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        edges = result.data['phones']['edges']
+        assert not edges, pformat(edges, indent=1)
+
+        # create address
+        address_name = "New address"
+        address_website = "emergya.com"
+        address_phone = "617-372-0822"
+        address_street = "Fake st 123"
+        address_postal_code = "12345"
+        address_postal_area = "Sevilla"
+
+        query = """
+          mutation{{
+        	create_address(input:{{
+              organization: {organization_id},
+              name: "{address_name}",
+              website: "{address_website}",
+              phone: "{address_phone}",
+              street: "{address_street}",
+              postal_code: "{address_postal_code}",
+              postal_area: "{address_postal_area}"
+            }}){{
+              errors{{
+                field
+                messages
+              }}
+              address{{
+                handle_id
+                name
+                website
+                phone
+                street
+                postal_code
+                postal_area
+              }}
+            }}
+          }}
+        """.format(organization_id=organization3_id, address_name=address_name,
+                    address_website=address_website, address_phone=address_phone,
+                    address_street=address_street,
+                    address_postal_code=address_postal_code,
+                    address_postal_area=address_postal_area)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        address_id_str = result.data['create_address']['address']['handle_id']
+
+        # delete organization
+        query = """
+        mutation{{
+          delete_organization(input:{{ handle_id: {organization_id} }}){{
+            errors{{
+              field
+              messages
+            }}
+            success
+          }}
+        }}
+        """.format(organization_id=organization3_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        errors = result.data['delete_organization']['errors']
+        success = result.data['delete_organization']['success']
+        assert not errors, pformat(errors, indent=1)
+        assert success, pformat(success, indent=1)
+
+        # check address is deleted
+        query = """
+        {{
+          addresss(filter:{{ AND:[{{ handle_id: {address_id_str} }}] }}){{
+            edges{{
+              node{{
+                handle_id
+                name
+              }}
+            }}
+          }}
+        }}
+        """.format(address_id_str=address_id_str)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        edges = result.data['addresss']['edges']
+        assert not edges, pformat(edges, indent=1)

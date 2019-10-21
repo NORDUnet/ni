@@ -126,9 +126,10 @@ def delete_outgoing_nodes(nodehandler, relation_name, user):
     relations = node.get_outgoing_relations()
 
     for relname, link_nodes in relations.items():
-        for link_node in link_nodes:
-            link_node = link_node['node']
-            helpers.delete_node(user, link_node.handle_id)
+        if relname == relation_name:
+            for link_node in link_nodes:
+                link_node = link_node['node']
+                helpers.delete_node(user, link_node.handle_id)
 
 
 class NIContactMutationFactory(NIMutationFactory):
