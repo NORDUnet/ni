@@ -791,6 +791,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', None)
         is_create     = getattr(ni_metaclass, 'is_create', False)
+        is_delete      = getattr(ni_metaclass, 'is_delete', False)
         include       = getattr(ni_metaclass, 'include', None)
         exclude       = getattr(ni_metaclass, 'exclude', None)
 
@@ -832,6 +833,14 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # add Input attribute to class
         inner_class = type('Input', (object,), inner_fields)
         setattr(cls, 'Input', inner_class)
+
+        # add Input to private attribute
+        if graphql_type and not is_delete:
+            type_name = graphql_type.__name__.lower()
+            inner_input = type('{}InnerInputField'.format(type_name),
+                (graphene.InputObjectType, ), inner_fields)
+
+            setattr(cls, '_input_list', graphene.List(inner_input))
 
         # add the converted fields to the metaclass so we can get them later
         setattr(ni_metaclass, 'inner_fields', inner_fields)
@@ -1142,6 +1151,7 @@ class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
+        is_delete      = False
 
     @classmethod
     def add_return_type(cls, graphql_type):
