@@ -489,7 +489,10 @@ class NIObjectType(DjangoObjectType):
             if info.context and info.context.user.is_authenticated:
                 # filtering will take a different approach
                 nodes = None
-                qs = NodeHandle.objects.all()
+                node_type = NodeType.objects.get(type=type_name)
+                qs = NodeHandle.objects.filter(node_type=node_type)
+                no_filter = False
+                no_order  = False
 
                 if filter:
                     # filter queryset with dates and users
@@ -501,11 +504,11 @@ class NIObjectType(DjangoObjectType):
                     nodes = nc.query_to_list(nc.graphdb.manager, q)
                     nodes = [ node['n'] for node in nodes]
                 else:
-                    nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
-                    nodes = list(nodes)
+                    no_filter = True
 
-                if nodes:
-                    handle_ids = []
+                handle_ids = []
+
+                if nodes or no_filter:
                     qs_order_prop = None
                     qs_order_order = None
 
@@ -515,6 +518,10 @@ class NIObjectType(DjangoObjectType):
                         m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
                         prop = m[1]
                         order = m[2]
+
+                        if no_filter: # delay neo4j query
+                            nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
+                            nodes = list(nodes)
 
                         if prop not in DateQueryBuilder.fields:
                             # node property ordering
@@ -526,25 +533,32 @@ class NIObjectType(DjangoObjectType):
 
                         handle_ids = [ node['handle_id'] for node in nodes ]
                     else:
-                        handle_ids = [ node['handle_id'] for node in nodes ]
-                        node_type = NodeType.objects.get(type=type_name)
+                        no_order = True
+
+                        if not no_filter:
+                            handle_ids = [ node['handle_id'] for node in nodes ]
 
                     ret = []
 
-                    # instead of vakt here, we reduce the original qs
-                    # to only the ones the user has right to read
-                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                    if not no_filter or not no_order:
+                        # instead of vakt here, we reduce the original qs
+                        # to only the ones the user has right to read
+                        qs = sriutils.trim_readable_queryset(qs, info.context.user)
 
-                    for handle_id in handle_ids:
-                        nodeqs = qs.filter(handle_id=handle_id)
-                        if nodeqs and len(nodeqs) == 1:
-                            ret.append(nodeqs.first())
+                        for handle_id in handle_ids:
+                            nodeqs = qs.filter(handle_id=handle_id)
+                            try:
+                                ret.append(nodeqs.first())
+                            except:
+                                pass # nothing to do if the qs doesn't have elements
 
-                    # do nodehandler attributes ordering now that we have
-                    # the nodes set, if this order is requested
-                    if qs_order_prop and qs_order_order:
-                        reverse = True if qs_order_order == 'DESC' else False
-                        ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                        # do nodehandler attributes ordering now that we have
+                        # the nodes set, if this order is requested
+                        if qs_order_prop and qs_order_order:
+                            reverse = True if qs_order_order == 'DESC' else False
+                            ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                    else:
+                        ret = list(qs)
 
                 if not ret:
                     ret = []
