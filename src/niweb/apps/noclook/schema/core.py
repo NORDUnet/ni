@@ -1122,7 +1122,7 @@ class CreateUniqueNIMutation(CreateNIMutation):
 
     @classmethod
     def get_form_to_nodehandle_func(cls):
-        return helpers.form_to_generic_node_handle
+        return helpers.form_to_unique_node_handle
 
 
 class UpdateNIMutation(AbstractNIMutation):
