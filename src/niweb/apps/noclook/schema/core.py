@@ -548,7 +548,9 @@ class NIObjectType(DjangoObjectType):
                         for handle_id in handle_ids:
                             nodeqs = qs.filter(handle_id=handle_id)
                             try:
-                                ret.append(nodeqs.first())
+                                the_node = nodeqs.first()
+                                if the_node:
+                                    ret.append(the_node)
                             except:
                                 pass # nothing to do if the qs doesn't have elements
 
