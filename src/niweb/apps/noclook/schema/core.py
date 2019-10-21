@@ -515,7 +515,8 @@ class NIObjectType(DjangoObjectType):
                 # filtering will take a different approach
                 nodes = None
                 node_type = NodeType.objects.get(type=type_name)
-                qs = NodeHandle.objects.filter(node_type=node_type)
+                qs = NodeHandle.objects.filter(node_type=node_type)\
+                    .order_by('-handle_id')
                 no_filter = False
                 no_order  = False
 
@@ -536,6 +537,10 @@ class NIObjectType(DjangoObjectType):
                 if nodes or no_filter:
                     qs_order_prop = None
                     qs_order_order = None
+
+                    # remove default ordering prop
+                    if orderBy and orderBy == 'handle_id_DESC':
+                        orderBy = None
 
                     # ordering
                     if orderBy:
