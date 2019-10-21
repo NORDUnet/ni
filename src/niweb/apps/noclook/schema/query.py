@@ -68,6 +68,13 @@ class NOCAutoQuery(graphene.ObjectType):
                 type_name     = node_type.type
                 type_slug     = node_type.slug
 
+                # add simple list attribute and resolver
+                field_name    = 'all_{}s'.format(type_slug)
+                resolver_name = 'resolve_{}'.format(field_name)
+
+                setattr(cls, field_name, graphene.List(graphql_type))
+                setattr(cls, resolver_name, graphql_type.get_list_resolver())
+
                 # add connection attribute
                 field_name    = '{}s'.format(type_slug)
                 resolver_name = 'resolve_{}'.format(field_name)

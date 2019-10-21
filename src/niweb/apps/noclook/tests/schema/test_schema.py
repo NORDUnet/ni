@@ -11,7 +11,46 @@ from . import Neo4jGraphQLTest
 from datetime import datetime
 
 class QueryTest(Neo4jGraphQLTest):
-    def test_get_contacts(self):
+    def test_simple_list(self):
+        # query all available types
+        test_types = {
+            'organization': [self.organization1, self.organization2],
+            'contact': [self.contact1, self.contact2],
+            'group': [self.group1, self.group2],
+        }
+
+        for name, nodes in test_types.items():
+            query = '''
+            {{
+              all_{}s {{
+                handle_id
+                node_name
+              }}
+            }}
+            '''.format(name)
+
+            node_list = []
+
+            for node in nodes:
+                node_dict = OrderedDict([
+                    ('handle_id', str(node.handle_id)),
+                    ('node_name', node.node_name)
+                ])
+                node_list.append(node_dict)
+
+            expected = OrderedDict([
+                ('all_{}s'.format(name), node_list)
+            ])
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+    def test_connections(self):
         # test contacts: slicing and ordering
         query = '''
         query getLastTwoContacts {
