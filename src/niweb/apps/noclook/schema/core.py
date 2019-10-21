@@ -466,6 +466,31 @@ class NIObjectType(DjangoObjectType):
         return generic_byid_resolver
 
     @classmethod
+    def get_list_resolver(cls):
+        '''
+        This method returns a simple list resolver for every nodetype in NOCAutoQuery
+        '''
+        type_name = cls.get_type_name()
+
+        def generic_list_resolver(self, info, **args):
+            qs = []
+
+            if info.context and info.context.user.is_authenticated:
+                node_type = NodeType.objects.get(type=type_name)
+                qs = NodeHandle.objects.filter(node_type=node_type).order_by('node_name')
+
+                # the node list is trimmed to the nodes that the user can read
+                qs = sriutils.trim_readable_queryset(qs, info.context.user)
+
+                return qs
+            else:
+                raise GraphQLAuthException()
+
+            return qs
+
+        return generic_list_resolver
+
+    @classmethod
     def get_connection_resolver(cls):
         '''
         This method returns a generic connection resolver for every nodetype in NOCAutoQuery
