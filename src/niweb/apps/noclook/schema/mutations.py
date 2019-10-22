@@ -571,10 +571,12 @@ class NOCRootMutation(graphene.ObjectType):
     create_phone        = NIPhoneMutationFactory.get_create_mutation().Field()
     update_phone        = NIPhoneMutationFactory.get_update_mutation().Field()
     delete_phone        = NIPhoneMutationFactory.get_delete_mutation().Field()
+    multiple_phone      = NIPhoneMutationFactory.get_multiple_mutation().Field()
 
     create_email        = NIEmailMutationFactory.get_create_mutation().Field()
     update_email        = NIEmailMutationFactory.get_update_mutation().Field()
     delete_email        = NIEmailMutationFactory.get_delete_mutation().Field()
+    multiple_email      = NIEmailMutationFactory.get_multiple_mutation().Field()
 
     create_address      = NIAddressMutationFactory.get_create_mutation().Field()
     update_address      = NIAddressMutationFactory.get_update_mutation().Field()
