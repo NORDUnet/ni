@@ -924,11 +924,13 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
         # add Input to private attribute
         if graphql_type and not is_delete:
-            type_name = graphql_type.__name__.lower()
-            inner_input = type('{}InnerInputField'.format(type_name),
+            op_name = 'Create' if is_create else 'Update'
+            type_name = graphql_type.__name__
+            inner_input = type('Single{}InputField'.format(op_name + type_name),
                 (graphene.InputObjectType, ), inner_fields)
 
-            setattr(cls, '_input_list', graphene.List(inner_input))
+            setattr(ni_metaclass, '_input_list', graphene.List(inner_input))
+            setattr(ni_metaclass, '_payload_list', graphene.List(cls))
 
         # add the converted fields to the metaclass so we can get them later
         setattr(ni_metaclass, 'inner_fields', inner_fields)
@@ -1274,6 +1276,36 @@ class DeleteNIMutation(AbstractNIMutation):
             for relation_name, relation_f in delete_nodes.items():
                 relation_f(nodehandler, relation_name, user)
 
+class MultipleMutation(relay.ClientIDMutation):
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        if not info.context or not info.context.user.is_authenticated:
+            raise GraphQLAuthException()
+
+        # get input values
+        create_inputs = input.get("create_inputs")
+        update_inputs = input.get("update_inputs")
+
+        # get underlying mutations
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        create_mutation = getattr(nimetaclass, 'create_mutation', None)
+        update_mutation = getattr(nimetaclass, 'update_mutation', None)
+
+        ret_create = None
+        if create_inputs:
+            for input in create_inputs:
+                ret = create_mutation.mutate_and_get_payload(root, info, **input)
+                ret_create.append(ret)
+
+        ret_update = []
+        if update_inputs:
+            for input in update_inputs:
+                ret = update_mutation.mutate_and_get_payload(root, info, **input)
+                ret_update.append(ret)
+
+        return cls(created=ret_create, updated=ret_update)
+
+
 class NIMutationFactory():
     '''
     The mutation factory takes a django form, a node type and some parameters
@@ -1395,6 +1427,40 @@ class NIMutationFactory():
             },
         )
 
+        # make multiple mutation
+        class_name = 'Multiple{}'.format(node_type.capitalize())
+
+        # create input class
+        multi_attr_input_list = {
+            'create_inputs': cls._create_mutation.NIMetaClass._input_list,
+            'update_inputs': cls._update_mutation.NIMetaClass._input_list,
+        }
+
+        inner_class = type('Input', (object,), multi_attr_input_list)
+
+        # metaclass
+        metaclass_attr = {
+            'create_mutation': cls._create_mutation,
+            'update_mutation': cls._update_mutation,
+        }
+
+        meta_class = type('NIMetaClass', (object,), metaclass_attr)
+
+        # create class
+        multiple_attr_list = {
+            'Input': inner_class,
+            'created': cls._create_mutation.NIMetaClass._payload_list,
+            'updated': cls._update_mutation.NIMetaClass._payload_list,
+            'NIMetaClass': meta_class
+        }
+
+        cls._multiple_mutation = type(
+            class_name,
+            (MultipleMutation,),
+            multiple_attr_list
+        )
+
+
     @classmethod
     def get_create_mutation(cls, *args, **kwargs):
         return cls._create_mutation
@@ -1406,6 +1472,10 @@ class NIMutationFactory():
     @classmethod
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
+
+    @classmethod
+    def get_multiple_mutation(cls, *args, **kwargs):
+        return cls._multiple_mutation
 
 ########## END MUTATION FACTORY
 

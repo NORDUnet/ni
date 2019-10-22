@@ -583,6 +583,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_contact      = NIContactMutationFactory.get_create_mutation().Field()
     update_contact      = NIContactMutationFactory.get_update_mutation().Field()
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
+    multiple_contact    = NIContactMutationFactory.get_multiple_mutation().Field()
 
     create_organization = CreateOrganization.Field()
     update_organization = UpdateOrganization.Field()
