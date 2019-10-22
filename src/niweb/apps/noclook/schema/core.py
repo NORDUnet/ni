@@ -466,6 +466,55 @@ class NIObjectType(DjangoObjectType):
         return generic_byid_resolver
 
     @classmethod
+    def get_list_resolver(cls):
+        '''
+        This method returns a simple list resolver for every nodetype in NOCAutoQuery
+        '''
+        type_name = cls.get_type_name()
+
+        def generic_list_resolver(self, info, **args):
+            qs = []
+
+            if info.context and info.context.user.is_authenticated:
+                node_type = NodeType.objects.get(type=type_name)
+                qs = NodeHandle.objects.filter(node_type=node_type).order_by('node_name')
+
+                # the node list is trimmed to the nodes that the user can read
+                qs = sriutils.trim_readable_queryset(qs, info.context.user)
+
+                return qs
+            else:
+                raise GraphQLAuthException()
+
+            return qs
+
+        return generic_list_resolver
+
+    @classmethod
+    def filter_is_empty(cls, filter):
+        empty = False
+
+        if not filter:
+            empty = True
+
+        if not empty and filter:
+            and_portion = None
+            if 'AND' in filter:
+                and_portion = filter['AND']
+
+            or_portion = None
+            if 'OR' in filter:
+                or_portion = filter['OR']
+
+            if not and_portion and not or_portion:
+                empty = True
+            elif not (and_portion and and_portion[0])\
+             and not (or_portion and or_portion[0]):
+                empty = True
+
+        return empty
+
+    @classmethod
     def get_connection_resolver(cls):
         '''
         This method returns a generic connection resolver for every nodetype in NOCAutoQuery
@@ -485,13 +534,18 @@ class NIObjectType(DjangoObjectType):
             ret = None
             filter  = args.get('filter', None)
             orderBy = args.get('orderBy', None)
+            apply_handle_id_order = False
+            revert_default_order = False
 
             if info.context and info.context.user.is_authenticated:
                 # filtering will take a different approach
                 nodes = None
-                qs = NodeHandle.objects.all()
+                node_type = NodeType.objects.get(type=type_name)
+                qs = NodeHandle.objects.filter(node_type=node_type)
+                no_filter = False
+                no_order  = False
 
-                if filter:
+                if not cls.filter_is_empty(filter):
                     # filter queryset with dates and users
                     qs = DateQueryBuilder.filter_queryset(filter, qs)
                     qs = UserQueryBuilder.filter_queryset(filter, qs)
@@ -501,13 +555,24 @@ class NIObjectType(DjangoObjectType):
                     nodes = nc.query_to_list(nc.graphdb.manager, q)
                     nodes = [ node['n'] for node in nodes]
                 else:
-                    nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
-                    nodes = list(nodes)
+                    no_filter = True
 
-                if nodes:
-                    handle_ids = []
+                handle_ids = []
+
+                if nodes or no_filter:
                     qs_order_prop = None
                     qs_order_order = None
+
+                    # remove default ordering prop if there's no filter
+                    if orderBy and no_filter:
+                        if orderBy == 'handle_id_DESC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = False
+                        elif orderBy == 'handle_id_ASC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = True
 
                     # ordering
                     if orderBy:
@@ -515,6 +580,10 @@ class NIObjectType(DjangoObjectType):
                         m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
                         prop = m[1]
                         order = m[2]
+
+                        if no_filter: # delay neo4j query
+                            nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
+                            nodes = list(nodes)
 
                         if prop not in DateQueryBuilder.fields:
                             # node property ordering
@@ -526,25 +595,44 @@ class NIObjectType(DjangoObjectType):
 
                         handle_ids = [ node['handle_id'] for node in nodes ]
                     else:
-                        handle_ids = [ node['handle_id'] for node in nodes ]
-                        node_type = NodeType.objects.get(type=type_name)
+                        no_order = True
+
+                        if not no_filter:
+                            handle_ids = [ node['handle_id'] for node in nodes ]
 
                     ret = []
 
-                    # instead of vakt here, we reduce the original qs
-                    # to only the ones the user has right to read
-                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                    if not no_filter or not no_order:
+                        # instead of vakt here, we reduce the original qs
+                        # to only the ones the user has right to read
+                        qs = sriutils.trim_readable_queryset(qs, info.context.user)
 
-                    for handle_id in handle_ids:
-                        nodeqs = qs.filter(handle_id=handle_id)
-                        if nodeqs and len(nodeqs) == 1:
-                            ret.append(nodeqs.first())
+                        for handle_id in handle_ids:
+                            nodeqs = qs.filter(handle_id=handle_id)
+                            try:
+                                the_node = nodeqs.first()
+                                if the_node:
+                                    ret.append(the_node)
+                            except:
+                                pass # nothing to do if the qs doesn't have elements
 
-                    # do nodehandler attributes ordering now that we have
-                    # the nodes set, if this order is requested
-                    if qs_order_prop and qs_order_order:
-                        reverse = True if qs_order_order == 'DESC' else False
-                        ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                        # do nodehandler attributes ordering now that we have
+                        # the nodes set, if this order is requested
+                        if qs_order_prop and qs_order_order:
+                            reverse = True if qs_order_order == 'DESC' else False
+                            ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                    else:
+                        if apply_handle_id_order:
+                            logger.debug('Apply handle_id order')
+
+                            if not revert_default_order:
+                                logger.debug('Apply descendent handle_id')
+                                qs = qs.order_by('-handle_id')
+                            else:
+                                logger.debug('Apply ascending handle_id')
+                                qs = qs.order_by('handle_id')
+
+                        ret = list(qs)
 
                 if not ret:
                     ret = []
@@ -1090,7 +1178,7 @@ class CreateUniqueNIMutation(CreateNIMutation):
 
     @classmethod
     def get_form_to_nodehandle_func(cls):
-        return helpers.form_to_generic_node_handle
+        return helpers.form_to_unique_node_handle
 
 
 class UpdateNIMutation(AbstractNIMutation):

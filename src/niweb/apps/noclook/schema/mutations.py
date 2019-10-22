@@ -190,7 +190,7 @@ class CreateOrganization(CreateNIMutation):
             form = form_class(request.POST.copy())
             if form.is_valid():
                 try:
-                    nh = helpers.form_to_unique_node_handle(request, form,
+                    nh = helpers.form_to_generic_node_handle(request, form,
                             node_type, node_meta_type)
                 except UniqueNodeError:
                     has_error = True
