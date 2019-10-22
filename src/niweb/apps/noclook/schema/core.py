@@ -508,8 +508,8 @@ class NIObjectType(DjangoObjectType):
 
             if not and_portion and not or_portion:
                 empty = True
-            elif (and_portion and not and_portion[0])\
-             and (or_portion and not or_portion[0]):
+            elif not (and_portion and and_portion[0])\
+             and not (or_portion and or_portion[0]):
                 empty = True
 
         return empty
