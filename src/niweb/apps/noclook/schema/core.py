@@ -491,6 +491,30 @@ class NIObjectType(DjangoObjectType):
         return generic_list_resolver
 
     @classmethod
+    def filter_is_empty(cls, filter):
+        empty = False
+
+        if not filter:
+            empty = True
+
+        if not empty and filter:
+            and_portion = None
+            if 'AND' in filter:
+                and_portion = filter['AND']
+
+            or_portion = None
+            if 'OR' in filter:
+                or_portion = filter['OR']
+
+            if not and_portion and not or_portion:
+                empty = True
+            elif not (and_portion and and_portion[0])\
+             and not (or_portion and or_portion[0]):
+                empty = True
+
+        return empty
+
+    @classmethod
     def get_connection_resolver(cls):
         '''
         This method returns a generic connection resolver for every nodetype in NOCAutoQuery
@@ -510,6 +534,8 @@ class NIObjectType(DjangoObjectType):
             ret = None
             filter  = args.get('filter', None)
             orderBy = args.get('orderBy', None)
+            apply_handle_id_order = False
+            revert_default_order = False
 
             if info.context and info.context.user.is_authenticated:
                 # filtering will take a different approach
@@ -519,7 +545,7 @@ class NIObjectType(DjangoObjectType):
                 no_filter = False
                 no_order  = False
 
-                if filter:
+                if not cls.filter_is_empty(filter):
                     # filter queryset with dates and users
                     qs = DateQueryBuilder.filter_queryset(filter, qs)
                     qs = UserQueryBuilder.filter_queryset(filter, qs)
@@ -536,6 +562,17 @@ class NIObjectType(DjangoObjectType):
                 if nodes or no_filter:
                     qs_order_prop = None
                     qs_order_order = None
+
+                    # remove default ordering prop if there's no filter
+                    if orderBy and no_filter:
+                        if orderBy == 'handle_id_DESC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = False
+                        elif orderBy == 'handle_id_ASC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = True
 
                     # ordering
                     if orderBy:
@@ -585,6 +622,16 @@ class NIObjectType(DjangoObjectType):
                             reverse = True if qs_order_order == 'DESC' else False
                             ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
                     else:
+                        if apply_handle_id_order:
+                            logger.debug('Apply handle_id order')
+
+                            if not revert_default_order:
+                                logger.debug('Apply descendent handle_id')
+                                qs = qs.order_by('-handle_id')
+                            else:
+                                logger.debug('Apply ascending handle_id')
+                                qs = qs.order_by('handle_id')
+
                         ret = list(qs)
 
                 if not ret:
