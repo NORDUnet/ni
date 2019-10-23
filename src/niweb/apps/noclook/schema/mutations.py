@@ -320,44 +320,6 @@ class UpdateOrganization(UpdateNIMutation):
         graphql_type   = Organization
 
 
-class DeleteRelationship(relay.ClientIDMutation):
-    class Input:
-        relation_id = graphene.Int(required=True)
-
-    success = graphene.Boolean(required=True)
-    relation_id = graphene.Int(required=True)
-
-    @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
-        relation_id = input.get("relation_id", None)
-        success = False
-
-        try:
-            relationship = nc.get_relationship_model(nc.graphdb.manager, relation_id)
-
-            # check permissions before delete
-            start_id = relationship.start['handle_id']
-            end_id = relationship.end['handle_id']
-
-            authorized_start = sriutils.authorice_read_resource(
-                info.context.user, start_id
-            )
-
-            authorized_end = sriutils.authorice_read_resource(
-                info.context.user, end_id
-            )
-
-            if authorized_start and authorized_end:
-                activitylog.delete_relationship(info.context.user, relationship)
-                relationship.delete()
-
-            success = True
-        except nc.exceptions.RelationshipNotFound:
-            success = True
-
-        return DeleteRelationship(success=success, relation_id=relation_id)
-
-
 class CreateRole(DjangoModelFormMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):

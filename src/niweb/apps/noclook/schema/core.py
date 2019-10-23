@@ -864,6 +864,45 @@ class NIRelationField(NIBasicField):
 class NodeHandler(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
+
+class DeleteRelationship(relay.ClientIDMutation):
+    class Input:
+        relation_id = graphene.Int(required=True)
+
+    success = graphene.Boolean(required=True)
+    relation_id = graphene.Int(required=True)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        relation_id = input.get("relation_id", None)
+        success = False
+
+        try:
+            relationship = nc.get_relationship_model(nc.graphdb.manager, relation_id)
+
+            # check permissions before delete
+            start_id = relationship.start['handle_id']
+            end_id = relationship.end['handle_id']
+
+            authorized_start = sriutils.authorice_read_resource(
+                info.context.user, start_id
+            )
+
+            authorized_end = sriutils.authorice_read_resource(
+                info.context.user, end_id
+            )
+
+            if authorized_start and authorized_end:
+                activitylog.delete_relationship(info.context.user, relationship)
+                relationship.delete()
+
+            success = True
+        except nc.exceptions.RelationshipNotFound:
+            success = True
+
+        return DeleteRelationship(success=success, relation_id=relation_id)
+
+
 class AbstractNIMutation(relay.ClientIDMutation):
     errors = graphene.List(ErrorType)
 
@@ -1437,6 +1476,7 @@ class NIMutationFactory():
             'create_inputs': cls._create_mutation.NIMetaClass._input_list,
             'update_inputs': cls._update_mutation.NIMetaClass._input_list,
             'delete_inputs': cls._delete_mutation.NIMetaClass._input_list,
+            'detach_relations': graphene.List(DeleteRelationship.Input),
         }
 
         inner_class = type('Input', (object,), multi_attr_input_list)
@@ -1456,6 +1496,7 @@ class NIMutationFactory():
             'created': cls._create_mutation.NIMetaClass._payload_list,
             'updated': cls._update_mutation.NIMetaClass._payload_list,
             'deleted': cls._delete_mutation.NIMetaClass._payload_list,
+            'detached': graphene.List(DeleteRelationship),
             'NIMetaClass': meta_class
         }
 
