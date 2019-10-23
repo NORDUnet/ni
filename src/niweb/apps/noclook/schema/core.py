@@ -473,16 +473,22 @@ class NIObjectType(DjangoObjectType):
         type_name = cls.get_type_name()
 
         def generic_list_resolver(self, info, **args):
-            qs = []
+            qs = NodeHandle.objects.none()
 
             if info.context and info.context.user.is_authenticated:
-                node_type = NodeType.objects.get(type=type_name)
-                qs = NodeHandle.objects.filter(node_type=node_type).order_by('node_name')
+                default_context = sriutils.get_default_context()
+                authorized = sriutils.authorize_list_module(
+                    info.context.user, default_context
+                )
 
-                # the node list is trimmed to the nodes that the user can read
-                qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                if authorized:
+                    node_type = NodeType.objects.get(type=type_name)
+                    qs = NodeHandle.objects.filter(node_type=node_type).order_by('node_name')
 
-                return qs
+                    # the node list is trimmed to the nodes that the user can read
+                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                else:
+                    raise GraphQLAuthException()
             else:
                 raise GraphQLAuthException()
 
@@ -531,13 +537,15 @@ class NIObjectType(DjangoObjectType):
             order to return an ordered node collection we have to query each
             node by its handle_id and append to a list.
             '''
-            ret = None
+            ret = NodeHandle.objects.none()
             filter  = args.get('filter', None)
             orderBy = args.get('orderBy', None)
             apply_handle_id_order = False
             revert_default_order = False
+            default_context = sriutils.get_default_context()
 
-            if info.context and info.context.user.is_authenticated:
+            if info.context and info.context.user.is_authenticated and \
+                sriutils.authorize_list_module(info.context.user, default_context):
                 # filtering will take a different approach
                 nodes = None
                 node_type = NodeType.objects.get(type=type_name)
