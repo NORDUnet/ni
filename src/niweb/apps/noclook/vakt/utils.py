@@ -186,3 +186,12 @@ def authorize_admin_module(user, context):
     logger.debug('Authorizing user to admin the module {}'\
         .format(context.name))
     return authorize_aa_operation(user, context, get_admin_authaction)
+
+
+def authorize_list_module(user, context):
+    '''
+    This function checks if the user can perform admin actions inside a module
+    '''
+    logger.debug('Authorizing user to admin the module {}'\
+        .format(context.name))
+    return authorize_aa_operation(user, context, get_list_authaction)
