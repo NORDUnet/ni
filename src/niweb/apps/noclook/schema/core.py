@@ -1325,25 +1325,44 @@ class MultipleMutation(relay.ClientIDMutation):
         # get input values
         create_inputs = input.get("create_inputs")
         update_inputs = input.get("update_inputs")
+        delete_inputs = input.get("delete_inputs")
+        detach_inputs = input.get("detach_inputs")
 
         # get underlying mutations
         nimetaclass = getattr(cls, 'NIMetaClass')
         create_mutation = getattr(nimetaclass, 'create_mutation', None)
         update_mutation = getattr(nimetaclass, 'update_mutation', None)
+        delete_mutation = getattr(nimetaclass, 'delete_mutation', None)
+        detach_mutation = getattr(nimetaclass, 'detach_mutation', None)
 
-        ret_create = None
+        ret_created = []
         if create_inputs:
             for input in create_inputs:
                 ret = create_mutation.mutate_and_get_payload(root, info, **input)
-                ret_create.append(ret)
+                ret_created.append(ret)
 
-        ret_update = []
+        ret_updated = []
         if update_inputs:
             for input in update_inputs:
                 ret = update_mutation.mutate_and_get_payload(root, info, **input)
-                ret_update.append(ret)
+                ret_updated.append(ret)
 
-        return cls(created=ret_create, updated=ret_update)
+        ret_deleted = []
+        if delete_inputs:
+            for input in delete_inputs:
+                ret = delete_mutation.mutate_and_get_payload(root, info, **input)
+                ret_deleted.append(ret)
+
+        ret_detached = []
+        if detach_inputs:
+            for input in update_inputs:
+                ret = detach_inputs.mutate_and_get_payload(root, info, **input)
+                ret_deleted.append(ret)
+
+        return cls(
+            created=ret_created, updated=ret_updated,
+            deleted=ret_deleted, detached=ret_detached
+        )
 
 
 class NIMutationFactory():
@@ -1476,7 +1495,7 @@ class NIMutationFactory():
             'create_inputs': cls._create_mutation.NIMetaClass._input_list,
             'update_inputs': cls._update_mutation.NIMetaClass._input_list,
             'delete_inputs': cls._delete_mutation.NIMetaClass._input_list,
-            'detach_relations': graphene.List(DeleteRelationship.Input),
+            'detach_inputs': graphene.List(DeleteRelationship.Input),
         }
 
         inner_class = type('Input', (object,), multi_attr_input_list)
@@ -1486,6 +1505,7 @@ class NIMutationFactory():
             'create_mutation': cls._create_mutation,
             'update_mutation': cls._update_mutation,
             'delete_mutation': cls._delete_mutation,
+            'detach_mutation': DeleteRelationship,
         }
 
         meta_class = type('NIMetaClass', (object,), metaclass_attr)
