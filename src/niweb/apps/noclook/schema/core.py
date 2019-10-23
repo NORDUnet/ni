@@ -9,7 +9,7 @@ import re
 
 import apps.noclook.vakt.utils as sriutils
 
-from apps.noclook import helpers
+from apps.noclook import activitylog, helpers
 from apps.noclook.models import NodeType, NodeHandle, NodeHandleContext
 from collections import OrderedDict, Iterable
 from django import forms
