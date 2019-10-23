@@ -879,7 +879,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', None)
         is_create     = getattr(ni_metaclass, 'is_create', False)
-        is_delete      = getattr(ni_metaclass, 'is_delete', False)
+        is_delete     = getattr(ni_metaclass, 'is_delete', False)
         include       = getattr(ni_metaclass, 'include', None)
         exclude       = getattr(ni_metaclass, 'exclude', None)
 
@@ -923,10 +923,11 @@ class AbstractNIMutation(relay.ClientIDMutation):
         setattr(cls, 'Input', inner_class)
 
         # add Input to private attribute
-        if graphql_type and not is_delete:
+        if graphql_type:
             op_name = 'Create' if is_create else 'Update'
+            op_name = 'Delete' if is_delete else op_name
             type_name = graphql_type.__name__
-            inner_input = type('Single{}InputField'.format(op_name + type_name),
+            inner_input = type('Single{}Input'.format(op_name + type_name),
                 (graphene.InputObjectType, ), inner_fields)
 
             setattr(ni_metaclass, '_input_list', graphene.List(inner_input))
@@ -1410,6 +1411,7 @@ class NIMutationFactory():
         del attr_dict['include']
         del attr_dict['exclude']
         del attr_dict['property_update']
+        attr_dict['is_delete'] = True
 
         if relations_processors:
             del attr_dict['relations_processors']
@@ -1434,6 +1436,7 @@ class NIMutationFactory():
         multi_attr_input_list = {
             'create_inputs': cls._create_mutation.NIMetaClass._input_list,
             'update_inputs': cls._update_mutation.NIMetaClass._input_list,
+            'delete_inputs': cls._delete_mutation.NIMetaClass._input_list,
         }
 
         inner_class = type('Input', (object,), multi_attr_input_list)
@@ -1442,6 +1445,7 @@ class NIMutationFactory():
         metaclass_attr = {
             'create_mutation': cls._create_mutation,
             'update_mutation': cls._update_mutation,
+            'delete_mutation': cls._delete_mutation,
         }
 
         meta_class = type('NIMetaClass', (object,), metaclass_attr)
@@ -1451,6 +1455,7 @@ class NIMutationFactory():
             'Input': inner_class,
             'created': cls._create_mutation.NIMetaClass._payload_list,
             'updated': cls._update_mutation.NIMetaClass._payload_list,
+            'deleted': cls._delete_mutation.NIMetaClass._payload_list,
             'NIMetaClass': meta_class
         }
 
