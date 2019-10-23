@@ -176,7 +176,7 @@ def authorize_create_resource(user, context):
     '''
     logger.debug('Authorizing user to create a node within the module {}'\
         .format(context.name))
-    return authorize_aa_operation(user, context, authorice_write_resource)
+    return authorize_aa_operation(user, context, get_write_authaction)
 
 
 def authorize_admin_module(user, context):

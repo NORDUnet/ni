@@ -16,6 +16,7 @@ class SRIVaktUtilsTest(NeoTestCase):
         # get auth actions
         self.get_read_authaction  = sriutils.get_read_authaction()
         self.get_write_authaction = sriutils.get_write_authaction()
+        self.get_list_authaction = sriutils.get_list_authaction()
         self.get_admin_authaction = sriutils.get_admin_authaction()
 
         # create some nodes
@@ -82,10 +83,12 @@ class SRIVaktUtilsTest(NeoTestCase):
         self.group1 = Group( name="Group can read the three contexts" )
         self.group2 = Group( name="Group can write for the community and contracts" )
         self.group3 = Group( name="Group can admin for the community module" )
+        self.group4 = Group( name="Group can list for the community and contracts" )
 
         self.group1.save()
         self.group2.save()
         self.group3.save()
+        self.group4.save()
 
         # add contexts and actions
         # first group
@@ -115,6 +118,13 @@ class SRIVaktUtilsTest(NeoTestCase):
             context = self.community_ctxt
         ).save()
 
+        for context in contexts:
+            GroupContextAuthzAction(
+                group = self.group4,
+                authzprofile = self.get_list_authaction,
+                context = context
+            ).save()
+
         # add users to groups
         self.group1.user_set.add(self.user1)
         self.group1.user_set.add(self.user2)
@@ -124,6 +134,10 @@ class SRIVaktUtilsTest(NeoTestCase):
         self.group2.user_set.add(self.user2)
 
         self.group3.user_set.add(self.user1)
+
+        self.group4.user_set.add(self.user1)
+        self.group4.user_set.add(self.user2)
+        self.group4.user_set.add(self.user3)
 
     def test_read_resource(self):
         # check if the three users can read the organization1
@@ -257,3 +271,17 @@ class SRIVaktUtilsTest(NeoTestCase):
         self.assertFalse(result_auth_u1)
         self.assertFalse(result_auth_u2)
         self.assertFalse(result_auth_u3)
+
+
+    def test_list(self):
+        # check that the user1 can't list network context elements
+        result_auth_u1 = sriutils.authorize_list_module(self.user1, self.network_ctxt)
+        self.assertFalse(result_auth_u1)
+
+        # check that the user1 can list community context elements
+        result_auth_u2 = sriutils.authorize_list_module(self.user2, self.community_ctxt)
+        self.assertTrue(result_auth_u2)
+
+        # check that the user1 can list contracts context elements
+        result_auth_u3 = sriutils.authorize_list_module(self.user3, self.contracts_ctxt)
+        self.assertTrue(result_auth_u3)
