@@ -34,7 +34,7 @@ def forwards_func(apps, schema_editor):
             policy = Policy(
                 uuid.uuid4(),
                 actions=[vakt_rules.Eq(list_aa.name)],
-                resources=[srirules.BelongsContext(context)],
+                resources=[vakt_rules.Any()],
                 subjects=[srirules.HasAuthAction(list_aa, context)],
                 context={ 'module': srirules.ContainsElement(context.name) },
                 effect=ALLOW_ACCESS,

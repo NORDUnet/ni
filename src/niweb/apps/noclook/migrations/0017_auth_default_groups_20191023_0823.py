@@ -39,7 +39,7 @@ def forwards_func(apps, schema_editor):
 
             aa_read  = sriutils.get_read_authaction(AuthzAction)
             aa_write = sriutils.get_write_authaction(AuthzAction)
-            aa_list = sriutils.get_write_authaction(AuthzAction)
+            aa_list = sriutils.get_list_authaction(AuthzAction)
             aa_admin = sriutils.get_admin_authaction(AuthzAction)
 
             GroupContextAuthzAction.objects.get_or_create( group = groupr, authzprofile = aa_read, context = context )
