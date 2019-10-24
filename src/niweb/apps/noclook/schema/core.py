@@ -9,7 +9,7 @@ import re
 
 import apps.noclook.vakt.utils as sriutils
 
-from apps.noclook import helpers
+from apps.noclook import activitylog, helpers
 from apps.noclook.models import NodeType, NodeHandle, NodeHandleContext
 from collections import OrderedDict, Iterable
 from django import forms
@@ -872,6 +872,45 @@ class NIRelationField(NIBasicField):
 class NodeHandler(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
+
+class DeleteRelationship(relay.ClientIDMutation):
+    class Input:
+        relation_id = graphene.Int(required=True)
+
+    success = graphene.Boolean(required=True)
+    relation_id = graphene.Int(required=True)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        relation_id = input.get("relation_id", None)
+        success = False
+
+        try:
+            relationship = nc.get_relationship_model(nc.graphdb.manager, relation_id)
+
+            # check permissions before delete
+            start_id = relationship.start['handle_id']
+            end_id = relationship.end['handle_id']
+
+            authorized_start = sriutils.authorice_read_resource(
+                info.context.user, start_id
+            )
+
+            authorized_end = sriutils.authorice_read_resource(
+                info.context.user, end_id
+            )
+
+            if authorized_start and authorized_end:
+                activitylog.delete_relationship(info.context.user, relationship)
+                relationship.delete()
+
+            success = True
+        except nc.exceptions.RelationshipNotFound:
+            success = True
+
+        return DeleteRelationship(success=success, relation_id=relation_id)
+
+
 class AbstractNIMutation(relay.ClientIDMutation):
     errors = graphene.List(ErrorType)
 
@@ -887,6 +926,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', None)
         is_create     = getattr(ni_metaclass, 'is_create', False)
+        is_delete     = getattr(ni_metaclass, 'is_delete', False)
         include       = getattr(ni_metaclass, 'include', None)
         exclude       = getattr(ni_metaclass, 'exclude', None)
 
@@ -928,6 +968,17 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # add Input attribute to class
         inner_class = type('Input', (object,), inner_fields)
         setattr(cls, 'Input', inner_class)
+
+        # add Input to private attribute
+        if graphql_type:
+            op_name = 'Create' if is_create else 'Update'
+            op_name = 'Delete' if is_delete else op_name
+            type_name = graphql_type.__name__
+            inner_input = type('Single{}Input'.format(op_name + type_name),
+                (graphene.InputObjectType, ), inner_fields)
+
+            setattr(ni_metaclass, '_input_list', graphene.List(inner_input))
+            setattr(ni_metaclass, '_payload_list', graphene.List(cls))
 
         # add the converted fields to the metaclass so we can get them later
         setattr(ni_metaclass, 'inner_fields', inner_fields)
@@ -1238,6 +1289,7 @@ class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
+        is_delete      = False
 
     @classmethod
     def add_return_type(cls, graphql_type):
@@ -1271,6 +1323,55 @@ class DeleteNIMutation(AbstractNIMutation):
         if delete_nodes:
             for relation_name, relation_f in delete_nodes.items():
                 relation_f(nodehandler, relation_name, user)
+
+class MultipleMutation(relay.ClientIDMutation):
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        if not info.context or not info.context.user.is_authenticated:
+            raise GraphQLAuthException()
+
+        # get input values
+        create_inputs = input.get("create_inputs")
+        update_inputs = input.get("update_inputs")
+        delete_inputs = input.get("delete_inputs")
+        detach_inputs = input.get("detach_inputs")
+
+        # get underlying mutations
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        create_mutation = getattr(nimetaclass, 'create_mutation', None)
+        update_mutation = getattr(nimetaclass, 'update_mutation', None)
+        delete_mutation = getattr(nimetaclass, 'delete_mutation', None)
+        detach_mutation = getattr(nimetaclass, 'detach_mutation', None)
+
+        ret_created = []
+        if create_inputs:
+            for input in create_inputs:
+                ret = create_mutation.mutate_and_get_payload(root, info, **input)
+                ret_created.append(ret)
+
+        ret_updated = []
+        if update_inputs:
+            for input in update_inputs:
+                ret = update_mutation.mutate_and_get_payload(root, info, **input)
+                ret_updated.append(ret)
+
+        ret_deleted = []
+        if delete_inputs:
+            for input in delete_inputs:
+                ret = delete_mutation.mutate_and_get_payload(root, info, **input)
+                ret_deleted.append(ret)
+
+        ret_detached = []
+        if detach_inputs:
+            for input in detach_inputs:
+                ret = detach_mutation.mutate_and_get_payload(root, info, **input)
+                ret_deleted.append(ret)
+
+        return cls(
+            created=ret_created, updated=ret_updated,
+            deleted=ret_deleted, detached=ret_detached
+        )
+
 
 class NIMutationFactory():
     '''
@@ -1376,6 +1477,7 @@ class NIMutationFactory():
         del attr_dict['include']
         del attr_dict['exclude']
         del attr_dict['property_update']
+        attr_dict['is_delete'] = True
 
         if relations_processors:
             del attr_dict['relations_processors']
@@ -1393,6 +1495,46 @@ class NIMutationFactory():
             },
         )
 
+        # make multiple mutation
+        class_name = 'Multiple{}'.format(node_type.capitalize())
+
+        # create input class
+        multi_attr_input_list = {
+            'create_inputs': cls._create_mutation.NIMetaClass._input_list,
+            'update_inputs': cls._update_mutation.NIMetaClass._input_list,
+            'delete_inputs': cls._delete_mutation.NIMetaClass._input_list,
+            'detach_inputs': graphene.List(DeleteRelationship.Input),
+        }
+
+        inner_class = type('Input', (object,), multi_attr_input_list)
+
+        # metaclass
+        metaclass_attr = {
+            'create_mutation': cls._create_mutation,
+            'update_mutation': cls._update_mutation,
+            'delete_mutation': cls._delete_mutation,
+            'detach_mutation': DeleteRelationship,
+        }
+
+        meta_class = type('NIMetaClass', (object,), metaclass_attr)
+
+        # create class
+        multiple_attr_list = {
+            'Input': inner_class,
+            'created': cls._create_mutation.NIMetaClass._payload_list,
+            'updated': cls._update_mutation.NIMetaClass._payload_list,
+            'deleted': cls._delete_mutation.NIMetaClass._payload_list,
+            'detached': graphene.List(DeleteRelationship),
+            'NIMetaClass': meta_class
+        }
+
+        cls._multiple_mutation = type(
+            class_name,
+            (MultipleMutation,),
+            multiple_attr_list
+        )
+
+
     @classmethod
     def get_create_mutation(cls, *args, **kwargs):
         return cls._create_mutation
@@ -1404,6 +1546,10 @@ class NIMutationFactory():
     @classmethod
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
+
+    @classmethod
+    def get_multiple_mutation(cls, *args, **kwargs):
+        return cls._multiple_mutation
 
 ########## END MUTATION FACTORY
 
