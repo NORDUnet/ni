@@ -25,7 +25,7 @@ class CsvImportTest(NeoTestCase):
     """
 
     contacts_str = """"salutation";"first_name";"last_name";"title";"contact_role";"contact_type";"mailing_street";"mailing_city";"mailing_zip";"mailing_state";"mailing_country";"phone";"mobile";"fax";"email";"other_email";"PGP_fingerprint";"account_name"
-"Honorable";"Caesar";"Newby";;"Computer Systems Analyst III";"Person";;;;;"China";"897-979-7799";"501-503-1550";;"cnewby0@joomla.org";"";;"Gabtune"
+"Honorable";"Caesar";"Newby";;"Computer Systems Analyst III";"Person";;;;;"China";"897-979-7799";"501-503-1550";;"cnewby0@joomla.org";"cnewby1@joomla.org";;"Gabtune"
 "Mr";"Zilvia";"Linnard";;"Analog Circuit Design manager";"Person";;;;;"Indonesia";"205-934-3477";"473-256-5648";;"zlinnard1@wunderground.com";;;"Babblestorm"
 "Honorable";"Reamonn";"Scriviner";;"Tax Accountant";"Person";;;;;"China";"200-111-4607";"419-639-2648";;"rscriviner2@moonfruit.com";;;"Babbleblab"
 "Mrs";"Jessy";"Bainton";;"Software Consultant";"Person";;;;;"China";"877-832-9647";"138-608-6235";;"fbainton3@si.edu";;;"Mudo"
@@ -171,8 +171,6 @@ class CsvImportTest(NeoTestCase):
 
         has_phone = 'phone' in organization1_node.data
         self.assertFalse(has_phone)
-        has_website = 'website' in organization1_node.data
-        self.assertFalse(has_website)
 
         relations = organization1_node.get_outgoing_relations()
         relation_keys = list(relations.keys())
@@ -183,9 +181,7 @@ class CsvImportTest(NeoTestCase):
         self.assertIsInstance(address_node, ncmodels.AddressModel)
 
         has_phone = 'phone' in address_node.data
-        has_website = 'website' in address_node.data
         self.assertTrue(has_phone)
-        self.assertTrue(has_website)
 
     def test_fix_emails_phones(self):
         # call csvimport command (verbose 0) to import test contacts

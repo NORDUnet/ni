@@ -33,6 +33,8 @@ class Command(BaseCommand):
                     action='store_true', help="regenerate emails and phones to separate models")
         parser.add_argument("-a", "--addressfix",
                     action='store_true', help="regenerate organizations' address to the new SRI")
+        parser.add_argument("-w", "--movewebsite",
+                    action='store_true', help="move organizations' website back from address")
         parser.add_argument('-d', "--delimiter", nargs='?', default=';',
                             help='Delimiter to use use. Default ";".')
 
@@ -50,6 +52,11 @@ class Command(BaseCommand):
         # check if the addressfix option has been called, do it and exit
         if options['addressfix']:
             self.fix_organizations_address()
+            return
+
+        # check if the addressfix option has been called, do it and exit
+        if options['movewebsite']:
+            self.fix_website_field()
             return
 
         relation_meta_type = 'Relation'
@@ -357,16 +364,14 @@ class Command(BaseCommand):
         logical_meta_type = 'Logical'
 
         phone_field = 'phone'
-        website_field = 'website'
 
         for organization in all_organizations:
             organization_node = organization.get_node()
             address_name = 'Address: {}'.format(organization.node_name)
 
-            old_website = organization_node.data.get(website_field, None)
             old_phone = organization_node.data.get(phone_field, None)
 
-            if old_website:
+            if old_phone:
                 # create an Address and asociate it to the Organization
                 new_address = NodeHandle.objects.get_or_create(
                     node_name=address_name,
@@ -376,14 +381,35 @@ class Command(BaseCommand):
                     modifier=self.user,
                 )[0]
 
-                new_address.get_node().add_property(website_field, old_website)
-                organization_node.remove_property(website_field)
-
-                if old_phone:
-                    new_address.get_node().add_property(phone_field, old_phone)
-                    organization_node.remove_property(phone_field)
+                new_address.get_node().add_property(phone_field, old_phone)
+                organization_node.remove_property(phone_field)
 
                 organization_node.add_address(new_address.handle_id)
+
+    def fix_website_field(self):
+        self.user = get_user()
+        address_type = NodeType.objects.get_or_create(type='Address', slug='address', hidden=True)[0] # address
+        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+
+        website_field = 'website'
+
+        for organization in all_organizations:
+            orgnode = organization.get_node()
+            relations = orgnode.get_outgoing_relations()
+            if relations and 'Has_address' in relations:
+                for rel in relations['Has_address']:
+                    address_node = rel['relationship'].end_node
+
+                    if website_field in address_node._properties:
+                        website_str = address_node._properties[website_field]
+
+                        # remove if it already exists
+                        orgnode.remove_property(website_field)
+                        orgnode.add_property(website_field)
+
+                        # remove value in address_node
+                        address_node.remove_property(website_field)
 
     def count_lines(self, file):
         '''
