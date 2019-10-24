@@ -302,6 +302,73 @@ class CsvImportTest(NeoTestCase):
         self.assertIsNotNone(role1)
         self.assertEquals(role1.name, 'Övrig incidentkontakt')
 
+    def test_organizations_import(self):
+        # call csvimport command (verbose 0)
+        call_command(
+            self.cmd_name,
+            organizations=self.organizations_file,
+            verbosity=0,
+        )
+
+        call_command(
+            self.cmd_name,
+            addressfix=True,
+            verbosity=0,
+        )
+
+        website_field = 'website'
+
+        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+
+        for organization in all_organizations:
+            # get the address and check that the website field is not present
+            website_value = organization.get_node().data.get(website_field, None)
+            self.assertIsNotNone(website_value)
+
+            relations = organization.get_node().get_outgoing_relations()
+            address_relations = relations.get('Has_address', None)
+            orgnode = organization.get_node()
+
+            self.assertIsNotNone(address_relations)
+            
+            # check and add it for test
+            for rel in address_relations:
+                address_end = rel['relationship'].end_node
+                self.assertFalse(website_field in address_end._properties)
+                handle_id = address_end._properties['handle_id']
+                address_node = NodeHandle.objects.get(handle_id=handle_id).get_node()
+
+                address_node.add_property(website_field, website_value)
+                orgnode.remove_property(website_field)
+
+        # fix it
+        call_command(
+            self.cmd_name,
+            movewebsite=True,
+            verbosity=0,
+        )
+
+        # check that it's good again
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+
+        for organization in all_organizations:
+            # get the address and check that the website field is not present
+            website_value = organization.get_node().data.get(website_field, None)
+            self.assertIsNotNone(website_value)
+
+            relations = organization.get_node().get_outgoing_relations()
+            address_relations = relations.get('Has_address', None)
+            orgnode = organization.get_node()
+
+            self.assertIsNotNone(address_relations)
+
+            # check the data is not present on the address
+            for rel in address_relations:
+                address_end = rel['relationship'].end_node
+                self.assertFalse(website_field in address_end._properties)
+
+
     def write_string_to_disk(self, string):
         # get random file
         tf = tempfile.NamedTemporaryFile(mode='w+')

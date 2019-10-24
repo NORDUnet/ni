@@ -397,16 +397,19 @@ class Command(BaseCommand):
         for organization in all_organizations:
             orgnode = organization.get_node()
             relations = orgnode.get_outgoing_relations()
-            if relations and 'Has_address' in relations:
-                for rel in relations['Has_address']:
-                    address_node = rel['relationship'].end_node
+            address_relations = relations.get('Has_address', None)
+            if address_relations:
+                for rel in address_relations:
+                    address_end = rel['relationship'].end_node
 
-                    if website_field in address_node._properties:
-                        website_str = address_node._properties[website_field]
+                    if website_field in address_end._properties:
+                        website_str = address_end._properties[website_field]
+                        handle_id = address_end._properties['handle_id']
+                        address_node = NodeHandle.objects.get(handle_id=handle_id).get_node()
 
                         # remove if it already exists
                         orgnode.remove_property(website_field)
-                        orgnode.add_property(website_field)
+                        orgnode.add_property(website_field, website_str)
 
                         # remove value in address_node
                         address_node.remove_property(website_field)
