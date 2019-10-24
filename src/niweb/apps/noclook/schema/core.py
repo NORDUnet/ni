@@ -1355,8 +1355,8 @@ class MultipleMutation(relay.ClientIDMutation):
 
         ret_detached = []
         if detach_inputs:
-            for input in update_inputs:
-                ret = detach_inputs.mutate_and_get_payload(root, info, **input)
+            for input in detach_inputs:
+                ret = detach_mutation.mutate_and_get_payload(root, info, **input)
                 ret_deleted.append(ret)
 
         return cls(
