@@ -124,6 +124,8 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
             if isinstance(value, six.string_types):
                 value = "toLower('{}')".format(value)
                 string_values = True
+            else:
+                value = str(value)
 
             value_list.append(value)
 
@@ -143,6 +145,8 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
             if isinstance(value, six.string_types):
                 value = "toLower('{}')".format(value)
                 string_values = True
+            else:
+                value = str(value)
 
             value_list.append(value)
 
