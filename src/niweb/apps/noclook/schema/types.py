@@ -98,6 +98,7 @@ class Organization(NIObjectType):
     customer_id = NIStringField()
     incident_management_info = NIStringField()
     type = NIChoiceField()
+    website = NIStringField()
     addresses = NIListField(type_args=(Address,), rel_name='Has_address', rel_method='get_outgoing_relations')
     affiliation_customer = NIBooleanField()
     affiliation_end_customer = NIBooleanField()
