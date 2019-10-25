@@ -320,44 +320,6 @@ class UpdateOrganization(UpdateNIMutation):
         graphql_type   = Organization
 
 
-class DeleteRelationship(relay.ClientIDMutation):
-    class Input:
-        relation_id = graphene.Int(required=True)
-
-    success = graphene.Boolean(required=True)
-    relation_id = graphene.Int(required=True)
-
-    @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
-        relation_id = input.get("relation_id", None)
-        success = False
-
-        try:
-            relationship = nc.get_relationship_model(nc.graphdb.manager, relation_id)
-
-            # check permissions before delete
-            start_id = relationship.start['handle_id']
-            end_id = relationship.end['handle_id']
-
-            authorized_start = sriutils.authorice_read_resource(
-                info.context.user, start_id
-            )
-
-            authorized_end = sriutils.authorice_read_resource(
-                info.context.user, end_id
-            )
-
-            if authorized_start and authorized_end:
-                activitylog.delete_relationship(info.context.user, relationship)
-                relationship.delete()
-
-            success = True
-        except nc.exceptions.RelationshipNotFound:
-            success = True
-
-        return DeleteRelationship(success=success, relation_id=relation_id)
-
-
 class CreateRole(DjangoModelFormMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
@@ -571,10 +533,12 @@ class NOCRootMutation(graphene.ObjectType):
     create_phone        = NIPhoneMutationFactory.get_create_mutation().Field()
     update_phone        = NIPhoneMutationFactory.get_update_mutation().Field()
     delete_phone        = NIPhoneMutationFactory.get_delete_mutation().Field()
+    multiple_phone      = NIPhoneMutationFactory.get_multiple_mutation().Field()
 
     create_email        = NIEmailMutationFactory.get_create_mutation().Field()
     update_email        = NIEmailMutationFactory.get_update_mutation().Field()
     delete_email        = NIEmailMutationFactory.get_delete_mutation().Field()
+    multiple_email      = NIEmailMutationFactory.get_multiple_mutation().Field()
 
     create_address      = NIAddressMutationFactory.get_create_mutation().Field()
     update_address      = NIAddressMutationFactory.get_update_mutation().Field()
@@ -583,6 +547,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_contact      = NIContactMutationFactory.get_create_mutation().Field()
     update_contact      = NIContactMutationFactory.get_update_mutation().Field()
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
+    multiple_contact    = NIContactMutationFactory.get_multiple_mutation().Field()
 
     create_organization = CreateOrganization.Field()
     update_organization = UpdateOrganization.Field()
