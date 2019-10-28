@@ -105,8 +105,8 @@ class QueryTest(Neo4jGraphQLTest):
         query {
           contacts(filter: {AND: [
             {
-              member_of_groups: { name: "group2" },
-              roles: { name: "role2"}
+              member_of_groups: { name: "Group2" },
+              roles: { name: "Role2"}
             }
           ]}){
             edges{
@@ -144,8 +144,8 @@ class QueryTest(Neo4jGraphQLTest):
         query {
           contacts(orderBy: handle_id_DESC, filter: {AND: [
             {
-              member_of_groups_in: [{ name: "group1" }, { name: "group2" }],
-              roles_in: [{ name: "role1" }, { name: "role2" }]
+              member_of_groups_in: [{ name: "Group1" }, { name: "gRoup2" }],
+              roles_in: [{ name: "ROLE1" }, { name: "role2" }]
             }
           ]}){
             edges{
@@ -190,7 +190,7 @@ class QueryTest(Neo4jGraphQLTest):
         query {
           contacts(filter: {AND: [
             {
-              member_of_groups: { name: "group2" },
+              member_of_groups: { name: "Group2" },
               roles: { name: "role2" }
             }
           ]}){
@@ -760,7 +760,6 @@ class QueryTest(Neo4jGraphQLTest):
         organization_id = result.data['organizations']['edges'][0]['node']['handle_id']
 
         # create address for organization
-        website_str = "www.emergya.com"
         street_str = "Calle Luis de Morales, 32, 5º, Puerta 5"
         postal_c_str = "41018"
         postal_a_str = "Seville"
@@ -769,7 +768,6 @@ class QueryTest(Neo4jGraphQLTest):
           create_address(input:{{
             organization: {organization_id},
             name: "New address",
-            website: "{website_str}",
             phone: "{phone_number}",
             street: "{street_str}",
             postal_code: "{postal_c_str}",
@@ -782,7 +780,6 @@ class QueryTest(Neo4jGraphQLTest):
             address{{
               handle_id
               name
-              website
               phone
               street
               postal_code
@@ -791,9 +788,8 @@ class QueryTest(Neo4jGraphQLTest):
           }}
         }}
         """.format(organization_id=organization_id,
-            website_str=website_str, phone_number=phone_number,
-            street_str=street_str, postal_c_str=postal_c_str,
-            postal_a_str=postal_a_str)
+            phone_number=phone_number, street_str=street_str,
+            postal_c_str=postal_c_str, postal_a_str=postal_a_str)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -811,7 +807,6 @@ class QueryTest(Neo4jGraphQLTest):
             addresses{{
               handle_id
               name
-              website
               phone
               street
               postal_code
@@ -826,7 +821,6 @@ class QueryTest(Neo4jGraphQLTest):
 
         taddress_id = result.data['getOrganizationById']['addresses'][0]['handle_id']
         taddress_name = result.data['getOrganizationById']['addresses'][0]['name']
-        taddress_website = result.data['getOrganizationById']['addresses'][0]['website']
         taddress_phone = result.data['getOrganizationById']['addresses'][0]['phone']
         taddress_street = result.data['getOrganizationById']['addresses'][0]['street']
         taddress_postal_code = result.data['getOrganizationById']['addresses'][0]['postal_code']
@@ -836,8 +830,6 @@ class QueryTest(Neo4jGraphQLTest):
             "Address id don't match: {} != {}".format(address_id, taddress_id)
         assert "New address" == taddress_name, \
             "Address name don't match: {}".format(taddress_name)
-        assert website_str == taddress_website, \
-            "Address website don't match: {} != {}".format(website_str, taddress_website)
         assert phone_number == taddress_phone, \
             "Address phone don't match: {} != {}".format(phone_number, taddress_phone)
         assert street_str == taddress_street, \
@@ -1418,7 +1410,6 @@ class QueryTest(Neo4jGraphQLTest):
         	create_address(input:{{
               organization: {organization_id},
               name: "{address_name}",
-              website: "{address_website}",
               phone: "{address_phone}",
               street: "{address_street}",
               postal_code: "{address_postal_code}",
@@ -1431,7 +1422,6 @@ class QueryTest(Neo4jGraphQLTest):
               address{{
                 handle_id
                 name
-                website
                 phone
                 street
                 postal_code
@@ -1440,8 +1430,7 @@ class QueryTest(Neo4jGraphQLTest):
             }}
           }}
         """.format(organization_id=organization3_id, address_name=address_name,
-                    address_website=address_website, address_phone=address_phone,
-                    address_street=address_street,
+                    address_phone=address_phone, address_street=address_street,
                     address_postal_code=address_postal_code,
                     address_postal_area=address_postal_area)
 
@@ -1863,8 +1852,12 @@ class QueryTest(Neo4jGraphQLTest):
         assert result.data['contacts']['edges'][0]['node']['roles'][0]['end']['handle_id'] == organization_id
         assert result.data['contacts']['edges'][1]['node']['roles'][0]['end']['handle_id'] == organization_id
 
-        assert result.data['contacts']['edges'][0]['node']['member_of_groups'][1]['handle_id'] == group_id
-        assert result.data['contacts']['edges'][1]['node']['member_of_groups'][1]['handle_id'] == group_id
+        assert \
+            result.data['contacts']['edges'][0]['node']['member_of_groups'][-1]['handle_id'] == group_id, \
+            pformat(result.data, indent=1)
+        assert \
+            result.data['contacts']['edges'][1]['node']['member_of_groups'][-1]['handle_id'] == group_id, \
+            pformat(result.data, indent=1)
 
         # check that the previous contacts are detached of their previous org
         assert len(result.data['contacts']['edges'][0]['node']['roles']) == 1
