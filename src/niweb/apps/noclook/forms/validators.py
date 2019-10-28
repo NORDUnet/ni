@@ -11,8 +11,8 @@ def validate_nodetype(value, type):
 
     if nh.node_type != type:
         raise ValidationError(
-            _('Node type %(type) doesn\'t match'),
-            params={'value': value, 'type': str(type)},
+            _('This field requires a %(type) but a %(badtype) was provided'),
+            params={'type': str(type), 'badtype': str(nh.node_type)},
         )
 
 def validate_organization(value):

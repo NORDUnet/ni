@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle, NodeType
+from apps.noclook.forms import common as forms
 from apps.noclook.forms.validators import validate_organization, \
                                             validate_contact, validate_group, \
                                             validate_procedure
@@ -78,3 +79,80 @@ class Neo4jGraphQLTest(NeoTestCase):
             valid = False
 
         self.assertFalse(valid)
+
+    def test_forms(self):
+        # create nodes
+        self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
+        self.contact1 = self.create_node('contact1', 'contact', meta='Relation')
+        self.group1 = self.create_node('group1', 'group', meta='Logical')
+        self.procedure1 = self.create_node('procedure1', 'procedure', meta='Logical')
+
+        ## organization
+        data = {
+            'handle_id': self.organization1.handle_id,
+            'account_id': '1234',
+            'name': 'Lipsum',
+            'description': 'Lorem ipsum dolor sit amet, \
+                            consectetur adipiscing elit.\
+                            Morbi dignissim vehicula \
+                            justo sit amet pulvinar. \
+                            Fusce ipsum nulla, feugiat eu\
+                            gravida eget, efficitur a risus.',
+            'website': 'www.lipsum.com',
+            'customer_id': '5678',
+            'type': 'provider',
+            'incident_management_info': 'They have a form on their website',
+            'relationship_parent_of': self.organization1.handle_id,
+        }
+
+        # check a valid form
+        form = forms.EditOrganizationForm(data)
+        self.assertTrue(form.is_valid())
+
+        # check a non valid form
+        data['relationship_parent_of'] = self.contact1.handle_id
+        form = forms.EditOrganizationForm(data)
+        self.assertFalse(form.is_valid())
+
+        ## contact
+        data = {
+            'handle_id': self.contact1.handle_id,
+            'first_name': 'Alice',
+            'last_name': 'Svensson',
+            'contact_type': 'person',
+            'title': 'PhD',
+            'pgp_fingerprint': '-',
+            'relationship_works_for': self.organization1.handle_id,
+            'relationship_member_of': self.group1.handle_id,
+        }
+
+        # check a valid form
+        form = forms.EditContactForm(data)
+        self.assertTrue(form.is_valid())
+
+        # check a non valid form
+        data['relationship_member_of'] = self.contact1.handle_id
+        form = forms.EditContactForm(data)
+        self.assertFalse(form.is_valid())
+
+        ## group
+        data = {
+            'handle_id': self.group1.handle_id,
+            'name': 'Text providers',
+            'description': 'Lorem ipsum dolor sit amet, \
+                            consectetur adipiscing elit.\
+                            Morbi dignissim vehicula \
+                            justo sit amet pulvinar. \
+                            Fusce ipsum nulla, feugiat eu\
+                            gravida eget, efficitur a risus.',
+            'relationship_member_of': self.contact1.handle_id,
+        }
+
+        # check a valid form
+        form = forms.EditGroupForm(data)
+        self.assertTrue(form.is_valid())
+
+        # check a non valid form
+        data['relationship_member_of'] = self.group1.handle_id
+        form = forms.EditGroupForm(data)
+        self.assertFalse(form.is_valid())
