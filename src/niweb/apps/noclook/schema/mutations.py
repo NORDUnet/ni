@@ -201,7 +201,8 @@ class CreateOrganization(CreateNIMutation):
                 property_keys = [
                     'name', 'description', 'customer_id', 'type', 'incident_management_info',
                     'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
-                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner'
+                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner',
+                    'website'
                 ]
                 helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
                 nh_reload, organization = helpers.get_nh_node(nh.handle_id)
@@ -278,7 +279,8 @@ class UpdateOrganization(UpdateNIMutation):
                 property_keys = [
                     'name', 'description', 'customer_id', 'type', 'incident_management_info',
                     'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
-                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner'
+                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner',
+                    'website'
                 ]
                 helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
 
