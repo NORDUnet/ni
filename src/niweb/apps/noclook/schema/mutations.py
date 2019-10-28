@@ -115,7 +115,7 @@ class NIAddressMutationFactory(NIMutationFactory):
         relations_processors = {
             'organization': process_has_address,
         }
-        property_update = ['name', 'website', 'phone', 'street', 'postal_code', 'postal_area']
+        property_update = ['name', 'phone', 'street', 'postal_code', 'postal_area']
 
     class Meta:
         abstract = False
