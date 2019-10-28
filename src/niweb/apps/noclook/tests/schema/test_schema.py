@@ -105,8 +105,8 @@ class QueryTest(Neo4jGraphQLTest):
         query {
           contacts(filter: {AND: [
             {
-              member_of_groups: { name: "group2" },
-              roles: { name: "role2"}
+              member_of_groups: { name: "Group2" },
+              roles: { name: "Role2"}
             }
           ]}){
             edges{
@@ -144,8 +144,8 @@ class QueryTest(Neo4jGraphQLTest):
         query {
           contacts(orderBy: handle_id_DESC, filter: {AND: [
             {
-              member_of_groups_in: [{ name: "group1" }, { name: "group2" }],
-              roles_in: [{ name: "role1" }, { name: "role2" }]
+              member_of_groups_in: [{ name: "Group1" }, { name: "gRoup2" }],
+              roles_in: [{ name: "ROLE1" }, { name: "role2" }]
             }
           ]}){
             edges{
@@ -190,7 +190,7 @@ class QueryTest(Neo4jGraphQLTest):
         query {
           contacts(filter: {AND: [
             {
-              member_of_groups: { name: "group2" },
+              member_of_groups: { name: "Group2" },
               roles: { name: "role2" }
             }
           ]}){
@@ -1863,8 +1863,12 @@ class QueryTest(Neo4jGraphQLTest):
         assert result.data['contacts']['edges'][0]['node']['roles'][0]['end']['handle_id'] == organization_id
         assert result.data['contacts']['edges'][1]['node']['roles'][0]['end']['handle_id'] == organization_id
 
-        assert result.data['contacts']['edges'][0]['node']['member_of_groups'][1]['handle_id'] == group_id
-        assert result.data['contacts']['edges'][1]['node']['member_of_groups'][1]['handle_id'] == group_id
+        assert \
+            result.data['contacts']['edges'][0]['node']['member_of_groups'][-1]['handle_id'] == group_id, \
+            pformat(result.data, indent=1)
+        assert \
+            result.data['contacts']['edges'][1]['node']['member_of_groups'][-1]['handle_id'] == group_id, \
+            pformat(result.data, indent=1)
 
         # check that the previous contacts are detached of their previous org
         assert len(result.data['contacts']['edges'][0]['node']['roles']) == 1
