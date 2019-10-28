@@ -436,7 +436,8 @@ class QueryTest(Neo4jGraphQLTest):
               it_security_contact: {contact_1_id},
               it_manager_contact: {contact_2_id},
               affiliation_provider: true,
-              affiliation_customer: true
+              affiliation_customer: true,
+              website: "{website}"
             }}
           ){{
             organization{{
@@ -446,12 +447,14 @@ class QueryTest(Neo4jGraphQLTest):
               incident_management_info
               affiliation_provider
               affiliation_customer
+              website
             }}
           }}
         }}
         """.format(organization_id=organization_id,
                     contact_1_id=contact_1_id, contact_2_id=contact_2_id,
-                    incident_management_info=incident_management_info)
+                    incident_management_info=incident_management_info,
+                    website="www.demo.org")
 
         result = schema.execute(query, context=self.context)
         organization_id_2 = result.data['create_organization']['organization']['handle_id']
@@ -466,7 +469,8 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('incident_management_info',
                                           incident_management_info),
                                           ('affiliation_provider', True),
-                                          ('affiliation_customer', True)]))]))])
+                                          ('affiliation_customer', True),
+                                          ('website', 'www.demo.org')]))]))])
 
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
@@ -486,7 +490,8 @@ class QueryTest(Neo4jGraphQLTest):
               it_security_contact: {contact_1_id},
               it_manager_contact: {contact_2_id},
               affiliation_provider: false,
-              affiliation_partner: true
+              affiliation_partner: true,
+              website: "{website}"
             }}
           ){{
             organization{{
@@ -497,11 +502,13 @@ class QueryTest(Neo4jGraphQLTest):
               affiliation_provider
               affiliation_partner
               affiliation_customer
+              website
             }}
           }}
         }}
         """.format(organization_id=organization_id_2,
-                    contact_1_id=contact_1_id, contact_2_id=contact_2_id)
+                    contact_1_id=contact_1_id, contact_2_id=contact_2_id,
+                    website="www.demo.com")
 
         expected = OrderedDict([('update_organization',
               OrderedDict([('organization',
@@ -514,7 +521,8 @@ class QueryTest(Neo4jGraphQLTest):
                                           incident_management_info),
                                           ('affiliation_provider', False),
                                           ('affiliation_partner', True),
-                                          ('affiliation_customer', True)]))]))])
+                                          ('affiliation_customer', True),
+                                          ('website', 'www.demo.com')]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -847,7 +855,6 @@ class QueryTest(Neo4jGraphQLTest):
         	create_address(input:{{
               organization: {organization_id},
               name: "{address_name}",
-              website: "{address_website}",
               phone: "{address_phone}",
               street: "{address_street}",
               postal_code: "{address_postal_code}",
@@ -860,7 +867,6 @@ class QueryTest(Neo4jGraphQLTest):
               address{{
                 handle_id
                 name
-                website
                 phone
                 street
                 postal_code
@@ -879,7 +885,6 @@ class QueryTest(Neo4jGraphQLTest):
                                    ('address',
                                     OrderedDict([('handle_id', None),
                                                  ('name', address_name),
-                                                 ('website', address_website),
                                                  ('phone', address_phone),
                                                  ('street', address_street),
                                                  ('postal_code', address_postal_code),
@@ -905,7 +910,6 @@ class QueryTest(Neo4jGraphQLTest):
             addresses{{
               handle_id
               name
-              website
               phone
               street
               postal_code
@@ -920,7 +924,6 @@ class QueryTest(Neo4jGraphQLTest):
                                    ('addresses',
                                     [OrderedDict([('handle_id', address_id_str),
                                                   ('name', address_name),
-                                                  ('website', address_website),
                                                   ('phone', address_phone),
                                                   ('street', address_street),
                                                   ('postal_code', address_postal_code),
@@ -943,7 +946,6 @@ class QueryTest(Neo4jGraphQLTest):
               handle_id: {address_id},
               organization: {organization_id},
               name: "{address_name}",
-              website: "{address_website}",
               phone: "{address_phone}",
               street: "{address_street}",
               postal_code: "{address_postal_code}",
@@ -956,7 +958,6 @@ class QueryTest(Neo4jGraphQLTest):
               address{{
                 handle_id
                 name
-                website
                 phone
                 street
                 postal_code
@@ -966,8 +967,7 @@ class QueryTest(Neo4jGraphQLTest):
           }}
         """.format(address_id=address_id_str,
                     organization_id=organization_id, address_name=address_name,
-                    address_website=new_website, address_phone=address_phone,
-                    address_street=address_street,
+                    address_phone=address_phone, address_street=address_street,
                     address_postal_code=address_postal_code,
                     address_postal_area=address_postal_area)
 
@@ -976,7 +976,6 @@ class QueryTest(Neo4jGraphQLTest):
                                    ('address',
                                     OrderedDict([('handle_id', address_id_str),
                                                  ('name', address_name),
-                                                 ('website', new_website),
                                                  ('phone', address_phone),
                                                  ('street', address_street),
                                                  ('postal_code', address_postal_code),

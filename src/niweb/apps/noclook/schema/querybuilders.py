@@ -94,108 +94,160 @@ class ScalarQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_match_predicate(field, value, type, **kwargs):
         # string quoting
+        expression = """n.{field} = {value}"""
         if isinstance(value, six.string_types):
             value = "'{}'".format(value)
+            expression = """toLower(n.{field}) = toLower({value})"""
 
-        ret = """n.{field} = {value}""".format(field=field, value=value)
+        ret = expression.format(field=field, value=value)
 
         return ret
 
     @staticmethod
     def build_not_predicate(field, value, type, **kwargs):
         # string quoting
+        expression = """n.{field} <> {value}"""
         if isinstance(value, six.string_types):
             value = "'{}'".format(value)
+            expression = """toLower(n.{field}) <> toLower({value})"""
 
-        ret = """n.{field} <> {value}""".format(field=field, value=value)
+        ret = expression.format(field=field, value=value)
 
         return ret
 
     @staticmethod
     def build_in_predicate(field, values, type, **kwargs): # a list predicate builder
-        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
-        ret = 'n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        expression = 'n.{field} IN [{list_string}]'
+        value_list = []
+        string_values = False
+        for value in values:
+            if isinstance(value, six.string_types):
+                value = "toLower('{}')".format(value)
+                string_values = True
+            else:
+                value = str(value)
+
+            value_list.append(value)
+
+        list_string = '{}'.format(', '.join(value_list))
+        if string_values:
+            expression = 'toLower(n.{field}) IN [{list_string}]'
+
+        ret = expression.format(field=field, list_string=list_string)
         return ret
 
     @staticmethod
     def build_not_in_predicate(field, values, type, **kwargs): # a list predicate builder
-        in_string = '{}'.format(', '.join(["'{}'".format(str(x)) for x in values]))
-        ret = 'NOT n.{field} IN [{in_string}]'.format(field=field, in_string=in_string)
+        expression = 'NOT n.{field} IN [{list_string}]'
+        value_list = []
+        string_values = False
+        for value in values:
+            if isinstance(value, six.string_types):
+                value = "toLower('{}')".format(value)
+                string_values = True
+            else:
+                value = str(value)
+
+            value_list.append(value)
+
+        list_string = '{}'.format(', '.join(value_list))
+        if string_values:
+            expression = 'NOT toLower(n.{field}) IN [{list_string}]'
+
+        ret = expression.format(field=field, list_string=list_string)
         return ret
 
     @staticmethod
     def build_lt_predicate(field, value, type, **kwargs):
+        expression = """n.{field} < {value}"""
         # string quoting
         if isinstance(value, six.string_types):
             value = "'{}'".format(value)
+            expression = """toLower(n.{field}) < toLower({value})"""
 
-        ret = """n.{field} < {value}""".format(field=field, value=value)
+        ret = expression.format(field=field, value=value)
 
         return ret
 
     @staticmethod
     def build_lte_predicate(field, value, type, **kwargs):
+        expression = """n.{field} <= {value}"""
         # string quoting
         if isinstance(value, six.string_types):
             value = "'{}'".format(value)
+            expression = """toLower(n.{field}) <= toLower({value})"""
 
-        ret = """n.{field} <= {value}""".format(field=field, value=value)
+        ret = expression.format(field=field, value=value)
 
         return ret
 
     @staticmethod
     def build_gt_predicate(field, value, type, **kwargs):
+        expression = """n.{field} > {value}"""
         # string quoting
         if isinstance(value, six.string_types):
             value = "'{}'".format(value)
+            expression = """toLower(n.{field}) > toLower({value})"""
 
-        ret = """n.{field} > {value}""".format(field=field, value=value)
+        ret = expression.format(field=field, value=value)
 
         return ret
 
     @staticmethod
     def build_gte_predicate(field, value, type, **kwargs):
+        expression = """n.{field} >= {value}"""
         # string quoting
         if isinstance(value, six.string_types):
             value = "'{}'".format(value)
+            expression = """toLower(n.{field}) >= toLower({value})"""
 
-        ret = """n.{field} >= {value}""".format(field=field, value=value)
+        ret = expression.format(field=field, value=value)
 
         return ret
 
     @staticmethod
     def build_contains_predicate(field, value, type, **kwargs):
-        return """n.{field} CONTAINS '{value}'""".format(field=field, value=value)
+        expression = """toLower(n.{field}) CONTAINS toLower('{value}')"""
+        return expression.format(field=field, value=value)
 
     @staticmethod
     def build_not_contains_predicate(field, value, type, **kwargs):
-        return """NOT n.{field} CONTAINS '{value}'""".format(field=field, value=value)
+        expression = """NOT toLower(n.{field}) CONTAINS toLower('{value}')"""
+        return expression.format(field=field, value=value)
 
     @staticmethod
     def build_starts_with_predicate(field, value, type, **kwargs):
-        return """n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
+        expression = """toLower(n.{field}) STARTS WITH toLower('{value}')"""
+        return expression.format(field=field, value=value)
 
     @staticmethod
     def build_not_starts_with_predicate(field, value, type, **kwargs):
-        return """NOT n.{field} STARTS WITH '{value}'""".format(field=field, value=value)
+        expression = """NOT toLower(n.{field}) STARTS WITH toLower('{value}')"""
+        return expression.format(field=field, value=value)
 
     @staticmethod
     def build_ends_with_predicate(field, value, type, **kwargs):
-        return """n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
+        expression = """toLower(n.{field}) ENDS WITH toLower('{value}')"""
+        return expression.format(field=field, value=value)
 
     @staticmethod
     def build_not_ends_with_predicate(field, value, type, **kwargs):
-        return """NOT n.{field} ENDS WITH '{value}'""".format(field=field, value=value)
+        expression = """NOT toLower(n.{field}) ENDS WITH toLower('{value}')"""
+        return expression.format(field=field, value=value)
 
 class InputFieldQueryBuilder(AbstractQueryBuilder):
     standard_expression = """{neo4j_var}.{field} {op} {value}"""
+    standard_insensitive_expression = """toLower({neo4j_var}.{field}) {op} {value}"""
     id_expression = """ID({neo4j_var}) {op} {value}"""
 
     @classmethod
-    def format_expression(cls, key, value, neo4j_var, op, add_quotes=True):
+    def format_expression(cls, key, value, neo4j_var, op, add_quotes=True, string_values=False):
         # string quoting
+        is_string = False
+
         if isinstance(value, str) and add_quotes:
-            value = "'{}'".format(value)
+            value = "toLower('{}')".format(value)
+            is_string = True
 
         if key is 'relation_id':
             ret = cls.id_expression.format(
@@ -204,7 +256,11 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
                 value=value,
             )
         else:
-            ret = cls.standard_expression.format(
+            expression = cls.standard_expression
+            if is_string or string_values:
+                expression = cls.standard_insensitive_expression
+
+            ret = expression.format(
                 neo4j_var=neo4j_var,
                 field=key,
                 op=op,
@@ -230,20 +286,22 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
     def multiple_value_predicate(cls, field, values, type, op, not_in=False, **kwargs): # a list predicate builder
         neo4j_var = kwargs.get('neo4j_var')
 
+        string_filter = False
         all_values = []
         field_name = ""
 
         for value in values:
             for k, v in value.items():
                 if isinstance(v, str):
-                    v = "'{}'".format(v)
+                    v = "toLower('{}')".format(v)
+                    string_filter = True
 
                 field_name = k
                 all_values.append(v)
 
         the_value = "[{}]".format(', '.join([str(x) for x in all_values]))
 
-        ret = InputFieldQueryBuilder.format_expression(field_name, the_value, neo4j_var, op, False)
+        ret = InputFieldQueryBuilder.format_expression(field_name, the_value, neo4j_var, op, False, string_filter)
 
         if not_in:
             ret = 'NOT {}'.format(ret)

@@ -838,6 +838,7 @@ class NewOrganizationForm(forms.Form):
     account_id = forms.CharField(required=False)
     name = forms.CharField()
     description = description_field('organization')
+    website = forms.CharField(required=False)
     customer_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     incident_management_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
@@ -1056,7 +1057,6 @@ class EmailForm(forms.Form):
 class AddressForm(forms.Form):
     organization = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Organizations", validators=[validate_organization])
     name = forms.CharField()
-    website = forms.CharField(required=False)
     phone = forms.CharField(required=False)
     street = forms.CharField(required=False)
     postal_code = forms.CharField(required=False)
