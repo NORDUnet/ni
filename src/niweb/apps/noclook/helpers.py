@@ -986,8 +986,8 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role):
     )
 
     if not relationship:
-        relationship = RoleRelationship()
-        relationship.load_from_nodes(contact_id, organization_id)
+        relationship = nc.models.RoleRelationship(nc.graphdb.manager)
+        relationship.load_from_nodes(contact_handle_id, node.handle_id)
 
     node = node.reload()
     created = node.incoming.get('Works_for')[0].get('created')
