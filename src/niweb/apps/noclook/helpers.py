@@ -990,7 +990,11 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role):
         relationship.load_from_nodes(contact_handle_id, node.handle_id)
 
     node = node.reload()
-    created = node.incoming.get('Works_for')[0].get('created')
+    created = False
+    works_for = node.incoming.get('Works_for')
+    if works_for:
+        created = works_for[0].get('created')
+
     if created:
         activitylog.create_relationship(user, relationship)
 

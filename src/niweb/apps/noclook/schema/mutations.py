@@ -20,6 +20,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from .core import NIMutationFactory, CreateNIMutation, CommentType
 from .types import *
 
+logger = logging.getLogger(__name__)
 
 class NIGroupMutationFactory(NIMutationFactory):
     class NIMetaClass:
@@ -236,6 +237,11 @@ class CreateOrganization(CreateNIMutation):
                     helpers.set_uses_a(request.user, organization, procedure_nh.handle_id)
 
                 return has_error, { graphql_type.__name__.lower(): nh }
+            else:
+                # get the errors and return them
+                has_error = True
+                errordict = cls.format_error_array(form.errors)
+                return has_error, errordict
         else:
             # get the errors and return them
             has_error = True
@@ -272,7 +278,7 @@ class UpdateOrganization(UpdateNIMutation):
         relations = organization.get_relations()
         out_relations = organization.get_outgoing_relations()
         if request.POST:
-            form = form_class(request.POST.copy())
+            form = form_class(request.POST)
             if form.is_valid():
                 # Generic node update
                 # use property keys to avoid inserting contacts as a string property of the node
@@ -310,6 +316,11 @@ class UpdateOrganization(UpdateNIMutation):
                     helpers.set_uses_a(request.user, organization, procedure_nh.handle_id)
 
                 return has_error, { graphql_type.__name__.lower(): nh }
+            else:
+                # get the errors and return them
+                has_error = True
+                errordict = cls.format_error_array(form.errors)
+                return has_error, errordict
         else:
             # get the errors and return them
             has_error = True
