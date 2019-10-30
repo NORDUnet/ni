@@ -869,23 +869,22 @@ class EditOrganizationForm(NewOrganizationForm):
                 if possible_contact:
                     args[0][field] = possible_contact.handle_id
 
+        self.strict_validation = False
+
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
         self.fields['relationship_uses_a'].choices = get_node_type_tuples('Procedure')
 
         # contact choices
-        if 'handle_id' in args[0]:
-            organization_id = args[0]['handle_id']
-            contact_choices = get_contacts_for_organization(organization_id)
-            contact_type = NodeType.objects.get(slug='contact')
-            contact_choices = [('', '')] + list(NodeHandle.objects.filter(node_type=contact_type).values_list('handle_id', 'node_name'))
+        contact_type = NodeType.objects.get(slug='contact')
+        contact_choices = [('', '')] + list(NodeHandle.objects.filter(node_type=contact_type).values_list('handle_id', 'node_name'))
 
-            self.fields['abuse_contact'].choices = contact_choices
-            self.fields['primary_contact'].choices = contact_choices
-            self.fields['secondary_contact'].choices = contact_choices
-            self.fields['it_technical_contact'].choices = contact_choices
-            self.fields['it_security_contact'].choices = contact_choices
-            self.fields['it_manager_contact'].choices = contact_choices
+        self.fields['abuse_contact'].choices = contact_choices
+        self.fields['primary_contact'].choices = contact_choices
+        self.fields['secondary_contact'].choices = contact_choices
+        self.fields['it_technical_contact'].choices = contact_choices
+        self.fields['it_security_contact'].choices = contact_choices
+        self.fields['it_manager_contact'].choices = contact_choices
 
     relationship_parent_of = relationship_field('organization', True, [validate_contact])
     relationship_uses_a = relationship_field('procedure', True, [validate_procedure])
@@ -912,7 +911,7 @@ class EditOrganizationForm(NewOrganizationForm):
                     except ValueError:
                         cleaned_data[field] = value
 
-                    if field in self._errors:
+                    if not self.strict_validation and field in self._errors:
                         del self._errors[field]
 
 

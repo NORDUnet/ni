@@ -189,6 +189,8 @@ class CreateOrganization(CreateNIMutation):
         # Get needed data from node
         if request.POST:
             form = form_class(request.POST.copy())
+            form.strict_validation = True
+            
             if form.is_valid():
                 try:
                     nh = helpers.form_to_generic_node_handle(request, form,
@@ -279,6 +281,8 @@ class UpdateOrganization(UpdateNIMutation):
         out_relations = organization.get_outgoing_relations()
         if request.POST:
             form = form_class(request.POST)
+            form.strict_validation = True
+
             if form.is_valid():
                 # Generic node update
                 # use property keys to avoid inserting contacts as a string property of the node

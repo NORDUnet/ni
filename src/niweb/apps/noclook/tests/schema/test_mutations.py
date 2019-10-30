@@ -484,6 +484,7 @@ class QueryTest(Neo4jGraphQLTest):
                     website="www.demo.org")
 
         result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
         organization_id_2 = result.data['create_organization']['organization']['handle_id']
 
         expected = OrderedDict([('create_organization',
@@ -500,7 +501,8 @@ class QueryTest(Neo4jGraphQLTest):
                                           ('website', 'www.demo.org')]))]))])
 
         assert not result.errors, pformat(result.errors, indent=1)
-        assert result.data == expected, pformat(result.data, indent=1)
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(result.data, indent=1), pformat(expected, indent=1))
 
         ## edit organization
         query = """

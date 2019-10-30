@@ -7,6 +7,8 @@ from apps.noclook.forms.validators import validate_organization, \
                                             validate_contact, validate_group, \
                                             validate_procedure
 from django.core.exceptions import ValidationError
+from pprint import pformat
+
 from ..neo4j_base import NeoTestCase
 
 class Neo4jGraphQLTest(NeoTestCase):
@@ -80,7 +82,7 @@ class Neo4jGraphQLTest(NeoTestCase):
 
         self.assertFalse(valid)
 
-    def test_forms(self):
+    def test_organization_form(self):
         # create nodes
         self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
         self.contact1 = self.create_node('contact1', 'contact', meta='Relation')
@@ -114,6 +116,37 @@ class Neo4jGraphQLTest(NeoTestCase):
         form = forms.EditOrganizationForm(data)
         self.assertFalse(form.is_valid())
 
+        # check another valid form
+        data['relationship_parent_of'] = self.organization1.handle_id
+
+        data['abuse_contact'] = self.contact1.handle_id
+        data['primary_contact'] = self.contact1.handle_id
+        data['secondary_contact'] = self.contact1.handle_id
+        data['it_technical_contact'] = self.contact1.handle_id
+        data['it_security_contact'] = self.contact1.handle_id
+        data['it_manager_contact'] = self.contact1.handle_id
+        form = forms.EditOrganizationForm(data)
+        form.strict_validation = True
+        self.assertTrue(form.is_valid(), pformat(form.errors, indent=1))
+
+        # check another non valid form
+        data['abuse_contact'] = self.group1.handle_id
+        data['primary_contact'] = self.procedure1.handle_id
+        data['secondary_contact'] = self.group1.handle_id
+        data['it_technical_contact'] = self.procedure1.handle_id
+        data['it_security_contact'] = self.group1.handle_id
+        data['it_manager_contact'] = self.procedure1.handle_id
+        form = forms.EditOrganizationForm(data)
+        form.strict_validation = True
+        self.assertFalse(form.is_valid(), pformat(form.errors, indent=1))
+
+    def test_contact_form(self):
+        # create nodes
+        self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
+        self.contact1 = self.create_node('contact1', 'contact', meta='Relation')
+        self.group1 = self.create_node('group1', 'group', meta='Logical')
+        self.procedure1 = self.create_node('procedure1', 'procedure', meta='Logical')
+
         ## contact
         data = {
             'handle_id': self.contact1.handle_id,
@@ -134,6 +167,13 @@ class Neo4jGraphQLTest(NeoTestCase):
         data['relationship_member_of'] = self.contact1.handle_id
         form = forms.EditContactForm(data)
         self.assertFalse(form.is_valid())
+
+    def test_group_form(self):
+        # create nodes
+        self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
+        self.contact1 = self.create_node('contact1', 'contact', meta='Relation')
+        self.group1 = self.create_node('group1', 'group', meta='Logical')
+        self.procedure1 = self.create_node('procedure1', 'procedure', meta='Logical')
 
         ## group
         data = {
