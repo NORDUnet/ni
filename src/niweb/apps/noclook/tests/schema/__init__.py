@@ -100,7 +100,7 @@ class Neo4jGraphQLTest(NeoTestCase):
             self.contact2.get_node().add_property(key, value)
 
         organization1_data = {
-            'type': 'provider',
+            'type': 'university_college',
         }
 
         for key, value in organization1_data.items():

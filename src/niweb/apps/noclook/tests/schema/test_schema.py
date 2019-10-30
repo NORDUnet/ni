@@ -249,8 +249,9 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         found = False
+        test_org_type = 'university_college'
         for pair in result.data['getChoicesForDropdown']:
-            if pair['value'] == 'provider':
+            if pair['value'] == test_org_type:
                 found = True
                 break
 
@@ -260,7 +261,7 @@ class QueryTest(Neo4jGraphQLTest):
         {
         	organizations(filter:{
             AND: [
-              { type: "provider" }
+              { type: "university_college" }
             ]
           }){
             edges{
@@ -280,7 +281,7 @@ class QueryTest(Neo4jGraphQLTest):
                                 ('name',
                                  'organization1'),
                                 ('type',
-                                 'provider')]))])])]))])
+                                 'university_college')]))])])]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
