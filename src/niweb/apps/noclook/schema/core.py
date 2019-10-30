@@ -9,7 +9,7 @@ import re
 
 import apps.noclook.vakt.utils as sriutils
 
-from apps.noclook import helpers
+from apps.noclook import activitylog, helpers
 from apps.noclook.models import NodeType, NodeHandle, NodeHandleContext
 from collections import OrderedDict, Iterable
 from django import forms
@@ -483,6 +483,61 @@ class NIObjectType(DjangoObjectType):
         return generic_byid_resolver
 
     @classmethod
+    def get_list_resolver(cls):
+        '''
+        This method returns a simple list resolver for every nodetype in NOCAutoQuery
+        '''
+        type_name = cls.get_type_name()
+
+        def generic_list_resolver(self, info, **args):
+            qs = NodeHandle.objects.none()
+
+            if info.context and info.context.user.is_authenticated:
+                default_context = sriutils.get_default_context()
+                authorized = sriutils.authorize_list_module(
+                    info.context.user, default_context
+                )
+
+                if authorized:
+                    node_type = NodeType.objects.get(type=type_name)
+                    qs = NodeHandle.objects.filter(node_type=node_type).order_by('node_name')
+
+                    # the node list is trimmed to the nodes that the user can read
+                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                else:
+                    raise GraphQLAuthException()
+            else:
+                raise GraphQLAuthException()
+
+            return qs
+
+        return generic_list_resolver
+
+    @classmethod
+    def filter_is_empty(cls, filter):
+        empty = False
+
+        if not filter:
+            empty = True
+
+        if not empty and filter:
+            and_portion = None
+            if 'AND' in filter:
+                and_portion = filter['AND']
+
+            or_portion = None
+            if 'OR' in filter:
+                or_portion = filter['OR']
+
+            if not and_portion and not or_portion:
+                empty = True
+            elif not (and_portion and and_portion[0])\
+             and not (or_portion and or_portion[0]):
+                empty = True
+
+        return empty
+
+    @classmethod
     def get_connection_resolver(cls):
         '''
         This method returns a generic connection resolver for every nodetype in NOCAutoQuery
@@ -499,16 +554,23 @@ class NIObjectType(DjangoObjectType):
             order to return an ordered node collection we have to query each
             node by its handle_id and append to a list.
             '''
-            ret = None
+            ret = NodeHandle.objects.none()
             filter  = args.get('filter', None)
             orderBy = args.get('orderBy', None)
+            apply_handle_id_order = False
+            revert_default_order = False
+            default_context = sriutils.get_default_context()
 
-            if info.context and info.context.user.is_authenticated:
+            if info.context and info.context.user.is_authenticated and \
+                sriutils.authorize_list_module(info.context.user, default_context):
                 # filtering will take a different approach
                 nodes = None
-                qs = NodeHandle.objects.all()
+                node_type = NodeType.objects.get(type=type_name)
+                qs = NodeHandle.objects.filter(node_type=node_type)
+                no_filter = False
+                no_order  = False
 
-                if filter:
+                if not cls.filter_is_empty(filter):
                     # filter queryset with dates and users
                     qs = DateQueryBuilder.filter_queryset(filter, qs)
                     qs = UserQueryBuilder.filter_queryset(filter, qs)
@@ -518,13 +580,24 @@ class NIObjectType(DjangoObjectType):
                     nodes = nc.query_to_list(nc.graphdb.manager, q)
                     nodes = [ node['n'] for node in nodes]
                 else:
-                    nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
-                    nodes = list(nodes)
+                    no_filter = True
 
-                if nodes:
-                    handle_ids = []
+                handle_ids = []
+
+                if nodes or no_filter:
                     qs_order_prop = None
                     qs_order_order = None
+
+                    # remove default ordering prop if there's no filter
+                    if orderBy and no_filter:
+                        if orderBy == 'handle_id_DESC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = False
+                        elif orderBy == 'handle_id_ASC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = True
 
                     # ordering
                     if orderBy:
@@ -532,6 +605,10 @@ class NIObjectType(DjangoObjectType):
                         m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
                         prop = m[1]
                         order = m[2]
+
+                        if no_filter: # delay neo4j query
+                            nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
+                            nodes = list(nodes)
 
                         if prop not in DateQueryBuilder.fields:
                             # node property ordering
@@ -543,25 +620,44 @@ class NIObjectType(DjangoObjectType):
 
                         handle_ids = [ node['handle_id'] for node in nodes ]
                     else:
-                        handle_ids = [ node['handle_id'] for node in nodes ]
-                        node_type = NodeType.objects.get(type=type_name)
+                        no_order = True
+
+                        if not no_filter:
+                            handle_ids = [ node['handle_id'] for node in nodes ]
 
                     ret = []
 
-                    # instead of vakt here, we reduce the original qs
-                    # to only the ones the user has right to read
-                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                    if not no_filter or not no_order:
+                        # instead of vakt here, we reduce the original qs
+                        # to only the ones the user has right to read
+                        qs = sriutils.trim_readable_queryset(qs, info.context.user)
 
-                    for handle_id in handle_ids:
-                        nodeqs = qs.filter(handle_id=handle_id)
-                        if nodeqs and len(nodeqs) == 1:
-                            ret.append(nodeqs.first())
+                        for handle_id in handle_ids:
+                            nodeqs = qs.filter(handle_id=handle_id)
+                            try:
+                                the_node = nodeqs.first()
+                                if the_node:
+                                    ret.append(the_node)
+                            except:
+                                pass # nothing to do if the qs doesn't have elements
 
-                    # do nodehandler attributes ordering now that we have
-                    # the nodes set, if this order is requested
-                    if qs_order_prop and qs_order_order:
-                        reverse = True if qs_order_order == 'DESC' else False
-                        ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                        # do nodehandler attributes ordering now that we have
+                        # the nodes set, if this order is requested
+                        if qs_order_prop and qs_order_order:
+                            reverse = True if qs_order_order == 'DESC' else False
+                            ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                    else:
+                        if apply_handle_id_order:
+                            logger.debug('Apply handle_id order')
+
+                            if not revert_default_order:
+                                logger.debug('Apply descendent handle_id')
+                                qs = qs.order_by('-handle_id')
+                            else:
+                                logger.debug('Apply ascending handle_id')
+                                qs = qs.order_by('handle_id')
+
+                        ret = list(qs)
 
                 if not ret:
                     ret = []
@@ -793,6 +889,45 @@ class NIRelationField(NIBasicField):
 class NodeHandler(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
 
+
+class DeleteRelationship(relay.ClientIDMutation):
+    class Input:
+        relation_id = graphene.Int(required=True)
+
+    success = graphene.Boolean(required=True)
+    relation_id = graphene.Int(required=True)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        relation_id = input.get("relation_id", None)
+        success = False
+
+        try:
+            relationship = nc.get_relationship_model(nc.graphdb.manager, relation_id)
+
+            # check permissions before delete
+            start_id = relationship.start['handle_id']
+            end_id = relationship.end['handle_id']
+
+            authorized_start = sriutils.authorice_read_resource(
+                info.context.user, start_id
+            )
+
+            authorized_end = sriutils.authorice_read_resource(
+                info.context.user, end_id
+            )
+
+            if authorized_start and authorized_end:
+                activitylog.delete_relationship(info.context.user, relationship)
+                relationship.delete()
+
+            success = True
+        except nc.exceptions.RelationshipNotFound:
+            success = True
+
+        return DeleteRelationship(success=success, relation_id=relation_id)
+
+
 class AbstractNIMutation(relay.ClientIDMutation):
     errors = graphene.List(ErrorType)
 
@@ -808,6 +943,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         django_form   = getattr(ni_metaclass, 'django_form', None)
         mutation_name = getattr(ni_metaclass, 'mutation_name', None)
         is_create     = getattr(ni_metaclass, 'is_create', False)
+        is_delete     = getattr(ni_metaclass, 'is_delete', False)
         include       = getattr(ni_metaclass, 'include', None)
         exclude       = getattr(ni_metaclass, 'exclude', None)
 
@@ -849,6 +985,17 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # add Input attribute to class
         inner_class = type('Input', (object,), inner_fields)
         setattr(cls, 'Input', inner_class)
+
+        # add Input to private attribute
+        if graphql_type:
+            op_name = 'Create' if is_create else 'Update'
+            op_name = 'Delete' if is_delete else op_name
+            type_name = graphql_type.__name__
+            inner_input = type('Single{}Input'.format(op_name + type_name),
+                (graphene.InputObjectType, ), inner_fields)
+
+            setattr(ni_metaclass, '_input_list', graphene.List(inner_input))
+            setattr(ni_metaclass, '_payload_list', graphene.List(cls))
 
         # add the converted fields to the metaclass so we can get them later
         setattr(ni_metaclass, 'inner_fields', inner_fields)
@@ -1098,7 +1245,7 @@ class CreateUniqueNIMutation(CreateNIMutation):
 
     @classmethod
     def get_form_to_nodehandle_func(cls):
-        return helpers.form_to_generic_node_handle
+        return helpers.form_to_unique_node_handle
 
 
 class UpdateNIMutation(AbstractNIMutation):
@@ -1159,6 +1306,7 @@ class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
+        is_delete      = False
 
     @classmethod
     def add_return_type(cls, graphql_type):
@@ -1192,6 +1340,55 @@ class DeleteNIMutation(AbstractNIMutation):
         if delete_nodes:
             for relation_name, relation_f in delete_nodes.items():
                 relation_f(nodehandler, relation_name, user)
+
+class MultipleMutation(relay.ClientIDMutation):
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        if not info.context or not info.context.user.is_authenticated:
+            raise GraphQLAuthException()
+
+        # get input values
+        create_inputs = input.get("create_inputs")
+        update_inputs = input.get("update_inputs")
+        delete_inputs = input.get("delete_inputs")
+        detach_inputs = input.get("detach_inputs")
+
+        # get underlying mutations
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        create_mutation = getattr(nimetaclass, 'create_mutation', None)
+        update_mutation = getattr(nimetaclass, 'update_mutation', None)
+        delete_mutation = getattr(nimetaclass, 'delete_mutation', None)
+        detach_mutation = getattr(nimetaclass, 'detach_mutation', None)
+
+        ret_created = []
+        if create_inputs:
+            for input in create_inputs:
+                ret = create_mutation.mutate_and_get_payload(root, info, **input)
+                ret_created.append(ret)
+
+        ret_updated = []
+        if update_inputs:
+            for input in update_inputs:
+                ret = update_mutation.mutate_and_get_payload(root, info, **input)
+                ret_updated.append(ret)
+
+        ret_deleted = []
+        if delete_inputs:
+            for input in delete_inputs:
+                ret = delete_mutation.mutate_and_get_payload(root, info, **input)
+                ret_deleted.append(ret)
+
+        ret_detached = []
+        if detach_inputs:
+            for input in detach_inputs:
+                ret = detach_mutation.mutate_and_get_payload(root, info, **input)
+                ret_deleted.append(ret)
+
+        return cls(
+            created=ret_created, updated=ret_updated,
+            deleted=ret_deleted, detached=ret_detached
+        )
+
 
 class NIMutationFactory():
     '''
@@ -1297,6 +1494,7 @@ class NIMutationFactory():
         del attr_dict['include']
         del attr_dict['exclude']
         del attr_dict['property_update']
+        attr_dict['is_delete'] = True
 
         if relations_processors:
             del attr_dict['relations_processors']
@@ -1314,6 +1512,46 @@ class NIMutationFactory():
             },
         )
 
+        # make multiple mutation
+        class_name = 'Multiple{}'.format(node_type.capitalize())
+
+        # create input class
+        multi_attr_input_list = {
+            'create_inputs': cls._create_mutation.NIMetaClass._input_list,
+            'update_inputs': cls._update_mutation.NIMetaClass._input_list,
+            'delete_inputs': cls._delete_mutation.NIMetaClass._input_list,
+            'detach_inputs': graphene.List(DeleteRelationship.Input),
+        }
+
+        inner_class = type('Input', (object,), multi_attr_input_list)
+
+        # metaclass
+        metaclass_attr = {
+            'create_mutation': cls._create_mutation,
+            'update_mutation': cls._update_mutation,
+            'delete_mutation': cls._delete_mutation,
+            'detach_mutation': DeleteRelationship,
+        }
+
+        meta_class = type('NIMetaClass', (object,), metaclass_attr)
+
+        # create class
+        multiple_attr_list = {
+            'Input': inner_class,
+            'created': cls._create_mutation.NIMetaClass._payload_list,
+            'updated': cls._update_mutation.NIMetaClass._payload_list,
+            'deleted': cls._delete_mutation.NIMetaClass._payload_list,
+            'detached': graphene.List(DeleteRelationship),
+            'NIMetaClass': meta_class
+        }
+
+        cls._multiple_mutation = type(
+            class_name,
+            (MultipleMutation,),
+            multiple_attr_list
+        )
+
+
     @classmethod
     def get_create_mutation(cls, *args, **kwargs):
         return cls._create_mutation
@@ -1325,6 +1563,10 @@ class NIMutationFactory():
     @classmethod
     def get_delete_mutation(cls, *args, **kwargs):
         return cls._delete_mutation
+
+    @classmethod
+    def get_multiple_mutation(cls, *args, **kwargs):
+        return cls._multiple_mutation
 
 ########## END MUTATION FACTORY
 

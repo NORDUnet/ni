@@ -54,13 +54,20 @@ class NIBasicField():
                     field_name, self.__class__
                 )
             )
-        def resolve_node_value(self, info, **kwargs):
-            return self.get_node().data.get(field_name)
+        def resolve_node_value(instance, info, **kwargs):
+            node = self.get_inner_node(instance)
+            return node.data.get(field_name)
 
         return resolve_node_value
 
     def get_field_type(self):
         return self.field_type
+
+    def get_inner_node(self, instance):
+        if not hasattr(instance, '_node'):
+            instance._node = instance.get_node()
+
+        return instance._node
 
 class NIStringField(NIBasicField):
     '''
@@ -95,8 +102,8 @@ class NIBooleanField(NIBasicField):
                     field_name, self.__class__
                 )
             )
-        def resolve_node_value(self, info, **kwargs):
-            possible_value = self.get_node().data.get(field_name)
+        def resolve_node_value(instance, info, **kwargs):
+            possible_value = self.get_inner_node(instance).data.get(field_name)
             if possible_value == None:
                 possible_value = False
 
@@ -124,8 +131,8 @@ class NIListField(NIBasicField):
         rel_name   = kwargs.get('rel_name')
         rel_method = kwargs.get('rel_method')
 
-        def resolve_relationship_list(self, info, **kwargs):
-            neo4jnode = self.get_node()
+        def resolve_relationship_list(instance, info, **kwargs):
+            neo4jnode = self.get_inner_node(instance)
             relations = getattr(neo4jnode, rel_method)()
             nodes = relations.get(rel_name)
 

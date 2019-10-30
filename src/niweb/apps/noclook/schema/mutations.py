@@ -115,7 +115,7 @@ class NIAddressMutationFactory(NIMutationFactory):
         relations_processors = {
             'organization': process_has_address,
         }
-        property_update = ['name', 'website', 'phone', 'street', 'postal_code', 'postal_area']
+        property_update = ['name', 'phone', 'street', 'postal_code', 'postal_area']
 
     class Meta:
         abstract = False
@@ -126,9 +126,10 @@ def delete_outgoing_nodes(nodehandler, relation_name, user):
     relations = node.get_outgoing_relations()
 
     for relname, link_nodes in relations.items():
-        for link_node in link_nodes:
-            link_node = link_node['node']
-            helpers.delete_node(user, link_node.handle_id)
+        if relname == relation_name:
+            for link_node in link_nodes:
+                link_node = link_node['node']
+                helpers.delete_node(user, link_node.handle_id)
 
 
 class NIContactMutationFactory(NIMutationFactory):
@@ -189,7 +190,7 @@ class CreateOrganization(CreateNIMutation):
             form = form_class(request.POST.copy())
             if form.is_valid():
                 try:
-                    nh = helpers.form_to_unique_node_handle(request, form,
+                    nh = helpers.form_to_generic_node_handle(request, form,
                             node_type, node_meta_type)
                 except UniqueNodeError:
                     has_error = True
@@ -200,7 +201,8 @@ class CreateOrganization(CreateNIMutation):
                 property_keys = [
                     'name', 'description', 'customer_id', 'type', 'incident_management_info',
                     'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
-                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner'
+                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner',
+                    'website'
                 ]
                 helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
                 nh_reload, organization = helpers.get_nh_node(nh.handle_id)
@@ -277,7 +279,8 @@ class UpdateOrganization(UpdateNIMutation):
                 property_keys = [
                     'name', 'description', 'customer_id', 'type', 'incident_management_info',
                     'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
-                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner'
+                    'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner',
+                    'website'
                 ]
                 helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
 
@@ -317,44 +320,6 @@ class UpdateOrganization(UpdateNIMutation):
         django_form = EditOrganizationForm
         request_path   = '/'
         graphql_type   = Organization
-
-
-class DeleteRelationship(relay.ClientIDMutation):
-    class Input:
-        relation_id = graphene.Int(required=True)
-
-    success = graphene.Boolean(required=True)
-    relation_id = graphene.Int(required=True)
-
-    @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
-        relation_id = input.get("relation_id", None)
-        success = False
-
-        try:
-            relationship = nc.get_relationship_model(nc.graphdb.manager, relation_id)
-
-            # check permissions before delete
-            start_id = relationship.start['handle_id']
-            end_id = relationship.end['handle_id']
-
-            authorized_start = sriutils.authorice_read_resource(
-                info.context.user, start_id
-            )
-
-            authorized_end = sriutils.authorice_read_resource(
-                info.context.user, end_id
-            )
-
-            if authorized_start and authorized_end:
-                activitylog.delete_relationship(info.context.user, relationship)
-                relationship.delete()
-
-            success = True
-        except nc.exceptions.RelationshipNotFound:
-            success = True
-
-        return DeleteRelationship(success=success, relation_id=relation_id)
 
 
 class CreateRole(DjangoModelFormMutation):
@@ -570,10 +535,12 @@ class NOCRootMutation(graphene.ObjectType):
     create_phone        = NIPhoneMutationFactory.get_create_mutation().Field()
     update_phone        = NIPhoneMutationFactory.get_update_mutation().Field()
     delete_phone        = NIPhoneMutationFactory.get_delete_mutation().Field()
+    multiple_phone      = NIPhoneMutationFactory.get_multiple_mutation().Field()
 
     create_email        = NIEmailMutationFactory.get_create_mutation().Field()
     update_email        = NIEmailMutationFactory.get_update_mutation().Field()
     delete_email        = NIEmailMutationFactory.get_delete_mutation().Field()
+    multiple_email      = NIEmailMutationFactory.get_multiple_mutation().Field()
 
     create_address      = NIAddressMutationFactory.get_create_mutation().Field()
     update_address      = NIAddressMutationFactory.get_update_mutation().Field()
@@ -582,6 +549,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_contact      = NIContactMutationFactory.get_create_mutation().Field()
     update_contact      = NIContactMutationFactory.get_update_mutation().Field()
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
+    multiple_contact    = NIContactMutationFactory.get_multiple_mutation().Field()
 
     create_organization = CreateOrganization.Field()
     update_organization = UpdateOrganization.Field()

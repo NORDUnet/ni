@@ -10,6 +10,7 @@ from vakt import Guard, RulesChecker, Inquiry
 READ_AA_NAME  = 'read'
 WRITE_AA_NAME = 'write'
 ADMIN_AA_NAME = 'admin'
+LIST_AA_NAME = 'list'
 
 NETWORK_CTX_NAME = 'Network'
 COMMUNITY_CTX_NAME = 'Community'
@@ -65,16 +66,20 @@ def get_authaction_by_name(name, aamodel=AuthzAction):
     return authzaction
 
 
-def get_read_authaction():
-    return get_authaction_by_name(READ_AA_NAME)
+def get_read_authaction(aamodel=AuthzAction):
+    return get_authaction_by_name(READ_AA_NAME, aamodel)
 
 
-def get_write_authaction():
-    return get_authaction_by_name(WRITE_AA_NAME)
+def get_write_authaction(aamodel=AuthzAction):
+    return get_authaction_by_name(WRITE_AA_NAME, aamodel)
 
 
-def get_admin_authaction():
-    return get_authaction_by_name(ADMIN_AA_NAME)
+def get_admin_authaction(aamodel=AuthzAction):
+    return get_authaction_by_name(ADMIN_AA_NAME, aamodel)
+
+
+def get_list_authaction(aamodel=AuthzAction):
+    return get_authaction_by_name(LIST_AA_NAME, aamodel)
 
 
 def get_context_by_name(name, cmodel=Context):
@@ -138,20 +143,18 @@ def authorice_write_resource(user, handle_id):
     return authorize_aa_resource(user, handle_id, get_write_authaction)
 
 
-def authorize_create_resource(user, context):
+def authorize_aa_operation(user, context, get_aa_func):
     '''
-    This function authorizes the creation of a resource within a particular
-    context, it checks if the user can write within this SRI module
+    This function authorizes an action within a particular context, it checks
+    if the user can perform that action within this SRI module
     '''
-    logger.debug('Authorizing user to create a node within the module {}'\
-        .format(context.name))
     ret = False # deny by default
 
     # get storage and guard
     storage, guard = get_vakt_storage_and_guard()
 
     # get authaction
-    authaction = get_write_authaction()
+    authaction = get_aa_func()
 
     # forge read resource inquiry
     inquiry = Inquiry(
@@ -164,6 +167,16 @@ def authorize_create_resource(user, context):
     ret = guard.is_allowed(inquiry)
 
     return ret
+
+
+def authorize_create_resource(user, context):
+    '''
+    This function authorizes the creation of a resource within a particular
+    context, it checks if the user can write within this SRI module
+    '''
+    logger.debug('Authorizing user to create a node within the module {}'\
+        .format(context.name))
+    return authorize_aa_operation(user, context, get_write_authaction)
 
 
 def authorize_admin_module(user, context):
@@ -172,22 +185,13 @@ def authorize_admin_module(user, context):
     '''
     logger.debug('Authorizing user to admin the module {}'\
         .format(context.name))
-    ret = False # deny by default
+    return authorize_aa_operation(user, context, get_admin_authaction)
 
-    # get storage and guard
-    storage, guard = get_vakt_storage_and_guard()
 
-    # get authaction
-    authaction = get_admin_authaction()
-
-    # forge read resource inquiry
-    inquiry = Inquiry(
-        action=authaction.name,
-        resource=None,
-        subject=user,
-        context={'module': (context.name,)}
-    )
-
-    ret = guard.is_allowed(inquiry)
-
-    return ret
+def authorize_list_module(user, context):
+    '''
+    This function checks if the user can perform admin actions inside a module
+    '''
+    logger.debug('Authorizing user to admin the module {}'\
+        .format(context.name))
+    return authorize_aa_operation(user, context, get_list_authaction)

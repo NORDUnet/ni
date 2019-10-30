@@ -26,13 +26,19 @@ class Neo4jGraphQLTest(NeoTestCase):
         self.group_write = Group( name="Group can write for the community context" )
         self.group_write.save()
 
+        # create group for list in community context
+        self.group_list = Group( name="Group can list for the community context" )
+        self.group_list.save()
+
         # add user to this group
         self.group_read.user_set.add(self.user)
         self.group_write.user_set.add(self.user)
+        self.group_list.user_set.add(self.user)
 
         # get read aa
         self.get_read_authaction  = sriutils.get_read_authaction()
         self.get_write_authaction = sriutils.get_write_authaction()
+        self.get_list_authaction  = sriutils.get_list_authaction()
 
         # get default context
         self.community_ctxt = sriutils.get_default_context()
@@ -47,6 +53,12 @@ class Neo4jGraphQLTest(NeoTestCase):
         GroupContextAuthzAction(
             group = self.group_write,
             authzprofile = self.get_write_authaction,
+            context = self.community_ctxt
+        ).save()
+
+        GroupContextAuthzAction(
+            group = self.group_list,
+            authzprofile = self.get_list_authaction,
             context = self.community_ctxt
         ).save()
 

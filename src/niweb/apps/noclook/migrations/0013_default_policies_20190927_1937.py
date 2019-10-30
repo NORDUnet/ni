@@ -22,7 +22,10 @@ def forwards_func(apps, schema_editor):
     # iterate over all existent contexts and authzactions
     # and create policies for each of them
     all_contexts = Context.objects.all()
-    rw_authzactions = AuthzAction.objects.exclude(name=sriutils.ADMIN_AA_NAME)
+    rw_authzactions = AuthzAction.objects.filter(name__in=(
+        sriutils.READ_AA_NAME,
+        sriutils.WRITE_AA_NAME,
+    ))
 
     # add read and write policies
     for context in all_contexts:
