@@ -102,14 +102,14 @@ class Neo4jGraphQLTest(NeoTestCase):
                             gravida eget, efficitur a risus.',
             'website': 'www.lipsum.com',
             'customer_id': '5678',
-            'type': 'provider',
+            'type': 'university_college',
             'incident_management_info': 'They have a form on their website',
             'relationship_parent_of': self.organization1.handle_id,
         }
 
         # check a valid form
         form = forms.EditOrganizationForm(data)
-        self.assertTrue(form.is_valid())
+        self.assertTrue(form.is_valid(), pformat(form.errors, indent=1))
 
         # check a non valid form
         data['relationship_parent_of'] = self.contact1.handle_id
@@ -138,7 +138,7 @@ class Neo4jGraphQLTest(NeoTestCase):
         data['it_manager_contact'] = self.procedure1.handle_id
         form = forms.EditOrganizationForm(data)
         form.strict_validation = True
-        self.assertFalse(form.is_valid(), pformat(form.errors, indent=1))
+        self.assertFalse(form.is_valid())
 
     def test_contact_form(self):
         # create nodes
