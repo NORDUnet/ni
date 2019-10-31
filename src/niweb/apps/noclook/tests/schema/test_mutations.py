@@ -475,6 +475,20 @@ class QueryTest(Neo4jGraphQLTest):
               affiliation_provider
               affiliation_customer
               website
+              incoming{{
+                name
+                relation{{
+                  id
+                  start{{
+                    handle_id
+                    node_name
+                  }}
+                  end{{
+                    handle_id
+                    node_name
+                  }}
+                }}
+              }}
             }}
           }}
         }}
@@ -486,6 +500,7 @@ class QueryTest(Neo4jGraphQLTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
         organization_id_2 = result.data['create_organization']['organization']['handle_id']
+        incoming_relations = result.data['create_organization']['organization']['incoming']
 
         expected = OrderedDict([('create_organization',
               OrderedDict([('organization',
@@ -498,7 +513,17 @@ class QueryTest(Neo4jGraphQLTest):
                                           incident_management_info),
                                           ('affiliation_provider', True),
                                           ('affiliation_customer', True),
-                                          ('website', 'www.demo.org')]))]))])
+                                          ('website', 'www.demo.org'),
+                                          ('incoming', incoming_relations)]))]))])
+
+        found_offspring = False
+        for relation in incoming_relations:
+            for k, relation_dict in relation.items():
+                if k == 'name' and relation_dict == 'Parent_of':
+                    if relation['relation']['start']['handle_id'] == str(organization_id):
+                        found_offspring = True
+
+        assert found_offspring, pformat(result.data, indent=1)
 
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, '{}\n!=\n{}'.format(
