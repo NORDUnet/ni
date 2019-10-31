@@ -227,6 +227,7 @@ class QueryTest(Neo4jGraphQLTest):
             }}
           ){{
             contact{{
+              handle_id
               name
               first_name
               last_name
@@ -250,9 +251,13 @@ class QueryTest(Neo4jGraphQLTest):
                     role_handle_id=role_handle_id, group_handle_id=group_handle_id,
                     note_txt=note_txt)
 
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        contact_id = result.data['create_contact']['contact']['handle_id']
         expected = OrderedDict([('create_contact',
                       OrderedDict([('contact',
-                        OrderedDict([('name', 'Jane Smith'),
+                        OrderedDict([('handle_id', contact_id),
+                                     ('name', 'Jane Smith'),
                                      ('first_name', 'Jane'),
                                      ('last_name', 'Smith'),
                                      ('title', None),
@@ -269,8 +274,6 @@ class QueryTest(Neo4jGraphQLTest):
                                        [OrderedDict([('name',
                                           'group1')])])]))]))])
 
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
         ## update ##
@@ -278,7 +281,7 @@ class QueryTest(Neo4jGraphQLTest):
         mutation update_test_contact {{
           update_contact(
             input: {{
-              handle_id: 14
+              handle_id: {contact_id}
               first_name: "Janet"
               last_name: "Doe"
               contact_type: "person"
@@ -307,12 +310,12 @@ class QueryTest(Neo4jGraphQLTest):
             }}
           }}
         }}
-        """.format(organization_id=organization_id,
+        """.format(contact_id=contact_id, organization_id=organization_id,
                     role_handle_id=role_handle_id, group_handle_id=group_handle_id)
 
         expected = OrderedDict([('update_contact',
               OrderedDict([('contact',
-                            OrderedDict([('handle_id', '14'),
+                            OrderedDict([('handle_id', contact_id),
                                          ('name', 'Janet Doe'),
                                          ('first_name', 'Janet'),
                                          ('last_name', 'Doe'),
@@ -335,36 +338,60 @@ class QueryTest(Neo4jGraphQLTest):
 
         # test error output
         query = '''
-        mutation{
-          update_contact(input:{
-            handle_id: 14,
+        mutation{{
+          update_contact(input:{{
+            handle_id: {contact_id},
             first_name: "Janet"
             last_name: "Janet"
             contact_type: "doesnt_exists"
-          }){
-            contact{
+          }}){{
+            contact{{
               handle_id
               name
-            }
-            errors{
+            }}
+            errors{{
               field
               messages
-            }
-          }
-        }
-        '''
+            }}
+          }}
+        }}
+        '''.format(contact_id=contact_id)
 
+        result = schema.execute(query, context=self.context)
+        assert 'errors' in result.data['update_contact'], pformat(result.data, indent=1)
+
+        # test another erroneous form
+        query = '''
+        mutation{{
+          update_contact(input:{{
+            handle_id: {contact_id},
+            first_name: "Janet"
+            last_name: "Janet"
+            contact_type: "person"
+            relationship_works_for: {organization_id}
+          }}){{
+            contact{{
+              handle_id
+              name
+            }}
+            errors{{
+              field
+              messages
+            }}
+          }}
+        }}
+        '''.format(contact_id=contact_id, organization_id=-1)
         result = schema.execute(query, context=self.context)
         assert 'errors' in result.data['update_contact'], pformat(result.data, indent=1)
 
         ## delete ##
         query = """
-        mutation delete_test_contact {
-          delete_contact(input: {handle_id: 14}){
+        mutation delete_test_contact {{
+          delete_contact(input: {{ handle_id: {contact_id} }}){{
             success
-          }
-        }
-        """
+          }}
+        }}
+        """.format(contact_id=contact_id)
 
         expected = OrderedDict([
             ('delete_contact',
@@ -457,6 +484,7 @@ class QueryTest(Neo4jGraphQLTest):
                     website="www.demo.org")
 
         result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
         organization_id_2 = result.data['create_organization']['organization']['handle_id']
 
         expected = OrderedDict([('create_organization',
@@ -473,7 +501,8 @@ class QueryTest(Neo4jGraphQLTest):
                                           ('website', 'www.demo.org')]))]))])
 
         assert not result.errors, pformat(result.errors, indent=1)
-        assert result.data == expected, pformat(result.data, indent=1)
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(result.data, indent=1), pformat(expected, indent=1))
 
         ## edit organization
         query = """
@@ -625,7 +654,7 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(contact_id=contact_1_id)
 
         expected = OrderedDict([('getContactById',
-                      OrderedDict([('handle_id', '9'),
+                      OrderedDict([('handle_id', str(contact_1_id)),
                                    ('phones',
                                     [OrderedDict([('handle_id', phone_id_str),
                                                   ('name', phone_num),
@@ -762,7 +791,7 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(contact_id=contact_1_id)
 
         expected = OrderedDict([('getContactById',
-                      OrderedDict([('handle_id', '9'),
+                      OrderedDict([('handle_id', str(contact_1_id)),
                                    ('emails',
                                     [OrderedDict([('handle_id', email_id_str),
                                                   ('name', email_str),
@@ -1115,3 +1144,83 @@ class QueryTest(Neo4jGraphQLTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
+
+    def test_node_validation(self):
+        # add an abuse contact first
+        organization_id = self.organization1.handle_id
+        organization2_id = self.organization2.handle_id
+        contact_1 = self.contact1.handle_id
+
+        query = '''
+        mutation{{
+          update_organization(input: {{
+            handle_id: {organization_id}
+            name: "Organization 1"
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            organization{{
+              handle_id
+              name
+              incoming{{
+                name
+                relation{{
+                  nidata{{
+                    name
+                    value
+                  }}
+                  start{{
+                    handle_id
+                    node_name
+                  }}
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(organization_id=organization_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert not result.data['update_organization']['errors'], \
+            pformat(result.data['update_organization']['errors'], indent=1)
+
+        # add a non valid contact (an organization)
+        query = '''
+        mutation{{
+          update_organization(input: {{
+            handle_id: {organization_id}
+            name: "Organization 1"
+            relationship_parent_of: {organization_2}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            organization{{
+              handle_id
+              name
+              incoming{{
+                name
+                relation{{
+                  nidata{{
+                    name
+                    value
+                  }}
+                  start{{
+                    handle_id
+                    node_name
+                  }}
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(organization_id=organization_id, organization_2=contact_1)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data['update_organization']['errors'], \
+            print('{}\n{}'.format(pformat(result.data, indent=1), pformat(result.errors, indent=1)))
