@@ -38,7 +38,7 @@ $(document).ready(
 
     <div class="accordion" id="edit-accordion">
       {% accordion 'Additional info (optional)' 'additional-edit' '#edit-accordion' %}
-        {{ form.customer_id | as_crispy_field}}
+        {{ form.organization_id | as_crispy_field}}
         {{ form.type | as_crispy_field}}
         {{ form.incident_management_info | as_crispy_field}}
       {% endaccordion %}

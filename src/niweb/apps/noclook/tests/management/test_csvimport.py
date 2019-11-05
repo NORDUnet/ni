@@ -17,7 +17,7 @@ __author__ = 'ffuentes'
 class CsvImportTest(NeoTestCase):
     cmd_name = 'csvimport'
 
-    organizations_str = """"account_id";"account_name";"description";"phone";"website";"customer_id";"type";"parent_account"
+    organizations_str = """"account_id";"account_name";"description";"phone";"website";"organization_id";"type";"parent_account"
 1;"Tazz";;"453-896-3068";"https://studiopress.com";"DRIVE";"University, College";
 2;"Wikizz";;"531-584-0224";"https://ihg.com";"DRIVE";"University, College";
 3;"Browsecat";;"971-875-7084";"http://skyrock.com";"ROAD";"University, College";"Tazz"
@@ -331,7 +331,7 @@ class CsvImportTest(NeoTestCase):
             orgnode = organization.get_node()
 
             self.assertIsNotNone(address_relations)
-            
+
             # check and add it for test
             for rel in address_relations:
                 address_end = rel['relationship'].end_node

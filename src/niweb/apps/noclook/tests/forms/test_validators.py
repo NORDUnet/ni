@@ -101,7 +101,7 @@ class Neo4jGraphQLTest(NeoTestCase):
                             Fusce ipsum nulla, feugiat eu\
                             gravida eget, efficitur a risus.',
             'website': 'www.lipsum.com',
-            'customer_id': '5678',
+            'organization_id': '5678',
             'type': 'university_college',
             'incident_management_info': 'They have a form on their website',
             'relationship_parent_of': self.organization1.handle_id,

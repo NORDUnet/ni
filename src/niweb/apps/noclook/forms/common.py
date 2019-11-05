@@ -839,7 +839,7 @@ class NewOrganizationForm(forms.Form):
     name = forms.CharField()
     description = description_field('organization')
     website = forms.CharField(required=False)
-    customer_id = forms.CharField(required=False)
+    organization_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     incident_management_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
     affiliation_customer = forms.BooleanField(required=False)

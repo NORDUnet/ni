@@ -190,7 +190,7 @@ class CreateOrganization(CreateNIMutation):
         if request.POST:
             form = form_class(request.POST.copy())
             form.strict_validation = True
-            
+
             if form.is_valid():
                 try:
                     nh = helpers.form_to_generic_node_handle(request, form,
@@ -202,7 +202,7 @@ class CreateOrganization(CreateNIMutation):
                 # Generic node update
                 # use property keys to avoid inserting contacts as a string property of the node
                 property_keys = [
-                    'name', 'description', 'customer_id', 'type', 'incident_management_info',
+                    'name', 'description', 'organization_id', 'type', 'incident_management_info',
                     'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
                     'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner',
                     'website'
@@ -287,7 +287,7 @@ class UpdateOrganization(UpdateNIMutation):
                 # Generic node update
                 # use property keys to avoid inserting contacts as a string property of the node
                 property_keys = [
-                    'name', 'description', 'customer_id', 'type', 'incident_management_info',
+                    'name', 'description', 'organization_id', 'type', 'incident_management_info',
                     'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
                     'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner',
                     'website'
