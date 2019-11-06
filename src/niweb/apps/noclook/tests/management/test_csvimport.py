@@ -369,6 +369,43 @@ class CsvImportTest(NeoTestCase):
                 self.assertFalse(website_field in address_end._properties)
 
 
+    def test_orgid_fix(self):
+        # call csvimport command (verbose 0)
+        call_command(
+            self.cmd_name,
+            organizations=self.organizations_file,
+            verbosity=0,
+        )
+
+        old_field1 = 'customer_id'
+        new_field1 = 'organization_id'
+
+        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+
+        for organization in all_organizations:
+            orgnode = organization.get_node()
+            org_id_val = orgnode.data.get(new_field1, None)
+            self.assertIsNotNone(org_id_val)
+            orgnode.remove_property(new_field1)
+            orgnode.add_property(old_field1, org_id_val)
+
+        # fix it
+        call_command(
+            self.cmd_name,
+            reorgprops=True,
+            verbosity=0,
+        )
+
+        # check that it's good again
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+
+        for organization in all_organizations:
+            # get the address and check that the website field is not present
+            org_id_val = organization.get_node().data.get(new_field1, None)
+            self.assertIsNotNone(org_id_val)
+
+
     def write_string_to_disk(self, string):
         # get random file
         tf = tempfile.NamedTemporaryFile(mode='w+')
