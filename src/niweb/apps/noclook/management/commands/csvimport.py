@@ -432,8 +432,9 @@ class Command(BaseCommand):
         for organization in all_organizations:
             orgnode = organization.get_node()
             org_id_val = orgnode.data.get(old_field1, None)
-            orgnode.remove_property(old_field1)
-            orgnode.add_property(new_field1, org_id_val)
+            if org_id_val:
+                orgnode.remove_property(old_field1)
+                orgnode.add_property(new_field1, org_id_val)
 
     def count_lines(self, file):
         '''
