@@ -375,15 +375,21 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_contains_predicate(field, value, type, **kwargs):
         op = "CONTAINS"
-        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
-                                                                op, **kwargs)
+        ret = ''
+
+        if isinstance(value, six.string_types):
+            ret = InputFieldQueryBuilder.single_value_predicate(field, value,
+                                                                type, op, **kwargs)
 
         return ret
 
     @staticmethod
     def build_not_contains_predicate(field, value, type, **kwargs):
         op = "CONTAINS"
-        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+        ret = ''
+
+        if isinstance(value, six.string_types):
+            ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
                                                                 op, True, **kwargs)
 
         return ret
@@ -391,7 +397,10 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_starts_with_predicate(field, value, type, **kwargs):
         op = "STARTS WITH"
-        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+        ret = ''
+
+        if isinstance(value, six.string_types):
+            ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
                                                                 op, **kwargs)
 
         return ret
@@ -399,7 +408,10 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_not_starts_with_predicate(field, value, type, **kwargs):
         op = "STARTS WITH"
-        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+        ret = ''
+
+        if isinstance(value, six.string_types):
+            ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
                                                                 op, True, **kwargs)
 
         return ret
@@ -407,7 +419,10 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_ends_with_predicate(field, value, type, **kwargs):
         op = "ENDS WITH"
-        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+        ret = ''
+
+        if isinstance(value, six.string_types):
+            ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
                                                                 op, **kwargs)
 
         return ret
@@ -415,7 +430,10 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
     @staticmethod
     def build_not_ends_with_predicate(field, value, type, **kwargs):
         op = "ENDS WITH"
-        ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
+        ret = ''
+
+        if isinstance(value, six.string_types):
+            ret = InputFieldQueryBuilder.single_value_predicate(field, value, type,
                                                                 op, True, **kwargs)
 
         return ret
