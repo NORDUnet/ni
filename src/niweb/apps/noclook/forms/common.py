@@ -1,5 +1,6 @@
 from datetime import datetime
 from django import forms
+from django.utils.translation import gettext_lazy as _
 from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput, Textarea
 from django.db import IntegrityError
@@ -852,6 +853,19 @@ class NewOrganizationForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['type'].choices = Dropdown.get('organization_types').as_choices()
+
+
+    def clean_organization_id(self):
+        organization_id = self.cleaned_data['organization_id']
+
+        # if it's not empty
+        if organization_id:
+            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id)
+            if exists:
+                raise ValidationError(
+                    _('The organization_id %(organization_id)s already exist on the system'),
+                    params={'organization_id': organization_id},
+                )
 
 
 class EditOrganizationForm(NewOrganizationForm):
