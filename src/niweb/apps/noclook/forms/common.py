@@ -856,16 +856,19 @@ class NewOrganizationForm(forms.Form):
 
 
     def clean_organization_id(self):
+        handle_id = self.data.get('handle_id', None)
         organization_id = self.cleaned_data['organization_id']
 
         # if it's not empty
         if organization_id:
-            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id)
+            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id)
             if exists:
                 raise ValidationError(
-                    _('The organization_id %(organization_id)s already exist on the system'),
+                    _('The Organization ID %(organization_id)s already exist on the system'),
                     params={'organization_id': organization_id},
                 )
+
+        return organization_id
 
 
 class EditOrganizationForm(NewOrganizationForm):
