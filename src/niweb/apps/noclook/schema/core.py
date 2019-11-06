@@ -773,7 +773,7 @@ class NIObjectType(DjangoObjectType):
         or_query = ' OR '.join(operations['OR']['predicates'])
 
         if and_query and or_query:
-            build_query = '{} OR {}'.format(
+            build_query = '{} AND {}'.format(
                 and_query,
                 or_query
             )
