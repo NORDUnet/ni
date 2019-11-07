@@ -499,6 +499,37 @@ class NIObjectType(DjangoObjectType):
         return generic_list_resolver
 
     @classmethod
+    def get_count_resolver(cls):
+        '''
+        This method returns a simple list resolver for every nodetype in NOCAutoQuery
+        '''
+        type_name = cls.get_type_name()
+
+        def generic_count_resolver(self, info, **args):
+            qs = NodeHandle.objects.none()
+
+            if info.context and info.context.user.is_authenticated:
+                default_context = sriutils.get_default_context()
+                authorized = sriutils.authorize_list_module(
+                    info.context.user, default_context
+                )
+
+                if authorized:
+                    node_type = NodeType.objects.get(type=type_name)
+                    qs = NodeHandle.objects.filter(node_type=node_type).order_by('node_name')
+
+                    # the node list is trimmed to the nodes that the user can read
+                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                else:
+                    raise GraphQLAuthException()
+            else:
+                raise GraphQLAuthException()
+
+            return qs.count()
+
+        return generic_count_resolver
+
+    @classmethod
     def filter_is_empty(cls, filter):
         empty = False
 
