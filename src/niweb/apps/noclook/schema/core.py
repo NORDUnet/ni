@@ -312,6 +312,7 @@ class NIObjectType(DjangoObjectType):
             if field:
                 if isinstance(field, graphene.types.scalars.String) or\
                     isinstance(field, graphene.types.scalars.Int) or\
+                    isinstance(field, graphene.types.scalars.Boolean) or\
                     isinstance(field, ChoiceScalar):
                     input_field = type(field)
                     input_fields[name] = input_field
