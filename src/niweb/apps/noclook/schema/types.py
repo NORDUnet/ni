@@ -95,6 +95,7 @@ class Organization(NIObjectType):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
+    organization_number = NIStringField()
     organization_id = NIStringField()
     incident_management_info = NIStringField()
     type = NIChoiceField()

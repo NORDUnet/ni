@@ -20,7 +20,7 @@ class CommonFormTest(NeoTestCase):
             self.organization1.get_node().add_property(key, value)
 
         data1 = {
-            'account_id': '1234',
+            'organization_number': '1234',
             'name': 'Lipsum',
             'description': 'Lorem ipsum dolor sit amet, \
                             consectetur adipiscing elit.\

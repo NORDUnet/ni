@@ -836,7 +836,7 @@ class CsvForm(forms.Form):
 
 
 class NewOrganizationForm(forms.Form):
-    account_id = forms.CharField(required=False)
+    organization_number = forms.CharField(required=False)
     name = forms.CharField()
     description = description_field('organization')
     website = forms.CharField(required=False)
