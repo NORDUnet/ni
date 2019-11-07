@@ -671,6 +671,8 @@ class NIObjectType(DjangoObjectType):
         and_node_predicates = []
         and_rels_predicates = []
 
+        raw_additional_clause = {}
+
         # embed entity index
         idxdict = {
             'rel_idx': 1,
@@ -723,27 +725,33 @@ class NIObjectType(DjangoObjectType):
                         additional_clause = of_type.match_additional_clause
 
                         if additional_clause:
-                            # format var name and additional match
-                            if issubclass(of_type, NIObjectType):
-                                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
-                                additional_clause = additional_clause.format(
-                                    'n:{}'.format(nodetype),
-                                    'l{}'.format(idxdict['subrel_idx']),
-                                    idxdict['node_idx']
-                                )
-                                idxdict['node_idx'] = idxdict['node_idx'] + 1
-                                idxdict['subrel_idx'] = idxdict['subrel_idx'] + 1
-                                match_additional_nodes.append(additional_clause)
-                            elif issubclass(of_type, NIRelationType):
-                                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
-                                additional_clause = additional_clause.format(
-                                    'n:{}'.format(nodetype),
-                                    idxdict['rel_idx'],
-                                    'z{}'.format(idxdict['subnode_idx'])
-                                )
-                                idxdict['rel_idx'] = idxdict['rel_idx'] + 1
-                                idxdict['subnode_idx'] = idxdict['subnode_idx'] + 1
-                                match_additional_rels.append(additional_clause)
+                            if additional_clause not in raw_additional_clause.keys():
+                                raw_clause = additional_clause
+                                # format var name and additional match
+                                if issubclass(of_type, NIObjectType):
+                                    neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
+                                    additional_clause = additional_clause.format(
+                                        'n:{}'.format(nodetype),
+                                        'l{}'.format(idxdict['subrel_idx']),
+                                        idxdict['node_idx']
+                                    )
+                                    idxdict['node_idx'] = idxdict['node_idx'] + 1
+                                    idxdict['subrel_idx'] = idxdict['subrel_idx'] + 1
+                                    match_additional_nodes.append(additional_clause)
+                                elif issubclass(of_type, NIRelationType):
+                                    neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
+                                    additional_clause = additional_clause.format(
+                                        'n:{}'.format(nodetype),
+                                        idxdict['rel_idx'],
+                                        'z{}'.format(idxdict['subnode_idx'])
+                                    )
+                                    idxdict['rel_idx'] = idxdict['rel_idx'] + 1
+                                    idxdict['subnode_idx'] = idxdict['subnode_idx'] + 1
+                                    match_additional_rels.append(additional_clause)
+
+                                raw_additional_clause[raw_clause] = neo4j_var
+                            else:
+                                neo4j_var = raw_additional_clause[additional_clause]
                     else:
                         filter_array = ScalarQueryBuilder.filter_array
                         queryBuilder = ScalarQueryBuilder
@@ -767,7 +775,7 @@ class NIObjectType(DjangoObjectType):
 
                             if predicate:
                                 predicates.append(predicate)
-                            elif predicate == "":
+                            elif predicate == "" and is_nested_query:
                                 # if the predicate comes empty, remove
                                 # index increases and additional matches
                                 if issubclass(of_type, NIObjectType):
