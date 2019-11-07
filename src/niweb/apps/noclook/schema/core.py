@@ -767,6 +767,17 @@ class NIObjectType(DjangoObjectType):
 
                             if predicate:
                                 predicates.append(predicate)
+                            elif predicate == "":
+                                # if the predicate comes empty, remove
+                                # index increases and additional matches
+                                if issubclass(of_type, NIObjectType):
+                                    idxdict['node_idx'] = idxdict['node_idx'] - 1
+                                    idxdict['subrel_idx'] = idxdict['subrel_idx'] - 1
+                                    del match_additional_nodes[-1]
+                                elif issubclass(of_type, NIRelationType):
+                                    idxdict['rel_idx'] = idxdict['rel_idx'] - 1
+                                    idxdict['subnode_idx'] = idxdict['subnode_idx'] - 1
+                                    del match_additional_rels[-1]
 
             operations[operation]['predicates'] = predicates
 
