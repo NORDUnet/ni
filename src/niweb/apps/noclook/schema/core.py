@@ -392,6 +392,7 @@ class NIObjectType(DjangoObjectType):
 
                 if not suffix_attr['only_strings'] \
                     or isinstance(field_instance, graphene.String) \
+                    or isinstance(field_instance, ChoiceScalar) \
                     or isinstance(field_instance, graphene.InputObjectType):
                     if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
                         filter_attrib[fmt_filter_field] = field_instance
