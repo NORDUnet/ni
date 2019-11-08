@@ -145,6 +145,7 @@ class NOCRootQuery(NOCAutoQuery):
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
     getOrganizationContacts = graphene.List(ContactWithRolename, handle_id=graphene.Int(required=True))
     getGroupContacts = graphene.List(ContactWithRelation, handle_id=graphene.Int(required=True))
+    checkExistentOrganizationId = graphene.Boolean(organization_id=graphene.String(required=True), handle_id=graphene.Int())
 
     # relationship lookups
     getGroupContactRelations = graphene.List(NIRelationType, group_id=graphene.Int(required=True), contact_id=graphene.Int(required=True), resolver=resolve_getGroupContactRelations)
@@ -303,6 +304,16 @@ class NOCRootQuery(NOCAutoQuery):
             }
 
             ret.append(contact_wrn)
+
+        return ret
+
+
+    def resolve_checkExistentOrganizationId(self, info, **kwargs):
+        # django dropdown resolver
+        organization_id = kwargs.get('organization_id')
+        handle_id = kwargs.get('handle_id', None)
+
+        ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
 
         return ret
 
