@@ -35,6 +35,8 @@ class Command(BaseCommand):
                     action='store_true', help="regenerate organizations' address to the new SRI")
         parser.add_argument("-w", "--movewebsite",
                     action='store_true', help="move organizations' website back from address")
+        parser.add_argument("-r", "--reorgprops",
+                    action='store_true', help="rename organization properties")
         parser.add_argument('-d', "--delimiter", nargs='?', default=';',
                             help='Delimiter to use use. Default ";".')
 
@@ -57,6 +59,11 @@ class Command(BaseCommand):
         # check if the addressfix option has been called, do it and exit
         if options['movewebsite']:
             self.fix_website_field()
+            return
+
+        # check if the addressfix option has been called, do it and exit
+        if options['reorgprops']:
+            self.fix_organizations_fields()
             return
 
         relation_meta_type = 'Relation'
@@ -413,6 +420,21 @@ class Command(BaseCommand):
 
                         # remove value in address_node
                         address_node.remove_property(website_field)
+
+    def fix_organizations_fields(self):
+        self.user = get_user()
+        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+
+        old_field1 = 'customer_id'
+        new_field1 = 'organization_id'
+
+        for organization in all_organizations:
+            orgnode = organization.get_node()
+            org_id_val = orgnode.data.get(old_field1, None)
+            if org_id_val:
+                orgnode.remove_property(old_field1)
+                orgnode.add_property(new_field1, org_id_val)
 
     def count_lines(self, file):
         '''

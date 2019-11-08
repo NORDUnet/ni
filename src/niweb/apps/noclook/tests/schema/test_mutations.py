@@ -447,6 +447,8 @@ class QueryTest(Neo4jGraphQLTest):
         assert contact_1_id != contact_2_id, 'The contact ids are equal'
 
         incident_management_info = "Nullam eleifend ultrices risus, ac dignissim sapien mollis id. Aenean ante nibh, pharetra ac accumsan eget, suscipit eget purus. Ut sit amet diam in arcu dapibus ultricies. Phasellus a consequat eros. Proin cursus commodo consequat. Fusce nisl metus, egestas eu blandit sit amet, condimentum vitae felis."
+        website = "www.demo.org"
+        organization_number = "1234A"
 
         query = """
         mutation{{
@@ -464,7 +466,8 @@ class QueryTest(Neo4jGraphQLTest):
               it_manager_contact: {contact_2_id},
               affiliation_provider: true,
               affiliation_customer: true,
-              website: "{website}"
+              website: "{website}",
+              organization_number: "{organization_number}"
             }}
           ){{
             organization{{
@@ -475,6 +478,7 @@ class QueryTest(Neo4jGraphQLTest):
               affiliation_provider
               affiliation_customer
               website
+              organization_number
               incoming{{
                 name
                 relation{{
@@ -495,7 +499,7 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(organization_id=organization_id,
                     contact_1_id=contact_1_id, contact_2_id=contact_2_id,
                     incident_management_info=incident_management_info,
-                    website="www.demo.org")
+                    website=website, organization_number=organization_number)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -513,7 +517,8 @@ class QueryTest(Neo4jGraphQLTest):
                                           incident_management_info),
                                           ('affiliation_provider', True),
                                           ('affiliation_customer', True),
-                                          ('website', 'www.demo.org'),
+                                          ('website', website),
+                                          ('organization_number', organization_number)]))]))])
                                           ('incoming', incoming_relations)]))]))])
 
         found_offspring = False
@@ -545,7 +550,8 @@ class QueryTest(Neo4jGraphQLTest):
               it_manager_contact: {contact_2_id},
               affiliation_provider: false,
               affiliation_partner: true,
-              website: "{website}"
+              website: "{website}",
+              organization_number: "{organization_number}"
             }}
           ){{
             organization{{
@@ -557,12 +563,13 @@ class QueryTest(Neo4jGraphQLTest):
               affiliation_partner
               affiliation_customer
               website
+              organization_number
             }}
           }}
         }}
         """.format(organization_id=organization_id_2,
                     contact_1_id=contact_1_id, contact_2_id=contact_2_id,
-                    website="www.demo.com")
+                    website=website, organization_number=organization_number)
 
         expected = OrderedDict([('update_organization',
               OrderedDict([('organization',
@@ -576,7 +583,8 @@ class QueryTest(Neo4jGraphQLTest):
                                           ('affiliation_provider', False),
                                           ('affiliation_partner', True),
                                           ('affiliation_customer', True),
-                                          ('website', 'www.demo.com')]))]))])
+                                          ('website', website),
+                                          ('organization_number', organization_number)]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)

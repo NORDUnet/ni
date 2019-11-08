@@ -590,7 +590,7 @@ def _organization_table(org, parent_orgs):
                     }
             parent_links.append(parent_org_link)
 
-    name = org.get('customer_id')
+    name = org.get('organization_id')
     row = TableRow(organization_link, parent_links)
     return row
 
