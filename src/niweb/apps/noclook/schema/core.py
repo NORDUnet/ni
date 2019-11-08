@@ -1410,6 +1410,9 @@ class NIMutationFactory():
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
 
+        manual_create   = getattr(ni_metaclass, 'manual_create', None)
+        manual_update   = getattr(ni_metaclass, 'manual_update', None)
+
         # check for relationship processors and delete associated nodes functions
         relations_processors = getattr(ni_metaclass, 'relations_processors', None)
         delete_nodes         = getattr(ni_metaclass, 'delete_nodes', None)
@@ -1445,13 +1448,16 @@ class NIMutationFactory():
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
 
-        cls._create_mutation = type(
-            class_name,
-            (cls.create_mutation_class,),
-            {
-                metaclass_name: create_metaclass,
-            },
-        )
+        if not manual_create:
+            cls._create_mutation = type(
+                class_name,
+                (cls.create_mutation_class,),
+                {
+                    metaclass_name: create_metaclass,
+                },
+            )
+        else:
+            cls._create_mutation = manual_create
 
         class_name = 'Update{}'.format(node_type.capitalize())
         attr_dict['django_form']   = update_form
@@ -1464,13 +1470,16 @@ class NIMutationFactory():
 
         update_metaclass = type(metaclass_name, (object,), attr_dict)
 
-        cls._update_mutation = type(
-            class_name,
-            (cls.update_mutation_class,),
-            {
-                metaclass_name: update_metaclass,
-            },
-        )
+        if not manual_update:
+            cls._update_mutation = type(
+                class_name,
+                (cls.update_mutation_class,),
+                {
+                    metaclass_name: update_metaclass,
+                },
+            )
+        else:
+            cls._update_mutation = manual_update
 
         class_name = 'Delete{}'.format(node_type.capitalize())
         del attr_dict['django_form']
