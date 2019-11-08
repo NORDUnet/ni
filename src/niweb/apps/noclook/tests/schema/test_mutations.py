@@ -518,7 +518,7 @@ class QueryTest(Neo4jGraphQLTest):
                                           ('affiliation_provider', True),
                                           ('affiliation_customer', True),
                                           ('website', website),
-                                          ('organization_number', organization_number)]))]))])
+                                          ('organization_number', organization_number),
                                           ('incoming', incoming_relations)]))]))])
 
         found_offspring = False
