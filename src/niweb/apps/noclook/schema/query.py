@@ -364,6 +364,8 @@ class NOCRootQuery(NOCAutoQuery):
         handle_id = kwargs.get('handle_id', None)
 
         ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
+        
+        return ret
 
     class NIMeta:
         graphql_types = [ Group, Address, Phone, Email, Contact, Organization, Procedure, Host ]
