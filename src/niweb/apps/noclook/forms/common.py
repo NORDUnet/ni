@@ -856,12 +856,11 @@ class NewOrganizationForm(forms.Form):
 
 
     def clean_organization_id(self):
-        handle_id = self.data.get('handle_id', None)
         organization_id = self.cleaned_data['organization_id']
 
         # if it's not empty
         if organization_id:
-            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id)
+            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id)
             if exists:
                 raise ValidationError(
                     _('The Organization ID %(organization_id)s already exist on the system'),
@@ -877,11 +876,12 @@ class EditOrganizationForm(NewOrganizationForm):
         initial = {} if 'initial' not in kwargs else kwargs['initial']
 
         if 'handle_id' in args[0]:
-            organization_id = args[0]['handle_id']
+            handle_id = args[0]['handle_id']
+            self.cached_handle_id = handle_id
 
             for field, roledict in DEFAULT_ROLES.items():
                 role = Role.objects.get(slug=field)
-                possible_contact = helpers.get_contact_for_orgrole(organization_id, role)
+                possible_contact = helpers.get_contact_for_orgrole(handle_id, role)
 
                 if possible_contact:
                     args[0][field] = possible_contact.handle_id
@@ -930,6 +930,21 @@ class EditOrganizationForm(NewOrganizationForm):
 
                     if not self.strict_validation and field in self._errors:
                         del self._errors[field]
+
+    def clean_organization_id(self):
+        organization_id = self.cleaned_data['organization_id']
+        handle_id = getattr(self, 'cached_handle_id', None)
+
+        # if it's not empty
+        if organization_id and self.strict_validation:
+            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id)
+            if exists:
+                raise ValidationError(
+                    _('The Organization ID %(organization_id)s already exist on the system'),
+                    params={'organization_id': organization_id},
+                )
+
+        return organization_id
 
 
 class NewContactForm(forms.Form):
