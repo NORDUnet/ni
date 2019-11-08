@@ -1,5 +1,6 @@
 from datetime import datetime
 from django import forms
+from django.utils.translation import gettext_lazy as _
 from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput, Textarea
 from django.db import IntegrityError
@@ -835,11 +836,11 @@ class CsvForm(forms.Form):
 
 
 class NewOrganizationForm(forms.Form):
-    account_id = forms.CharField(required=False)
+    organization_number = forms.CharField(required=False)
     name = forms.CharField()
     description = description_field('organization')
     website = forms.CharField(required=False)
-    customer_id = forms.CharField(required=False)
+    organization_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     incident_management_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
     affiliation_customer = forms.BooleanField(required=False)
@@ -854,17 +855,33 @@ class NewOrganizationForm(forms.Form):
         self.fields['type'].choices = Dropdown.get('organization_types').as_choices()
 
 
+    def clean_organization_id(self):
+        organization_id = self.cleaned_data['organization_id']
+
+        # if it's not empty
+        if organization_id:
+            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id)
+            if exists:
+                raise ValidationError(
+                    _('The Organization ID %(organization_id)s already exist on the system'),
+                    params={'organization_id': organization_id},
+                )
+
+        return organization_id
+
+
 class EditOrganizationForm(NewOrganizationForm):
     def __init__(self, *args, **kwargs):
         # set initial for contact combos
         initial = {} if 'initial' not in kwargs else kwargs['initial']
 
         if 'handle_id' in args[0]:
-            organization_id = args[0]['handle_id']
+            handle_id = args[0]['handle_id']
+            self.cached_handle_id = handle_id
 
             for field, roledict in DEFAULT_ROLES.items():
                 role = Role.objects.get(slug=field)
-                possible_contact = helpers.get_contact_for_orgrole(organization_id, role)
+                possible_contact = helpers.get_contact_for_orgrole(handle_id, role)
 
                 if possible_contact:
                     args[0][field] = possible_contact.handle_id
@@ -913,6 +930,21 @@ class EditOrganizationForm(NewOrganizationForm):
 
                     if not self.strict_validation and field in self._errors:
                         del self._errors[field]
+
+    def clean_organization_id(self):
+        organization_id = self.cleaned_data['organization_id']
+        handle_id = getattr(self, 'cached_handle_id', None)
+
+        # if it's not empty
+        if organization_id and self.strict_validation:
+            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id)
+            if exists:
+                raise ValidationError(
+                    _('The Organization ID %(organization_id)s already exist on the system'),
+                    params={'organization_id': organization_id},
+                )
+
+        return organization_id
 
 
 class NewContactForm(forms.Form):

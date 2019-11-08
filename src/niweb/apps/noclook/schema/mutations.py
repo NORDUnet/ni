@@ -152,21 +152,6 @@ class NIContactMutationFactory(NIMutationFactory):
         abstract = False
 
 
-class NIOrganizationMutationFactory(NIMutationFactory):
-    class NIMetaClass:
-        create_form    = NewOrganizationForm
-        update_form    = EditOrganizationForm
-        request_path   = '/'
-        graphql_type   = Organization
-        # create_include or create_exclude
-
-        delete_nodes = {
-            'Has_address': delete_outgoing_nodes,
-        }
-
-    class Meta:
-        abstract = False
-
 class CreateOrganization(CreateNIMutation):
     @classmethod
     def do_request(cls, request, **kwargs):
@@ -190,7 +175,7 @@ class CreateOrganization(CreateNIMutation):
         if request.POST:
             form = form_class(request.POST.copy())
             form.strict_validation = True
-            
+
             if form.is_valid():
                 try:
                     nh = helpers.form_to_generic_node_handle(request, form,
@@ -202,10 +187,10 @@ class CreateOrganization(CreateNIMutation):
                 # Generic node update
                 # use property keys to avoid inserting contacts as a string property of the node
                 property_keys = [
-                    'name', 'description', 'customer_id', 'type', 'incident_management_info',
+                    'name', 'description', 'organization_id', 'type', 'incident_management_info',
                     'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
                     'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner',
-                    'website'
+                    'website', 'organization_number'
                 ]
                 helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
                 nh_reload, organization = helpers.get_nh_node(nh.handle_id)
@@ -287,10 +272,10 @@ class UpdateOrganization(UpdateNIMutation):
                 # Generic node update
                 # use property keys to avoid inserting contacts as a string property of the node
                 property_keys = [
-                    'name', 'description', 'customer_id', 'type', 'incident_management_info',
+                    'name', 'description', 'organization_id', 'type', 'incident_management_info',
                     'affiliation_customer', 'affiliation_end_customer', 'affiliation_provider',
                     'affiliation_partner', 'affiliation_host_user', 'affiliation_site_owner',
-                    'website'
+                    'website', 'organization_number'
                 ]
                 helpers.form_update_node(request.user, organization.handle_id, form, property_keys)
 
@@ -335,6 +320,25 @@ class UpdateOrganization(UpdateNIMutation):
         django_form = EditOrganizationForm
         request_path   = '/'
         graphql_type   = Organization
+
+
+class NIOrganizationMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewOrganizationForm
+        update_form    = EditOrganizationForm
+        request_path   = '/'
+        graphql_type   = Organization
+        # create_include or create_exclude
+
+        delete_nodes = {
+            'Has_address': delete_outgoing_nodes,
+        }
+
+        manual_create = CreateOrganization
+        manual_update = UpdateOrganization
+
+    class Meta:
+        abstract = False
 
 
 class CreateRole(DjangoModelFormMutation):
@@ -566,9 +570,10 @@ class NOCRootMutation(graphene.ObjectType):
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
     multiple_contact    = NIContactMutationFactory.get_multiple_mutation().Field()
 
-    create_organization = CreateOrganization.Field()
-    update_organization = UpdateOrganization.Field()
-    delete_organization = NIOrganizationMutationFactory.get_delete_mutation().Field()
+    create_organization   = CreateOrganization.Field()
+    update_organization   = UpdateOrganization.Field()
+    delete_organization   = NIOrganizationMutationFactory.get_delete_mutation().Field()
+    multiple_organization = NIOrganizationMutationFactory.get_multiple_mutation().Field()
 
     create_role = CreateRole.Field()
     update_role = UpdateRole.Field()

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from apps.noclook.models import NodeHandle, Dropdown, Choice, Role, Group, GroupContextAuthzAction, NodeHandleContext
+from apps.noclook.models import NodeHandle, Dropdown, Choice, Role, Group, \
+    GroupContextAuthzAction, NodeHandleContext, DEFAULT_ROLEGROUP_NAME
 from collections import OrderedDict
 from django.utils.dateparse import parse_datetime
 from niweb.schema import schema
@@ -1891,3 +1892,64 @@ class QueryTest(Neo4jGraphQLTest):
         query = query_getcontact.format(contact_id=delete_c2_id)
         result = schema.execute(query, context=self.context)
         assert result.errors, pformat(result.errors, indent=1)
+
+
+    def test_rolegroup(self):
+        query = '''
+        {
+          getAvailableRoleGroups{
+            name
+          }
+        }
+        '''
+
+        expected = []
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        found = False
+
+        for rolegroups in result.data['getAvailableRoleGroups']:
+            for k, gname in rolegroups.items():
+                if gname == DEFAULT_ROLEGROUP_NAME:
+                    found = True
+
+        assert found, pformat(result.data, indent=1)
+
+        query = """
+        {
+          getRolesFromRoleGroup{
+            handle_id
+            name
+            slug
+            description
+          }
+        }
+        """
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        no_args_roles = result.data['getRolesFromRoleGroup']
+
+        query = '''
+        {{
+          getRolesFromRoleGroup(name: "{default_rolegroup}"){{
+            handle_id
+            name
+            slug
+            description
+          }}
+        }}
+        '''.format(default_rolegroup=DEFAULT_ROLEGROUP_NAME)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        args_roles = result.data['getRolesFromRoleGroup']
+
+        assert args_roles == no_args_roles, "{}\n!=\n{}".format(
+            pformat(no_args_roles, indent=1),
+            pformat(args_roles, indent=1)
+        )
