@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls import include, url
 from tastypie.api import Api
 import apps.noclook.api.resources as niapi
+import apps.userprofile.resources as profile_api
 from django.contrib.auth import views as auth_views
 from django.views.decorators.csrf import csrf_exempt
 from apps.noclook.schema import AuthGraphQLView
@@ -20,6 +21,7 @@ def if_installed(appname, *args, **kwargs):
 
 v1_api = Api(api_name='v1')
 # Resources
+v1_api.register(profile_api.UserProfileResource())
 v1_api.register(niapi.NodeTypeResource())
 v1_api.register(niapi.RelationshipResource())
 v1_api.register(niapi.UserResource())

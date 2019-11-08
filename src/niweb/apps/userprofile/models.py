@@ -6,12 +6,27 @@ from django.urls import reverse
 from django.utils.encoding import python_2_unicode_compatible
 
 
+LANDING_CHOICES = (
+        ('network', 'Network'),
+        ('services', 'Services'),
+        ('community', 'Community'),
+    )
+
+
 @python_2_unicode_compatible
 class UserProfile(models.Model):
     user = models.OneToOneField(User, related_name='profile')
     display_name = models.CharField(max_length=255, blank=True, null=True)
+    #  avatar = models.ImageField()
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+
+    landing_page = models.CharField(max_length=255,
+                                    choices=LANDING_CHOICES,
+                                    default='community')
+    view_network = models.BooleanField(default=True)
+    view_services = models.BooleanField(default=True)
+    view_community = models.BooleanField(default=True)
 
     def __str__(self):
         return "%s [%s]" % (self.user.username, self.display_name)
