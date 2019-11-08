@@ -168,6 +168,8 @@ class CommentType(DjangoObjectType):
     class Meta:
         model = Comment
 
+input_fields_clsnames = {}
+
 class NIObjectType(DjangoObjectType):
     '''
     This class expands graphene_django object type adding the defined fields in
@@ -328,13 +330,29 @@ class NIObjectType(DjangoObjectType):
                     # get object attributes by their filter input fields
                     # to build the filter field for the nested object
                     filter_attrib = {}
-                    for a, b in field_of_type.get_filter_input_fields().items():
-                        filter_attrib[a] = b()
+                    instance_inputfield = False
+
+                    if hasattr(field_of_type, 'get_filter_input_fields'):
+                        instance_inputfield = True
+                        for a, b in field_of_type.get_filter_input_fields().items():
+                            if callable(b):
+                                filter_attrib[a] = b()
+                            else:
+                                filter_attrib[a] = b[0]()
 
                     filter_attrib['_of_type'] = field._of_type
 
-                    binput_field = type('{}InputField'.format(name_fot), (graphene.InputObjectType, ), filter_attrib)
-                    input_fields[name] = binput_field, field._of_type
+                    if instance_inputfield:
+                        ifield_clsname = '{}InputField'.format(name_fot)
+
+                        if not ifield_clsname in input_fields_clsnames:
+                            binput_field = type(ifield_clsname, (graphene.InputObjectType, ), filter_attrib)
+                            input_fields_clsnames[ifield_clsname] = binput_field
+                            logger.debug('Created input filter class: {} || {}'.format(ifield_clsname, binput_field.__module__))
+                        else:
+                            binput_field = input_fields_clsnames[ifield_clsname]
+
+                        input_fields[name] = binput_field, field._of_type
 
         input_fields['handle_id'] = graphene.Int
 

@@ -115,6 +115,7 @@ class Organization(NIObjectType):
     affiliation_partner = NIBooleanField()
     affiliation_host_user = NIBooleanField()
     affiliation_site_owner = NIBooleanField()
+    parent_organization = NIListField(type_args=(lambda: Organization,), rel_name='Parent_of', rel_method='get_relations')
 
     class NIMetaType:
         ni_type = 'Organization'
@@ -184,6 +185,7 @@ class Contact(NIObjectType):
     pgp_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
     roles = NIRelationField(rel_name=RoleRelationship.RELATION_NAME, type_args=(RoleRelation, ))
+    organizations = NIListField(type_args=(Organization,), rel_name='Works_for', rel_method='get_outgoing_relations')
     notes = NIStringField()
 
     class NIMetaType:
