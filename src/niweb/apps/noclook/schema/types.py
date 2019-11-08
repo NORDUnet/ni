@@ -6,7 +6,7 @@ import graphene
 from norduniclient.models import RoleRelationship
 from graphene import relay, ObjectType, String, Field
 from .core import *
-from ..models import Dropdown, Choice, Role as RoleModel
+from ..models import Dropdown, Choice, Role as RoleModel, RoleGroup as RoleGroupModel
 
 # further centralization?
 NIMETA_LOGICAL  = 'logical'
@@ -36,6 +36,14 @@ class Choice(DjangoObjectType):
 class Neo4jChoice(graphene.ObjectType):
     class Meta:
         interfaces = (KeyValue, )
+
+
+class RoleGroup(DjangoObjectType):
+    '''
+    This class represents a Role in the relational db
+    '''
+    class Meta:
+        model = RoleGroupModel
 
 
 class Role(DjangoObjectType):
@@ -95,7 +103,8 @@ class Organization(NIObjectType):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    customer_id = NIStringField()
+    organization_number = NIStringField()
+    organization_id = NIStringField()
     incident_management_info = NIStringField()
     type = NIChoiceField()
     website = NIStringField()
@@ -169,7 +178,7 @@ class Contact(NIObjectType):
     last_name = NIStringField(type_kwargs={ 'required': True })
     title = NIStringField()
     salutation = NIStringField()
-    contact_type = NIStringField()
+    contact_type = NIChoiceField()
     phones = NIListField(type_args=(Phone,), rel_name='Has_phone', rel_method='get_outgoing_relations')
     emails = NIListField(type_args=(Email,), rel_name='Has_email', rel_method='get_outgoing_relations')
     pgp_fingerprint = NIStringField()

@@ -312,6 +312,7 @@ class NIObjectType(DjangoObjectType):
             if field:
                 if isinstance(field, graphene.types.scalars.String) or\
                     isinstance(field, graphene.types.scalars.Int) or\
+                    isinstance(field, graphene.types.scalars.Boolean) or\
                     isinstance(field, ChoiceScalar):
                     input_field = type(field)
                     input_fields[name] = input_field
@@ -390,7 +391,9 @@ class NIObjectType(DjangoObjectType):
                 fmt_filter_field = '{}{}'.format(field_name, suffix)
 
                 if not suffix_attr['only_strings'] \
-                    or isinstance(field_instance, graphene.String):
+                    or isinstance(field_instance, graphene.String) \
+                    or isinstance(field_instance, ChoiceScalar) \
+                    or isinstance(field_instance, graphene.InputObjectType):
                     if 'wrapper_field' not in suffix_attr or not suffix_attr['wrapper_field']:
                         filter_attrib[fmt_filter_field] = field_instance
                         cls.filter_names[fmt_filter_field]  = {
@@ -495,6 +498,37 @@ class NIObjectType(DjangoObjectType):
             return qs
 
         return generic_list_resolver
+
+    @classmethod
+    def get_count_resolver(cls):
+        '''
+        This method returns a simple list resolver for every nodetype in NOCAutoQuery
+        '''
+        type_name = cls.get_type_name()
+
+        def generic_count_resolver(self, info, **args):
+            qs = NodeHandle.objects.none()
+
+            if info.context and info.context.user.is_authenticated:
+                default_context = sriutils.get_default_context()
+                authorized = sriutils.authorize_list_module(
+                    info.context.user, default_context
+                )
+
+                if authorized:
+                    node_type = NodeType.objects.get(type=type_name)
+                    qs = NodeHandle.objects.filter(node_type=node_type).order_by('node_name')
+
+                    # the node list is trimmed to the nodes that the user can read
+                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                else:
+                    raise GraphQLAuthException()
+            else:
+                raise GraphQLAuthException()
+
+            return qs.count()
+
+        return generic_count_resolver
 
     @classmethod
     def filter_is_empty(cls, filter):
@@ -670,6 +704,8 @@ class NIObjectType(DjangoObjectType):
         and_node_predicates = []
         and_rels_predicates = []
 
+        raw_additional_clause = {}
+
         # embed entity index
         idxdict = {
             'rel_idx': 1,
@@ -722,27 +758,33 @@ class NIObjectType(DjangoObjectType):
                         additional_clause = of_type.match_additional_clause
 
                         if additional_clause:
-                            # format var name and additional match
-                            if issubclass(of_type, NIObjectType):
-                                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
-                                additional_clause = additional_clause.format(
-                                    'n:{}'.format(nodetype),
-                                    'l{}'.format(idxdict['subrel_idx']),
-                                    idxdict['node_idx']
-                                )
-                                idxdict['node_idx'] = idxdict['node_idx'] + 1
-                                idxdict['subrel_idx'] = idxdict['subrel_idx'] + 1
-                                match_additional_nodes.append(additional_clause)
-                            elif issubclass(of_type, NIRelationType):
-                                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
-                                additional_clause = additional_clause.format(
-                                    'n:{}'.format(nodetype),
-                                    idxdict['rel_idx'],
-                                    'z{}'.format(idxdict['subnode_idx'])
-                                )
-                                idxdict['rel_idx'] = idxdict['rel_idx'] + 1
-                                idxdict['subnode_idx'] = idxdict['subnode_idx'] + 1
-                                match_additional_rels.append(additional_clause)
+                            if additional_clause not in raw_additional_clause.keys():
+                                raw_clause = additional_clause
+                                # format var name and additional match
+                                if issubclass(of_type, NIObjectType):
+                                    neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
+                                    additional_clause = additional_clause.format(
+                                        'n:{}'.format(nodetype),
+                                        'l{}'.format(idxdict['subrel_idx']),
+                                        idxdict['node_idx']
+                                    )
+                                    idxdict['node_idx'] = idxdict['node_idx'] + 1
+                                    idxdict['subrel_idx'] = idxdict['subrel_idx'] + 1
+                                    match_additional_nodes.append(additional_clause)
+                                elif issubclass(of_type, NIRelationType):
+                                    neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
+                                    additional_clause = additional_clause.format(
+                                        'n:{}'.format(nodetype),
+                                        idxdict['rel_idx'],
+                                        'z{}'.format(idxdict['subnode_idx'])
+                                    )
+                                    idxdict['rel_idx'] = idxdict['rel_idx'] + 1
+                                    idxdict['subnode_idx'] = idxdict['subnode_idx'] + 1
+                                    match_additional_rels.append(additional_clause)
+
+                                raw_additional_clause[raw_clause] = neo4j_var
+                            else:
+                                neo4j_var = raw_additional_clause[additional_clause]
                     else:
                         filter_array = ScalarQueryBuilder.filter_array
                         queryBuilder = ScalarQueryBuilder
@@ -766,6 +808,17 @@ class NIObjectType(DjangoObjectType):
 
                             if predicate:
                                 predicates.append(predicate)
+                            elif predicate == "" and is_nested_query:
+                                # if the predicate comes empty, remove
+                                # index increases and additional matches
+                                if issubclass(of_type, NIObjectType):
+                                    idxdict['node_idx'] = idxdict['node_idx'] - 1
+                                    idxdict['subrel_idx'] = idxdict['subrel_idx'] - 1
+                                    del match_additional_nodes[-1]
+                                elif issubclass(of_type, NIRelationType):
+                                    idxdict['rel_idx'] = idxdict['rel_idx'] - 1
+                                    idxdict['subnode_idx'] = idxdict['subnode_idx'] - 1
+                                    del match_additional_rels[-1]
 
             operations[operation]['predicates'] = predicates
 
@@ -773,7 +826,7 @@ class NIObjectType(DjangoObjectType):
         or_query = ' OR '.join(operations['OR']['predicates'])
 
         if and_query and or_query:
-            build_query = '{} OR {}'.format(
+            build_query = '({}) AND ({})'.format(
                 and_query,
                 or_query
             )
@@ -1410,6 +1463,9 @@ class NIMutationFactory():
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
 
+        manual_create   = getattr(ni_metaclass, 'manual_create', None)
+        manual_update   = getattr(ni_metaclass, 'manual_update', None)
+
         # check for relationship processors and delete associated nodes functions
         relations_processors = getattr(ni_metaclass, 'relations_processors', None)
         delete_nodes         = getattr(ni_metaclass, 'delete_nodes', None)
@@ -1445,13 +1501,16 @@ class NIMutationFactory():
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
 
-        cls._create_mutation = type(
-            class_name,
-            (cls.create_mutation_class,),
-            {
-                metaclass_name: create_metaclass,
-            },
-        )
+        if not manual_create:
+            cls._create_mutation = type(
+                class_name,
+                (cls.create_mutation_class,),
+                {
+                    metaclass_name: create_metaclass,
+                },
+            )
+        else:
+            cls._create_mutation = manual_create
 
         class_name = 'Update{}'.format(node_type.capitalize())
         attr_dict['django_form']   = update_form
@@ -1464,13 +1523,16 @@ class NIMutationFactory():
 
         update_metaclass = type(metaclass_name, (object,), attr_dict)
 
-        cls._update_mutation = type(
-            class_name,
-            (cls.update_mutation_class,),
-            {
-                metaclass_name: update_metaclass,
-            },
-        )
+        if not manual_update:
+            cls._update_mutation = type(
+                class_name,
+                (cls.update_mutation_class,),
+                {
+                    metaclass_name: update_metaclass,
+                },
+            )
+        else:
+            cls._update_mutation = manual_update
 
         class_name = 'Delete{}'.format(node_type.capitalize())
         del attr_dict['django_form']

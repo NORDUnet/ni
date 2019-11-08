@@ -588,7 +588,7 @@ def new_organization(request, **kwargs):
 
             # use property keys to avoid inserting contacts as a string property of the node
             property_keys = [
-                'name', 'description', 'phone', 'website', 'customer_id', 'type', 'incident_management_info',
+                'name', 'description', 'phone', 'website', 'organization_id', 'type', 'incident_management_info',
             ]
             helpers.form_update_node(request.user, nh.handle_id, form, property_keys)
 

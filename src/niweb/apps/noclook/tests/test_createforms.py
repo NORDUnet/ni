@@ -267,7 +267,7 @@ class CommonNewForms(FormTestCase):
         data = {
             'name': 'test organization',
             'description': 'SE',
-            'customer_id': 'STDH',
+            'organization_id': 'STDH',
             'type': 'university_college',
         }
         resp = self.client.post('/new/{}/'.format(slugify(node_type)), data)
