@@ -7,7 +7,8 @@ import apps.noclook.vakt.utils as sriutils
 
 from django.apps import apps
 from graphql import GraphQLError
-from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown
+from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown,\
+                RoleGroup as RoleGroupModel, DEFAULT_ROLEGROUP_NAME
 from .types import *
 
 def can_load_models():
@@ -159,6 +160,10 @@ class NOCRootQuery(NOCAutoQuery):
     getContactEmailRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), email_id=graphene.Int(required=True), resolver=resolve_getContactEmailRelations)
     getContactPhoneRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), phone_id=graphene.Int(required=True), resolver=resolve_getContactPhoneRelations)
     getOrganizationAddressRelations = graphene.List(NIRelationType, organization_id=graphene.Int(required=True), address_id=graphene.Int(required=True), resolver=resolve_getOrganizationAddressRelations)
+
+    # get roles lookup
+    getAvailableRoleGroups = graphene.List(RoleGroup)
+    getRolesFromRoleGroup = graphene.List(Role, name=graphene.String())
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -314,6 +319,44 @@ class NOCRootQuery(NOCAutoQuery):
 
         return ret
 
+    def resolve_getAvailableRoleGroups(self, info, **kwargs):
+        ret = []
+
+        if info.context and info.context.user.is_authenticated:
+            default_context = sriutils.get_default_context()
+            authorized = sriutils.authorize_list_module(
+                info.context.user, default_context
+            )
+
+            if not authorized:
+                raise GraphQLAuthException()
+
+            ret = RoleGroupModel.objects.all()
+        else:
+            raise GraphQLAuthException()
+
+        return ret
+
+
+    def resolve_getRolesFromRoleGroup(self, info, **kwargs):
+        ret = []
+        name = kwargs.get('name', DEFAULT_ROLEGROUP_NAME)
+
+        if info.context and info.context.user.is_authenticated:
+            default_context = sriutils.get_default_context()
+            authorized = sriutils.authorize_list_module(
+                info.context.user, default_context
+            )
+
+            if not authorized:
+                raise GraphQLAuthException()
+
+            role_group = RoleGroupModel.objects.get(name=name)
+            ret = RoleModel.objects.filter(role_group=role_group)
+        else:
+            raise GraphQLAuthException()
+
+        return ret
 
     def resolve_checkExistentOrganizationId(self, info, **kwargs):
         # django dropdown resolver
@@ -321,8 +364,6 @@ class NOCRootQuery(NOCAutoQuery):
         handle_id = kwargs.get('handle_id', None)
 
         ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
-
-        return ret
 
     class NIMeta:
         graphql_types = [ Group, Address, Phone, Email, Contact, Organization, Procedure, Host ]
