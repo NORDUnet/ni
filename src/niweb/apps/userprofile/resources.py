@@ -4,7 +4,7 @@ import logging
 
 from tastypie.resources import Resource, ModelResource
 from tastypie import fields
-from tastypie.authentication import ApiKeyAuthentication
+from tastypie.authentication import SessionAuthentication
 from tastypie.authorization import Authorization
 from apps.userprofile.models import UserProfile
 
@@ -23,7 +23,7 @@ class UserProfileResource(ModelResource):
     class Meta:
         queryset = UserProfile.objects.all()
         resource_name = 'userprofile'
-        # XXX fix authentication = ApiKeyAuthentication()
+        authentication = SessionAuthentication()
         authorization = Authorization()
         excludes = ['created', 'modified']
         filtering = {}
