@@ -554,27 +554,28 @@ class DateQueryBuilder(AbstractQueryBuilder):
         }
 
         # iterate operations (AND/OR) and its array of values
-        for and_or_op, op_filter_list in cfilter_values.items():
-            array_idx = 0
+        if cfilter_values:
+            for and_or_op, op_filter_list in cfilter_values.items():
+                array_idx = 0
 
-            # iterate through the array of dicts of the operation
-            for op_filter_values in op_filter_list:
+                # iterate through the array of dicts of the operation
+                for op_filter_values in op_filter_list:
 
-                # iterate through the fields and values in these dicts
-                for filter_name, filter_value in op_filter_values.items():
-                    if filter_name in cls.search_fields_list:
-                        # extract values
-                        func = cls.search_fields_list[filter_name]['function']
-                        field_name = cls.search_fields_list[filter_name]['field']
+                    # iterate through the fields and values in these dicts
+                    for filter_name, filter_value in op_filter_values.items():
+                        if filter_name in cls.search_fields_list:
+                            # extract values
+                            func = cls.search_fields_list[filter_name]['function']
+                            field_name = cls.search_fields_list[filter_name]['field']
 
-                        # call function and add q object
-                        qobj = func(field_name, filter_value)
-                        qobj_dict[and_or_op].append(qobj)
+                            # call function and add q object
+                            qobj = func(field_name, filter_value)
+                            qobj_dict[and_or_op].append(qobj)
 
-                        # delete value from filter
-                        del filter_values[and_or_op][array_idx][filter_name]
+                            # delete value from filter
+                            del filter_values[and_or_op][array_idx][filter_name]
 
-                array_idx = array_idx + 1
+                    array_idx = array_idx + 1
 
         # filter the queryset with the q objects
         # do AND
