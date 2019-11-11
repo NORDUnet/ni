@@ -17,7 +17,7 @@ LANDING_CHOICES = (
 class UserProfile(models.Model):
     user = models.OneToOneField(User, related_name='profile')
     display_name = models.CharField(max_length=255, blank=True, null=True)
-    #  avatar = models.ImageField()
+    avatar = models.ImageField()
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
