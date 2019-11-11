@@ -140,4 +140,4 @@ urlpatterns = [
 ]
 
 if not settings.DJANGO_LOGIN_DISABLED:
-    urlpatterns += [url(r'^login/$', auth_views.LoginView.as_view())]
+    urlpatterns = [url(r'^login/$', auth_views.LoginView.as_view())] + urlpatterns
