@@ -1,10 +1,10 @@
 # This also imports the include function
+from django.conf import settings
 from django.conf.urls import url
 from django.contrib.auth import views as auth_views
 from .views import other, create, edit, import_nodes, report, detail, redirect, debug, list as _list
 
 urlpatterns = [
-    url(r'^login/$', auth_views.LoginView.as_view()),
     url(r'^$', other.index),
     # Log out
     url(r'^logout/$', other.logout_page),
@@ -138,3 +138,6 @@ urlpatterns = [
     # -- debug view
     url(r'^nodes/(?P<handle_id>\d+)/debug$', debug.generic_debug, name='debug'),
 ]
+
+if not settings.DJANGO_LOGIN_DISABLED:
+    urlpatterns += [url(r'^login/$', auth_views.LoginView.as_view())]
