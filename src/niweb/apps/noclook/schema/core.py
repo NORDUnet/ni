@@ -1443,6 +1443,78 @@ class MultipleMutation(relay.ClientIDMutation):
             deleted=ret_deleted, detached=ret_detached
         )
 
+class CompositeMutation(relay.ClientIDMutation):
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        # check if the user is authenticated
+        if not info.context or not info.context.user.is_authenticated:
+            raise GraphQLAuthException()
+
+        # get main entity possible inputs
+        create_input = input.get("create_input")
+        update_input = input.get("update_input")
+
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        create_mutation = getattr(nimetaclass, 'create_mutation', None)
+        update_mutation = getattr(nimetaclass, 'update_mutation', None)
+
+        # this handle_id will be set to the created or updated main entity
+        main_handle_id = None
+        ret_created = None
+        ret_updated = None
+
+        ret_subcreated = None
+        ret_subupdated = None
+        ret_subdeleted = None
+
+        has_main_errors = False
+
+        if create_input:
+            ret_created = create_mutation.mutate_and_get_payload(root, info, **input)
+        elif update_input:
+            ret_updated = update_mutation.mutate_and_get_payload(root, info, **input)
+        else:
+            raise Exception('At least an input should be provided')
+
+        # extract handle_id from the returned payload
+
+        # if everything went fine, proceed with the subentity list
+        if main_handle_id:
+            create_subinputs = input.get("create_subinputs")
+            update_subinputs = input.get("update_subinputs")
+            delete_subinputs = input.get("delete_subinputs")
+
+            create_submutation = getattr(nimetaclass, 'create_submutation', None)
+            update_submutation = getattr(nimetaclass, 'update_submutation', None)
+            delete_submutation = getattr(nimetaclass, 'delete_submutation', None)
+
+            if create_subinputs:
+                ret_subcreated = []
+
+                for input in create_subinputs:
+                    ret = create_submutation.mutate_and_get_payload(root, info, **input)
+                    ret_subcreated.append(ret)
+
+            if update_subinputs:
+                ret_subupdated = []
+
+                for input in update_subinputs:
+                    ret = update_submutation.mutate_and_get_payload(root, info, **input)
+                    ret_subupdated.append(ret)
+
+            if delete_subinputs:
+                ret_subdeleted = []
+
+                for input in delete_subinputs:
+                    ret = delete_submutation.mutate_and_get_payload(root, info, **input)
+                    ret_subdeleted.append(ret)
+
+        return cls(
+            created=ret_created, updated=ret_updated,
+            subcreated=ret_subcreated, subupdated=ret_subupdated,
+            subdeleted=ret_subdeleted
+        )
+
 
 class NIMutationFactory():
     '''

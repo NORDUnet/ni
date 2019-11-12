@@ -1013,6 +1013,22 @@ class EditContactForm(NewContactForm):
             self.data = self.data.copy()
             del self.data['role']
 
+
+class MailPhoneContactForm(EditContactForm):
+    email_handle_id = forms.IntegerField(widget=forms.widgets.HiddenInput, required=False)
+    email = forms.EmailField(required=False)
+    email_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+
+    phone_handle_id = forms.IntegerField(widget=forms.widgets.HiddenInput, required=False)
+    phone = forms.CharField(required=False)
+    phone_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(MailPhoneContactForm, self).__init__(*args, **kwargs)
+        self.fields['email_type'].choices = email_choices()
+        self.fields['phone_type'].choices = phone_choices()
+
+
 class NewProcedureForm(forms.Form):
     name = forms.CharField()
     description = description_field('procedure')

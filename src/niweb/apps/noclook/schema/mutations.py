@@ -135,7 +135,7 @@ def delete_outgoing_nodes(nodehandler, relation_name, user):
 
 class NIContactMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        form = EditContactForm
+        form = MailPhoneContactForm
         request_path   = '/'
         graphql_type   = Contact
         relations_processors = {
@@ -542,10 +542,35 @@ class CreateOptionForDropdown(relay.ClientIDMutation):
         return CreateOptionForDropdown(choice=choice)
 
 
+## Composite mutations
+class CompositeGroupMutation(CompositeMutation):
+    class Input:
+        create_input = NIGroupMutationFactory.get_create_mutation().Input
+        update_input = NIGroupMutationFactory.get_update_mutation().Input
+        create_subinputs = graphene.List(NIContactMutationFactory.get_create_mutation().Input)
+        update_subinputs = graphene.List(NIContactMutationFactory.get_update_mutation().Input)
+        delete_subinputs = graphene.List(NIContactMutationFactory.get_delete_mutation().Input)
+
+    created = graphene.Field(NIGroupMutationFactory.get_create_mutation())
+    updated = graphene.Field(NIGroupMutationFactory.get_update_mutation())
+    subcreated = graphene.List(NIContactMutationFactory.get_create_mutation())
+    subupdated = graphene.List(NIContactMutationFactory.get_update_mutation())
+    subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
+
+    class NIMetaClass:
+        create_mutation = NIGroupMutationFactory.get_create_mutation()
+        update_mutation = NIGroupMutationFactory.get_update_mutation()
+        create_submutation = NIContactMutationFactory.get_create_mutation()
+        update_submutation = NIContactMutationFactory.get_update_mutation()
+        delete_submutation = NIContactMutationFactory.get_delete_mutation()
+
+
 class NOCRootMutation(graphene.ObjectType):
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()
     update_group        = NIGroupMutationFactory.get_update_mutation().Field()
     delete_group        = NIGroupMutationFactory.get_delete_mutation().Field()
+
+    composite_group     = CompositeGroupMutation.Field()
 
     create_procedure    = NIProcedureMutationFactory.get_create_mutation().Field()
     update_procedure    = NIProcedureMutationFactory.get_update_mutation().Field()
