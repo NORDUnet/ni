@@ -545,8 +545,8 @@ class CreateOptionForDropdown(relay.ClientIDMutation):
 ## Composite mutations
 class CompositeGroupMutation(CompositeMutation):
     class Input:
-        create_input = NIGroupMutationFactory.get_create_mutation().Input
-        update_input = NIGroupMutationFactory.get_update_mutation().Input
+        create_input = graphene.Field(NIGroupMutationFactory.get_create_mutation().Input)
+        update_input = graphene.Field(NIGroupMutationFactory.get_update_mutation().Input)
         create_subinputs = graphene.List(NIContactMutationFactory.get_create_mutation().Input)
         update_subinputs = graphene.List(NIContactMutationFactory.get_update_mutation().Input)
         delete_subinputs = graphene.List(NIContactMutationFactory.get_delete_mutation().Input)
