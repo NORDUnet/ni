@@ -1,6 +1,7 @@
 from apps.userprofile.models import UserProfile
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from actstream.models import actor_stream
 
@@ -28,3 +29,10 @@ def userprofile_detail(request, userprofile_id):
         activities = paginator.page(paginator.num_pages)
     return render(request, 'userprofile/userprofile_detail.html',
                   {'profile': profile, 'activities': activities})
+
+
+@login_required
+def whoami(request):
+    if request.method == 'GET':
+        return JsonResponse({'userid': request.user.pk})
+    return httpResponse(status_code=405)
