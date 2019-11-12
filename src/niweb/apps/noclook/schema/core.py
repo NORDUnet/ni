@@ -772,7 +772,7 @@ class NIObjectType(DjangoObjectType):
 
         if filter and 'AND' in filter:
             and_filters = filter.get('AND', [])
-            operations['AND']['filters'] = or_filters
+            operations['AND']['filters'] = and_filters
 
         # build OR block
         or_filters = []
@@ -950,7 +950,7 @@ class NIObjectType(DjangoObjectType):
                     '{}.name'.format(neo4j_var),
                     cls._desc_suffix if cls._order_field_match[orderBy]['is_desc'] else cls._asc_suffix,
                 )
-            elif issubclass(of_type, NIObjectType):
+            elif issubclass(of_type, NIRelationType):
                 neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
                 neo4j_vars[of_type] = neo4j_var
                 additional_clause = additional_clause.format(
