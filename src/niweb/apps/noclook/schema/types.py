@@ -60,6 +60,7 @@ class Group(NIObjectType):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
+    contacts = NIListField(type_args=(lambda: Contact,), rel_name='Member_of', rel_method='get_relations')
 
     class NIMetaType:
         ni_type = 'Group'
