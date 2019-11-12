@@ -302,6 +302,20 @@ class Choice(models.Model):
     def __str__(self):
         return u"{} ({})".format(self.name, self.dropdown.name)
 
+@python_2_unicode_compatible
+class SwitchType(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    ports = models.CharField(max_length=1024, blank=True, help_text="Autogenerate ports. \",\" separator. ex: Et1,Et2,Et3 alt ge-0/0/0,ge-0/0/1")
+
+    @classmethod
+    def as_choices(self):
+        choices=[('','')]
+        choices.extend([(val.pk, val.name) for val in SwitchType.objects.all()])
+        return choices 
+
+    def __str__(self):
+        return "{}".format(self.name)
+
 
 # -- Signals
 @receiver(comment_was_posted, dispatch_uid="apps.noclook.models")
