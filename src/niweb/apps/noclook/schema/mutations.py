@@ -586,12 +586,18 @@ class CompositeGroupMutation(CompositeMutation):
     subupdated = graphene.List(NIContactMutationFactory.get_update_mutation())
     subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
 
+    @classmethod
+    def link_slave_to_master(cls, master_nh, slave_nh):
+        slave_nh.get_node().add_group(master_nh.handle_id)
+
     class NIMetaClass:
         create_mutation = NIGroupMutationFactory.get_create_mutation()
         update_mutation = NIGroupMutationFactory.get_update_mutation()
         create_submutation = NIContactMutationFactory.get_create_mutation()
         update_submutation = NIContactMutationFactory.get_update_mutation()
         delete_submutation = NIContactMutationFactory.get_delete_mutation()
+        graphql_type = Group
+        graphql_subtype = Contact
 
 
 class NOCRootMutation(graphene.ObjectType):

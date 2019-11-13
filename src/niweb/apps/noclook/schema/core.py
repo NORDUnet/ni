@@ -1578,6 +1578,10 @@ class MultipleMutation(relay.ClientIDMutation):
 
 class CompositeMutation(relay.ClientIDMutation):
     @classmethod
+    def link_slave_to_master(cls, master_nh, slave_nh):
+        pass
+
+    @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
         # check if the user is authenticated
         if not info.context or not info.context.user.is_authenticated:
@@ -1588,6 +1592,8 @@ class CompositeMutation(relay.ClientIDMutation):
         update_input = input.get("update_input")
 
         nimetaclass = getattr(cls, 'NIMetaClass')
+        graphql_type = getattr(nimetaclass, 'graphql_type', None)
+        graphql_subtype = getattr(nimetaclass, 'graphql_subtype', None)
         create_mutation = getattr(nimetaclass, 'create_mutation', None)
         update_mutation = getattr(nimetaclass, 'update_mutation', None)
 
@@ -1602,18 +1608,33 @@ class CompositeMutation(relay.ClientIDMutation):
 
         has_main_errors = False
 
+        # perform main operation
+        create = False
+
         if create_input:
-            ret_created = create_mutation.mutate_and_get_payload(root, info, **input)
+            create = True
+            ret_created = create_mutation.mutate_and_get_payload(root, info, **create_input)
+            logger.debug(pformat(vars(ret_created), indent=1))
         elif update_input:
-            ret_updated = update_mutation.mutate_and_get_payload(root, info, **input)
+            ret_updated = update_mutation.mutate_and_get_payload(root, info, **update_input)
+            logger.debug(pformat(vars(ret_updated), indent=1))
         else:
             raise Exception('At least an input should be provided')
 
+        main_ret = ret_created if create else ret_updated
+
         # extract handle_id from the returned payload
+        extract_param = graphql_type.get_from_nimetatype('ni_type').lower()
+        main_nh = getattr(main_ret, extract_param, None)
+        main_handle_id = main_nh.handle_id
+
         # check if there's errors in the form
+        errors = getattr(main_ret, 'errors', None)
 
         # if everything went fine, proceed with the subentity list
-        if main_handle_id:
+        if main_handle_id and not errors:
+            extract_param = graphql_subtype.get_from_nimetatype('ni_type').lower()
+
             create_subinputs = input.get("create_subinputs")
             update_subinputs = input.get("update_subinputs")
             delete_subinputs = input.get("delete_subinputs")
@@ -1629,12 +1650,26 @@ class CompositeMutation(relay.ClientIDMutation):
                     ret = create_submutation.mutate_and_get_payload(root, info, **input)
                     ret_subcreated.append(ret)
 
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_created = getattr(ret, extract_param, None)
+
+                    if not sub_errors and sub_created:
+                        cls.link_slave_to_master(main_nh, sub_created)
+
             if update_subinputs:
                 ret_subupdated = []
 
                 for input in update_subinputs:
                     ret = update_submutation.mutate_and_get_payload(root, info, **input)
                     ret_subupdated.append(ret)
+
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_created = getattr(ret, extract_param, None)
+
+                    if not sub_errors and sub_created:
+                        cls.link_slave_to_master(main_nh, sub_created)
 
             if delete_subinputs:
                 ret_subdeleted = []
