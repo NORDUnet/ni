@@ -1258,31 +1258,32 @@ class AbstractNIMutation(relay.ClientIDMutation):
                 nh = None
 
                 # create or edit entity
-                if not sub_handle_id: # create
-                    nh = NodeHandle(
-                        node_name=node_name,
-                        node_type=node_type,
-                        node_meta_type=meta_type,
-                        creator=request.user,
-                        modifier=request.user,
-                    )
-                    nh.save()
-                else: # edit
-                    nh = NodeHandle.objects.get(handle_id=sub_handle_id)
+                if node_name:
+                    if not sub_handle_id: # create
+                        nh = NodeHandle(
+                            node_name=node_name,
+                            node_type=node_type,
+                            node_meta_type=meta_type,
+                            creator=request.user,
+                            modifier=request.user,
+                        )
+                        nh.save()
+                    else: # edit
+                        nh = NodeHandle.objects.get(handle_id=sub_handle_id)
 
-                # add neo4j attributes
-                for key, value in input_params.items():
-                    nh.get_node().remove_property(key)
-                    nh.get_node().add_property(key, value)
+                    # add neo4j attributes
+                    for key, value in input_params.items():
+                        nh.get_node().remove_property(key)
+                        nh.get_node().add_property(key, value)
 
-                # add relation to master node
-                link_method = getattr(master_nh, link_method, None)
+                    # add relation to master node
+                    link_method = getattr(master_nh, link_method, None)
 
-                if link_method:
-                    link_method(nh.handle_id)
+                    if link_method:
+                        link_method(nh.handle_id)
 
-                # add to permission context
-                NodeHandleContext(nodehandle=nh, context=default_context).save()
+                    # add to permission context
+                    NodeHandleContext(nodehandle=nh, context=default_context).save()
 
     '''@classmethod
     def process_subentities(cls, request, form, nodehandler):
@@ -1472,6 +1473,9 @@ class UpdateNIMutation(AbstractNIMutation):
 
                 # process relations if implemented
                 cls.process_relations(request, form, nodehandler)
+
+                # process subentities if implemented
+                cls.process_subentities(request, form, nodehandler)
 
                 return has_error, { graphql_type.__name__.lower(): nh }
             else:
