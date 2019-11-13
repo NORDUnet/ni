@@ -1721,8 +1721,8 @@ class NIMutationFactory():
             'property_update': property_update,
         }
 
-        if subentity_processors:
-            attr_dict['subentity_processors'] = subentity_processors
+        if relations_processors:
+            attr_dict['relations_processors'] = relations_processors
 
         if subentity_processors:
             attr_dict['subentity_processors'] = subentity_processors
