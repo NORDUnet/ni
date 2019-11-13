@@ -1614,10 +1614,8 @@ class CompositeMutation(relay.ClientIDMutation):
         if create_input:
             create = True
             ret_created = create_mutation.mutate_and_get_payload(root, info, **create_input)
-            logger.debug(pformat(vars(ret_created), indent=1))
         elif update_input:
             ret_updated = update_mutation.mutate_and_get_payload(root, info, **update_input)
-            logger.debug(pformat(vars(ret_updated), indent=1))
         else:
             raise Exception('At least an input should be provided')
 
