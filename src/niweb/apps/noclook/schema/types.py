@@ -8,12 +8,6 @@ from graphene import relay, ObjectType, String, Field
 from .core import *
 from ..models import Dropdown, Choice, Role as RoleModel, RoleGroup as RoleGroupModel
 
-# further centralization?
-NIMETA_LOGICAL  = 'logical'
-NIMETA_RELATION = 'relation'
-NIMETA_PHYSICAL = 'physical'
-NIMETA_LOCATION = 'location'
-
 
 class Dropdown(DjangoObjectType):
     '''

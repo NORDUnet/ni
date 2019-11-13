@@ -960,7 +960,7 @@ class NewContactForm(forms.Form):
     pgp_fingerprint = forms.CharField(required=False, label='PGP fingerprint')
     notes = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Notes")
 
-    def clean(self, is_create=True):
+    def clean(self):
         """
         Sets name from first and second name
         """
@@ -997,7 +997,7 @@ class EditContactForm(NewContactForm):
         """
         Check empty role, set to employee
         """
-        cleaned_data = super(EditContactForm, self).clean(False)
+        cleaned_data = super(EditContactForm, self).clean()
         role_id = cleaned_data.get("role")
 
         if not role_id:

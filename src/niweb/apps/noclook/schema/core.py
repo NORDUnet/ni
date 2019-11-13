@@ -32,6 +32,12 @@ from ..models import NodeType, NodeHandle
 logger = logging.getLogger(__name__)
 
 ########## RELATION AND NODE TYPES
+
+NIMETA_LOGICAL  = 'logical'
+NIMETA_RELATION = 'relation'
+NIMETA_PHYSICAL = 'physical'
+NIMETA_LOCATION = 'location'
+
 class User(DjangoObjectType):
     '''
     The django user type
@@ -1219,6 +1225,127 @@ class AbstractNIMutation(relay.ClientIDMutation):
             for relation_name, relation_f in relations_processors.items():
                 relation_f(request, form, nodehandler, relation_name)
 
+    @classmethod
+    def process_subentities(cls, request, form, master_nh):
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        subentity_processors = getattr(nimetaclass, 'subentity_processors', None)
+
+        default_context = sriutils.get_default_context()
+
+        if subentity_processors:
+            for sub_name, sub_props in subentity_processors.items():
+                type_slug = sub_props['type_slug']
+                fields = sub_props['fields']
+                meta_type = sub_props['meta_type']
+                link_method = sub_props['link_method']
+
+                node_type = NodeType.objects.get(slug=type_slug)
+
+                # forge attributes object
+                input_params = {}
+                sub_handle_id = None
+                node_name = None
+
+                for fform_name, fform_value in fields.items():
+                    if fform_name == 'handle_id':
+                        sub_handle_id = form.cleaned_data.get(fform_value, None)
+                    else:
+                        if fform_name == 'name':
+                            node_name = form.cleaned_data.get(fform_value, None)
+
+                        input_params[fform_name] = form.cleaned_data.get(fform_value, None)
+
+                nh = None
+
+                # create or edit entity
+                if not sub_handle_id: # create
+                    nh = NodeHandle(
+                        node_name=node_name,
+                        node_type=node_type,
+                        node_meta_type=meta_type,
+                        creator=request.user,
+                        modifier=request.user,
+                    )
+                    nh.save()
+                else: # edit
+                    nh = NodeHandle.objects.get(handle_id=sub_handle_id)
+
+                # add neo4j attributes
+                for key, value in input_params.items():
+                    nh.get_node().remove_property(key)
+                    nh.get_node().add_property(key, value)
+
+                # add relation to master node
+                link_method = getattr(master_nh, link_method, None)
+
+                if link_method:
+                    link_method(nh.handle_id)
+
+                # add to permission context
+                NodeHandleContext(nodehandle=nh, context=default_context).save()
+
+    '''@classmethod
+    def process_subentities(cls, request, form, nodehandler):
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        subentity_processors = getattr(nimetaclass, 'subentity_processors', None)
+        default_context = sriutils.get_default_context()
+
+        if subentity_processors:
+            for sub_name, sub_props in subentity_processors.items():
+                subform = sub_props['form']
+                fields = sub_props['fields']
+
+                # forge request object
+                input_params = {}
+                sub_handle_id = None
+
+                for fform_name, fform_value in input_params.items():
+                    input_params[fform_name] = form.get(fform_value, None)
+                    if fform_name == 'handle_id':
+                        sub_handle_id = form.get(fform_value, None)
+
+                request_factory = RequestFactory()
+                subrequest = request_factory.post(request_path, data=input_params)
+                subrequest.user = request.user
+
+                subform = form_class(subrequest.POST)
+
+                # check it can write on this context
+                authorized = sriutils.authorize_create_resource(request.user, default_context)
+
+                if authorized:
+                    if form.is_valid():
+                        nh = False
+
+                        if not sub_handle_id:
+                            try:
+                                form_to_nodehandle = cls.get_form_to_nodehandle_func()
+                                nh = form_to_nodehandle(request, form,
+                                        node_type, node_meta_type)
+                            except UniqueNodeError:
+                                has_error = True
+                                return has_error, [ErrorType(
+                                    field="_",
+                                    messages=["A {} with that name already exists.".format(node_type)]
+                                )]
+                        else:
+                            nh, nodehandler = helpers.get_nh_node(handle_id)
+
+                        helpers.form_update_node(request.user, nh.handle_id, form)
+
+                        # add default context
+                        NodeHandleContext(nodehandle=nh, context=default_context).save()
+
+                        return has_error, { graphql_type.__name__.lower(): nh }
+                    else:
+                        # get the errors and return them
+                        has_error = True
+                        errordict = cls.format_error_array(subform.errors)
+                        return has_error, errordict
+
+                else:
+                    raise GraphQLAuthException()'''
+
     class Meta:
         abstract = True
 
@@ -1282,6 +1409,11 @@ class CreateNIMutation(AbstractNIMutation):
             if not has_error:
                 nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
                 cls.process_relations(request, form, nodehandler)
+
+            # process subentities if implemented
+            if not has_error:
+                nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
+                cls.process_subentities(request, form, nodehandler)
 
             return has_error, { graphql_type.__name__.lower(): nh }
         else:
@@ -1443,6 +1575,7 @@ class MultipleMutation(relay.ClientIDMutation):
             deleted=ret_deleted, detached=ret_detached
         )
 
+
 class CompositeMutation(relay.ClientIDMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
@@ -1477,6 +1610,7 @@ class CompositeMutation(relay.ClientIDMutation):
             raise Exception('At least an input should be provided')
 
         # extract handle_id from the returned payload
+        # check if there's errors in the form
 
         # if everything went fine, proceed with the subentity list
         if main_handle_id:
@@ -1559,6 +1693,7 @@ class NIMutationFactory():
         # check for relationship processors and delete associated nodes functions
         relations_processors = getattr(ni_metaclass, 'relations_processors', None)
         delete_nodes         = getattr(ni_metaclass, 'delete_nodes', None)
+        subentity_processors = getattr(ni_metaclass, 'subentity_processors', None)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -1586,8 +1721,11 @@ class NIMutationFactory():
             'property_update': property_update,
         }
 
-        if relations_processors:
-            attr_dict['relations_processors'] = relations_processors
+        if subentity_processors:
+            attr_dict['subentity_processors'] = subentity_processors
+
+        if subentity_processors:
+            attr_dict['subentity_processors'] = subentity_processors
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
 
@@ -1636,6 +1774,9 @@ class NIMutationFactory():
 
         if delete_nodes:
             attr_dict['delete_nodes'] = delete_nodes
+
+        if subentity_processors:
+            del attr_dict['subentity_processors']
 
         delete_metaclass = type(metaclass_name, (object,), attr_dict)
 

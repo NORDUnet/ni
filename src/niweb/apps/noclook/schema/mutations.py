@@ -143,6 +143,31 @@ class NIContactMutationFactory(NIMutationFactory):
             'relationship_member_of': process_member_of,
         }
 
+        subentity_processors = {
+            'email': {
+                'form': EmailForm,
+                'type_slug': 'email',
+                'meta_type': 'Logical',
+                'fields': {
+                    'handle_id': 'email_handle_id',
+                    'name': 'email',
+                    'type': 'email_type',
+                },
+                'link_method': 'add_email',
+            },
+            'phone': {
+                'form': PhoneForm,
+                'type_slug': 'phone',
+                'meta_type': 'Logical',
+                'fields': {
+                    'handle_id': 'phone_handle_id',
+                    'name': 'phone',
+                    'type': 'phone_type',
+                },
+                'link_method': 'add_phone',
+            },
+        }
+
         delete_nodes = {
             'Has_email': delete_outgoing_nodes,
             'Has_phone': delete_outgoing_nodes,
@@ -150,6 +175,10 @@ class NIContactMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+        property_update = [
+            'first_name', 'last_name', 'contact_type', 'name', 'title',
+            'pgp_fingerprint', 'notes'
+        ]
 
 
 class CreateOrganization(CreateNIMutation):
