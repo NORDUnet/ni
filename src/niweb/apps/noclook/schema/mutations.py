@@ -587,8 +587,9 @@ class CompositeGroupMutation(CompositeMutation):
     subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
 
     @classmethod
-    def link_slave_to_master(cls, master_nh, slave_nh):
+    def link_slave_to_master(cls, user, master_nh, slave_nh):
         slave_nh.get_node().add_group(master_nh.handle_id)
+        helpers.set_member_of(user, slave_nh.get_node(), master_nh.handle_id)
 
     class NIMetaClass:
         create_mutation = NIGroupMutationFactory.get_create_mutation()
@@ -597,6 +598,113 @@ class CompositeGroupMutation(CompositeMutation):
         update_submutation = NIContactMutationFactory.get_update_mutation()
         delete_submutation = NIContactMutationFactory.get_delete_mutation()
         graphql_type = Group
+        graphql_subtype = Contact
+
+
+class CompositeOrganizationMutation(CompositeMutation):
+    class Input:
+        create_input = graphene.Field(CreateOrganization.Input)
+        update_input = graphene.Field(UpdateOrganization.Input)
+
+        create_subinputs = graphene.List(NIContactMutationFactory.get_create_mutation().Input)
+        update_subinputs = graphene.List(NIContactMutationFactory.get_update_mutation().Input)
+        delete_subinputs = graphene.List(NIContactMutationFactory.get_delete_mutation().Input)
+
+        create_address = graphene.List(NIAddressMutationFactory.get_create_mutation().Input)
+        update_address = graphene.List(NIAddressMutationFactory.get_update_mutation().Input)
+        delete_address = graphene.List(NIAddressMutationFactory.get_delete_mutation().Input)
+
+    created = graphene.Field(CreateOrganization)
+    updated = graphene.Field(UpdateOrganization)
+
+    subcreated = graphene.List(NIContactMutationFactory.get_create_mutation())
+    subupdated = graphene.List(NIContactMutationFactory.get_update_mutation())
+    subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
+
+    address_created = graphene.List(NIAddressMutationFactory.get_create_mutation())
+    address_updated = graphene.List(NIAddressMutationFactory.get_update_mutation())
+    address_deleted  = graphene.List(NIAddressMutationFactory.get_delete_mutation())
+
+    @classmethod
+    def get_link_kwargs(cls, master_input, slave_input):
+        ret = {}
+        role_handle_id = slave_input.get('role_handle_id', None)
+
+        if role_handle_id:
+            ret['role_handle_id'] = role_handle_id
+
+        return ret
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh, **kwargs):
+        role_handle_id = kwargs.get('role_handle_id', None)
+        role_name = None
+
+        if role_handle_id:
+            role = RoleModel.objects.get(handle_id=role_handle_id)
+            role_name = role.name
+
+        helpers.set_works_for(user, slave_nh.get_node(), master_nh.handle_id, role_name)
+
+    @classmethod
+    def process_extra_subentities(cls, user, master_nh):
+        extract_param = 'address'
+        ret_subcreated = None
+        ret_subupdated = None
+        ret_subdeleted = None
+
+        create_address = input.get("create_address")
+        update_address = input.get("update_address")
+        delete_address = input.get("delete_address")
+
+        address_created = getattr(nimetaclass, 'address_created', None)
+        address_updated = getattr(nimetaclass, 'address_updated', None)
+        address_deleted = getattr(nimetaclass, 'address_deleted', None)
+
+        if create_address:
+            ret_subcreated = []
+
+            for input in create_address:
+                ret = address_created.mutate_and_get_payload(root, info, **input)
+                ret_subcreated.append(ret)
+
+                # link if it's possible
+                sub_errors = getattr(ret, 'errors', None)
+                sub_created = getattr(ret, extract_param, None)
+
+                if not sub_errors and sub_created:
+                    helpers.add_address_organization(
+                        user, sub_created.get_node(), master_nh.handle_id)
+
+        if update_address:
+            ret_subupdated = []
+
+            for input in update_address:
+                ret = address_updated.mutate_and_get_payload(root, info, **input)
+                ret_subupdated.append(ret)
+
+                # link if it's possible
+                sub_errors = getattr(ret, 'errors', None)
+                sub_edited = getattr(ret, extract_param, None)
+
+                if not sub_errors and sub_edited:
+                    helpers.add_address_organization(
+                        user, sub_edited.get_node(), master_nh.handle_id)
+
+        if delete_subinputs:
+            ret_subdeleted = []
+
+            for input in delete_subinputs:
+                ret = delete_submutation.mutate_and_get_payload(root, info, **input)
+                ret_subdeleted.append(ret)
+
+    class NIMetaClass:
+        create_mutation = NIGroupMutationFactory.get_create_mutation()
+        update_mutation = NIGroupMutationFactory.get_update_mutation()
+        create_submutation = NIContactMutationFactory.get_create_mutation()
+        update_submutation = NIContactMutationFactory.get_update_mutation()
+        delete_submutation = NIContactMutationFactory.get_delete_mutation()
+        graphql_type = Organization
         graphql_subtype = Contact
 
 
@@ -630,10 +738,11 @@ class NOCRootMutation(graphene.ObjectType):
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
     multiple_contact    = NIContactMutationFactory.get_multiple_mutation().Field()
 
-    create_organization   = CreateOrganization.Field()
-    update_organization   = UpdateOrganization.Field()
-    delete_organization   = NIOrganizationMutationFactory.get_delete_mutation().Field()
-    multiple_organization = NIOrganizationMutationFactory.get_multiple_mutation().Field()
+    create_organization    = CreateOrganization.Field()
+    update_organization    = UpdateOrganization.Field()
+    delete_organization    = NIOrganizationMutationFactory.get_delete_mutation().Field()
+    multiple_organization  = NIOrganizationMutationFactory.get_multiple_mutation().Field()
+    composite_organization = CompositeOrganizationMutation.Field()
 
     create_role = CreateRole.Field()
     update_role = UpdateRole.Field()

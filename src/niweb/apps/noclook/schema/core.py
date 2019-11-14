@@ -1520,7 +1520,19 @@ class MultipleMutation(relay.ClientIDMutation):
 
 class CompositeMutation(relay.ClientIDMutation):
     @classmethod
-    def link_slave_to_master(cls, master_nh, slave_nh):
+    def get_link_kwargs(cls, master_input, slave_input):
+        return {}
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh, **kwargs):
+        pass
+
+    @classmethod
+    def forge_payload(cls, **kwargs):
+        return cls(**kwargs)
+
+    @classmethod
+    def process_extra_subentities(cls, user, master_nh):
         pass
 
     @classmethod
@@ -1530,6 +1542,7 @@ class CompositeMutation(relay.ClientIDMutation):
             raise GraphQLAuthException()
 
         # get main entity possible inputs
+        user = info.context.user
         create_input = input.get("create_input")
         update_input = input.get("update_input")
 
@@ -1571,6 +1584,9 @@ class CompositeMutation(relay.ClientIDMutation):
         # check if there's errors in the form
         errors = getattr(main_ret, 'errors', None)
 
+        # extra params for return
+        ret_extra_subentities = {}
+
         # if everything went fine, proceed with the subentity list
         if main_handle_id and not errors:
             extract_param = graphql_subtype.get_from_nimetatype('ni_type').lower()
@@ -1595,7 +1611,8 @@ class CompositeMutation(relay.ClientIDMutation):
                     sub_created = getattr(ret, extract_param, None)
 
                     if not sub_errors and sub_created:
-                        cls.link_slave_to_master(main_nh, sub_created)
+                        link_kwargs = cls.get_link_kwargs(create_input, input)
+                        cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
 
             if update_subinputs:
                 ret_subupdated = []
@@ -1606,10 +1623,11 @@ class CompositeMutation(relay.ClientIDMutation):
 
                     # link if it's possible
                     sub_errors = getattr(ret, 'errors', None)
-                    sub_created = getattr(ret, extract_param, None)
+                    sub_edited = getattr(ret, extract_param, None)
 
-                    if not sub_errors and sub_created:
-                        cls.link_slave_to_master(main_nh, sub_created)
+                    if not sub_errors and sub_edited:
+                        link_kwargs = cls.get_link_kwargs(create_input, input)
+                        cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
 
             if delete_subinputs:
                 ret_subdeleted = []
@@ -1618,10 +1636,19 @@ class CompositeMutation(relay.ClientIDMutation):
                     ret = delete_submutation.mutate_and_get_payload(root, info, **input)
                     ret_subdeleted.append(ret)
 
-        return cls(
+            ret_extra_subentities = cls.process_extra_subentities(user, main_nh)
+
+        payload_kwargs = dict(
             created=ret_created, updated=ret_updated,
             subcreated=ret_subcreated, subupdated=ret_subupdated,
             subdeleted=ret_subdeleted
+        )
+
+        if ret_extra_subentities:
+            payload_kwargs = {**payload_kwargs, **ret_extra_subentities}
+
+        return cls.forge_payload(
+            **payload_kwargs
         )
 
 
