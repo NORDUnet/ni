@@ -1285,68 +1285,6 @@ class AbstractNIMutation(relay.ClientIDMutation):
                     # add to permission context
                     NodeHandleContext(nodehandle=nh, context=default_context).save()
 
-    '''@classmethod
-    def process_subentities(cls, request, form, nodehandler):
-        nimetaclass = getattr(cls, 'NIMetaClass')
-        subentity_processors = getattr(nimetaclass, 'subentity_processors', None)
-        default_context = sriutils.get_default_context()
-
-        if subentity_processors:
-            for sub_name, sub_props in subentity_processors.items():
-                subform = sub_props['form']
-                fields = sub_props['fields']
-
-                # forge request object
-                input_params = {}
-                sub_handle_id = None
-
-                for fform_name, fform_value in input_params.items():
-                    input_params[fform_name] = form.get(fform_value, None)
-                    if fform_name == 'handle_id':
-                        sub_handle_id = form.get(fform_value, None)
-
-                request_factory = RequestFactory()
-                subrequest = request_factory.post(request_path, data=input_params)
-                subrequest.user = request.user
-
-                subform = form_class(subrequest.POST)
-
-                # check it can write on this context
-                authorized = sriutils.authorize_create_resource(request.user, default_context)
-
-                if authorized:
-                    if form.is_valid():
-                        nh = False
-
-                        if not sub_handle_id:
-                            try:
-                                form_to_nodehandle = cls.get_form_to_nodehandle_func()
-                                nh = form_to_nodehandle(request, form,
-                                        node_type, node_meta_type)
-                            except UniqueNodeError:
-                                has_error = True
-                                return has_error, [ErrorType(
-                                    field="_",
-                                    messages=["A {} with that name already exists.".format(node_type)]
-                                )]
-                        else:
-                            nh, nodehandler = helpers.get_nh_node(handle_id)
-
-                        helpers.form_update_node(request.user, nh.handle_id, form)
-
-                        # add default context
-                        NodeHandleContext(nodehandle=nh, context=default_context).save()
-
-                        return has_error, { graphql_type.__name__.lower(): nh }
-                    else:
-                        # get the errors and return them
-                        has_error = True
-                        errordict = cls.format_error_array(subform.errors)
-                        return has_error, errordict
-
-                else:
-                    raise GraphQLAuthException()'''
-
     class Meta:
         abstract = True
 
