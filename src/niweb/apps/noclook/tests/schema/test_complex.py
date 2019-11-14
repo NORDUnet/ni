@@ -116,8 +116,17 @@ class ComplexTest(Neo4jGraphQLTest):
         for subcreated in result.data['composite_group']['subcreated']:
             assert not subcreated['errors']
 
+        # get the ids
+        result_data = result.data['composite_group']
+        group_handle_id = result_data['created']['group']['handle_id']
+        c1_handle_id = result_data['subcreated'][0]['contact']['handle_id']
+        c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['handle_id']
+        c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
+        c2_handle_id = result_data['subcreated'][1]['contact']['handle_id']
+        c2_email_id = result_data['subcreated'][1]['contact']['emails'][0]['handle_id']
+
         # check the integrity of the data
-        created_data = result.data['composite_group']['created']['group']
+        created_data = result_data['created']['group']
 
         # check group
         assert created_data['name'] == group_name, \
@@ -128,8 +137,9 @@ class ComplexTest(Neo4jGraphQLTest):
                 .format(created_data['description'], description_group)
 
         # check members
-        subcreated_data = result.data['composite_group']['subcreated']
+        subcreated_data = result_data['subcreated']
 
+        # first contact
         assert subcreated_data[0]['contact']['first_name'] == c1_first_name, \
             "1st contact's first name doesn't match \n{} != {}"\
                 .format(subcreated_data[0]['contact']['first_name'], c1_first_name)
@@ -142,7 +152,11 @@ class ComplexTest(Neo4jGraphQLTest):
         assert subcreated_data[0]['contact']['phones'][0]['name'] == c1_phone, \
             "1st contact's phone doesn't match \n{} != {}"\
                 .format(subcreated_data[0]['contact']['phones'][0]['name'], c1_phone)
+        assert subcreated_data[0]['contact']['member_of_groups'][0]['name'] == group_name, \
+            "1st contact's group name doesn't match \n{} != {}"\
+                .format(subcreated_data[0]['contact']['member_of_groups'][0]['name'], group_name)
 
+        # second contact
         assert subcreated_data[1]['contact']['first_name'] == c2_first_name, \
             "2nd contact's first name doesn't match \n{} != {}"\
                 .format(subcreated_data[1]['contact']['first_name'], c2_first_name)
@@ -152,6 +166,9 @@ class ComplexTest(Neo4jGraphQLTest):
         assert subcreated_data[1]['contact']['emails'][0]['name'] == c2_mail, \
             "2nd contact's email doesn't match \n{} != {}"\
                 .format(subcreated_data[1]['contact']['emails'][0]['name'], c2_mail)
+        assert subcreated_data[1]['contact']['member_of_groups'][0]['name'] == group_name, \
+            "1st contact's group name doesn't match \n{} != {}"\
+                .format(subcreated_data[1]['contact']['member_of_groups'][0]['name'], group_name)
 
 
     def test_multiple_mutation(self):
