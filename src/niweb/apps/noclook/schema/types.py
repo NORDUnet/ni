@@ -119,6 +119,7 @@ class Organization(NIObjectType):
 
 class RoleRelation(NIRelationType):
     name = graphene.String()
+    start = graphene.Field(lambda: Contact)
     end = graphene.Field(Organization)
     role_data = graphene.Field(Role)
 

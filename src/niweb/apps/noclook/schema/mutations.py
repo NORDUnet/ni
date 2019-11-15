@@ -720,11 +720,22 @@ class CompositeOrganizationMutation(CompositeMutation):
         graphql_subtype = Contact
 
 
+class LinkContactRoleOrgMutation(relay.ClientIDMutation):
+    class Input:
+        role_handle_id = graphene.Int(required=True)
+        organization_handle_id = graphene.Int(required=True)
+
+    rolerelaion = Field(RoleRelation)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        pass
+
+
 class NOCRootMutation(graphene.ObjectType):
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()
     update_group        = NIGroupMutationFactory.get_update_mutation().Field()
     delete_group        = NIGroupMutationFactory.get_delete_mutation().Field()
-
     composite_group     = CompositeGroupMutation.Field()
 
     create_procedure    = NIProcedureMutationFactory.get_create_mutation().Field()
