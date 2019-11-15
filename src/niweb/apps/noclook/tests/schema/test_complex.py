@@ -179,7 +179,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         org_web = "pypi.org"
         org_num = "55446"
 
-        c1_first_name = "Jane"
+        c1_first_name = "Janet"
         c1_last_name  = "Doe"
         c1_contact_type = "person"
         c1_email = "jdoe@pypi.org"
@@ -736,10 +736,10 @@ class MultipleMutationTest(Neo4jGraphQLTest):
         assert result.data['contacts']['edges'][1]['node']['roles'][0]['end']['handle_id'] == organization_id
 
         assert \
-            result.data['contacts']['edges'][0]['node']['member_of_groups'][-1]['handle_id'] == group_id, \
+            result.data['contacts']['edges'][0]['node']['member_of_groups'][0]['handle_id'] == group_id, \
             pformat(result.data, indent=1)
         assert \
-            result.data['contacts']['edges'][1]['node']['member_of_groups'][-1]['handle_id'] == group_id, \
+            result.data['contacts']['edges'][1]['node']['member_of_groups'][0]['handle_id'] == group_id, \
             pformat(result.data, indent=1)
 
         # check that the previous contacts are detached of their previous org
