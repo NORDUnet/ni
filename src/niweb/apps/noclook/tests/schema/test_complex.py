@@ -329,7 +329,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         # check the integrity of the data
         created_data = result_data['created']['organization']
 
-        # check group
+        # check organization
         assert created_data['name'] == org_name, \
             "Organization name doesn't match \n{} != {}"\
                 .format(created_data['name'], org_name)
@@ -343,6 +343,15 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert address_node['name'] == org_addr_name, \
             "Address' name doesn't match \n{} != {}"\
                 .format(address_node['name'], org_addr_name)
+        assert address_node['street'] == org_addr_st, \
+            "Address' street doesn't match \n{} != {}"\
+                .format(address_node['street'], org_addr_st)
+        assert address_node['postal_code'] == org_addr_pcode, \
+            "Address' postal code doesn't match \n{} != {}"\
+                .format(address_node['postal_code'], org_addr_pcode)
+        assert address_node['postal_area'] == org_addr_parea, \
+            "Address' postal area doesn't match \n{} != {}"\
+                .format(address_node['postal_area'], org_addr_parea)
 
         subcreated_data = result_data['subcreated']
 
