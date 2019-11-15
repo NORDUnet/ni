@@ -1532,7 +1532,7 @@ class CompositeMutation(relay.ClientIDMutation):
         return cls(**kwargs)
 
     @classmethod
-    def process_extra_subentities(cls, user, master_nh):
+    def process_extra_subentities(cls, user, master_nh, input):
         pass
 
     @classmethod
@@ -1636,7 +1636,7 @@ class CompositeMutation(relay.ClientIDMutation):
                     ret = delete_submutation.mutate_and_get_payload(root, info, **input)
                     ret_subdeleted.append(ret)
 
-            ret_extra_subentities = cls.process_extra_subentities(user, main_nh)
+            ret_extra_subentities = cls.process_extra_subentities(user, main_nh, input)
 
         payload_kwargs = dict(
             created=ret_created, updated=ret_updated,

@@ -9,8 +9,8 @@ from niweb.schema import schema
 from pprint import pformat
 from . import Neo4jGraphQLTest
 
-class ComplexTest(Neo4jGraphQLTest):
-    def test_composite_mutation_group(self):
+class GroupComplexTest(Neo4jGraphQLTest):
+    def test_composite_group(self):
         group_name = "The Pendletones"
         description_group = "In sodales nisl et turpis sollicitudin, nec \
         feugiat erat egestas. Nam pretium felis vel dolor euismod ornare. \
@@ -170,7 +170,156 @@ class ComplexTest(Neo4jGraphQLTest):
             "1st contact's group name doesn't match \n{} != {}"\
                 .format(subcreated_data[1]['contact']['member_of_groups'][0]['name'], group_name)
 
+class OrganizationComplexTest(Neo4jGraphQLTest):
+    def test_composite_organization(self):
+        org_name = "PyPI"
+        org_type = "partner"
+        org_id = "AABA"
+        parent_org_id = self.organization1.handle_id
+        org_web = "pypi.org"
+        org_num = "55446"
 
+        c1_first_name = "Jane"
+        c1_last_name  = "Doe"
+        c1_contact_type = "person"
+        c1_email = "jdoe@pypi.org"
+        c1_email_type = "work"
+        c1_phone = "+34600123456"
+        c1_phone_type = "work"
+
+        org_addr_name = "Main"
+        org_addr_st = "Fake St. 123"
+        org_addr_pcode = "21500"
+        org_addr_parea = "Huelva"
+
+        query = '''
+        mutation{{
+          composite_organization(input:{{
+            create_input:{{
+              name: "{org_name}"
+              type: "{org_type}"
+              affiliation_site_owner: true
+              organization_id: "{org_id}"
+              relationship_parent_of: {parent_org_id}
+              website: "{org_web}"
+              organization_number: "{org_num}"
+            }}
+            create_subinputs:[
+              {{
+                first_name: "{c1_first_name}"
+                last_name: "{c1_last_name}"
+                contact_type: "{c1_contact_type}"
+                email: "{c1_email}"
+                email_type: "{c1_email_type}"
+                phone:"{c1_phone}"
+                phone_type: "{c1_phone_type}"
+              }}
+            ]
+            create_address:[
+              {{
+                name: "{org_addr_name}"
+                street: "{org_addr_st}"
+                postal_code: "{org_addr_pcode}"
+                postal_area: "{org_addr_parea}"
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              organization{{
+                handle_id
+                name
+                description
+                addresses{{
+                  handle_id
+                  name
+                  street
+                  postal_code
+                  postal_area
+                }}
+                contacts{{
+                  handle_id
+                  first_name
+                  last_name
+                  contact_type
+                  emails{{
+                    handle_id
+                    name
+                    type
+                  }}
+                  phones{{
+                    handle_id
+                    name
+                    type
+                  }}
+                }}
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              contact{{
+                handle_id
+                first_name
+                last_name
+                contact_type
+                emails{{
+                  handle_id
+                  name
+                  type
+                }}
+                phones{{
+                  handle_id
+                  name
+                  type
+                }}
+                organizations{{
+                  handle_id
+                  name
+                }}
+              }}
+            }}
+            address_created{{
+              errors{{
+                field
+                messages
+              }}
+              address{{
+                handle_id
+                name
+                street
+                postal_code
+                postal_area
+              }}
+            }}
+          }}
+        }}
+        '''.format(org_name=org_name, org_type=org_type, org_id=org_id,
+                    parent_org_id=parent_org_id, org_web=org_web, org_num=org_num,
+                    c1_first_name=c1_first_name, c1_last_name=c1_last_name,
+                    c1_contact_type=c1_contact_type, c1_email=c1_email,
+                    c1_email_type=c1_email_type, c1_phone=c1_phone,
+                    c1_phone_type=c1_phone_type, org_addr_name=org_addr_name,
+                    org_addr_st=org_addr_st, org_addr_pcode=org_addr_pcode,
+                    org_addr_parea=org_addr_parea)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_organization']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_organization']['subcreated']:
+            assert not subcreated['errors']
+
+
+class MultipleMutationTest(Neo4jGraphQLTest):
     def test_multiple_mutation(self):
         # create two new contacts to delete
         self.contact5 = self.create_node('contact5', 'contact', meta='Relation')

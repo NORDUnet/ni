@@ -78,7 +78,6 @@ class Address(NIObjectType):
     Phone entity to be used inside contact
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    website = NIStringField()
     phone = NIStringField()
     street = NIStringField()
     postal_code = NIStringField()
@@ -111,6 +110,7 @@ class Organization(NIObjectType):
     affiliation_host_user = NIBooleanField()
     affiliation_site_owner = NIBooleanField()
     parent_organization = NIListField(type_args=(lambda: Organization,), rel_name='Parent_of', rel_method='get_relations')
+    contacts = NIListField(type_args=(lambda: Contact,), rel_name='Works_for', rel_method='get_relations')
 
     class NIMetaType:
         ni_type = 'Organization'

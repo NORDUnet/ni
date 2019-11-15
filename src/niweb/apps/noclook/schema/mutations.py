@@ -647,7 +647,11 @@ class CompositeOrganizationMutation(CompositeMutation):
         helpers.set_works_for(user, slave_nh.get_node(), master_nh.handle_id, role_name)
 
     @classmethod
-    def process_extra_subentities(cls, user, master_nh):
+    def link_address_to_organization(cls, user, master_nh, slave_nh, **kwargs):
+        helpers.add_address_organization(user, slave_nh.get_node(), master_nh.handle_id)
+
+    @classmethod
+    def process_extra_subentities(cls, user, master_nh, input):
         extract_param = 'address'
         ret_subcreated = None
         ret_subupdated = None
@@ -657,6 +661,7 @@ class CompositeOrganizationMutation(CompositeMutation):
         update_address = input.get("update_address")
         delete_address = input.get("delete_address")
 
+        nimetaclass = getattr(cls, 'NIMetaClass')
         address_created = getattr(nimetaclass, 'address_created', None)
         address_updated = getattr(nimetaclass, 'address_updated', None)
         address_deleted = getattr(nimetaclass, 'address_deleted', None)
@@ -691,16 +696,20 @@ class CompositeOrganizationMutation(CompositeMutation):
                     helpers.add_address_organization(
                         user, sub_edited.get_node(), master_nh.handle_id)
 
-        if delete_subinputs:
+        if delete_address:
             ret_subdeleted = []
 
-            for input in delete_subinputs:
-                ret = delete_submutation.mutate_and_get_payload(root, info, **input)
+            for input in delete_address:
+                ret = delete_address.mutate_and_get_payload(root, info, **input)
                 ret_subdeleted.append(ret)
 
+        return dict(address_created=ret_subcreated,
+                    address_updated=ret_subupdated,
+                    address_deleted=ret_subdeleted)
+
     class NIMetaClass:
-        create_mutation = NIGroupMutationFactory.get_create_mutation()
-        update_mutation = NIGroupMutationFactory.get_update_mutation()
+        create_mutation = CreateOrganization
+        update_mutation = UpdateOrganization
         create_submutation = NIContactMutationFactory.get_create_mutation()
         update_submutation = NIContactMutationFactory.get_update_mutation()
         delete_submutation = NIContactMutationFactory.get_delete_mutation()
