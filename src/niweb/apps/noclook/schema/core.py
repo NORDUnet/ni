@@ -1532,7 +1532,7 @@ class CompositeMutation(relay.ClientIDMutation):
         return cls(**kwargs)
 
     @classmethod
-    def process_extra_subentities(cls, user, master_nh, input):
+    def process_extra_subentities(cls, user, master_nh, root, info, input):
         pass
 
     @classmethod
@@ -1602,8 +1602,8 @@ class CompositeMutation(relay.ClientIDMutation):
             if create_subinputs:
                 ret_subcreated = []
 
-                for input in create_subinputs:
-                    ret = create_submutation.mutate_and_get_payload(root, info, **input)
+                for subinput in create_subinputs:
+                    ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
                     ret_subcreated.append(ret)
 
                     # link if it's possible
@@ -1617,8 +1617,8 @@ class CompositeMutation(relay.ClientIDMutation):
             if update_subinputs:
                 ret_subupdated = []
 
-                for input in update_subinputs:
-                    ret = update_submutation.mutate_and_get_payload(root, info, **input)
+                for subinput in update_subinputs:
+                    ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
                     ret_subupdated.append(ret)
 
                     # link if it's possible
@@ -1636,7 +1636,8 @@ class CompositeMutation(relay.ClientIDMutation):
                     ret = delete_submutation.mutate_and_get_payload(root, info, **input)
                     ret_subdeleted.append(ret)
 
-            ret_extra_subentities = cls.process_extra_subentities(user, main_nh, input)
+            ret_extra_subentities = \
+                cls.process_extra_subentities(user, main_nh, root, info, input)
 
         payload_kwargs = dict(
             created=ret_created, updated=ret_updated,

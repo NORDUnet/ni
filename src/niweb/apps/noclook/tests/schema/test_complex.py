@@ -338,6 +338,12 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 .format(created_data['type'], org_type)
 
         # check subnodes
+        # address
+        address_node = created_data['addresses'][0]
+        assert address_node['name'] == org_addr_name, \
+            "Address' name doesn't match \n{} != {}"\
+                .format(address_node['name'], org_addr_name)
+
         subcreated_data = result_data['subcreated']
 
         # contact

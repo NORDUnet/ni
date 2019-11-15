@@ -651,7 +651,7 @@ class CompositeOrganizationMutation(CompositeMutation):
         helpers.add_address_organization(user, slave_nh.get_node(), master_nh.handle_id)
 
     @classmethod
-    def process_extra_subentities(cls, user, master_nh, input):
+    def process_extra_subentities(cls, user, master_nh, root, info, input):
         extract_param = 'address'
         ret_subcreated = None
         ret_subupdated = None
@@ -713,6 +713,9 @@ class CompositeOrganizationMutation(CompositeMutation):
         create_submutation = NIContactMutationFactory.get_create_mutation()
         update_submutation = NIContactMutationFactory.get_update_mutation()
         delete_submutation = NIContactMutationFactory.get_delete_mutation()
+        address_created = NIAddressMutationFactory.get_create_mutation()
+        address_updated = NIAddressMutationFactory.get_update_mutation()
+        address_deleted  = NIAddressMutationFactory.get_delete_mutation()
         graphql_type = Organization
         graphql_subtype = Contact
 
