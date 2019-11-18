@@ -170,6 +170,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
             "1st contact's group name doesn't match \n{} != {}"\
                 .format(subcreated_data[1]['contact']['member_of_groups'][0]['name'], group_name)
 
+
 class OrganizationComplexTest(Neo4jGraphQLTest):
     def test_composite_organization(self):
         org_name = "PyPI"
@@ -499,6 +500,63 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         for subcreated in result.data['composite_contact']['phones_created']:
             assert not subcreated['errors']
+
+        for subcreated in result.data['composite_contact']['rolerelations']:
+            assert not subcreated['errors']
+
+        # get the ids
+        result_data = result.data['composite_contact']
+        c1_handle_id = result_data['created']['contact']['handle_id']
+        c1_email_id = result_data['subcreated'][0]['email']['handle_id']
+        c1_phone_id = result_data['phones_created'][0]['phone']['handle_id']
+
+        # check the integrity of the data
+        created_data = result_data['created']['contact']
+
+        # check contact
+        assert created_data['first_name'] == c1_first_name, \
+            "1st contact's first name doesn't match \n{} != {}"\
+                .format(created_data['first_name'], c1_first_name)
+        assert created_data['last_name'] == c1_last_name, \
+            "1st contact's last name doesn't match \n{} != {}"\
+                .format(created_data['last_name'], c1_last_name)
+
+        # check email
+        created_email_data = result_data['subcreated'][0]['email']
+
+        assert c1_email_id == created_data['emails'][0]['handle_id'], \
+            "Contact's email handle_id doesn't match \n{} != {}"\
+                .format(c1_email_id, created_data['emails'][0]['handle_id'])
+        assert c1_email == created_email_data['name'], \
+            "Contact's email doesn't match \n{} != {}"\
+                .format(c1_email, created_email_data['name'])
+        assert c1_email_type == created_email_data['type'], \
+            "Contact's email type doesn't match \n{} != {}"\
+                .format(c1_email_type, created_email_data['type'])
+
+        # check phone
+        created_phone_data = result_data['phones_created'][0]['phone']
+
+        assert c1_phone_id == created_data['phones'][0]['handle_id'], \
+            "Contact's phone handle_id doesn't match \n{} != {}"\
+                .format(c1_phone_id, created_data['phones'][0]['handle_id'])
+        assert c1_phone == created_phone_data['name'], \
+            "Contact's phone doesn't match \n{} != {}"\
+                .format(c1_phone, created_phone_data['name'])
+        assert c1_phone_type == created_phone_data['type'], \
+            "Contact's phone type doesn't match \n{} != {}"\
+                .format(c1_phone_type, created_phone_data['type'])
+
+        # check rolerelation
+        rolerelation = result_data['rolerelations'][0]['rolerelation']
+
+        assert c1_handle_id == rolerelation['start']['handle_id'], \
+            "Contact's handle_id doesn't match with the one present in the relation \n\
+                {} != {}".format(c1_handle_id , rolerelation['start']['handle_id'],)
+        assert int(organization_id) == int(rolerelation['end']['handle_id']), \
+            "Organization's handle_id doesn't match with the one present in the relation\n\
+                {} != {}".format(organization_id , rolerelation['end']['handle_id'],)
+
 
 
 class MultipleMutationTest(Neo4jGraphQLTest):
