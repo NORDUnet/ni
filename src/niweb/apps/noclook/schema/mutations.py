@@ -730,7 +730,81 @@ class RoleRelationMutation(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        pass
+        if not info.context or not info.context.user.is_authenticated:
+            raise GraphQLAuthException()
+
+        user = info.context.user
+
+        errors = None
+        rolerelation = None
+
+        # get input
+        contact_handle_id = input.get('contact_handle_id', None)
+        organization_handle_id = input.get('organization_handle_id', None)
+        role_handle_id = input.get('role_handle_id', None)
+
+        # get entities and check permissions
+        contact_nh = None
+        organization_nh = None
+        role_model = None
+
+        add_error_contact = False
+        add_error_organization = False
+        add_error_role = False
+
+        if sriutils.authorice_write_resource(user, contact_handle_id):
+            try:
+                contact_nh = NodeHandle.objects.get(handle_id=contact_handle_id)
+            except:
+                add_error_contact = True
+        else:
+            add_error_contact = True
+
+        if add_error_contact:
+            error = ErrorType(
+                field="contact_handle_id",
+                messages=["The selected contact doesn't exist"]
+            )
+            errors.append(error)
+
+
+        if sriutils.authorice_write_resource(user, organization_handle_id):
+            try:
+                organization_nh = NodeHandle.objects.get(handle_id=organization_handle_id)
+            except:
+                add_error_organization = True
+        else:
+            add_error_organization = True
+
+        if add_error_organization:
+            error = ErrorType(
+                field="organization_handle_id",
+                messages=["The selected organization doesn't exist"]
+            )
+            errors.append(error)
+
+        if sriutils.authorice_write_resource(user, role_handle_id):
+            try:
+                role_model = RoleModel.objects.get(handle_id=role_handle_id)
+            except:
+                add_error_role = True
+        else:
+            add_error_role = True
+
+        if add_error_role:
+            error = ErrorType(
+                field="role_handle_id",
+                messages=["The selected role doesn't exist"]
+            )
+            errors.append(error)
+
+        # link contact with organization
+        if not errors:
+            contact, rolerelation = helpers.link_contact_role_for_organization(
+                user, organization_nh.get_node(), contact_nh.handle_id, role_model
+            )
+
+        return cls(errors=errors, rolerelation=rolerelation)
 
 
 class CompositeContactMutation(CompositeMutation):
@@ -768,15 +842,18 @@ class CompositeContactMutation(CompositeMutation):
         ret_subcreated = None
         ret_subupdated = None
         ret_subdeleted = None
+        ret_rolerelations = None
 
         create_phones = input.get("create_phones")
         update_phones = input.get("update_phones")
         delete_phones = input.get("delete_phones")
+        link_rolerelations = input.get("link_rolerelations")
 
         nimetaclass = getattr(cls, 'NIMetaClass')
         phones_created = getattr(nimetaclass, 'phones_created', None)
         phones_updated = getattr(nimetaclass, 'phones_updated', None)
         phones_deleted = getattr(nimetaclass, 'phones_deleted', None)
+        rolerelation_mutation = getattr(nimetaclass, 'rolerelation_mutation', None)
 
         if create_phones:
             ret_subcreated = []
@@ -815,9 +892,18 @@ class CompositeContactMutation(CompositeMutation):
                 ret = phones_deleted.mutate_and_get_payload(root, info, **input)
                 ret_subdeleted.append(ret)
 
+        if link_rolerelations:
+            ret_rolerelations = []
+
+            for input in link_rolerelations:
+                input['contact_handle_id'] = master_nh.handle_id
+                ret = rolerelation_mutation.mutate_and_get_payload(root, info, **input)
+                ret_rolerelations.append(ret)
+
         return dict(phones_created=ret_subcreated,
                     phones_updated=ret_subupdated,
-                    phones_deleted=ret_subdeleted)
+                    phones_deleted=ret_subdeleted,
+                    rolerelations=ret_rolerelations)
 
     class NIMetaClass:
         create_mutation = NIContactMutationFactory.get_create_mutation()
@@ -828,6 +914,7 @@ class CompositeContactMutation(CompositeMutation):
         phones_created = NIPhoneMutationFactory.get_create_mutation()
         phones_updated = NIPhoneMutationFactory.get_update_mutation()
         phones_deleted = NIPhoneMutationFactory.get_delete_mutation()
+        rolerelation_mutation = RoleRelationMutation
         graphql_type = Contact
         graphql_subtype = Email
 

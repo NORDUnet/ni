@@ -411,8 +411,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             ]
             link_rolerelations:[
               {{
-                role_handle_id: 2
-                organization_handle_id: 1
+                role_handle_id: {role_handle_id}
+                organization_handle_id: {organization_id}
               }}
             ]
           }}){{
@@ -484,7 +484,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         '''.format(c1_first_name=c1_first_name, c1_last_name=c1_last_name,
                     c1_contact_type=c1_contact_type, c1_email=c1_email,
                     c1_email_type=c1_email_type, c1_phone=c1_phone,
-                    c1_phone_type=c1_phone_type)
+                    c1_phone_type=c1_phone_type, role_handle_id=role_handle_id,
+                    organization_id=organization_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
