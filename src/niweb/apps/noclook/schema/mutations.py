@@ -7,7 +7,8 @@ import apps.noclook.vakt.utils as sriutils
 
 from apps.noclook import activitylog, helpers
 from apps.noclook.forms import *
-from apps.noclook.models import Dropdown as DropdownModel, Role as RoleModel, DEFAULT_ROLES, Choice as ChoiceModel
+from apps.noclook.models import Dropdown as DropdownModel, Role as RoleModel, \
+    DEFAULT_ROLES, DEFAULT_ROLES, Choice as ChoiceModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.test import RequestFactory
@@ -637,13 +638,14 @@ class CompositeOrganizationMutation(CompositeMutation):
     @classmethod
     def link_slave_to_master(cls, user, master_nh, slave_nh, **kwargs):
         role_handle_id = kwargs.get('role_handle_id', None)
-        role_name = None
+        role = None
 
         if role_handle_id:
             role = RoleModel.objects.get(handle_id=role_handle_id)
-            role_name = role.name
+        else:
+            role = RoleModel.objects.get(slug=DEFAULT_ROLE_KEY)
 
-        helpers.set_works_for(user, slave_nh.get_node(), master_nh.handle_id, role_name)
+        helpers.link_contact_role_for_organization(user, master_nh.get_node(), slave_nh.handle_id, role)
 
     @classmethod
     def link_address_to_organization(cls, user, master_nh, slave_nh, **kwargs):
