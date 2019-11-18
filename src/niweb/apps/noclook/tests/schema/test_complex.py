@@ -319,6 +319,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         for subcreated in result.data['composite_organization']['subcreated']:
             assert not subcreated['errors']
 
+        for subcreated in result.data['composite_organization']['address_created']:
+            assert not subcreated['errors']
+
         # get the ids
         result_data = result.data['composite_organization']
         organization_handle_id = result_data['created']['organization']['handle_id']
@@ -371,6 +374,130 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert subcreated_data[0]['contact']['organizations'][0]['name'] == org_name, \
             "1st contact's organization name doesn't match \n{} != {}"\
                 .format(subcreated_data[0]['contact']['organizations'][0]['name'], org_name)
+
+
+class ContactsComplexTest(Neo4jGraphQLTest):
+    def test_multiple_mutation(self):
+        c1_first_name = "Jane"
+        c1_last_name  = "Doe"
+        c1_contact_type = "person"
+        c1_email = "jdoe@pypi.org"
+        c1_email_type = "work"
+        c1_phone = "+34600123456"
+        c1_phone_type = "work"
+
+        role_handle_id = Role.objects.all().first().handle_id
+        organization_id = self.organization1.handle_id
+
+        query = '''
+        mutation{{
+          composite_contact(input:{{
+            create_input:{{
+              first_name: "{c1_first_name}"
+              last_name: "{c1_last_name}"
+              contact_type: "{c1_contact_type}"
+            }}
+            create_subinputs:[
+              {{
+                name: "{c1_email}"
+                type: "{c1_email_type}"
+              }}
+            ]
+            create_phones:[
+              {{
+                name: "{c1_phone}"
+                type: "{c1_phone_type}"
+              }}
+            ]
+            link_rolerelations:[
+              {{
+                role_handle_id: 2
+                organization_handle_id: 1
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              contact{{
+                handle_id
+                first_name
+                last_name
+                contact_type
+                emails{{
+                  handle_id
+                  name
+                  type
+                }}
+                phones{{
+                  handle_id
+                  name
+                  type
+                }}
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              email{{
+                handle_id
+                name
+                type
+              }}
+            }}
+            phones_created{{
+              errors{{
+                field
+                messages
+              }}
+              phone{{
+                handle_id
+                name
+                type
+              }}
+            }}
+            rolerelations{{
+              errors{{
+                field
+                messages
+              }}
+              rolerelation{{
+                relation_id
+                type
+                start{{
+                  handle_id
+                  first_name
+                  last_name
+                }}
+                end{{
+                  handle_id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(c1_first_name=c1_first_name, c1_last_name=c1_last_name,
+                    c1_contact_type=c1_contact_type, c1_email=c1_email,
+                    c1_email_type=c1_email_type, c1_phone=c1_phone,
+                    c1_phone_type=c1_phone_type)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_contact']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_contact']['subcreated']:
+            assert not subcreated['errors']
+
+        for subcreated in result.data['composite_contact']['phones_created']:
+            assert not subcreated['errors']
 
 
 class MultipleMutationTest(Neo4jGraphQLTest):
