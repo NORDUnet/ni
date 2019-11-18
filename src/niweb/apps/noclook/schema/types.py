@@ -216,7 +216,7 @@ class Contact(NIObjectType):
     last_name = NIStringField(type_kwargs={ 'required': True })
     title = NIStringField()
     salutation = NIStringField()
-    contact_type = NIChoiceField()
+    contact_type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="contact_type")
     phones = NIListField(type_args=(Phone,), rel_name='Has_phone', rel_method='get_outgoing_relations')
     emails = NIListField(type_args=(Email,), rel_name='Has_email', rel_method='get_outgoing_relations')
     pgp_fingerprint = NIStringField()
