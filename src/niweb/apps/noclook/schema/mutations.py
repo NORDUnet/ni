@@ -588,7 +588,6 @@ class CompositeGroupMutation(CompositeMutation):
 
     @classmethod
     def link_slave_to_master(cls, user, master_nh, slave_nh):
-        slave_nh.get_node().add_group(master_nh.handle_id)
         helpers.set_member_of(user, slave_nh.get_node(), master_nh.handle_id)
 
     class NIMetaClass:
