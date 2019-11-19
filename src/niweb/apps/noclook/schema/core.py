@@ -1635,8 +1635,8 @@ class CompositeMutation(relay.ClientIDMutation):
             if delete_subinputs:
                 ret_subdeleted = []
 
-                for input in delete_subinputs:
-                    ret = delete_submutation.mutate_and_get_payload(root, info, **input)
+                for subinput in delete_subinputs:
+                    ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
                     ret_subdeleted.append(ret)
 
             ret_extra_subentities = \

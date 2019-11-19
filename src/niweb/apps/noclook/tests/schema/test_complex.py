@@ -637,6 +637,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         c1_handle_id = result_data['subcreated'][0]['contact']['handle_id']
         c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['handle_id']
         c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
+        c2_handle_id = result_data['subcreated'][1]['contact']['handle_id']
         address1_id = result_data['address_created'][0]['address']['handle_id']
         address2_id = result_data['address_created'][1]['address']['handle_id']
 
@@ -722,10 +723,17 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         c3_email = "sperson@pypi.org"
         c3_phone = "+34600555123"
 
+        org_addr_name3 = "Thrid"
+        org_addr_st3 = "Imaginary St. 789"
+        org_addr_pcode3 = "41001"
+        org_addr_parea3 = "Sevilla"
+
+        nondefault_roleid = Role.objects.all().first().handle_id
+
         query = '''
-        mutation{
-          composite_organization(input:{
-            update_input: {
+        mutation{{
+          composite_organization(input:{{
+            update_input: {{
               handle_id: {org_handle_id}
               name: "{org_name}"
               type: "{org_type}"
@@ -734,246 +742,262 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
               organization_id: "{org_id}"
               website: "{org_web}"
               organization_number: "{org_num}"
-            }
-            create_subinputs:[{
+            }}
+            create_subinputs:[{{
               first_name: "{c3_first_name}"
               last_name: "{c3_last_name}"
-              contact_type: ""
-              email: ""
-              email_type: ""
-              phone: ""
-              phone_type: ""
-              role_handle_id: -1
-            }]
-            update_subinputs:[{
-              first_name: ""
-              last_name: ""
-              contact_type: ""
-              email: ""
-              email_type: ""
-              phone: ""
-              phone_type: ""
-              role_handle_id: -1
-            }]
-            delete_subinputs:[{
-              handle_id: -1
-            }]
-            create_address:[{
-              name: ""
-              street: ""
-              postal_code: ""
-              postal_area: ""
-            }]
-            update_address:[{
-              handle_id: -1
-              name: ""
-              street: ""
-              postal_code: ""
-              postal_area: ""
-            }]
-            delete_address:[{
-              handle_id: -1
-            }]
-          }){
-            updated{
-            	errors{
+              contact_type: "{contact_type}"
+              email: "{c3_email}"
+              email_type: "{email_type}"
+              phone: "{c3_phone}"
+              phone_type: "{phone_type}"
+              role_handle_id: {nondefault_roleid}
+            }}]
+            update_subinputs:[{{
+              handle_id: {c1_handle_id}
+              first_name: "{c1_first_name}"
+              last_name: "{c1_last_name}"
+              contact_type: "{contact_type}"
+              email: "{c1_email}"
+              email_type: "{email_type}"
+              email_handle_id: {c1_email_id}
+              phone: "{c1_phone}"
+              phone_type: "{phone_type}"
+              role_handle_id: {nondefault_roleid}
+            }}]
+            delete_subinputs:[{{
+              handle_id: {c2_handle_id}
+            }}]
+            create_address:[{{
+              name: "{org_addr_name3}"
+              street: "{org_addr_st3}"
+              postal_code: "{org_addr_pcode3}"
+              postal_area: "{org_addr_parea3}"
+            }}]
+            update_address:[{{
+              handle_id: {address1_id}
+              name: "{org_addr_name}"
+              street: "{org_addr_st}"
+              postal_code: "{org_addr_pcode}"
+              postal_area: "{org_addr_parea}"
+            }}]
+            delete_address:[{{
+              handle_id: {address2_id}
+            }}]
+          }}){{
+            updated{{
+            	errors{{
                 field
                 messages
-              }
-              organization{
+              }}
+              organization{{
                 handle_id
                 type
                 name
                 description
-                addresses{
+                addresses{{
                   handle_id
                   name
                   street
                   postal_code
                   postal_area
-                }
-                contacts{
+                }}
+                contacts{{
                   handle_id
                   first_name
                   last_name
                   contact_type
-                  emails{
+                  emails{{
                     handle_id
                     name
                     type
-                  }
-                  phones{
+                  }}
+                  phones{{
                     handle_id
                     name
                     type
-                  }
-                  organizations{
+                  }}
+                  organizations{{
                     handle_id
                     name
-                  }
-                  roles{
+                  }}
+                  roles{{
                     relation_id
                     name
-                    start{
+                    start{{
                       handle_id
                       first_name
                       last_name
-                    }
-                    end{
+                    }}
+                    end{{
                       handle_id
                       name
-                    }
-                  }
-                }
-              }
-          	}
-            subcreated{
-              errors{
+                    }}
+                  }}
+                }}
+              }}
+          	}}
+            subcreated{{
+              errors{{
                 field
                 messages
-              }
-              contact{
+              }}
+              contact{{
                 handle_id
                 first_name
                 last_name
                 contact_type
-                emails{
+                emails{{
                   handle_id
                   name
                   type
-                }
-                phones{
+                }}
+                phones{{
                   handle_id
                   name
                   type
-                }
-                organizations{
+                }}
+                organizations{{
                   handle_id
                   name
-                }
-                roles{
+                }}
+                roles{{
                   relation_id
                   name
-                  start{
+                  start{{
                     handle_id
                     first_name
                     last_name
-                  }
-                  end{
+                  }}
+                  end{{
                     handle_id
                     name
-                  }
-                }
-              }
-            }
-            subupdated{
-              errors{
+                  }}
+                }}
+              }}
+            }}
+            subupdated{{
+              errors{{
                 field
                 messages
-              }
-              contact{
+              }}
+              contact{{
                 handle_id
                 first_name
                 last_name
                 contact_type
-                emails{
+                emails{{
                   handle_id
                   name
                   type
-                }
-                phones{
+                }}
+                phones{{
                   handle_id
                   name
                   type
-                }
-                organizations{
+                }}
+                organizations{{
                   handle_id
                   name
-                }
-                roles{
+                }}
+                roles{{
                   relation_id
                   name
-                  start{
+                  start{{
                     handle_id
                     first_name
                     last_name
-                  }
-                  end{
+                  }}
+                  end{{
                     handle_id
                     name
-                  }
-                }
-              }
-            }
-            subdeleted{
-              errors{
+                  }}
+                }}
+              }}
+            }}
+            subdeleted{{
+              errors{{
                 field
                 messages
-              }
+              }}
               success
-            }
-            address_created{
-              errors{
+            }}
+            address_created{{
+              errors{{
                 field
                 messages
-              }
-              address{
+              }}
+              address{{
                 handle_id
                 name
                 street
                 postal_code
                 postal_area
-              }
-            }
-            address_updated{
-              errors{
+              }}
+            }}
+            address_updated{{
+              errors{{
                 field
                 messages
-              }
-              address{
+              }}
+              address{{
                 handle_id
                 name
                 street
                 postal_code
                 postal_area
-              }
-            }
-            address_deleted{
-              errors{
+              }}
+            }}
+            address_deleted{{
+              errors{{
                 field
                 messages
-              }
+              }}
               success
-            }
-          }
-        }
-        '''
+            }}
+          }}
+        }}
         '''.format(org_handle_id=organization_handle_id, org_name=org_name,
                     org_type=org_type, org_id=org_id, org_web=org_web,
                     org_num=org_num, c3_first_name=c3_first_name,
-                    c3_last_name=c3_last_name)'''
+                    c3_last_name=c3_last_name, contact_type=contact_type,
+                    c3_email=c3_email, email_type=email_type, c3_phone=c3_phone,
+                    phone_type=phone_type, nondefault_roleid=nondefault_roleid,
+                    c1_handle_id=c1_handle_id, c1_first_name=c1_first_name,
+                    c1_last_name=c1_last_name, c1_email=c1_email,
+                    c1_email_id=c1_email_id, c1_phone=c1_phone,
+                    c2_handle_id=c2_handle_id, org_addr_name3=org_addr_name3,
+                    org_addr_st3=org_addr_st3, org_addr_pcode3=org_addr_pcode3,
+                    org_addr_parea3=org_addr_parea3, address1_id=address1_id,
+                    org_addr_name=org_addr_name, org_addr_st=org_addr_st,
+                    org_addr_pcode=org_addr_pcode, org_addr_parea=org_addr_parea,
+                    address2_id=address2_id)
 
-        '''
-        .format(org_name=org_name, org_type=org_type, org_id=org_id,
-                    parent_org_id=parent_org_id, org_web=org_web, org_num=org_num,
-                    c1_first_name=c1_first_name, c1_last_name=c1_last_name,
-                    c1_contact_type=c1_contact_type, c1_email=c1_email,
-                    c1_email_type=c1_email_type, c1_phone=c1_phone,
-                    c1_phone_type=c1_phone_type, c2_first_name=c2_first_name,
-                    c2_last_name=c2_last_name, c2_email=c2_email,
-                    c2_phone=c2_phone, org_addr_name=org_addr_name,
-                    org_addr_st=org_addr_st, org_addr_pcode=org_addr_pcode,
-                    org_addr_parea=org_addr_parea, org_addr_name2=org_addr_name2,
-                    org_addr_st2=org_addr_st2, org_addr_pcode2=org_addr_pcode2,
-                    org_addr_parea2=org_addr_parea2)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
 
-        organization_handle_id = result_data['created']['organization']['handle_id']
-        c1_handle_id = result_data['subcreated'][0]['contact']['handle_id']
-        c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['handle_id']
-        c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
-        address1_id = result_data['address_created'][0]['address']['handle_id']
-        address2_id = result_data['address_created'][1]['address']['handle_id']
-        '''
+        # check for errors
+        updated_errors = result.data['composite_organization']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        for subcreated in result.data['composite_organization']['subcreated']:
+            assert not subcreated['errors']
+
+        for subupdated in result.data['composite_organization']['subupdated']:
+            assert not subupdated['errors']
+
+        for subdeleted in result.data['composite_organization']['subdeleted']:
+            assert not subdeleted['errors']
+
+        for subcreated in result.data['composite_organization']['address_created']:
+            assert not subcreated['errors']
+
+        for subupdated in result.data['composite_organization']['address_updated']:
+            assert not subupdated['errors']
+
+        for subdeleted in result.data['composite_organization']['address_deleted']:
+            assert not subdeleted['errors']
+
 
 class ContactsComplexTest(Neo4jGraphQLTest):
     def test_multiple_mutation(self):

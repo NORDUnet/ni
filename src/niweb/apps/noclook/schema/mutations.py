@@ -707,7 +707,7 @@ class CompositeOrganizationMutation(CompositeMutation):
                 ret_subdeleted = []
 
                 for input in delete_address:
-                    ret = delete_address.mutate_and_get_payload(root, info, **input)
+                    ret = address_deleted.mutate_and_get_payload(root, info, **input)
                     ret_subdeleted.append(ret)
 
         return dict(address_created=ret_subcreated,
