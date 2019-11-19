@@ -1,21 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import logging
-
 from tastypie.resources import Resource, ModelResource
 from tastypie import fields
 from tastypie.authentication import SessionAuthentication
 from tastypie.authorization import Authorization
 from apps.userprofile.models import UserProfile
-
-
-logger = logging.getLogger('userprofile_resources')
-logger.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
 
 
 class UserProfileResource(ModelResource):

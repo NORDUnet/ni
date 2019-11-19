@@ -31,8 +31,27 @@ def userprofile_detail(request, userprofile_id):
                   {'profile': profile, 'activities': activities})
 
 
+    display_name = fields.CharField('display_name')
+    email = fields.CharField('user__email')
+    #  avatar = fields.FileField('avatar')
+    landing_page = fields.CharField('landing_page')
+    view_network = fields.BooleanField('view_network')
+    view_services = fields.BooleanField('view_services')
+    view_community = fields.BooleanField('view_community')
+
+
+
 @login_required
 def whoami(request):
     if request.method == 'GET':
-        return JsonResponse({'userid': request.user.pk})
+        user = {
+                'userid': request.user.pk,
+                'name': request.user.profile.display_name,
+                'email': request.user.email,
+                'landing_page': request.user.profile.display_name,
+                'view_network': request.user.profile.view_network,
+                'view_services': request.user.profile.view_services,
+                'view_community': request.user.profile.view_community
+        }
+        return JsonResponse(user)
     return httpResponse(status_code=405)
