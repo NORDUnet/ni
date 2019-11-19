@@ -32,6 +32,11 @@ class GroupComplexTest(Neo4jGraphQLTest):
         c2_mail = 'mlove@pendletones.com'
         c2_phone = '555-987654'
 
+        c3_first_name = "Murry"
+        c3_last_name = "Wilson"
+        c3_mail = 'mwilson@pendletones.com'
+        c3_phone = '555-987654'
+
         query = '''
         mutation{{
           composite_group(input:{{
@@ -55,6 +60,15 @@ class GroupComplexTest(Neo4jGraphQLTest):
                 contact_type: "{contact_type2}"
                 email: "{c2_mail}"
                 email_type: "{email_type2}"
+              }}
+              {{
+                first_name: "{c3_first_name}"
+                last_name: "{c3_last_name}"
+                contact_type: "{contact_type1}"
+                email: "{c3_mail}"
+                email_type: "{email_type1}"
+                phone: "{c3_phone}"
+                phone_type: "{phone_type1}"
               }}
             ]
           }}){{
@@ -104,7 +118,9 @@ class GroupComplexTest(Neo4jGraphQLTest):
                     email_type1=email_type, c1_phone=c1_phone,
                     phone_type1=phone_type, c2_first_name=c2_first_name,
                     c2_last_name=c2_last_name, contact_type2=contact_type,
-                    c2_mail=c2_mail, email_type2=email_type)
+                    c2_mail=c2_mail, email_type2=email_type,
+                    c3_first_name=c3_first_name, c3_last_name=c3_last_name,
+                    c3_mail=c3_mail, c3_phone=c3_phone)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -124,6 +140,9 @@ class GroupComplexTest(Neo4jGraphQLTest):
         c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
         c2_handle_id = result_data['subcreated'][1]['contact']['handle_id']
         c2_email_id = result_data['subcreated'][1]['contact']['emails'][0]['handle_id']
+        c3_handle_id = result_data['subcreated'][2]['contact']['handle_id']
+        c3_email_id = result_data['subcreated'][2]['contact']['emails'][0]['handle_id']
+        c3_phone_id = result_data['subcreated'][2]['contact']['phones'][0]['handle_id']
 
         # check the integrity of the data
         created_data = result_data['created']['group']
@@ -167,8 +186,263 @@ class GroupComplexTest(Neo4jGraphQLTest):
             "2nd contact's email doesn't match \n{} != {}"\
                 .format(subcreated_data[1]['contact']['emails'][0]['name'], c2_mail)
         assert subcreated_data[1]['contact']['member_of_groups'][0]['name'] == group_name, \
-            "1st contact's group name doesn't match \n{} != {}"\
+            "2nd contact's group name doesn't match \n{} != {}"\
                 .format(subcreated_data[1]['contact']['member_of_groups'][0]['name'], group_name)
+
+        # third contact
+        assert subcreated_data[2]['contact']['first_name'] == c3_first_name, \
+            "3rd contact's first name doesn't match \n{} != {}"\
+                .format(subcreated_data[2]['contact']['first_name'], c3_first_name)
+        assert subcreated_data[2]['contact']['last_name'] == c3_last_name, \
+            "3rd contact's last name doesn't match \n{} != {}"\
+                .format(subcreated_data[2]['contact']['last_name'], c3_last_name)
+        assert subcreated_data[2]['contact']['emails'][0]['name'] == c3_mail, \
+            "3rd contact's email doesn't match \n{} != {}"\
+                .format(subcreated_data[2]['contact']['emails'][0]['name'], c3_mail)
+        assert subcreated_data[2]['contact']['phones'][0]['name'] == c3_phone, \
+            "3rd contact's phone doesn't match \n{} != {}"\
+                .format(subcreated_data[2]['contact']['phones'][0]['name'], c3_phone)
+        assert subcreated_data[2]['contact']['member_of_groups'][0]['name'] == group_name, \
+            "3rd contact's group name doesn't match \n{} != {}"\
+                .format(subcreated_data[2]['contact']['member_of_groups'][0]['name'], group_name)
+
+        ## edit
+        group_name = "The Beach Boys"
+        c1_mail = 'bwilson@beachboys.com'
+        c1_phone = '555-123456'
+        c2_mail = 'mlove@beachboys.com'
+        c2_phone = '555-987654'
+        phone_type2 = 'personal'
+
+        c4_first_name = "Carl"
+        c4_last_name = "Wilson"
+        c4_mail = 'cwilson@beachboys.com'
+        c4_phone = '555-000000'
+
+        #c3_handle_id
+
+        query = '''
+        mutation {{
+          composite_group(input: {{
+            update_input: {{
+              handle_id: {group_handle_id},
+              name: "{group_name}"
+              description: "{description_group}"
+          	}}
+            create_subinputs:[
+              {{
+                first_name: "{c4_first_name}"
+                last_name: "{c4_last_name}"
+                contact_type: "{contact_type}"
+                email: "{c4_mail}"
+                email_type: "{email_type}"
+                phone: "{c4_phone}"
+                phone_type: "{phone_type2}"
+              }}
+            ]
+            update_subinputs:[
+              {{
+                handle_id: {c1_handle_id}
+                first_name: "{c1_first_name}"
+                last_name: "{c1_last_name}"
+                contact_type: "{contact_type}"
+                email_handle_id: {c1_email_id}
+                email: "{c1_mail}"
+                email_type: "{email_type}"
+                email_handle_id: {c1_email_id}
+                phone: "{c1_phone}"
+                phone_type: "{phone_type2}"
+                phone_handle_id: {c1_phone_id}
+              }}
+              {{
+                handle_id: {c2_handle_id}
+                first_name: "{c2_first_name}"
+                last_name: "{c2_last_name}"
+                contact_type: "{contact_type}"
+                email_handle_id: {c2_email_id}
+                email: "{c2_mail}"
+                email_type: "{email_type}"
+                phone: "{c2_phone}"
+                phone_type: "{phone_type2}"
+              }}
+            ]
+            delete_subinputs:[
+              {{
+                handle_id: {c3_handle_id}
+              }}
+            ]
+          }})
+          {{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              group{{
+                handle_id
+                name
+                description
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              contact{{
+                handle_id
+                first_name
+                last_name
+                emails{{
+                  handle_id
+                  name
+                  type
+                }}
+                phones{{
+                  handle_id
+                  name
+                  type
+                }}
+                member_of_groups{{
+                  name
+                }}
+              }}
+            }}
+            subupdated{{
+              errors{{
+                field
+                messages
+              }}
+              contact{{
+                handle_id
+                first_name
+                last_name
+                emails{{
+                  handle_id
+                  name
+                  type
+                }}
+                phones{{
+                  handle_id
+                  name
+                  type
+                }}
+                member_of_groups{{
+                  name
+                }}
+              }}
+            }}
+            subdeleted{{
+              errors{{
+                field
+                messages
+              }}
+              success
+            }}
+          }}
+        }}
+        '''.format(group_handle_id=group_handle_id, group_name=group_name,
+                    description_group=description_group,
+                    c4_first_name=c4_first_name, c4_last_name=c4_last_name,
+                    contact_type=contact_type, c4_mail=c4_mail,
+                    email_type=email_type, c4_phone=c4_phone,
+                    phone_type2=phone_type2, c1_handle_id=c1_handle_id,
+                    c1_first_name=c1_first_name, c1_last_name=c1_last_name,
+                    c1_email_id=c1_email_id, c1_mail=c1_mail,
+                    c1_phone=c1_phone, c1_phone_id=c1_phone_id,
+                    c2_handle_id=c2_handle_id, c2_first_name=c2_first_name,
+                    c2_last_name=c2_last_name, c2_email_id=c2_email_id,
+                    c2_mail=c2_mail, c2_phone=c2_phone, c3_handle_id=c3_handle_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = result.data['composite_group']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        for subcreated in result.data['composite_group']['subcreated']:
+            assert not subcreated['errors']
+
+        for subupdated in result.data['composite_group']['subupdated']:
+            assert not subupdated['errors']
+
+        for subdeleted in result.data['composite_group']['subdeleted']:
+            assert not subdeleted['errors']
+
+        # get the ids
+        result_data = result.data['composite_group']
+        c4_handle_id = result_data['subcreated'][0]['contact']['handle_id']
+
+        # check the integrity of the data
+        updated_data = result_data['updated']['group']
+
+        # check group
+        assert updated_data['name'] == group_name, \
+            "Group name doesn't match \n{} != {}"\
+                .format(updated_data['name'], group_name)
+        assert updated_data['description'] == description_group, \
+            "Group name doesn't match \n{} != {}"\
+                .format(updated_data['description'], description_group)
+
+        # check members
+        subcreated_data = result_data['subcreated']
+        subupdated_data = result_data['subupdated']
+        subdeleted_data = result_data['subdeleted']
+
+        # fourth contact
+        assert subcreated_data[0]['contact']['first_name'] == c4_first_name, \
+            "4th contact's first name doesn't match \n{} != {}"\
+                .format(subcreated_data[0]['contact']['first_name'], c4_first_name)
+        assert subcreated_data[0]['contact']['last_name'] == c4_last_name, \
+            "4th contact's last name doesn't match \n{} != {}"\
+                .format(subcreated_data[0]['contact']['last_name'], c4_last_name)
+        assert subcreated_data[0]['contact']['emails'][0]['name'] == c4_mail, \
+            "4th contact's email doesn't match \n{} != {}"\
+                .format(subcreated_data[0]['contact']['emails'][0]['name'], c4_mail)
+        assert subcreated_data[0]['contact']['phones'][0]['name'] == c4_phone, \
+            "4th contact's phone doesn't match \n{} != {}"\
+                .format(subcreated_data[0]['contact']['phones'][0]['name'], c4_phone)
+        assert subcreated_data[0]['contact']['member_of_groups'][0]['name'] == group_name, \
+            "4th contact's group name doesn't match \n{} != {}"\
+                .format(subcreated_data[0]['contact']['member_of_groups'][0]['name'], group_name)
+
+        # first contact
+        assert subupdated_data[0]['contact']['first_name'] == c1_first_name, \
+            "1st contact's first name doesn't match \n{} != {}"\
+                .format(subupdated_data[0]['contact']['first_name'], c1_first_name)
+        assert subupdated_data[0]['contact']['last_name'] == c1_last_name, \
+            "1st contact's last name doesn't match \n{} != {}"\
+                .format(subupdated_data[0]['contact']['last_name'], c1_last_name)
+        assert subupdated_data[0]['contact']['emails'][0]['name'] == c1_mail, \
+            "1st contact's email doesn't match \n{} != {}"\
+                .format(subupdated_data[0]['contact']['emails'][0]['name'], c1_mail)
+        assert subupdated_data[0]['contact']['phones'][0]['name'] == c1_phone, \
+            "1st contact's phone doesn't match \n{} != {}"\
+                .format(subupdated_data[0]['contact']['phones'][0]['name'], c1_phone)
+        assert subupdated_data[0]['contact']['member_of_groups'][0]['name'] == group_name, \
+            "1st contact's group name doesn't match \n{} != {}"\
+                .format(subupdated_data[0]['contact']['member_of_groups'][0]['name'], group_name)
+
+        # second contact
+        assert subupdated_data[1]['contact']['first_name'] == c2_first_name, \
+            "2nd contact's first name doesn't match \n{} != {}"\
+                .format(subupdated_data[1]['contact']['first_name'], c2_first_name)
+        assert subupdated_data[1]['contact']['last_name'] == c2_last_name, \
+            "2nd contact's last name doesn't match \n{} != {}"\
+                .format(subupdated_data[1]['contact']['last_name'], c2_last_name)
+        assert subupdated_data[1]['contact']['emails'][0]['name'] == c2_mail, \
+            "2nd contact's email doesn't match \n{} != {}"\
+                .format(subupdated_data[1]['contact']['emails'][0]['name'], c2_mail)
+        assert subupdated_data[1]['contact']['phones'][0]['name'] == c2_phone, \
+            "1st contact's phone doesn't match \n{} != {}"\
+                .format(subupdated_data[1]['contact']['phones'][0]['name'], c2_phone)
+        assert subupdated_data[1]['contact']['member_of_groups'][0]['name'] == group_name, \
+            "2nd contact's group name doesn't match \n{} != {}"\
+                .format(subupdated_data[1]['contact']['member_of_groups'][0]['name'], group_name)
+
+        # third contact
+        assert subdeleted_data[0]['success'], "The requested contact couldn't be deleted"
 
 
 class OrganizationComplexTest(Neo4jGraphQLTest):
@@ -187,6 +461,14 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         c1_email_type = "work"
         c1_phone = "+34600123456"
         c1_phone_type = "work"
+
+        c2_first_name = "Brian"
+        c2_last_name  = "Smith"
+        c2_contact_type = "person"
+        c2_email = "bsmith@pypi.org"
+        c2_email_type = "work"
+        c2_phone = "+34600789456"
+        c2_phone_type = "work"
 
         org_addr_name = "Main"
         org_addr_st = "Fake St. 123"
@@ -213,6 +495,15 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 email: "{c1_email}"
                 email_type: "{c1_email_type}"
                 phone:"{c1_phone}"
+                phone_type: "{c1_phone_type}"
+              }}
+              {{
+                first_name: "{c2_first_name}"
+                last_name: "{c2_last_name}"
+                contact_type: "{c1_contact_type}"
+                email: "{c2_email}"
+                email_type: "{c1_email_type}"
+                phone:"{c2_phone}"
                 phone_type: "{c1_phone_type}"
               }}
             ]
@@ -306,7 +597,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                     c1_first_name=c1_first_name, c1_last_name=c1_last_name,
                     c1_contact_type=c1_contact_type, c1_email=c1_email,
                     c1_email_type=c1_email_type, c1_phone=c1_phone,
-                    c1_phone_type=c1_phone_type, org_addr_name=org_addr_name,
+                    c1_phone_type=c1_phone_type, c2_first_name=c2_first_name,
+                    c2_last_name=c2_last_name, c2_email=c2_email,
+                    c2_phone=c2_phone, org_addr_name=org_addr_name,
                     org_addr_st=org_addr_st, org_addr_pcode=org_addr_pcode,
                     org_addr_parea=org_addr_parea)
 
@@ -359,7 +652,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
 
         subcreated_data = result_data['subcreated']
 
-        # contact
+        # contacts
         assert subcreated_data[0]['contact']['first_name'] == c1_first_name, \
             "1st contact's first name doesn't match \n{} != {}"\
                 .format(subcreated_data[0]['contact']['first_name'], c1_first_name)
@@ -375,6 +668,22 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert subcreated_data[0]['contact']['organizations'][0]['name'] == org_name, \
             "1st contact's organization name doesn't match \n{} != {}"\
                 .format(subcreated_data[0]['contact']['organizations'][0]['name'], org_name)
+
+        assert subcreated_data[1]['contact']['first_name'] == c2_first_name, \
+            "2nd contact's first name doesn't match \n{} != {}"\
+                .format(subcreated_data[1]['contact']['first_name'], c2_first_name)
+        assert subcreated_data[1]['contact']['last_name'] == c2_last_name, \
+            "2nd contact's last name doesn't match \n{} != {}"\
+                .format(subcreated_data[1]['contact']['last_name'], c2_last_name)
+        assert subcreated_data[1]['contact']['emails'][0]['name'] == c2_email, \
+            "2nd contact's email doesn't match \n{} != {}"\
+                .format(subcreated_data[1]['contact']['emails'][0]['name'], c2_email)
+        assert subcreated_data[1]['contact']['phones'][0]['name'] == c2_phone, \
+            "2nd contact's phone doesn't match \n{} != {}"\
+                .format(subcreated_data[1]['contact']['phones'][0]['name'], c2_phone)
+        assert subcreated_data[1]['contact']['organizations'][0]['name'] == org_name, \
+            "2nd contact's organization name doesn't match \n{} != {}"\
+                .format(subcreated_data[1]['contact']['organizations'][0]['name'], org_name)
 
 
 class ContactsComplexTest(Neo4jGraphQLTest):
