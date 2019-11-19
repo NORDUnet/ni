@@ -475,6 +475,11 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         org_addr_pcode = "21500"
         org_addr_parea = "Huelva"
 
+        org_addr_name2 = "Second"
+        org_addr_st2 = "Real St. 456"
+        org_addr_pcode2 = "41000"
+        org_addr_parea2 = "Sevilla"
+
         query = '''
         mutation{{
           composite_organization(input:{{
@@ -513,6 +518,12 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 street: "{org_addr_st}"
                 postal_code: "{org_addr_pcode}"
                 postal_area: "{org_addr_parea}"
+              }}
+              {{
+                name: "{org_addr_name2}"
+                street: "{org_addr_st2}"
+                postal_code: "{org_addr_pcode2}"
+                postal_area: "{org_addr_parea2}"
               }}
             ]
           }}){{
@@ -601,7 +612,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                     c2_last_name=c2_last_name, c2_email=c2_email,
                     c2_phone=c2_phone, org_addr_name=org_addr_name,
                     org_addr_st=org_addr_st, org_addr_pcode=org_addr_pcode,
-                    org_addr_parea=org_addr_parea)
+                    org_addr_parea=org_addr_parea, org_addr_name2=org_addr_name2,
+                    org_addr_st2=org_addr_st2, org_addr_pcode2=org_addr_pcode2,
+                    org_addr_parea2=org_addr_parea2)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -622,6 +635,8 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         c1_handle_id = result_data['subcreated'][0]['contact']['handle_id']
         c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['handle_id']
         c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
+        address1_id = result_data['address_created'][0]['address']['handle_id']
+        address2_id = result_data['address_created'][1]['address']['handle_id']
 
         # check the integrity of the data
         created_data = result_data['created']['organization']
@@ -650,9 +665,23 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
             "Address' postal area doesn't match \n{} != {}"\
                 .format(address_node['postal_area'], org_addr_parea)
 
-        subcreated_data = result_data['subcreated']
+        address_node = created_data['addresses'][1]
+        assert address_node['name'] == org_addr_name2, \
+            "Address' 2 name doesn't match \n{} != {}"\
+                .format(address_node['name'], org_addr_name2)
+        assert address_node['street'] == org_addr_st2, \
+            "Address' 2 street doesn't match \n{} != {}"\
+                .format(address_node['street'], org_addr_st2)
+        assert address_node['postal_code'] == org_addr_pcode2, \
+            "Address' 2 postal code doesn't match \n{} != {}"\
+                .format(address_node['postal_code'], org_addr_pcode2)
+        assert address_node['postal_area'] == org_addr_parea2, \
+            "Address' 2 postal area doesn't match \n{} != {}"\
+                .format(address_node['postal_area'], org_addr_parea2)
 
         # contacts
+        subcreated_data = result_data['subcreated']
+
         assert subcreated_data[0]['contact']['first_name'] == c1_first_name, \
             "1st contact's first name doesn't match \n{} != {}"\
                 .format(subcreated_data[0]['contact']['first_name'], c1_first_name)
