@@ -652,7 +652,7 @@ class CompositeOrganizationMutation(CompositeMutation):
         helpers.add_address_organization(user, slave_nh.get_node(), master_nh.handle_id)
 
     @classmethod
-    def process_extra_subentities(cls, user, master_nh, root, info, input):
+    def process_extra_subentities(cls, user, main_nh, root, info, input):
         extract_param = 'address'
         ret_subcreated = None
         ret_subupdated = None
@@ -667,42 +667,48 @@ class CompositeOrganizationMutation(CompositeMutation):
         address_updated = getattr(nimetaclass, 'address_updated', None)
         address_deleted = getattr(nimetaclass, 'address_deleted', None)
 
-        if create_address:
-            ret_subcreated = []
+        main_handle_id = None
 
-            for input in create_address:
-                ret = address_created.mutate_and_get_payload(root, info, **input)
-                ret_subcreated.append(ret)
+        if main_nh:
+            main_handle_id = main_nh.handle_id
 
-                # link if it's possible
-                sub_errors = getattr(ret, 'errors', None)
-                sub_created = getattr(ret, extract_param, None)
+        if main_handle_id:
+            if create_address:
+                ret_subcreated = []
 
-                if not sub_errors and sub_created:
-                    helpers.add_address_organization(
-                        user, sub_created.get_node(), master_nh.handle_id)
+                for input in create_address:
+                    ret = address_created.mutate_and_get_payload(root, info, **input)
+                    ret_subcreated.append(ret)
 
-        if update_address:
-            ret_subupdated = []
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_created = getattr(ret, extract_param, None)
 
-            for input in update_address:
-                ret = address_updated.mutate_and_get_payload(root, info, **input)
-                ret_subupdated.append(ret)
+                    if not sub_errors and sub_created:
+                        helpers.add_address_organization(
+                            user, sub_created.get_node(), main_handle_id)
 
-                # link if it's possible
-                sub_errors = getattr(ret, 'errors', None)
-                sub_edited = getattr(ret, extract_param, None)
+            if update_address:
+                ret_subupdated = []
 
-                if not sub_errors and sub_edited:
-                    helpers.add_address_organization(
-                        user, sub_edited.get_node(), master_nh.handle_id)
+                for input in update_address:
+                    ret = address_updated.mutate_and_get_payload(root, info, **input)
+                    ret_subupdated.append(ret)
 
-        if delete_address:
-            ret_subdeleted = []
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_edited = getattr(ret, extract_param, None)
 
-            for input in delete_address:
-                ret = delete_address.mutate_and_get_payload(root, info, **input)
-                ret_subdeleted.append(ret)
+                    if not sub_errors and sub_edited:
+                        helpers.add_address_organization(
+                            user, sub_edited.get_node(), main_handle_id)
+
+            if delete_address:
+                ret_subdeleted = []
+
+                for input in delete_address:
+                    ret = delete_address.mutate_and_get_payload(root, info, **input)
+                    ret_subdeleted.append(ret)
 
         return dict(address_created=ret_subcreated,
                     address_updated=ret_subupdated,
@@ -838,7 +844,7 @@ class CompositeContactMutation(CompositeMutation):
         helpers.add_email_contact(user, slave_nh.get_node(), master_nh.handle_id)
 
     @classmethod
-    def process_extra_subentities(cls, user, master_nh, root, info, input):
+    def process_extra_subentities(cls, user, main_nh, root, info, input):
         extract_param = 'phone'
         ret_subcreated = None
         ret_subupdated = None
@@ -856,50 +862,56 @@ class CompositeContactMutation(CompositeMutation):
         phones_deleted = getattr(nimetaclass, 'phones_deleted', None)
         rolerelation_mutation = getattr(nimetaclass, 'rolerelation_mutation', None)
 
-        if create_phones:
-            ret_subcreated = []
+        main_handle_id = None
 
-            for input in create_phones:
-                ret = phones_created.mutate_and_get_payload(root, info, **input)
-                ret_subcreated.append(ret)
+        if main_nh:
+            main_handle_id = main_nh.handle_id
 
-                # link if it's possible
-                sub_errors = getattr(ret, 'errors', None)
-                sub_created = getattr(ret, extract_param, None)
+        if main_handle_id:
+            if create_phones:
+                ret_subcreated = []
 
-                if not sub_errors and sub_created:
-                    helpers.add_phone_contact(
-                        user, sub_created.get_node(), master_nh.handle_id)
+                for input in create_phones:
+                    ret = phones_created.mutate_and_get_payload(root, info, **input)
+                    ret_subcreated.append(ret)
 
-        if update_phones:
-            ret_subupdated = []
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_created = getattr(ret, extract_param, None)
 
-            for input in update_phones:
-                ret = phones_updated.mutate_and_get_payload(root, info, **input)
-                ret_subupdated.append(ret)
+                    if not sub_errors and sub_created:
+                        helpers.add_phone_contact(
+                            user, sub_created.get_node(), main_handle_id)
 
-                # link if it's possible
-                sub_errors = getattr(ret, 'errors', None)
-                sub_edited = getattr(ret, extract_param, None)
+            if update_phones:
+                ret_subupdated = []
 
-                if not sub_errors and sub_edited:
-                    helpers.add_phone_contact(
-                        user, sub_edited.get_node(), master_nh.handle_id)
+                for input in update_phones:
+                    ret = phones_updated.mutate_and_get_payload(root, info, **input)
+                    ret_subupdated.append(ret)
 
-        if delete_phones:
-            ret_subdeleted = []
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_edited = getattr(ret, extract_param, None)
 
-            for input in delete_phones:
-                ret = phones_deleted.mutate_and_get_payload(root, info, **input)
-                ret_subdeleted.append(ret)
+                    if not sub_errors and sub_edited:
+                        helpers.add_phone_contact(
+                            user, sub_edited.get_node(), main_handle_id)
 
-        if link_rolerelations:
-            ret_rolerelations = []
+            if delete_phones:
+                ret_subdeleted = []
 
-            for input in link_rolerelations:
-                input['contact_handle_id'] = master_nh.handle_id
-                ret = rolerelation_mutation.mutate_and_get_payload(root, info, **input)
-                ret_rolerelations.append(ret)
+                for input in delete_phones:
+                    ret = phones_deleted.mutate_and_get_payload(root, info, **input)
+                    ret_subdeleted.append(ret)
+
+            if link_rolerelations:
+                ret_rolerelations = []
+
+                for input in link_rolerelations:
+                    input['contact_handle_id'] = main_handle_id
+                    ret = rolerelation_mutation.mutate_and_get_payload(root, info, **input)
+                    ret_rolerelations.append(ret)
 
         return dict(phones_created=ret_subcreated,
                     phones_updated=ret_subupdated,

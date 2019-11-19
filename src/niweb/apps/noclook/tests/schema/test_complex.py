@@ -37,6 +37,8 @@ class GroupComplexTest(Neo4jGraphQLTest):
         c3_mail = 'mwilson@pendletones.com'
         c3_phone = '555-987654'
 
+        # Create query
+
         query = '''
         mutation{{
           composite_group(input:{{
@@ -219,7 +221,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
         c4_mail = 'cwilson@beachboys.com'
         c4_phone = '555-000000'
 
-        #c3_handle_id
+        # Update query
 
         query = '''
         mutation {{
@@ -454,21 +456,19 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         org_web = "pypi.org"
         org_num = "55446"
 
+        contact_type = "person"
+        email_type = "work"
+        phone_type = "work"
+
         c1_first_name = "Janet"
         c1_last_name  = "Doe"
-        c1_contact_type = "person"
         c1_email = "jdoe@pypi.org"
-        c1_email_type = "work"
         c1_phone = "+34600123456"
-        c1_phone_type = "work"
 
         c2_first_name = "Brian"
         c2_last_name  = "Smith"
-        c2_contact_type = "person"
         c2_email = "bsmith@pypi.org"
-        c2_email_type = "work"
         c2_phone = "+34600789456"
-        c2_phone_type = "work"
 
         org_addr_name = "Main"
         org_addr_st = "Fake St. 123"
@@ -479,6 +479,8 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         org_addr_st2 = "Real St. 456"
         org_addr_pcode2 = "41000"
         org_addr_parea2 = "Sevilla"
+
+        # Create query
 
         query = '''
         mutation{{
@@ -496,20 +498,20 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
               {{
                 first_name: "{c1_first_name}"
                 last_name: "{c1_last_name}"
-                contact_type: "{c1_contact_type}"
+                contact_type: "{contact_type}"
                 email: "{c1_email}"
-                email_type: "{c1_email_type}"
+                email_type: "{email_type}"
                 phone:"{c1_phone}"
-                phone_type: "{c1_phone_type}"
+                phone_type: "{phone_type}"
               }}
               {{
                 first_name: "{c2_first_name}"
                 last_name: "{c2_last_name}"
-                contact_type: "{c1_contact_type}"
+                contact_type: "{contact_type}"
                 email: "{c2_email}"
-                email_type: "{c1_email_type}"
+                email_type: "{email_type}"
                 phone:"{c2_phone}"
-                phone_type: "{c1_phone_type}"
+                phone_type: "{phone_type}"
               }}
             ]
             create_address:[
@@ -606,9 +608,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         '''.format(org_name=org_name, org_type=org_type, org_id=org_id,
                     parent_org_id=parent_org_id, org_web=org_web, org_num=org_num,
                     c1_first_name=c1_first_name, c1_last_name=c1_last_name,
-                    c1_contact_type=c1_contact_type, c1_email=c1_email,
-                    c1_email_type=c1_email_type, c1_phone=c1_phone,
-                    c1_phone_type=c1_phone_type, c2_first_name=c2_first_name,
+                    contact_type=contact_type, c1_email=c1_email,
+                    email_type=email_type, c1_phone=c1_phone,
+                    phone_type=phone_type, c2_first_name=c2_first_name,
                     c2_last_name=c2_last_name, c2_email=c2_email,
                     c2_phone=c2_phone, org_addr_name=org_addr_name,
                     org_addr_st=org_addr_st, org_addr_pcode=org_addr_pcode,
@@ -714,6 +716,264 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
             "2nd contact's organization name doesn't match \n{} != {}"\
                 .format(subcreated_data[1]['contact']['organizations'][0]['name'], org_name)
 
+        # Update query
+        c3_first_name = "Stella"
+        c3_last_name  = "Svennson"
+        c3_email = "sperson@pypi.org"
+        c3_phone = "+34600555123"
+
+        query = '''
+        mutation{
+          composite_organization(input:{
+            update_input: {
+              handle_id: {org_handle_id}
+              name: "{org_name}"
+              type: "{org_type}"
+              affiliation_site_owner: false
+              affiliation_partner: true
+              organization_id: "{org_id}"
+              website: "{org_web}"
+              organization_number: "{org_num}"
+            }
+            create_subinputs:[{
+              first_name: "{c3_first_name}"
+              last_name: "{c3_last_name}"
+              contact_type: ""
+              email: ""
+              email_type: ""
+              phone: ""
+              phone_type: ""
+              role_handle_id: -1
+            }]
+            update_subinputs:[{
+              first_name: ""
+              last_name: ""
+              contact_type: ""
+              email: ""
+              email_type: ""
+              phone: ""
+              phone_type: ""
+              role_handle_id: -1
+            }]
+            delete_subinputs:[{
+              handle_id: -1
+            }]
+            create_address:[{
+              name: ""
+              street: ""
+              postal_code: ""
+              postal_area: ""
+            }]
+            update_address:[{
+              handle_id: -1
+              name: ""
+              street: ""
+              postal_code: ""
+              postal_area: ""
+            }]
+            delete_address:[{
+              handle_id: -1
+            }]
+          }){
+            updated{
+            	errors{
+                field
+                messages
+              }
+              organization{
+                handle_id
+                type
+                name
+                description
+                addresses{
+                  handle_id
+                  name
+                  street
+                  postal_code
+                  postal_area
+                }
+                contacts{
+                  handle_id
+                  first_name
+                  last_name
+                  contact_type
+                  emails{
+                    handle_id
+                    name
+                    type
+                  }
+                  phones{
+                    handle_id
+                    name
+                    type
+                  }
+                  organizations{
+                    handle_id
+                    name
+                  }
+                  roles{
+                    relation_id
+                    name
+                    start{
+                      handle_id
+                      first_name
+                      last_name
+                    }
+                    end{
+                      handle_id
+                      name
+                    }
+                  }
+                }
+              }
+          	}
+            subcreated{
+              errors{
+                field
+                messages
+              }
+              contact{
+                handle_id
+                first_name
+                last_name
+                contact_type
+                emails{
+                  handle_id
+                  name
+                  type
+                }
+                phones{
+                  handle_id
+                  name
+                  type
+                }
+                organizations{
+                  handle_id
+                  name
+                }
+                roles{
+                  relation_id
+                  name
+                  start{
+                    handle_id
+                    first_name
+                    last_name
+                  }
+                  end{
+                    handle_id
+                    name
+                  }
+                }
+              }
+            }
+            subupdated{
+              errors{
+                field
+                messages
+              }
+              contact{
+                handle_id
+                first_name
+                last_name
+                contact_type
+                emails{
+                  handle_id
+                  name
+                  type
+                }
+                phones{
+                  handle_id
+                  name
+                  type
+                }
+                organizations{
+                  handle_id
+                  name
+                }
+                roles{
+                  relation_id
+                  name
+                  start{
+                    handle_id
+                    first_name
+                    last_name
+                  }
+                  end{
+                    handle_id
+                    name
+                  }
+                }
+              }
+            }
+            subdeleted{
+              errors{
+                field
+                messages
+              }
+              success
+            }
+            address_created{
+              errors{
+                field
+                messages
+              }
+              address{
+                handle_id
+                name
+                street
+                postal_code
+                postal_area
+              }
+            }
+            address_updated{
+              errors{
+                field
+                messages
+              }
+              address{
+                handle_id
+                name
+                street
+                postal_code
+                postal_area
+              }
+            }
+            address_deleted{
+              errors{
+                field
+                messages
+              }
+              success
+            }
+          }
+        }
+        '''
+        '''.format(org_handle_id=organization_handle_id, org_name=org_name,
+                    org_type=org_type, org_id=org_id, org_web=org_web,
+                    org_num=org_num, c3_first_name=c3_first_name,
+                    c3_last_name=c3_last_name)'''
+
+        '''
+        .format(org_name=org_name, org_type=org_type, org_id=org_id,
+                    parent_org_id=parent_org_id, org_web=org_web, org_num=org_num,
+                    c1_first_name=c1_first_name, c1_last_name=c1_last_name,
+                    c1_contact_type=c1_contact_type, c1_email=c1_email,
+                    c1_email_type=c1_email_type, c1_phone=c1_phone,
+                    c1_phone_type=c1_phone_type, c2_first_name=c2_first_name,
+                    c2_last_name=c2_last_name, c2_email=c2_email,
+                    c2_phone=c2_phone, org_addr_name=org_addr_name,
+                    org_addr_st=org_addr_st, org_addr_pcode=org_addr_pcode,
+                    org_addr_parea=org_addr_parea, org_addr_name2=org_addr_name2,
+                    org_addr_st2=org_addr_st2, org_addr_pcode2=org_addr_pcode2,
+                    org_addr_parea2=org_addr_parea2)
+
+        organization_handle_id = result_data['created']['organization']['handle_id']
+        c1_handle_id = result_data['subcreated'][0]['contact']['handle_id']
+        c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['handle_id']
+        c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
+        address1_id = result_data['address_created'][0]['address']['handle_id']
+        address2_id = result_data['address_created'][1]['address']['handle_id']
+        '''
 
 class ContactsComplexTest(Neo4jGraphQLTest):
     def test_multiple_mutation(self):

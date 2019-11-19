@@ -1579,7 +1579,10 @@ class CompositeMutation(relay.ClientIDMutation):
         # extract handle_id from the returned payload
         extract_param = graphql_type.get_from_nimetatype('ni_type').lower()
         main_nh = getattr(main_ret, extract_param, None)
-        main_handle_id = main_nh.handle_id
+        main_handle_id = None
+
+        if main_nh:
+            main_handle_id = main_nh.handle_id
 
         # check if there's errors in the form
         errors = getattr(main_ret, 'errors', None)
