@@ -37,7 +37,20 @@ def cable_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
     cable = nh.get_node()
     last_seen, expired = helpers.neo4j_data_age(cable.data)
-    connections = cable.get_connected_equipment()
+
+    # should be fixed in nc.get_connected_equipment
+    q = """
+                MATCH (n:Node {handle_id: {handle_id}})-[rel:Connected_to]->(port)
+                OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
+                WITH  rel, port, last(collect(end)) as end
+                OPTIONAL MATCH (end)-[:Located_in]->(location)
+                OPTIONAL MATCH (location)<-[:Has*1..10]-(site:Site)
+                RETURN id(rel) as rel_id, rel, port, end, location, site
+                ORDER BY end.name, port.name
+                """
+    connections = nc.query_to_list(nc.graphdb.manager, q, handle_id=cable.handle_id)
+
+    #connections = cable.get_connected_equipment()
     relations = cable.get_relations()
     dependent = cable.get_dependent_as_types()
     connection_path = cable.get_connection_path()
@@ -227,7 +240,21 @@ def odf_detail(request, handle_id):
     odf = nh.get_node()
     last_seen, expired = helpers.neo4j_data_age(odf.data)
     # Get ports in ODF
-    connections = odf.get_connections()
+    #connections = odf.get_connections()
+    # should be fixed in nc.get_connected_equipment
+    q = """
+              MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta:Port)
+              OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
+              OPTIONAL MATCH (cable)-[r1:Connected_to]->(portb:Port)
+              WHERE ID(r1) <> ID(r0)
+              OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)
+              WITH porta, r0, cable, portb, r1, last(collect(end)) as end
+              OPTIONAL MATCH (end)-[:Located_in]->(location)
+              OPTIONAL MATCH (location)<-[:Has*1..10]-(site:Site)
+              RETURN porta, r0, cable, r1, portb, end, location, site
+        """
+    connections = nc.query_to_list(nc.graphdb.manager, q, handle_id=odf.handle_id)
+
     # Get location
     location_path = odf.get_location_path()
 
@@ -608,6 +635,45 @@ def site_detail(request, handle_id):
                    'urls': urls,
                    })
 
+@login_required
+def room_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    room = nh.get_node()
+    last_seen, expired = helpers.neo4j_data_age(room.data)
+    relations = room.get_relations()
+
+    # Direct equipment (aka not racked)
+    equipment_relationships = _nodes_without(room.get_located_in().get('Located_in', []), 'operational_state', ['decommissioned'])
+
+    # Racked equipment
+    q = """
+    MATCH (room:Room {handle_id: {handle_id}})-[:Has]->(rack:Node)
+    OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
+    WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
+    RETURN rack, item order by toLower(rack.name), toLower(item.name)
+    """
+    rack_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
+
+    # Create racked equipment table
+    racks_table = Table('Rack', 'Equipment')
+    racks_table.rows = [TableRow(r.get('rack'), r.get('item')) for r in rack_list]
+
+    location_path = room.get_location_path()
+
+    urls = helpers.get_node_urls(room, equipment_relationships, relations, rack_list)
+    return render(request, 'noclook/detail/room_detail.html',
+                  {'node_handle': nh,
+                   'node': room,
+                   'last_seen': last_seen,
+                   'expired': expired,
+                   'equipment_relationships': equipment_relationships,
+                   'relations': relations,
+                   'racks_table': racks_table,
+                   'history': True,
+                   'urls': urls,
+                   'location_path':location_path,
+                   })
 
 @login_required
 def site_owner_detail(request, handle_id):

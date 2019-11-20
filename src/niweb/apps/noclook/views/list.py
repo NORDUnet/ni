@@ -3,7 +3,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
-from apps.noclook.models import NodeType
+from apps.noclook.models import NodeType, NodeHandle
 from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
@@ -277,19 +277,13 @@ def list_firewalls(request):
 
 
 def _odf_table(item):
-    location = item.get('location')
-    location_view = None
     odf = item.get('odf')
-    site = item.get('site')
-    # manipulate location name to include site name
-    location_names = []
-    if site and site.get('name'):
-        location_names.append(site.get('name'))
-    if location:
-        if location.get('name'):
-            location_names.append(location.get('name'))
-        location_view = {'name': ' '.join(location_names), 'handle_id': location.get('handle_id')}
-    row = TableRow(location_view, odf)
+    nh = get_object_or_404(NodeHandle, pk=odf.get('handle_id'))
+
+    node = nh.get_node()
+    location_path = node.get_location_path()
+
+    row = TableRow(odf, location_path)
     _set_operational_state(row, odf)
     return row
 
@@ -298,16 +292,15 @@ def _odf_table(item):
 def list_odfs(request):
     q = """
         MATCH (odf:ODF)
-        OPTIONAL MATCH (odf)-[:Located_in]->(location)
-        OPTIONAL MATCH (location)<-[:Has]-(site)
-        RETURN odf, location, site
-        ORDER BY site.name, location.name, odf.name
+        RETURN odf
+        ORDER BY odf.name
         """
     odf_list = nc.query_to_list(nc.graphdb.manager, q)
     odf_list = _filter_operational_state(odf_list, request, select=lambda n: n.get('odf'))
     urls = get_node_urls(odf_list)
 
-    table = Table("Location", "Name")
+
+    table = Table("Name", "Location")
     table.rows = [_odf_table(item) for item in odf_list]
     # Filter out
     _set_filters_operational_state(table, request)
@@ -469,21 +462,49 @@ def list_peering_partners(request):
 def list_racks(request):
     q = """
         MATCH (rack:Rack)
-        OPTIONAL MATCH (rack)<-[:Has]-(site)
-        RETURN rack, site
-        ORDER BY site.name, rack.name
+        RETURN rack
+        ORDER BY rack.name
         """
 
     rack_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(rack_list)
 
-    table = Table('Site', 'Name')
-    table.rows = [TableRow(item['site'], item['rack']) for item in rack_list]
+    table = Table('Name', 'Location')
     table.no_badges = True
+
+    for item in rack_list:
+        rack = item.get('rack')
+        nh = get_object_or_404(NodeHandle, pk=rack.get('handle_id'))
+        node = nh.get_node()
+        location_path = node.get_location_path()
+        table.rows.append(TableRow(item['rack'], location_path))
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Racks', 'urls': urls})
 
+@login_required
+def list_rooms(request):
+    q = """
+        MATCH (room:Room)
+        RETURN room
+        ORDER BY room.name
+        """
+
+    room_list = nc.query_to_list(nc.graphdb.manager, q)
+    urls = get_node_urls(room_list)
+
+    table = Table('Name','Location')
+    for item in room_list:
+        room = item.get('room')
+        nh = get_object_or_404(NodeHandle, pk=room.get('handle_id'))
+        node = nh.get_node()
+        location_path = node.get_location_path()
+        table.rows.append(TableRow(item['room'], location_path))
+
+    table.no_badges = True
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'Rooms', 'urls': urls})
 
 def _router_table(router):
     row = TableRow(router, router.get('model'), router.get('version'), router.get('operational_state'))
