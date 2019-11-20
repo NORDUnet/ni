@@ -580,12 +580,14 @@ class CompositeGroupMutation(CompositeMutation):
         create_subinputs = graphene.List(NIContactMutationFactory.get_create_mutation().Input)
         update_subinputs = graphene.List(NIContactMutationFactory.get_update_mutation().Input)
         delete_subinputs = graphene.List(NIContactMutationFactory.get_delete_mutation().Input)
+        unlink_subinputs = graphene.List(DeleteRelationship.Input)
 
     created = graphene.Field(NIGroupMutationFactory.get_create_mutation())
     updated = graphene.Field(NIGroupMutationFactory.get_update_mutation())
     subcreated = graphene.List(NIContactMutationFactory.get_create_mutation())
     subupdated = graphene.List(NIContactMutationFactory.get_update_mutation())
     subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
+    unlinked = graphene.List(DeleteRelationship)
 
     @classmethod
     def link_slave_to_master(cls, user, master_nh, slave_nh):
@@ -597,6 +599,7 @@ class CompositeGroupMutation(CompositeMutation):
         create_submutation = NIContactMutationFactory.get_create_mutation()
         update_submutation = NIContactMutationFactory.get_update_mutation()
         delete_submutation = NIContactMutationFactory.get_delete_mutation()
+        unlink_submutation = DeleteRelationship
         graphql_type = Group
         graphql_subtype = Contact
 
@@ -609,6 +612,7 @@ class CompositeOrganizationMutation(CompositeMutation):
         create_subinputs = graphene.List(NIContactMutationFactory.get_create_mutation().Input)
         update_subinputs = graphene.List(NIContactMutationFactory.get_update_mutation().Input)
         delete_subinputs = graphene.List(NIContactMutationFactory.get_delete_mutation().Input)
+        unlink_subinputs = graphene.List(DeleteRelationship.Input)
 
         create_address = graphene.List(NIAddressMutationFactory.get_create_mutation().Input)
         update_address = graphene.List(NIAddressMutationFactory.get_update_mutation().Input)
@@ -620,6 +624,7 @@ class CompositeOrganizationMutation(CompositeMutation):
     subcreated = graphene.List(NIContactMutationFactory.get_create_mutation())
     subupdated = graphene.List(NIContactMutationFactory.get_update_mutation())
     subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
+    unlinked = graphene.List(DeleteRelationship)
 
     address_created = graphene.List(NIAddressMutationFactory.get_create_mutation())
     address_updated = graphene.List(NIAddressMutationFactory.get_update_mutation())
@@ -720,6 +725,7 @@ class CompositeOrganizationMutation(CompositeMutation):
         create_submutation = NIContactMutationFactory.get_create_mutation()
         update_submutation = NIContactMutationFactory.get_update_mutation()
         delete_submutation = NIContactMutationFactory.get_delete_mutation()
+        unlink_submutation = DeleteRelationship
         address_created = NIAddressMutationFactory.get_create_mutation()
         address_updated = NIAddressMutationFactory.get_update_mutation()
         address_deleted  = NIAddressMutationFactory.get_delete_mutation()
@@ -818,6 +824,7 @@ class CompositeContactMutation(CompositeMutation):
         create_subinputs = graphene.List(NIEmailMutationFactory.get_create_mutation().Input)
         update_subinputs = graphene.List(NIEmailMutationFactory.get_update_mutation().Input)
         delete_subinputs = graphene.List(NIEmailMutationFactory.get_delete_mutation().Input)
+        unlink_subinputs = graphene.List(DeleteRelationship.Input)
 
         create_phones = graphene.List(NIPhoneMutationFactory.get_create_mutation().Input)
         update_phones = graphene.List(NIPhoneMutationFactory.get_update_mutation().Input)
@@ -831,6 +838,7 @@ class CompositeContactMutation(CompositeMutation):
     subcreated = graphene.List(NIEmailMutationFactory.get_create_mutation())
     subupdated = graphene.List(NIEmailMutationFactory.get_update_mutation())
     subdeleted = graphene.List(NIEmailMutationFactory.get_delete_mutation())
+    unlinked = graphene.List(DeleteRelationship)
     phones_created = graphene.List(NIPhoneMutationFactory.get_create_mutation())
     phones_updated = graphene.List(NIPhoneMutationFactory.get_update_mutation())
     phones_deleted = graphene.List(NIPhoneMutationFactory.get_delete_mutation())
@@ -921,6 +929,7 @@ class CompositeContactMutation(CompositeMutation):
         create_submutation = NIEmailMutationFactory.get_create_mutation()
         update_submutation = NIEmailMutationFactory.get_update_mutation()
         delete_submutation = NIEmailMutationFactory.get_delete_mutation()
+        unlink_submutation = DeleteRelationship
         phones_created = NIPhoneMutationFactory.get_create_mutation()
         phones_updated = NIPhoneMutationFactory.get_update_mutation()
         phones_deleted = NIPhoneMutationFactory.get_delete_mutation()

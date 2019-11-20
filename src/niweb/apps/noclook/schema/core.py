@@ -1560,6 +1560,7 @@ class CompositeMutation(relay.ClientIDMutation):
         ret_subcreated = None
         ret_subupdated = None
         ret_subdeleted = None
+        ret_unlinked = None
 
         has_main_errors = False
 
@@ -1598,10 +1599,12 @@ class CompositeMutation(relay.ClientIDMutation):
             create_subinputs = input.get("create_subinputs")
             update_subinputs = input.get("update_subinputs")
             delete_subinputs = input.get("delete_subinputs")
+            unlink_subinputs = input.get("unlink_subinputs")
 
             create_submutation = getattr(nimetaclass, 'create_submutation', None)
             update_submutation = getattr(nimetaclass, 'update_submutation', None)
             delete_submutation = getattr(nimetaclass, 'delete_submutation', None)
+            unlink_submutation = getattr(nimetaclass, 'unlink_submutation', None)
 
             if create_subinputs:
                 ret_subcreated = []
@@ -1640,13 +1643,20 @@ class CompositeMutation(relay.ClientIDMutation):
                     ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
                     ret_subdeleted.append(ret)
 
+            if unlink_subinputs:
+                ret_unlinked = []
+
+                for subinput in unlink_subinputs:
+                    ret = unlink_submutation.mutate_and_get_payload(root, info, **subinput)
+                    ret_unlinked.append(ret)
+
             ret_extra_subentities = \
                 cls.process_extra_subentities(user, main_nh, root, info, input)
 
         payload_kwargs = dict(
             created=ret_created, updated=ret_updated,
             subcreated=ret_subcreated, subupdated=ret_subupdated,
-            subdeleted=ret_subdeleted
+            subdeleted=ret_subdeleted, unlinked=ret_unlinked
         )
 
         if ret_extra_subentities:
