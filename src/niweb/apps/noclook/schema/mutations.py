@@ -790,12 +790,9 @@ class RoleRelationMutation(relay.ClientIDMutation):
             )
             errors.append(error)
 
-        if sriutils.authorice_write_resource(user, role_handle_id):
-            try:
-                role_model = RoleModel.objects.get(handle_id=role_handle_id)
-            except:
-                add_error_role = True
-        else:
+        try:
+            role_model = RoleModel.objects.get(handle_id=role_handle_id)
+        except:
             add_error_role = True
 
         if add_error_role:
