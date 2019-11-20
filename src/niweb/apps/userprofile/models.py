@@ -41,4 +41,6 @@ class UserProfile(models.Model):
 @receiver(post_save, sender=User)
 def create_user_profile(sender, **kwargs):
     user = kwargs['instance']
-    UserProfile.objects.get_or_create(user=user)
+    user_profile, created = UserProfile.objects.get_or_create(user=user)
+    if(created):
+        user_profile.display_name = "%s %s" % (user.first_name, user.last_name)
