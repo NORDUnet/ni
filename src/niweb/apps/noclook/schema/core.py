@@ -1575,6 +1575,7 @@ class CompositeMutation(relay.ClientIDMutation):
             raise Exception('At least an input should be provided')
 
         main_ret = ret_created if create else ret_updated
+        main_input = create_input if create else update_input
 
         # extract handle_id from the returned payload
         extract_param = graphql_type.get_from_nimetatype('ni_type').lower()
@@ -1614,7 +1615,7 @@ class CompositeMutation(relay.ClientIDMutation):
                     sub_created = getattr(ret, extract_param, None)
 
                     if not sub_errors and sub_created:
-                        link_kwargs = cls.get_link_kwargs(create_input, input)
+                        link_kwargs = cls.get_link_kwargs(main_input, subinput)
                         cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
 
             if update_subinputs:
@@ -1629,7 +1630,7 @@ class CompositeMutation(relay.ClientIDMutation):
                     sub_edited = getattr(ret, extract_param, None)
 
                     if not sub_errors and sub_edited:
-                        link_kwargs = cls.get_link_kwargs(create_input, input)
+                        link_kwargs = cls.get_link_kwargs(main_input, subinput)
                         cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
 
             if delete_subinputs:

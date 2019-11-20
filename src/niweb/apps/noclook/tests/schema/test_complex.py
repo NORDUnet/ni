@@ -732,7 +732,8 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         org_addr_pcode3 = "41001"
         org_addr_parea3 = "Sevilla"
 
-        nondefault_roleid = Role.objects.all().first().handle_id
+        nondefault_role = Role.objects.all().first()
+        nondefault_roleid = nondefault_role.handle_id
 
         query = '''
         mutation{{
@@ -1083,23 +1084,29 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert contact_1['organizations'][0]['name'] == org_name, \
             "1st contact's organization name doesn't match \n{} != {}"\
                 .format(contact_1['organizations'][0]['name'], org_name)
+        assert contact_1['roles'][0]['name'] == nondefault_role.name, \
+            "1st contact's role name doesn't match \n{} != {}"\
+                .format(contact_1['roles'][0]['name'], nondefault_role.name)
 
         self.assertIsNotNone(contact_3)
         assert contact_3['first_name'] == c3_first_name, \
-            "1st contact's first name doesn't match \n{} != {}"\
+            "3rd contact's first name doesn't match \n{} != {}"\
                 .format(contact_3['first_name'], c3_first_name)
         assert contact_3['last_name'] == c3_last_name, \
-            "1st contact's last name doesn't match \n{} != {}"\
+            "3rd contact's last name doesn't match \n{} != {}"\
                 .format(contact_3['last_name'], c3_last_name)
         assert contact_3['emails'][0]['name'] == c3_email, \
-            "1st contact's email doesn't match \n{} != {}"\
+            "3rd contact's email doesn't match \n{} != {}"\
                 .format(contact_3['emails'][0]['name'], c3_email)
         assert contact_3['phones'][0]['name'] == c3_phone, \
-            "1st contact's phone doesn't match \n{} != {}"\
+            "3rd contact's phone doesn't match \n{} != {}"\
                 .format(contact_3['phones'][0]['name'], c3_phone)
         assert contact_3['organizations'][0]['name'] == org_name, \
-            "1st contact's organization name doesn't match \n{} != {}"\
+            "3rd contact's organization name doesn't match \n{} != {}"\
                 .format(contact_3['organizations'][0]['name'], org_name)
+        assert contact_3['roles'][0]['name'] == nondefault_role.name, \
+            "3rd contact's role name doesn't match \n{} != {}"\
+                .format(contact_3['roles'][0]['name'], nondefault_role.name)
 
         # check for deleted address and contact
         c2_handle_id = int(c2_handle_id)
