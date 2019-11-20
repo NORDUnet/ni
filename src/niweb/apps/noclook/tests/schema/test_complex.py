@@ -588,6 +588,19 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   handle_id
                   name
                 }}
+                roles{{
+                  relation_id
+                  name
+                  start{{
+                    handle_id
+                    first_name
+                    last_name
+                  }}
+                  end{{
+                    handle_id
+                    name
+                  }}
+                }}
               }}
             }}
             address_created{{
@@ -637,6 +650,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         c1_handle_id = result_data['subcreated'][0]['contact']['handle_id']
         c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['handle_id']
         c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
+        c1_org_rel_id = result_data['subcreated'][0]['contact']['roles'][0]['relation_id']
         c2_handle_id = result_data['subcreated'][1]['contact']['handle_id']
         address1_id = result_data['address_created'][0]['address']['handle_id']
         address2_id = result_data['address_created'][1]['address']['handle_id']
@@ -788,6 +802,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
             }}]
             delete_address:[{{
               handle_id: {address2_id}
+            }}]
+            unlink_subinputs:[{{
+              relation_id: {c1_org_rel_id}
             }}]
           }}){{
             updated{{
@@ -976,7 +993,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                     org_addr_parea3=org_addr_parea3, address1_id=address1_id,
                     org_addr_name=org_addr_name, org_addr_st=org_addr_st,
                     org_addr_pcode=org_addr_pcode, org_addr_parea=org_addr_parea,
-                    address2_id=address2_id)
+                    address2_id=address2_id, c1_org_rel_id=c1_org_rel_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1087,6 +1104,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert contact_1['roles'][0]['name'] == nondefault_role.name, \
             "1st contact's role name doesn't match \n{} != {}"\
                 .format(contact_1['roles'][0]['name'], nondefault_role.name)
+        assert len(contact_1['roles']) == 1, "1st contact has two roles"
 
         self.assertIsNotNone(contact_3)
         assert contact_3['first_name'] == c3_first_name, \
@@ -1107,6 +1125,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert contact_3['roles'][0]['name'] == nondefault_role.name, \
             "3rd contact's role name doesn't match \n{} != {}"\
                 .format(contact_3['roles'][0]['name'], nondefault_role.name)
+        assert len(contact_3['roles']) == 1, "1st contact has two roles"
 
         # check for deleted address and contact
         c2_handle_id = int(c2_handle_id)
