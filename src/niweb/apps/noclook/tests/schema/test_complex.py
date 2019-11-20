@@ -718,9 +718,13 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 .format(subcreated_data[1]['contact']['organizations'][0]['name'], org_name)
 
         # Update query
+        org_name = 'FSF'
+        c1_email = "jdoe@fsf.org"
+        c2_email = "bsmith@fsf.org"
+
         c3_first_name = "Stella"
         c3_last_name  = "Svennson"
-        c3_email = "sperson@pypi.org"
+        c3_email = "ssvensson@fsf.org"
         c3_phone = "+34600555123"
 
         org_addr_name3 = "Thrid"
@@ -997,6 +1001,114 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
 
         for subdeleted in result.data['composite_organization']['address_deleted']:
             assert not subdeleted['errors']
+
+        # get the ids
+        result_data = result.data['composite_organization']
+        address3_id = result_data['address_created'][0]['address']['handle_id']
+        c3_handle_id = result_data['subcreated'][0]['contact']['handle_id']
+
+        # check the integrity of the data
+        updated_data = result_data['updated']['organization']
+
+        # check organization
+        assert updated_data['name'] == org_name, \
+            "Organization name doesn't match \n{} != {}"\
+                .format(updated_data['name'], org_name)
+        assert updated_data['type'] == org_type, \
+            "Organization type doesn't match \n{} != {}"\
+                .format(updated_data['type'], org_type)
+
+        # check subnodes (address and contacts)
+        address_node_1 = None
+        address_node_3 = None
+
+        for address_node in updated_data['addresses']:
+            if address_node['handle_id'] == address1_id:
+                address_node_1 = address_node
+            elif address_node['handle_id'] == address3_id:
+                address_node_3 = address_node
+
+        self.assertIsNotNone(address_node_1)
+
+        assert address_node_1['name'] == org_addr_name, \
+            "Created address' name doesn't match \n{} != {}"\
+                .format(address_node_1['name'], org_addr_name)
+        assert address_node_1['street'] == org_addr_st, \
+            "Created address' street doesn't match \n{} != {}"\
+                .format(address_node_1['street'], org_addr_st)
+        assert address_node_1['postal_code'] == org_addr_pcode, \
+            "Created address' postal code doesn't match \n{} != {}"\
+                .format(address_node_1['postal_code'], org_addr_pcode)
+        assert address_node_1['postal_area'] == org_addr_parea, \
+            "Created address' postal area doesn't match \n{} != {}"\
+                .format(address_node_1['postal_area'], org_addr_parea)
+
+        self.assertIsNotNone(address_node_3)
+
+        assert address_node_3['name'] == org_addr_name3, \
+            "Created address' name doesn't match \n{} != {}"\
+                .format(address_node_3['name'], org_addr_name3)
+        assert address_node_3['street'] == org_addr_st3, \
+            "Created address' street doesn't match \n{} != {}"\
+                .format(address_node_3['street'], org_addr_st3)
+        assert address_node_3['postal_code'] == org_addr_pcode3, \
+            "Created address' postal code doesn't match \n{} != {}"\
+                .format(address_node_3['postal_code'], org_addr_pcode3)
+        assert address_node_3['postal_area'] == org_addr_parea3, \
+            "Created address' postal area doesn't match \n{} != {}"\
+                .format(address_node_3['postal_area'], org_addr_parea3)
+
+        contact_1 = None
+        contact_3 = None
+
+        for contact_node in updated_data['contacts']:
+            if contact_node['handle_id'] == c1_handle_id:
+                contact_1 = contact_node
+            elif contact_node['handle_id'] == c3_handle_id:
+                contact_3 = contact_node
+
+        self.assertIsNotNone(contact_1)
+        assert contact_1['first_name'] == c1_first_name, \
+            "1st contact's first name doesn't match \n{} != {}"\
+                .format(contact_1['first_name'], c1_first_name)
+        assert contact_1['last_name'] == c1_last_name, \
+            "1st contact's last name doesn't match \n{} != {}"\
+                .format(contact_1['last_name'], c1_last_name)
+        assert contact_1['emails'][0]['name'] == c1_email, \
+            "1st contact's email doesn't match \n{} != {}"\
+                .format(contact_1['emails'][0]['name'], c1_email)
+        assert contact_1['phones'][0]['name'] == c1_phone, \
+            "1st contact's phone doesn't match \n{} != {}"\
+                .format(contact_1['phones'][0]['name'], c1_phone)
+        assert contact_1['organizations'][0]['name'] == org_name, \
+            "1st contact's organization name doesn't match \n{} != {}"\
+                .format(contact_1['organizations'][0]['name'], org_name)
+
+        self.assertIsNotNone(contact_3)
+        assert contact_3['first_name'] == c3_first_name, \
+            "1st contact's first name doesn't match \n{} != {}"\
+                .format(contact_3['first_name'], c3_first_name)
+        assert contact_3['last_name'] == c3_last_name, \
+            "1st contact's last name doesn't match \n{} != {}"\
+                .format(contact_3['last_name'], c3_last_name)
+        assert contact_3['emails'][0]['name'] == c3_email, \
+            "1st contact's email doesn't match \n{} != {}"\
+                .format(contact_3['emails'][0]['name'], c3_email)
+        assert contact_3['phones'][0]['name'] == c3_phone, \
+            "1st contact's phone doesn't match \n{} != {}"\
+                .format(contact_3['phones'][0]['name'], c3_phone)
+        assert contact_3['organizations'][0]['name'] == org_name, \
+            "1st contact's organization name doesn't match \n{} != {}"\
+                .format(contact_3['organizations'][0]['name'], org_name)
+
+        # check for deleted address and contact
+        c2_handle_id = int(c2_handle_id)
+        assert not NodeHandle.objects.filter(handle_id=c2_handle_id).exists(), \
+            "Second contact of this organization should have been deleted"
+
+        address2_id = int(address2_id)
+        assert not NodeHandle.objects.filter(handle_id=address2_id).exists(), \
+            "Second address of this organization should have been deleted"
 
 
 class ContactsComplexTest(Neo4jGraphQLTest):
