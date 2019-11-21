@@ -412,6 +412,7 @@ class NIObjectType(DjangoObjectType):
             # adding order attributes and store in field property
             if of_type == graphene.Int or \
                 of_type == graphene.String or \
+                of_type == ChoiceScalar or \
                 issubclass(of_type, NIObjectType) or \
                 issubclass(of_type, NIRelationType):
                 asc_field_name = '{}_{}'.format(field_name, cls._asc_suffix)
