@@ -724,6 +724,52 @@ def edit_port(request, handle_id):
 
 
 @staff_member_required
+def connect_port(request, handle_id):
+    nh, port = helpers.get_nh_node(handle_id)
+    parent = port.get_parent()
+    connected_to = port.get_connected_to()
+    parent_categories = ['external-equipment',
+                         'firewall',
+                         'host',
+                         'odf',
+                         'optical-node',
+                         'router',
+                         'switch']
+    connections_categories = Dropdown.get('cable_types').as_values(False)
+
+    cable_types = u', '.join([u'"{}"'.format(val) for val in Dropdown.get('cable_types').as_values()])
+
+    if request.POST:
+        form = forms.ConnectPortForm(request.POST)
+        if form.is_valid():
+            try:
+                new_cable_nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
+            except UniqueNodeError:
+                form = forms.ConnectPortForm(request.POST)
+                form.add_error('name', 'A Cable with that name already exists.')
+                return render(request, 'noclook/create/create_cable.html', {'form': form})
+
+            # Generic node update
+            helpers.form_update_node(request.user, port.handle_id, form)
+            # Port specific updates
+            helpers.set_connected_to(request.user, new_cable_nh, node.handle_id)
+
+            if form.cleaned_data['relationship_end_b']:
+                end_b_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_b'])
+                helpers.set_connected_to(request.user, new_cable_nh, end_b_nh.handle_id)
+
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        initial = {'name': None}
+        form = forms.ConnectPortForm(initial=initial)
+
+    return render(request, 'noclook/edit/connect_port.html',
+                  {'node_handle': nh, 'form': form, 'node': port, 'parent': parent,
+                      'connected_to': connected_to, 'cable_types': cable_types, 'parent_categories': parent_categories, 'connections_categories': connections_categories})
+
+
+@staff_member_required
 def edit_provider(request, handle_id):
     # Get needed data from node
     nh, provider = helpers.get_nh_node(handle_id)

@@ -240,6 +240,19 @@ class EditCableForm(NewCableForm):
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
+class ConnectPortForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(ConnectPortForm, self).__init__(*args, **kwargs)
+        self.fields['cable_type'].choices = Dropdown.get('cable_types').as_choices()
+        #self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
+    name = forms.CharField()
+    cable_type = forms.ChoiceField(widget=forms.widgets.Select, initial='Patch')
+    relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+
+
 class OpticalNodeForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(OpticalNodeForm, self).__init__(*args, **kwargs)

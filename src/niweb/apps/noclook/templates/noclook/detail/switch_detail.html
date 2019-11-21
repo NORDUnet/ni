@@ -128,7 +128,7 @@
     </form>
 {% endif %}
 {% include "noclook/detail/includes/depend_include.html" %}
-{% include "noclook/detail/includes/connections.html" with connections=connections only %}
+{% include "noclook/detail/includes/connections.html" with connections=connections user=user only %}
 {% include "noclook/detail/includes/host_services.html" %}
 {% if hardware_modules %}
 <div class="accordion" id="hardware">
