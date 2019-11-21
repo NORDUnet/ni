@@ -930,36 +930,46 @@ class NIObjectType(DjangoObjectType):
         if orderBy:
             emptyFilter = False if filter else True
             of_type = cls._order_field_match[orderBy]['input_field']
-            additional_clause = of_type.match_additional_clause
 
-            if issubclass(of_type, NIObjectType):
-                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
-                neo4j_vars[of_type] = neo4j_var
-                additional_clause = additional_clause.format(
-                    'n:{}'.format(nodetype),
-                    'l{}'.format(idxdict['subrel_idx']),
-                    idxdict['node_idx']
-                )
+            additional_clause = ''
 
-                optional_matches = 'OPTIONAL MATCH {}'.format(additional_clause)
-                order_query = 'ORDER BY {} {}'.format(
-                    '{}.name'.format(neo4j_var),
-                    cls._desc_suffix if cls._order_field_match[orderBy]['is_desc'] else cls._asc_suffix,
-                )
-            elif issubclass(of_type, NIRelationType):
-                neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
-                neo4j_vars[of_type] = neo4j_var
-                additional_clause = additional_clause.format(
-                    'n:{}'.format(nodetype),
-                    idxdict['rel_idx'],
-                    'z{}'.format(idxdict['subnode_idx'])
-                )
+            if hasattr(of_type, 'match_additional_clause'):
+                additional_clause = of_type.match_additional_clause
 
-                optional_matches = 'OPTIONAL MATCH {}'.format(additional_clause)
-                order_query = 'ORDER BY {} {}'.format(
-                    '{}.name'.format(neo4j_var),
-                    cls._desc_suffix if cls._order_field_match[orderBy]['is_desc'] else cls._asc_suffix,
-                )
+                if issubclass(of_type, NIObjectType):
+                    neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
+                    neo4j_vars[of_type] = neo4j_var
+                    additional_clause = additional_clause.format(
+                        'n:{}'.format(nodetype),
+                        'l{}'.format(idxdict['subrel_idx']),
+                        idxdict['node_idx']
+                    )
+
+                    optional_matches = 'OPTIONAL MATCH {}'.format(additional_clause)
+                    order_query = 'ORDER BY {} {}'.format(
+                        '{}.name'.format(neo4j_var),
+                        cls._desc_suffix if cls._order_field_match[orderBy]['is_desc'] else cls._asc_suffix,
+                    )
+                elif issubclass(of_type, NIRelationType):
+                    neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
+                    neo4j_vars[of_type] = neo4j_var
+                    additional_clause = additional_clause.format(
+                        'n:{}'.format(nodetype),
+                        idxdict['rel_idx'],
+                        'z{}'.format(idxdict['subnode_idx'])
+                    )
+
+                    optional_matches = 'OPTIONAL MATCH {}'.format(additional_clause)
+                    order_query = 'ORDER BY {} {}'.format(
+                        '{}.name'.format(neo4j_var),
+                        cls._desc_suffix if cls._order_field_match[orderBy]['is_desc'] else cls._asc_suffix,
+                    )
+            else:
+                m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                prop = m[1]
+                order = m[2]
+
+                order_query = "ORDER BY n.{} {}".format(prop, order)
 
         if handle_id_order:
             order_nibble = 'ASC' if revert_order else 'DESC'
