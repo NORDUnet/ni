@@ -194,14 +194,14 @@ SAML_ENABLED = environ.get('SAML_ENABLED', False)
 
 ########## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
-MIDDLEWARE_CLASSES = (
-    'django.middleware.common.CommonMiddleware',
+MIDDLEWARE = (
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
 )
 ########## END MIDDLEWARE CONFIGURATION
@@ -213,6 +213,9 @@ AUTHENTICATION_BACKENDS = (
 if SAML_ENABLED:
     AUTHENTICATION_BACKENDS += (
         'djangosaml2.backends.Saml2Backend',
+    )
+    MIDDLEWARE += (
+        'apps.saml2auth.middleware.HandleUnsupportedBinding',
     )
 ######### END AUTHENTICATION BACKENDS CONFIGURATION
 

@@ -358,8 +358,8 @@ def _equipment_spacer(units):
 
 
 def _rack_sort(item):
-    pos = item.get('node').data.get('rack_position', -1)
-    size = item.get('node').data.get('rack_units', 0) * -1
+    pos = int(item.get('node').data.get('rack_position', -1))
+    size = int(item.get('node').data.get('rack_units', 0)) * -1
 
     return (pos, size)
 
@@ -367,11 +367,11 @@ RACK_SIZE_PX=20
 
 def _equipment(item):
     data = item.get('node').data
-    units = data.get('rack_units', 1)
+    units = int(data.get('rack_units', 1))
     return {
         'units': units,
         'position': data.get('rack_position'),
-        'position_end': units + data.get('rack_position', 1) - 1,
+        'position_end': units + int(data.get('rack_position', 1)) - 1,
         'height': "{}px".format(units * RACK_SIZE_PX),
         'sub_equipment': [],
         'data': data,
@@ -389,7 +389,7 @@ def noclook_rack(rack, equipment):
     last_eq = None
     for item in equipment:
         view_data = _equipment(item)
-        ridx = view_data.get('position')
+        ridx = int(view_data.get('position', 0) or 0)
         if ridx and ridx > 0:
             spacing = ridx - idx
             if spacing < 0:
