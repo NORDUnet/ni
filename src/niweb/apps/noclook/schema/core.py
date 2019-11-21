@@ -640,8 +640,10 @@ class NIObjectType(DjangoObjectType):
                 nodes = None
                 node_type = NodeType.objects.get(type=type_name)
                 qs = NodeHandle.objects.filter(node_type=node_type)
-                no_filter = False
-                no_order  = False
+
+                # instead of vakt here, we reduce the original qs
+                # to only the ones the user has right to read
+                qs = sriutils.trim_readable_queryset(qs, info.context.user)
 
                 # remove default ordering prop if there's no filter
                 if not cls.order_is_empty(orderBy):
@@ -660,85 +662,41 @@ class NIObjectType(DjangoObjectType):
                     qs = UserQueryBuilder.filter_queryset(filter, qs)
 
                     # create query
-                    q = cls.build_filter_query(filter, orderBy, type_name)
+                    q = cls.build_filter_query(filter, orderBy, type_name,
+                                    apply_handle_id_order, revert_default_order)
                     nodes = nc.query_to_list(nc.graphdb.manager, q)
                     nodes = [ node['n'] for node in nodes]
 
                     use_neo4j_query = True
                 else:
                     use_neo4j_query = False
-                    no_filter = True
-
-                handle_ids = []
 
                 if use_neo4j_query:
-                    pass
-                else:
-                    pass
-
-                if nodes or no_filter:
-                    qs_order_prop = None
-                    qs_order_order = None
-
-                    # ordering
-                    if orderBy:
-                        # extract field and order
-                        m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
-                        prop = m[1]
-                        order = m[2]
-
-                        if no_filter: # delay neo4j query
-                            nodes = nc.get_nodes_by_type(nc.graphdb.manager, type_name)
-                            nodes = list(nodes)
-
-                        if prop not in DateQueryBuilder.fields:
-                            # node property ordering
-                            reverse = True if order == 'DESC' else False
-                            nodes.sort(key=lambda x: x.get(prop, ''), reverse=reverse)
-                        else: # set model attribute ordering
-                            qs_order_prop  = prop
-                            qs_order_order = order
-
-                        handle_ids = [ node['handle_id'] for node in nodes ]
-                    else:
-                        no_order = True
-
-                        if not no_filter:
-                            handle_ids = [ node['handle_id'] for node in nodes ]
-
                     ret = []
 
-                    if not no_filter or not no_order:
-                        # instead of vakt here, we reduce the original qs
-                        # to only the ones the user has right to read
-                        qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                    handle_ids = []
+                    handle_ids = [ node['handle_id'] for node in nodes ]
 
-                        for handle_id in handle_ids:
-                            nodeqs = qs.filter(handle_id=handle_id)
-                            try:
-                                the_node = nodeqs.first()
-                                if the_node:
-                                    ret.append(the_node)
-                            except:
-                                pass # nothing to do if the qs doesn't have elements
+                    for handle_id in handle_ids:
+                        nodeqs = qs.filter(handle_id=handle_id)
+                        try:
+                            the_node = nodeqs.first()
+                            if the_node:
+                                ret.append(the_node)
+                        except:
+                            pass # nothing to do if the qs doesn't have elements
+                else:
+                    if apply_handle_id_order:
+                        logger.debug('Apply handle_id order')
 
-                        # do nodehandler attributes ordering now that we have
-                        # the nodes set, if this order is requested
-                        if qs_order_prop and qs_order_order:
-                            reverse = True if qs_order_order == 'DESC' else False
-                            ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
-                    else:
-                        if apply_handle_id_order:
-                            logger.debug('Apply handle_id order')
+                        if not revert_default_order:
+                            logger.debug('Apply descendent handle_id')
+                            qs = qs.order_by('-handle_id')
+                        else:
+                            logger.debug('Apply ascending handle_id')
+                            qs = qs.order_by('handle_id')
 
-                            if not revert_default_order:
-                                logger.debug('Apply descendent handle_id')
-                                qs = qs.order_by('-handle_id')
-                            else:
-                                logger.debug('Apply ascending handle_id')
-                                qs = qs.order_by('handle_id')
-
-                        ret = list(qs)
+                    ret = list(qs)
 
                 if not ret:
                     ret = []
@@ -750,7 +708,7 @@ class NIObjectType(DjangoObjectType):
         return generic_list_resolver
 
     @classmethod
-    def build_filter_query(cls, filter, orderBy, nodetype):
+    def build_filter_query(cls, filter, orderBy, nodetype, handle_id_order=False, revert_order=False):
         build_query = ''
         order_query = ''
         optional_matches = ''
@@ -964,6 +922,10 @@ class NIObjectType(DjangoObjectType):
                     '{}.name'.format(neo4j_var),
                     cls._desc_suffix if cls._order_field_match[orderBy]['is_desc'] else cls._asc_suffix,
                 )
+
+        if handle_id_order:
+            order_nibble = 'ASC' if revert_order else 'DESC'
+            order_query = "ORDER BY n.handle_id {}".format(order_nibble)
 
         q = """
             MATCH {node_match_clause}
