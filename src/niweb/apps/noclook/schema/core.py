@@ -675,7 +675,9 @@ class NIObjectType(DjangoObjectType):
                     ret = []
 
                     handle_ids = []
-                    handle_ids = [ node['handle_id'] for node in nodes ]
+                    for node in nodes:
+                        if node['handle_id'] not in handle_ids:
+                            handle_ids.append(node['handle_id'])
 
                     for handle_id in handle_ids:
                         nodeqs = qs.filter(handle_id=handle_id)
