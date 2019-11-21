@@ -7,7 +7,8 @@ import apps.noclook.vakt.utils as sriutils
 
 from apps.noclook import activitylog, helpers
 from apps.noclook.forms import *
-from apps.noclook.models import Dropdown as DropdownModel, Role as RoleModel, DEFAULT_ROLES, Choice as ChoiceModel
+from apps.noclook.models import Dropdown as DropdownModel, Role as RoleModel, \
+    DEFAULT_ROLES, DEFAULT_ROLES, Choice as ChoiceModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.test import RequestFactory
@@ -135,12 +136,37 @@ def delete_outgoing_nodes(nodehandler, relation_name, user):
 
 class NIContactMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        form = EditContactForm
+        form = MailPhoneContactForm
         request_path   = '/'
         graphql_type   = Contact
         relations_processors = {
             'relationship_works_for': process_works_for,
             'relationship_member_of': process_member_of,
+        }
+
+        subentity_processors = {
+            'email': {
+                'form': EmailForm,
+                'type_slug': 'email',
+                'meta_type': 'Logical',
+                'fields': {
+                    'handle_id': 'email_handle_id',
+                    'name': 'email',
+                    'type': 'email_type',
+                },
+                'link_method': 'add_email',
+            },
+            'phone': {
+                'form': PhoneForm,
+                'type_slug': 'phone',
+                'meta_type': 'Logical',
+                'fields': {
+                    'handle_id': 'phone_handle_id',
+                    'name': 'phone',
+                    'type': 'phone_type',
+                },
+                'link_method': 'add_phone',
+            },
         }
 
         delete_nodes = {
@@ -150,6 +176,10 @@ class NIContactMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+        property_update = [
+            'first_name', 'last_name', 'contact_type', 'name', 'title',
+            'pgp_fingerprint', 'notes'
+        ]
 
 
 class CreateOrganization(CreateNIMutation):
@@ -542,10 +572,377 @@ class CreateOptionForDropdown(relay.ClientIDMutation):
         return CreateOptionForDropdown(choice=choice)
 
 
+## Composite mutations
+class CompositeGroupMutation(CompositeMutation):
+    class Input:
+        create_input = graphene.Field(NIGroupMutationFactory.get_create_mutation().Input)
+        update_input = graphene.Field(NIGroupMutationFactory.get_update_mutation().Input)
+        create_subinputs = graphene.List(NIContactMutationFactory.get_create_mutation().Input)
+        update_subinputs = graphene.List(NIContactMutationFactory.get_update_mutation().Input)
+        delete_subinputs = graphene.List(NIContactMutationFactory.get_delete_mutation().Input)
+        unlink_subinputs = graphene.List(DeleteRelationship.Input)
+
+    created = graphene.Field(NIGroupMutationFactory.get_create_mutation())
+    updated = graphene.Field(NIGroupMutationFactory.get_update_mutation())
+    subcreated = graphene.List(NIContactMutationFactory.get_create_mutation())
+    subupdated = graphene.List(NIContactMutationFactory.get_update_mutation())
+    subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
+    unlinked = graphene.List(DeleteRelationship)
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh):
+        helpers.set_member_of(user, slave_nh.get_node(), master_nh.handle_id)
+
+    class NIMetaClass:
+        create_mutation = NIGroupMutationFactory.get_create_mutation()
+        update_mutation = NIGroupMutationFactory.get_update_mutation()
+        create_submutation = NIContactMutationFactory.get_create_mutation()
+        update_submutation = NIContactMutationFactory.get_update_mutation()
+        delete_submutation = NIContactMutationFactory.get_delete_mutation()
+        unlink_submutation = DeleteRelationship
+        graphql_type = Group
+        graphql_subtype = Contact
+
+
+class CompositeOrganizationMutation(CompositeMutation):
+    class Input:
+        create_input = graphene.Field(CreateOrganization.Input)
+        update_input = graphene.Field(UpdateOrganization.Input)
+
+        create_subinputs = graphene.List(NIContactMutationFactory.get_create_mutation().Input)
+        update_subinputs = graphene.List(NIContactMutationFactory.get_update_mutation().Input)
+        delete_subinputs = graphene.List(NIContactMutationFactory.get_delete_mutation().Input)
+        unlink_subinputs = graphene.List(DeleteRelationship.Input)
+
+        create_address = graphene.List(NIAddressMutationFactory.get_create_mutation().Input)
+        update_address = graphene.List(NIAddressMutationFactory.get_update_mutation().Input)
+        delete_address = graphene.List(NIAddressMutationFactory.get_delete_mutation().Input)
+
+    created = graphene.Field(CreateOrganization)
+    updated = graphene.Field(UpdateOrganization)
+
+    subcreated = graphene.List(NIContactMutationFactory.get_create_mutation())
+    subupdated = graphene.List(NIContactMutationFactory.get_update_mutation())
+    subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
+    unlinked = graphene.List(DeleteRelationship)
+
+    address_created = graphene.List(NIAddressMutationFactory.get_create_mutation())
+    address_updated = graphene.List(NIAddressMutationFactory.get_update_mutation())
+    address_deleted  = graphene.List(NIAddressMutationFactory.get_delete_mutation())
+
+    @classmethod
+    def get_link_kwargs(cls, master_input, slave_input):
+        ret = {}
+        role_handle_id = slave_input.get('role_handle_id', None)
+
+        if role_handle_id:
+            ret['role_handle_id'] = role_handle_id
+
+        return ret
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh, **kwargs):
+        role_handle_id = kwargs.get('role_handle_id', None)
+        role = None
+
+        if role_handle_id:
+            role = RoleModel.objects.get(handle_id=role_handle_id)
+        else:
+            role = RoleModel.objects.get(slug=DEFAULT_ROLE_KEY)
+
+        helpers.link_contact_role_for_organization(user, master_nh.get_node(), slave_nh.handle_id, role)
+
+    @classmethod
+    def link_address_to_organization(cls, user, master_nh, slave_nh, **kwargs):
+        helpers.add_address_organization(user, slave_nh.get_node(), master_nh.handle_id)
+
+    @classmethod
+    def process_extra_subentities(cls, user, main_nh, root, info, input):
+        extract_param = 'address'
+        ret_subcreated = None
+        ret_subupdated = None
+        ret_subdeleted = None
+
+        create_address = input.get("create_address")
+        update_address = input.get("update_address")
+        delete_address = input.get("delete_address")
+
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        address_created = getattr(nimetaclass, 'address_created', None)
+        address_updated = getattr(nimetaclass, 'address_updated', None)
+        address_deleted = getattr(nimetaclass, 'address_deleted', None)
+
+        main_handle_id = None
+
+        if main_nh:
+            main_handle_id = main_nh.handle_id
+
+        if main_handle_id:
+            if create_address:
+                ret_subcreated = []
+
+                for input in create_address:
+                    ret = address_created.mutate_and_get_payload(root, info, **input)
+                    ret_subcreated.append(ret)
+
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_created = getattr(ret, extract_param, None)
+
+                    if not sub_errors and sub_created:
+                        helpers.add_address_organization(
+                            user, sub_created.get_node(), main_handle_id)
+
+            if update_address:
+                ret_subupdated = []
+
+                for input in update_address:
+                    ret = address_updated.mutate_and_get_payload(root, info, **input)
+                    ret_subupdated.append(ret)
+
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_edited = getattr(ret, extract_param, None)
+
+                    if not sub_errors and sub_edited:
+                        helpers.add_address_organization(
+                            user, sub_edited.get_node(), main_handle_id)
+
+            if delete_address:
+                ret_subdeleted = []
+
+                for input in delete_address:
+                    ret = address_deleted.mutate_and_get_payload(root, info, **input)
+                    ret_subdeleted.append(ret)
+
+        return dict(address_created=ret_subcreated,
+                    address_updated=ret_subupdated,
+                    address_deleted=ret_subdeleted)
+
+    class NIMetaClass:
+        create_mutation = CreateOrganization
+        update_mutation = UpdateOrganization
+        create_submutation = NIContactMutationFactory.get_create_mutation()
+        update_submutation = NIContactMutationFactory.get_update_mutation()
+        delete_submutation = NIContactMutationFactory.get_delete_mutation()
+        unlink_submutation = DeleteRelationship
+        address_created = NIAddressMutationFactory.get_create_mutation()
+        address_updated = NIAddressMutationFactory.get_update_mutation()
+        address_deleted  = NIAddressMutationFactory.get_delete_mutation()
+        graphql_type = Organization
+        graphql_subtype = Contact
+
+
+class RoleRelationMutation(relay.ClientIDMutation):
+    class Input:
+        role_handle_id = graphene.Int(required=True)
+        organization_handle_id = graphene.Int(required=True)
+
+    errors = graphene.List(ErrorType)
+    rolerelation = Field(RoleRelation)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        if not info.context or not info.context.user.is_authenticated:
+            raise GraphQLAuthException()
+
+        user = info.context.user
+
+        errors = None
+        rolerelation = None
+
+        # get input
+        contact_handle_id = input.get('contact_handle_id', None)
+        organization_handle_id = input.get('organization_handle_id', None)
+        role_handle_id = input.get('role_handle_id', None)
+
+        # get entities and check permissions
+        contact_nh = None
+        organization_nh = None
+        role_model = None
+
+        add_error_contact = False
+        add_error_organization = False
+        add_error_role = False
+
+        if sriutils.authorice_write_resource(user, contact_handle_id):
+            try:
+                contact_nh = NodeHandle.objects.get(handle_id=contact_handle_id)
+            except:
+                add_error_contact = True
+        else:
+            add_error_contact = True
+
+        if add_error_contact:
+            error = ErrorType(
+                field="contact_handle_id",
+                messages=["The selected contact doesn't exist"]
+            )
+            errors.append(error)
+
+
+        if sriutils.authorice_write_resource(user, organization_handle_id):
+            try:
+                organization_nh = NodeHandle.objects.get(handle_id=organization_handle_id)
+            except:
+                add_error_organization = True
+        else:
+            add_error_organization = True
+
+        if add_error_organization:
+            error = ErrorType(
+                field="organization_handle_id",
+                messages=["The selected organization doesn't exist"]
+            )
+            errors.append(error)
+
+        try:
+            role_model = RoleModel.objects.get(handle_id=role_handle_id)
+        except:
+            add_error_role = True
+
+        if add_error_role:
+            error = ErrorType(
+                field="role_handle_id",
+                messages=["The selected role doesn't exist"]
+            )
+            errors.append(error)
+
+        # link contact with organization
+        if not errors:
+            contact, rolerelation = helpers.link_contact_role_for_organization(
+                user, organization_nh.get_node(), contact_nh.handle_id, role_model
+            )
+
+        return cls(errors=errors, rolerelation=rolerelation)
+
+
+class CompositeContactMutation(CompositeMutation):
+    class Input:
+        create_input = graphene.Field(NIContactMutationFactory.get_create_mutation().Input)
+        update_input = graphene.Field(NIContactMutationFactory.get_update_mutation().Input)
+        create_subinputs = graphene.List(NIEmailMutationFactory.get_create_mutation().Input)
+        update_subinputs = graphene.List(NIEmailMutationFactory.get_update_mutation().Input)
+        delete_subinputs = graphene.List(NIEmailMutationFactory.get_delete_mutation().Input)
+        unlink_subinputs = graphene.List(DeleteRelationship.Input)
+
+        create_phones = graphene.List(NIPhoneMutationFactory.get_create_mutation().Input)
+        update_phones = graphene.List(NIPhoneMutationFactory.get_update_mutation().Input)
+        delete_phones = graphene.List(NIPhoneMutationFactory.get_delete_mutation().Input)
+
+        link_rolerelations = graphene.List(RoleRelationMutation.Input)
+
+
+    created = graphene.Field(NIContactMutationFactory.get_create_mutation())
+    updated = graphene.Field(NIContactMutationFactory.get_update_mutation())
+    subcreated = graphene.List(NIEmailMutationFactory.get_create_mutation())
+    subupdated = graphene.List(NIEmailMutationFactory.get_update_mutation())
+    subdeleted = graphene.List(NIEmailMutationFactory.get_delete_mutation())
+    unlinked = graphene.List(DeleteRelationship)
+    phones_created = graphene.List(NIPhoneMutationFactory.get_create_mutation())
+    phones_updated = graphene.List(NIPhoneMutationFactory.get_update_mutation())
+    phones_deleted = graphene.List(NIPhoneMutationFactory.get_delete_mutation())
+    rolerelations = graphene.List(RoleRelationMutation)
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh):
+        helpers.add_email_contact(user, slave_nh.get_node(), master_nh.handle_id)
+
+    @classmethod
+    def process_extra_subentities(cls, user, main_nh, root, info, input):
+        extract_param = 'phone'
+        ret_subcreated = None
+        ret_subupdated = None
+        ret_subdeleted = None
+        ret_rolerelations = None
+
+        create_phones = input.get("create_phones")
+        update_phones = input.get("update_phones")
+        delete_phones = input.get("delete_phones")
+        link_rolerelations = input.get("link_rolerelations")
+
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        phones_created = getattr(nimetaclass, 'phones_created', None)
+        phones_updated = getattr(nimetaclass, 'phones_updated', None)
+        phones_deleted = getattr(nimetaclass, 'phones_deleted', None)
+        rolerelation_mutation = getattr(nimetaclass, 'rolerelation_mutation', None)
+
+        main_handle_id = None
+
+        if main_nh:
+            main_handle_id = main_nh.handle_id
+
+        if main_handle_id:
+            if create_phones:
+                ret_subcreated = []
+
+                for input in create_phones:
+                    ret = phones_created.mutate_and_get_payload(root, info, **input)
+                    ret_subcreated.append(ret)
+
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_created = getattr(ret, extract_param, None)
+
+                    if not sub_errors and sub_created:
+                        helpers.add_phone_contact(
+                            user, sub_created.get_node(), main_handle_id)
+
+            if update_phones:
+                ret_subupdated = []
+
+                for input in update_phones:
+                    ret = phones_updated.mutate_and_get_payload(root, info, **input)
+                    ret_subupdated.append(ret)
+
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_edited = getattr(ret, extract_param, None)
+
+                    if not sub_errors and sub_edited:
+                        helpers.add_phone_contact(
+                            user, sub_edited.get_node(), main_handle_id)
+
+            if delete_phones:
+                ret_subdeleted = []
+
+                for input in delete_phones:
+                    ret = phones_deleted.mutate_and_get_payload(root, info, **input)
+                    ret_subdeleted.append(ret)
+
+            if link_rolerelations:
+                ret_rolerelations = []
+
+                for input in link_rolerelations:
+                    input['contact_handle_id'] = main_handle_id
+                    ret = rolerelation_mutation.mutate_and_get_payload(root, info, **input)
+                    ret_rolerelations.append(ret)
+
+        return dict(phones_created=ret_subcreated,
+                    phones_updated=ret_subupdated,
+                    phones_deleted=ret_subdeleted,
+                    rolerelations=ret_rolerelations)
+
+    class NIMetaClass:
+        create_mutation = NIContactMutationFactory.get_create_mutation()
+        update_mutation = NIContactMutationFactory.get_update_mutation()
+        create_submutation = NIEmailMutationFactory.get_create_mutation()
+        update_submutation = NIEmailMutationFactory.get_update_mutation()
+        delete_submutation = NIEmailMutationFactory.get_delete_mutation()
+        unlink_submutation = DeleteRelationship
+        phones_created = NIPhoneMutationFactory.get_create_mutation()
+        phones_updated = NIPhoneMutationFactory.get_update_mutation()
+        phones_deleted = NIPhoneMutationFactory.get_delete_mutation()
+        rolerelation_mutation = RoleRelationMutation
+        graphql_type = Contact
+        graphql_subtype = Email
+
+
 class NOCRootMutation(graphene.ObjectType):
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()
     update_group        = NIGroupMutationFactory.get_update_mutation().Field()
     delete_group        = NIGroupMutationFactory.get_delete_mutation().Field()
+    composite_group     = CompositeGroupMutation.Field()
 
     create_procedure    = NIProcedureMutationFactory.get_create_mutation().Field()
     update_procedure    = NIProcedureMutationFactory.get_update_mutation().Field()
@@ -569,11 +966,13 @@ class NOCRootMutation(graphene.ObjectType):
     update_contact      = NIContactMutationFactory.get_update_mutation().Field()
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
     multiple_contact    = NIContactMutationFactory.get_multiple_mutation().Field()
+    composite_contact   = CompositeContactMutation.Field()
 
-    create_organization   = CreateOrganization.Field()
-    update_organization   = UpdateOrganization.Field()
-    delete_organization   = NIOrganizationMutationFactory.get_delete_mutation().Field()
-    multiple_organization = NIOrganizationMutationFactory.get_multiple_mutation().Field()
+    create_organization    = CreateOrganization.Field()
+    update_organization    = UpdateOrganization.Field()
+    delete_organization    = NIOrganizationMutationFactory.get_delete_mutation().Field()
+    multiple_organization  = NIOrganizationMutationFactory.get_multiple_mutation().Field()
+    composite_organization = CompositeOrganizationMutation.Field()
 
     create_role = CreateRole.Field()
     update_role = UpdateRole.Field()

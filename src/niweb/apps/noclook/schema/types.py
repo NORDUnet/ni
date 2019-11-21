@@ -9,12 +9,6 @@ from .core import *
 from ..models import Dropdown as DropdownModel, Choice as ChoiceModel,\
         Role as RoleModel, RoleGroup as RoleGroupModel
 
-# further centralization?
-NIMETA_LOGICAL  = 'logical'
-NIMETA_RELATION = 'relation'
-NIMETA_PHYSICAL = 'physical'
-NIMETA_LOCATION = 'location'
-
 
 class Dropdown(DjangoObjectType):
     '''
@@ -98,6 +92,7 @@ class Group(NIObjectType):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
+    contacts = NIListField(type_args=(lambda: Contact,), rel_name='Member_of', rel_method='get_relations')
 
     class NIMetaType:
         ni_type = 'Group'
@@ -121,7 +116,6 @@ class Address(NIObjectType):
     Phone entity to be used inside contact
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    website = NIStringField()
     phone = NIStringField()
     street = NIStringField()
     postal_code = NIStringField()
@@ -153,6 +147,8 @@ class Organization(NIObjectType):
     affiliation_partner = NIBooleanField()
     affiliation_host_user = NIBooleanField()
     affiliation_site_owner = NIBooleanField()
+    parent_organization = NIListField(type_args=(lambda: Organization,), rel_name='Parent_of', rel_method='get_relations')
+    contacts = NIListField(type_args=(lambda: Contact,), rel_name='Works_for', rel_method='get_relations')
 
     class NIMetaType:
         ni_type = 'Organization'
@@ -161,6 +157,7 @@ class Organization(NIObjectType):
 
 class RoleRelation(NIRelationType):
     name = graphene.String()
+    start = graphene.Field(lambda: Contact)
     end = graphene.Field(Organization)
     role_data = graphene.Field(Role)
 
@@ -222,6 +219,7 @@ class Contact(NIObjectType):
     pgp_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
     roles = NIRelationField(rel_name=RoleRelationship.RELATION_NAME, type_args=(RoleRelation, ))
+    organizations = NIListField(type_args=(Organization,), rel_name='Works_for', rel_method='get_outgoing_relations')
     notes = NIStringField()
 
     class NIMetaType:

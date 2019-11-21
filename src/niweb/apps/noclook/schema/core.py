@@ -32,6 +32,12 @@ from ..models import NodeType, NodeHandle, Choice as ChoiceModel
 logger = logging.getLogger(__name__)
 
 ########## RELATION AND NODE TYPES
+
+NIMETA_LOGICAL  = 'logical'
+NIMETA_RELATION = 'relation'
+NIMETA_PHYSICAL = 'physical'
+NIMETA_LOCATION = 'location'
+
 class User(DjangoObjectType):
     '''
     The django user type
@@ -176,6 +182,8 @@ class CommentType(DjangoObjectType):
     '''
     class Meta:
         model = Comment
+
+input_fields_clsnames = {}
 
 class NIObjectType(DjangoObjectType):
     '''
@@ -343,13 +351,29 @@ class NIObjectType(DjangoObjectType):
                     # get object attributes by their filter input fields
                     # to build the filter field for the nested object
                     filter_attrib = {}
-                    for a, b in field_of_type.get_filter_input_fields().items():
-                        filter_attrib[a] = b()
+                    instance_inputfield = False
+
+                    if hasattr(field_of_type, 'get_filter_input_fields'):
+                        instance_inputfield = True
+                        for a, b in field_of_type.get_filter_input_fields().items():
+                            if callable(b):
+                                filter_attrib[a] = b()
+                            else:
+                                filter_attrib[a] = b[0]()
 
                     filter_attrib['_of_type'] = field._of_type
 
-                    binput_field = type('{}InputField'.format(name_fot), (graphene.InputObjectType, ), filter_attrib)
-                    input_fields[name] = binput_field, field._of_type
+                    if instance_inputfield:
+                        ifield_clsname = '{}InputField'.format(name_fot)
+
+                        if not ifield_clsname in input_fields_clsnames:
+                            binput_field = type(ifield_clsname, (graphene.InputObjectType, ), filter_attrib)
+                            input_fields_clsnames[ifield_clsname] = binput_field
+                            logger.debug('Created input filter class: {} || {}'.format(ifield_clsname, binput_field.__module__))
+                        else:
+                            binput_field = input_fields_clsnames[ifield_clsname]
+
+                        input_fields[name] = binput_field, field._of_type
                 elif isinstance(field, graphene.types.field.Field) and\
                     field.type == Choice:
                     input_fields[name] = ChoiceScalar
@@ -1219,6 +1243,66 @@ class AbstractNIMutation(relay.ClientIDMutation):
             for relation_name, relation_f in relations_processors.items():
                 relation_f(request, form, nodehandler, relation_name)
 
+    @classmethod
+    def process_subentities(cls, request, form, master_nh):
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        subentity_processors = getattr(nimetaclass, 'subentity_processors', None)
+
+        default_context = sriutils.get_default_context()
+
+        if subentity_processors:
+            for sub_name, sub_props in subentity_processors.items():
+                type_slug = sub_props['type_slug']
+                fields = sub_props['fields']
+                meta_type = sub_props['meta_type']
+                link_method = sub_props['link_method']
+
+                node_type = NodeType.objects.get(slug=type_slug)
+
+                # forge attributes object
+                input_params = {}
+                sub_handle_id = None
+                node_name = None
+
+                for fform_name, fform_value in fields.items():
+                    if fform_name == 'handle_id':
+                        sub_handle_id = form.cleaned_data.get(fform_value, None)
+                    else:
+                        if fform_name == 'name':
+                            node_name = form.cleaned_data.get(fform_value, None)
+
+                        input_params[fform_name] = form.cleaned_data.get(fform_value, None)
+
+                nh = None
+
+                # create or edit entity
+                if node_name:
+                    if not sub_handle_id: # create
+                        nh = NodeHandle(
+                            node_name=node_name,
+                            node_type=node_type,
+                            node_meta_type=meta_type,
+                            creator=request.user,
+                            modifier=request.user,
+                        )
+                        nh.save()
+                    else: # edit
+                        nh = NodeHandle.objects.get(handle_id=sub_handle_id)
+
+                    # add neo4j attributes
+                    for key, value in input_params.items():
+                        nh.get_node().remove_property(key)
+                        nh.get_node().add_property(key, value)
+
+                    # add relation to master node
+                    link_method = getattr(master_nh, link_method, None)
+
+                    if link_method:
+                        link_method(nh.handle_id)
+
+                    # add to permission context
+                    NodeHandleContext(nodehandle=nh, context=default_context).save()
+
     class Meta:
         abstract = True
 
@@ -1283,6 +1367,11 @@ class CreateNIMutation(AbstractNIMutation):
                 nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
                 cls.process_relations(request, form, nodehandler)
 
+            # process subentities if implemented
+            if not has_error:
+                nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
+                cls.process_subentities(request, form, nodehandler)
+
             return has_error, { graphql_type.__name__.lower(): nh }
         else:
             # get the errors and return them
@@ -1340,6 +1429,9 @@ class UpdateNIMutation(AbstractNIMutation):
 
                 # process relations if implemented
                 cls.process_relations(request, form, nodehandler)
+
+                # process subentities if implemented
+                cls.process_subentities(request, form, nodehandler)
 
                 return has_error, { graphql_type.__name__.lower(): nh }
             else:
@@ -1444,6 +1536,155 @@ class MultipleMutation(relay.ClientIDMutation):
         )
 
 
+class CompositeMutation(relay.ClientIDMutation):
+    @classmethod
+    def get_link_kwargs(cls, master_input, slave_input):
+        return {}
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh, **kwargs):
+        pass
+
+    @classmethod
+    def forge_payload(cls, **kwargs):
+        return cls(**kwargs)
+
+    @classmethod
+    def process_extra_subentities(cls, user, master_nh, root, info, input):
+        pass
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        # check if the user is authenticated
+        if not info.context or not info.context.user.is_authenticated:
+            raise GraphQLAuthException()
+
+        # get main entity possible inputs
+        user = info.context.user
+        create_input = input.get("create_input")
+        update_input = input.get("update_input")
+
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        graphql_type = getattr(nimetaclass, 'graphql_type', None)
+        graphql_subtype = getattr(nimetaclass, 'graphql_subtype', None)
+        create_mutation = getattr(nimetaclass, 'create_mutation', None)
+        update_mutation = getattr(nimetaclass, 'update_mutation', None)
+
+        # this handle_id will be set to the created or updated main entity
+        main_handle_id = None
+        ret_created = None
+        ret_updated = None
+
+        ret_subcreated = None
+        ret_subupdated = None
+        ret_subdeleted = None
+        ret_unlinked = None
+
+        has_main_errors = False
+
+        # perform main operation
+        create = False
+
+        if create_input:
+            create = True
+            ret_created = create_mutation.mutate_and_get_payload(root, info, **create_input)
+        elif update_input:
+            ret_updated = update_mutation.mutate_and_get_payload(root, info, **update_input)
+        else:
+            raise Exception('At least an input should be provided')
+
+        main_ret = ret_created if create else ret_updated
+        main_input = create_input if create else update_input
+
+        # extract handle_id from the returned payload
+        extract_param = graphql_type.get_from_nimetatype('ni_type').lower()
+        main_nh = getattr(main_ret, extract_param, None)
+        main_handle_id = None
+
+        if main_nh:
+            main_handle_id = main_nh.handle_id
+
+        # check if there's errors in the form
+        errors = getattr(main_ret, 'errors', None)
+
+        # extra params for return
+        ret_extra_subentities = {}
+
+        # if everything went fine, proceed with the subentity list
+        if main_handle_id and not errors:
+            extract_param = graphql_subtype.get_from_nimetatype('ni_type').lower()
+
+            create_subinputs = input.get("create_subinputs")
+            update_subinputs = input.get("update_subinputs")
+            delete_subinputs = input.get("delete_subinputs")
+            unlink_subinputs = input.get("unlink_subinputs")
+
+            create_submutation = getattr(nimetaclass, 'create_submutation', None)
+            update_submutation = getattr(nimetaclass, 'update_submutation', None)
+            delete_submutation = getattr(nimetaclass, 'delete_submutation', None)
+            unlink_submutation = getattr(nimetaclass, 'unlink_submutation', None)
+
+            if create_subinputs:
+                ret_subcreated = []
+
+                for subinput in create_subinputs:
+                    ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
+                    ret_subcreated.append(ret)
+
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_created = getattr(ret, extract_param, None)
+
+                    if not sub_errors and sub_created:
+                        link_kwargs = cls.get_link_kwargs(main_input, subinput)
+                        cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
+
+            if update_subinputs:
+                ret_subupdated = []
+
+                for subinput in update_subinputs:
+                    ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
+                    ret_subupdated.append(ret)
+
+                    # link if it's possible
+                    sub_errors = getattr(ret, 'errors', None)
+                    sub_edited = getattr(ret, extract_param, None)
+
+                    if not sub_errors and sub_edited:
+                        link_kwargs = cls.get_link_kwargs(main_input, subinput)
+                        cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
+
+            if delete_subinputs:
+                ret_subdeleted = []
+
+                for subinput in delete_subinputs:
+                    ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
+                    ret_subdeleted.append(ret)
+
+            if unlink_subinputs:
+                ret_unlinked = []
+
+                for subinput in unlink_subinputs:
+                    ret = unlink_submutation.mutate_and_get_payload(root, info, **subinput)
+                    ret_unlinked.append(ret)
+
+            ret_extra_subentities = \
+                cls.process_extra_subentities(user, main_nh, root, info, input)
+
+        payload_kwargs = dict(
+            created=ret_created, updated=ret_updated,
+            subcreated=ret_subcreated, subupdated=ret_subupdated,
+            subdeleted=ret_subdeleted, unlinked=ret_unlinked
+        )
+
+        if ret_extra_subentities:
+            payload_kwargs = {**payload_kwargs, **ret_extra_subentities}
+
+        return cls.forge_payload(
+            **payload_kwargs
+        )
+
+
 class NIMutationFactory():
     '''
     The mutation factory takes a django form, a node type and some parameters
@@ -1487,6 +1728,7 @@ class NIMutationFactory():
         # check for relationship processors and delete associated nodes functions
         relations_processors = getattr(ni_metaclass, 'relations_processors', None)
         delete_nodes         = getattr(ni_metaclass, 'delete_nodes', None)
+        subentity_processors = getattr(ni_metaclass, 'subentity_processors', None)
 
         # we'll retrieve these values NI type/metatype from the GraphQLType
         nimetatype     = getattr(graphql_type, 'NIMetaType')
@@ -1516,6 +1758,9 @@ class NIMutationFactory():
 
         if relations_processors:
             attr_dict['relations_processors'] = relations_processors
+
+        if subentity_processors:
+            attr_dict['subentity_processors'] = subentity_processors
 
         create_metaclass = type(metaclass_name, (object,), attr_dict)
 
@@ -1564,6 +1809,9 @@ class NIMutationFactory():
 
         if delete_nodes:
             attr_dict['delete_nodes'] = delete_nodes
+
+        if subentity_processors:
+            del attr_dict['subentity_processors']
 
         delete_metaclass = type(metaclass_name, (object,), attr_dict)
 

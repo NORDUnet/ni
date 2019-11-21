@@ -960,7 +960,7 @@ class NewContactForm(forms.Form):
     pgp_fingerprint = forms.CharField(required=False, label='PGP fingerprint')
     notes = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Notes")
 
-    def clean(self, is_create=True):
+    def clean(self):
         """
         Sets name from first and second name
         """
@@ -997,7 +997,7 @@ class EditContactForm(NewContactForm):
         """
         Check empty role, set to employee
         """
-        cleaned_data = super(EditContactForm, self).clean(False)
+        cleaned_data = super(EditContactForm, self).clean()
         role_id = cleaned_data.get("role")
 
         if not role_id:
@@ -1012,6 +1012,26 @@ class EditContactForm(NewContactForm):
         if 'role' in self.data:
             self.data = self.data.copy()
             del self.data['role']
+
+
+class MailPhoneContactForm(EditContactForm):
+    # this form adds extra data for the underlying nodes/relations
+    # extra email form data
+    email_handle_id = forms.IntegerField(widget=forms.widgets.HiddenInput, required=False)
+    email = forms.EmailField(required=False)
+    email_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+
+    phone_handle_id = forms.IntegerField(widget=forms.widgets.HiddenInput, required=False)
+    phone = forms.CharField(required=False)
+    phone_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+
+    role_handle_id = forms.IntegerField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(MailPhoneContactForm, self).__init__(*args, **kwargs)
+        self.fields['email_type'].choices = email_choices()
+        self.fields['phone_type'].choices = phone_choices()
+
 
 class NewProcedureForm(forms.Form):
     name = forms.CharField()
