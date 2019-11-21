@@ -407,6 +407,7 @@ class NIObjectType(DjangoObjectType):
             if of_type == graphene.Int or \
                 of_type == graphene.String or \
                 of_type == ChoiceScalar or \
+                issubclass(of_type, DateTime) or \
                 issubclass(of_type, NIObjectType) or \
                 issubclass(of_type, NIRelationType):
                 asc_field_name = '{}_{}'.format(field_name, cls._asc_suffix)
@@ -657,10 +658,27 @@ class NIObjectType(DjangoObjectType):
                         apply_handle_id_order = True
                         revert_default_order = True
 
+                qs_order_prop = None
+                qs_order_order = None
+
+                if not cls.order_is_empty(orderBy):
+                    m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                    prop = m[1]
+                    order = m[2]
+
+                    if prop in DateQueryBuilder.fields:
+                        # set model attribute ordering
+                        qs_order_prop  = prop
+                        qs_order_order = order
+
                 if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
                     # filter queryset with dates and users
                     qs = DateQueryBuilder.filter_queryset(filter, qs)
                     qs = UserQueryBuilder.filter_queryset(filter, qs)
+
+                    # remove order if is a date order
+                    if qs_order_prop and qs_order_order:
+                        orderBy = None
 
                     # create query
                     q = cls.build_filter_query(filter, orderBy, type_name,
@@ -688,7 +706,24 @@ class NIObjectType(DjangoObjectType):
                                 ret.append(the_node)
                         except:
                             pass # nothing to do if the qs doesn't have elements
+
+                    # apply date order if it applies
+                    if qs_order_prop and qs_order_order:
+                        reverse = True if qs_order_order == 'DESC' else False
+                        ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
                 else:
+                    # do nodehandler attributes ordering now that we have
+                    # the nodes set, if this order is requested
+                    if qs_order_prop and qs_order_order:
+                        reverse = True if qs_order_order == 'DESC' else False
+
+                        if reverse:
+                            raise Exception('asdasd')
+                            qs = qs.order_by('{}'.format(qs_order_prop))
+                        else:
+                            raise Exception('qweqwe')
+                            qs = qs.order_by('-{}'.format(qs_order_prop))
+
                     if apply_handle_id_order:
                         logger.debug('Apply handle_id order')
 
