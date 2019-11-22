@@ -33,6 +33,6 @@ NOCSCHEMA_MUTATIONS = [
     NOCRootMutation,
 ]
 
-# @method_decorator(login_required, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class AuthGraphQLView(GraphQLView):
     pass
