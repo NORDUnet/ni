@@ -178,7 +178,7 @@ class OrganizationConnectionTest(Neo4jGraphQLTest):
           organizations( orderBy: type_DESC ){
             edges{
               node{
-                node_name
+                name
                 type
               }
             }
@@ -189,18 +189,109 @@ class OrganizationConnectionTest(Neo4jGraphQLTest):
         expected = OrderedDict([('organizations',
                       OrderedDict([('edges',
                         [OrderedDict([('node',
-                          OrderedDict([('node_name',
+                          OrderedDict([('name',
                             'organization1'),
                            ('type',
                             'university_college')]))]),
                         OrderedDict([('node',
-                           OrderedDict([('node_name',
+                           OrderedDict([('name',
                              'organization2'),
                             ('type',
                              'university_coldep')]))]),
                              ])]))])
 
         result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+    def test_organizations_filter(self):
+        # filter by name
+        query = '''
+        {
+          organizations(
+            filter:{
+              AND:[{
+                name: "organization1"
+              }]
+            }
+        	){
+            edges{
+              node{
+                name
+                type
+              }
+            }
+          }
+        }
+        '''
+
+        expected = OrderedDict([('organizations',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                          OrderedDict([('name',
+                            'organization1'),
+                           ('type',
+                            'university_college')]))])
+                             ])]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        # filter by organization_id
+        query = '''
+        {
+          organizations(
+            filter:{
+              AND:[{
+                organization_id: "ORG1"
+              }]
+            }
+        	){
+            edges{
+              node{
+                name
+                type
+              }
+            }
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        # filter by type
+        query = '''
+        {
+          organizations(
+            filter:{
+              AND:[{
+                type: "university_college"
+              }]
+            }
+        	){
+            edges{
+              node{
+                name
+                type
+              }
+            }
+          }
+        }
+        '''
+
+        esult = schema.execute(query, context=self.context)
         assert not result.errors, result.errors
         assert result.data == expected, '{}\n!=\n{}'.format(
             pformat(expected, indent=1),
