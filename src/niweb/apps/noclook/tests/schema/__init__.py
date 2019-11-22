@@ -101,10 +101,21 @@ class Neo4jGraphQLTest(NeoTestCase):
 
         organization1_data = {
             'type': 'university_college',
+            'organization_id': 'ORG1',
+            'affiliation_customer': True,
         }
 
         for key, value in organization1_data.items():
             self.organization1.get_node().add_property(key, value)
+
+        organization2_data = {
+            'type': 'university_coldep',
+            'organization_id': 'ORG2',
+            'affiliation_end_customer': True,
+        }
+
+        for key, value in organization2_data.items():
+            self.organization2.get_node().add_property(key, value)
 
         # create relationships
         self.contact1.get_node().add_group(self.group1.handle_id)
