@@ -12,7 +12,7 @@ from django.http import Http404
 from django.shortcuts import render, redirect
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
-from apps.noclook.models import NodeHandle, Dropdown, SwitchType
+from apps.noclook.models import NodeHandle, Dropdown
 from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
@@ -38,7 +38,6 @@ TYPES = [
     ("room", "Room"),
     ("site", "Site"),
     ("site-owner", "Site Owner"),
-    ("switch", "Switch"),
 ]
 if helpers.app_enabled("apps.scan"):
     TYPES.append(("/scan/queue", "Host scan"))
@@ -571,36 +570,6 @@ def reserve_id_sequence(request, slug=None):
         form = forms.ReserveIdForm()
         return render(request, 'noclook/edit/reserve_id.html', {'form': form, 'slug': slug})
 
-@staff_member_required
-def new_switch(request, **kwargs):
-    if request.POST:
-        form = forms.NewSwitchForm(request.POST)
-        if form.is_valid():
-            try:
-                nh = helpers.form_to_unique_node_handle(request, form, 'switch', 'Physical')
-            except UniqueNodeError:
-                form = forms.NewSwitchForm(request.POST)
-                form.add_error('name', 'A Switch with that name already exists.')
-                return render(request, 'noclook/create/create_switch.html', {'form': form})
-            helpers.form_update_node(request.user, nh.handle_id, form)
-            node = nh.get_node()
-            if form.cleaned_data['relationship_provider']:
-                provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-                helpers.set_provider(request.user, node, provider_nh.handle_id)
-            if form.cleaned_data['switch_type']:
-                switch_type = SwitchType.objects.get(pk=form.cleaned_data['switch_type'])
-                helpers.dict_update_node(request.user, nh.handle_id, {"model":switch_type.name}) 
-                if switch_type.ports:
-                    for port in switch_type.ports.split(","):
-                        helpers.create_port(node, port.strip(), request.user)
-
-            return redirect(nh.get_absolute_url())
-    else:
-        name = kwargs.get('name', None)
-        initial = {'name': name}
-        form = forms.NewSwitchForm(initial=initial)
-    return render(request, 'noclook/create/create_switch.html', {'form': form })
-
 
 NEW_FUNC = {
     'cable': new_cable,
@@ -622,6 +591,5 @@ NEW_FUNC = {
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,
-    'switch' : new_switch,
     'optical-node': new_optical_node,
 }

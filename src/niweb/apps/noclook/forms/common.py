@@ -5,7 +5,7 @@ from django.forms.widgets import HiddenInput
 from django.db import IntegrityError
 import json
 import csv
-from apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown, SwitchType
+from apps.noclook.models import NodeHandle, UniqueIdGenerator, ServiceType, NordunetUniqueId, Dropdown
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
@@ -238,19 +238,6 @@ class NewCableForm(forms.Form):
 class EditCableForm(NewCableForm):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
-
-class NewSwitchForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        super(NewSwitchForm, self).__init__(*args, **kwargs)
-        self.fields['switch_type'].choices = SwitchType.as_choices()
-        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
-        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
-
-    name = forms.CharField()
-    operational_state = forms.ChoiceField(initial='Reserved')
-    switch_type = forms.ChoiceField(widget=forms.widgets.Select)
-    description = description_field('switch')
-    relationship_provider = relationship_field('provider', True)
 
 
 class OpticalNodeForm(forms.Form):
