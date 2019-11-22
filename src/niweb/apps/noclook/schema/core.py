@@ -351,7 +351,6 @@ class NIObjectType(DjangoObjectType):
                         if not ifield_clsname in input_fields_clsnames:
                             binput_field = type(ifield_clsname, (graphene.InputObjectType, ), filter_attrib)
                             input_fields_clsnames[ifield_clsname] = binput_field
-                            logger.debug('Created input filter class: {} || {}'.format(ifield_clsname, binput_field.__module__))
                         else:
                             binput_field = input_fields_clsnames[ifield_clsname]
 
@@ -425,8 +424,6 @@ class NIObjectType(DjangoObjectType):
                     'is_desc': True,
                     'input_field': of_type,
                 }
-
-                logger.debug('Input field added is {} for field {}'.format(of_type, field_name))
 
             # adding filter attributes
             for suffix, suffix_attr in AbstractQueryBuilder.filter_array.items():
@@ -798,6 +795,8 @@ class NIObjectType(DjangoObjectType):
             'subrel_idx': 1,
         }
 
+        filtered_fields = []
+
         if filter:
             for operation in operations.keys():
                 filters = operations[operation]['filters']
@@ -867,6 +866,10 @@ class NIObjectType(DjangoObjectType):
 
                         filter_field = cls.filter_names[filter_key]
                         field  = filter_field['field']
+
+                        # append field to list to avoid the aditional match
+                        filtered_fields.append(field)
+
                         suffix = filter_field['suffix']
                         field_type = filter_field['field_type']
 
@@ -936,7 +939,20 @@ class NIObjectType(DjangoObjectType):
             if hasattr(of_type, 'match_additional_clause'):
                 additional_clause = of_type.match_additional_clause
 
+                m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                prop = m[1]
+                order = m[2]
+
+                order_field_present = False
+
+                if prop in filtered_fields:
+                    order_field_present = True
+
                 if issubclass(of_type, NIObjectType):
+                    if order_field_present:
+                        idxdict['node_idx'] = idxdict['node_idx'] - 1
+                        idxdict['subrel_idx'] = idxdict['subrel_idx'] - 1
+
                     neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['node_idx'])
                     neo4j_vars[of_type] = neo4j_var
                     additional_clause = additional_clause.format(
@@ -951,6 +967,10 @@ class NIObjectType(DjangoObjectType):
                         cls._desc_suffix if cls._order_field_match[orderBy]['is_desc'] else cls._asc_suffix,
                     )
                 elif issubclass(of_type, NIRelationType):
+                    if order_field_present:
+                        idxdict['rel_idx'] = idxdict['rel_idx'] - 1
+                        idxdict['subnode_idx'] = idxdict['subnode_idx'] - 1
+
                     neo4j_var = '{}{}'.format(of_type.neo4j_var_name, idxdict['rel_idx'])
                     neo4j_vars[of_type] = neo4j_var
                     additional_clause = additional_clause.format(
@@ -964,6 +984,10 @@ class NIObjectType(DjangoObjectType):
                         '{}.name'.format(neo4j_var),
                         cls._desc_suffix if cls._order_field_match[orderBy]['is_desc'] else cls._asc_suffix,
                     )
+
+                if order_field_present:
+                    optional_matches = ''
+
             else:
                 m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
                 prop = m[1]
