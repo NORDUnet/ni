@@ -45,9 +45,10 @@ def whoami(request):
     if request.method == 'GET':
         user = {
             'userid': request.user.pk,
-            'name': request.user.profile.display_name,
+            'display_name': request.user.profile.display_name,
             'email': request.user.email,
             'landing_page': request.user.profile.landing_page,
+            'landing_choices': request.user.profile.LANDING_CHOICES,
             'view_network': request.user.profile.view_network,
             'view_services': request.user.profile.view_services,
             'view_community': request.user.profile.view_community
