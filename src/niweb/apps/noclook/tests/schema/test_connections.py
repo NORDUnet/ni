@@ -9,7 +9,6 @@ from niweb.schema import schema
 class OrganizationConnectionTest(Neo4jGraphQLTest):
     def test_organizations_order(self):
         ## order by name
-
         query = '''
         {
           organizations( orderBy:name_ASC ){
@@ -291,7 +290,148 @@ class OrganizationConnectionTest(Neo4jGraphQLTest):
         }
         '''
 
-        esult = schema.execute(query, context=self.context)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+
+class ContactConnectionTest(Neo4jGraphQLTest):
+    def test_organizations_order(self):
+        ## order by name
+        query = '''
+        {
+          contacts( orderBy: name_ASC){
+            edges{
+              node{
+                name
+              }
+            }
+          }
+        }
+        '''
+
+        expected = OrderedDict([('contacts',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([
+                            ('name',
+                             'Jane Doe')]))]),
+                         OrderedDict([('node',
+                           OrderedDict([
+                            ('name',
+                             'John '
+                             'Smith')]))])])]))])
+
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        query = '''
+        {
+          contacts( orderBy: name_DESC){
+            edges{
+              node{
+                name
+              }
+            }
+          }
+        }
+        '''
+
+        expected = OrderedDict([('contacts',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                          OrderedDict([
+                           ('name',
+                            'John '
+                            'Smith')]))]),
+                        OrderedDict([('node',
+                           OrderedDict([
+                            ('name',
+                             'Jane Doe')]))]),
+                             ])]))])
+
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        ## order by organization
+        query = '''
+        {
+          contacts( orderBy: organizations_ASC){
+            edges{
+              node{
+                name
+                organizations{
+                  name
+                }
+              }
+            }
+          }
+        }
+        '''
+
+        expected = OrderedDict([('contacts',
+                    OrderedDict([('edges',
+                    [OrderedDict([('node',
+                       OrderedDict([('name', 'Jane Doe'),
+                        ('organizations',
+                         [OrderedDict([('name',
+                            'organization1')])])]))]),
+                     OrderedDict([('node',
+                       OrderedDict([('name', 'John Smith'),
+                        ('organizations',
+                         [OrderedDict([('name',
+                            'organization2')])])]))])])]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        query = '''
+        {
+          contacts( orderBy: organizations_DESC){
+            edges{
+              node{
+                name
+                organizations{
+                  name
+                }
+              }
+            }
+          }
+        }
+        '''
+
+        expected = OrderedDict([('contacts',
+                    OrderedDict([('edges',
+                    [OrderedDict([('node',
+                      OrderedDict([('name', 'John Smith'),
+                       ('organizations',
+                        [OrderedDict([('name',
+                           'organization2')])])]))]),
+                    OrderedDict([('node',
+                       OrderedDict([('name', 'Jane Doe'),
+                        ('organizations',
+                         [OrderedDict([('name',
+                            'organization1')])])]))]),
+                            ])]))])
+
+        result = schema.execute(query, context=self.context)
         assert not result.errors, result.errors
         assert result.data == expected, '{}\n!=\n{}'.format(
             pformat(expected, indent=1),
