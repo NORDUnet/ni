@@ -280,12 +280,16 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected = OrderedDict([('organizations',
                     OrderedDict([('edges',
-                        [OrderedDict([('node',
-                            OrderedDict([
-                                ('name',
-                                 'organization1'),
-                                ('type',
-                                 'university_college')]))])])]))])
+                    [OrderedDict([('node',
+                       OrderedDict([('name',
+                         'organization1'),
+                        ('type',
+                         OrderedDict([('name',
+                           'University, '
+                           'College'),
+                          ('value',
+                           'university_college')]))]))])])]))])
+
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -604,7 +608,10 @@ class QueryTest(Neo4jGraphQLTest):
                 handle_id
                 first_name
                 last_name
-                contact_type
+                contact_type{
+                  name
+                  value
+                }
               }
             }
           }

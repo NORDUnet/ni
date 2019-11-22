@@ -232,7 +232,10 @@ class QueryTest(Neo4jGraphQLTest):
               first_name
               last_name
               title
-              contact_type
+              contact_type{{
+                name
+                value
+              }}
               notes
               roles{{
                 name
@@ -261,7 +264,9 @@ class QueryTest(Neo4jGraphQLTest):
                                      ('first_name', 'Jane'),
                                      ('last_name', 'Smith'),
                                      ('title', None),
-                                     ('contact_type', 'person'),
+                                     ('contact_type',
+                                      OrderedDict([('name', 'Person'),
+                                       ('value', 'person')])),
                                      ('notes', note_txt),
                                       ('roles',
                                        [OrderedDict([('name', 'NOC Manager'),
@@ -296,7 +301,10 @@ class QueryTest(Neo4jGraphQLTest):
               first_name
               last_name
               title
-              contact_type
+              contact_type{{
+                name
+                value
+              }}
               roles{{
                 name
                 end{{
@@ -320,7 +328,9 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('first_name', 'Janet'),
                                          ('last_name', 'Doe'),
                                          ('title', None),
-                                         ('contact_type', 'person'),
+                                         ('contact_type',
+                                          OrderedDict([('name', 'Person'),
+                                           ('value', 'person')])),
                                          ('roles',
                                           [OrderedDict([('name', 'NOC Manager'),
                                             ('end',
