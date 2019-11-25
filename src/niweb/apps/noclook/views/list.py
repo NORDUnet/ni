@@ -278,10 +278,8 @@ def list_firewalls(request):
 
 def _odf_table(item):
     odf = item.get('odf')
-    nh = get_object_or_404(NodeHandle, pk=odf.get('handle_id'))
-
-    node = nh.get_node()
-    location_path = node.get_location_path()
+    location_path = {}
+    location_path['location_path'] = item.get('location_path')
 
     row = TableRow(odf, location_path)
     _set_operational_state(row, odf)
@@ -292,7 +290,12 @@ def _odf_table(item):
 def list_odfs(request):
     q = """
         MATCH (odf:ODF)
-        RETURN odf
+        OPTIONAL MATCH (odf)-[:Located_in]->(r)
+        OPTIONAL MATCH p=()-[:Has*0..20]->(r)
+        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, odf
+        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, odf AS odf
+        UNWIND(longestPaths) as location_path
+        RETURN odf, location_path
         ORDER BY odf.name
         """
     odf_list = nc.query_to_list(nc.graphdb.manager, q)
@@ -462,7 +465,11 @@ def list_peering_partners(request):
 def list_racks(request):
     q = """
         MATCH (rack:Rack)
-        RETURN rack
+        OPTIONAL MATCH p=()-[:Has*0..20]->(rack)
+        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, rack AS rack
+        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, rack AS rack
+        UNWIND(longestPaths) as location_path
+        RETURN rack, location_path
         ORDER BY rack.name
         """
 
@@ -474,10 +481,9 @@ def list_racks(request):
 
     for item in rack_list:
         rack = item.get('rack')
-        nh = get_object_or_404(NodeHandle, pk=rack.get('handle_id'))
-        node = nh.get_node()
-        location_path = node.get_location_path()
-        table.rows.append(TableRow(item['rack'], location_path))
+        location_path={}
+        location_path['location_path'] = item.get('location_path')
+        table.rows.append(TableRow(rack, location_path))
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Racks', 'urls': urls})
