@@ -14,4 +14,5 @@ admin.autodiscover()
 urlpatterns = [
     url(r'^$', views.list_userprofiles),
     url(r'^(?P<userprofile_id>\d+)/$', views.userprofile_detail, name='userprofile_detail'),
+    url(r'^whoami/$', views.whoami, name='whoami'),
 ]

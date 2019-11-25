@@ -1796,6 +1796,456 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 handle_id
                 first_name
                 last_name
+                contact_type
+                emails{{
+                  handle_id
+                  name
+                  type
+                }}
+                phones{{
+                  handle_id
+                  name
+                  type
+                }}
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              email{{
+                handle_id
+                name
+                type
+              }}
+            }}
+            phones_created{{
+              errors{{
+                field
+                messages
+              }}
+              phone{{
+                handle_id
+                name
+                type
+              }}
+            }}
+          }}
+        }}
+        '''.format(c1_first_name=c1_first_name, c1_last_name=c1_last_name,
+                    c1_contact_type=c1_contact_type, c1_email=c1_email,
+                    c1_email_type=c1_email_type, c2_email=c2_email,
+                    c2_email_type=c2_email_type, c1_phone=c1_phone,
+                    c1_phone_type=c1_phone_type, c2_phone=c2_phone,
+                    c2_phone_type=c2_phone_type)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_contact']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_contact']['subcreated']:
+            assert not subcreated['errors']
+
+        for subcreated in result.data['composite_contact']['phones_created']:
+            assert not subcreated['errors']
+
+        # get the ids
+        result_data = result.data['composite_contact']
+        c1_handle_id = result_data['created']['contact']['handle_id']
+        c1_email_id = result_data['subcreated'][0]['email']['handle_id']
+        c1_email_id2 = result_data['subcreated'][1]['email']['handle_id']
+        c1_phone_id = result_data['phones_created'][0]['phone']['handle_id']
+        c1_phone_id2 = result_data['phones_created'][1]['phone']['handle_id']
+
+        # check the integrity of the data
+        created_data = result_data['created']['contact']
+
+        # check contact
+        assert created_data['first_name'] == c1_first_name, \
+            "1st contact's first name doesn't match \n{} != {}"\
+                .format(created_data['first_name'], c1_first_name)
+        assert created_data['last_name'] == c1_last_name, \
+            "1st contact's last name doesn't match \n{} != {}"\
+                .format(created_data['last_name'], c1_last_name)
+
+        # check email
+        created_email_data = result_data['subcreated'][0]['email']
+
+        assert c1_email_id == created_data['emails'][0]['handle_id'], \
+            "Contact's email handle_id doesn't match \n{} != {}"\
+                .format(c1_email_id, created_data['emails'][0]['handle_id'])
+        assert c1_email == created_email_data['name'], \
+            "Contact's email doesn't match \n{} != {}"\
+                .format(c1_email, created_email_data['name'])
+        assert c1_email_type == created_email_data['type'], \
+            "Contact's email type doesn't match \n{} != {}"\
+                .format(c1_email_type, created_email_data['type'])
+
+        created_email_data = result_data['subcreated'][1]['email']
+
+        assert c1_email_id2 == created_data['emails'][1]['handle_id'], \
+            "Contact's email handle_id doesn't match \n{} != {}"\
+                .format(c1_email_id2, created_data['emails'][1]['handle_id'])
+        assert c2_email == created_email_data['name'], \
+            "Contact's email doesn't match \n{} != {}"\
+                .format(c2_email, created_email_data['name'])
+        assert c2_email_type == created_email_data['type'], \
+            "Contact's email type doesn't match \n{} != {}"\
+                .format(c2_email_type, created_email_data['type'])
+
+        # check phone
+        created_phone_data = result_data['phones_created'][0]['phone']
+
+        assert c1_phone_id == created_data['phones'][0]['handle_id'], \
+            "Contact's phone handle_id doesn't match \n{} != {}"\
+                .format(c1_phone_id, created_data['phones'][0]['handle_id'])
+        assert c1_phone == created_phone_data['name'], \
+            "Contact's phone doesn't match \n{} != {}"\
+                .format(c1_phone, created_phone_data['name'])
+        assert c1_phone_type == created_phone_data['type'], \
+            "Contact's phone type doesn't match \n{} != {}"\
+                .format(c1_phone_type, created_phone_data['type'])
+
+        # Update mutation
+        c1_first_name = "Anne"
+        c1_last_name  = "Doe"
+        c1_email = "adoe@pypi.org"
+        c1_phone = "+34600000789"
+
+        c3_email = "adoe@myemail.org"
+        c3_email_type = "personal"
+        c3_phone = "+34600111222"
+        c3_phone_type = "personal"
+
+        role_handle_id = Role.objects.all().last().handle_id
+        organization_id = self.organization2.handle_id
+
+        query = '''
+        mutation{{
+          composite_contact(input:{{
+            update_input:{{
+              handle_id: {c1_handle_id}
+              first_name: "{c1_first_name}"
+              last_name: "{c1_last_name}"
+              contact_type: "{c1_contact_type}"
+            }}
+            create_subinputs:[{{
+              name: "{c3_email}"
+              type: "{c3_email_type}"
+            }}]
+            update_subinputs:[{{
+              handle_id: {c1_email_id}
+              name: "{c1_email}"
+              type: "{c1_email_type}"
+            }}]
+            delete_subinputs:[{{
+              handle_id: {c1_email_id2}
+            }}]
+            create_phones:[{{
+              name: "{c3_phone}"
+              type: "{c3_phone_type}"
+            }}]
+            update_phones:[{{
+              handle_id: {c1_phone_id}
+              name: "{c1_phone}"
+              type: "{c1_phone_type}"
+            }}]
+            link_rolerelations:[{{
+              role_handle_id: {role_handle_id}
+              organization_handle_id: {organization_id}
+            }}]
+            delete_phones:[{{
+              handle_id: {c1_phone_id2}
+            }}]
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              contact{{
+                handle_id
+                first_name
+                last_name
+                contact_type
+                emails{{
+                  handle_id
+                  name
+                  type
+                }}
+                phones{{
+                  handle_id
+                  name
+                  type
+                }}
+                roles{{
+                  relation_id
+                  start{{
+                    handle_id
+                    first_name
+                  }}
+                  end{{
+                    handle_id
+                    name
+                  }}
+                }}
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              email{{
+                handle_id
+                name
+                type
+              }}
+            }}
+            subupdated{{
+              errors{{
+                field
+                messages
+              }}
+              email{{
+                handle_id
+                name
+                type
+              }}
+            }}
+            phones_created{{
+              errors{{
+                field
+                messages
+              }}
+              phone{{
+                handle_id
+                name
+                type
+              }}
+            }}
+            phones_updated{{
+              errors{{
+                field
+                messages
+              }}
+              phone{{
+                handle_id
+                name
+                type
+              }}
+            }}
+            rolerelations{{
+              errors{{
+                field
+                messages
+              }}
+              rolerelation{{
+                relation_id
+                type
+                start{{
+                  handle_id
+                  first_name
+                  last_name
+                }}
+                end{{
+                  handle_id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(c1_handle_id=c1_handle_id, c1_first_name=c1_first_name,
+                    c1_last_name=c1_last_name, c1_contact_type=c1_contact_type,
+                    c3_email=c3_email, c3_email_type=c3_email_type,
+                    c1_email_id=c1_email_id, c1_email=c1_email,
+                    c1_email_type=c1_email_type, c1_email_id2=c1_email_id2,
+                    c3_phone=c3_phone, c3_phone_type=c3_phone_type,
+                    c1_phone_id=c1_phone_id, c1_phone=c1_phone,
+                    c1_phone_type=c1_phone_type, role_handle_id=role_handle_id,
+                    organization_id=organization_id, c1_phone_id2=c1_phone_id2)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = result.data['composite_contact']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        for subcreated in result.data['composite_contact']['subcreated']:
+            assert not subcreated['errors']
+
+        for subupdated in result.data['composite_contact']['subupdated']:
+            assert not subupdated['errors']
+
+        for subcreated in result.data['composite_contact']['phones_created']:
+            assert not subcreated['errors']
+
+        for subupdated in result.data['composite_contact']['phones_updated']:
+            assert not subupdated['errors']
+
+        for subcreated in result.data['composite_contact']['rolerelations']:
+            assert not subcreated['errors']
+
+        # get the ids
+        result_data = result.data['composite_contact']
+        c1_email_id3 = result_data['subcreated'][0]['email']['handle_id']
+        c1_phone_id3 = result_data['phones_created'][0]['phone']['handle_id']
+        role_relation_id2 = result_data['rolerelations'][0]['rolerelation']['relation_id']
+
+        # check the integrity of the data
+        updated_data = result_data['updated']['contact']
+
+        # check contact
+        assert updated_data['first_name'] == c1_first_name, \
+            "1st contact's first name doesn't match \n{} != {}"\
+                .format(updated_data['first_name'], c1_first_name)
+        assert updated_data['last_name'] == c1_last_name, \
+            "1st contact's last name doesn't match \n{} != {}"\
+                .format(updated_data['last_name'], c1_last_name)
+
+        # get emails and check them
+        email1_node = None
+        email3_node = None
+
+        for email_node in updated_data['emails']:
+            if email_node['handle_id'] == c1_email_id:
+                email1_node = email_node
+            elif email_node['handle_id'] == c1_email_id3:
+                email3_node = email_node
+
+        self.assertIsNotNone(email1_node)
+
+        assert c1_email_id == email1_node['handle_id'], \
+            "Contact's email handle_id doesn't match \n{} != {}"\
+                .format(c1_email_id, email1_node['handle_id'])
+        assert c1_email == email1_node['name'], \
+            "Contact's email doesn't match \n{} != {}"\
+                .format(c1_email, email1_node['name'])
+        assert c1_email_type == email1_node['type'], \
+            "Contact's email type doesn't match \n{} != {}"\
+                .format(c1_email_type, email1_node['type'])
+
+        self.assertIsNotNone(email3_node)
+
+        assert c1_email_id3 == email3_node['handle_id'], \
+            "Contact's email handle_id doesn't match \n{} != {}"\
+                .format(c1_phone_id3, email3_node['handle_id'])
+        assert c3_email == email3_node['name'], \
+            "Contact's email doesn't match \n{} != {}"\
+                .format(c3_email, email3_node['name'])
+        assert c3_email_type == email3_node['type'], \
+            "Contact's email type doesn't match \n{} != {}"\
+                .format(c3_email_type, email3_node['type'])
+
+
+        # get phones and check them
+        phone1_node = None
+        phone3_node = None
+
+        for phone_node in updated_data['phones']:
+            if phone_node['handle_id'] == c1_phone_id:
+                phone1_node = phone_node
+            elif phone_node['handle_id'] == c1_phone_id3:
+                phone3_node = phone_node
+
+        self.assertIsNotNone(phone1_node)
+
+        assert c1_phone_id == phone1_node['handle_id'], \
+            "Contact's phone handle_id doesn't match \n{} != {}"\
+                .format(c1_phone_id, phone1_node['handle_id'])
+        assert c1_phone == phone1_node['name'], \
+            "Contact's phone doesn't match \n{} != {}"\
+                .format(c1_phone, phone1_node['name'])
+        assert c1_phone_type == phone1_node['type'], \
+            "Contact's phone type doesn't match \n{} != {}"\
+                .format(c1_phone_type, phone1_node['type'])
+
+        self.assertIsNotNone(phone3_node)
+
+        assert c1_phone_id3 == phone3_node['handle_id'], \
+            "Contact's phone handle_id doesn't match \n{} != {}"\
+                .format(c1_phone_id, phone3_node['handle_id'])
+        assert c3_phone == phone3_node['name'], \
+            "Contact's phone doesn't match \n{} != {}"\
+                .format(c3_phone, phone3_node['name'])
+        assert c3_phone_type == phone3_node['type'], \
+            "Contact's phone type doesn't match \n{} != {}"\
+                .format(c3_phone_type, phone3_node['type'])
+
+        # check rolerelation
+        assert len(result_data['rolerelations']) == 1, \
+            'This contact should only have one role'
+        rolerelation = result_data['rolerelations'][0]['rolerelation']
+
+        # check number of roles
+        roles_data = result_data['updated']['contact']['roles']
+        assert len(roles_data) == 1, \
+            'This contact should only have one role'
+
+        assert c1_handle_id == rolerelation['start']['handle_id'], \
+            "Contact's handle_id doesn't match with the one present in the relation \n\
+                {} != {}".format(c1_handle_id , rolerelation['start']['handle_id'],)
+        assert int(organization_id) == int(rolerelation['end']['handle_id']), \
+            "Organization's handle_id doesn't match with the one present in the relation\n\
+                {} != {}".format(organization_id , rolerelation['end']['handle_id'],)
+
+        # check for deleted email and phone
+        c1_email_id2 = int(c1_email_id2)
+        assert not NodeHandle.objects.filter(handle_id=c1_email_id2).exists(), \
+            "This email node should had been deleted"
+
+        c1_phone_id2 = int(c1_phone_id2)
+        assert not NodeHandle.objects.filter(handle_id=c1_phone_id2).exists(), \
+            "This phone node should had been deleted"
+
+
+        role_handle_id = Role.objects.all().first().handle_id
+        organization_id = self.organization1.handle_id
+
+        query = '''
+        mutation{{
+          composite_contact(input:{{
+            create_input:{{
+              first_name: "{c1_first_name}"
+              last_name: "{c1_last_name}"
+              contact_type: "{c1_contact_type}"
+            }}
+            create_subinputs:[
+              {{
+                name: "{c1_email}"
+                type: "{c1_email_type}"
+              }}
+              {{
+                name: "{c2_email}"
+                type: "{c2_email_type}"
+              }}
+            ]
+            create_phones:[
+              {{
+                name: "{c1_phone}"
+                type: "{c1_phone_type}"
+              }}
+              {{
+                name: "{c2_phone}"
+                type: "{c2_phone_type}"
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              contact{{
+                handle_id
+                first_name
+                last_name
                 contact_type{{
                   name
                   value
