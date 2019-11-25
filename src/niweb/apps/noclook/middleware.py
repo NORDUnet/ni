@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from datetime import datetime
+from django.conf import settings
 from graphql_jwt import signals
 from graphql_jwt.settings import jwt_settings
 from graphql_jwt.shortcuts import get_token
@@ -26,6 +27,7 @@ class SRIJWTMiddleware(object):
             response.set_cookie(
                 jwt_settings.JWT_COOKIE_NAME,
                 token,
+                domain=settings.COOKIE_DOMAIN,
                 expires=expires,
                 httponly=False,
                 secure=jwt_settings.JWT_COOKIE_SECURE,
