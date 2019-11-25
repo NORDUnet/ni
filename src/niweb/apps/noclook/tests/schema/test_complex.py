@@ -1796,16 +1796,25 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 handle_id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   handle_id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   handle_id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
               }}
             }}
@@ -1817,7 +1826,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 handle_id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_created{{
@@ -1828,7 +1840,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 handle_id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
           }}
@@ -1881,9 +1896,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, created_email_data['name'])
-        assert c1_email_type == created_email_data['type'], \
+        assert c1_email_type == created_email_data['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c1_email_type, created_email_data['type'])
+                .format(c1_email_type, created_email_data['type']['value'])
 
         created_email_data = result_data['subcreated'][1]['email']
 
@@ -1893,9 +1908,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c2_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c2_email, created_email_data['name'])
-        assert c2_email_type == created_email_data['type'], \
+        assert c2_email_type == created_email_data['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c2_email_type, created_email_data['type'])
+                .format(c2_email_type, created_email_data['type']['value'])
 
         # check phone
         created_phone_data = result_data['phones_created'][0]['phone']
@@ -1906,9 +1921,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_phone == created_phone_data['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, created_phone_data['name'])
-        assert c1_phone_type == created_phone_data['type'], \
+        assert c1_phone_type == created_phone_data['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c1_phone_type, created_phone_data['type'])
+                .format(c1_phone_type, created_phone_data['type']['value'])
 
         # Update mutation
         c1_first_name = "Anne"
@@ -1971,16 +1986,25 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 handle_id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   handle_id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   handle_id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 roles{{
                   relation_id
@@ -2003,7 +2027,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 handle_id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             subupdated{{
@@ -2014,7 +2041,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 handle_id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_created{{
@@ -2025,7 +2055,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 handle_id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_updated{{
@@ -2036,7 +2069,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 handle_id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             rolerelations{{
@@ -2127,9 +2163,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_email == email1_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, email1_node['name'])
-        assert c1_email_type == email1_node['type'], \
+        assert c1_email_type == email1_node['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c1_email_type, email1_node['type'])
+                .format(c1_email_type, email1_node['type']['value'])
 
         self.assertIsNotNone(email3_node)
 
@@ -2139,9 +2175,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c3_email == email3_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c3_email, email3_node['name'])
-        assert c3_email_type == email3_node['type'], \
+        assert c3_email_type == email3_node['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c3_email_type, email3_node['type'])
+                .format(c3_email_type, email3_node['type']['value'])
 
 
         # get phones and check them
@@ -2162,9 +2198,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_phone == phone1_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, phone1_node['name'])
-        assert c1_phone_type == phone1_node['type'], \
+        assert c1_phone_type == phone1_node['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c1_phone_type, phone1_node['type'])
+                .format(c1_phone_type, phone1_node['type']['value'])
 
         self.assertIsNotNone(phone3_node)
 
@@ -2174,9 +2210,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c3_phone == phone3_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c3_phone, phone3_node['name'])
-        assert c3_phone_type == phone3_node['type'], \
+        assert c3_phone_type == phone3_node['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c3_phone_type, phone3_node['type'])
+                .format(c3_phone_type, phone3_node['type']['value'])
 
         # check rolerelation
         assert len(result_data['rolerelations']) == 1, \
