@@ -247,9 +247,40 @@ class ConnectPortForm(forms.Form):
         self.fields['cable_type'].choices = Dropdown.get('cable_types').as_choices()
         #self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
-    name = forms.CharField()
+    name = forms.CharField(label='Cable label',
+                           help_text="If not specified will the next avalible cable ID be used.",
+                           required=False)
     cable_type = forms.ChoiceField(widget=forms.widgets.Select, initial='Patch')
-    relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+    class Meta:
+        id_generator_name = 'Cable'
+        id_collection = NordunetUniqueId
+
+    def clean(self):
+        """
+        Sets name to next generated ID or register the name in the ID collection.
+        """
+        cleaned_data = super(ConnectPortForm, self).clean()
+        # Set name to a generated id if the cable is not a manually named cable.
+        name = cleaned_data.get("name")
+        if self.is_valid():
+            if not name:
+                if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                    raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
+                try:
+                    id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                except UniqueIdGenerator.DoesNotExist as e:
+                    raise e
+            else:
+                try:
+                    unique_ids.register_unique_id(self.Meta.id_collection, name)
+                except IntegrityError as e:
+                    if NodeHandle.objects.filter(node_name=name):
+                        self.add_error('name', str(e))
+        return cleaned_data
+
+    relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
 

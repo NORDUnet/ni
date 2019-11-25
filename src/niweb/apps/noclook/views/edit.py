@@ -742,24 +742,29 @@ def connect_port(request, handle_id):
     if request.POST:
         form = forms.ConnectPortForm(request.POST)
         if form.is_valid():
-            try:
-                new_cable_nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
-            except UniqueNodeError:
-                form = forms.ConnectPortForm(request.POST)
-                form.add_error('name', 'A Cable with that name already exists.')
-                return render(request, 'noclook/create/create_cable.html', {'form': form})
-
-            # Generic node update
-            helpers.form_update_node(request.user, port.handle_id, form)
-            # Port specific updates
-            helpers.set_connected_to(request.user, new_cable_nh, node.handle_id)
-
-            if form.cleaned_data['relationship_end_b']:
-                end_b_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_b'])
-                helpers.set_connected_to(request.user, new_cable_nh, end_b_nh.handle_id)
-
+            if not form.cleaned_data['relationship_end_a']:
+                form.add_error('relationship_end_a', 'Please select other end of cable')
             else:
-                return redirect('%sedit' % nh.get_absolute_url())
+                #try:
+                new_cable_nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
+                #except UniqueNodeError:
+                #    form = forms.ConnectPortForm(request.POST)
+                #    form.add_error('name', 'A Cable with that name already exists.')
+                #    return render(request, 'noclook/edit/connect_port.html', {'form': form})
+
+
+                # Connect cable to first port
+                helpers.set_connected_to(request.user, new_cable_nh.get_node(), port.handle_id)
+
+                # Connect cable to selected port
+                end_a_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_a'])
+                helpers.set_connected_to(request.user, new_cable_nh.get_node(), end_a_nh.handle_id)
+
+                # retunr to device the port is connected to
+                parent = port.get_parent().get('Has', [])
+                if parent:
+                    redirect_url = helpers.get_node_url(parent[0]['node'].handle_id)
+                return redirect(redirect_url)
     else:
         initial = {'name': None}
         form = forms.ConnectPortForm(initial=initial)
