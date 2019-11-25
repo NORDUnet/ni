@@ -4,7 +4,9 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from .models import NodeHandle, NodeType, Role, RoleGroup, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, Choice
+from .models import NodeHandle, NodeType, Role, RoleGroup, UniqueIdGenerator,\
+    NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, \
+    Choice, GroupContextAuthzAction
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -101,3 +103,4 @@ admin.site.register(Dropdown, DropdownAdmin)
 admin.site.register(Choice, ChoiceAdmin)
 admin.site.register(RoleGroup)
 admin.site.register(Role)
+admin.site.register(GroupContextAuthzAction)
