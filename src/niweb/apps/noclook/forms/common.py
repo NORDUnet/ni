@@ -248,7 +248,7 @@ class ConnectPortForm(forms.Form):
         #self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField(label='Cable label',
-                           help_text="If not specified will the next avalible cable ID be used.",
+                           help_text="Leave blank for next available cable ID.",
                            required=False)
     cable_type = forms.ChoiceField(widget=forms.widgets.Select, initial='Patch')
 

@@ -17,6 +17,7 @@ from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
 import norduniclient as nc
+from norduniclient.exceptions import UniqueNodeError
 
 
 # Helper functions
@@ -726,18 +727,17 @@ def edit_port(request, handle_id):
 @staff_member_required
 def connect_port(request, handle_id):
     nh, port = helpers.get_nh_node(handle_id)
-    parent = port.get_parent()
+    location_path = port.get_location_path()
     connected_to = port.get_connected_to()
-    parent_categories = ['external-equipment',
-                         'firewall',
-                         'host',
-                         'odf',
-                         'optical-node',
-                         'router',
-                         'switch']
-    connections_categories = Dropdown.get('cable_types').as_values(False)
 
+    connections_categories = Dropdown.get('cable_types').as_values(False)
     cable_types = u', '.join([u'"{}"'.format(val) for val in Dropdown.get('cable_types').as_values()])
+
+    # retunr to device the port is connected to
+    redirect_url = helpers.get_node_url(port.handle_id)
+    parent = port.get_parent().get('Has', [])
+    if parent:
+        redirect_url = helpers.get_node_url(parent[0]['node'].handle_id)
 
     if request.POST:
         form = forms.ConnectPortForm(request.POST)
@@ -745,13 +745,15 @@ def connect_port(request, handle_id):
             if not form.cleaned_data['relationship_end_a']:
                 form.add_error('relationship_end_a', 'Please select other end of cable')
             else:
-                #try:
-                new_cable_nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
-                #except UniqueNodeError:
-                #    form = forms.ConnectPortForm(request.POST)
-                #    form.add_error('name', 'A Cable with that name already exists.')
-                #    return render(request, 'noclook/edit/connect_port.html', {'form': form})
+                try:
+                    new_cable_nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
+                except UniqueNodeError:
+                    form = forms.ConnectPortForm(request.POST)
+                    form.add_error('name', 'A Cable with that name already exists.')
+                    return render(request, 'noclook/edit/connect_port.html', {'form': form})
 
+                #Update cable
+                helpers.form_update_node(request.user, new_cable_nh.handle_id, form)
 
                 # Connect cable to first port
                 helpers.set_connected_to(request.user, new_cable_nh.get_node(), port.handle_id)
@@ -760,18 +762,15 @@ def connect_port(request, handle_id):
                 end_a_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_a'])
                 helpers.set_connected_to(request.user, new_cable_nh.get_node(), end_a_nh.handle_id)
 
-                # retunr to device the port is connected to
-                parent = port.get_parent().get('Has', [])
-                if parent:
-                    redirect_url = helpers.get_node_url(parent[0]['node'].handle_id)
                 return redirect(redirect_url)
     else:
         initial = {'name': None}
         form = forms.ConnectPortForm(initial=initial)
 
     return render(request, 'noclook/edit/connect_port.html',
-                  {'node_handle': nh, 'form': form, 'node': port, 'parent': parent,
-                      'connected_to': connected_to, 'cable_types': cable_types, 'parent_categories': parent_categories, 'connections_categories': connections_categories})
+                  {'node_handle': nh, 'form': form, 'node': port, 'redirect_url': redirect_url,
+                      'connected_to': connected_to, 'cable_types': cable_types,
+                   'connections_categories': connections_categories, 'location_path': location_path})
 
 
 @staff_member_required

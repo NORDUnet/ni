@@ -87,6 +87,7 @@
 {% endblock %}
 
 {% block content %}
+{% load noclook_tags %}
   <!-- Modal -->
   <div id="dialog-object-confirm" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-header">
@@ -116,8 +117,27 @@
     </div>
   </div>
 
+
   <form action="" method="post">{% csrf_token %}
         <h1>Edit {{ node_handle.node_type|lower }} <a href="{{ node_handle.get_absolute_url }}">{{ node_handle.node_name }}</a></h1>
+
+        {% if location_path.location_path %}
+            <h5 class="site">Located in
+            {% for loc in location_path.location_path %}
+                <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
+            {% endfor %}
+            {% if node.data.rack_position %}
+              U{{node.data.rack_position}}
+            {% endif %}
+            </h5>
+        {% elif node.get_placement_path.placement_path %}
+            <h5 class="site">Located in
+            {% for loc in node.get_placement_path.placement_path %}
+                <a href="{% noclook_node_to_url loc.handle_id %}"> {{ loc.name }}</a>
+            {% endfor %}
+            </h5>
+        {% endif %}
+
         {% if form.errors %}
             <div class="alert alert-error">
                 <h4 class="alert-heading">The operation could not be performed because one or more error(s) occurred.</h4>
@@ -127,6 +147,7 @@
         {% endif %}
 {% endblock %}
 
+
 {% block content_footer %}
         <br><br>
         <div class="row">
@@ -135,7 +156,7 @@
                     <div class="btn-group">
                         <input type="submit" name="saveanddone" class="btn btn-primary" value="Save">
                         <input type="submit" name="save" class="btn btn-primary" value="continue editing">
-                        <a href="{{ node_handle.get_absolute_url }}" class="btn">Cancel</a>
+                        <a href="{{ parent_nh.get_absolute_url }}" class="btn">Cancel</a>
                     </div>
                 </div>
             </div>

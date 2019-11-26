@@ -39,7 +39,7 @@
                 <tr>
                     <td><a href="{% noclook_node_to_url item.porta.handle_id %}">{{ item.porta.name }}</a></td>
                     {% if user.is_staff %}
-                      <td><a href="/port/{{ item.porta.handle_id }}/edit_connect" class="btn btn-info"><i class="icon-edit icon-white"></i> Connect</a></td>
+                      <td><a href="/port/{{ item.porta.handle_id }}/edit_connect" class="btn btn-link"><i class="icon-edit icon-black"></i> Connect</a></td>
                     {% endif %}
                     <td>{{ item.porta.description }}</td>
                     <td><a href="{% noclook_node_to_url item.cable.handle_id %}">{{ item.cable.name }}</a></td>
