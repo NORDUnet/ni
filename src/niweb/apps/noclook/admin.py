@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 
 from .models import NodeHandle, NodeType, Role, RoleGroup, UniqueIdGenerator,\
     NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, \
-    Choice, GroupContextAuthzAction
+    Choice, GroupContextAuthzAction, NodeHandleContext
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -104,3 +104,4 @@ admin.site.register(Choice, ChoiceAdmin)
 admin.site.register(RoleGroup)
 admin.site.register(Role)
 admin.site.register(GroupContextAuthzAction)
+admin.site.register(NodeHandleContext)
