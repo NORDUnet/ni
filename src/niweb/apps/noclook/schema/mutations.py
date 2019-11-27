@@ -737,6 +737,7 @@ class RoleRelationMutation(relay.ClientIDMutation):
     class Input:
         role_handle_id = graphene.Int(required=True)
         organization_handle_id = graphene.Int(required=True)
+        relation_id = graphene.Int()
 
     errors = graphene.List(ErrorType)
     rolerelation = Field(RoleRelation)
@@ -755,6 +756,7 @@ class RoleRelationMutation(relay.ClientIDMutation):
         contact_handle_id = input.get('contact_handle_id', None)
         organization_handle_id = input.get('organization_handle_id', None)
         role_handle_id = input.get('role_handle_id', None)
+        relation_id = input.get('relation_id', None)
 
         # get entities and check permissions
         contact_nh = None
@@ -811,7 +813,8 @@ class RoleRelationMutation(relay.ClientIDMutation):
         # link contact with organization
         if not errors:
             contact, rolerelation = helpers.link_contact_role_for_organization(
-                user, organization_nh.get_node(), contact_nh.handle_id, role_model
+                user, organization_nh.get_node(), contact_nh.handle_id,
+                role_model, relation_id
             )
 
         return cls(errors=errors, rolerelation=rolerelation)

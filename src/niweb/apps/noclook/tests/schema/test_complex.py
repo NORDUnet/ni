@@ -1687,6 +1687,12 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 type: "{c2_phone_type}"
               }}
             ]
+            link_rolerelations:[
+              {{
+                role_handle_id: {role_handle_id}
+                organization_handle_id: {organization_id}
+              }}
+            ]
           }}){{
             created{{
               errors{{
@@ -1732,6 +1738,25 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 type
               }}
             }}
+            rolerelations{{
+              errors{{
+                field
+                messages
+              }}
+              rolerelation{{
+                relation_id
+                type
+                start{{
+                  handle_id
+                  first_name
+                  last_name
+                }}
+                end{{
+                  handle_id
+                  name
+                }}
+              }}
+            }}
           }}
         }}
         '''.format(c1_first_name=c1_first_name, c1_last_name=c1_last_name,
@@ -1739,7 +1764,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                     c1_email_type=c1_email_type, c2_email=c2_email,
                     c2_email_type=c2_email_type, c1_phone=c1_phone,
                     c1_phone_type=c1_phone_type, c2_phone=c2_phone,
-                    c2_phone_type=c2_phone_type)
+                    c2_phone_type=c2_phone_type, role_handle_id=role_handle_id,
+                    organization_id=organization_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1761,6 +1787,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         c1_email_id2 = result_data['subcreated'][1]['email']['handle_id']
         c1_phone_id = result_data['phones_created'][0]['phone']['handle_id']
         c1_phone_id2 = result_data['phones_created'][1]['phone']['handle_id']
+        role_relation_id = result_data['rolerelations'][0]['rolerelation']['relation_id']
 
         # check the integrity of the data
         created_data = result_data['created']['contact']
@@ -1811,6 +1838,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             "Contact's phone type doesn't match \n{} != {}"\
                 .format(c1_phone_type, created_phone_data['type'])
 
+        # assert role relation
+        self.assertIsNotNone(role_relation_id, 'Role relation shouldn\'t be none')
+
         # Update mutation
         c1_first_name = "Anne"
         c1_last_name  = "Doe"
@@ -1823,7 +1853,6 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         c3_phone_type = "personal"
 
         role_handle_id = Role.objects.all().last().handle_id
-        organization_id = self.organization2.handle_id
 
         query = '''
         mutation{{
@@ -1858,6 +1887,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             link_rolerelations:[{{
               role_handle_id: {role_handle_id}
               organization_handle_id: {organization_id}
+              relation_id: {role_relation_id}
             }}]
             delete_phones:[{{
               handle_id: {c1_phone_id2}
@@ -1969,7 +1999,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                     c3_phone=c3_phone, c3_phone_type=c3_phone_type,
                     c1_phone_id=c1_phone_id, c1_phone=c1_phone,
                     c1_phone_type=c1_phone_type, role_handle_id=role_handle_id,
-                    organization_id=organization_id, c1_phone_id2=c1_phone_id2)
+                    organization_id=organization_id,
+                    role_relation_id=role_relation_id, c1_phone_id2=c1_phone_id2)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
