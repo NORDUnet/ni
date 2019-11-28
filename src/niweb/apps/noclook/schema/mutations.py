@@ -608,6 +608,7 @@ class CompositeGroupMutation(CompositeMutation):
         unlink_submutation = DeleteRelationship
         graphql_type = Group
         graphql_subtype = Contact
+        context = sriutils.get_community_context()
 
 
 class CompositeOrganizationMutation(CompositeMutation):
@@ -663,7 +664,7 @@ class CompositeOrganizationMutation(CompositeMutation):
         helpers.add_address_organization(user, slave_nh.get_node(), master_nh.handle_id)
 
     @classmethod
-    def process_extra_subentities(cls, user, main_nh, root, info, input):
+    def process_extra_subentities(cls, user, main_nh, root, info, input, context):
         extract_param = 'address'
         ret_subcreated = None
         ret_subupdated = None
@@ -688,6 +689,7 @@ class CompositeOrganizationMutation(CompositeMutation):
                 ret_subcreated = []
 
                 for input in create_address:
+                    input['context'] = context
                     ret = address_created.mutate_and_get_payload(root, info, **input)
                     ret_subcreated.append(ret)
 
@@ -703,6 +705,7 @@ class CompositeOrganizationMutation(CompositeMutation):
                 ret_subupdated = []
 
                 for input in update_address:
+                    input['context'] = context
                     ret = address_updated.mutate_and_get_payload(root, info, **input)
                     ret_subupdated.append(ret)
 
@@ -737,6 +740,7 @@ class CompositeOrganizationMutation(CompositeMutation):
         address_deleted  = NIAddressMutationFactory.get_delete_mutation()
         graphql_type = Organization
         graphql_subtype = Contact
+        context = sriutils.get_community_context()
 
 
 class RoleRelationMutation(relay.ClientIDMutation):
@@ -855,7 +859,7 @@ class CompositeContactMutation(CompositeMutation):
         helpers.add_email_contact(user, slave_nh.get_node(), master_nh.handle_id)
 
     @classmethod
-    def process_extra_subentities(cls, user, main_nh, root, info, input):
+    def process_extra_subentities(cls, user, main_nh, root, info, input, context):
         extract_param = 'phone'
         ret_subcreated = None
         ret_subupdated = None
@@ -883,6 +887,7 @@ class CompositeContactMutation(CompositeMutation):
                 ret_subcreated = []
 
                 for input in create_phones:
+                    input['context'] = context
                     ret = phones_created.mutate_and_get_payload(root, info, **input)
                     ret_subcreated.append(ret)
 
@@ -898,6 +903,7 @@ class CompositeContactMutation(CompositeMutation):
                 ret_subupdated = []
 
                 for input in update_phones:
+                    input['context'] = context
                     ret = phones_updated.mutate_and_get_payload(root, info, **input)
                     ret_subupdated.append(ret)
 
@@ -942,6 +948,7 @@ class CompositeContactMutation(CompositeMutation):
         rolerelation_mutation = RoleRelationMutation
         graphql_type = Contact
         graphql_subtype = Email
+        context = sriutils.get_community_context()
 
 
 class NOCRootMutation(graphene.ObjectType):

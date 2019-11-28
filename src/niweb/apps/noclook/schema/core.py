@@ -308,11 +308,11 @@ class NIObjectType(DjangoObjectType):
         return node_type.type
 
     @classmethod
-    def get_read_context(cls):
+    def get_type_context(cls):
         context_resolver = cls.get_from_nimetatype('context_method')
 
         if not context_resolver:
-            context_resolver = sriutils.get_default_context()
+            context_resolver = sriutils.get_default_context
 
         return context_resolver()
 
@@ -537,7 +537,7 @@ class NIObjectType(DjangoObjectType):
             qs = NodeHandle.objects.none()
 
             if info.context and info.context.user.is_authenticated:
-                context = cls.get_read_context()
+                context = cls.get_type_context()
                 authorized = sriutils.authorize_list_module(
                     info.context.user, context
                 )
@@ -568,7 +568,7 @@ class NIObjectType(DjangoObjectType):
             qs = NodeHandle.objects.none()
 
             if info.context and info.context.user.is_authenticated:
-                context = cls.get_read_context()
+                context = cls.get_type_context()
                 authorized = sriutils.authorize_list_module(
                     info.context.user, context
                 )
@@ -646,7 +646,7 @@ class NIObjectType(DjangoObjectType):
             revert_default_order = False
             use_neo4j_query = False
 
-            context = cls.get_read_context()
+            context = cls.get_type_context()
 
             if info.context and info.context.user.is_authenticated and \
                 sriutils.authorize_list_module(info.context.user, context):
@@ -1330,10 +1330,18 @@ class AbstractNIMutation(relay.ClientIDMutation):
         if not info.context or not info.context.user.is_authenticated:
             raise GraphQLAuthException()
 
+        # convert the input to a request object for the form to processs
         reqinput = cls.from_input_to_request(info.context.user, **input)
+
+        # get input context, otherwise get the type context
+        graphql_type = cls.get_graphql_type()
+        input_context = input.get('context', graphql_type.get_type_context())
+        # add it to the dict
+        reqinput[1]['input_context'] = input_context
+
+        # call subclass do_request method
         has_error, ret = cls.do_request(reqinput[0], **reqinput[1])
 
-        graphql_type = cls.get_graphql_type()
         init_params = {}
 
         if not has_error:
@@ -1370,11 +1378,9 @@ class AbstractNIMutation(relay.ClientIDMutation):
                 relation_f(request, form, nodehandler, relation_name)
 
     @classmethod
-    def process_subentities(cls, request, form, master_nh):
+    def process_subentities(cls, request, form, master_nh, context):
         nimetaclass = getattr(cls, 'NIMetaClass')
         subentity_processors = getattr(nimetaclass, 'subentity_processors', None)
-
-        default_context = sriutils.get_default_context()
 
         if subentity_processors:
             for sub_name, sub_props in subentity_processors.items():
@@ -1427,7 +1433,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
                         link_method(nh.handle_id)
 
                     # add to permission context
-                    NodeHandleContext(nodehandle=nh, context=default_context).save()
+                    NodeHandleContext(nodehandle=nh, context=context).save()
 
     class Meta:
         abstract = True
@@ -1454,7 +1460,9 @@ class CreateNIMutation(AbstractNIMutation):
 
     @classmethod
     def do_request(cls, request, **kwargs):
-        form_class     = kwargs.get('form_class')
+        form_class = kwargs.get('form_class')
+        context    = kwargs.get('input_context')
+
         nimetaclass    = getattr(cls, 'NIMetaClass')
         graphql_type   = getattr(nimetaclass, 'graphql_type')
         property_update = getattr(nimetaclass, 'property_update', None)
@@ -1462,11 +1470,8 @@ class CreateNIMutation(AbstractNIMutation):
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
-        context_method = getattr(nimetatype, 'context_method')
 
         has_error      = False
-
-        context = context_method()
 
         # check it can write on this context
         authorized = sriutils.authorize_create_resource(request.user, context)
@@ -1498,7 +1503,7 @@ class CreateNIMutation(AbstractNIMutation):
             # process subentities if implemented
             if not has_error:
                 nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
-                cls.process_subentities(request, form, nodehandler)
+                cls.process_subentities(request, form, nodehandler, context)
 
             return has_error, { graphql_type.__name__.lower(): nh }
         else:
@@ -1532,6 +1537,8 @@ class UpdateNIMutation(AbstractNIMutation):
     @classmethod
     def do_request(cls, request, **kwargs):
         form_class      = kwargs.get('form_class')
+        context    = kwargs.get('input_context')
+
         nimetaclass     = getattr(cls, 'NIMetaClass')
         graphql_type    = getattr(nimetaclass, 'graphql_type')
         property_update = getattr(nimetaclass, 'property_update', None)
@@ -1539,6 +1546,7 @@ class UpdateNIMutation(AbstractNIMutation):
         nimetatype      = getattr(graphql_type, 'NIMetaType')
         node_type       = getattr(nimetatype, 'ni_type').lower()
         node_meta_type  = getattr(nimetatype, 'ni_metatype').capitalize()
+        context_method = getattr(nimetatype, 'context_method')
         handle_id       = request.POST.get('handle_id')
         has_error       = False
 
@@ -1559,7 +1567,7 @@ class UpdateNIMutation(AbstractNIMutation):
                 cls.process_relations(request, form, nodehandler)
 
                 # process subentities if implemented
-                cls.process_subentities(request, form, nodehandler)
+                cls.process_subentities(request, form, nodehandler, context)
 
                 return has_error, { graphql_type.__name__.lower(): nh }
             else:
@@ -1678,7 +1686,7 @@ class CompositeMutation(relay.ClientIDMutation):
         return cls(**kwargs)
 
     @classmethod
-    def process_extra_subentities(cls, user, master_nh, root, info, input):
+    def process_extra_subentities(cls, user, master_nh, root, info, input, context):
         pass
 
     @classmethod
@@ -1697,6 +1705,7 @@ class CompositeMutation(relay.ClientIDMutation):
         graphql_subtype = getattr(nimetaclass, 'graphql_subtype', None)
         create_mutation = getattr(nimetaclass, 'create_mutation', None)
         update_mutation = getattr(nimetaclass, 'update_mutation', None)
+        context         = getattr(nimetaclass, 'context', None)
 
         # this handle_id will be set to the created or updated main entity
         main_handle_id = None
@@ -1715,8 +1724,10 @@ class CompositeMutation(relay.ClientIDMutation):
 
         if create_input:
             create = True
+            create_input['context'] = context
             ret_created = create_mutation.mutate_and_get_payload(root, info, **create_input)
         elif update_input:
+            update_input['context'] = context
             ret_updated = update_mutation.mutate_and_get_payload(root, info, **update_input)
         else:
             raise Exception('At least an input should be provided')
@@ -1756,6 +1767,7 @@ class CompositeMutation(relay.ClientIDMutation):
                 ret_subcreated = []
 
                 for subinput in create_subinputs:
+                    subinput['context'] = context
                     ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
                     ret_subcreated.append(ret)
 
@@ -1771,6 +1783,7 @@ class CompositeMutation(relay.ClientIDMutation):
                 ret_subupdated = []
 
                 for subinput in update_subinputs:
+                    subinput['context'] = context
                     ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
                     ret_subupdated.append(ret)
 
@@ -1797,7 +1810,7 @@ class CompositeMutation(relay.ClientIDMutation):
                     ret_unlinked.append(ret)
 
             ret_extra_subentities = \
-                cls.process_extra_subentities(user, main_nh, root, info, input)
+                cls.process_extra_subentities(user, main_nh, root, info, input, context)
 
         payload_kwargs = dict(
             created=ret_created, updated=ret_updated,
