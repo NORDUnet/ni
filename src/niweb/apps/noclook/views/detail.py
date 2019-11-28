@@ -38,7 +38,7 @@ def cable_detail(request, handle_id):
     cable = nh.get_node()
     last_seen, expired = helpers.neo4j_data_age(cable.data)
 
-    # should be fixed in nc.get_connected_equipment
+    # TODO: should be fixed in nc.get_connected_equipment
     q = """
                 MATCH (n:Node {handle_id: {handle_id}})-[rel:Connected_to]->(port)
                 OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
@@ -50,7 +50,7 @@ def cable_detail(request, handle_id):
                 """
     connections = nc.query_to_list(nc.graphdb.manager, q, handle_id=cable.handle_id)
 
-    #connections = cable.get_connected_equipment()
+    # connections = cable.get_connected_equipment()
     relations = cable.get_relations()
     dependent = cable.get_dependent_as_types()
     connection_path = cable.get_connection_path()
@@ -240,8 +240,8 @@ def odf_detail(request, handle_id):
     odf = nh.get_node()
     last_seen, expired = helpers.neo4j_data_age(odf.data)
     # Get ports in ODF
-    #connections = odf.get_connections()
-    # should be fixed in nc.get_connected_equipment
+    # connections = odf.get_connections()
+    # TODO: should be fixed in nc.get_connections
     q = """
               MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta:Port)
               OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
@@ -546,7 +546,7 @@ def router_detail(request, handle_id):
     hw_name = "{}-hardware.json".format(router.data.get('name', 'router'))
     hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
     if hw_attachment:
-        try: 
+        try:
             hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
         except IOError as e:
             logger.warning('Missing hardware modules json for router %s(%s). Error was: %s', nh.node_name, nh.handle_id, e)
@@ -635,6 +635,7 @@ def site_detail(request, handle_id):
                    'urls': urls,
                    })
 
+
 @login_required
 def room_detail(request, handle_id):
     nh = get_object_or_404(NodeHandle, pk=handle_id)
@@ -672,8 +673,9 @@ def room_detail(request, handle_id):
                    'racks_table': racks_table,
                    'history': True,
                    'urls': urls,
-                   'location_path':location_path,
+                   'location_path': location_path,
                    })
+
 
 @login_required
 def site_owner_detail(request, handle_id):
@@ -712,7 +714,7 @@ def switch_detail(request, handle_id):
     hw_name = "{}-hardware.json".format(switch.data.get('name', 'switch'))
     hw_attachment = helpers.find_attachments(handle_id, hw_name).first()
     if hw_attachment:
-        try: 
+        try:
             hardware_modules = [json.loads(helpers.attachment_content(hw_attachment))]
         except IOError as e:
             logger.warning('Missing hardware modules json for router %s(%s). Error was: %s', nh.node_name, nh.handle_id, e)
