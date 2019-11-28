@@ -298,7 +298,7 @@ class NIObjectType(DjangoObjectType):
 
     @classmethod
     def get_from_nimetatype(cls, attr):
-        ni_metatype = getattr(cls, 'NIMetaType')
+        ni_metatype = getattr(cls, 'NIMetaType', None)
         return getattr(ni_metatype, attr)
 
     @classmethod
@@ -306,6 +306,15 @@ class NIObjectType(DjangoObjectType):
         ni_type = cls.get_from_nimetatype('ni_type')
         node_type = NodeType.objects.filter(type=ni_type).first()
         return node_type.type
+
+    @classmethod
+    def get_read_context(cls):
+        context_resolver = cls.get_from_nimetatype('context_method')
+
+        if not context_resolver:
+            context_resolver = sriutils.get_default_context()
+
+        return context_resolver()
 
     @classmethod
     def get_filter_input_fields(cls):
@@ -528,9 +537,9 @@ class NIObjectType(DjangoObjectType):
             qs = NodeHandle.objects.none()
 
             if info.context and info.context.user.is_authenticated:
-                default_context = sriutils.get_default_context()
+                context = cls.get_read_context()
                 authorized = sriutils.authorize_list_module(
-                    info.context.user, default_context
+                    info.context.user, context
                 )
 
                 if authorized:
@@ -559,9 +568,9 @@ class NIObjectType(DjangoObjectType):
             qs = NodeHandle.objects.none()
 
             if info.context and info.context.user.is_authenticated:
-                default_context = sriutils.get_default_context()
+                context = cls.get_read_context()
                 authorized = sriutils.authorize_list_module(
-                    info.context.user, default_context
+                    info.context.user, context
                 )
 
                 if authorized:
@@ -637,10 +646,10 @@ class NIObjectType(DjangoObjectType):
             revert_default_order = False
             use_neo4j_query = False
 
-            default_context = sriutils.get_default_context()
+            context = cls.get_read_context()
 
             if info.context and info.context.user.is_authenticated and \
-                sriutils.authorize_list_module(info.context.user, default_context):
+                sriutils.authorize_list_module(info.context.user, context):
                 # filtering will take a different approach
                 nodes = None
                 node_type = NodeType.objects.get(type=type_name)
