@@ -771,6 +771,7 @@ def edit_rack(request, handle_id):
                   {'node_handle': nh, 'form': form, 'parent': parent, 'node': rack,
                       'located_in': located_in, 'parent_categories': 'site', 'located_in_categories': located_in_categories})
 
+
 @staff_member_required
 def edit_room(request, handle_id):
     # Get needed data from node
@@ -796,7 +797,6 @@ def edit_room(request, handle_id):
     return render(request, 'noclook/edit/edit_room.html',
                   {'node_handle': nh, 'form': form, 'parent': parent, 'node': room,
                       'located_in': located_in, 'parent_categories': 'site', 'located_in_categories': located_in_categories})
-
 
 
 @staff_member_required

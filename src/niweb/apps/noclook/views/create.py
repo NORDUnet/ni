@@ -483,6 +483,7 @@ def new_site(request, **kwargs):
         form = forms.NewSiteForm()
     return render(request, 'noclook/create/create_site.html', {'form': form})
 
+
 @staff_member_required
 def new_room(request, **kwargs):
     if request.POST:
@@ -490,6 +491,11 @@ def new_room(request, **kwargs):
         if form.is_valid():
             nh = helpers.form_to_generic_node_handle(request, form, 'room', 'Location')
             helpers.form_update_node(request.user, nh.handle_id, form)
+
+            if form.cleaned_data['relationship_location']:
+                parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+                helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
+
             return redirect(nh.get_absolute_url())
     else:
         form = forms.NewRoomForm()
