@@ -464,11 +464,12 @@ def list_peering_partners(request):
 def list_racks(request):
     q = """
         MATCH (rack:Rack)
-        OPTIONAL MATCH p=()-[:Has*0..20]->(rack)
+        OPTIONAL MATCH (rack)<-[:Has]-(loc)
+        OPTIONAL MATCH p=(loc)<-[:Has*0..20]-()
         WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, rack AS rack
         WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, rack AS rack
         UNWIND(longestPaths) as location_path
-        RETURN rack, location_path
+        RETURN rack, reverse(location_path) as location_path
         ORDER BY rack.name
         """
 
@@ -480,12 +481,12 @@ def list_racks(request):
 
     for item in rack_list:
         rack = item.get('rack')
-        location_path={}
-        location_path['location_path'] = item.get('location_path')
+        location_path = item.get('location_path')
         table.rows.append(TableRow(rack, location_path))
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Racks', 'urls': urls})
+
 
 @login_required
 def list_rooms(request):
@@ -498,18 +499,19 @@ def list_rooms(request):
     room_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(room_list)
 
-    table = Table('Name','Location')
+    table = Table('Name', 'Location')
     for item in room_list:
         room = item.get('room')
         nh = get_object_or_404(NodeHandle, pk=room.get('handle_id'))
         node = nh.get_node()
         location_path = node.get_location_path()
-        table.rows.append(TableRow(item['room'], location_path))
+        table.rows.append(TableRow(item['room'], location_path.get('location_path')))
 
     table.no_badges = True
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Rooms', 'urls': urls})
+
 
 def _router_table(router):
     row = TableRow(router, router.get('model'), router.get('version'), router.get('operational_state'))
