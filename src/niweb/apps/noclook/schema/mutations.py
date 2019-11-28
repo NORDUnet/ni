@@ -191,12 +191,13 @@ class CreateOrganization(CreateNIMutation):
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        context_method = getattr(nimetatype, 'context_method')
         has_error      = False
 
-        default_context = sriutils.get_default_context()
+        context = context_method()
 
         # check it can write on this context
-        authorized = sriutils.authorize_create_resource(request.user, default_context)
+        authorized = sriutils.authorize_create_resource(request.user, context)
 
         if not authorized:
             raise GraphQLAuthException()
@@ -226,7 +227,7 @@ class CreateOrganization(CreateNIMutation):
                 nh_reload, organization = helpers.get_nh_node(nh.handle_id)
 
                 # add default context
-                NodeHandleContext(nodehandle=nh, context=default_context).save()
+                NodeHandleContext(nodehandle=nh, context=context).save()
 
                 # specific role setting
                 for field, roledict in DEFAULT_ROLES.items():
@@ -374,10 +375,10 @@ class NIOrganizationMutationFactory(NIMutationFactory):
 class CreateRole(DjangoModelFormMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        default_context = sriutils.get_default_context()
+        context = sriutils.get_community_context()
 
         # check it can write on this context
-        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+        authorized = sriutils.authorize_create_resource(info.context.user, context)
 
         if not authorized:
             raise GraphQLAuthException()
@@ -404,6 +405,14 @@ class UpdateRole(DjangoModelFormMutation):
 
     @classmethod
     def get_form_kwargs(cls, root, info, **input):
+        context = sriutils.get_community_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(info.context.user, context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         kwargs = {"data": input}
 
         pk = input.pop("handle_id", None)
@@ -429,10 +438,10 @@ class DeleteRole(relay.ClientIDMutation):
         handle_id = input.get("handle_id", None)
         success = False
 
-        default_context = sriutils.get_default_context()
+        context = sriutils.get_community_context()
 
         # check it can write on this context
-        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+        authorized = sriutils.authorize_create_resource(info.context.user, context)
 
         if not authorized:
             raise GraphQLAuthException()
@@ -456,15 +465,14 @@ class CreateComment(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        default_context = sriutils.get_default_context()
+        object_pk = input.get("object_pk", None)
 
-        # check it can write on this context
-        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+        # check it can write for this node
+        authorized = sriutils.authorice_write_resource(info.context.user, object_pk)
 
         if not authorized:
             raise GraphQLAuthException()
 
-        object_pk = input.get("object_pk",)
         comment = input.get("comment")
         content_type = ContentType.objects.get(app_label="noclook", model="nodehandle")
 
@@ -492,18 +500,18 @@ class UpdateComment(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        default_context = sriutils.get_default_context()
-
-        # check it can write on this context
-        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
-
-        if not authorized:
-            raise GraphQLAuthException()
-
         id = input.get("id",)
         comment_txt = input.get("comment")
 
         comment = Comment.objects.get(id=id)
+        object_pk = comment.object_pk
+
+        # check it can write for this node
+        authorized = sriutils.authorice_write_resource(info.context.user, object_pk)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
         comment.comment = comment_txt
         comment.save()
 
@@ -518,19 +526,19 @@ class DeleteComment(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        default_context = sriutils.get_default_context()
-
-        # check it can write on this context
-        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
-
-        if not authorized:
-            raise GraphQLAuthException()
-
         id = input.get("id", None)
         success = False
 
         try:
             comment = Comment.objects.get(id=id)
+            object_pk = comment.object_pk
+
+            # check it can write for this node
+            authorized = sriutils.authorice_write_resource(info.context.user, object_pk)
+
+            if not authorized:
+                raise GraphQLAuthException()
+
             comment.delete()
             success = True
         except ObjectDoesNotExist:
@@ -549,10 +557,8 @@ class CreateOptionForDropdown(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        default_context = sriutils.get_default_context()
-
-        # check it can write on this context
-        authorized = sriutils.authorize_create_resource(info.context.user, default_context)
+        # only superadmins may add options for dropdowns
+        authorized = sriutils.authorize_superadmin(info.context.user)
 
         if not authorized:
             raise GraphQLAuthException()

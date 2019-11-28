@@ -1462,12 +1462,14 @@ class CreateNIMutation(AbstractNIMutation):
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        context_method = getattr(nimetatype, 'context_method')
+
         has_error      = False
 
-        default_context = sriutils.get_default_context()
+        context = context_method()
 
         # check it can write on this context
-        authorized = sriutils.authorize_create_resource(request.user, default_context)
+        authorized = sriutils.authorize_create_resource(request.user, context)
 
         if not authorized:
             raise GraphQLAuthException()
@@ -1486,7 +1488,7 @@ class CreateNIMutation(AbstractNIMutation):
             helpers.form_update_node(request.user, nh.handle_id, form, property_update)
 
             # add default context
-            NodeHandleContext(nodehandle=nh, context=default_context).save()
+            NodeHandleContext(nodehandle=nh, context=context).save()
 
             # process relations if implemented
             if not has_error:
