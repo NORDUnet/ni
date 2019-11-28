@@ -7,8 +7,6 @@
     <h1>{{name}}</h1>
 {% endblock %}
 
-{% load noclook_tags %}
-
 {% block table_labels %}
   {% if table.no_badges %}
       {# Nothing to show #}
@@ -34,16 +32,8 @@
             {% for row in table.rows %}
               <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
                 {% for col in row.cols %}
-                    {% if col.location_path %}
-                        <td>
-                            {% for loc in col.location_path %}
-                                <a href="{% noclook_node_to_url loc.handle_id %}">{{ loc.name }}, </a>
-                            {% endfor %}
-                        </td>
-                    {% else %}
-                        <td>{% table_column col %}</td>
-                    {% endif %}
+                  <td>{% table_column col %}</td>
                 {% endfor %}
-               </tr>
+              </tr>
             {% endfor %}
 {% endblock %}

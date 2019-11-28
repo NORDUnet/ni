@@ -278,8 +278,7 @@ def list_firewalls(request):
 
 def _odf_table(item):
     odf = item.get('odf')
-    location_path = {}
-    location_path['location_path'] = item.get('location_path')
+    location_path = item.get('location_path')
 
     row = TableRow(odf, location_path)
     _set_operational_state(row, odf)
