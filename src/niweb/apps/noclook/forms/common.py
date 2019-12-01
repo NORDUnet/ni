@@ -388,6 +388,23 @@ class NewOdfForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
 
+class NewPatchPannelForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(NewPatchPannelForm, self).__init__(*args, **kwargs)
+        # Set max number of ports to choose from
+        max_num_of_ports = 48
+        choices = [(x, x) for x in range(1, max_num_of_ports + 1) if x]
+        self.fields['max_number_of_ports'].choices = choices
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField()
+    description = description_field('Patch Panel')
+    max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select, initial="In service")
+    relationship_location = relationship_field('location')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
 
 class BulkPortsForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -416,6 +433,19 @@ class EditOdfForm(forms.Form):
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
 
+class EditPatchPanelForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditPatchPanelForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField()
+    description = description_field('Patch Panel')
+    max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
+    relationship_location = relationship_field('location')
 
 class NewOpticalFilter(NewOdfForm):
     pass

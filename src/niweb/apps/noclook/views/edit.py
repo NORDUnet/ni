@@ -446,6 +446,32 @@ def edit_odf(request, handle_id):
     return render(request, 'noclook/edit/edit_odf.html',
                   {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports})
 
+@staff_member_required
+def edit_patch_panel(request, handle_id):
+    # Get needed data from node
+    nh, patch_panel = helpers.get_nh_node(handle_id)
+    location = patch_panel.get_location()
+    ports = patch_panel.get_ports()
+    if request.POST:
+        form = forms.EditPatchPanelForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, patch_panel.handle_id, form)
+            # ODF specific updates
+            _handle_location(request.user,
+                             patch_panel,
+                             form.cleaned_data['relationship_location'])
+            _handle_ports(patch_panel,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditPatchPanelForm(patch_panel.data)
+    return render(request, 'noclook/edit/edit_patch_panel.html',
+                  {'node_handle': nh, 'node': patch_panel, 'form': form, 'location': location, 'ports': ports})
 
 @staff_member_required
 def edit_optical_fillter(request, handle_id):
@@ -978,6 +1004,7 @@ EDIT_FUNC = {
     'optical-link': edit_optical_link,
     'optical-multiplex-section': edit_optical_multiplex_section,
     'optical-path': edit_optical_path,
+    'patch-panel': edit_patch_panel,
     'pdu': edit_pdu,
     'peering-partner': edit_peering_partner,
     'peering-group': edit_peering_group,
