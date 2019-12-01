@@ -34,6 +34,7 @@
     <div class="pull-right">
         {% table_search "locations" %}
     </div>
+    {% include "noclook/detail/includes/equipment.html" with equipment=equipment_relationships title="Local equipment" %}
     <h3>Racks and equipment</h3>
     {% blockvar th %}
       {% for header in racks_table.headers %}
