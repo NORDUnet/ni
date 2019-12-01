@@ -293,7 +293,7 @@ def list_odfs(request):
         OPTIONAL MATCH p=()-[:Has*0..20]->(r)
         WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, odf
         WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, odf AS odf
-        UNWIND(longestPaths) as location_path
+        UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
         RETURN odf, location_path
         ORDER BY odf.name
         """
@@ -468,7 +468,7 @@ def list_racks(request):
         OPTIONAL MATCH p=(loc)<-[:Has*0..20]-()
         WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, rack AS rack
         WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, rack AS rack
-        UNWIND(longestPaths) as location_path
+        UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
         RETURN rack, reverse(location_path) as location_path
         ORDER BY rack.name
         """
