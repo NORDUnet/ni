@@ -611,7 +611,7 @@ def site_detail(request, handle_id):
 
     # Racked equipment
     q = """
-    MATCH (site:Site {handle_id: {handle_id}})-[:Has]->(rack:Node)
+    MATCH (site:Site {handle_id: {handle_id}})-[:Has]->(rack:Rack)
     OPTIONAL MATCH (rack)<-[:Located_in]-(item:Node)
     WHERE NOT item.operational_state IN ['Decommissioned'] OR NOT exists(item.operational_state)
     RETURN rack, item order by toLower(rack.name), toLower(item.name)
@@ -622,7 +622,17 @@ def site_detail(request, handle_id):
     racks_table = Table('Rack', 'Equipment')
     racks_table.rows = [TableRow(r.get('rack'), r.get('item')) for r in rack_list]
 
-    urls = helpers.get_node_urls(site, equipment_relationships, relations, rack_list)
+    # rooms
+    q = """
+        MATCH (site:Site {handle_id: {handle_id}})-[:Has]->(room:Room)
+        RETURN room order by toLower(room.name)
+        """
+    rooms_list = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
+
+    rooms_table = Table('Rooms')
+    rooms_table.rows = [TableRow(r.get('room')) for r in rooms_list]
+
+    urls = helpers.get_node_urls(site, equipment_relationships, relations, rack_list, rooms_list)
     return render(request, 'noclook/detail/site_detail.html',
                   {'node_handle': nh,
                    'node': site,
@@ -631,6 +641,7 @@ def site_detail(request, handle_id):
                    'equipment_relationships': equipment_relationships,
                    'relations': relations,
                    'racks_table': racks_table,
+                   'rooms_table': rooms_table,
                    'history': True,
                    'urls': urls,
                    })
