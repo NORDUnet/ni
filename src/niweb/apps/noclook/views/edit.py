@@ -451,6 +451,7 @@ def edit_patch_panel(request, handle_id):
     # Get needed data from node
     nh, patch_panel = helpers.get_nh_node(handle_id)
     location = patch_panel.get_location()
+    location_path = patch_panel.get_location_path()
     ports = patch_panel.get_ports()
     if request.POST:
         form = forms.EditPatchPanelForm(request.POST)
@@ -471,7 +472,8 @@ def edit_patch_panel(request, handle_id):
     else:
         form = forms.EditPatchPanelForm(patch_panel.data)
     return render(request, 'noclook/edit/edit_patch_panel.html',
-                  {'node_handle': nh, 'node': patch_panel, 'form': form, 'location': location, 'ports': ports})
+                  {'node_handle': nh, 'node': patch_panel, 'form': form, 'location': location,
+                   'location_path': location_path,'ports': ports})
 
 @staff_member_required
 def edit_optical_fillter(request, handle_id):

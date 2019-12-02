@@ -329,20 +329,20 @@ def _patch_panel_table(item):
 def list_patch_panels(request):
     q = """
         MATCH (patch_panel:Patch_Panel)
-        OPTIONAL MATCH (patch_pannel)-[:Located_in]->(r)
+        OPTIONAL MATCH (patch_panel)-[:Located_in]->(r)
         OPTIONAL MATCH p=()-[:Has*0..20]->(r)
         WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, patch_panel
         WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, patch_panel AS patch_panel
-        UNWIND(longestPaths) as location_path
+        UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
         RETURN patch_panel, location_path
         ORDER BY patch_panel.name
         """
     patch_panel_list = nc.query_to_list(nc.graphdb.manager, q)
-    patch_panel_list = _filter_operational_state(patch_panel_list, request, select=lambda n: n.get('pp'))
+    patch_panel_list = _filter_operational_state(patch_panel_list, request, select=lambda n: n.get('patch_panel'))
     urls = get_node_urls(patch_panel_list)
 
 
-    table = Table("Name", patch_panel_list )
+    table = Table("Name", "Location" )
     table.rows = [_patch_panel_table(item) for item in patch_panel_list]
     # Filter out
     _set_filters_operational_state(table, request)
