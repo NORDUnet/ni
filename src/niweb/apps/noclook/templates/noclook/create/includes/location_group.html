@@ -1,6 +1,5 @@
 {% load noclook_tags %}
 {% load crispy_forms_tags %}
-{% accordion 'Location (optional)' 'location_accordion' '#edit-accordion' %}
   {% if node.meta_type == 'Logical' %}
       <div class="alert alert-danger">Setting a location will convert it to a physical {{ node_handle.node_type }}. Which will remove dependencies.</div>
   {% endif %}
@@ -26,10 +25,9 @@
       {% endfor %}
   {% endif %}
   <hr>
-  {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='Ex: rack' min_length=2 %}
+  {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='room rack' min_length=2 %}
   <hr>
   {% if form.rack_units %}
     {{ form.rack_units | as_crispy_field }}
     {{ form.rack_position | as_crispy_field }}
   {% endif %}
-{% endaccordion %}

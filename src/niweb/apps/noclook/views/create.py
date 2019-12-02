@@ -32,6 +32,7 @@ TYPES = [
     ("optical-filter", "Optical Filter"),
     ("optical-multiplex-section", "Optical Multiplex Section"),
     ("optical-node", "Optical Node"),
+    ("outlet", "Outlet"),
     ("patch-panel", "Patch Panel"),
     ("port", "Port"),
     ("provider", "Provider"),
@@ -407,6 +408,29 @@ def new_optical_multiplex_section(request, **kwargs):
 
 
 @staff_member_required
+def new_outlet(request, **kwargs):
+    if request.POST:
+        form = forms.NewOutletForm(request.POST)
+        ports_form = forms.BulkPortsForm(request.POST)
+        if form.is_valid() and ports_form.is_valid():
+            nh = helpers.form_to_generic_node_handle(request, form, 'outlet', 'Physical')
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            data = form.cleaned_data
+            node = nh.get_node()
+            if data['relationship_location']:
+                location = NodeHandle.objects.get(pk=data['relationship_location'])
+                helpers.set_location(request.user, node, location.handle_id)
+            if not ports_form.cleaned_data['no_ports']:
+                data = ports_form.cleaned_data
+                helpers.bulk_create_ports(nh.get_node(), request.user, **data)
+
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewPatchPannelForm()
+        ports_form = forms.BulkPortsForm({'port_type': 'RJ45', 'offset': 1, 'num_ports': '0'})
+    return render(request, 'noclook/create/create_outlet.html', {'form': form, 'ports_form': ports_form})
+
+@staff_member_required
 def new_patch_panel(request, **kwargs):
     if request.POST:
         form = forms.NewPatchPannelForm(request.POST)
@@ -597,6 +621,7 @@ NEW_FUNC = {
     'optical-link': new_optical_link,
     'optical-multiplex-section': new_optical_multiplex_section,
     'optical-path': new_optical_path,
+    'outlet': new_outlet,
     'patch-panel': new_patch_panel,
     'port': new_port,
     'provider': new_provider,

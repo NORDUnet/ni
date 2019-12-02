@@ -406,6 +406,18 @@ class NewPatchPannelForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
 
+class NewOutletForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(NewOutletForm, self).__init__(*args, **kwargs)
+        # Set max number of ports to choose from
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField()
+    description = description_field('Patch Panel')
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select, initial="In service")
+    relationship_location = relationship_field('location')
+
 class BulkPortsForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(BulkPortsForm, self).__init__(*args, **kwargs)
@@ -446,6 +458,18 @@ class EditPatchPanelForm(forms.Form):
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
+
+class EditOutletForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditOutletForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField()
+    description = description_field('Outlet')
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
+    relationship_location = relationship_field('location')
+
 
 class NewOpticalFilter(NewOdfForm):
     pass

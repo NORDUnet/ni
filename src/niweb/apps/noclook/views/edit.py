@@ -447,6 +447,35 @@ def edit_odf(request, handle_id):
                   {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports})
 
 @staff_member_required
+def edit_outlet(request, handle_id):
+    # Get needed data from node
+    nh, outlet = helpers.get_nh_node(handle_id)
+    location = outlet.get_location()
+    location_path = outlet.get_location_path()
+    ports = outlet.get_ports()
+    if request.POST:
+        form = forms.EditOutletForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, outlet.handle_id, form)
+            # ODF specific updates
+            _handle_location(request.user,
+                             outlet,
+                             form.cleaned_data['relationship_location'])
+            _handle_ports(outlet,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditOutletForm(outlet.data)
+    return render(request, 'noclook/edit/edit_outlet.html',
+                  {'node_handle': nh, 'node': outlet, 'form': form, 'location': location,
+                   'location_path': location_path,'ports': ports})
+
+@staff_member_required
 def edit_patch_panel(request, handle_id):
     # Get needed data from node
     nh, patch_panel = helpers.get_nh_node(handle_id)
@@ -1006,6 +1035,7 @@ EDIT_FUNC = {
     'optical-link': edit_optical_link,
     'optical-multiplex-section': edit_optical_multiplex_section,
     'optical-path': edit_optical_path,
+    'outlet': edit_outlet,
     'patch-panel': edit_patch_panel,
     'pdu': edit_pdu,
     'peering-partner': edit_peering_partner,
