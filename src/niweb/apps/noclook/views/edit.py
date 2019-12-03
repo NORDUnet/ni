@@ -728,7 +728,14 @@ def edit_port(request, handle_id):
 def connect_port(request, handle_id):
     nh, port = helpers.get_nh_node(handle_id)
     location_path = port.get_location_path()
-    connected_to = port.get_connected_to()
+
+    tmp_connected_to = port.get_connected_to()
+
+    # Remove all "Fixed" cables, reduce risk for user to remove building cables
+    connected_to = {'Connected_to': []}
+    for item in tmp_connected_to['Connected_to']:
+        if item['node'].data['cable_type'] != 'Fixed':
+            connected_to['Connected_to'].append(item)
 
     connections_categories = Dropdown.get('cable_types').as_values(False)
     cable_types = u', '.join([u'"{}"'.format(val) for val in Dropdown.get('cable_types').as_values()])
@@ -771,7 +778,6 @@ def connect_port(request, handle_id):
                   {'node_handle': nh, 'form': form, 'node': port, 'redirect_url': redirect_url,
                       'connected_to': connected_to, 'cable_types': cable_types,
                    'connections_categories': connections_categories, 'location_path': location_path})
-
 
 @staff_member_required
 def edit_provider(request, handle_id):
