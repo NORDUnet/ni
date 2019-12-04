@@ -733,9 +733,10 @@ def connect_port(request, handle_id):
 
     # Remove all "Fixed" cables, reduce risk for user to remove building cables
     connected_to = {'Connected_to': []}
-    for item in tmp_connected_to['Connected_to']:
-        if item['node'].data['cable_type'] != 'Fixed':
-            connected_to['Connected_to'].append(item)
+    if tmp_connected_to.get('Connected_to'):
+        for item in tmp_connected_to['Connected_to']:
+            if item['node'].data['cable_type'] != 'Fixed':
+                connected_to['Connected_to'].append(item)
 
     connections_categories = Dropdown.get('cable_types').as_values(False)
     cable_types = u', '.join([u'"{}"'.format(val) for val in Dropdown.get('cable_types').as_values()])

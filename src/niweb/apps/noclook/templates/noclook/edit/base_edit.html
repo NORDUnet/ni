@@ -147,7 +147,6 @@
         {% endif %}
 {% endblock %}
 
-
 {% block content_footer %}
         <br><br>
         <div class="row">
@@ -156,7 +155,7 @@
                     <div class="btn-group">
                         <input type="submit" name="saveanddone" class="btn btn-primary" value="Save">
                         <input type="submit" name="save" class="btn btn-primary" value="continue editing">
-                        <a href="{{ parent_nh.get_absolute_url }}" class="btn">Cancel</a>
+                        <a href="{{ node_handle.get_absolute_url }}" class="btn">Cancel</a>
                     </div>
                 </div>
             </div>
