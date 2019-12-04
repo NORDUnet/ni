@@ -1,0 +1,13 @@
+{% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+
+{% block content %}
+{{ block.super }}
+    <div class="well">
+        {{ form.name | as_crispy_field}}
+        {{ form.floor | as_crispy_field}}
+        {% include "noclook/edit/includes/parent_group.html" %}
+    </div>
+{% endblock %}
+

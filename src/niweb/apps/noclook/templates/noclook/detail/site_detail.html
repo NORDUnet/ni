@@ -107,14 +107,35 @@
     <div class="pull-right">
         {% table_search "locations" %}
     </div>
-    <h3>Racks and equipment</h3>
-    {% blockvar th %}
-      {% for header in racks_table.headers %}
-        <th>{{header}}</th>
-      {% endfor %}
-    {% endblockvar %}
-    {% load table_tags %}
-    {% blockvar tbody %}
+    {% if rooms_table.rows %}
+        <h3>Rooms</h3>
+        {% blockvar th %}
+            {% for header in rooms_table.headers %}
+                <th>{{header}}</th>
+            {% endfor %}
+        {% endblockvar %}
+        {% load table_tags %}
+        {% blockvar tbody %}
+            {% for row in rooms_table.rows %}
+              <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
+                {% for col in row.cols %}
+                  <td>{% table_column col %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+        {% endblockvar %}
+        {% table th tbody id="locations" %}
+    {% endif %}
+
+    {% if racks_table.rows %}
+        <h3>Racks and equipment</h3>
+        {% blockvar th %}
+            {% for header in racks_table.headers %}
+                <th>{{header}}</th>
+            {% endfor %}
+        {% endblockvar %}
+        {% load table_tags %}
+        {% blockvar tbody %}
             {% for row in racks_table.rows %}
               <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
                 {% for col in row.cols %}
@@ -122,9 +143,13 @@
                 {% endfor %}
               </tr>
             {% endfor %}
-    {% endblockvar %}
-    {% table th tbody id="locations" %}
+        {% endblockvar %}
+        {% table th tbody id="locations" %}
+    {% endif %}
 </div>
-{% include "noclook/detail/includes/equipment.html" with equipment=equipment_relationships title="Unracked equipment" %}
+{% if equipment_relationships %}
+    {% include "noclook/detail/includes/equipment.html" with equipment=equipment_relationships title="Unracked equipment" %}
+{% endif %}
+
 {% endblock %}
 
