@@ -35,6 +35,7 @@ TYPES = [
     ("port", "Port"),
     ("provider", "Provider"),
     ("rack", "Rack"),
+    ("room", "Room"),
     ("site", "Site"),
     ("site-owner", "Site Owner"),
 ]
@@ -484,6 +485,24 @@ def new_site(request, **kwargs):
 
 
 @staff_member_required
+def new_room(request, **kwargs):
+    if request.POST:
+        form = forms.NewRoomForm(request.POST)
+        if form.is_valid():
+            nh = helpers.form_to_generic_node_handle(request, form, 'room', 'Location')
+            helpers.form_update_node(request.user, nh.handle_id, form)
+
+            if form.cleaned_data['relationship_location']:
+                parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+                helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
+
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewRoomForm()
+    return render(request, 'noclook/create/create_room.html', {'form': form})
+
+
+@staff_member_required
 def new_site_owner(request, **kwargs):
     if request.POST:
         form = forms.NewSiteOwnerForm(request.POST)
@@ -574,6 +593,7 @@ NEW_FUNC = {
     'port': new_port,
     'provider': new_provider,
     'rack': new_rack,
+    'room': new_room,
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,

@@ -147,16 +147,14 @@ def search_port_typeahead(request):
             q = """
                 MATCH (port:Port)<-[:Has]-(n:Node)
                 OPTIONAL MATCH (n)-[:Located_in]->(n2:Node)
-                OPTIONAL MATCH (n2)<-[:Has]-(s:Site)
-                WITH port.handle_id as handle_id,
-                n.handle_id as parent_id,
-                CASE WHEN n2 IS null THEN
-                  ""
-                WHEN s IS null THEN
-                    n2.name + " "
-                ELSE
-                    s.name + " " + n2.name + " "
-                END + n.name+" "+port.name as name
+                OPTIONAL MATCH p = () - [:Has * 0..20]->(n2)
+                WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength,
+                 port.handle_id AS handle_id, n.handle_id AS parent_id,
+                 port.name AS port_name, n.name AS node_name
+                WITH FILTER(path IN paths WHERE length(path) = maxLength) AS longestPaths,
+                 handle_id AS handle_id, parent_id AS parent_id, port_name AS port_name, node_name AS node_name
+                UNWIND(longestPaths) AS location_path
+                WITH REDUCE(s = "", n IN location_path | s + n.name + " ") + node_name + " " + port_name AS name, handle_id, parent_id
                 WHERE name =~ '(?i).*{}.*'
                 RETURN name, handle_id, parent_id
                 """.format(".*".join(match_q))
@@ -176,18 +174,14 @@ def search_location_typeahead(request):
         # split for search
         match_q = neo4j_escape(to_find.split())
         try:
+            # find all has relations to the top
             q = """
-                MATCH (l:Node)
-                WHERE l:Site or l:Rack
-                OPTIONAL MATCH (s:Node)-[:Has]->(l)
-                WITH l.handle_id as handle_id,
-                    CASE WHEN s IS null THEN
-                      ""
-                    ELSE
-                        s.name + " "
-                    END + l.name as name
-                WHERE name =~ '(?i).*{}.*'
-                 RETURN name, handle_id
+                MATCH (l:Location) WHERE l.name =~ '(?i).*{}.*'
+                MATCH p = () - [:Has * 0..20]->(l)
+                WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, l.handle_id as handle_id
+                WITH FILTER(path IN paths WHERE length(path) = maxLength) AS longestPaths, handle_id as handle_id
+                UNWIND(longestPaths) AS location_path
+                RETURN REDUCE(s = "", n IN location_path | s + n.name + " ") AS name, handle_id 
                 """.format(".*".join(match_q))
             result = nc.query_to_list(nc.graphdb.manager, q)
         except Exception as e:
@@ -195,6 +189,7 @@ def search_location_typeahead(request):
     json.dump(result, response)
     return response
 
+# UNWIND(longestPaths) as location_path
 
 @login_required
 def search_non_location_typeahead(request):

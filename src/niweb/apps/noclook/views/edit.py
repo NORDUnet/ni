@@ -830,6 +830,33 @@ def edit_rack(request, handle_id):
 
 
 @staff_member_required
+def edit_room(request, handle_id):
+    # Get needed data from node
+    nh, room = helpers.get_nh_node(handle_id)
+    parent = room.get_parent()
+    located_in = room.get_located_in()
+    located_in_categories = ['rack', 'host', 'odf', 'optical-node', 'router']
+    if request.POST:
+        form = forms.EditRoomForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, room.handle_id, form)
+            # Room specific updates
+            if form.cleaned_data['relationship_parent']:
+                parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent'])
+                helpers.set_has(request.user, parent_nh.get_node(), room.handle_id)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditRoomForm(room.data)
+    return render(request, 'noclook/edit/edit_room.html',
+                  {'node_handle': nh, 'form': form, 'parent': parent, 'node': room,
+                      'located_in': located_in, 'parent_categories': 'site', 'located_in_categories': located_in_categories})
+
+
+@staff_member_required
 def update_rack_position(request, rack_handle_id, handle_id, position):
     """
     Updates the nodes rack_position if node is placed in rack
@@ -1043,6 +1070,7 @@ EDIT_FUNC = {
     'rack': edit_rack,
     'router': edit_router,
     'site': edit_site,
+    'room': edit_room,
     'site-owner': edit_site_owner,
     'switch': edit_switch,
 }
