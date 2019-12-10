@@ -951,12 +951,10 @@ class NOCRootMutation(graphene.ObjectType):
     create_phone        = NIPhoneMutationFactory.get_create_mutation().Field()
     update_phone        = NIPhoneMutationFactory.get_update_mutation().Field()
     delete_phone        = NIPhoneMutationFactory.get_delete_mutation().Field()
-    multiple_phone      = NIPhoneMutationFactory.get_multiple_mutation().Field()
 
     create_email        = NIEmailMutationFactory.get_create_mutation().Field()
     update_email        = NIEmailMutationFactory.get_update_mutation().Field()
     delete_email        = NIEmailMutationFactory.get_delete_mutation().Field()
-    multiple_email      = NIEmailMutationFactory.get_multiple_mutation().Field()
 
     create_address      = NIAddressMutationFactory.get_create_mutation().Field()
     update_address      = NIAddressMutationFactory.get_update_mutation().Field()
@@ -965,13 +963,11 @@ class NOCRootMutation(graphene.ObjectType):
     create_contact      = NIContactMutationFactory.get_create_mutation().Field()
     update_contact      = NIContactMutationFactory.get_update_mutation().Field()
     delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
-    multiple_contact    = NIContactMutationFactory.get_multiple_mutation().Field()
     composite_contact   = CompositeContactMutation.Field()
 
     create_organization    = CreateOrganization.Field()
     update_organization    = UpdateOrganization.Field()
     delete_organization    = NIOrganizationMutationFactory.get_delete_mutation().Field()
-    multiple_organization  = NIOrganizationMutationFactory.get_multiple_mutation().Field()
     composite_organization = CompositeOrganizationMutation.Field()
 
     create_role = CreateRole.Field()
