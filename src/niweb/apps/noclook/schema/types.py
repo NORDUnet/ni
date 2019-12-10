@@ -189,17 +189,6 @@ class Contact(NIObjectType):
         ni_metatype = NIMETA_RELATION
 
 
-class ContactWithRolename(ObjectType):
-    contact = Field(Contact)
-    role = Field(Role)
-    relation_id = graphene.Int()
-
-
-class ContactWithRelation(ObjectType):
-    contact = Field(Contact)
-    relation_id = graphene.Int()
-
-
 class Host(NIObjectType):
     '''
     A host in the SRI system

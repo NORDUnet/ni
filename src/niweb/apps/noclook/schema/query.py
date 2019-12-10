@@ -26,27 +26,6 @@ class NOCAutoQuery(graphene.ObjectType):
     This class creates a connection and a getById method for each of the types
     declared on the graphql_types of the NIMeta class of any subclass.
     '''
-    node = relay.Node.Field()
-    getNodeById = graphene.Field(NodeHandler, handle_id=graphene.Int())
-
-    def resolve_getNodeById(self, info, **args):
-        handle_id = args.get('handle_id')
-
-        ret = None
-
-        if info.context and info.context.user.is_authenticated:
-            if handle_id:
-                ret = NodeHandle.objects.get(handle_id=handle_id)
-            else:
-                raise GraphQLError('A valid handle_id must be provided')
-
-            if not ret:
-                raise GraphQLError("There isn't any {} with handle_id {}".format(nodetype, handle_id))
-
-            return ret
-        else:
-            raise GraphQLAuthException()
-
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -110,56 +89,12 @@ class NOCAutoQuery(graphene.ObjectType):
                 setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
                 setattr(cls, resolver_name, graphql_type.get_byid_resolver())
 
-def get_node2node_relations_resolver(id1_name, id2_name, rel_type):
-    def resolve_getNode1Node2Relations(self, info, **kwargs):
-        group_id = kwargs.get(id1_name)
-        contact_id = kwargs.get(id2_name)
-
-        authorized_node1 = sriutils.authorice_read_resource(
-            info.context.user, group_id
-        )
-
-        authorized_node2 = sriutils.authorice_read_resource(
-            info.context.user, contact_id
-        )
-
-        if not (authorized_node1 and authorized_node2):
-            raise GraphQLAuthException()
-
-        relationships = nc.get_relationships(nc.graphdb.manager, handle_id1=group_id, handle_id2=contact_id, rel_type=rel_type)
-
-        output = []
-        for relationship in relationships:
-            rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relationship._id)
-            rel.relation_id = rel.id
-            output.append(rel)
-
-        return output
-
-    return resolve_getNode1Node2Relations
-
-
-resolve_getGroupContactRelations = get_node2node_relations_resolver('group_id', 'contact_id',  'Member_of')
-resolve_getContactEmailRelations = get_node2node_relations_resolver('contact_id', 'email_id',  'Has_email')
-resolve_getContactPhoneRelations = get_node2node_relations_resolver('contact_id', 'phone_id',  'Has_phone')
-resolve_getOrganizationAddressRelations = get_node2node_relations_resolver('organization_id', 'address_id',  'Has_address')
-
 
 class NOCRootQuery(NOCAutoQuery):
     getAvailableDropdowns = graphene.List(graphene.String)
     getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
-    getRelationById = graphene.Field(NIRelationType, relation_id=graphene.Int(required=True))
-    getRoleRelationById = graphene.Field(RoleRelation, relation_id=graphene.Int(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
-    getOrganizationContacts = graphene.List(ContactWithRolename, handle_id=graphene.Int(required=True))
-    getGroupContacts = graphene.List(ContactWithRelation, handle_id=graphene.Int(required=True))
     checkExistentOrganizationId = graphene.Boolean(organization_id=graphene.String(required=True), handle_id=graphene.Int())
-
-    # relationship lookups
-    getGroupContactRelations = graphene.List(NIRelationType, group_id=graphene.Int(required=True), contact_id=graphene.Int(required=True), resolver=resolve_getGroupContactRelations)
-    getContactEmailRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), email_id=graphene.Int(required=True), resolver=resolve_getContactEmailRelations)
-    getContactPhoneRelations = graphene.List(NIRelationType, contact_id=graphene.Int(required=True), phone_id=graphene.Int(required=True), resolver=resolve_getContactPhoneRelations)
-    getOrganizationAddressRelations = graphene.List(NIRelationType, organization_id=graphene.Int(required=True), address_id=graphene.Int(required=True), resolver=resolve_getOrganizationAddressRelations)
 
     # get roles lookup
     getAvailableRoleGroups = graphene.List(RoleGroup)
@@ -179,48 +114,6 @@ class NOCRootQuery(NOCAutoQuery):
             return ddqs.choice_set.order_by('name')
         else:
             raise Exception(u'Could not find dropdown with name \'{}\'. Please create it using /admin/'.format(name))
-
-    def resolve_getRelationById(self, info, **kwargs):
-        relation_id = kwargs.get('relation_id')
-        rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
-        rel.relation_id = rel.id
-
-        start_id = rel.start['handle_id']
-        end_id = rel.end['handle_id']
-
-        authorized_start = sriutils.authorice_read_resource(
-            info.context.user, start_id
-        )
-
-        authorized_end = sriutils.authorice_read_resource(
-            info.context.user, end_id
-        )
-
-        if not (authorized_start and authorized_end):
-            raise GraphQLAuthException()
-
-        return rel
-
-    def resolve_getRoleRelationById(self, info, **kwargs):
-        relation_id = kwargs.get('relation_id')
-        rel = nc.models.RoleRelationship.get_relationship_model(nc.graphdb.manager, relationship_id=relation_id)
-        rel.relation_id = rel.id
-
-        start_id = rel.start['handle_id']
-        end_id = rel.end['handle_id']
-
-        authorized_start = sriutils.authorice_read_resource(
-            info.context.user, start_id
-        )
-
-        authorized_end = sriutils.authorice_read_resource(
-            info.context.user, end_id
-        )
-
-        if not (authorized_start and authorized_end):
-            raise GraphQLAuthException()
-
-        return rel
 
     def resolve_roles(self, info, **kwargs):
         filter = kwargs.get('filter')
@@ -246,78 +139,6 @@ class NOCRootQuery(NOCAutoQuery):
                 qs = qs.filter(name=filter.name)
 
         return qs
-
-    def resolve_getOrganizationContacts(self, info, **kwargs):
-        ret = []
-
-        handle_id = kwargs.get('handle_id')
-
-        # check read permissions
-        authorized = sriutils.authorice_read_resource(
-            info.context.user, handle_id
-        )
-
-        if not authorized:
-            raise GraphQLAuthException()
-
-        organization_nh = NodeHandle.objects.get(handle_id=handle_id)
-        relations = organization_nh.get_node().get_relations()['Works_for']
-
-        for relation in relations:
-            # resolve contact
-            contact_node = relation['node']
-            contact_id = contact_node.handle_id
-            contact_nh = NodeHandle.objects.get(handle_id=contact_id)
-
-            # resolve role object
-            relationship = relation['relationship']
-            relation_id = relation['relationship_id']
-            role_name = relation['relationship']._properties['name']
-            role_obj = RoleModel.objects.get(name=role_name)
-
-            contact_wrn = {
-                'contact': contact_nh,
-                'role': role_obj,
-                'relation_id': relation_id,
-            }
-
-            ret.append(contact_wrn)
-
-        return ret
-
-    def resolve_getGroupContacts(self, info, **kwargs):
-        ret = []
-
-        handle_id = kwargs.get('handle_id')
-
-        # check read permissions
-        authorized = sriutils.authorice_read_resource(
-            info.context.user, handle_id
-        )
-
-        if not authorized:
-            raise GraphQLAuthException()
-
-        group_nh = NodeHandle.objects.get(handle_id=handle_id)
-        relations = group_nh.get_node().get_relations()['Member_of']
-
-        for relation in relations:
-            # resolve contact
-            contact_node = relation['node']
-            contact_id = contact_node.handle_id
-            contact_nh = NodeHandle.objects.get(handle_id=contact_id)
-
-            # resolve role object
-            relationship_id = relation['relationship_id']
-
-            contact_wrn = {
-                'contact': contact_nh,
-                'relation_id': relationship_id,
-            }
-
-            ret.append(contact_wrn)
-
-        return ret
 
     def resolve_getAvailableRoleGroups(self, info, **kwargs):
         ret = []
@@ -364,7 +185,7 @@ class NOCRootQuery(NOCAutoQuery):
         handle_id = kwargs.get('handle_id', None)
 
         ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
-        
+
         return ret
 
     class NIMeta:
