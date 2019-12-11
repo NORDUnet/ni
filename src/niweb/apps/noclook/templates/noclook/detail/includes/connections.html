@@ -28,12 +28,19 @@
         </div>
     <h3>Connections</h3>
         {% blockvar th %}
-            <th>Port</th><th>Description</th><th>Cable</th><th>End site</th><th>End location</th><th>End equipment</th><th>End port</th><th>Description</th>
+            <th>Port</th>
+            {% if user.is_staff %}
+              <th>Connect</th>
+            {% endif %}
+            <th>Description</th><th>Cable</th><th>End site</th><th>End location</th><th>End equipment</th><th>End port</th><th>Description</th>
         {% endblockvar %}
         {% blockvar tbody %}
             {% for item in connections %}
                 <tr>
                     <td><a href="{% noclook_node_to_url item.porta.handle_id %}">{{ item.porta.name }}</a></td>
+                    {% if user.is_staff %}
+                      <td><a href="/port/{{ item.porta.handle_id }}/edit_connect" class="btn btn-link"><i class="icon-edit icon-black"></i> Connect</a></td>
+                    {% endif %}
                     <td>{{ item.porta.description }}</td>
                     <td><a href="{% noclook_node_to_url item.cable.handle_id %}">{{ item.cable.name }}</a></td>
                     <td>

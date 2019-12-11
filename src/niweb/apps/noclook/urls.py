@@ -50,6 +50,7 @@ urlpatterns = [
 
     # -- edit views
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', edit.edit_node, name='generic_edit'),
+    url(r'^port/(?P<handle_id>\d+)/edit_connect$', edit.connect_port),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit/disable-noclook-auto-manage/$', edit.disable_noclook_auto_manage),
     url(r'^host/(?P<handle_id>\d+)/edit/convert-to/(?P<slug>[-\w]+)/$', edit.convert_host),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/delete$', edit.delete_node),
