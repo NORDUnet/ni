@@ -1579,6 +1579,15 @@ class DeleteNIMutation(AbstractNIMutation):
     def do_request(cls, request, **kwargs):
         handle_id = request.POST.get('handle_id')
 
+        if not NodeHandle.objects.filter(handle_id=handle_id).exists():
+            has_error = True
+            return has_error, [
+                ErrorType(
+                    field="_",
+                    messages=["The node doesn't exist".format(node_type)]
+                )
+            ]
+
         # check authorization
         authorized = sriutils.authorice_write_resource(request.user, handle_id)
 
