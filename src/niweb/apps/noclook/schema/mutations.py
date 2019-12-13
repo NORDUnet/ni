@@ -174,12 +174,13 @@ class NIContactMutationFactory(NIMutationFactory):
             'Has_phone': delete_outgoing_nodes,
         }
 
-    class Meta:
-        abstract = False
         property_update = [
             'first_name', 'last_name', 'contact_type', 'name', 'title',
             'pgp_fingerprint', 'notes'
         ]
+
+    class Meta:
+        abstract = False
 
 
 class CreateOrganization(CreateNIMutation):
