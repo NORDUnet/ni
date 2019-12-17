@@ -181,8 +181,6 @@ query='''{query_value}'''
                 set_works_for(user, contact.get_node(), organization.handle_id,
                                 rand_role.name)
 
-        import ipdb; ipdb.sset_trace(); ipdb.spm()
-
     def test_organization_list(self):
         query = '''
         {
