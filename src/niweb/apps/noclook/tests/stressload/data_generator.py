@@ -68,3 +68,11 @@ class FakeDataGenerator:
         }
 
         return organization_dict
+
+    def create_fake_group(self):
+        group_dict = {
+            'name': self.fake.sentence(),
+            'description': self.fake.paragraph(),
+        }
+
+        return group_dict

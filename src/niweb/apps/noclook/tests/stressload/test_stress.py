@@ -3,6 +3,9 @@
 __author__ = 'ffuentes'
 
 from abc import ABC, abstractmethod
+from apps.noclook.models import User, NodeType, NodeHandle, Role
+from apps.noclook.helpers import set_member_of, set_works_for
+from apps.nerds.lib.consumer_util import get_user
 from django.core.management import call_command
 from niweb.schema import schema
 
@@ -11,10 +14,12 @@ from ..management.fileutils import write_string_to_disk
 from ..neo4j_base import NeoTestCase
 
 import logging
-import timeit
-import unittest
-import os
+import norduniclient as nc
+import random
 import sys
+import timeit
+import os
+import unittest
 
 #logging.basicConfig( stream=sys.stderr )
 logger = logging.getLogger('StressTest')
@@ -27,21 +32,18 @@ class AbstractStressTest(ABC):
     con_csv_head = '"salutation";"first_name";"last_name";"title";"contact_role";"contact_type";"mailing_street";"mailing_city";"mailing_zip";"mailing_state";"mailing_country";"phone";"mobile";"fax";"email";"other_email";"PGP_fingerprint";"account_name"'
 
     setup_code = """
-import apps.noclook.vakt.utils as sriutils
 from apps.noclook.models import Group, GroupContextAuthzAction
+from apps.nerds.lib.consumer_util import get_user
 from django.contrib.auth.models import User
 from niweb.schema import schema
+
+import apps.noclook.vakt.utils as sriutils
 
 class TestContext():
     def __init__(self, user, *ignore):
         self.user = user
 
-user = User.objects.filter(username='test user')
-
-if not user:
-    user = User.objects.get_or_create(username='test user', password='test')[0]
-else:
-    user = user.first()
+user = get_user()
 
 context = TestContext(user)
 
@@ -128,7 +130,59 @@ query='''{query_value}'''
             verbosity=0,
         )
 
-    @unittest.skipUnless(os.environ.get('STRESS_TEST'), skip_reason)
+        # call data modifiers
+        call_command(self.import_cmd, emailphones=True, verbosity=0)
+        call_command(self.import_cmd, addressfix=True, verbosity=0)
+        call_command(self.import_cmd, movewebsite=True, verbosity=0)
+        call_command(self.import_cmd, reorgprops=True, verbosity=0)
+
+        # create groups and add members
+        group_list = []
+        group_type = NodeType.objects.filter(type='Group').first()
+        contact_type = NodeType.objects.filter(type='Contact').first()
+        user = get_user()
+
+        contact_ids = [ x.handle_id for x in NodeHandle.objects.filter(node_type=contact_type)]
+
+        for i in range(self.group_num):
+            group_dict = generator.create_fake_group()
+
+            # create group
+            group = NodeHandle.objects.get_or_create(
+                node_name = group_dict['name'],
+                node_type = group_type,
+                node_meta_type = nc.META_TYPES[1],
+                creator = user,
+                modifier = user,
+            )[0]
+            group_node = group.get_node()
+            group_node.add_property('description', group_dict['description'])
+
+            # add contacts (get them randomly)
+            hids = random.sample(
+                contact_ids, min(len(contact_ids), self.contacts_per_group)
+            )
+            gcontacts = NodeHandle.objects.filter(handle_id__in=hids)
+
+            for contact in gcontacts:
+                set_member_of(user, contact.get_node(), group.handle_id)
+
+        # add members to organizations
+        organization_type = NodeType.objects.filter(type='Organization').first()
+        role_ids = [x.handle_id for x in Role.objects.all()]
+        for organization in NodeHandle.objects.filter(node_type=organization_type):
+            hids = random.sample(
+                contact_ids, min(len(contact_ids), self.contacts_per_organization)
+            )
+            ocontacts = NodeHandle.objects.filter(handle_id__in=hids)
+
+            for contact in ocontacts:
+                rand_role = Role.objects.get(handle_id = random.choice(role_ids))
+                set_works_for(user, contact.get_node(), organization.handle_id,
+                                rand_role.name)
+
+        import ipdb; ipdb.sset_trace(); ipdb.spm()
+
     def test_organization_list(self):
         query = '''
         {
@@ -199,7 +253,6 @@ query='''{query_value}'''
 
         test_result = "Full organization list resolution for {} took {} ms".format(self, mark1)
 
-    @unittest.skipUnless(os.environ.get('STRESS_TEST'), skip_reason)
     def test_contact_list(self):
         query = '''
         query SearchContactsAllQuery{
@@ -266,19 +319,29 @@ query='''{query_value}'''
 
         test_result = "Full contact list resolution for {} took {} ms".format(self, mark1)
 
+    def test_group_list(self):
+        query = '''
+        '''
 
+@unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 1, skip_reason)
 class LowStressTest(NeoTestCase, AbstractStressTest):
     contact_num = 10
     organization_num = 10
+    group_num = 2
+    contacts_per_group = 5
+    contacts_per_organization = 5
 
     def setUp(self):
         super(LowStressTest, self).setUp()
         self.load_nodes()
 
 
+@unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 2, skip_reason)
 class MidStressTest(NeoTestCase, AbstractStressTest):
     contact_num = 50
     organization_num = 50
+    group_num = 10
+    contacts_per_group = 25
 
     def setUp(self):
         super(MidStressTest, self).setUp()
