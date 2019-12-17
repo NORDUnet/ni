@@ -31,6 +31,8 @@ class AbstractStressTest(ABC):
     org_csv_head = '"organization_number";"account_name";"description";"phone";"website";"organization_id";"type";"parent_account"'
     con_csv_head = '"salutation";"first_name";"last_name";"title";"contact_role";"contact_type";"mailing_street";"mailing_city";"mailing_zip";"mailing_state";"mailing_country";"phone";"mobile";"fax";"email";"other_email";"PGP_fingerprint";"account_name"'
 
+    log_file = 'stress_log.txt'
+
     setup_code = """
 from apps.noclook.models import Group, GroupContextAuthzAction
 from apps.nerds.lib.consumer_util import get_user
@@ -181,7 +183,14 @@ query='''{query_value}'''
                 set_works_for(user, contact.get_node(), organization.handle_id,
                                 rand_role.name)
 
-    def test_organization_list(self):
+    def empty_file(self):
+        open('/app/niweb/logs/{}'.format(self.log_file), 'w').close()
+
+    def write_to_log_file(self, to_write):
+        with open('/app/niweb/logs/{}'.format(self.log_file), 'a') as f:
+            f.write(to_write)
+
+    def test_lists(self):
         query = '''
         {
           ...OrganizationList_organizations_1tT5Hu
@@ -246,12 +255,12 @@ query='''{query_value}'''
 
         setup_code = self.setup_code.format(query_value=query)
 
-        mark1 = timeit.Timer("""schema.execute(query, context=context)""", \
+        mark1 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
             setup=setup_code).timeit(1)
 
-        test_result = "Full organization list resolution for {} took {} ms".format(self, mark1)
+        test_result = "Full organization list resolution for {} took {} seconds\n".format(self, mark1)
+        self.write_to_log_file(test_result)
 
-    def test_contact_list(self):
         query = '''
         query SearchContactsAllQuery{
           ...ContactList_contacts_1tT5Hu
@@ -312,12 +321,12 @@ query='''{query_value}'''
 
         setup_code = self.setup_code.format(query_value=query)
 
-        mark1 = timeit.Timer("""schema.execute(query, context=context)""", \
+        mark1 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
             setup=setup_code).timeit(1)
 
-        test_result = "Full contact list resolution for {} took {} ms".format(self, mark1)
+        test_result = "Full contact list resolution for {} took {} seconds\n".format(self, mark1)
+        self.write_to_log_file(test_result)
 
-    def test_group_list(self):
         query = '''
         query SearchGroupAllQuery{
           ...GroupList_groups_1tT5Hu
@@ -350,21 +359,23 @@ query='''{query_value}'''
 
         setup_code = self.setup_code.format(query_value=query)
 
-        mark1 = timeit.Timer("""schema.execute(query, context=context)""", \
+        mark1 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
             setup=setup_code).timeit(1)
 
-        test_result = "Full contact list resolution for {} took {} ms".format(self, mark1)
+        test_result = "Full group list resolution for {} took {} seconds\n".format(self, mark1)
+        self.write_to_log_file(test_result)
 
 @unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 1, skip_reason)
 class LowStressTest(NeoTestCase, AbstractStressTest):
-    contact_num = 10
-    organization_num = 10
-    group_num = 2
-    contacts_per_group = 5
-    contacts_per_organization = 5
+    contact_num = 5
+    organization_num = 5
+    group_num = 3
+    contacts_per_group = 3
+    contacts_per_organization = 3
 
     def setUp(self):
         super(LowStressTest, self).setUp()
+        NodeHandle.objects.all().delete()
         self.load_nodes()
 
 
@@ -374,7 +385,23 @@ class MidStressTest(NeoTestCase, AbstractStressTest):
     organization_num = 50
     group_num = 10
     contacts_per_group = 25
+    contacts_per_organization = 10
 
     def setUp(self):
         super(MidStressTest, self).setUp()
+        NodeHandle.objects.all().delete()
+        self.load_nodes()
+
+
+@unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 3, skip_reason)
+class HighStressTest(NeoTestCase, AbstractStressTest):
+    contact_num = 500
+    organization_num = 500
+    group_num = 100
+    contacts_per_group = 100
+    contacts_per_organization = 50
+
+    def setUp(self):
+        super(HighStressTest, self).setUp()
+        NodeHandle.objects.all().delete()
         self.load_nodes()
