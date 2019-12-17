@@ -321,7 +321,41 @@ query='''{query_value}'''
 
     def test_group_list(self):
         query = '''
+        query SearchGroupAllQuery{
+          ...GroupList_groups_1tT5Hu
+        }
+
+        fragment GroupList_groups_1tT5Hu on Query {
+          groups(filter: {}, orderBy:handle_id_DESC) {
+            edges {
+              node {
+                handle_id
+                ...GroupRow_group
+                id
+                __typename
+              }
+              cursor
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+
+        fragment GroupRow_group on Group {
+          handle_id
+          name
+          description
+        }
         '''
+
+        setup_code = self.setup_code.format(query_value=query)
+
+        mark1 = timeit.Timer("""schema.execute(query, context=context)""", \
+            setup=setup_code).timeit(1)
+
+        test_result = "Full contact list resolution for {} took {} ms".format(self, mark1)
 
 @unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 1, skip_reason)
 class LowStressTest(NeoTestCase, AbstractStressTest):
