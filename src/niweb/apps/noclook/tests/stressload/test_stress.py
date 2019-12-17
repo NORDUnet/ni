@@ -191,39 +191,39 @@ query='''{query_value}'''
             f.write(to_write)
 
     def test_lists(self):
-        query = '''
-        {
+        organizations_query = '''
+        {{
           ...OrganizationList_organizations_1tT5Hu
           ...OrganizationList_organization_types
-        }
+        }}
 
-        fragment OrganizationList_organization_types on Query {
-          getChoicesForDropdown(name: "organization_types") {
+        fragment OrganizationList_organization_types on Query {{
+          getChoicesForDropdown(name: "organization_types") {{
             name
             value
             id
-          }
-        }
+          }}
+        }}
 
-        fragment OrganizationList_organizations_1tT5Hu on Query {
-          organizations(filter: {}, orderBy: handle_id_DESC) {
-            edges {
-              node {
+        fragment OrganizationList_organizations_1tT5Hu on Query {{
+          organizations(filter: {filter}, orderBy: {order_by}) {{
+            edges {{
+              node {{
                 handle_id
                 ...OrganizationRow_organization
                 id
                 __typename
-              }
+              }}
               cursor
-            }
-            pageInfo {
+            }}
+            pageInfo {{
               hasNextPage
               endCursor
-            }
-          }
-        }
+            }}
+          }}
+        }}
 
-        fragment OrganizationRow_organization on Organization {
+        fragment OrganizationRow_organization on Organization {{
           handle_id
           name
           type
@@ -234,135 +234,168 @@ query='''{query_value}'''
           affiliation_partner
           affiliation_provider
           affiliation_site_owner
-          parent_organization {
+          parent_organization {{
             organization_id
             id
-          }
-          incoming {
+          }}
+          incoming {{
             name
-            relation {
+            relation {{
               type
-              start {
+              start {{
                 handle_id
                 node_name
                 id
-              }
+              }}
               id
-            }
-          }
-        }
+            }}
+          }}
+        }}
         '''
 
-        setup_code = self.setup_code.format(query_value=query)
+        # order by id: native django order
+        by_id_query = organizations_query.format(filter={}, order_by='handle_id_DESC')
+        setup_code = self.setup_code.format(query_value=by_id_query)
 
         mark1 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
             setup=setup_code).timeit(1)
 
-        test_result = "Full organization list resolution for {} took {} seconds\n".format(self, mark1)
+        test_result = "Organization list resolution with default order took {} seconds\n".format(mark1)
         self.write_to_log_file(test_result)
 
-        query = '''
-        query SearchContactsAllQuery{
+        # order by id: native django order
+        name_query = organizations_query.format(filter={}, order_by='name_DESC')
+        setup_code = self.setup_code.format(query_value=name_query)
+        mark2 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
+            setup=setup_code).timeit(1)
+
+        test_result = "Organization list resolution with name order took {} seconds\n".format(mark2)
+        self.write_to_log_file(test_result)
+
+        contacts_query = '''
+        query SearchContactsAllQuery{{
           ...ContactList_contacts_1tT5Hu
           ...ContactList_organization_types
           ...ContactList_roles_default
-        }
+        }}
 
-        fragment ContactList_contacts_1tT5Hu on Query {
-          contacts(filter: {}, orderBy: handle_id_DESC) {
-            edges {
-              node {
+        fragment ContactList_contacts_1tT5Hu on Query {{
+          contacts(filter: {filter}, orderBy: {order_by}) {{
+            edges {{
+              node {{
                 handle_id
                 ...ContactRow_contact
                 id
                 __typename
-              }
+              }}
               cursor
-            }
-            pageInfo {
+            }}
+            pageInfo {{
               endCursor
               hasNextPage
               hasPreviousPage
               startCursor
-            }
-          }
-        }
+            }}
+          }}
+        }}
 
-        fragment ContactList_organization_types on Query {
-          getChoicesForDropdown(name: "organization_types") {
+        fragment ContactList_organization_types on Query {{
+          getChoicesForDropdown(name: "organization_types") {{
             name
             value
             id
-          }
-        }
+          }}
+        }}
 
-        fragment ContactList_roles_default on Query {
-          getRolesFromRoleGroup {
+        fragment ContactList_roles_default on Query {{
+          getRolesFromRoleGroup {{
             handle_id
             name
-          }
-        }
+          }}
+        }}
 
-        fragment ContactRow_contact on Contact {
+        fragment ContactRow_contact on Contact {{
           handle_id
           first_name
           last_name
           contact_type
           modified
-          roles {
+          roles {{
             name
-            end {
+            end {{
               name
               id
-            }
-          }
-        }
+            }}
+          }}
+        }}
         '''
 
-        setup_code = self.setup_code.format(query_value=query)
+        # order by id: native django order
+        by_id_query = contacts_query.format(filter={}, order_by='handle_id_DESC')
+        setup_code = self.setup_code.format(query_value=by_id_query)
 
         mark1 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
             setup=setup_code).timeit(1)
 
-        test_result = "Full contact list resolution for {} took {} seconds\n".format(self, mark1)
+        test_result = "Contact list resolution with default order took {} seconds\n".format(mark1)
         self.write_to_log_file(test_result)
 
-        query = '''
-        query SearchGroupAllQuery{
-          ...GroupList_groups_1tT5Hu
-        }
+        # order by id: native django order
+        name_query = contacts_query.format(filter={}, order_by='name_DESC')
+        setup_code = self.setup_code.format(query_value=name_query)
+        mark2 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
+            setup=setup_code).timeit(1)
 
-        fragment GroupList_groups_1tT5Hu on Query {
-          groups(filter: {}, orderBy:handle_id_DESC) {
-            edges {
-              node {
+        test_result = "Contact list resolution with name order took {} seconds\n".format(mark2)
+        self.write_to_log_file(test_result)
+
+        groups_query = '''
+        query SearchGroupAllQuery{{
+          ...GroupList_groups_1tT5Hu
+        }}
+
+        fragment GroupList_groups_1tT5Hu on Query {{
+          groups(filter: {filter}, orderBy: {order_by}) {{
+            edges {{
+              node {{
                 handle_id
                 ...GroupRow_group
                 id
                 __typename
-              }
+              }}
               cursor
-            }
-            pageInfo {
+            }}
+            pageInfo {{
               hasNextPage
               endCursor
-            }
-          }
-        }
+            }}
+          }}
+        }}
 
-        fragment GroupRow_group on Group {
+        fragment GroupRow_group on Group {{
           handle_id
           name
           description
-        }
+        }}
         '''
 
-        setup_code = self.setup_code.format(query_value=query)
+        # order by id: native django order
+        by_id_query = groups_query.format(filter={}, order_by='handle_id_DESC')
+        setup_code = self.setup_code.format(query_value=by_id_query)
 
         mark1 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
             setup=setup_code).timeit(1)
 
-        test_result = "Full group list resolution for {} took {} seconds\n".format(self, mark1)
+        test_result = "Group list resolution with default order took {} seconds\n".format(mark1)
+        self.write_to_log_file(test_result)
+
+        # order by id: native django order
+        name_query = groups_query.format(filter={}, order_by='name_DESC')
+        setup_code = self.setup_code.format(query_value=name_query)
+        mark2 = timeit.Timer("""result = schema.execute(query, context=context); assert result.data""", \
+            setup=setup_code).timeit(1)
+
+        test_result = "Group list resolution with name order took {} seconds\n".format(mark2)
         self.write_to_log_file(test_result)
 
 @unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 1, skip_reason)
