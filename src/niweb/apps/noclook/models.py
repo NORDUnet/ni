@@ -217,7 +217,7 @@ class GroupContextAuthzAction(models.Model):
     context = models.ForeignKey(Context, models.CASCADE)
 
     def __str__(self):
-        return 'GroupContextAuthzAction {} / {} / {}'.format(
+        return '{} / {} / {}'.format(
                 str(self.group),
                 self.authzprofile.name,
                 self.context.name
@@ -230,7 +230,7 @@ class NodeHandleContext(models.Model):
     context = models.ForeignKey(Context, models.CASCADE)
 
     def __str__(self):
-        return 'NodeHandleContext {} / {}'.format(self.nodehandle.node_name, self.context.name)
+        return '{} / {}'.format(self.nodehandle.node_name, self.context.name)
 
 
 @python_2_unicode_compatible
