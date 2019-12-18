@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 import graphene
 
+import apps.noclook.vakt.utils as sriutils
 from norduniclient.models import RoleRelationship
 from graphene import relay, ObjectType, String, Field
 from .core import *
@@ -59,6 +60,7 @@ class Group(NIObjectType):
     class NIMetaType:
         ni_type = 'Group'
         ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_community_context
 
 
 class Procedure(NIObjectType):
@@ -71,6 +73,7 @@ class Procedure(NIObjectType):
     class NIMetaType:
         ni_type = 'Procedure'
         ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_community_context
 
 
 class Address(NIObjectType):
@@ -89,6 +92,7 @@ class Address(NIObjectType):
     class NIMetaType:
         ni_type = 'Address'
         ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_community_context
 
 
 class Organization(NIObjectType):
@@ -115,6 +119,7 @@ class Organization(NIObjectType):
     class NIMetaType:
         ni_type = 'Organization'
         ni_metatype = NIMETA_RELATION
+        context_method = sriutils.get_community_context
 
 
 class RoleRelation(NIRelationType):
@@ -149,6 +154,7 @@ class Phone(NIObjectType):
     class NIMetaType:
         ni_type = 'Phone'
         ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_community_context
 
 
 class Email(NIObjectType):
@@ -164,6 +170,7 @@ class Email(NIObjectType):
     class NIMetaType:
         ni_type = 'Email'
         ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_community_context
 
 
 class Contact(NIObjectType):
@@ -187,6 +194,7 @@ class Contact(NIObjectType):
     class NIMetaType:
         ni_type = 'Contact'
         ni_metatype = NIMETA_RELATION
+        context_method = sriutils.get_community_context
 
 
 class ContactWithRolename(ObjectType):

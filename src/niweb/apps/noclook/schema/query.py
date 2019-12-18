@@ -323,9 +323,11 @@ class NOCRootQuery(NOCAutoQuery):
         ret = []
 
         if info.context and info.context.user.is_authenticated:
-            default_context = sriutils.get_default_context()
+            # well use the community context to check if the user
+            # can read the rolegroup list
+            community_context = sriutils.get_community_context()
             authorized = sriutils.authorize_list_module(
-                info.context.user, default_context
+                info.context.user, community_context
             )
 
             if not authorized:
@@ -343,9 +345,11 @@ class NOCRootQuery(NOCAutoQuery):
         name = kwargs.get('name', DEFAULT_ROLEGROUP_NAME)
 
         if info.context and info.context.user.is_authenticated:
-            default_context = sriutils.get_default_context()
+            # well use the community context to check if the user
+            # can read the rolegroup list
+            community_context = sriutils.get_community_context()
             authorized = sriutils.authorize_list_module(
-                info.context.user, default_context
+                info.context.user, community_context
             )
 
             if not authorized:
@@ -364,7 +368,7 @@ class NOCRootQuery(NOCAutoQuery):
         handle_id = kwargs.get('handle_id', None)
 
         ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
-        
+
         return ret
 
     class NIMeta:
