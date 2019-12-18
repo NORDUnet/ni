@@ -398,7 +398,7 @@ query='''{query_value}'''
         test_result = "Group list resolution with name order took {} seconds\n".format(mark2)
         self.write_to_log_file(test_result)
 
-@unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 1, skip_reason)
+@unittest.skipUnless(int(os.environ.get('STRESS_TEST', '0')) >= 1, skip_reason)
 class LowStressTest(NeoTestCase, AbstractStressTest):
     contact_num = 5
     organization_num = 5
@@ -412,7 +412,7 @@ class LowStressTest(NeoTestCase, AbstractStressTest):
         self.load_nodes()
 
 
-@unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 2, skip_reason)
+@unittest.skipUnless(int(os.environ.get('STRESS_TEST', '0')) >= 2, skip_reason)
 class MidStressTest(NeoTestCase, AbstractStressTest):
     contact_num = 50
     organization_num = 50
@@ -426,7 +426,7 @@ class MidStressTest(NeoTestCase, AbstractStressTest):
         self.load_nodes()
 
 
-@unittest.skipUnless(int(os.environ.get('STRESS_TEST')) >= 3, skip_reason)
+@unittest.skipUnless(int(os.environ.get('STRESS_TEST', '0')) >= 3, skip_reason)
 class HighStressTest(NeoTestCase, AbstractStressTest):
     contact_num = 500
     organization_num = 500
