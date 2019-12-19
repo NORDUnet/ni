@@ -195,3 +195,19 @@ def authorize_list_module(user, context):
     logger.debug('Authorizing user to admin the module {}'\
         .format(context.name))
     return authorize_aa_operation(user, context, get_list_authaction)
+
+def authorize_superadmin(user, cmodel=Context):
+    '''
+    This function checks if the user can perform admin actions inside a module
+    '''
+    logger.debug('Authorizing user {} as a superadmin'.format(user.username))
+
+    is_superadmin = True
+    all_contexts = cmodel.objects.all()
+
+    for context in all_contexts:
+        if not authorize_aa_operation(user, context, get_admin_authaction):
+            is_superadmin = False
+            break
+
+    return is_superadmin

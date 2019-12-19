@@ -970,7 +970,8 @@ def set_of_member(user, node, contact_id):
     return relationship, created
 
 
-def link_contact_role_for_organization(user, node, contact_handle_id, role):
+def link_contact_role_for_organization(user, node, contact_handle_id, role, \
+                                        relationship_id=None):
     """
     :param user: Django user
     :param node: norduniclient organization model
@@ -978,12 +979,21 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role):
     :param role: the selected role
     :return: contact
     """
+    relationship = None
 
-    relationship = nc.models.RoleRelationship.link_contact_organization(
-        contact_handle_id,
-        node.handle_id,
-        role.name
-    )
+    if not relationship_id:
+        relationship = nc.models.RoleRelationship.link_contact_organization(
+            contact_handle_id,
+            node.handle_id,
+            role.name
+        )
+    else:
+        relationship = nc.models.RoleRelationship.update_contact_organization(
+            contact_handle_id,
+            node.handle_id,
+            role.name,
+            relationship_id
+        )
 
     if not relationship:
         relationship = nc.models.RoleRelationship(nc.graphdb.manager)

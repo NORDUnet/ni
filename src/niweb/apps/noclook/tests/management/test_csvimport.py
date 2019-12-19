@@ -9,8 +9,7 @@ import norduniclient.models as ncmodels
 from apps.noclook.models import NodeHandle, NodeType, User, Role, DEFAULT_ROLE_KEY
 
 from ..neo4j_base import NeoTestCase
-
-import tempfile
+from .fileutils import write_string_to_disk
 
 __author__ = 'ffuentes'
 
@@ -44,13 +43,13 @@ class CsvImportTest(NeoTestCase):
     def setUp(self):
         super(CsvImportTest, self).setUp()
         # write organizations csv file to disk
-        self.organizations_file = self.write_string_to_disk(self.organizations_str)
+        self.organizations_file = write_string_to_disk(self.organizations_str)
 
         # write contacts csv file to disk
-        self.contacts_file = self.write_string_to_disk(self.contacts_str)
+        self.contacts_file = write_string_to_disk(self.contacts_str)
 
         # write contacts csv file to disk
-        self.secroles_file = self.write_string_to_disk(self.secroles_str)
+        self.secroles_file = write_string_to_disk(self.secroles_str)
 
         # create noclook user
         User.objects.get_or_create(username="noclook")[0]
