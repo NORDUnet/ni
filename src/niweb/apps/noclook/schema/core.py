@@ -500,9 +500,16 @@ class NIObjectType(DjangoObjectType):
         type_name = cls.get_type_name()
 
         def generic_byid_resolver(self, info, **args):
-            handle_id = args.get('handle_id')
-            node_type = NodeType.objects.get(type=type_name)
+            id = args.get('id')
+            handle_id = None
+            ret = None
 
+            try:
+                _type, handle_id = relay.Node.from_global_id(id)
+            except:
+                pass # nothing is done, we'll return None
+
+            node_type = NodeType.objects.get(type=type_name)
             ret = None
 
             if info.context and info.context.user.is_authenticated:
