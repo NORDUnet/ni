@@ -86,7 +86,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 field_name    = 'get{}ById'.format(type_name)
                 resolver_name = 'resolve_{}'.format(field_name)
 
-                setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
+                setattr(cls, field_name, graphene.Field(graphql_type, id=graphene.ID()))
                 setattr(cls, resolver_name, graphql_type.get_byid_resolver())
 
 
