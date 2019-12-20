@@ -371,8 +371,6 @@ class NIObjectType(DjangoObjectType):
 
                         input_fields[name] = binput_field, field._of_type
 
-        input_fields['handle_id'] = graphene.Int
-
         # add 'created' and 'modified' datetime fields
         for date_ffield in DateQueryBuilder.fields:
             input_fields[date_ffield] = DateTime
@@ -478,6 +476,13 @@ class NIObjectType(DjangoObjectType):
         filter_attrib['OR'] = graphene.List(graphene.NonNull(simple_filter_input))
 
         filter_input = type('{}Filter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
+
+        # add the handle id field manually
+        handle_id_field = 'handle_id'
+        asc_field_name = '{}_{}'.format(handle_id_field, cls._asc_suffix)
+        desc_field_name = '{}_{}'.format(handle_id_field, cls._desc_suffix)
+        enum_options.append([asc_field_name, asc_field_name])
+        enum_options.append([desc_field_name, desc_field_name])
 
         orderBy = graphene.Enum('{}OrderBy'.format(ni_type), enum_options)
 
