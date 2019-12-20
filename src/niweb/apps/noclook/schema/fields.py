@@ -135,8 +135,7 @@ class NIListField(NIBasicField):
             neo4jnode = self.get_inner_node(instance)
             relations = getattr(neo4jnode, rel_method)()
             nodes = relations.get(rel_name)
-
-            # this may be the worst way to do it, but it's just for a PoC
+            
             handle_id_list = []
             if nodes:
                 for node in nodes:
@@ -144,7 +143,7 @@ class NIListField(NIBasicField):
                     node_id = node.data.get('handle_id')
                     handle_id_list.append(node_id)
 
-            ret = NodeHandle.objects.filter(handle_id__in=handle_id_list)
+            ret = NodeHandle.objects.filter(handle_id__in=handle_id_list).order_by('handle_id')
 
             return ret
 

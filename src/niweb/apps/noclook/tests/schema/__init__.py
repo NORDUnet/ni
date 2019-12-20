@@ -41,7 +41,7 @@ class Neo4jGraphQLTest(NeoTestCase):
         self.get_list_authaction  = sriutils.get_list_authaction()
 
         # get default context
-        self.community_ctxt = sriutils.get_default_context()
+        self.community_ctxt = sriutils.get_community_context()
 
         # add contexts and profiles
         GroupContextAuthzAction(

@@ -860,26 +860,37 @@ class QueryTest(Neo4jGraphQLTest):
         # get relation from Group - Contact
         query = """
         {{
-          getGroupContactRelations(group_id: {group_handle_id}, contact_id: {contact_1_id}){{
-            relation_id
-            type
-            start{{
+          getGroupById(handle_id: {group_handle_id}){{
+            handle_id
+            name
+            contacts{{
               handle_id
+              name
             }}
-            end{{
-              handle_id
+            incoming{{
+              name
+              relation{{
+                relation_id
+                start{{
+                  handle_id
+                  node_name
+                }}
+                end{{
+                  handle_id
+                  node_name
+                }}
+              }}
             }}
           }}
         }}
-        """.format(group_handle_id=group_handle_id, contact_1_id=contact_1_id)
+        """.format(group_handle_id=group_handle_id)
+
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        start_id = result.data['getGroupContactRelations'][0]['start']['handle_id']
-        end_id = result.data['getGroupContactRelations'][0]['end']['handle_id']
-        relation_id = result.data['getGroupContactRelations'][0]['relation_id']
-
-        relation_dict = result.data['getGroupContactRelations'][0]
+        start_id = result.data['getGroupById']['incoming'][0]['relation']['start']['handle_id']
+        end_id = result.data['getGroupById']['incoming'][0]['relation']['end']['handle_id']
+        relation_id = result.data['getGroupById']['incoming'][0]['relation']['relation_id']
 
         assert int(start_id) == int(contact_1_id), \
             "Contact id don't match: {} != {}".format(start_id, contact_1_id)
@@ -888,29 +899,6 @@ class QueryTest(Neo4jGraphQLTest):
             "Group id don't match: {} != {}".format(end_id, group_handle_id)
 
         assert relation_id, "Relation id is null"
-
-        # proof that relation exists
-        query = """
-        {{
-          getRelationById(relation_id: {relation_id}){{
-            relation_id
-            type
-            start{{
-              handle_id
-            }}
-            end{{
-              handle_id
-            }}
-          }}
-        }}
-        """.format(relation_id=relation_id)
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-
-        trelation_dict = result.data['getRelationById']
-        assert relation_dict == trelation_dict, \
-            "Relations don't match: \n{}\n !=\n {}\n".format(
-                pformat(relation_dict, indent=1), pformat(trelation_dict, indent=1))
 
         # delete relationship
         query = """
@@ -946,55 +934,45 @@ class QueryTest(Neo4jGraphQLTest):
         # get relation from Contact - Email
         query = """
         {{
-          getContactEmailRelations(contact_id: {contact_1_id}, email_id: {email_id}){{
-            relation_id
-            type
-            start{{
-              handle_id
-            }}
-            end{{
-              handle_id
+          getContactById(handle_id: {contact_1_id}){{
+            handle_id
+            outgoing{{
+              name
+              relation{{
+                relation_id
+                start{{
+                  handle_id
+                  node_name
+                }}
+                end{{
+                  handle_id
+                  node_name
+                }}
+              }}
             }}
           }}
         }}
-        """.format(contact_1_id=contact_1_id, email_id=email_id)
+        """.format(contact_1_id=contact_1_id)
+
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        start_id = result.data['getContactEmailRelations'][0]['start']['handle_id']
-        end_id = result.data['getContactEmailRelations'][0]['end']['handle_id']
-        relation_id = result.data['getContactEmailRelations'][0]['relation_id']
+        idx = 0
+        for relation in result.data['getContactById']['outgoing']:
+            if relation['name'] == 'Has_email':
+                break
+            idx = idx + 1
 
-        relation_dict = result.data['getContactEmailRelations'][0]
+        start_id = result.data['getContactById']['outgoing'][idx]['relation']['start']['handle_id']
+        end_id = result.data['getContactById']['outgoing'][idx]['relation']['end']['handle_id']
+        relation_id = result.data['getContactById']['outgoing'][idx]['relation']['relation_id']
+
 
         assert int(start_id) == int(contact_1_id), \
             "Contact id don't match: {} != {}".format(start_id, contact_1_id)
 
         assert int(end_id) == int(email_id), \
             "Email id don't match: {} != {}".format(end_id, email_id)
-
-        # proof that relation exists
-        query = """
-        {{
-          getRelationById(relation_id: {relation_id}){{
-            relation_id
-            type
-            start{{
-              handle_id
-            }}
-            end{{
-              handle_id
-            }}
-          }}
-        }}
-        """.format(relation_id=relation_id)
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-
-        trelation_dict = result.data['getRelationById']
-        assert relation_dict == trelation_dict, \
-            "Relations don't match: \n{}\n !=\n {}\n".format(
-                pformat(relation_dict, indent=1), pformat(trelation_dict, indent=1))
 
         # delete relationship
         query = """
@@ -1030,55 +1008,44 @@ class QueryTest(Neo4jGraphQLTest):
         # get relation from Contact - Phone
         query = """
         {{
-          getContactPhoneRelations(contact_id: {contact_1_id}, phone_id: {phone_id}){{
-            relation_id
-            type
-            start{{
-              handle_id
-            }}
-            end{{
-              handle_id
+          getContactById(handle_id: {contact_1_id}){{
+            handle_id
+            outgoing{{
+              name
+              relation{{
+                relation_id
+                start{{
+                  handle_id
+                  node_name
+                }}
+                end{{
+                  handle_id
+                  node_name
+                }}
+              }}
             }}
           }}
         }}
-        """.format(contact_1_id=contact_1_id, phone_id=phone_id)
+        """.format(contact_1_id=contact_1_id)
+
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        start_id = result.data['getContactPhoneRelations'][0]['start']['handle_id']
-        end_id = result.data['getContactPhoneRelations'][0]['end']['handle_id']
-        relation_id = result.data['getContactPhoneRelations'][0]['relation_id']
+        idx = 0
+        for relation in result.data['getContactById']['outgoing']:
+            if relation['name'] == 'Has_phone':
+                break
+            idx = idx + 1
 
-        relation_dict = result.data['getContactPhoneRelations'][0]
+        start_id = result.data['getContactById']['outgoing'][idx]['relation']['start']['handle_id']
+        end_id = result.data['getContactById']['outgoing'][idx]['relation']['end']['handle_id']
+        relation_id = result.data['getContactById']['outgoing'][idx]['relation']['relation_id']
 
         assert int(start_id) == int(contact_1_id), \
             "Contact id don't match: {} != {}".format(start_id, contact_1_id)
 
         assert int(end_id) == int(phone_id), \
             "Phone id don't match: {} != {}".format(end_id, phone_id)
-
-        # proof that relation exists
-        query = """
-        {{
-          getRelationById(relation_id: {relation_id}){{
-            relation_id
-            type
-            start{{
-              handle_id
-            }}
-            end{{
-              handle_id
-            }}
-          }}
-        }}
-        """.format(relation_id=relation_id)
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-
-        trelation_dict = result.data['getRelationById']
-        assert relation_dict == trelation_dict, \
-            "Relations don't match: \n{}\n !=\n {}\n".format(
-                pformat(relation_dict, indent=1), pformat(trelation_dict, indent=1))
 
         # delete relationship
         query = """
@@ -1114,55 +1081,44 @@ class QueryTest(Neo4jGraphQLTest):
         # get relation from Organization - Address
         query = """
         {{
-          getOrganizationAddressRelations(organization_id: {organization_id}, address_id: {address_id}){{
-            relation_id
-            type
-            start{{
-              handle_id
-            }}
-            end{{
-              handle_id
+          getOrganizationById(handle_id: {organization_id}){{
+            handle_id
+            outgoing{{
+              name
+              relation{{
+                relation_id
+                start{{
+                  handle_id
+                  node_name
+                }}
+                end{{
+                  handle_id
+                  node_name
+                }}
+              }}
             }}
           }}
         }}
-        """.format(organization_id=organization_id, address_id=address_id)
+        """.format(organization_id=organization_id)
+
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        start_id = result.data['getOrganizationAddressRelations'][0]['start']['handle_id']
-        end_id = result.data['getOrganizationAddressRelations'][0]['end']['handle_id']
-        relation_id = result.data['getOrganizationAddressRelations'][0]['relation_id']
+        idx = 0
+        for relation in result.data['getOrganizationById']['outgoing']:
+            if relation['name'] == 'Has_address':
+                break
+            idx = idx + 1
 
-        relation_dict = result.data['getOrganizationAddressRelations'][0]
+        start_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['start']['handle_id']
+        end_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['end']['handle_id']
+        relation_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['relation_id']
 
         assert int(start_id) == int(organization_id), \
             "Contact id don't match: {} != {}".format(start_id, organization_id)
 
         assert int(end_id) == int(address_id), \
             "Phone id don't match: {} != {}".format(end_id, address_id)
-
-        # proof that relation exists
-        query = """
-        {{
-          getRelationById(relation_id: {relation_id}){{
-            relation_id
-            type
-            start{{
-              handle_id
-            }}
-            end{{
-              handle_id
-            }}
-          }}
-        }}
-        """.format(relation_id=relation_id)
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-
-        trelation_dict = result.data['getRelationById']
-        assert relation_dict == trelation_dict, \
-            "Relations don't match: \n{}\n !=\n {}\n".format(
-                pformat(relation_dict, indent=1), pformat(trelation_dict, indent=1))
 
         # delete relationship
         query = """

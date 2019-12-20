@@ -600,44 +600,6 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
-        ## get contacts that works for an organization
-        query = """
-        {{
-          getOrganizationContacts(handle_id: {organization_id}){{
-            contact{{
-              handle_id
-            }}
-            role{{
-              name
-            }}
-          }}
-        }}
-        """.format(organization_id=organization_id_2)
-
-        expected = OrderedDict([('getOrganizationContacts',
-              [OrderedDict([('contact', OrderedDict([('handle_id', str(contact_2_id))])),
-                            ('role', OrderedDict([('name', 'NOC Manager')]))]),
-               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_1_id))])),
-                            ('role', OrderedDict([('name', 'NOC Security')]))]),
-               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_2_id))])),
-                            ('role',
-                             OrderedDict([('name', 'NOC Technical')]))]),
-               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_1_id))])),
-                            ('role',
-                             OrderedDict([('name',
-                                           'Secondary contact at '
-                                           'incidents')]))]),
-               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_2_id))])),
-                            ('role',
-                             OrderedDict([('name',
-                                           'Primary contact at incidents')]))]),
-               OrderedDict([('contact', OrderedDict([('handle_id', str(contact_1_id))])),
-                            ('role', OrderedDict([('name', 'Abuse')]))])])])
-
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-        assert result.data == expected, pformat(result.data, indent=1)
-
         ### Phone/Email tests ###
 
         ## create ##

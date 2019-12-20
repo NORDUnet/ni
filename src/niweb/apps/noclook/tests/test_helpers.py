@@ -66,6 +66,31 @@ class Neo4jHelpersTest(NeoTestCase):
             self.organization_node.get_relations().get('Works_for')[0].get('node')
         )
 
+    def test_update_contact_organization(self):
+        contact, role = helpers.link_contact_role_for_organization(
+            self.user,
+            self.organization_node,
+            self.contact_node.handle_id,
+            self.role
+        )
+        self.assertEqual(len(self.organization_node.relationships), 1)
+
+        anther_role = Role.objects.get_or_create(name="NOC Manager")[0]
+        relationship_id = \
+            self.organization_node.get_relations()\
+                .get('Works_for')[0]['relationship_id']
+
+        contact, role = helpers.link_contact_role_for_organization(
+            self.user,
+            self.organization_node,
+            self.contact_node.handle_id,
+            anther_role,
+            relationship_id
+        )
+
+        self.assertEqual(len(self.organization_node.relationships), 1)
+        self.assertEqual(role.name, anther_role.name)
+
     def test_add_parent(self):
         self.assertEqual(self.organization_node.get_relations(), {})
         relationship, created = helpers.set_parent_of(
