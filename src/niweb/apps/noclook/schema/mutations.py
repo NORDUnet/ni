@@ -150,7 +150,7 @@ class NIContactMutationFactory(NIMutationFactory):
                 'type_slug': 'email',
                 'meta_type': 'Logical',
                 'fields': {
-                    'handle_id': 'email_handle_id',
+                    'id': 'email_id',
                     'name': 'email',
                     'type': 'email_type',
                 },
@@ -161,7 +161,7 @@ class NIContactMutationFactory(NIMutationFactory):
                 'type_slug': 'phone',
                 'meta_type': 'Logical',
                 'fields': {
-                    'handle_id': 'phone_handle_id',
+                    'id': 'phone_id',
                     'name': 'phone',
                     'type': 'phone_type',
                 },

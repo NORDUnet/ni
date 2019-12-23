@@ -1409,8 +1409,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
                 node_name = None
 
                 for fform_name, fform_value in fields.items():
-                    if fform_name == 'handle_id':
-                        sub_handle_id = form.cleaned_data.get(fform_value, None)
+                    if fform_name == 'id':
+                        sub_id = form.cleaned_data.get(fform_value, None)
+                        if sub_id:
+                            _type, sub_handle_id = relay.Node.from_global_id(sub_id)
                     else:
                         if fform_name == 'name':
                             node_name = form.cleaned_data.get(fform_value, None)
