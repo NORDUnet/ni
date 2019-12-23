@@ -45,6 +45,10 @@ class NIProcedureMutationFactory(NIMutationFactory):
         abstract = False
 
 
+def empty_processor(request, form, nodehandler, relation_name):
+    pass
+
+
 def process_works_for(request, form, nodehandler, relation_name):
     if relation_name in form.cleaned_data and 'role' in form.cleaned_data and \
         form.cleaned_data[relation_name] and form.cleaned_data['role']:
@@ -249,10 +253,10 @@ class CreateOrganization(CreateNIMutation):
 
                 # Set child organizations
                 if form.cleaned_data['relationship_parent_of']:
-                    organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
+                    organization_nh = NodeHandle.objects.get(handle_id=form.cleaned_data['relationship_parent_of'])
                     helpers.set_parent_of(request.user, organization, organization_nh.handle_id)
                 if form.cleaned_data['relationship_uses_a']:
-                    procedure_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_uses_a'])
+                    procedure_nh = NodeHandle.objects.get(handle_id=form.cleaned_data['relationship_uses_a'])
                     helpers.set_uses_a(request.user, organization, procedure_nh.handle_id)
 
                 return has_error, { graphql_type.__name__.lower(): nh }
@@ -273,6 +277,12 @@ class CreateOrganization(CreateNIMutation):
         graphql_type   = Organization
         is_create = True
 
+        relations_processors = {
+            'relationship_parent_of': empty_processor,
+            'relationship_uses_a': empty_processor,
+        }
+
+
 
 class UpdateOrganization(UpdateNIMutation):
     @classmethod
@@ -283,10 +293,11 @@ class UpdateOrganization(UpdateNIMutation):
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
-        handle_id      = request.POST.get('handle_id')
+        id      = request.POST.get('id')
         has_error      = False
 
         # check authorization
+        handle_id = relay.Node.from_global_id(id)[1]
         authorized = sriutils.authorice_write_resource(request.user, handle_id)
 
         if not authorized:
@@ -402,7 +413,7 @@ class CreateRole(DjangoModelFormMutation):
 
 class UpdateRole(DjangoModelFormMutation):
     class Input:
-        handle_id = graphene.Int(required=True)
+        id = graphene.ID(required=True)
 
     @classmethod
     def get_form_kwargs(cls, root, info, **input):
@@ -416,9 +427,10 @@ class UpdateRole(DjangoModelFormMutation):
 
         kwargs = {"data": input}
 
-        pk = input.pop("handle_id", None)
-        if pk:
-            instance = cls._meta.model._default_manager.get(pk=pk)
+        id = input.pop("id", None)
+        handle_id = relay.Node.from_global_id(id)[1]
+        if handle_id:
+            instance = cls._meta.model._default_manager.get(pk=handle_id)
             kwargs["instance"] = instance
 
         return kwargs
@@ -429,14 +441,15 @@ class UpdateRole(DjangoModelFormMutation):
 
 class DeleteRole(relay.ClientIDMutation):
     class Input:
-        handle_id = graphene.Int(required=True)
+        id = graphene.ID(required=True)
 
     success = graphene.Boolean(required=True)
-    handle_id = graphene.Int(required=True)
+    id = graphene.ID(required=True)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        handle_id = input.get("handle_id", None)
+        id = input.get("id", None)
+        handle_id = relay.Node.from_global_id(id)[1]
         success = False
 
         context = sriutils.get_community_context()
@@ -454,7 +467,7 @@ class DeleteRole(relay.ClientIDMutation):
         except ObjectDoesNotExist:
             success = False
 
-        return DeleteRole(success=success, handle_id=handle_id)
+        return DeleteRole(success=success, id=id)
 
 
 class CreateComment(relay.ClientIDMutation):
@@ -641,19 +654,20 @@ class CompositeOrganizationMutation(CompositeMutation):
     @classmethod
     def get_link_kwargs(cls, master_input, slave_input):
         ret = {}
-        role_handle_id = slave_input.get('role_handle_id', None)
+        role_id = slave_input.get('role_id', None)
 
-        if role_handle_id:
-            ret['role_handle_id'] = role_handle_id
+        if role_id:
+            ret['role_id'] = role_id
 
         return ret
 
     @classmethod
     def link_slave_to_master(cls, user, master_nh, slave_nh, **kwargs):
-        role_handle_id = kwargs.get('role_handle_id', None)
+        role_id = kwargs.get('role_id', None)
         role = None
 
-        if role_handle_id:
+        if role_id:
+            role_handle_id = relay.Node.from_global_id(role_id)[1]
             role = RoleModel.objects.get(handle_id=role_handle_id)
         else:
             role = RoleModel.objects.get(slug=DEFAULT_ROLE_KEY)

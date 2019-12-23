@@ -1319,7 +1319,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         if not is_create:
             input_params['id'] = input.get('id')
             handle_id = None
-            _type, handle_id = relay.Node.from_global_id(input_params['id'])
+            handle_id = relay.Node.from_global_id(input_params['id'])[1]
 
             # get previous instance
             nh = NodeHandle.objects.get(handle_id=handle_id)
@@ -1328,6 +1328,16 @@ class AbstractNIMutation(relay.ClientIDMutation):
                 if noninput_field in node.data:
                     input_params[noninput_field] = node.data.get(noninput_field)
 
+        # morph ids for relation processors
+        relations_processors = getattr(ni_metaclass, 'relations_processors', None)
+
+        if relations_processors:
+            for relation_name in relations_processors.keys():
+                relay_id = input.get(relation_name, None)
+
+                if relay_id:
+                    handle_id = relay.Node.from_global_id(relay_id)[1]
+                    input_params[relation_name] = handle_id
 
         # forge request
         request_factory = RequestFactory()
@@ -1565,7 +1575,7 @@ class UpdateNIMutation(AbstractNIMutation):
         has_error       = False
 
         # check authorization
-        _type, handle_id = relay.Node.from_global_id(id)
+        handle_id = relay.Node.from_global_id(id)[1]
         authorized = sriutils.authorice_write_resource(request.user, handle_id)
 
         if not authorized:

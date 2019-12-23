@@ -1199,7 +1199,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }
             organization{
-              handle_id
+              id
               name
             }
           }
@@ -1207,7 +1207,7 @@ class QueryTest(Neo4jGraphQLTest):
         """
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        organization3_id = result.data['create_organization']['organization']['handle_id']
+        organization3_id = result.data['create_organization']['organization']['id']
 
         # create a new contact for this organization
         query = """
@@ -1223,7 +1223,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }}
             contact{{
-              handle_id
+              id
               name
             }}
           }}
@@ -1231,7 +1231,7 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(organization_id=organization3_id)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        contact3_id = result.data['create_contact']['contact']['handle_id']
+        contact3_id = result.data['create_contact']['contact']['id']
 
         # add email and get id
         query = """
@@ -1246,7 +1246,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }}
             email{{
-              handle_id
+              id
               name
             }}
           }}
@@ -1254,7 +1254,7 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(contact_id=contact3_id)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        email3_id = result.data['create_email']['email']['handle_id']
+        email3_id = result.data['create_email']['email']['id']
 
         # add phone and get id
         query = """
@@ -1269,7 +1269,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }}
             phone{{
-              handle_id
+              id
               name
             }}
           }}
@@ -1277,7 +1277,7 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(contact_id=contact3_id)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        phone3_id = result.data['create_phone']['phone']['handle_id']
+        phone3_id = result.data['create_phone']['phone']['id']
 
         # delete contact
         query = """
@@ -1304,7 +1304,7 @@ class QueryTest(Neo4jGraphQLTest):
           organizations(filter:{{ AND:[{{ handle_id: {organization_id} }}] }}){{
             edges{{
               node{{
-                handle_id
+                id
                 name
               }}
             }}
