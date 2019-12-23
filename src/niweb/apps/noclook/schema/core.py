@@ -1196,7 +1196,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
         # add handle_id
         if not is_create:
-            inner_fields['handle_id'] = graphene.Int(required=True)
+            inner_fields['id'] = graphene.ID(required=True)
 
         # add Input attribute to class
         inner_class = type('Input', (object,), inner_fields)
@@ -1319,10 +1319,12 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # if it's an edit mutation add handle_id
         # and also add the existent values in the request
         if not is_create:
-            input_params['handle_id'] = input.get('handle_id')
+            input_params['id'] = input.get('id')
+            handle_id = None
+            _type, handle_id = relay.Node.from_global_id(input_params['id'])
 
             # get previous instance
-            nh = NodeHandle.objects.get(handle_id=input_params['handle_id'])
+            nh = NodeHandle.objects.get(handle_id=handle_id)
             node = nh.get_node()
             for noninput_field in noninput_fields:
                 if noninput_field in node.data:
@@ -1558,11 +1560,12 @@ class UpdateNIMutation(AbstractNIMutation):
         nimetatype      = getattr(graphql_type, 'NIMetaType')
         node_type       = getattr(nimetatype, 'ni_type').lower()
         node_meta_type  = getattr(nimetatype, 'ni_metatype').capitalize()
-        context_method = getattr(nimetatype, 'context_method')
-        handle_id       = request.POST.get('handle_id')
+        context_method  = getattr(nimetatype, 'context_method')
+        id              = request.POST.get('id')
         has_error       = False
 
         # check authorization
+        _type, handle_id = relay.Node.from_global_id(id)
         authorized = sriutils.authorice_write_resource(request.user, handle_id)
 
         if not authorized:
@@ -1608,9 +1611,12 @@ class DeleteNIMutation(AbstractNIMutation):
 
     @classmethod
     def do_request(cls, request, **kwargs):
-        handle_id = request.POST.get('handle_id')
+        id              = request.POST.get('id')
+        handle_id = relay.Node.from_global_id(id)[1]
 
-        if not NodeHandle.objects.filter(handle_id=handle_id).exists():
+        if not handle_id or \
+            not NodeHandle.objects.filter(handle_id=handle_id).exists():
+
             has_error = True
             return has_error, [
                 ErrorType(
