@@ -264,6 +264,69 @@ def odf_detail(request, handle_id):
                    'connections': connections, 'location_path': location_path,
                    'history': True, 'urls': urls})
 
+@login_required
+def outlet_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    outlet = nh.get_node()
+    last_seen, expired = helpers.neo4j_data_age(outlet.data)
+    # Get ports in Patch Panel
+    # connections = patch_panel.get_connections()
+    # TODO: should be fixed in nc.get_connections
+    q = """
+              MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta:Port)
+              OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
+              OPTIONAL MATCH (cable)-[r1:Connected_to]->(portb:Port)
+              WHERE ID(r1) <> ID(r0)
+              OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)
+              WITH porta, r0, cable, portb, r1, last(collect(end)) as end
+              OPTIONAL MATCH (end)-[:Located_in]->(location)
+              OPTIONAL MATCH (location)<-[:Has*1..10]-(site:Site)
+              RETURN porta, r0, cable, r1, portb, end, location, site
+        """
+    connections = nc.query_to_list(nc.graphdb.manager, q, handle_id=outlet.handle_id)
+
+    # Get location
+    location_path = outlet.get_location_path()
+
+    urls = helpers.get_node_urls(outlet, connections, location_path)
+    return render(request, 'noclook/detail/outlet_detail.html',
+                  {'node': outlet, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
+                   'connections': connections, 'location_path': location_path,
+                   'history': True, 'urls': urls})
+
+
+@login_required
+def patch_panel_detail(request, handle_id):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    # Get node from neo4j-database
+    patch_panel = nh.get_node()
+    last_seen, expired = helpers.neo4j_data_age(patch_panel.data)
+    # Get ports in Patch Panel
+    # connections = patch_panel.get_connections()
+    # TODO: should be fixed in nc.get_connections
+    q = """
+              MATCH (n:Node {handle_id: {handle_id}})-[:Has*1..10]->(porta:Port)
+              OPTIONAL MATCH (porta)<-[r0:Connected_to]-(cable)
+              OPTIONAL MATCH (cable)-[r1:Connected_to]->(portb:Port)
+              WHERE ID(r1) <> ID(r0)
+              OPTIONAL MATCH (portb)<-[:Has*1..10]-(end)
+              WITH porta, r0, cable, portb, r1, last(collect(end)) as end
+              OPTIONAL MATCH (end)-[:Located_in]->(location)
+              OPTIONAL MATCH (location)<-[:Has*1..10]-(site:Site)
+              RETURN porta, r0, cable, r1, portb, end, location, site
+        """
+    connections = nc.query_to_list(nc.graphdb.manager, q, handle_id=patch_panel.handle_id)
+
+    # Get location
+    location_path = patch_panel.get_location_path()
+
+    urls = helpers.get_node_urls(patch_panel, connections, location_path)
+    return render(request, 'noclook/detail/patch_panel_detail.html',
+                  {'node': patch_panel, 'node_handle': nh, 'last_seen': last_seen, 'expired': expired,
+                   'connections': connections, 'location_path': location_path,
+                   'history': True, 'urls': urls})
+
 
 @login_required
 def optical_filter_detail(request, handle_id):
