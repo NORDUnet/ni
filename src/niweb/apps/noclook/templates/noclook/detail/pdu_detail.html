@@ -13,6 +13,11 @@
                     <th>Status:</th><td>{{ node.data.operational_state|capfirst }}</td>
                 </tr>
             {% endif %}
+            {% if node.data.type %}
+                <tr>
+                    <th>Type:</th><td>{{ node.data.type }}</td>
+                </tr>
+            {% endif %}
             {% if node.data.nagios_checks %}
                 <tr>
                     <th>Nagios:</th><td>{{ node.data.nagios_checks|yesno:"Yes,No,Not set" }}</td>

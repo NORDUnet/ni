@@ -99,6 +99,7 @@ urlpatterns = [
     url(r'^firewall/$', _list.list_firewalls),
     url(r'^customer/$', _list.list_customers),
     url(r'^port/$', _list.list_ports),
+    url(r'^pdu/$', _list.list_pdu),
     # Generic list
     url(r'^(?P<slug>[-\w]+)/$', _list.list_by_type, name='generic_list'),
 

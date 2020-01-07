@@ -681,3 +681,31 @@ def list_sites(request):
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Sites', 'urls': urls})
+
+
+def _pdu_table(pdu):
+    row = TableRow(pdu, pdu.get('type'), pdu.get('description'))
+    _set_expired(row, pdu)
+    return row
+
+
+@login_required
+def list_pdu(request):
+    q = """
+        MATCH (pdu:PDU)
+        RETURN pdu
+        ORDER BY pdu.name
+        """
+
+    pdu_list = nc.query_to_list(nc.graphdb.manager, q)
+    pdu_list = _filter_expired(pdu_list, request, select=lambda n: n.get('pdu'))
+    pdu_list = _filter_operational_state(pdu_list, request, select=lambda n: n.get('pdu'))
+    urls = get_node_urls(pdu_list)
+
+    table = Table('Name', 'Type', 'Description')
+    table.rows = [_pdu_table(item['pdu']) for item in pdu_list]
+    _set_filters_expired(table, request)
+    _set_filters_operational_state(table, request)
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'PDUs', 'urls': urls})

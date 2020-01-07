@@ -426,6 +426,10 @@ class EditFirewallForm(EditHostForm):
 
 
 class EditPDUForm(EditHostForm):
+    def __init__(self, *args, **kwargs):
+        super(EditPDUForm, self).__init__(*args, **kwargs)
+        self.fields['type'].choices = Dropdown.get('pdu_types').as_choices()
+    type = forms.ChoiceField(required=False)
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
