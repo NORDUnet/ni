@@ -748,10 +748,8 @@ class NIObjectType(DjangoObjectType):
                         reverse = True if qs_order_order == 'DESC' else False
 
                         if reverse:
-                            raise Exception('asdasd')
                             qs = qs.order_by('{}'.format(qs_order_prop))
                         else:
-                            raise Exception('qweqwe')
                             qs = qs.order_by('-{}'.format(qs_order_prop))
 
                     if apply_handle_id_order:
