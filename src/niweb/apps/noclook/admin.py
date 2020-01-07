@@ -4,7 +4,7 @@ from tastypie.models import ApiAccess, ApiKey
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, Choice
+from .models import NodeHandle, NodeType, UniqueIdGenerator, NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, Choice, SwitchType
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -87,6 +87,9 @@ class DropdownAdmin(admin.ModelAdmin):
 class ChoiceAdmin(admin.ModelAdmin):
     list_display = ('name', 'dropdown')
 
+class SwitchTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'ports')
+
 admin.site.register(NodeHandle, NodeHandleAdmin)
 admin.site.register(NodeType, NodeTypeAdmin)
 admin.site.register(ApiAccess)
@@ -99,3 +102,4 @@ admin.site.register(ServiceType, ServiceTypeAdmin)
 admin.site.register(ServiceClass)
 admin.site.register(Dropdown, DropdownAdmin)
 admin.site.register(Choice, ChoiceAdmin)
+admin.site.register(SwitchType, SwitchTypeAdmin)
