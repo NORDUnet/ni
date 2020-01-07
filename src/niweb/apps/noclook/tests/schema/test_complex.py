@@ -1154,8 +1154,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         c2_phone = "+34600789456"
         c2_phone_type = "personal"
 
-        role_id = relay.Node.to_global_id('Role', str(Role.objects.all().first().handle_id))
-        organization_id = relay.Node.to_global_id('Organization', str(self.organization1.handle_id))
+        role_id = relay.Node.to_global_id(
+            'Role', str(Role.objects.all().first().handle_id))
+        organization_id = relay.Node.to_global_id(
+            'Organization', str(self.organization1.handle_id))
 
         query = '''
         mutation{{
@@ -1187,8 +1189,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             ]
             link_rolerelations:[
               {{
-                role_id: {role_id}
-                organization_id: {organization_id}
+                role_id: "{role_id}"
+                organization_id: "{organization_id}"
               }}
             ]
           }}){{
@@ -1345,7 +1347,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_id == rolerelation['start']['id'], \
             "Contact's id doesn't match with the one present in the relation \n\
                 {} != {}".format(c1_id , rolerelation['start']['id'],)
-        assert int(organization_id) == int(rolerelation['end']['id']), \
+        assert organization_id == rolerelation['end']['id'], \
             "Organization's id doesn't match with the one present in the relation\n\
                 {} != {}".format(organization_id , rolerelation['end']['id'],)
 
@@ -1367,7 +1369,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         mutation{{
           composite_contact(input:{{
             update_input:{{
-              id: {c1_id}
+              id: "{c1_id}"
               first_name: "{c1_first_name}"
               last_name: "{c1_last_name}"
               contact_type: "{c1_contact_type}"
@@ -1377,28 +1379,28 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               type: "{c3_email_type}"
             }}]
             update_subinputs:[{{
-              id: {c1_email_id}
+              id: "{c1_email_id}"
               name: "{c1_email}"
               type: "{c1_email_type}"
             }}]
             delete_subinputs:[{{
-              id: {c1_email_id2}
+              id: "{c1_email_id2}"
             }}]
             create_phones:[{{
               name: "{c3_phone}"
               type: "{c3_phone_type}"
             }}]
             update_phones:[{{
-              id: {c1_phone_id}
+              id: "{c1_phone_id}"
               name: "{c1_phone}"
               type: "{c1_phone_type}"
             }}]
             link_rolerelations:[{{
-              role_id: {role_id}
-              organization_id: {organization_id}
+              role_id: "{role_id}"
+              organization_id: "{organization_id}"
             }}]
             delete_phones:[{{
-              id: {c1_phone_id2}
+              id: "{c1_phone_id2}"
             }}]
             unlink_subinputs:[{{
               relation_id: {role_relation_id}
@@ -1633,7 +1635,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_id == rolerelation['start']['id'], \
             "Contact's id doesn't match with the one present in the relation \n\
                 {} != {}".format(c1_id , rolerelation['start']['id'],)
-        assert int(organization_id) == int(rolerelation['end']['id']), \
+        assert organization_id == rolerelation['end']['id'], \
             "Organization's id doesn't match with the one present in the relation\n\
                 {} != {}".format(organization_id , rolerelation['end']['id'],)
 
@@ -1694,8 +1696,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             ]
             link_rolerelations:[
               {{
-                role_id: {role_id}
-                organization_id: {organization_id}
+                role_id: "{role_id}"
+                organization_id: "{organization_id}"
               }}
             ]
           }}){{
@@ -1863,7 +1865,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         mutation{{
           composite_contact(input:{{
             update_input:{{
-              id: {c1_id}
+              id: "{c1_id}"
               first_name: "{c1_first_name}"
               last_name: "{c1_last_name}"
               contact_type: "{c1_contact_type}"
@@ -1873,29 +1875,29 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               type: "{c3_email_type}"
             }}]
             update_subinputs:[{{
-              id: {c1_email_id}
+              id: "{c1_email_id}"
               name: "{c1_email}"
               type: "{c1_email_type}"
             }}]
             delete_subinputs:[{{
-              id: {c1_email_id2}
+              id: "{c1_email_id2}"
             }}]
             create_phones:[{{
               name: "{c3_phone}"
               type: "{c3_phone_type}"
             }}]
             update_phones:[{{
-              id: {c1_phone_id}
+              id: "{c1_phone_id}"
               name: "{c1_phone}"
               type: "{c1_phone_type}"
             }}]
             link_rolerelations:[{{
-              role_id: {role_id}
-              organization_id: {organization_id}
+              role_id: "{role_id}"
+              organization_id: "{organization_id}"
               relation_id: {role_relation_id}
             }}]
             delete_phones:[{{
-              id: {c1_phone_id2}
+              id: "{c1_phone_id2}"
             }}]
           }}){{
             updated{{
@@ -2128,7 +2130,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_id == rolerelation['start']['id'], \
             "Contact's id doesn't match with the one present in the relation \n\
                 {} != {}".format(c1_id , rolerelation['start']['id'],)
-        assert int(organization_id) == int(rolerelation['end']['id']), \
+        assert organization_id == rolerelation['end']['id'], \
             "Organization's id doesn't match with the one present in the relation\n\
                 {} != {}".format(organization_id , rolerelation['end']['id'],)
 

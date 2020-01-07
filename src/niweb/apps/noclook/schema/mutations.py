@@ -760,8 +760,8 @@ class CompositeOrganizationMutation(CompositeMutation):
 
 class RoleRelationMutation(relay.ClientIDMutation):
     class Input:
-        role_handle_id = graphene.Int(required=True)
-        organization_handle_id = graphene.Int(required=True)
+        role_id = graphene.ID(required=True)
+        organization_id = graphene.ID(required=True)
         relation_id = graphene.Int()
 
     errors = graphene.List(ErrorType)
@@ -779,9 +779,12 @@ class RoleRelationMutation(relay.ClientIDMutation):
 
         # get input
         contact_handle_id = input.get('contact_handle_id', None)
-        organization_handle_id = input.get('organization_handle_id', None)
-        role_handle_id = input.get('role_handle_id', None)
+        organization_id = input.get('organization_id', None)
+        role_id = input.get('role_id', None)
         relation_id = input.get('relation_id', None)
+
+        role_handle_id = relay.Node.from_global_id(role_id)[1]
+        organization_handle_id = relay.Node.from_global_id(organization_id)[1]
 
         # get entities and check permissions
         contact_nh = None
