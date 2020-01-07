@@ -459,14 +459,14 @@ def remove_router_conf(user, data_age):
             last_seen, expired = helpers.neo4j_data_age(logical.data, data_age)
             if expired:
                 helpers.delete_node(user, logical.handle_id)
-                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
+                logger.warning('Deleted node {handle_id}.'.format(handle_id=handle_id))
     for handle_id in router_result.get('physical', []):
         physical = nc.get_node_model(nc.graphdb.manager, handle_id)
         if physical:
             last_seen, expired = helpers.neo4j_data_age(physical.data, data_age)
             if expired:
                 helpers.delete_node(user, physical.handle_id)
-                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
+                logger.warning('Deleted node {handle_id}.'.format(handle_id=handle_id))
 
 
 def remove_peer_conf(user, data_age):
