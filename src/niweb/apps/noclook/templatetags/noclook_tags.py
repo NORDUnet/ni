@@ -48,20 +48,7 @@ def noclook_node_to_link(context, node):
     return result
 
 
-@register.assignment_tag
-def noclook_node_to_node_handle(node):
-    """
-    :param node: Neo4j node
-    :return node_handle: Django NodeHandle or None
-    """
-    try:
-        node_handle = NodeHandle.objects.get(handle_id = node.getProperty('handle_id', ''))
-    except NodeHandle.DoesNotExist:
-        return None
-    return node_handle
-
-
-@register.assignment_tag
+@register.simple_tag
 def noclook_last_seen_to_dt(noclook_last_seen):
     """
     Returns noclook_last_seen property (ex. 2011-11-01T14:37:13.713434) as a
@@ -87,7 +74,7 @@ def noclook_last_seen_as_td(date):
     return {'last_seen': last_seen}
 
 
-@register.assignment_tag
+@register.simple_tag
 def timestamp_to_td(seconds):
     """
     Converts a UNIX timestamp to a timedelta object.
@@ -99,7 +86,7 @@ def timestamp_to_td(seconds):
     return td
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_has_expired(item):
     """
     Returns True if the item has a noclook_last_seen property and it has expired.
@@ -108,7 +95,7 @@ def noclook_has_expired(item):
     return expired
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_get_model(handle_id):
     """
     :param handle_id: unique id
@@ -120,7 +107,7 @@ def noclook_get_model(handle_id):
         return ''
 
 
-@register.assignment_tag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def noclook_get_type(context, handle_id):
     urls = context.get('urls')
     if urls and handle_id in urls:
@@ -133,7 +120,7 @@ def noclook_get_type(context, handle_id):
             return ''
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_get_ports(handle_id):
     """
     Return port nodes that are either dependencies or connected to item. Also returns the
@@ -144,12 +131,12 @@ def noclook_get_ports(handle_id):
     return nc.get_node_model(nc.graphdb.manager, handle_id).get_ports()
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_get_location(handle_id):
     return nc.get_node_model(nc.graphdb.manager, handle_id).get_location()
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_report_age(item, old, very_old):
     """
     :param item: Neo4j node
@@ -161,7 +148,7 @@ def noclook_report_age(item, old, very_old):
         return ''
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_has_rogue_ports(handle_id):
     """
     :param handle_id: unique id
