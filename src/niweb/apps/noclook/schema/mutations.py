@@ -209,7 +209,17 @@ class CreateOrganization(CreateNIMutation):
 
         # Get needed data from node
         if request.POST:
-            form = form_class(request.POST.copy())
+            # replace relay ids for handle_id in contacts if present
+            post_data = request.POST.copy()
+
+            for field, roledict in DEFAULT_ROLES.items():
+                if field in post_data:
+                    contact_id = post_data.get(field)
+                    contact_id = relay.Node.from_global_id(contact_id)[1]
+                    post_data.pop(field)
+                    post_data.update({field: contact_id})
+
+            form = form_class(post_data)
             form.strict_validation = True
 
             if form.is_valid():
@@ -238,6 +248,7 @@ class CreateOrganization(CreateNIMutation):
                 for field, roledict in DEFAULT_ROLES.items():
                     if field in form.cleaned_data:
                         contact_id = form.cleaned_data[field]
+
                         role = RoleModel.objects.get(slug=field)
                         set_contact = helpers.get_contact_for_orgrole(organization.handle_id, role)
 
@@ -307,8 +318,22 @@ class UpdateOrganization(UpdateNIMutation):
         nh, organization = helpers.get_nh_node(handle_id)
         relations = organization.get_relations()
         out_relations = organization.get_outgoing_relations()
+
         if request.POST:
-            form = form_class(request.POST)
+            # set handle_id into POST data and remove relay id
+            post_data = request.POST.copy()
+            post_data.pop('id')
+            post_data.update({'handle_id': handle_id})
+
+            # replace relay ids for handle_id in contacts if present
+            for field, roledict in DEFAULT_ROLES.items():
+                if field in post_data:
+                    contact_id = post_data.get(field)
+                    contact_id = relay.Node.from_global_id(contact_id)[1]
+                    post_data.pop(field)
+                    post_data.update({field: contact_id})
+
+            form = form_class(post_data)
             form.strict_validation = True
 
             if form.is_valid():
