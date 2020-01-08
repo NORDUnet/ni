@@ -93,7 +93,11 @@ class CommonNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.get(node_name='test site')
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         data['country'] = 'Sweden'
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data.keys():
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
 
     def test_NewSiteOwnerForm_full(self):
         node_type = 'Site Owner'
@@ -106,7 +110,11 @@ class CommonNewForms(FormTestCase):
         self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
 
     def test_NewCustomerForm_full(self):
         node_type = 'Customer'
@@ -119,7 +127,11 @@ class CommonNewForms(FormTestCase):
         self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
 
     def test_NewEndUserForm_full(self):
         node_type = 'End User'
@@ -132,7 +144,11 @@ class CommonNewForms(FormTestCase):
         self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
 
     def test_NewProviderForm_full(self):
         node_type = 'Provider'
@@ -145,7 +161,11 @@ class CommonNewForms(FormTestCase):
         self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 2)
         nh = NodeType.objects.get(type=node_type).nodehandle_set.get(node_name='test provider')
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
 
     def test_NewCableForm_full(self):
         node_type = 'Cable'
@@ -160,7 +180,12 @@ class CommonNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_provider']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
 
     def test_NewRackForm_full(self):
@@ -175,7 +200,12 @@ class CommonNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_location']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
 
     def test_NewOdfForm_full(self):
@@ -189,7 +219,11 @@ class CommonNewForms(FormTestCase):
         self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
 
     def test_NewExternalEquipmentForm_full(self):
         node_type = 'External Equipment'
@@ -202,7 +236,11 @@ class CommonNewForms(FormTestCase):
         self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
 
     def test_NewPortForm_full(self):
         node_type = 'Port'
@@ -217,7 +255,12 @@ class CommonNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_parent']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
 
     def test_NewServiceForm_full_external(self):
@@ -237,7 +280,12 @@ class CommonNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_provider']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
 
     def test_NewOpticalMultiplexSectionForm_full(self):
@@ -254,7 +302,12 @@ class CommonNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_provider']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
 
 
@@ -307,7 +360,11 @@ class NordunetNewForms(FormTestCase):
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         data['name'] = 'SE-TEST SITE'
         data['country'] = 'Sweden'
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
 
     def test_NewCableForm_full(self):
         node_type = 'Cable'
@@ -322,7 +379,12 @@ class NordunetNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_provider']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
 
     def test_NewCableForm_generated(self):
@@ -337,7 +399,12 @@ class NordunetNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_provider']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
         self.assertEqual(nh.get_node().data['name'], 'CABLE-000001')
 
@@ -357,7 +424,12 @@ class NordunetNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_provider']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
         self.assertEqual(nh.get_node().data['name'], 'SERVICE-000001')
 
@@ -376,7 +448,12 @@ class NordunetNewForms(FormTestCase):
         self.assertEqual(NodeType.objects.get(type=node_type).nodehandle_set.count(), 1)
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(nh.get_node().data['name'], 'External Test Service')
 
     def test_NewOpticalLinkForm_full(self):
@@ -395,7 +472,11 @@ class NordunetNewForms(FormTestCase):
         nh = NodeType.objects.get(type=node_type).nodehandle_set.first()
         self.assertEqual(resp['Location'], self.get_full_url(nh.get_absolute_url()))
         del data['relationship_provider']
-        self.assertDictContainsSubset(data, nh.get_node().data)
+
+        node_data = nh.get_node().data
+        for k in data:
+            self.assertIn(k, node_data)
+            self.assertEqual(data[k], node_data[k])
+
         self.assertEqual(len(nh.get_node().relationships), 1)
         self.assertEqual(nh.get_node().data['name'], 'SERVICE-000001')
-

@@ -113,3 +113,9 @@ class ExportSiteTest(NeoTestCase):
         self.assertEqual(1, len(result))
         on_result = result[0]
         self.assertEqual({u'name': u'NI-TEST-ROADM', u'node_type': u'Optical Node', u'type': u'ciena6500', u'rack_units': u'2', u'children': [], u'operational_state': u'In service'}, on_result)
+
+    # Replace the now deprecated unittest assert
+    def assertDictContainsSubset(self, what, superset):
+        for k in what:
+            self.assertIn(k, superset)
+            self.assertEqual(what[k], superset[k])
