@@ -841,19 +841,22 @@ class NIObjectType(DjangoObjectType):
                         # transform relay id into handle_id
                         old_filter_key = filter_key
 
-                        if filter_key.index('id') == 0:
-                            # change value
-                            try: # list value
-                                nfilter_value = []
-                                for fval in filter_value:
-                                    handle_id_fval = relay.Node.from_global_id(fval)[1]
-                                    handle_id_fval = int(handle_id_fval)
-                                    nfilter_value.append(handle_id_fval)
+                        try:
+                            if filter_key.index('id') == 0:
+                                # change value
+                                try: # list value
+                                    nfilter_value = []
+                                    for fval in filter_value:
+                                        handle_id_fval = relay.Node.from_global_id(fval)[1]
+                                        handle_id_fval = int(handle_id_fval)
+                                        nfilter_value.append(handle_id_fval)
 
-                                filter_value = nfilter_value
-                            except: # single value
-                                filter_value = relay.Node.from_global_id(filter_value)[1]
-                                filter_value = int(filter_value)
+                                    filter_value = nfilter_value
+                                except: # single value
+                                    filter_value = relay.Node.from_global_id(filter_value)[1]
+                                    filter_value = int(filter_value)
+                        except ValueError:
+                            pass
 
 
                         if isinstance(filter_value, int) or isinstance(filter_value, str):
@@ -923,8 +926,11 @@ class NIObjectType(DjangoObjectType):
                         # the predicate building function
                         for fa_suffix, fa_value in filter_array.items():
                             # change id field into handle_id for neo4j db
-                            if field.index('id') == 0:
-                                field = field.replace('id', 'handle_id')
+                            try:
+                                if field.index('id') == 0:
+                                    field = field.replace('id', 'handle_id')
+                            except ValueError:
+                                pass
 
                             if fa_suffix != '':
                                 fa_suffix = '_{}'.format(fa_suffix)
