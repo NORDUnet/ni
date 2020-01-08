@@ -19,7 +19,7 @@ from tastypie.authentication import ApiKeyAuthentication
 from tastypie.authorization import Authorization
 from django.contrib.auth.models import User
 from django.conf.urls import url
-from django.core.urlresolvers import reverse, resolve, NoReverseMatch
+from django.urls import reverse, resolve, NoReverseMatch
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.http import HttpResponseNotAllowed, HttpResponse
 from django.template.defaultfilters import slugify
@@ -66,7 +66,7 @@ def handle_id2resource_uri(handle_id):
         kwargs['node_name'] = nh.node_name
         return reverse(view, args=None, kwargs=kwargs)
 
-    
+
 def resource_uri2id(resource_uri):
     """
     Takes a resource uri and returns the id.
@@ -119,7 +119,7 @@ def raise_app_error(message):
 
 
 class FullUserResource(ModelResource):
-    
+
     class Meta:
         queryset = User.objects.all()
         resource_name = 'full_user'
@@ -129,7 +129,7 @@ class FullUserResource(ModelResource):
         filtering = {
             "username": ALL
         }
-    
+
     created = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource', 'creator', related_name='creator')
     modified = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource', 'modifier', related_name='modifier')
 
@@ -144,15 +144,15 @@ class UserResource(ModelResource):
 
 
 class NodeTypeResource(ModelResource):
-    
+
     node_handles = fields.ToManyField('apps.noclook.api.resources.NodeHandleResource',
                                       'nodehandle_set', related_name='node_type')
-    
+
     class Meta:
         queryset = NodeType.objects.all()
         resource_name = 'node_type'
         authentication = ApiKeyAuthentication()
-        authorization = Authorization() 
+        authorization = Authorization()
         filtering = {
             'slug': ALL,
         }
@@ -162,15 +162,15 @@ class NodeTypeResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<slug>[-\w]+)/$" % self._meta.resource_name,
                 self.wrap_view('dispatch_detail'), name="api_dispatch_detail"),
         ]
-    
+
     def dehydrate(self, bundle):
         bundle.data['resource_uri'] = bundle.data['resource_uri'].replace('/%d/' % bundle.obj.pk,
                                                                           '/%s/' % bundle.obj.slug)
-        return bundle  
+        return bundle
 
 
 class NodeHandleResource(ModelResource):
-    
+
     handle_id = fields.IntegerField(attribute='handle_id', readonly=True, unique=True)
     node_name = fields.CharField(attribute='node_name')
     node_type = fields.ForeignKey(NodeTypeResource, 'node_type')
@@ -180,7 +180,7 @@ class NodeHandleResource(ModelResource):
     modifier = fields.ForeignKey(UserResource, 'modifier')
     modified = fields.DateTimeField(attribute='modified', readonly=True)
     node = fields.DictField(default={}, blank=True)
-        
+
     class Meta:
         api_name = 'v1'
         queryset = NodeHandle.objects.all()
@@ -211,7 +211,7 @@ class NodeHandleResource(ModelResource):
                 self._meta.resource_name, utils.trailing_slash()),
                 self.wrap_view('get_relationships'), name="api_get_relationships"),
         ]
-    
+
     def get_relationships(self, request, **kwargs):
         rel_type = kwargs.get('rel_type', None)
         if rel_type:
@@ -238,7 +238,7 @@ class NodeHandleResource(ModelResource):
 
     def dehydrate_node(self, bundle):
         return bundle.obj.get_node().data
-        
+
     def hydrate_node(self, bundle):
         try:
             node = bundle.obj.get_node()
@@ -301,10 +301,10 @@ class NodeHandleResource(ModelResource):
 
 
 class RelationshipObject(object):
-    
+
     def __init__(self, initial=None):
         self.__dict__['_data'] = {'properties': {}}
-        
+
         if hasattr(initial, 'items'):
             self.__dict__['_data'] = initial
 
@@ -319,13 +319,13 @@ class RelationshipObject(object):
 
 
 class RelationshipResource(Resource):
-    
+
     id = fields.IntegerField(attribute='id', readonly=True, unique=True)
     type = fields.CharField(attribute='type')
     start = fields.CharField(attribute='start')
     end = fields.CharField(attribute='end')
     properties = fields.DictField(attribute='properties', default={}, blank=True)
-    
+
     class Meta:
         resource_name = 'relationship'
         object_class = RelationshipObject
@@ -358,7 +358,7 @@ class RelationshipResource(Resource):
             return self._build_reverse_url('api_dispatch_detail', kwargs=kwargs)
         except NoReverseMatch:
             return ''
-    
+
     def get_object_list(self, request, **kwargs):
         results = []
         if kwargs.get('parent_obj', None):
@@ -376,10 +376,10 @@ class RelationshipResource(Resource):
             return results
         else:
             raise ImmediateHttpResponse(HttpResponseNotAllowed(['POST']))
-    
+
     def obj_get_list(self, request=None, **kwargs):
         return self.get_object_list(request, **kwargs)
-        
+
     def obj_get(self, request=None, **kwargs):
         pk = int(kwargs['pk'])
         try:
@@ -427,7 +427,7 @@ class CableResource(NodeHandleResource):
     node_name = fields.CharField(attribute='node_name')
     cable_type = fields.CharField(attribute='cable_type', blank=True, null=True)
     end_points = fields.ListField(help_text='[{"device": "", "device_type": "", "port": ""},]', blank=True, null=True)
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='cable')
         resource_name = 'cable'
@@ -602,7 +602,7 @@ class FirewallResource(NodeHandleResource):
 
 
 class HostResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host')
         resource_name = 'host'
@@ -612,10 +612,10 @@ class HostResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
+
 
 class HostProviderResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-provider')
         resource_name = 'host-provider'
@@ -625,10 +625,10 @@ class HostProviderResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
+
 
 class HostServiceResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-service')
         resource_name = 'host-service'
@@ -638,10 +638,10 @@ class HostServiceResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
-        
+
+
 class HostUserResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='host-user')
         resource_name = 'host-user'
@@ -651,10 +651,10 @@ class HostUserResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
-        
+
+
 class ODFResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='odf')
         resource_name = 'odf'
@@ -692,7 +692,7 @@ class OpticalMultiplexSectionResource(NodeHandleResource):
 
 
 class OpticalNodeResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='optical-node')
         resource_name = 'optical-node'
@@ -767,10 +767,10 @@ class ProviderResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
-      
+
+
 class PortResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='port')
         resource_name = 'port'
@@ -780,10 +780,10 @@ class PortResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
+
 
 class RackResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='rack')
         resource_name = 'rack'
@@ -793,10 +793,10 @@ class RackResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
-        
+
+
 class RouterResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='router')
         resource_name = 'router'
@@ -817,8 +817,9 @@ class ServiceResource(NodeHandleResource):
     modifier = fields.ForeignKey(UserResource, 'modifier', blank=True)
     # Service specific fields
     description = fields.CharField(blank=True, null=True)
-    operational_state = fields.CharField(blank=True, null=True,
-                                help_text='Choices: In service, Reserved, Decommissioned, Testing')
+    operational_state = fields.CharField(
+        blank=True, null=True,
+        help_text='Choices: In service, Reserved, Decommissioned, Testing')
 
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='service')
@@ -1019,7 +1020,7 @@ class ServiceL2VPNResource(ServiceResource):
 
 
 class SiteResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='site')
         resource_name = 'site'
@@ -1029,10 +1030,10 @@ class SiteResource(NodeHandleResource):
         filtering = {
             "node_name": ALL,
         }
-        
-        
+
+
 class SiteOwnerResource(NodeHandleResource):
-    
+
     class Meta:
         queryset = NodeHandle.objects.filter(node_type__slug__exact='site-owner')
         resource_name = 'site-owner'
@@ -1107,7 +1108,6 @@ class HostScanResource(Resource):
     def last_seen(self, days=7):
         return (datetime.now() - timedelta(days)).isoformat()
 
-
     def get_object_list(self, request):
         q = """
             MATCH (h:Host)<-[r:Depends_on]-(s:Host_Service)
@@ -1117,7 +1117,7 @@ class HostScanResource(Resource):
             RETURN h.handle_id as handle_id, h.ip_addresses as ip_addresses, collect(distinct r.protocol + r.port) as ports
             """
         host_list = nc.query_to_list(nc.graphdb.manager, q, last_seen=self.last_seen())
-        return [ HostScan(h) for h in host_list ]
+        return [HostScan(h) for h in host_list]
 
     def obj_get_list(self, bundle, **kwargs):
         return self.get_object_list(bundle.request)
