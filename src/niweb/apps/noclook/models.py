@@ -69,9 +69,9 @@ class NodeHandle(models.Model):
     node_type = models.ForeignKey(NodeType, on_delete=models.CASCADE)
     node_meta_type = models.CharField(max_length=255, choices=NODE_META_TYPE_CHOICES)
     # Meta information
-    creator = models.ForeignKey(User, related_name='creator', on_delete=models.SET_NULL)
+    creator = models.ForeignKey(User, related_name='creator', null=True, on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
-    modifier = models.ForeignKey(User, related_name='modifier', on_delete=models.SET_NULL)
+    modifier = models.ForeignKey(User, related_name='modifier', null=True, on_delete=models.SET_NULL)
     modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -133,7 +133,7 @@ class UniqueIdGenerator(models.Model):
     last_id = models.CharField(max_length=256, editable=False)
     next_id = models.CharField(max_length=256, editable=False)
     # Meta
-    creator = models.ForeignKey(User, related_name='unique_id_creator', on_delete=models.SET_NULL)
+    creator = models.ForeignKey(User, related_name='unique_id_creator', null=True, on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
     modifier = models.ForeignKey(User, null=True, blank=True, related_name='unique_id_modifier', on_delete=models.SET_NULL)
     modified = models.DateTimeField(auto_now=True)
