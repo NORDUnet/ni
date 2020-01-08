@@ -21,8 +21,8 @@ class CreateOpticalNodeTest(NeoTestCase):
         node_data = node.data
         self.assertRedirects(resp, self.get_absolute_url(nh))
         self.assertEqual("test optical node", node_data['name'])
-        self.assertEquals('ciena6500', node_data['type'])
-        self.assertEquals('In service', node_data['operational_state'])
+        self.assertEqual('ciena6500', node_data['type'])
+        self.assertEqual('In service', node_data['operational_state'])
 
     def test_with_ports(self):
         self.data['prefix'] = 'Port-'
@@ -60,7 +60,7 @@ class CreateOpticalNodeTest(NeoTestCase):
     def test_bad_optical_node_type(self):
         self.data['type'] = "NotAType"
         resp = self.create(self.data)
-        self.assertEquals(1, len(resp.context['form'].errors))
+        self.assertEqual(1, len(resp.context['form'].errors))
 
     def check_port(self, port, name, port_type):
         pdata = port.get('node').data

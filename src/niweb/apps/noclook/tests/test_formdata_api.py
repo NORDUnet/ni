@@ -35,13 +35,13 @@ class FormadataApiTest(NeoTestCase):
         site_names = [name for _id, name in resp.json()]
 
         real_site_names = sorted([name for _id, name in self.sites])
-        self.assertEquals(real_site_names[0], site_names[0])
+        self.assertEqual(real_site_names[0], site_names[0])
 
     def test_formdata_slug_racks(self):
         resp = self.client.get(self.base_url.format(slug='rack'))
         racks = resp.json()
 
-        self.assertEquals(self.racks, racks)
+        self.assertEqual(self.racks, racks)
 
     def create_site(self, name):
         return helpers.create_unique_node_handle(self.user, name, "site", "Location")

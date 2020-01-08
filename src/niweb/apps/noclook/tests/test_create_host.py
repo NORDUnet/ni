@@ -28,4 +28,4 @@ class CreateHostView(NeoTestCase):
 
         self.data['name'] = 'Awesome.NORDU.NET'
         resp = self.create(self.data)
-        self.assertEquals(1, len(resp.context['form'].errors))
+        self.assertEqual(1, len(resp.context['form'].errors))

@@ -32,32 +32,31 @@ class SearchTypeaheadPortsCase(NeoTestCase):
     def test_one_result(self):
         resp = self.client.get(self.typeahead_url, {"query": "hex odf 3+4"})
         result = resp.json()
-        self.assertEquals(1, len(result))
+        self.assertEqual(1, len(result))
         odf = result[0]
-        self.assertEquals("UK-HEX A.01 test-odf1 3+4", odf.get("name"))
+        self.assertEqual("UK-HEX A.01 test-odf1 3+4", odf.get("name"))
 
     def test_no_result(self):
         resp = self.client.get(self.typeahead_url, {"query": "ore2 odf"})
         result = resp.json()
-        self.assertEquals(0, len(result))
+        self.assertEqual(0, len(result))
 
     def test_multiple_results(self):
         resp = self.client.get(self.typeahead_url, {"query": "ge-"})
         result = resp.json()
-        self.assertEquals(3, len(result))
+        self.assertEqual(3, len(result))
 
     def test_empty_query(self):
         resp = self.client.get(self.typeahead_url, {"query": ""})
         result = resp.json()
-        self.assertEquals(0, len(result))
+        self.assertEqual(0, len(result))
 
     def test_no_query(self):
         resp = self.client.get(self.typeahead_url, {})
         result = resp.json()
-        self.assertEquals(0, len(result))
+        self.assertEqual(0, len(result))
 
     def test_escapes_regex(self):
         resp = self.client.get(self.typeahead_url, {"query": ".*"})
         result = resp.json()
-        self.assertEquals(0, len(result))
-
+        self.assertEqual(0, len(result))
