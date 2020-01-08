@@ -267,6 +267,7 @@ class ConnectPortForm(forms.Form):
 
     class Meta:
         id_generator_name = 'Cable'
+        id_generator_name = 'nordunet_cable_id'
         id_collection = NordunetUniqueId
 
     def clean(self):
