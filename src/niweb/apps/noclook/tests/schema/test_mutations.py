@@ -2,12 +2,13 @@
 __author__ = 'ffuentes'
 
 from collections import OrderedDict
+from graphene import relay
 from niweb.schema import schema
 from pprint import pformat
 from . import Neo4jGraphQLTest
 
-class QueryTest(Neo4jGraphQLTest):
-    def test_mutations(self):
+class JWTTest(Neo4jGraphQLTest):
+    def test_jwt_mutations(self):
         ### jwt mutations
         ## get token
         test_username="test user"
@@ -50,7 +51,8 @@ class QueryTest(Neo4jGraphQLTest):
             "The username from the jwt token doesn't match"
         assert result.data['refresh_token']['token'], result.data['refresh_token']['token']
 
-
+class SingleTest(Neo4jGraphQLTest):
+    def test_single_mutations(self):
         ### Simple entity ###
         ## create ##
         new_group_name = "New test group"
@@ -405,6 +407,8 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
+class MultipleEntityTest(Neo4jGraphQLTest):
+    def test_multiple_entity_mutations(self):
         ### Composite entities (Organization) ###
         # get the first organization
         query= """
@@ -1038,20 +1042,23 @@ class QueryTest(Neo4jGraphQLTest):
                                                 pformat(result.data, indent=1),
                                                 pformat(expected, indent=1)
                                             )
-
+class CommentsTest(Neo4jGraphQLTest):
+    def test_comments_mutations(self):
         ### Comments tests ###
+        organization_id = relay.Node.to_global_id('Organization',
+                                            str(self.organization1.handle_id))
 
         ## create ##
         query = """
         mutation{{
           create_comment(
             input:{{
-              object_pk: {organization_id},
+              object_id: "{organization_id}",
               comment: "This comment was added using the graphql api"
             }}
           ){{
             comment{{
-              object_pk
+              object_id
               comment
               is_public
             }}
@@ -1061,7 +1068,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected =  OrderedDict([('create_comment',
               OrderedDict([('comment',
-                            OrderedDict([('object_pk', str(organization_id)),
+                            OrderedDict([('object_id', organization_id),
                                          ('comment',
                                           'This comment was added using the '
                                           'graphql api'),
@@ -1074,7 +1081,7 @@ class QueryTest(Neo4jGraphQLTest):
         ## read ##
         query = """
         {{
-          getOrganizationById(handle_id: {organization_id}){{
+          getOrganizationById(id: "{organization_id}"){{
             comments{{
               id
               comment
@@ -1092,7 +1099,7 @@ class QueryTest(Neo4jGraphQLTest):
         mutation{{
           update_comment(
             input:{{
-              id: {comment_id},
+              id: "{comment_id}",
               comment: "This comment was added using SRI's graphql api"
             }}
           ){{
@@ -1122,7 +1129,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
         mutation{{
           delete_comment(input:{{
-            id: {comment_id}
+            id: "{comment_id}"
           }}){{
             success
             id
@@ -1132,7 +1139,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected = OrderedDict([
             ('delete_comment',
-                OrderedDict([('success', True), ('id', int(comment_id))])
+                OrderedDict([('success', True), ('id', comment_id)])
             )
         ])
 
@@ -1140,16 +1147,20 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
+class ValidationTest(Neo4jGraphQLTest):
     def test_node_validation(self):
         # add an abuse contact first
-        organization_id = self.organization1.handle_id
-        organization2_id = self.organization2.handle_id
-        contact_1 = self.contact1.handle_id
+        organization_id = relay.Node.to_global_id('Organization',
+                                            str(self.organization1.handle_id))
+        organization2_id = relay.Node.to_global_id('Organization',
+                                            str(self.organization2.handle_id))
+        contact_1 = relay.Node.to_global_id('Contact',
+                                            str(self.organization2.handle_id))
 
         query = '''
         mutation{{
           update_organization(input: {{
-            handle_id: {organization_id}
+            id: "{organization_id}"
             name: "Organization 1"
           }}){{
             errors{{
@@ -1157,7 +1168,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }}
             organization{{
-              handle_id
+              id
               name
               incoming{{
                 name
@@ -1167,7 +1178,7 @@ class QueryTest(Neo4jGraphQLTest):
                     value
                   }}
                   start{{
-                    handle_id
+                    id
                     node_name
                   }}
                 }}
@@ -1186,16 +1197,16 @@ class QueryTest(Neo4jGraphQLTest):
         query = '''
         mutation{{
           update_organization(input: {{
-            handle_id: {organization_id}
+            id: "{organization_id}"
             name: "Organization 1"
-            relationship_parent_of: {organization_2}
+            relationship_parent_of: "{organization_2}"
           }}){{
             errors{{
               field
               messages
             }}
             organization{{
-              handle_id
+              id
               name
               incoming{{
                 name
@@ -1205,7 +1216,7 @@ class QueryTest(Neo4jGraphQLTest):
                     value
                   }}
                   start{{
-                    handle_id
+                    id
                     node_name
                   }}
                 }}

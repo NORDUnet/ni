@@ -472,14 +472,15 @@ class DeleteRole(relay.ClientIDMutation):
 
 class CreateComment(relay.ClientIDMutation):
     class Input:
-        object_pk = graphene.Int(required=True)
+        object_id = graphene.ID(required=True)
         comment = graphene.String(required=True)
 
     comment = Field(CommentType)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        object_pk = input.get("object_pk", None)
+        object_id = input.get("object_id")
+        object_pk = relay.Node.from_global_id(object_id)[1]
 
         # check it can write for this node
         authorized = sriutils.authorice_write_resource(info.context.user, object_pk)
@@ -507,14 +508,15 @@ class CreateComment(relay.ClientIDMutation):
 
 class UpdateComment(relay.ClientIDMutation):
     class Input:
-        id = graphene.Int(required=True)
+        id = graphene.ID(required=True)
         comment = graphene.String(required=True)
 
     comment = Field(CommentType)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        id = input.get("id",)
+        id = input.get("id")
+        id = relay.Node.from_global_id(id)[1]
         comment_txt = input.get("comment")
 
         comment = Comment.objects.get(id=id)
@@ -533,14 +535,15 @@ class UpdateComment(relay.ClientIDMutation):
 
 class DeleteComment(relay.ClientIDMutation):
     class Input:
-        id = graphene.Int(required=True)
+        id = graphene.ID(required=True)
 
     success = graphene.Boolean(required=True)
-    id = graphene.Int(required=True)
+    id = graphene.ID(required=True)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        id = input.get("id", None)
+        relay_id = input.get("id")
+        id = relay.Node.from_global_id(relay_id)[1]
         success = False
 
         try:
@@ -558,7 +561,7 @@ class DeleteComment(relay.ClientIDMutation):
         except ObjectDoesNotExist:
             success = False
 
-        return DeleteComment(success=success, id=id)
+        return DeleteComment(success=success, id=relay_id)
 
 
 class CreateOptionForDropdown(relay.ClientIDMutation):

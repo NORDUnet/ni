@@ -171,8 +171,19 @@ class CommentType(DjangoObjectType):
     This type represents a comment in the API, it uses the comments model just
     like the rest of noclook
     '''
+    object_id = graphene.ID(required=True)
+
+    def resolve_object_id(self, info, **kwargs):
+        node = NodeHandle.objects.get(handle_id = self.object_pk)
+        object_id = relay.Node.to_global_id(str(node.node_type),
+                                            str(self.object_pk))
+
+        return object_id
+
     class Meta:
         model = Comment
+        interfaces = (relay.Node, )
+        exclude_fields = ('object_pk', )
 
 input_fields_clsnames = {}
 
