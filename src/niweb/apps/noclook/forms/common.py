@@ -903,13 +903,7 @@ class CsvForm(forms.Form):
     def csv_parse(self, func, validate=False):
         # Make sure cleaned_data is populated
         self.is_valid()
-        raw_lines = self.cleaned_data['csv_data']
-        # XXX: might not be needed since we are python3 only now
-        try:
-            raw_lines = raw_lines.decode('utf-8')
-        except (UnicodeDecodeError, AttributeError):
-            pass
-        lines = raw_lines.splitlines()
+        lines = self.cleaned_data['csv_data'].splitlines()
         if six.PY3:
             # Py3 csv uses unicode
             reader = csv.DictReader(lines, fieldnames=self.csv_headers)
