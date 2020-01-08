@@ -11,7 +11,7 @@ class ImportSiteTest(NeoTestCase):
         resp, site = self.import_to_site({
           "import": True,
         })
-        self.assertRedirects(resp, self.get_full_url(site))
+        self.assertRedirects(resp, self.get_absolute_url(site))
 
     def test_import_form(self):
         resp,site = self.import_to_site({
@@ -30,7 +30,7 @@ class ImportSiteTest(NeoTestCase):
           "Rack1.ODF1.Port1.port_type": "E2000",
         })
 
-        self.assertRedirects(resp, self.get_full_url(site))
+        self.assertRedirects(resp, self.get_absolute_url(site))
         
         node = site.get_node()
         racks = node.get_has()
@@ -82,7 +82,7 @@ class ImportSiteTest(NeoTestCase):
             "import": True,
             "file": io.StringIO(u"[]"),
         })
-        self.assertRedirects(resp, self.get_full_url(site))
+        self.assertRedirects(resp, self.get_absolute_url(site))
 
     def test_import_file(self):
         fake_file = u'''[{
@@ -128,11 +128,11 @@ class ImportSiteTest(NeoTestCase):
             "Optical Node1.rack_units": "2",
         })
         # Maybe we should have an error page instad?
-        self.assertRedirects(resp, self.get_full_url(site))
+        self.assertRedirects(resp, self.get_absolute_url(site))
 
     def import_to_site(self,data):
         site = self.create_site()
-        resp = self.client.post(self.get_full_url(site)+"import", data)
+        resp = self.client.post(self.get_absolute_url(site)+"import", data)
         return resp, site
 
     def create_site(self, name="Test site"):

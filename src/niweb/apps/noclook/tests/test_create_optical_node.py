@@ -19,7 +19,7 @@ class CreateOpticalNodeTest(NeoTestCase):
 
         nh, node = self.get_node(self.data['name'])
         node_data = node.data
-        self.assertRedirects(resp, self.get_full_url(nh))
+        self.assertRedirects(resp, self.get_absolute_url(nh))
         self.assertEqual("test optical node", node_data['name'])
         self.assertEquals('ciena6500', node_data['type'])
         self.assertEquals('In service', node_data['operational_state'])
@@ -31,7 +31,7 @@ class CreateOpticalNodeTest(NeoTestCase):
         resp = self.create(self.data)
 
         nh, node = self.get_node(self.data['name'])
-        self.assertRedirects(resp, self.get_full_url(nh))
+        self.assertRedirects(resp, self.get_absolute_url(nh))
 
         ports = self.get_ports(node)
         ports = sorted(ports, key=itemgetter('node'))
@@ -52,7 +52,7 @@ class CreateOpticalNodeTest(NeoTestCase):
         resp = self.create(self.data)
 
         nh, node = self.get_node(self.data['name'])
-        self.assertRedirects(resp, self.get_full_url(nh))
+        self.assertRedirects(resp, self.get_absolute_url(nh))
 
         ports = self.get_ports(node)
         self.assertEqual(0, len(ports))
