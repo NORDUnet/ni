@@ -99,8 +99,8 @@ class JSONField(forms.CharField):
 
 class JSONInput(HiddenInput):
 
-    def render(self, name, value, attrs=None):
-        return super(JSONInput, self).render(name, json.dumps(value), attrs)
+    def render(self, name, value, attrs=None, renderer=None):
+        return super(JSONInput, self).render(name, json.dumps(value), attrs, renderer)
 
 
 class NodeChoiceField(forms.ModelChoiceField):
@@ -903,7 +903,13 @@ class CsvForm(forms.Form):
     def csv_parse(self, func, validate=False):
         # Make sure cleaned_data is populated
         self.is_valid()
-        lines = self.cleaned_data['csv_data'].splitlines()
+        raw_lines = self.cleaned_data['csv_data']
+        # XXX: might not be needed since we are python3 only now
+        try:
+            raw_lines = raw_lines.decode('utf-8')
+        except (UnicodeDecodeError, AttributeError):
+            pass
+        lines = raw_lines.splitlines()
         if six.PY3:
             # Py3 csv uses unicode
             reader = csv.DictReader(lines, fieldnames=self.csv_headers)
