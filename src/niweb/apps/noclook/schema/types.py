@@ -47,6 +47,8 @@ class Role(DjangoObjectType):
     '''
     class Meta:
         model = RoleModel
+        interfaces = (relay.Node, )
+        use_connection = False
 
 
 class Group(NIObjectType):
@@ -231,7 +233,7 @@ class RoleConnection(relay.Connection):
 
 class RoleFilter(graphene.InputObjectType):
     name = graphene.String()
-    handle_id = graphene.Int()
+    id = graphene.ID()
 
 
 class RoleOrderBy(graphene.Enum):

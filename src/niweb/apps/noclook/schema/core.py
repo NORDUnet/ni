@@ -1532,6 +1532,7 @@ class CreateNIMutation(AbstractNIMutation):
         nimetaclass    = getattr(cls, 'NIMetaClass')
         graphql_type   = getattr(nimetaclass, 'graphql_type')
         property_update = getattr(nimetaclass, 'property_update', None)
+        relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
@@ -1546,7 +1547,18 @@ class CreateNIMutation(AbstractNIMutation):
             raise GraphQLAuthException()
 
         ## code from role creation
-        form = form_class(request.POST)
+        post_data = request.POST.copy()
+
+        # convert relay ids to django ids
+        if relay_extra_ids:
+            for extra_id in relay_extra_ids:
+                rela_id_val = post_data.get(extra_id)
+                if rela_id_val:
+                    rela_id_val = relay.Node.from_global_id(rela_id_val)[1]
+                    post_data.pop(extra_id)
+                    post_data.update({ extra_id: rela_id_val})
+
+        form = form_class(post_data)
         if form.is_valid():
             try:
                 form_to_nodehandle = cls.get_form_to_nodehandle_func()
@@ -1608,6 +1620,7 @@ class UpdateNIMutation(AbstractNIMutation):
         nimetaclass     = getattr(cls, 'NIMetaClass')
         graphql_type    = getattr(nimetaclass, 'graphql_type')
         property_update = getattr(nimetaclass, 'property_update', None)
+        relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype      = getattr(graphql_type, 'NIMetaType')
         node_type       = getattr(nimetatype, 'ni_type').lower()
@@ -1625,7 +1638,18 @@ class UpdateNIMutation(AbstractNIMutation):
 
         nh, nodehandler = helpers.get_nh_node(handle_id)
         if request.POST:
-            form = form_class(request.POST)
+            post_data = request.POST.copy()
+
+            # convert relay ids to django ids
+            if relay_extra_ids:
+                for extra_id in relay_extra_ids:
+                    rela_id_val = post_data.get(extra_id)
+                    if rela_id_val:
+                        rela_id_val = relay.Node.from_global_id(rela_id_val)[1]
+                        post_data.pop(extra_id)
+                        post_data.update({ extra_id: rela_id_val})
+
+            form = form_class(post_data)
             if form.is_valid():
                 # Generic node update
                 helpers.form_update_node(request.user, nodehandler.handle_id, form, property_update)
@@ -1941,6 +1965,7 @@ class NIMutationFactory():
         update_include  = getattr(ni_metaclass, 'update_include', None)
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
+        relay_extra_ids = getattr(ni_metaclass, 'relay_extra_ids', None)
 
         manual_create   = getattr(ni_metaclass, 'manual_create', None)
         manual_update   = getattr(ni_metaclass, 'manual_update', None)
@@ -1974,6 +1999,7 @@ class NIMutationFactory():
             'include': create_include,
             'exclude': create_exclude,
             'property_update': property_update,
+            'relay_extra_ids': relay_extra_ids,
         }
 
         if relations_processors:
@@ -2022,6 +2048,7 @@ class NIMutationFactory():
         del attr_dict['include']
         del attr_dict['exclude']
         del attr_dict['property_update']
+        del attr_dict['relay_extra_ids']
         attr_dict['is_delete'] = True
 
         if relations_processors:

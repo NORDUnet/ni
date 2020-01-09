@@ -183,6 +183,8 @@ class NIContactMutationFactory(NIMutationFactory):
             'pgp_fingerprint', 'notes'
         ]
 
+        relay_extra_ids = ['role', ]
+
     class Meta:
         abstract = False
 

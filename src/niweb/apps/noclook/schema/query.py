@@ -132,8 +132,9 @@ class NOCRootQuery(NOCAutoQuery):
                 qs = qs.order_by('-name')
 
         if filter:
-            if filter.handle_id:
-                qs = qs.filter(handle_id=filter.handle_id)
+            if filter.id:
+                handle_id = relay.Node.from_global_id(filter.id)[1]
+                qs = qs.filter(handle_id=handle_id)
 
             if filter.name:
                 qs = qs.filter(name=filter.name)

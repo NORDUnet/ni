@@ -200,7 +200,7 @@ class SingleTest(Neo4jGraphQLTest):
           roles(filter: {name: "NOC Manager"}){
             edges{
               node{
-                handle_id
+                id
                 name
               }
             }
@@ -210,7 +210,7 @@ class SingleTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        role_handle_id = result.data['roles']['edges'][0]['node']['handle_id']
+        role_id = result.data['roles']['edges'][0]['node']['id']
 
         ## create ##
         note_txt = "Lorem ipsum dolor sit amet"
@@ -224,11 +224,15 @@ class SingleTest(Neo4jGraphQLTest):
               title: ""
               contact_type: "person"
               relationship_works_for: "{organization_id}"
-              role: "{role_handle_id}"
+              role: "{role_id}"
               relationship_member_of: "{group_handle_id}"
               notes: "{note_txt}"
             }}
           ){{
+            errors{{
+              field
+              messages
+            }}
             contact{{
               id
               name
@@ -251,14 +255,17 @@ class SingleTest(Neo4jGraphQLTest):
           }}
         }}
         """.format(organization_id=organization_id,
-                    role_handle_id=role_handle_id, group_handle_id=group_handle_id,
+                    role_id=role_id, group_handle_id=group_handle_id,
                     note_txt=note_txt)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
+        assert not result.data['create_contact']['errors'], \
+            pformat(result.data['create_contact']['errors'], indent=1)
         contact_id = result.data['create_contact']['contact']['id']
         expected = OrderedDict([('create_contact',
-                      OrderedDict([('contact',
+                      OrderedDict([('errors', None),
+                      ('contact',
                         OrderedDict([('id', contact_id),
                                      ('name', 'Jane Smith'),
                                      ('first_name', 'Jane'),
@@ -289,7 +296,7 @@ class SingleTest(Neo4jGraphQLTest):
               last_name: "Doe"
               contact_type: "person"
               relationship_works_for: "{organization_id}"
-              role: "{role_handle_id}"
+              role: "{role_id}"
               relationship_member_of: "{group_handle_id}"
             }}
           ){{
@@ -314,7 +321,7 @@ class SingleTest(Neo4jGraphQLTest):
           }}
         }}
         """.format(contact_id=contact_id, organization_id=organization_id,
-                    role_handle_id=role_handle_id, group_handle_id=group_handle_id)
+                    role_id=role_id, group_handle_id=group_handle_id)
 
         expected = OrderedDict([('update_contact',
               OrderedDict([('contact',
@@ -361,6 +368,7 @@ class SingleTest(Neo4jGraphQLTest):
         '''.format(contact_id=contact_id)
 
         result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
         assert 'errors' in result.data['update_contact'], pformat(result.data, indent=1)
 
         # test another erroneous form
