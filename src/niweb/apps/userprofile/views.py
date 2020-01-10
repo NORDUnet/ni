@@ -26,5 +26,6 @@ def userprofile_detail(request, userprofile_id):
     except EmptyPage:
         # If page is out of range (e.g. 9999), deliver last page of results.
         activities = paginator.page(paginator.num_pages)
+    total_activities = '{:,}'.format(activities.paginator.count)
     return render(request, 'userprofile/userprofile_detail.html',
-                  {'profile': profile, 'activities': activities})
+            {'profile': profile, 'activities': activities, 'total_activities': total_activities})
