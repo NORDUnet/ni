@@ -2,6 +2,7 @@ import argparse
 import logging
 import utils  # noqa: F401 Keep for django_hack
 from apps.noclook.models import NodeType, NodeHandle
+from actstream.models import Action
 
 logger = logging.getLogger('noclook_cleanup_peering_partners')
 
@@ -27,18 +28,20 @@ def main():
     total_deleted = 0
     for peer_nh in nh_peers:
         peer_log = {}
-        deletions = 0
+        to_delete = set()
         for action in peer_nh.action_object_actions.all().reverse():
             # could also check if action.data.noclook.action_type == relationship
             previous_action = peer_log.get(action.target_object_id)
             if previous_action == action.verb:
-                deletions += 1
-                logger.info('Deleting %s for %s', action, peer_nh)
-                if not args.dry_run:
-                    action.delete()
+                if action.verb == 'create':
+                    logger.info('Mark for deletion %s for %s', action, peer_nh)
+                    to_delete.add(action.id)
             else:
                 peer_log[action.target_object_id] = action.verb
+        deletions = len(to_delete)
         if deletions > 0:
+            if not args.dry_run:
+                Action.objects.filter(id__in=to_delete).delete()
             total_deleted += deletions
             logger.warning('Deleted %d useless actions for %s (%s)', deletions, peer_nh, peer_nh.handle_id)
     logger.warning('Total usless actions deleted: %d', total_deleted)
