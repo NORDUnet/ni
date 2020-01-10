@@ -375,7 +375,6 @@ def insert_external_bgp_peering(peering, peering_group):
             result = peer_node.set_peering_group(peering_group.handle_id, remote_address)
         relationship_id = result.get('Uses')[0]['relationship_id']
         relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
-        activitylog.create_relationship(user, relationship)
         helpers.set_noclook_auto_manage(relationship, True)
         if result.get('Uses')[0].get('created', False):
             activitylog.create_relationship(user, relationship)

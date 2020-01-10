@@ -99,8 +99,8 @@ class JSONField(forms.CharField):
 
 class JSONInput(HiddenInput):
 
-    def render(self, name, value, attrs=None):
-        return super(JSONInput, self).render(name, json.dumps(value), attrs)
+    def render(self, name, value, attrs=None, renderer=None):
+        return super(JSONInput, self).render(name, json.dumps(value), attrs, renderer)
 
 
 class NodeChoiceField(forms.ModelChoiceField):
@@ -267,6 +267,7 @@ class ConnectPortForm(forms.Form):
 
     class Meta:
         id_generator_name = 'Cable'
+        id_generator_name = 'nordunet_cable_id'
         id_collection = NordunetUniqueId
 
     def clean(self):

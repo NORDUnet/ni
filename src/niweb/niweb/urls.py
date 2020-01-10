@@ -8,11 +8,13 @@ from django.contrib.auth import views as auth_views
 from django.contrib import admin
 admin.autodiscover()
 
+
 def if_installed(appname, *args, **kwargs):
     ret = url(*args, **kwargs)
     if appname not in settings.INSTALLED_APPS:
         ret.resolve = lambda *args: None
     return ret
+
 
 v1_api = Api(api_name='v1')
 # Resources

@@ -10,11 +10,11 @@ from actstream import action
 try:
     from neo4j.exceptions import CypherError
 except ImportError:
-    try: 
+    try:
         # pre neo4j 1.4
         from neo4j.v1.exceptions import CypherError
     except ImportError:
-        # neo4j 1.1 
+        # neo4j 1.1
         from neo4j.v1.api import CypherError
 
 
@@ -66,12 +66,12 @@ class NodeHandle(models.Model):
     handle_id = models.AutoField(primary_key=True)
     # Data shared with the node
     node_name = models.CharField(max_length=200)
-    node_type = models.ForeignKey(NodeType)
+    node_type = models.ForeignKey(NodeType, on_delete=models.CASCADE)
     node_meta_type = models.CharField(max_length=255, choices=NODE_META_TYPE_CHOICES)
     # Meta information
-    creator = models.ForeignKey(User, related_name='creator')
+    creator = models.ForeignKey(User, related_name='creator', null=True, on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
-    modifier = models.ForeignKey(User, related_name='modifier')
+    modifier = models.ForeignKey(User, related_name='modifier', null=True, on_delete=models.SET_NULL)
     modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -133,9 +133,9 @@ class UniqueIdGenerator(models.Model):
     last_id = models.CharField(max_length=256, editable=False)
     next_id = models.CharField(max_length=256, editable=False)
     # Meta
-    creator = models.ForeignKey(User, related_name='unique_id_creator')
+    creator = models.ForeignKey(User, related_name='unique_id_creator', null=True, on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
-    modifier = models.ForeignKey(User, null=True, blank=True, related_name='unique_id_modifier')
+    modifier = models.ForeignKey(User, null=True, blank=True, related_name='unique_id_modifier', on_delete=models.SET_NULL)
     modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -195,8 +195,8 @@ class UniqueId(models.Model):
     unique_id = models.CharField(max_length=256, unique=True)
     reserved = models.BooleanField(default=False)
     reserve_message = models.CharField(max_length=512, null=True, blank=True)
-    reserver = models.ForeignKey(User, null=True, blank=True)
-    site = models.ForeignKey(NodeHandle, null=True, blank=True)
+    reserver = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    site = models.ForeignKey(NodeHandle, null=True, blank=True, on_delete=models.SET_NULL)
     # Meta
     created = models.DateTimeField(auto_now_add=True)
 
@@ -237,7 +237,7 @@ class ServiceClass(models.Model):
 @python_2_unicode_compatible
 class ServiceType(models.Model):
     name = models.CharField(unique=True, max_length=255)
-    service_class = models.ForeignKey(ServiceClass)
+    service_class = models.ForeignKey(ServiceClass, on_delete=models.CASCADE)
 
     def as_choice(self):
         return self.name, u'{} - {}'.format(self.service_class.name, self.name)

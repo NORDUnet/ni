@@ -168,7 +168,7 @@ def new_cable(request, **kwargs):
 
 
 def _csv_to_cable_form(data):
-    data['cable_type'] = data.get('cable_type', '').strip().title()
+    data['cable_type'] = data.get('cable_type', '').strip()
     if data.get('name'):
         data['name'] = data['name'].strip()
     return forms.NewCableForm(data)

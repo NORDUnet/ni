@@ -45,6 +45,12 @@ class NeoTestCase(TestCase):
             path = what
         return 'http://testserver{}'.format(path)
 
+    def get_absolute_url(self, what):
+        if isinstance(what, NodeHandle):
+            return what.get_absolute_url()
+        else:
+            return what
+
     def get_ports(self, node):
         return node.get_ports().get("Has", [])
 
