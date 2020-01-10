@@ -24,6 +24,7 @@ def main():
     peer_type = NodeType.objects.get(type='Peering Partner')
     nh_peers = NodeHandle.objects.filter(node_type=peer_type)
     # for each check activity log
+    total_deleted = 0
     for peer_nh in nh_peers:
         peer_log = {}
         deletions = 0
@@ -38,7 +39,9 @@ def main():
             else:
                 peer_log[action.target_object_id] = action.verb
         if deletions > 0:
+            total_deleted += deletions
             logger.warning('Deleted %d useless actions for %s (%s)', deletions, peer_nh, peer_nh.handle_id)
+    logger.warning('Total usless actions deleted: %d', total_deleted)
 
 
 if __name__ == '__main__':
