@@ -274,7 +274,7 @@ def get_peering_partner(peering):
     user = utils.get_user()
     peer_node = None
     peer_properties = {
-        'name':  'Missing description',
+        'name': 'Missing description',
         'as_number': '0'
     }
     if peering.get('description'):
@@ -287,19 +287,22 @@ def get_peering_partner(peering):
             peer_node = nc.get_node_model(nc.graphdb.manager, node['handle_id'])
             helpers.set_noclook_auto_manage(peer_node, True)
             if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
-                    helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
+                helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
             logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
             found += 1
         if found > 1:
             logger.error('Found more then one Peering Partner with AS number {!s}'.format(peer_properties['as_number']))
+        if not peer_node:
+            node_handle = utils.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
+            peer_node = node_handle.get_node()
+            helpers.set_noclook_auto_manage(peer_node, True)
+            helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
+            logger.info('Peering Partner {name} created.'.format(name=peer_properties['name']))
+        PEER_AS_CACHE[peering['as_number']] = peer_node
+    else:
+        # no as number
+        logger.error('No AS number in peering %s', peering)
 
-    if not peer_node:
-        node_handle = utils.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
-        peer_node = node_handle.get_node()
-        helpers.set_noclook_auto_manage(peer_node, True)
-        helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
-        logger.info('Peering Partner {name} created.'.format(name=peer_properties['name']))
-    PEER_AS_CACHE[peering['as_number']] = peer_node
     return peer_node
 
 
@@ -362,6 +365,9 @@ def insert_external_bgp_peering(peering, peering_group):
     user = utils.get_user()
     # Get or create the peering partner, unique per AS
     peer_node = get_peering_partner(peering)
+    if peer_node is None:
+        # We are done. This is a broken peering.
+        return
     # Get all relationships with this ip address, should never be more than one
     remote_address = peering.get('remote_address', None).lower()
     if remote_address:
@@ -398,14 +404,14 @@ def insert_juniper_bgp_peerings(bgp_peerings):
     This is to be able to get all the peerings associated to the right interfaces.
     """
     for peering in bgp_peerings:
-        peering_group = peering.get('group', 'Unknown Peering Group')
-        peering_group_handle = utils.get_unique_node_handle(peering_group, 'Peering Group', 'Logical', case_insensitive=False)
-        peering_group_node = peering_group_handle.get_node()
-        helpers.set_noclook_auto_manage(peering_group_node, True)
         peering_type = peering.get('type')
         if peering_type == 'internal':
             continue  # Not implemented
         elif peering_type == 'external':
+            peering_group = peering.get('group', 'Unknown Peering Group')
+            peering_group_handle = utils.get_unique_node_handle(peering_group, 'Peering Group', 'Logical', case_insensitive=False)
+            peering_group_node = peering_group_handle.get_node()
+            helpers.set_noclook_auto_manage(peering_group_node, True)
             insert_external_bgp_peering(peering, peering_group_node)
 
 
