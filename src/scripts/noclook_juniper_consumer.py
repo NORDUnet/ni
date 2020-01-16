@@ -40,7 +40,7 @@ logger = logging.getLogger('noclook_consumer.juniper')
 # NERDS producers juniper_config to the NOCLook database viewer.
 #
 # JSON format used:
-#{["host": {
+# {["host": {
 #   "juniper_conf": {
 #       "bgp_peerings": [
 #            {
@@ -82,7 +82,7 @@ logger = logging.getLogger('noclook_consumer.juniper')
 #        "version": 1,
 #        "name": ""
 #    }
-#]}
+# ]}
 
 PEER_AS_CACHE = {}
 REMOTE_IP_MATCH_CACHE = {}
@@ -133,8 +133,9 @@ def insert_interface_unit(iface_node, unit, service_id_regex):
     # Auto depend service on unit
     auto_depend_services(unit_node.handle_id, unit.get('description', ''), service_id_regex, 'Unit')
 
+
 def cleanup_hardware_v1(router_node, user):
-    p = "^\d+/\d+/\d+$"
+    p = r"^\d+/\d+/\d+$"
     bad_interfaces = re.compile(p)
 
     # Cleanup ni hardware info v1...
@@ -164,6 +165,7 @@ def cleanup_hardware_v1(router_node, user):
     for hw in old_hardware:
         helpers.delete_node(user, hw['handle_id'])
 
+
 def _service_id_regex():
     global_preferences = global_preferences_registry.manager()
     service_id_generator_name = global_preferences.get('id_generators__services')
@@ -172,16 +174,17 @@ def _service_id_regex():
         try:
             id_generator = UniqueIdGenerator.objects.get(name=service_id_generator_name)
             regex = id_generator.get_regex()
-        except UniqueIdGenerator.DoesNotExist as e:
+        except UniqueIdGenerator.DoesNotExist:
             pass
     return regex
+
 
 def _find_service(service_id):
     # Consider using cypher...
     service = None
     try:
         service = nc.get_unique_node_by_name(nc.graphdb.manager, service_id, 'Service')
-    except:
+    except Exception:
         pass
     return service
 
@@ -193,18 +196,18 @@ def auto_depend_services(handle_id, description, service_id_regex, _type="Port")
     if not service_id_regex:
         return
     if not description:
-        description=""
+        description = ""
 
     desc_services = service_id_regex.findall(description)
 
-    for service_id in  desc_services:
+    for service_id in desc_services:
         service = _find_service(service_id)
         if service:
             if service.data.get('operational_state') == 'Decommissioned':
-                logger.warning('{} {} description mentions decommissioned service {}'.format(_type,handle_id, service_id))
+                logger.warning('{} {} description mentions decommissioned service {}'.format(_type, handle_id, service_id))
             else:
-                #Add it
-                #logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
+                # Add it
+                # logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
                 helpers.set_depends_on(utils.get_user(), service, handle_id)
         else:
             logger.info('{} {} description mentions unknown service {}'.format(_type, handle_id, service_id))
@@ -215,10 +218,11 @@ def auto_depend_services(handle_id, description, service_id_regex, _type="Port")
         RETURN collect(s) as unregistered
         """
     result = nc.query_to_dict(nc.graphdb.manager, q, handle_id=handle_id, desc_services=','.join(desc_services)).get('unregistered', [])
-    unregistered_services = [ u"{}({})".format(s['name'],s['handle_id']) for s in result ]
-    
+    unregistered_services = [u"{}({})".format(s['name'], s['handle_id']) for s in result]
+
     if unregistered_services:
         logger.info(u"{} {} has services depending on it that is not in description: {}".format(_type, handle_id, ','.join(unregistered_services)))
+
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
@@ -226,7 +230,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     relationship from the router_node. Some filtering is done for
     interface names that are not interesting.
     """
-    p = """
+    p = r"""
         .*\*|\.|all|tap|fxp.*|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|
         pp.*|pip.*|irb.*|demux.*|cbp.*|me.*|lo.*
         """
@@ -240,7 +244,7 @@ def insert_juniper_interfaces(router_node, interfaces):
         port_name = interface['name']
         if port_name and not not_interesting_interfaces.match(port_name) and not interface.get('inactive', False):
             result = router_node.get_port(port_name)
-            if 'Has' in  result:
+            if 'Has' in result:
                 port_node = result.get('Has')[0].get('node')
             else:
                 node_handle = utils.create_node_handle(port_name, 'Port', 'Physical')
@@ -419,7 +423,7 @@ def insert_juniper_hardware(router_node, hardware):
     if hardware:
         # Upload hardware info as json file.
         hw_str = json.dumps(hardware)
-        name = "{}-hardware.json".format(router_node.data.get('name','router'))
+        name = "{}-hardware.json".format(router_node.data.get('name', 'router'))
         user = utils.get_user()
         # Store it! (or overwrite)
         helpers.attach_as_file(router_node.handle_id, name, hw_str, user, overwrite=True)
@@ -540,6 +544,7 @@ def main():
     if config and config.has_option('delete_data', 'juniper_conf') and config.getboolean('delete_data', 'juniper_conf'):
         remove_juniper_conf(config.get('data_age', 'juniper_conf'))
     return 0
+
 
 if __name__ == '__main__':
     if not len(logger.handlers):
