@@ -468,14 +468,14 @@ def remove_router_conf(user, data_age):
             last_seen, expired = helpers.neo4j_data_age(logical.data, data_age)
             if expired:
                 helpers.delete_node(user, logical.handle_id)
-                logger.warning('Deleted node {handle_id}.'.format(handle_id=handle_id))
+                logger.warning('Deleted logical router: %s (%s).', logical.data.get('name'), handle_id)
     for handle_id in router_result.get('physical', []):
         physical = nc.get_node_model(nc.graphdb.manager, handle_id)
         if physical:
             last_seen, expired = helpers.neo4j_data_age(physical.data, data_age)
             if expired:
                 helpers.delete_node(user, physical.handle_id)
-                logger.warning('Deleted node {handle_id}.'.format(handle_id=handle_id))
+                logger.warning('Deleted physical router: %s (%s).', physical.data.get('name'), handle_id)
 
 
 def remove_peer_conf(user, data_age):
@@ -493,14 +493,14 @@ def remove_peer_conf(user, data_age):
             last_seen, expired = helpers.neo4j_data_age(relationship.data, data_age)
             if expired:
                 helpers.delete_relationship(user, relationship.id)
-                logger.info('Deleted relationship {relationship_id}'.format(relationship_id=relationship_id))
+                logger.warning('Deleted relationship {name} ({relationship_id})'.format(name=relationship.data.get('name'), relationship_id=relationship_id))
     for handle_id in peer_result.get('peer_groups', []):
         peer_group = nc.get_node_model(nc.graphdb.manager, handle_id)
         if peer_group:
             last_seen, expired = helpers.neo4j_data_age(peer_group.data, data_age)
             if expired:
                 helpers.delete_node(user, peer_group.handle_id)
-                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
+                logger.warning('Deleted node {name} ({handle_id}).'.format(name=peer_group.data.get('name'), handle_id=handle_id))
 
 
 def remove_juniper_conf(data_age):
