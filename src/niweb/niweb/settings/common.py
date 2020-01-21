@@ -192,13 +192,11 @@ SAML_ENABLED = environ.get('SAML_ENABLED', False)
 MIDDLEWARE = (
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'apps.noclook.middleware.SRIJWTAuthMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'apps.noclook.middleware.SRIJWTMiddleware',
 )
 ########## END MIDDLEWARE CONFIGURATION
