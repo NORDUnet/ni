@@ -63,13 +63,18 @@ class SRIJWTAuthMiddleware(object):
             has_token = True
 
         # add session
-        session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
-
-        if not hasattr(request, 'session') or not session_key:
+        if not hasattr(request, 'session') or not request.user.is_authenticated:
             session_engine = import_module(settings.SESSION_ENGINE)
             session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
             request.session = session_engine.SessionStore(session_key)
+            request.session.save()
             session_created = True
+
+        # we'll force the session cookie creation if:
+        # we have a valid token but we don't have a session for the user
+        # the session was not created because the user is logged in
+        create_session_cookie = token and session_created \
+                                or token and not request.user.is_authenticated
 
         # process response with inner middleware
         response = self.get_response(request)
@@ -93,11 +98,6 @@ class SRIJWTAuthMiddleware(object):
                 SESSION_SAVE_EVERY_REQUEST = settings.SESSION_SAVE_EVERY_REQUEST
             except AttributeError:
                 SESSION_SAVE_EVERY_REQUEST = None
-
-            # we'll force the session cookie creation if:
-            # we have a valid token but we don't have a session for the user
-            # the session was not created because it was already present
-            create_session_cookie = token and session_created or not session_created
 
             if (modified or SESSION_SAVE_EVERY_REQUEST) and not empty or create_session_cookie:
                 if request.session.get_expire_at_browser_close():
