@@ -26,7 +26,7 @@ class SRIJWTCookieMiddleware(object):
         if user.is_authenticated:
             token = get_token(user)
             signals.token_issued.send(
-                sender=SRIJWTMiddleware, request=request, user=user)
+                sender=SRIJWTCookieMiddleware, request=request, user=user)
 
         response = self.get_response(request)
 
