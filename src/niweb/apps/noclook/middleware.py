@@ -49,9 +49,10 @@ class SRIJWTAuthMiddleware(object):
 
     def __call__(self, request):
         # add session
-        session_engine = import_module(settings.SESSION_ENGINE)
-        session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
-        request.session = session_engine.SessionStore(session_key)
+        if not hasattr(request, 'session'):
+            session_engine = import_module(settings.SESSION_ENGINE)
+            session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
+            request.session = session_engine.SessionStore(session_key)
 
         # add user
         request.user = SimpleLazyObject(lambda: get_user(request))
