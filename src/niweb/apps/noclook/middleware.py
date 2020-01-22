@@ -51,21 +51,25 @@ class SRIJWTAuthMiddleware(object):
 
     def __call__(self, request):
         session_created = False
-
-        # add session
-        if not hasattr(request, 'session'):
-            session_engine = import_module(settings.SESSION_ENGINE)
-            session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
-            request.session = session_engine.SessionStore(session_key)
-            session_created = True
+        has_token = False
 
         # add user
         request.user = SimpleLazyObject(lambda: get_user(request))
         token = get_credentials(request)
 
-        if token is not None:
+        if token is not None and token != '':
             user = get_user_by_token(token, request)
             request.user = user
+            has_token = True
+
+        # add session
+        session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
+
+        if not hasattr(request, 'session') or not session_key:
+            session_engine = import_module(settings.SESSION_ENGINE)
+            session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
+            request.session = session_engine.SessionStore(session_key)
+            session_created = True
 
         # process response with inner middleware
         response = self.get_response(request)
@@ -90,7 +94,12 @@ class SRIJWTAuthMiddleware(object):
             except AttributeError:
                 SESSION_SAVE_EVERY_REQUEST = None
 
-            if (modified or SESSION_SAVE_EVERY_REQUEST) and not empty or session_created:
+            # we'll force the session cookie creation if:
+            # we have a valid token but we don't have a session for the user
+            # the session was not created because it was already present
+            create_session_cookie = token and session_created or not session_created
+
+            if (modified or SESSION_SAVE_EVERY_REQUEST) and not empty or create_session_cookie:
                 if request.session.get_expire_at_browser_close():
                     max_age = None
                     expires = None
