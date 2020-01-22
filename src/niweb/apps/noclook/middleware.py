@@ -15,7 +15,7 @@ from importlib import import_module
 
 import time
 
-class SRIJWTMiddleware(object):
+class SRIJWTCookieMiddleware(object):
     def __init__(self, get_response):
         self.get_response = get_response
 
