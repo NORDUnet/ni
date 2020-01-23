@@ -71,8 +71,8 @@ class SRIJWTAuthMiddleware(object):
             session_created = True
 
         # we'll force the session cookie creation if:
-        # we have a valid token but we don't have a session for the user
-        # the session was not created because the user is logged in
+        # * we have a valid token but we didn't have a session for the user
+        # * the session was not created because the user is logged in
         create_session_cookie = token and session_created \
                                 or token and not request.user.is_authenticated
 
