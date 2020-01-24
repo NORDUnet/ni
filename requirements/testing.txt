@@ -1,2 +1,2 @@
 -r common.txt
-coverage<4.0
+coverage<6.0
