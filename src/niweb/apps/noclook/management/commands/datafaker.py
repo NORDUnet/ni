@@ -30,17 +30,24 @@ class Command(BaseCommand):
     def create_equipment_cables(self, numnodes):
         generator = NetworkFakeDataGenerator()
 
-        self.printProgressBar(0, numnodes)
+        create_funcs = [
+            generator.create_cable,
+            generator.create_host,
+        ]
 
-        for i in range(numnodes):
-            cable = generator.create_cable()
-            self.printProgressBar(i, numnodes)
+        total_nodes = numnodes * len(create_funcs)
+        created_nodes = 0
+        self.printProgressBar(0, total_nodes)
 
-        self.printProgressBar(numnodes, numnodes)
+        for create_func in create_funcs:
+            for i in range(numnodes):
+                node = create_func()
+                created_nodes = created_nodes + 1
+                self.printProgressBar(created_nodes, total_nodes)
 
     def delete_network_nodes(self):
         if settings.DEBUG: # guard against accidental deletion on the wrong environment
-            delete_types = ['Cable', 'Provider', 'Port']
+            delete_types = ['Cable', 'Provider', 'Port', 'Host']
 
             total_nodes = 0
 

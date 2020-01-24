@@ -218,3 +218,54 @@ class NetworkFakeDataGenerator:
         helpers.set_connected_to(self.user, cable.get_node(), port_b.handle_id)
 
         return cable
+
+    def create_host(self, type_name="Host", metatype=META_TYPES[0]):
+        # create object
+        host = self.get_or_create_node(
+            self.fake.hostname(), type_name, metatype)
+
+        # add context
+        self.add_network_context(host)
+
+        # add data
+        num_ips = random.randint(0,4)
+        ip_adresses = self.fake.ipv4()
+
+        for i in range(num_ips):
+            ip_adresses = '{}\n{}'.format(ip_adresses, self.fake.ipv4())
+
+        operational_states = self.get_dropdown_keys('operational_states')
+        managed_by = self.get_dropdown_keys('host_management_sw')
+        responsible_group = self.get_dropdown_keys('responsible_groups')
+        support_group = self.get_dropdown_keys('responsible_groups')
+        backup_systems = ['TSM', 'IP nett']
+        security_class = self.get_dropdown_keys('security_classes')
+        os_options = (
+            ('GNU/Linux', ('Ubuntu', 'Debian', 'Fedora', 'Arch')),
+            ('Microsoft Windows', ('8', '10', 'X'))
+        )
+        os_choice = random.choice(os_options)
+
+        data = {
+            'ip_addresses' : ip_adresses,
+            'rack_units': random.randint(1,10),
+            'rack_position': random.randint(1,10),
+            'description': self.fake.paragraph(),
+            'operational_state': random.choice(operational_states),
+            'managed_by': random.choice(managed_by),
+            'responsible_group': random.choice(responsible_group),
+            'support_group': random.choice(support_group),
+            'backup': random.choice(backup_systems),
+            'security_class': random.choice(security_class),
+            'security_comment': self.fake.paragraph(),
+            'os': os_choice[0],
+            'os_version': random.choice(os_choice[1]),
+            'model': self.fake.license_plate(),
+            'vendor': self.fake.company(),
+            'service_tag': self.fake.license_plate(),
+        }
+
+        for key, value in data.items():
+            host.get_node().add_property(key, value)
+
+        return host
