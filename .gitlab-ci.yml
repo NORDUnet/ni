@@ -37,6 +37,6 @@ test:
     - for i in $(seq 1 60); do if nc -z neo4j 7474; then break; fi; sleep 1; done
     - cd src/niweb
     - coverage run --source='.' manage.py test
-    - coverage report -m
+    - coverage report
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
 
