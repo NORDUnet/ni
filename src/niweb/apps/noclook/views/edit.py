@@ -12,10 +12,12 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle, Dropdown
+from apps.noclook.models import NodeHandle, Dropdown, UniqueIdGenerator, NordunetUniqueId
+from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
+from apps.noclook import unique_ids
 import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError
 
@@ -474,7 +476,81 @@ def edit_outlet(request, handle_id):
         form = forms.EditOutletForm(outlet.data)
     return render(request, 'noclook/edit/edit_outlet.html',
                   {'node_handle': nh, 'node': outlet, 'form': form, 'location': location,
-                   'location_path': location_path,'ports': ports})
+                   'location_path': location_path, 'ports': ports})
+
+
+def _handle_trunk_cable(node, form, user):
+    # sanity checks
+    if form.is_valid():
+        if form.cleaned_data['trunk_num_ports'] < 1:
+            # no ports to handle
+            return True
+        # get base cable id
+        base_name = form.cleaned_data['trunk_base_name']
+        if not base_name:
+            # check uniqueIDgennerator
+            try:
+                id_generator = UniqueIdGenerator.objects.filter(name__endswith='cable_id').get()
+                base_name = unique_ids.get_collection_unique_id(id_generator)
+            except ObjectDoesNotExist:
+                form.add_error('trunk_base_name', 'No unique id generator found, so base name is required')
+                return False
+
+        # get other equipment
+        try:
+            target_nh, target_node = helpers.get_nh_node(form.cleaned_data['trunk_relationship_other'])
+        except Exception:
+            form.add_error('trunk_relationship_other', 'Other equipment cannot be found')
+            return False
+
+        def port_map(ports_raw):
+            ports = ports_raw.get('Has', {})
+            return {p.get('node').data.get('name'): p.get('node') for p in ports}
+        ports = port_map(node.get_ports())
+        target_ports = port_map(target_node.get_ports())
+        first_port = form.cleaned_data['trunk_first_port']
+        end_port = first_port + form.cleaned_data['trunk_num_ports']
+        create_missing = form.cleaned_data['trunk_create_missing_ports']
+        trunk_prefix = form.cleaned_data['trunk_prefix']
+
+        ports_to_connect = []
+        for i in range(first_port, end_port):
+            port_name = '{}{}'.format(trunk_prefix, i)
+            port_a = ports.get(port_name)
+            port_b = target_ports.get(port_name)
+
+            # check if cable exis
+            cable_name = '{}_{}'.format(base_name, port_name)
+            cable_count = NodeHandle.objects.filter(node_name=cable_name, node_type__type='Cable').count()
+            if cable_count != 0:
+                form.add_error('trunk_base_name', '{} already exist'.format(cable_name))
+            elif port_a and port_b:
+                ports_to_connect.append((port_a, port_b))
+            elif create_missing:
+                if not port_a:
+                    port_a = helpers.create_port(node, port_name, user)
+                if not port_b:
+                    port_b = helpers.create_port(target_node, port_name, user)
+                ports_to_connect.append((port_a, port_b))
+            else:
+                form.add_error('trunk_create_missing_ports', '{} missing on one of the endpoints'.format(port_name))
+
+        if form.errors:
+            return False
+
+        # create cables between ports
+        for a, b in ports_to_connect:
+            port_name = a.data.get('name')
+            cable_name = '{}_{}'.format(base_name, port_name)
+            unique_ids.register_unique_id(NordunetUniqueId, cable_name)
+            cable_nh = helpers.create_unique_node_handle(user, cable_name, 'cable', 'Physical')
+            cable_node = cable_nh.get_node()
+            # update cable type
+            helpers.dict_update_node(user, cable_node.handle_id, {'cable_type': 'Fixed'})
+            helpers.set_connected_to(user, cable_node, a.handle_id)
+            helpers.set_connected_to(user, cable_node, b.handle_id)
+        return True
+
 
 @staff_member_required
 def edit_patch_panel(request, handle_id):
@@ -483,6 +559,8 @@ def edit_patch_panel(request, handle_id):
     location = patch_panel.get_location()
     location_path = patch_panel.get_location_path()
     ports = patch_panel.get_ports()
+
+    trunk_form = forms.TrunkCableForm(request.POST or None)
     if request.POST:
         form = forms.EditPatchPanelForm(request.POST)
         if form.is_valid():
@@ -495,15 +573,26 @@ def edit_patch_panel(request, handle_id):
             _handle_ports(patch_panel,
                           form.cleaned_data['relationship_ports'],
                           request.user)
-            if 'saveanddone' in request.POST:
+            if not _handle_trunk_cable(patch_panel, trunk_form, request.user):
+                # fall through to default return
+                form.add_error(None, 'Error in trunk cable')
+            elif 'saveanddone' in request.POST:
                 return redirect(nh.get_absolute_url())
             else:
                 return redirect('%sedit' % nh.get_absolute_url())
     else:
         form = forms.EditPatchPanelForm(patch_panel.data)
-    return render(request, 'noclook/edit/edit_patch_panel.html',
-                  {'node_handle': nh, 'node': patch_panel, 'form': form, 'location': location,
-                   'location_path': location_path,'ports': ports})
+    return render(
+        request,
+        'noclook/edit/edit_patch_panel.html',
+        {'node_handle': nh,
+         'node': patch_panel,
+         'form': form,
+         'trunk_form': trunk_form,
+         'location': location,
+         'location_path': location_path,
+         'ports': ports})
+
 
 @staff_member_required
 def edit_optical_fillter(request, handle_id):

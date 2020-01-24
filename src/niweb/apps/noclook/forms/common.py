@@ -928,3 +928,16 @@ class CsvForm(forms.Form):
         cleaned = form.cleaned_data
         raw = form.data
         return u",".join([cleaned.get(h) or raw.get(h, '') for h in headers])
+
+
+class TrunkCableForm(forms.Form):
+    trunk_base_name = forms.CharField(
+        required=False,
+        help_text='Basename for the trunk cable, each cable will be prefixed with this. If empty a new cable ID will be taken.')
+    trunk_relationship_other = relationship_field('other equipment')
+    # trunk_bundled = forms.BooleanField(required=False, help_text='Are the ports bundled? That is named e.g. 1+2')
+    trunk_port_type = forms.ChoiceField(required=False)
+    trunk_first_port = forms.IntegerField(required=False, min_value=0, initial=1, label='First port')
+    trunk_num_ports = forms.IntegerField(required=False, min_value=0, initial=0, label='Number of ports', help_text='Also number of cables that is in the trunk cable')
+    trunk_prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0', label='Port prefix')
+    trunk_create_missing_ports = forms.BooleanField(required=False, help_text='Force create missing ports', label='Create missing ports')

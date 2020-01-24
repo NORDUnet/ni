@@ -39,7 +39,7 @@
   </script>
 
   {{ field }}
-  <div class="control-group">
+  <div class="control-group{% if field.errors %} error{% endif %}">
     <label for="{{ field.id_for_label }}_typeahead" class="control-label">{{ field.label }}</label>
 
     {% if node_types %}
@@ -50,7 +50,11 @@
       </select>
     {% endif %}
     <div class="controls">
-      <input type="text" id="{{ field.id_for_label}}_typeahead" placeholder="{{ placeholder }}" />
+      <input type="text" id="{{ field.id_for_label}}_typeahead" placeholder="{{ placeholder }}"/>
+      {% for error in field.errors %}
+      <span class="help-inline">{{error}}</span>
+      {% endfor %}
+
     </div>
   </div>
 {% else %}

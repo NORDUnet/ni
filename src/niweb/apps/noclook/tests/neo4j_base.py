@@ -54,10 +54,14 @@ class NeoTestCase(TestCase):
     def get_ports(self, node):
         return node.get_ports().get("Has", [])
 
-    def get_node(self, name):
-        nh = NodeHandle.objects.filter(node_type__type=self.node_type).get(node_name=name)
+    def get_node(self, name, _type=None):
+        type = _type or self.node_type
+        nh = NodeHandle.objects.filter(node_type__type=type).get(node_name=name)
         node = nh.get_node()
         return nh, node
+
+    def query_to_list(self, q, **kwargs):
+        return nc.query_to_list(nc.graphdb.manager, q, **kwargs)
 
     def create(self, data):
         url = '/new/{}/'.format(slugify(self.node_type))

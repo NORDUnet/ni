@@ -181,7 +181,7 @@ def search_location_typeahead(request):
                 WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, l.handle_id as handle_id
                 WITH FILTER(path IN paths WHERE length(path) = maxLength) AS longestPaths, handle_id as handle_id
                 UNWIND(longestPaths) AS location_path
-                RETURN REDUCE(s = "", n IN location_path | s + n.name + " ") AS name, handle_id 
+                RETURN REDUCE(s = "", n IN location_path | s + n.name + " ") AS name, handle_id
                 """.format(".*".join(match_q))
             result = nc.query_to_list(nc.graphdb.manager, q)
         except Exception as e:
@@ -207,10 +207,12 @@ def search_non_location_typeahead(request):
                 WITH n.handle_id as handle_id,
                      coalesce(e.name, "") + " "+ n.name as name,
                      labels(n) as labels
-                WHERE name =~ '(?i).*{}.*'
+                WHERE name =~ $name_re
                 RETURN handle_id, trim(name) as name, labels ORDER BY name
-                """.format(".*".join(match_q))
-            result = nc.query_to_list(nc.graphdb.manager, q)
+                """
+            name_re = '(?i).*{}.*'.format('.*'.join(match_q))
+
+            result = nc.query_to_list(nc.graphdb.manager, q, name_re=name_re)
         except Exception as e:
             raise e
     for r in result:
@@ -223,28 +225,28 @@ def search_non_location_typeahead(request):
 
 
 @login_required
-def typeahead_slug(request, slug='Node'):
+def typeahead_slugs(request, slug='Node'):
     response = HttpResponse(content_type='application/json')
     to_find = request.GET.get('query', None)
     result = []
     if to_find:
         # split for search
-        match_q = neo4j_escape(to_find.split())
-        # TODO: optical-node => Optical_Node
-        label = slug.replace('-', '_').title()
+        match_q = to_find.split()
+        labels = [s.replace('-', '_').title() for s in slug.split('+')]
         try:
             q = """
-                MATCH (n:{})
+                MATCH (n:Node)
+                WHERE any(label in labels(n) where label in $labels)
                 OPTIONAL MATCH (n)<-[:Has]-(e:Node)
                 WITH n.handle_id as handle_id,
                      coalesce(e.name, "") + " "+ n.name as name
-                WHERE name =~ '(?i).*{}.*'
+                WHERE name =~ $name_re
                 RETURN handle_id, trim(name) as name
-                """.format(label, ".*".join(match_q),)
-            result = nc.query_to_list(nc.graphdb.manager, q)
+                """
+            name_re = '(?i).*{}.*'.format('.*'.join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q, labels=labels, name_re=name_re)
         except Exception as e:
             raise e
-    # TODO: do stuff with labels
     json.dump(result, response)
     return response
 
