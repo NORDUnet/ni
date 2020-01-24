@@ -40,38 +40,39 @@ class Command(BaseCommand):
 
     def delete_network_nodes(self):
         if settings.DEBUG: # guard against accidental deletion on the wrong environment
-            cable_type = self.get_nodetype('Cable')
-            provider_type = self.get_nodetype('Provider')
-            port_type = self.get_nodetype('Port')
+            delete_types = ['Cable', 'Provider', 'Port']
 
-            cable_num = NodeHandle.objects.filter(node_type=cable_type).count()
-            provider_num = NodeHandle.objects.filter(node_type=provider_type).count()
-            ports_num = NodeHandle.objects.filter(node_type=port_type).count()
+            total_nodes = 0
 
-            total_nodes = cable_num + provider_num + ports_num
+            for delete_type in delete_types:
+                total_nodes = total_nodes + self.get_node_num(delete_type)
 
             if total_nodes > 0:
                 deleted_nodes = 0
 
                 self.printProgressBar(deleted_nodes, total_nodes)
 
-                # delete cables
-                [x.delete() for x in NodeHandle.objects.filter(node_type=cable_type)]
-                deleted_nodes = deleted_nodes + cable_num
-                self.printProgressBar(deleted_nodes, total_nodes)
-
-                # delete providers
-                [x.delete() for x in NodeHandle.objects.filter(node_type=provider_type)]
-                deleted_nodes = deleted_nodes + provider_num
-                self.printProgressBar(deleted_nodes, total_nodes)
-
-                # delete ports
-                [x.delete() for x in NodeHandle.objects.filter(node_type=port_type)]
-                deleted_nodes = deleted_nodes + ports_num
-                self.printProgressBar(deleted_nodes, total_nodes)
+                for delete_type in delete_types:
+                    deleted_nodes = self.delete_type(delete_type, deleted_nodes, total_nodes)
 
     def get_nodetype(self, type_name):
         return NodeType.objects.get_or_create(type=type_name, slug=type_name.lower())[0]
+
+    def get_node_num(self, type_name):
+        node_type = self.get_nodetype(type_name)
+        node_num = NodeHandle.objects.filter(node_type=node_type).count()
+
+        return node_num
+
+    def delete_type(self, type_name, deleted_nodes, total_nodes):
+        node_type = self.get_nodetype(type_name)
+        node_num = self.get_node_num(type_name)
+
+        [x.delete() for x in NodeHandle.objects.filter(node_type=node_type)]
+        deleted_nodes = deleted_nodes + node_num
+        self.printProgressBar(deleted_nodes, total_nodes)
+
+        return deleted_nodes
 
     def printProgressBar (self, iteration, total, prefix = 'Progress', suffix = 'Complete', decimals = 1, length = 100, fill = '█'):
         """
