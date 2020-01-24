@@ -5,6 +5,7 @@ __author__ = 'ffuentes'
 from collections import OrderedDict
 from faker import Faker
 from apps.nerds.lib.consumer_util import get_user
+from apps.noclook import helpers
 from apps.noclook.models import NodeHandle, NodeType, Dropdown, Choice, NodeHandleContext
 from django.contrib.auth.models import User
 from norduniclient import META_TYPES
@@ -161,5 +162,8 @@ class NetworkFakeDataGenerator:
 
         for key, value in data.items():
             cable.get_node().add_property(key, value)
+
+        # add relationship to provider
+        helpers.set_provider(self.user, cable.get_node(), provider.handle_id)
 
         return cable
