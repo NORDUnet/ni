@@ -96,21 +96,37 @@ class NetworkFakeDataGenerator:
 
         self.user = user = get_user()
 
+        # set vars
+        self.max_cable_providers = 5
+        self.max_ports_total = 100
+
     def add_network_context(self, nh):
         net_ctx = sriutils.get_network_context()
         NodeHandleContext(nodehandle=nh, context=net_ctx).save()
 
-    def create_provider(self):
-        type = NodeType.objects.get_or_create(type='Provider', slug='provider')[0]
+    def get_nodetype(self, type_name):
+        return NodeType.objects.get_or_create(type=type_name, slug=type_name.lower())[0]
+
+    def get_or_create_node(self, node_name, type_name, meta_type):
+        node_type = self.get_nodetype(type_name)
 
         # create object
-        provider = NodeHandle.objects.get_or_create(
-            node_name=self.fake.company(),
-            node_type=type,
-            node_meta_type=META_TYPES[0],
+        nh = NodeHandle.objects.get_or_create(
+            node_name=node_name,
+            node_type=node_type,
+            node_meta_type=meta_type,
             creator=self.user,
             modifier=self.user
         )[0]
+
+        return nh
+
+    def get_dropdown_keys(self, dropdown_name):
+        return [ x[0] for x in Dropdown.get(dropdown_name).as_choices()[1:] ]
+
+    def create_provider(self):
+        provider = self.get_or_create_node(
+            self.fake.company(), 'Provider', META_TYPES[0])
 
         # add context
         self.add_network_context(provider)
@@ -124,8 +140,32 @@ class NetworkFakeDataGenerator:
 
         return provider
 
+    def create_port(self):
+        type = self.get_nodetype('Port')
+
+        # create object
+        port = self.get_or_create_node(
+            self.fake.company(), str(random.randint(0, 50000)), META_TYPES[0])
+
+        # add context
+        self.add_network_context(port)
+
+        # add data
+        port_types = self.get_dropdown_keys('port_types')
+
+        data = {
+            'port_type' : random.choice(port_types),
+            'description' : self.fake.paragraph(),
+            #'relationship_parent' : -1, # not used for the moment
+        }
+
+        for key, value in data.items():
+            port.get_node().add_property(key, value)
+
+        return port
+
     def create_cable(self):
-        type = NodeType.objects.get_or_create(type='Cable', slug='cable')[0]
+        type = self.get_nodetype('Cable')
 
         # create object
         cable = NodeHandle.objects.get_or_create(
@@ -140,13 +180,13 @@ class NetworkFakeDataGenerator:
         self.add_network_context(cable)
 
         # add data
-        cable_types = [ x[0] for x in Dropdown.get('cable_types').as_choices()[1:] ]
+        cable_types = self.get_dropdown_keys('cable_types')
 
         # check if there's any provider or if we should create one
         provider_type = NodeType.objects.get_or_create(type='Provider', slug='provider')[0]
         providers = NodeHandle.objects.filter(node_type=provider_type)
 
-        max_providers = 5
+        max_providers = self.max_cable_providers
         provider = None
 
         if not providers or len(providers) < max_providers:

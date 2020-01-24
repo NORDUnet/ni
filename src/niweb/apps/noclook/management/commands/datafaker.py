@@ -42,12 +42,14 @@ class Command(BaseCommand):
         if settings.DEBUG: # guard against accidental deletion on the wrong environment
             cable_type = self.get_nodetype('Cable')
             provider_type = self.get_nodetype('Provider')
+            port_type = self.get_nodetype('Port')
 
             cable_num = NodeHandle.objects.filter(node_type=cable_type).count()
             provider_num = NodeHandle.objects.filter(node_type=provider_type).count()
+            ports_num = NodeHandle.objects.filter(node_type=port_type).count()
 
-            total_nodes = cable_num + provider_num
-            
+            total_nodes = cable_num + provider_num + ports_num
+
             if total_nodes > 0:
                 deleted_nodes = 0
 
@@ -61,6 +63,11 @@ class Command(BaseCommand):
                 # delete providers
                 [x.delete() for x in NodeHandle.objects.filter(node_type=provider_type)]
                 deleted_nodes = deleted_nodes + provider_num
+                self.printProgressBar(deleted_nodes, total_nodes)
+
+                # delete ports
+                [x.delete() for x in NodeHandle.objects.filter(node_type=port_type)]
+                deleted_nodes = deleted_nodes + ports_num
                 self.printProgressBar(deleted_nodes, total_nodes)
 
     def get_nodetype(self, type_name):
