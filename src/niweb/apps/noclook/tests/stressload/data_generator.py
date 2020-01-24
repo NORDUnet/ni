@@ -93,12 +93,37 @@ class NetworkFakeDataGenerator:
         if seed:
             self.fake.seed_instance(seed)
 
+        self.user = user = get_user()
+
     def add_network_context(self, nh):
         net_ctx = sriutils.get_network_context()
         NodeHandleContext(nodehandle=nh, context=net_ctx).save()
 
+    def create_provider(self):
+        type = NodeType.objects.get_or_create(type='Provider', slug='provider')[0]
+
+        # create object
+        provider = NodeHandle.objects.get_or_create(
+            node_name=self.fake.company(),
+            node_type=type,
+            node_meta_type=META_TYPES[0],
+            creator=self.user,
+            modifier=self.user
+        )[0]
+
+        # add context
+        self.add_network_context(provider)
+
+        data = {
+            'url' : self.fake.url(),
+        }
+
+        for key, value in data.items():
+            provider.get_node().add_property(key, value)
+
+        return provider
+
     def create_cable(self):
-        user = get_user()
         type = NodeType.objects.get_or_create(type='Cable', slug='cable')[0]
 
         # create object
@@ -106,8 +131,8 @@ class NetworkFakeDataGenerator:
             node_name=self.fake.hostname(),
             node_type=type,
             node_meta_type=META_TYPES[0],
-            creator=user,
-            modifier=user
+            creator=self.user,
+            modifier=self.user
         )[0]
 
         # add context
@@ -116,9 +141,22 @@ class NetworkFakeDataGenerator:
         # add data
         cable_types = [ x[0] for x in Dropdown.get('cable_types').as_choices()[1:] ]
 
+        # check if there's any provider or if we should create one
+        provider_type = NodeType.objects.get_or_create(type='Provider', slug='provider')[0]
+        providers = NodeHandle.objects.filter(node_type=provider_type)
+
+        max_providers = 5
+        provider = None
+
+        if not providers or len(providers) < max_providers:
+            provider = self.create_provider()
+        else:
+            provider = random.choice(list(providers))
+
         data = {
             'cable_type' : random.choice(cable_types),
             'description' : self.fake.paragraph(),
+            'relationship_provider' : provider.handle_id,
         }
 
         for key, value in data.items():
