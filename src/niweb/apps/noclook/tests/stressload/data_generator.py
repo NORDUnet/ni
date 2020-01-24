@@ -4,8 +4,12 @@ __author__ = 'ffuentes'
 
 from collections import OrderedDict
 from faker import Faker
-from apps.noclook.models import Dropdown, Choice
+from apps.nerds.lib.consumer_util import get_user
+from apps.noclook.models import NodeHandle, NodeType, Dropdown, Choice, NodeHandleContext
+from django.contrib.auth.models import User
+from norduniclient import META_TYPES
 
+import apps.noclook.vakt.utils as sriutils
 import random
 
 class FakeDataGenerator:
@@ -76,3 +80,48 @@ class FakeDataGenerator:
         }
 
         return group_dict
+
+
+class NetworkFakeDataGenerator:
+    def __init__(self, seed=None):
+        locales = OrderedDict([
+            ('en_GB', 1),
+            ('sv_SE', 2),
+        ])
+        self.fake = Faker(locales)
+
+        if seed:
+            self.fake.seed_instance(seed)
+
+    def add_network_context(self, nh):
+        net_ctx = sriutils.get_network_context()
+        NodeHandleContext(nodehandle=nh, context=net_ctx).save()
+
+    def create_cable(self):
+        user = get_user()
+        type = NodeType.objects.get_or_create(type='Cable', slug='cable')[0]
+
+        # create object
+        cable = NodeHandle.objects.get_or_create(
+            node_name=self.fake.hostname(),
+            node_type=type,
+            node_meta_type=META_TYPES[0],
+            creator=user,
+            modifier=user
+        )[0]
+
+        # add context
+        self.add_network_context(cable)
+
+        # add data
+        cable_types = [ x[0] for x in Dropdown.get('cable_types').as_choices()[1:] ]
+
+        data = {
+            'cable_type' : random.choice(cable_types),
+            'description' : self.fake.paragraph(),
+        }
+
+        for key, value in data.items():
+            cable.get_node().add_property(key, value)
+
+        return cable
