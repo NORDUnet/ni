@@ -281,10 +281,15 @@ def get_peering_partner(peering):
         'name': 'Missing description',
         'as_number': '0'
     }
+    # neither description or as_number error and return
+    if not (peering.get('description') or peering.get('as_number')):
+        logger.error('Neither AS number nor description in peering %s', peering)
+        return None
     if peering.get('description'):
         peer_properties['name'] = peering.get('description')
     if peering.get('as_number'):
         peer_properties['as_number'] = peering.get('as_number')
+        # as number is most important
         hits = nc.get_nodes_by_value(nc.graphdb.manager, prop='as_number', value=peer_properties['as_number'])
         found = 0
         for node in hits:
@@ -296,17 +301,31 @@ def get_peering_partner(peering):
             found += 1
         if found > 1:
             logger.error('Found more then one Peering Partner with AS number {!s}'.format(peer_properties['as_number']))
+
         if not peer_node:
+            # since we have a AS number we will create a new Peering Partner, even if name is missing or exists
             node_handle = utils.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
             peer_node = node_handle.get_node()
             helpers.set_noclook_auto_manage(peer_node, True)
             helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
-            logger.info('Peering Partner {name} created.'.format(name=peer_properties['name']))
-        PEER_AS_CACHE[peering['as_number']] = peer_node
-    else:
-        # no as number
-        logger.error('No AS number in peering %s', peering)
+            logger.info('Peering Partner %s AS(%s) created.', peer_properties['name'], peer_properties['as_number'])
 
+    # Handle peer with name only
+    if not peer_node and peering.get('description'):
+        # find or create using name
+        peer_nh = utils.get_unique_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
+        peer_node = peer_nh.get_node()
+        if not peer_node.data.get('as_number'):
+            # Peering partner did not exist
+            # AS number is going to be 0, but that is ok
+            helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
+
+        elif peer_node.data.get('as_number') != '0':
+            # warn about as number not being in peering
+            logger.warning('Peering found for Peering Partner %s without the AS number %s mentioned. Peering: %s', peer_properties['name'], peer_node.data.get('as_number'), peering)
+        helpers.set_noclook_auto_manage(peer_node, True)
+
+    PEER_AS_CACHE[peering['as_number']] = peer_node
     return peer_node
 
 
