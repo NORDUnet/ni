@@ -229,10 +229,10 @@ class NetworkFakeDataGenerator:
 
         # add data
         num_ips = random.randint(0,4)
-        ip_adresses = self.fake.ipv4()
+        ip_adresses = [self.fake.ipv4()]
 
         for i in range(num_ips):
-            ip_adresses = '{}\n{}'.format(ip_adresses, self.fake.ipv4())
+            ip_adresses.append(self.fake.ipv4())
 
         operational_states = self.get_dropdown_keys('operational_states')
         managed_by = self.get_dropdown_keys('host_management_sw')
