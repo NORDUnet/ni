@@ -317,6 +317,7 @@ def get_peering_partner(peering):
         peer_node = peer_nh.get_node()
         if not peer_node.data.get('as_number'):
             # Peering partner did not exist
+            logger.warning('Peering Partner %s without AS number created for peering: %s', peer_node.data.get('name'), peering)
             # AS number is going to be 0, but that is ok
             helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
 
