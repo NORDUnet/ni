@@ -6,7 +6,7 @@
 {% block js %}
 <script src="{% static "js/jquery/js.cookie.min.js" %}"></script>
 <script type="text/javascript">
-Cookies.remove("JWT", { domain: '.localenv.loc' });
+Cookies.remove("JWT", { domain: "{{ cookie_domain }}" });
 document.location.href = '/';
 </script>
 {% endblock %}
