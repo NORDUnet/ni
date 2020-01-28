@@ -31,7 +31,7 @@ def logout_page(request):
     """
     Log users out and redirects them to the index.
     """
-    response = redirect('/')
+    response = render(request, 'noclook/index.html', {})
     response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
     request.session.flush()
 
