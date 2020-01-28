@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ block.super }} | Welcome{% endblock %}
 
 {% block js %}
-<script src="https://cdn.jsdelivr.net/npm/js-cookie@beta/dist/js.cookie.min.js"></script>
+<script src="{% static "js/jquery/js.cookie.min.js" %}"></script>
 <script type="text/javascript">
 Cookies.remove("JWT", { domain: '.localenv.loc' });
 document.location.href = '/';
