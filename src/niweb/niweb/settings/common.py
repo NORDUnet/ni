@@ -216,6 +216,8 @@ if SAML_ENABLED:
     MIDDLEWARE += (
         'apps.saml2auth.middleware.HandleUnsupportedBinding',
     )
+    # Needed since django 2+ sets lax per default
+    SESSION_COOKIE_SAMESITE = None
 ######### END AUTHENTICATION BACKENDS CONFIGURATION
 
 ########## URL CONFIGURATION
