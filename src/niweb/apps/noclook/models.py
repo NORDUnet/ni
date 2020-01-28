@@ -89,16 +89,21 @@ class NodeHandle(models.Model):
     def url(self):
         return reverse('generic_detail', args=[self.node_type.get_slug(), self.handle_id])
 
+    def _create_node(self, label=None):
+        if not label:
+            label = self.node_type.get_label()
+        try:
+            nc.create_node(nc.graphdb.manager, self.node_name, self.node_meta_type, label, self.handle_id)
+        except CypherError:
+            #  A node associated with this handle_id already exists
+            pass
+
     def save(self, *args, **kwargs):
         """
         Create a new node and associate it to the handle.
         """
         super(NodeHandle, self).save(*args, **kwargs)
-        try:
-            nc.create_node(nc.graphdb.manager, self.node_name, self.node_meta_type, self.node_type.get_label(), self.handle_id)
-        except CypherError:
-            #  A node associated with this handle_id already exists
-            pass
+        self._create_node()
         return self
 
     save.alters_data = True
