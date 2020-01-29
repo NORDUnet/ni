@@ -32,7 +32,7 @@ from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
-from apps.noclook.models import UniqueIdGenerator
+from apps.noclook.models import UniqueIdGenerator, NodeHandle
 
 logger = logging.getLogger('noclook_consumer.juniper')
 
@@ -312,9 +312,15 @@ def get_peering_partner(peering):
 
     # Handle peer with name only
     if not peer_node and peering.get('description'):
-        # find or create using name
-        peer_nh = utils.get_unique_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
-        peer_node = peer_nh.get_node()
+        # Try and get peer_partners
+        res = NodeHandle.objects.filter(node_name__iexact=peer_properties['name'], node_type__type='Peering Partner').order_by('-modified')
+        for ph in res:
+            peer_node = ph.get_node()
+            break
+        if not peer_node:
+            # create
+            peer_nh = utils.get_unique_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
+            peer_node = peer_nh.get_node()
         if not peer_node.data.get('as_number'):
             # Peering partner did not exist
             logger.warning('Peering Partner %s without AS number created for peering: %s', peer_node.data.get('name'), peering)
