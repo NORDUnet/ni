@@ -3,6 +3,7 @@ from django.conf.urls import include, url
 from tastypie.api import Api
 import apps.noclook.api.resources as niapi
 from django.contrib.auth import views as auth_views
+from django.conf.urls.static import static
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -97,3 +98,6 @@ urlpatterns += [
     # NOCLook URLs
     url(r'', include('apps.noclook.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
