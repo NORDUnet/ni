@@ -518,8 +518,9 @@ def remove_peer_conf(user, data_age):
         if relationship:
             last_seen, expired = helpers.neo4j_data_age(relationship.data, data_age)
             if expired:
+                rel_info = helpers.relationship_to_str(relationship)
                 helpers.delete_relationship(user, relationship.id)
-                logger.warning('Deleted relationship {name} ({relationship_id})'.format(name=relationship.data, relationship_id=relationship_id))
+                logger.warning('Deleted relationship {rel_info}'.format(rel_info=rel_info))
     for handle_id in peer_result.get('peer_groups', []):
         peer_group = nc.get_node_model(nc.graphdb.manager, handle_id)
         if peer_group:

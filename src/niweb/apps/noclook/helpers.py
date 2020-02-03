@@ -882,3 +882,22 @@ def attachment_content(attachment):
     with open(file_name, 'r') as f:
         content = f.read()
     return content
+
+
+def relationship_to_str(relationship):
+    """
+    Takes a relationship and returns a string representation of the relationship:
+    ("":Router)<-[:Has]-("":Port)
+    """
+    if isinstance(relationship, int):
+        rel = nc.get_relationship_model(nc.graphdb.models, relationship)
+    else:
+        rel = relationship
+    return '({a_name} ({a_handle_id}))-[{rel_id}:{rel_type}]->({b_name} (b_handle_id))'.format(
+        a_name=rel.start['name'],
+        a_handle_id=rel.start['handle_id'],
+        rel_id=rel.id,
+        rel_type=rel.type,
+        b_name=rel.end['name'],
+        b_handle_id=rel.end['handle_id'],
+    )
