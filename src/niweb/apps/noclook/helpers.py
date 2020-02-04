@@ -893,7 +893,7 @@ def relationship_to_str(relationship):
         rel = nc.get_relationship_model(nc.graphdb.models, relationship)
     else:
         rel = relationship
-    return '({a_name} ({a_handle_id}))-[{rel_id}:{rel_type}]->({b_name} (b_handle_id))'.format(
+    return '({a_name} ({a_handle_id}))-[{rel_id}:{rel_type}]->({b_name} ({b_handle_id}))'.format(
         a_name=rel.start['name'],
         a_handle_id=rel.start['handle_id'],
         rel_id=rel.id,
