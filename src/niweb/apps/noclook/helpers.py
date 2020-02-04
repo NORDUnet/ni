@@ -890,7 +890,7 @@ def relationship_to_str(relationship):
     ("":Router)<-[:Has]-("":Port)
     """
     if isinstance(relationship, int):
-        rel = nc.get_relationship_model(nc.graphdb.models, relationship)
+        rel = nc.get_relationship_model(nc.graphdb.manager, relationship)
     else:
         rel = relationship
     return '({a_name} ({a_handle_id}))-[{rel_id}:{rel_type}]->({b_name} ({b_handle_id}))'.format(
