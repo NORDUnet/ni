@@ -14,6 +14,29 @@ def cli():
     return parser.parse_args()
 
 
+def cleanup_activity_created(node_handles, dry_run=False):
+    total_deleted = 0
+    for nh in node_handles:
+        node_log = {}
+        to_delete = set()
+        for action in nh.action_object_actions.all().reverse():
+            # could also check if action.data.noclook.action_type == relationship
+            previous_action = nh.get(action.target_object_id)
+            if previous_action == action.verb:
+                if action.verb == 'create':
+                    logger.info('Mark for deletion %s for %s', action, nh)
+                    to_delete.add(action.id)
+            else:
+                node_log[action.target_object_id] = action.verb
+        deletions = len(to_delete)
+        if deletions > 0:
+            if not dry_run:
+                Action.objects.filter(id__in=to_delete).delete()
+            total_deleted += deletions
+            logger.warning('Deleted %d useless actions for %s (%s)', deletions, nh, nh.handle_id)
+    logger.warning('Total usless actions deleted: %d', total_deleted)
+
+
 def main():
     args = cli()
 
@@ -24,27 +47,8 @@ def main():
     # get all peering partners
     peer_type = NodeType.objects.get(type='Peering Partner')
     nh_peers = NodeHandle.objects.filter(node_type=peer_type)
-    # for each check activity log
-    total_deleted = 0
-    for peer_nh in nh_peers:
-        peer_log = {}
-        to_delete = set()
-        for action in peer_nh.action_object_actions.all().reverse():
-            # could also check if action.data.noclook.action_type == relationship
-            previous_action = peer_log.get(action.target_object_id)
-            if previous_action == action.verb:
-                if action.verb == 'create':
-                    logger.info('Mark for deletion %s for %s', action, peer_nh)
-                    to_delete.add(action.id)
-            else:
-                peer_log[action.target_object_id] = action.verb
-        deletions = len(to_delete)
-        if deletions > 0:
-            if not args.dry_run:
-                Action.objects.filter(id__in=to_delete).delete()
-            total_deleted += deletions
-            logger.warning('Deleted %d useless actions for %s (%s)', deletions, peer_nh, peer_nh.handle_id)
-    logger.warning('Total usless actions deleted: %d', total_deleted)
+
+    cleanup_activity_created(nh_peers, args.dry_run)
 
 
 if __name__ == '__main__':
