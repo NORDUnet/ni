@@ -11,6 +11,7 @@ def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument('--verbose', '-V', action='store_true', default=False)
     parser.add_argument('--dry-run', '-N', action='store_true', default=False)
+    parser.add_argument('--delete-missing-descriptions', action='store_true', default=False)
     return parser.parse_args()
 
 
@@ -60,7 +61,8 @@ def main():
     nh_peers = NodeHandle.objects.filter(node_type=peer_type)
 
     cleanup_activity_created(nh_peers, args.dry_run)
-    cleanup_missing_description(args.dry_run)
+    if args.delete_missing_descriptions:
+        cleanup_missing_description(args.dry_run)
 
 
 if __name__ == '__main__':
