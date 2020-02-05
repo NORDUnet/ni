@@ -21,7 +21,7 @@ def cleanup_activity_created(node_handles, dry_run=False):
         to_delete = set()
         for action in nh.action_object_actions.all().reverse():
             # could also check if action.data.noclook.action_type == relationship
-            previous_action = nh.get(action.target_object_id)
+            previous_action = node_log.get(action.target_object_id)
             if previous_action == action.verb:
                 if action.verb == 'create':
                     logger.info('Mark for deletion %s for %s', action, nh)
