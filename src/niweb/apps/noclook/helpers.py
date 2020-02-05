@@ -633,7 +633,6 @@ def set_user(user, node, user_id):
     result = node.set_user(user_id)
     relationship_id = result.get('Uses')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
-    activitylog.create_relationship(user, relationship)
     created = result.get('Uses')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
