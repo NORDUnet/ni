@@ -37,6 +37,17 @@ def cleanup_activity_created(node_handles, dry_run=False):
     logger.warning('Total usless actions deleted: %d', total_deleted)
 
 
+def cleanup_missing_description(dry_run=False):
+    count = 0
+    for nh in NodeHandle.objects.filter(node_type__type='Peering Partner', node_name='Missing description'):
+        node = nh.get_node()
+        if node.data.get('as_number') == '0':
+            if not dry_run:
+                nh.delete()
+            count += 1
+    logger.warning('Total missing description peering partners deleted: %d', count)
+
+
 def main():
     args = cli()
 
@@ -49,6 +60,7 @@ def main():
     nh_peers = NodeHandle.objects.filter(node_type=peer_type)
 
     cleanup_activity_created(nh_peers, args.dry_run)
+    cleanup_missing_description(args.dry_run)
 
 
 if __name__ == '__main__':
