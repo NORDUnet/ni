@@ -161,7 +161,7 @@ class NIListField(NIBasicField):
 
 
 class IDRelation(graphene.ObjectType):
-    id = graphene.ID()
+    entity_id = graphene.ID()
     relation_id = graphene.Int()
 
 
@@ -210,7 +210,7 @@ class NIRelationListField(NIBasicField):
                         type_str, str(node_id)
                     )
                     id_relation = IDRelation()
-                    id_relation.id = id
+                    id_relation.entity_id = id
                     id_relation.relation_id = relation_id
                     handle_id_list.append(id_relation)
 
