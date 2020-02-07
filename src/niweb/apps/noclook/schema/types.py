@@ -58,6 +58,7 @@ class Group(NIObjectType):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
     contacts = NIListField(type_args=(lambda: Contact,), rel_name='Member_of', rel_method='get_relations')
+    contact_relations = NIRelationListField(rel_name='Member_of', rel_method='get_relations', graphene_type=lambda: Contact)
 
     class NIMetaType:
         ni_type = 'Group'
@@ -109,6 +110,7 @@ class Organization(NIObjectType):
     type = NIChoiceField()
     website = NIStringField()
     addresses = NIListField(type_args=(Address,), rel_name='Has_address', rel_method='get_outgoing_relations')
+    addresses_relations = NIRelationListField(rel_name='Has_address', rel_method='get_outgoing_relations', graphene_type= Address)
     affiliation_customer = NIBooleanField()
     affiliation_end_customer = NIBooleanField()
     affiliation_provider = NIBooleanField()
@@ -117,6 +119,7 @@ class Organization(NIObjectType):
     affiliation_site_owner = NIBooleanField()
     parent_organization = NIListField(type_args=(lambda: Organization,), rel_name='Parent_of', rel_method='get_relations')
     contacts = NIListField(type_args=(lambda: Contact,), rel_name='Works_for', rel_method='get_relations')
+    contacts_relations = NIRelationListField(rel_name='Works_for', rel_method='get_relations', graphene_type=lambda: Contact)
 
     class NIMetaType:
         ni_type = 'Organization'
@@ -186,11 +189,14 @@ class Contact(NIObjectType):
     salutation = NIStringField()
     contact_type = NIChoiceField()
     phones = NIListField(type_args=(Phone,), rel_name='Has_phone', rel_method='get_outgoing_relations')
+    phones_relations = NIRelationListField(rel_name='Has_phone', rel_method='get_outgoing_relations', graphene_type=Phone)
     emails = NIListField(type_args=(Email,), rel_name='Has_email', rel_method='get_outgoing_relations')
+    emails_relations = NIRelationListField(rel_name='Has_email', rel_method='get_outgoing_relations', graphene_type=Email)
     pgp_fingerprint = NIStringField()
     member_of_groups = NIListField(type_args=(Group,), rel_name='Member_of', rel_method='get_outgoing_relations')
     roles = NIRelationField(rel_name=RoleRelationship.RELATION_NAME, type_args=(RoleRelation, ))
     organizations = NIListField(type_args=(Organization,), rel_name='Works_for', rel_method='get_outgoing_relations')
+    organizations_relations = NIRelationListField(rel_name='Works_for', rel_method='get_outgoing_relations', graphene_type=Organization)
     notes = NIStringField()
 
     class NIMetaType:
