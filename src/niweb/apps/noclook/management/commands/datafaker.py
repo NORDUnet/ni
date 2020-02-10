@@ -10,6 +10,7 @@ logger = logging.getLogger('noclook.management.datafaker')
 
 class Command(BaseCommand):
     help = 'Create fake data for the Network module'
+    generated_types = ['Cable', 'Provider', 'Port', 'Host', 'Router', 'Switch']
 
     def add_arguments(self, parser):
         parser.add_argument("--equipmentcables",
@@ -33,6 +34,8 @@ class Command(BaseCommand):
         create_funcs = [
             generator.create_cable,
             generator.create_host,
+            generator.create_router,
+            generator.create_switch,
         ]
 
         total_nodes = numnodes * len(create_funcs)
@@ -47,7 +50,7 @@ class Command(BaseCommand):
 
     def delete_network_nodes(self):
         if settings.DEBUG: # guard against accidental deletion on the wrong environment
-            delete_types = ['Cable', 'Provider', 'Port', 'Host']
+            delete_types = self.generated_types
 
             total_nodes = 0
 

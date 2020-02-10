@@ -219,10 +219,13 @@ class NetworkFakeDataGenerator:
 
         return cable
 
-    def create_host(self, type_name="Host", metatype=META_TYPES[0]):
+    def create_host(self, name=None, type_name="Host", metatype=META_TYPES[0]):
         # create object
+        if not name:
+            name = self.fake.hostname()
+
         host = self.get_or_create_node(
-            self.fake.hostname(), type_name, metatype)
+            name, type_name, metatype)
 
         # add context
         self.add_network_context(host)
@@ -269,3 +272,43 @@ class NetworkFakeDataGenerator:
             host.get_node().add_property(key, value)
 
         return host
+
+    def create_router(self):
+        # create object
+        router_name = '{}-{}'.format(
+            self.fake.safe_color_name(), self.fake.ean8())
+        router = self.get_or_create_node(
+            router_name, 'Router', META_TYPES[0])
+
+        # add context
+        self.add_network_context(router)
+
+        # add data
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        data = {
+            'rack_units': random.randint(1,10),
+            'rack_position': random.randint(1,10),
+            'operational_state': random.choice(operational_states),
+            'description': self.fake.paragraph(),
+            'model': self.fake.license_plate(),
+            'version': '{}.{}'.format(random.randint(0,20), random.randint(0,99)),
+        }
+
+        for key, value in data.items():
+            router.get_node().add_property(key, value)
+
+        return router
+
+    def create_switch(self):
+        # create object
+        switch_name = '{}-{}'.format(
+            self.fake.safe_color_name(), self.fake.ean8())
+        switch = self.create_host(switch_name, "Switch")
+
+        data = {
+            'max_number_of_ports': random.randint(5,25),
+        }
+
+        for key, value in data.items():
+            switch.get_node().add_property(key, value)
