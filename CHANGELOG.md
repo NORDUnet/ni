@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2020-02-11
+### Fixed
+- Typeahead search had a problem with `-` in python 3 due to bad regex escaping.
+
 ## 2020-02-06
 ### Added
 - Download link for router hardware info

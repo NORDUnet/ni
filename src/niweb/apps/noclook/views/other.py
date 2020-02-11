@@ -142,7 +142,7 @@ def search_port_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = neo4j_escape(to_find.split())
+        match_q = to_find.split()
         try:
             q = """
                 MATCH (port:Port)<-[:Has]-(n:Node)
@@ -155,10 +155,11 @@ def search_port_typeahead(request):
                  handle_id AS handle_id, parent_id AS parent_id, port_name AS port_name, node_name AS node_name
                 UNWIND(longestPaths) AS location_path
                 WITH REDUCE(s = "", n IN location_path | s + n.name + " ") + node_name + " " + port_name AS name, handle_id, parent_id
-                WHERE name =~ '(?i).*{}.*'
+                WHERE name =~ $name_re
                 RETURN name, handle_id, parent_id
-                """.format(".*".join(match_q))
-            result = nc.query_to_list(nc.graphdb.manager, q)
+                """
+            name_re = '(?i).*{}.*'.format('.*'.join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q, name_re=name_re)
         except Exception as e:
             raise e
     json.dump(result, response)
@@ -172,18 +173,19 @@ def search_location_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = neo4j_escape(to_find.split())
+        match_q = to_find.split()
         try:
             # find all has relations to the top
             q = """
-                MATCH (l:Location) WHERE l.name =~ '(?i).*{}.*'
+                MATCH (l:Location) WHERE l.name =~ $name_re
                 MATCH p = () - [:Has * 0..20]->(l)
                 WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, l.handle_id as handle_id
                 WITH FILTER(path IN paths WHERE length(path) = maxLength) AS longestPaths, handle_id as handle_id
                 UNWIND(longestPaths) AS location_path
                 RETURN REDUCE(s = "", n IN location_path | s + n.name + " ") AS name, handle_id
-                """.format(".*".join(match_q))
-            result = nc.query_to_list(nc.graphdb.manager, q)
+                """
+            name_re = '(?i).*{}.*'.format('.*'.join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q, name_re=name_re)
         except Exception as e:
             raise e
     json.dump(result, response)
@@ -198,7 +200,7 @@ def search_non_location_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = neo4j_escape(to_find.split())
+        match_q = to_find.split()
         try:
             q = """
                 MATCH (n:Node)
