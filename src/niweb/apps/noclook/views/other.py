@@ -129,10 +129,10 @@ def search_autocomplete(request):
     return False
 
 
-def neo4j_escape(_in):
+def regex_escape(_in):
     if type(_in) is list:
-        return map(neo4j_escape, _in)
-    return re_escape(_in).replace('\\', '\\\\')
+        return map(regex_escape, _in)
+    return re_escape(_in)
 
 
 @login_required
@@ -142,7 +142,7 @@ def search_port_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = to_find.split()
+        match_q = regex_escape(to_find.split())
         try:
             q = """
                 MATCH (port:Port)<-[:Has]-(n:Node)
@@ -173,7 +173,7 @@ def search_location_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = to_find.split()
+        match_q = regex_escape(to_find.split())
         try:
             # find all has relations to the top
             q = """
@@ -200,7 +200,7 @@ def search_non_location_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = to_find.split()
+        match_q = regex_escape(to_find.split())
         try:
             q = """
                 MATCH (n:Node)
@@ -233,7 +233,7 @@ def typeahead_slugs(request, slug='Node'):
     result = []
     if to_find:
         # split for search
-        match_q = to_find.split()
+        match_q = regex_escape(to_find.split())
         labels = [s.replace('-', '_').title() for s in slug.split('+')]
         try:
             q = """

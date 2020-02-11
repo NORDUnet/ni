@@ -27,7 +27,7 @@ class SearchTypeaheadPortsCase(NeoTestCase):
         helpers.set_location(self.user, router_node, site.handle_id)
         helpers.create_port(router_node, "ge-0/0/1", self.user)
         helpers.create_port(router_node, "ge-0/0/2", self.user)
-        helpers.create_port(router_node, "ge-0/1/1", self.user)
+        helpers.create_port(router_node, "ge-1/1/1", self.user)
 
     def test_one_result(self):
         resp = self.client.get(self.typeahead_url, {"query": "hex odf 3+4"})
@@ -35,6 +35,13 @@ class SearchTypeaheadPortsCase(NeoTestCase):
         self.assertEqual(1, len(result))
         odf = result[0]
         self.assertEqual("UK-HEX A.01 test-odf1 3+4", odf.get("name"))
+
+    def test_search_with_dash(self):
+        resp = self.client.get(self.typeahead_url, {"query": "ge-1"})
+        result = resp.json()
+        self.assertEqual(1, len(result))
+        port = result[0]
+        self.assertEqual('UK-HEX uk-hex.nordu.net ge-1/1/1', port.get("name"))
 
     def test_no_result(self):
         resp = self.client.get(self.typeahead_url, {"query": "ore2 odf"})
