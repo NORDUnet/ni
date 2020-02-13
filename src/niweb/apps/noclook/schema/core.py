@@ -183,7 +183,6 @@ class CommentType(DjangoObjectType):
     class Meta:
         model = Comment
         interfaces = (relay.Node, )
-        exclude_fields = ('object_pk', )
 
 input_fields_clsnames = {}
 
