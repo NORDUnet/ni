@@ -5,13 +5,14 @@ from apps.noclook.models import NodeHandle, Dropdown, Choice, Role, Group, \
     GroupContextAuthzAction, NodeHandleContext, DEFAULT_ROLEGROUP_NAME
 from collections import OrderedDict
 from django.utils.dateparse import parse_datetime
+from graphene import relay
 from niweb.schema import schema
 from pprint import pformat
 from . import Neo4jGraphQLTest
 
 from datetime import datetime
 
-class QueryTest(Neo4jGraphQLTest):
+class SimpleListTest(Neo4jGraphQLTest):
     def test_simple_list(self):
         # query all available types
         test_types = {
@@ -51,6 +52,7 @@ class QueryTest(Neo4jGraphQLTest):
                                                 pformat(expected, indent=1)
                                             )
 
+class ConnectionsTest(Neo4jGraphQLTest):
     def test_connections(self):
         # test contacts: slicing and ordering
         query = '''
@@ -511,6 +513,8 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
+
+class DropdownTest(Neo4jGraphQLTest):
     def test_dropdown(self):
         query = '''
         {
@@ -534,6 +538,8 @@ class QueryTest(Neo4jGraphQLTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
+
+class RelationResolversTest(Neo4jGraphQLTest):
     def test_relation_resolvers(self):
         ## get aux entities types
         # get phone types
@@ -580,7 +586,7 @@ class QueryTest(Neo4jGraphQLTest):
           groups(orderBy: handle_id_ASC, first: 1) {
             edges {
               node {
-                handle_id
+                id
               }
             }
           }
@@ -589,8 +595,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        group_handle_id = result.data['groups']['edges'][0]['node']['handle_id']
-        group_handle_id = int(group_handle_id)
+        group_handle_id = result.data['groups']['edges'][0]['node']['id']
 
         # get the two contacts
         query= """
@@ -598,7 +603,7 @@ class QueryTest(Neo4jGraphQLTest):
           contacts(orderBy: handle_id_ASC, first: 2){
             edges{
               node{
-                handle_id
+                id
                 first_name
                 last_name
                 contact_type
@@ -610,12 +615,10 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        contact_1_id = result.data['contacts']['edges'][0]['node']['handle_id']
-        contact_1_id = int(contact_1_id)
+        contact_1_id = result.data['contacts']['edges'][0]['node']['id']
         contact_1_fname = result.data['contacts']['edges'][0]['node']['first_name']
         contact_1_lname = result.data['contacts']['edges'][0]['node']['last_name']
-        contact_2_id = result.data['contacts']['edges'][1]['node']['handle_id']
-        contact_2_id = int(contact_2_id)
+        contact_2_id = result.data['contacts']['edges'][1]['node']['id']
         contact_2_fname = result.data['contacts']['edges'][1]['node']['first_name']
         contact_2_lname = result.data['contacts']['edges'][1]['node']['last_name']
 
@@ -626,7 +629,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
         mutation{{
           create_phone(input:{{
-            contact: {contact_1_id},
+            contact: "{contact_1_id}",
             name: "{phone_number}"
             type: "{phone_type}",
           }}){{
@@ -635,7 +638,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }}
             phone{{
-              handle_id
+              id
               name
               type
             }}
@@ -649,14 +652,14 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.data['create_phone']['errors'], \
             pformat(result.data['create_phone']['errors'], indent=1)
 
-        phone_id = result.data['create_phone']['phone']['handle_id']
+        phone_id = result.data['create_phone']['phone']['id']
 
         # create an email for the first contact
         email_dir = "cnewby1@joomla.org"
         query = """
         mutation{{
           create_email(input:{{
-            contact: {contact_1_id},
+            contact: "{contact_1_id}",
             name: "{email_dir}"
             type: "{email_type}",
           }}){{
@@ -665,7 +668,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }}
             email{{
-              handle_id
+              id
               name
               type
             }}
@@ -679,19 +682,19 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.data['create_email']['errors'], \
             pformat(result.data['create_email']['errors'], indent=1)
 
-        email_id = result.data['create_email']['email']['handle_id']
+        email_id = result.data['create_email']['email']['id']
 
         # check the contact has the right phone and email set
         query = """
         {{
-          getContactById(handle_id: {contact_1_id}){{
-            handle_id
+          getContactById(id: "{contact_1_id}"){{
+            id
             name
             phones{{
-              handle_id
+              id
             }}
             emails{{
-              handle_id
+              id
             }}
           }}
         }}
@@ -699,24 +702,24 @@ class QueryTest(Neo4jGraphQLTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        tphone_id = result.data['getContactById']['phones'][0]['handle_id']
-        temail_id = result.data['getContactById']['emails'][0]['handle_id']
+        tphone_id = result.data['getContactById']['phones'][0]['id']
+        temail_id = result.data['getContactById']['emails'][0]['id']
 
-        assert int(phone_id) == int(tphone_id), \
+        assert phone_id == tphone_id, \
             "Phone id don't match: {} != {}".format(phone_id, tphone_id)
 
-        assert int(email_id) == int(temail_id), \
+        assert email_id == temail_id, \
             "Email id don't match: {} != {}".format(email_id, temail_id)
 
         # associate first contact to group
         query = """
         mutation{{
           update_contact(input:{{
-            handle_id: {contact_1_id},
+            id: "{contact_1_id}",
             first_name: "{contact_1_fname}",
             last_name: "{contact_1_lname}",
             contact_type: "{contact_1_ctype}",
-            relationship_member_of: {group_handle_id}
+            relationship_member_of: "{group_handle_id}"
           }}){{
             errors{{
               field
@@ -725,7 +728,7 @@ class QueryTest(Neo4jGraphQLTest):
             contact{{
               handle_id
               member_of_groups{{
-                handle_id
+                id
               }}
             }}
           }}
@@ -741,8 +744,8 @@ class QueryTest(Neo4jGraphQLTest):
             pformat(result.data['update_contact']['errors'], indent=1)
 
         t_group_handle_id = \
-            result.data['update_contact']['contact']['member_of_groups'][0]['handle_id']
-        assert int(t_group_handle_id) == int(group_handle_id)
+            result.data['update_contact']['contact']['member_of_groups'][0]['id']
+        assert t_group_handle_id == group_handle_id
 
         # get the first organization
         query = """
@@ -750,7 +753,7 @@ class QueryTest(Neo4jGraphQLTest):
           organizations(orderBy: handle_id_ASC, first: 1) {
             edges {
               node {
-                handle_id
+                id
               }
             }
           }
@@ -759,7 +762,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        organization_id = result.data['organizations']['edges'][0]['node']['handle_id']
+        organization_id = result.data['organizations']['edges'][0]['node']['id']
 
         # create address for organization
         street_str = "Calle Luis de Morales, 32, 5º, Puerta 5"
@@ -768,7 +771,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
         mutation{{
           create_address(input:{{
-            organization: {organization_id},
+            organization: "{organization_id}",
             name: "New address",
             phone: "{phone_number}",
             street: "{street_str}",
@@ -780,7 +783,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }}
             address{{
-              handle_id
+              id
               name
               phone
               street
@@ -798,16 +801,16 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.data['create_address']['errors'], \
             pformat(result.data['create_address']['errors'], indent=1)
 
-        address_id = result.data['create_address']['address']['handle_id']
+        address_id = result.data['create_address']['address']['id']
 
         # check the address has been added
         query = """
         {{
-          getOrganizationById(handle_id: {organization_id}){{
-            handle_id
+          getOrganizationById(id: "{organization_id}"){{
+            id
             name
             addresses{{
-              handle_id
+              id
               name
               phone
               street
@@ -821,14 +824,14 @@ class QueryTest(Neo4jGraphQLTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        taddress_id = result.data['getOrganizationById']['addresses'][0]['handle_id']
+        taddress_id = result.data['getOrganizationById']['addresses'][0]['id']
         taddress_name = result.data['getOrganizationById']['addresses'][0]['name']
         taddress_phone = result.data['getOrganizationById']['addresses'][0]['phone']
         taddress_street = result.data['getOrganizationById']['addresses'][0]['street']
         taddress_postal_code = result.data['getOrganizationById']['addresses'][0]['postal_code']
         taddress_postal_area = result.data['getOrganizationById']['addresses'][0]['postal_area']
 
-        assert int(address_id) == int(taddress_id), \
+        assert address_id == taddress_id, \
             "Address id don't match: {} != {}".format(address_id, taddress_id)
         assert "New address" == taddress_name, \
             "Address name don't match: {}".format(taddress_name)
@@ -844,11 +847,11 @@ class QueryTest(Neo4jGraphQLTest):
         # get relation from Group - Contact
         query = """
         {{
-          getGroupById(handle_id: {group_handle_id}){{
-            handle_id
+          getGroupById(id: "{group_handle_id}"){{
+            id
             name
             contacts{{
-              handle_id
+              id
               name
             }}
             incoming{{
@@ -856,11 +859,11 @@ class QueryTest(Neo4jGraphQLTest):
               relation{{
                 relation_id
                 start{{
-                  handle_id
+                  id
                   node_name
                 }}
                 end{{
-                  handle_id
+                  id
                   node_name
                 }}
               }}
@@ -872,15 +875,21 @@ class QueryTest(Neo4jGraphQLTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        start_id = result.data['getGroupById']['incoming'][0]['relation']['start']['handle_id']
-        end_id = result.data['getGroupById']['incoming'][0]['relation']['end']['handle_id']
+        start_id = result.data['getGroupById']['incoming'][0]['relation']['start']['id']
+        end_id = result.data['getGroupById']['incoming'][0]['relation']['end']['id']
         relation_id = result.data['getGroupById']['incoming'][0]['relation']['relation_id']
 
-        assert int(start_id) == int(contact_1_id), \
-            "Contact id don't match: {} != {}".format(start_id, contact_1_id)
+        start_handle_id = relay.Node.from_global_id(start_id)[1]
+        end_handle_id = relay.Node.from_global_id(end_id)[1]
 
-        assert int(end_id) == int(group_handle_id), \
-            "Group id don't match: {} != {}".format(end_id, group_handle_id)
+        c1_handle_id = relay.Node.from_global_id(contact_1_id)[1]
+        g_handle_id = relay.Node.from_global_id(group_handle_id)[1]
+
+        assert start_handle_id == c1_handle_id, \
+            "Contact id don't match: {} != {}".format(start_handle_id, c1_handle_id)
+
+        assert end_handle_id == g_handle_id, \
+            "Group id don't match: {} != {}".format(end_handle_id, g_handle_id)
 
         assert relation_id, "Relation id is null"
 
@@ -900,10 +909,10 @@ class QueryTest(Neo4jGraphQLTest):
         # check that it doesn't exist anymore
         query = """
         {{
-          getContactById(handle_id: {contact_1_id}){{
-            handle_id
+          getContactById(id: "{contact_1_id}"){{
+            id
             member_of_groups{{
-              handle_id
+              id
             }}
           }}
         }}
@@ -918,18 +927,18 @@ class QueryTest(Neo4jGraphQLTest):
         # get relation from Contact - Email
         query = """
         {{
-          getContactById(handle_id: {contact_1_id}){{
-            handle_id
+          getContactById(id: "{contact_1_id}"){{
+            id
             outgoing{{
               name
               relation{{
                 relation_id
                 start{{
-                  handle_id
+                  id
                   node_name
                 }}
                 end{{
-                  handle_id
+                  id
                   node_name
                 }}
               }}
@@ -947,16 +956,21 @@ class QueryTest(Neo4jGraphQLTest):
                 break
             idx = idx + 1
 
-        start_id = result.data['getContactById']['outgoing'][idx]['relation']['start']['handle_id']
-        end_id = result.data['getContactById']['outgoing'][idx]['relation']['end']['handle_id']
+        start_id = result.data['getContactById']['outgoing'][idx]['relation']['start']['id']
+        end_id = result.data['getContactById']['outgoing'][idx]['relation']['end']['id']
         relation_id = result.data['getContactById']['outgoing'][idx]['relation']['relation_id']
 
+        start_handle_id = relay.Node.from_global_id(start_id)[1]
+        end_handle_id = relay.Node.from_global_id(end_id)[1]
 
-        assert int(start_id) == int(contact_1_id), \
-            "Contact id don't match: {} != {}".format(start_id, contact_1_id)
+        c1_handle_id = relay.Node.from_global_id(contact_1_id)[1]
+        email_handle_id = relay.Node.from_global_id(email_id)[1]
 
-        assert int(end_id) == int(email_id), \
-            "Email id don't match: {} != {}".format(end_id, email_id)
+        assert start_handle_id == c1_handle_id, \
+            "Contact id don't match: {} != {}".format(start_handle_id, c1_handle_id)
+
+        assert end_handle_id == email_handle_id, \
+            "Email id don't match: {} != {}".format(end_handle_id, email_handle_id)
 
         # delete relationship
         query = """
@@ -974,10 +988,10 @@ class QueryTest(Neo4jGraphQLTest):
         # check that it doesn't exist anymore
         query = """
         {{
-          getContactById(handle_id: {contact_1_id}){{
-            handle_id
+          getContactById(id: "{contact_1_id}"){{
+            id
             emails{{
-              handle_id
+              id
             }}
           }}
         }}
@@ -992,18 +1006,18 @@ class QueryTest(Neo4jGraphQLTest):
         # get relation from Contact - Phone
         query = """
         {{
-          getContactById(handle_id: {contact_1_id}){{
-            handle_id
+          getContactById(id: "{contact_1_id}"){{
+            id
             outgoing{{
               name
               relation{{
                 relation_id
                 start{{
-                  handle_id
+                  id
                   node_name
                 }}
                 end{{
-                  handle_id
+                  id
                   node_name
                 }}
               }}
@@ -1021,15 +1035,21 @@ class QueryTest(Neo4jGraphQLTest):
                 break
             idx = idx + 1
 
-        start_id = result.data['getContactById']['outgoing'][idx]['relation']['start']['handle_id']
-        end_id = result.data['getContactById']['outgoing'][idx]['relation']['end']['handle_id']
+        start_id = result.data['getContactById']['outgoing'][idx]['relation']['start']['id']
+        end_id = result.data['getContactById']['outgoing'][idx]['relation']['end']['id']
         relation_id = result.data['getContactById']['outgoing'][idx]['relation']['relation_id']
 
-        assert int(start_id) == int(contact_1_id), \
-            "Contact id don't match: {} != {}".format(start_id, contact_1_id)
+        start_handle_id = relay.Node.from_global_id(start_id)[1]
+        end_handle_id = relay.Node.from_global_id(end_id)[1]
 
-        assert int(end_id) == int(phone_id), \
-            "Phone id don't match: {} != {}".format(end_id, phone_id)
+        c1_handle_id = relay.Node.from_global_id(contact_1_id)[1]
+        p_handle_id = relay.Node.from_global_id(phone_id)[1]
+
+        assert start_handle_id == c1_handle_id, \
+            "Contact id don't match: {} != {}".format(start_handle_id, c1_handle_id)
+
+        assert end_handle_id == p_handle_id, \
+            "Phone id don't match: {} != {}".format(end_handle_id, p_handle_id)
 
         # delete relationship
         query = """
@@ -1047,10 +1067,10 @@ class QueryTest(Neo4jGraphQLTest):
         # check that it doesn't exist anymore
         query = """
         {{
-          getContactById(handle_id: {contact_1_id}){{
-            handle_id
+          getContactById(id: "{contact_1_id}"){{
+            id
             phones{{
-              handle_id
+              id
             }}
           }}
         }}
@@ -1065,18 +1085,18 @@ class QueryTest(Neo4jGraphQLTest):
         # get relation from Organization - Address
         query = """
         {{
-          getOrganizationById(handle_id: {organization_id}){{
-            handle_id
+          getOrganizationById(id: "{organization_id}"){{
+            id
             outgoing{{
               name
               relation{{
                 relation_id
                 start{{
-                  handle_id
+                  id
                   node_name
                 }}
                 end{{
-                  handle_id
+                  id
                   node_name
                 }}
               }}
@@ -1094,15 +1114,21 @@ class QueryTest(Neo4jGraphQLTest):
                 break
             idx = idx + 1
 
-        start_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['start']['handle_id']
-        end_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['end']['handle_id']
+        start_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['start']['id']
+        end_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['end']['id']
         relation_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['relation_id']
 
-        assert int(start_id) == int(organization_id), \
-            "Contact id don't match: {} != {}".format(start_id, organization_id)
+        start_handle_id = relay.Node.from_global_id(start_id)[1]
+        end_handle_id = relay.Node.from_global_id(end_id)[1]
 
-        assert int(end_id) == int(address_id), \
-            "Phone id don't match: {} != {}".format(end_id, address_id)
+        org1_handle_id = relay.Node.from_global_id(organization_id)[1]
+        addr_handle_id = relay.Node.from_global_id(address_id)[1]
+
+        assert start_handle_id == org1_handle_id, \
+            "Contact id don't match: {} != {}".format(start_handle_id, org1_handle_id)
+
+        assert end_handle_id == addr_handle_id, \
+            "Phone id don't match: {} != {}".format(end_handle_id, addr_handle_id)
 
         # delete relationship
         query = """
@@ -1120,8 +1146,8 @@ class QueryTest(Neo4jGraphQLTest):
         # check that it doesn't exist anymore
         query = """
         {{
-          getOrganizationById(handle_id: {organization_id}){{
-            handle_id
+          getOrganizationById(id: "{organization_id}"){{
+            id
             addresses{{
               handle_id
             }}
@@ -1135,6 +1161,8 @@ class QueryTest(Neo4jGraphQLTest):
             pformat(organization_addresses, indent=1)
         )
 
+
+class CascadeDeleteTest(Neo4jGraphQLTest):
     def test_cascade_delete(self):
         ## get aux entities types
         # get contact types
@@ -1199,7 +1227,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }
             organization{
-              handle_id
+              id
               name
             }
           }
@@ -1207,7 +1235,7 @@ class QueryTest(Neo4jGraphQLTest):
         """
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        organization3_id = result.data['create_organization']['organization']['handle_id']
+        organization3_id = result.data['create_organization']['organization']['id']
 
         # create a new contact for this organization
         query = """
@@ -1216,14 +1244,14 @@ class QueryTest(Neo4jGraphQLTest):
             first_name: "Jasmine"
             last_name: "Svensson"
             contact_type: "person"
-            relationship_works_for: {organization_id}
+            relationship_works_for: "{organization_id}"
           }}){{
             errors{{
               field
               messages
             }}
             contact{{
-              handle_id
+              id
               name
             }}
           }}
@@ -1231,7 +1259,7 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(organization_id=organization3_id)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        contact3_id = result.data['create_contact']['contact']['handle_id']
+        contact3_id = result.data['create_contact']['contact']['id']
 
         # add email and get id
         query = """
@@ -1239,14 +1267,14 @@ class QueryTest(Neo4jGraphQLTest):
           create_email(input:{{
             name: "jsvensson@emergya.com"
             type: "work"
-            contact: {contact_id}
+            contact: "{contact_id}"
           }}){{
             errors{{
               field
               messages
             }}
             email{{
-              handle_id
+              id
               name
             }}
           }}
@@ -1254,7 +1282,7 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(contact_id=contact3_id)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        email3_id = result.data['create_email']['email']['handle_id']
+        email3_id = result.data['create_email']['email']['id']
 
         # add phone and get id
         query = """
@@ -1262,14 +1290,14 @@ class QueryTest(Neo4jGraphQLTest):
           create_phone(input:{{
             name: "+34606000606"
             type: "work"
-            contact: {contact_id}
+            contact: "{contact_id}"
           }}){{
             errors{{
               field
               messages
             }}
             phone{{
-              handle_id
+              id
               name
             }}
           }}
@@ -1277,12 +1305,12 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(contact_id=contact3_id)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        phone3_id = result.data['create_phone']['phone']['handle_id']
+        phone3_id = result.data['create_phone']['phone']['id']
 
         # delete contact
         query = """
         mutation{{
-          delete_contact(input:{{ handle_id: {contact_id} }}){{
+          delete_contact(input:{{ id: "{contact_id}" }}){{
             errors{{
               field
               messages
@@ -1301,59 +1329,45 @@ class QueryTest(Neo4jGraphQLTest):
         # check organization still exists
         query = """
         {{
-          organizations(filter:{{ AND:[{{ handle_id: {organization_id} }}] }}){{
-            edges{{
-              node{{
-                handle_id
-                name
-              }}
-            }}
+          getOrganizationById( id: "{organization_id}" ){{
+            id
+            name
           }}
         }}
         """.format(organization_id=organization3_id)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        edges = result.data['organizations']['edges']
+        edges = result.data['getOrganizationById']
         assert edges, \
             "Organization query is empty:\n {}".format(pformat(edges, indent=1))
-        test_org_id = result.data['organizations']['edges'][0]['node']['handle_id']
-        assert int(test_org_id) == int(organization3_id), \
+        test_org_id = result.data['getOrganizationById']['id']
+        assert test_org_id == organization3_id, \
             print("Organization doesn't exists")
 
         # check email and phone are deleted
         query = """
         {{
-          emails(filter:{{ AND:[{{ handle_id: {email_id} }}] }}){{
-            edges{{
-              node{{
-                handle_id
-                name
-              }}
-            }}
+          getEmailById( id: "{email_id}" ){{
+            handle_id
+            name
           }}
         }}
         """.format(email_id=email3_id)
         result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-        edges = result.data['emails']['edges']
-        assert not edges, pformat(edges, indent=1)
+
+        expected_error = [()]
+        assert result.errors, pformat(result, indent=1)
 
         query = """
         {{
-          phones(filter:{{ AND:[{{ handle_id: {phone_id} }}] }}){{
-            edges{{
-              node{{
-                handle_id
-                name
-              }}
-            }}
+          getPhoneById( id: "{phone_id}" ){{
+            id
+            name
           }}
         }}
         """.format(phone_id=phone3_id)
         result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-        edges = result.data['phones']['edges']
-        assert not edges, pformat(edges, indent=1)
+        assert result.errors, pformat(result, indent=1)
 
         # create address
         address_name = "New address"
@@ -1366,7 +1380,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
           mutation{{
         	create_address(input:{{
-              organization: {organization_id},
+              organization: "{organization_id}",
               name: "{address_name}",
               phone: "{address_phone}",
               street: "{address_street}",
@@ -1378,7 +1392,7 @@ class QueryTest(Neo4jGraphQLTest):
                 messages
               }}
               address{{
-                handle_id
+                id
                 name
                 phone
                 street
@@ -1394,12 +1408,12 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        address_id_str = result.data['create_address']['address']['handle_id']
+        address_id_str = result.data['create_address']['address']['id']
 
         # delete organization
         query = """
         mutation{{
-          delete_organization(input:{{ handle_id: {organization_id} }}){{
+          delete_organization(input:{{ id: "{organization_id}" }}){{
             errors{{
               field
               messages
@@ -1418,10 +1432,10 @@ class QueryTest(Neo4jGraphQLTest):
         # check address is deleted
         query = """
         {{
-          addresss(filter:{{ AND:[{{ handle_id: {address_id_str} }}] }}){{
+          getAddressById( id: {address_id_str} ){{
             edges{{
               node{{
-                handle_id
+                id
                 name
               }}
             }}
@@ -1429,11 +1443,10 @@ class QueryTest(Neo4jGraphQLTest):
         }}
         """.format(address_id_str=address_id_str)
         result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-        edges = result.data['addresss']['edges']
-        assert not edges, pformat(edges, indent=1)
+        assert result.errors, pformat(result, indent=1)
 
 
+class RoleGroupTest(Neo4jGraphQLTest):
     def test_rolegroup(self):
         query = '''
         {

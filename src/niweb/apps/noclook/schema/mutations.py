@@ -45,6 +45,10 @@ class NIProcedureMutationFactory(NIMutationFactory):
         abstract = False
 
 
+def empty_processor(request, form, nodehandler, relation_name):
+    pass
+
+
 def process_works_for(request, form, nodehandler, relation_name):
     if relation_name in form.cleaned_data and 'role' in form.cleaned_data and \
         form.cleaned_data[relation_name] and form.cleaned_data['role']:
@@ -150,7 +154,7 @@ class NIContactMutationFactory(NIMutationFactory):
                 'type_slug': 'email',
                 'meta_type': 'Logical',
                 'fields': {
-                    'handle_id': 'email_handle_id',
+                    'id': 'email_id',
                     'name': 'email',
                     'type': 'email_type',
                 },
@@ -161,7 +165,7 @@ class NIContactMutationFactory(NIMutationFactory):
                 'type_slug': 'phone',
                 'meta_type': 'Logical',
                 'fields': {
-                    'handle_id': 'phone_handle_id',
+                    'id': 'phone_id',
                     'name': 'phone',
                     'type': 'phone_type',
                 },
@@ -178,6 +182,8 @@ class NIContactMutationFactory(NIMutationFactory):
             'first_name', 'last_name', 'contact_type', 'name', 'title',
             'pgp_fingerprint', 'notes'
         ]
+
+        relay_extra_ids = ['role', ]
 
     class Meta:
         abstract = False
@@ -205,7 +211,17 @@ class CreateOrganization(CreateNIMutation):
 
         # Get needed data from node
         if request.POST:
-            form = form_class(request.POST.copy())
+            # replace relay ids for handle_id in contacts if present
+            post_data = request.POST.copy()
+
+            for field, roledict in DEFAULT_ROLES.items():
+                if field in post_data:
+                    contact_id = post_data.get(field)
+                    contact_id = relay.Node.from_global_id(contact_id)[1]
+                    post_data.pop(field)
+                    post_data.update({field: contact_id})
+
+            form = form_class(post_data)
             form.strict_validation = True
 
             if form.is_valid():
@@ -234,6 +250,7 @@ class CreateOrganization(CreateNIMutation):
                 for field, roledict in DEFAULT_ROLES.items():
                     if field in form.cleaned_data:
                         contact_id = form.cleaned_data[field]
+
                         role = RoleModel.objects.get(slug=field)
                         set_contact = helpers.get_contact_for_orgrole(organization.handle_id, role)
 
@@ -249,10 +266,10 @@ class CreateOrganization(CreateNIMutation):
 
                 # Set child organizations
                 if form.cleaned_data['relationship_parent_of']:
-                    organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
+                    organization_nh = NodeHandle.objects.get(handle_id=form.cleaned_data['relationship_parent_of'])
                     helpers.set_parent_of(request.user, organization, organization_nh.handle_id)
                 if form.cleaned_data['relationship_uses_a']:
-                    procedure_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_uses_a'])
+                    procedure_nh = NodeHandle.objects.get(handle_id=form.cleaned_data['relationship_uses_a'])
                     helpers.set_uses_a(request.user, organization, procedure_nh.handle_id)
 
                 return has_error, { graphql_type.__name__.lower(): nh }
@@ -273,6 +290,12 @@ class CreateOrganization(CreateNIMutation):
         graphql_type   = Organization
         is_create = True
 
+        relations_processors = {
+            'relationship_parent_of': empty_processor,
+            'relationship_uses_a': empty_processor,
+        }
+
+
 
 class UpdateOrganization(UpdateNIMutation):
     @classmethod
@@ -283,10 +306,11 @@ class UpdateOrganization(UpdateNIMutation):
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
         node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
-        handle_id      = request.POST.get('handle_id')
+        id      = request.POST.get('id')
         has_error      = False
 
         # check authorization
+        handle_id = relay.Node.from_global_id(id)[1]
         authorized = sriutils.authorice_write_resource(request.user, handle_id)
 
         if not authorized:
@@ -296,8 +320,22 @@ class UpdateOrganization(UpdateNIMutation):
         nh, organization = helpers.get_nh_node(handle_id)
         relations = organization.get_relations()
         out_relations = organization.get_outgoing_relations()
+
         if request.POST:
-            form = form_class(request.POST)
+            # set handle_id into POST data and remove relay id
+            post_data = request.POST.copy()
+            post_data.pop('id')
+            post_data.update({'handle_id': handle_id})
+
+            # replace relay ids for handle_id in contacts if present
+            for field, roledict in DEFAULT_ROLES.items():
+                if field in post_data:
+                    contact_id = post_data.get(field)
+                    contact_id = relay.Node.from_global_id(contact_id)[1]
+                    post_data.pop(field)
+                    post_data.update({field: contact_id})
+
+            form = form_class(post_data)
             form.strict_validation = True
 
             if form.is_valid():
@@ -402,7 +440,7 @@ class CreateRole(DjangoModelFormMutation):
 
 class UpdateRole(DjangoModelFormMutation):
     class Input:
-        handle_id = graphene.Int(required=True)
+        id = graphene.ID(required=True)
 
     @classmethod
     def get_form_kwargs(cls, root, info, **input):
@@ -416,9 +454,10 @@ class UpdateRole(DjangoModelFormMutation):
 
         kwargs = {"data": input}
 
-        pk = input.pop("handle_id", None)
-        if pk:
-            instance = cls._meta.model._default_manager.get(pk=pk)
+        id = input.pop("id", None)
+        handle_id = relay.Node.from_global_id(id)[1]
+        if handle_id:
+            instance = cls._meta.model._default_manager.get(pk=handle_id)
             kwargs["instance"] = instance
 
         return kwargs
@@ -429,14 +468,15 @@ class UpdateRole(DjangoModelFormMutation):
 
 class DeleteRole(relay.ClientIDMutation):
     class Input:
-        handle_id = graphene.Int(required=True)
+        id = graphene.ID(required=True)
 
     success = graphene.Boolean(required=True)
-    handle_id = graphene.Int(required=True)
+    id = graphene.ID(required=True)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        handle_id = input.get("handle_id", None)
+        id = input.get("id", None)
+        handle_id = relay.Node.from_global_id(id)[1]
         success = False
 
         context = sriutils.get_community_context()
@@ -454,19 +494,20 @@ class DeleteRole(relay.ClientIDMutation):
         except ObjectDoesNotExist:
             success = False
 
-        return DeleteRole(success=success, handle_id=handle_id)
+        return DeleteRole(success=success, id=id)
 
 
 class CreateComment(relay.ClientIDMutation):
     class Input:
-        object_pk = graphene.Int(required=True)
+        object_id = graphene.ID(required=True)
         comment = graphene.String(required=True)
 
     comment = Field(CommentType)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        object_pk = input.get("object_pk", None)
+        object_id = input.get("object_id")
+        object_pk = relay.Node.from_global_id(object_id)[1]
 
         # check it can write for this node
         authorized = sriutils.authorice_write_resource(info.context.user, object_pk)
@@ -494,14 +535,15 @@ class CreateComment(relay.ClientIDMutation):
 
 class UpdateComment(relay.ClientIDMutation):
     class Input:
-        id = graphene.Int(required=True)
+        id = graphene.ID(required=True)
         comment = graphene.String(required=True)
 
     comment = Field(CommentType)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        id = input.get("id",)
+        id = input.get("id")
+        id = relay.Node.from_global_id(id)[1]
         comment_txt = input.get("comment")
 
         comment = Comment.objects.get(id=id)
@@ -520,14 +562,15 @@ class UpdateComment(relay.ClientIDMutation):
 
 class DeleteComment(relay.ClientIDMutation):
     class Input:
-        id = graphene.Int(required=True)
+        id = graphene.ID(required=True)
 
     success = graphene.Boolean(required=True)
-    id = graphene.Int(required=True)
+    id = graphene.ID(required=True)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        id = input.get("id", None)
+        relay_id = input.get("id")
+        id = relay.Node.from_global_id(relay_id)[1]
         success = False
 
         try:
@@ -545,7 +588,7 @@ class DeleteComment(relay.ClientIDMutation):
         except ObjectDoesNotExist:
             success = False
 
-        return DeleteComment(success=success, id=id)
+        return DeleteComment(success=success, id=relay_id)
 
 
 class CreateOptionForDropdown(relay.ClientIDMutation):
@@ -641,19 +684,20 @@ class CompositeOrganizationMutation(CompositeMutation):
     @classmethod
     def get_link_kwargs(cls, master_input, slave_input):
         ret = {}
-        role_handle_id = slave_input.get('role_handle_id', None)
+        role_id = slave_input.get('role_id', None)
 
-        if role_handle_id:
-            ret['role_handle_id'] = role_handle_id
+        if role_id:
+            ret['role_id'] = role_id
 
         return ret
 
     @classmethod
     def link_slave_to_master(cls, user, master_nh, slave_nh, **kwargs):
-        role_handle_id = kwargs.get('role_handle_id', None)
+        role_id = kwargs.get('role_id', None)
         role = None
 
-        if role_handle_id:
+        if role_id:
+            role_handle_id = relay.Node.from_global_id(role_id)[1]
             role = RoleModel.objects.get(handle_id=role_handle_id)
         else:
             role = RoleModel.objects.get(slug=DEFAULT_ROLE_KEY)
@@ -746,8 +790,8 @@ class CompositeOrganizationMutation(CompositeMutation):
 
 class RoleRelationMutation(relay.ClientIDMutation):
     class Input:
-        role_handle_id = graphene.Int(required=True)
-        organization_handle_id = graphene.Int(required=True)
+        role_id = graphene.ID(required=True)
+        organization_id = graphene.ID(required=True)
         relation_id = graphene.Int()
 
     errors = graphene.List(ErrorType)
@@ -765,9 +809,12 @@ class RoleRelationMutation(relay.ClientIDMutation):
 
         # get input
         contact_handle_id = input.get('contact_handle_id', None)
-        organization_handle_id = input.get('organization_handle_id', None)
-        role_handle_id = input.get('role_handle_id', None)
+        organization_id = input.get('organization_id', None)
+        role_id = input.get('role_id', None)
         relation_id = input.get('relation_id', None)
+
+        role_handle_id = relay.Node.from_global_id(role_id)[1]
+        organization_handle_id = relay.Node.from_global_id(organization_id)[1]
 
         # get entities and check permissions
         contact_nh = None
