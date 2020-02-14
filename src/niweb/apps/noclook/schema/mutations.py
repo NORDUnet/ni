@@ -8,7 +8,7 @@ import apps.noclook.vakt.utils as sriutils
 from apps.noclook import activitylog, helpers
 from apps.noclook.forms import *
 from apps.noclook.models import Dropdown as DropdownModel, Role as RoleModel, \
-    DEFAULT_ROLES, DEFAULT_ROLES, Choice as ChoiceModel
+    DEFAULT_ROLES, DEFAULT_ROLES, DEFAULT_ROLE_KEY, Choice as ChoiceModel
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.test import RequestFactory
@@ -790,7 +790,7 @@ class CompositeOrganizationMutation(CompositeMutation):
 
 class RoleRelationMutation(relay.ClientIDMutation):
     class Input:
-        role_id = graphene.ID(required=True)
+        role_id = graphene.ID()
         organization_id = graphene.ID(required=True)
         relation_id = graphene.Int()
 
@@ -813,7 +813,12 @@ class RoleRelationMutation(relay.ClientIDMutation):
         role_id = input.get('role_id', None)
         relation_id = input.get('relation_id', None)
 
-        role_handle_id = relay.Node.from_global_id(role_id)[1]
+        if role_id:
+            role_handle_id = relay.Node.from_global_id(role_id)[1]
+        else:
+            default_role = RoleModel.objects.get(slug=DEFAULT_ROLE_KEY)
+            role_handle_id = default_role.handle_id
+
         organization_handle_id = relay.Node.from_global_id(organization_id)[1]
 
         # get entities and check permissions
