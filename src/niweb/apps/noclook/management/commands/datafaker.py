@@ -107,7 +107,9 @@ class Command(BaseCommand):
 
         [x.delete() for x in NodeHandle.objects.filter(node_type=node_type)]
         deleted_nodes = deleted_nodes + node_num
-        self.printProgressBar(deleted_nodes, total_nodes)
+        
+        if node_num > 0:
+            self.printProgressBar(deleted_nodes, total_nodes)
 
         return deleted_nodes
 
