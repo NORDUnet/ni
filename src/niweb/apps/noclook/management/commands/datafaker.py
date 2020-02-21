@@ -15,9 +15,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--organizations",
-                    help="Create organization nodes", type=int, default=20)
+                    help="Create organization nodes", type=int, default=0)
         parser.add_argument("--equipmentcables",
-                    help="Create equipment and cables nodes", type=int, default=20)
+                    help="Create equipment and cables nodes", type=int, default=0)
         parser.add_argument("-d", "--deleteall", action='store_true',
                     help="BEWARE: This command deletes information in the database")
 
@@ -28,13 +28,15 @@ class Command(BaseCommand):
 
         if options['organizations']:
             numnodes = options['organizations']
-            self.create_organizations(numnodes)
-            return
+            if numnodes > 0:
+                self.create_organizations(numnodes)
 
         if options['equipmentcables']:
             numnodes = options['equipmentcables']
-            self.create_equipment_cables(numnodes)
-            return
+            if numnodes > 0:
+                self.create_equipment_cables(numnodes)
+
+        return
 
     def create_entities(self, numnodes, create_funcs):
         total_nodes = numnodes * len(create_funcs)
