@@ -10,9 +10,12 @@ logger = logging.getLogger('noclook.management.datafaker')
 
 class Command(BaseCommand):
     help = 'Create fake data for the Network module'
-    generated_types = ['Cable', 'Provider', 'Port', 'Host', 'Router', 'Switch']
+    generated_types = ['Customer', 'End User',
+            'Cable', 'Provider', 'Port', 'Host', 'Router', 'Switch']
 
     def add_arguments(self, parser):
+        parser.add_argument("--organizations",
+                    help="Create organization nodes", type=int, default=20)
         parser.add_argument("--equipmentcables",
                     help="Create equipment and cables nodes", type=int, default=20)
         parser.add_argument("-d", "--deleteall", action='store_true',
@@ -23,10 +26,36 @@ class Command(BaseCommand):
             self.delete_network_nodes()
             return
 
+        if options['organizations']:
+            numnodes = options['organizations']
+            self.create_organizations(numnodes)
+            return
+
         if options['equipmentcables']:
             numnodes = options['equipmentcables']
             self.create_equipment_cables(numnodes)
             return
+
+    def create_entities(self, numnodes, create_funcs):
+        total_nodes = numnodes * len(create_funcs)
+        created_nodes = 0
+        self.printProgressBar(0, total_nodes)
+
+        for create_func in create_funcs:
+            for i in range(numnodes):
+                node = create_func()
+                created_nodes = created_nodes + 1
+                self.printProgressBar(created_nodes, total_nodes)
+
+    def create_organizations(self, numnodes):
+        generator = NetworkFakeDataGenerator()
+
+        create_funcs = [
+            generator.create_customer,
+            generator.create_end_user,
+        ]
+
+        self.create_entities(numnodes, create_funcs)
 
     def create_equipment_cables(self, numnodes):
         generator = NetworkFakeDataGenerator()
@@ -38,15 +67,7 @@ class Command(BaseCommand):
             generator.create_switch,
         ]
 
-        total_nodes = numnodes * len(create_funcs)
-        created_nodes = 0
-        self.printProgressBar(0, total_nodes)
-
-        for create_func in create_funcs:
-            for i in range(numnodes):
-                node = create_func()
-                created_nodes = created_nodes + 1
-                self.printProgressBar(created_nodes, total_nodes)
+        self.create_entities(numnodes, create_funcs)
 
     def delete_network_nodes(self):
         if settings.DEBUG: # guard against accidental deletion on the wrong environment
@@ -65,8 +86,12 @@ class Command(BaseCommand):
                 for delete_type in delete_types:
                     deleted_nodes = self.delete_type(delete_type, deleted_nodes, total_nodes)
 
+            # delete node types
+            for delete_type in delete_types:
+                NodeType.objects.filter(type=delete_type).delete()
+
     def get_nodetype(self, type_name):
-        return NodeType.objects.get_or_create(type=type_name, slug=type_name.lower())[0]
+        return NetworkFakeDataGenerator.get_nodetype(type_name)
 
     def get_node_num(self, type_name):
         node_type = self.get_nodetype(type_name)
