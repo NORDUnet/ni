@@ -160,6 +160,22 @@ class NetworkFakeDataGenerator:
 
         return enduser
 
+    def create_peering_partner(self):
+        # create object
+        name = self.fake.company()
+        peering_partner = self.get_or_create_node(
+            name, 'Peering Partner', META_TYPES[2]) # Relation
+
+        return peering_partner
+
+    def create_peering_group(self):
+        # create object
+        name = self.fake.company()
+        peering_group = self.get_or_create_node(
+            name, 'Peering Group', META_TYPES[1]) # Logical
+
+        return peering_group
+
     ## Equipment and cables
 
     def create_provider(self):
