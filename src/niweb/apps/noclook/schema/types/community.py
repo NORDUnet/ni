@@ -3,35 +3,10 @@ __author__ = 'ffuentes'
 
 import graphene
 
-import apps.noclook.vakt.utils as sriutils
+from graphene_django import DjangoObjectType
+from apps.noclook.models import Role as RoleModel, RoleGroup as RoleGroupModel
+from apps.noclook.schema.core import *
 from norduniclient.models import RoleRelationship
-from graphene import relay, ObjectType, String, Field
-from .core import *
-from ..models import Dropdown, Choice, Role as RoleModel, RoleGroup as RoleGroupModel
-
-
-class Dropdown(DjangoObjectType):
-    '''
-    This class represents a dropdown to use in forms
-    '''
-    class Meta:
-        only_fields = ('id', 'name')
-        model = Dropdown
-
-
-class Choice(DjangoObjectType):
-    '''
-    This class is used for the choices available in a dropdown
-    '''
-    class Meta:
-        model = Choice
-        interfaces = (KeyValue, )
-
-
-class Neo4jChoice(graphene.ObjectType):
-    class Meta:
-        interfaces = (KeyValue, )
-
 
 class RoleGroup(DjangoObjectType):
     '''
@@ -47,7 +22,7 @@ class Role(DjangoObjectType):
     '''
     class Meta:
         model = RoleModel
-        interfaces = (relay.Node, )
+        interfaces = (graphene.relay.Node, )
         use_connection = False
 
 
@@ -232,7 +207,7 @@ class Host(NIObjectType):
         ni_metatype = NIMETA_LOGICAL
 
 
-class RoleConnection(relay.Connection):
+class RoleConnection(graphene.relay.Connection):
     class Meta:
         node = Role
 
