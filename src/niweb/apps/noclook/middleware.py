@@ -10,10 +10,23 @@ from django.utils.http import cookie_date
 from graphql_jwt import signals
 from graphql_jwt.settings import jwt_settings
 from graphql_jwt.shortcuts import get_token, get_user_by_token
-from graphql_jwt.utils import get_credentials
+from graphql_jwt.utils import get_credentials, get_payload, jwt_encode, jwt_payload
+from graphql_jwt.exceptions import JSONWebTokenExpired
 from importlib import import_module
 
 import time
+
+def token_is_expired(token):
+    ret = False
+
+    try:
+        get_payload(token)
+        ret = True
+    except JSONWebTokenExpired:
+        pass
+
+    return ret
+
 
 class SRIJWTCookieMiddleware(object):
     def __init__(self, get_response):
@@ -25,6 +38,11 @@ class SRIJWTCookieMiddleware(object):
 
         if user.is_authenticated:
             token = get_token(user)
+
+            # if token is expired, refresh it
+            if token_is_expired(token):
+                token = jwt_encode(jwt_payload(user))
+
             signals.token_issued.send(
                 sender=SRIJWTCookieMiddleware, request=request, user=user)
 
