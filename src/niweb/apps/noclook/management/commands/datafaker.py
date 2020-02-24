@@ -15,9 +15,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--organizations",
-                    help="Create organization nodes", type=int, default=20)
+                    help="Create organization nodes", type=int, default=0)
         parser.add_argument("--equipmentcables",
-                    help="Create equipment and cables nodes", type=int, default=20)
+                    help="Create equipment and cables nodes", type=int, default=0)
         parser.add_argument("-d", "--deleteall", action='store_true',
                     help="BEWARE: This command deletes information in the database")
 
@@ -28,13 +28,21 @@ class Command(BaseCommand):
 
         if options['organizations']:
             numnodes = options['organizations']
-            self.create_organizations(numnodes)
-            return
+            if numnodes > 0:
+                self.stdout\
+                    .write('Forging fake organizations: {} for each subtype:'\
+                    .format(numnodes))
+                self.create_organizations(numnodes)
 
         if options['equipmentcables']:
             numnodes = options['equipmentcables']
-            self.create_equipment_cables(numnodes)
-            return
+            if numnodes > 0:
+                self.stdout\
+                    .write('Forging fake equipement & cables: {} for each subtype:'\
+                    .format(numnodes))
+                self.create_equipment_cables(numnodes)
+
+        return
 
     def create_entities(self, numnodes, create_funcs):
         total_nodes = numnodes * len(create_funcs)
@@ -53,6 +61,8 @@ class Command(BaseCommand):
         create_funcs = [
             generator.create_customer,
             generator.create_end_user,
+            generator.create_peering_partner,
+            generator.create_peering_group,
         ]
 
         self.create_entities(numnodes, create_funcs)
@@ -79,6 +89,7 @@ class Command(BaseCommand):
                 total_nodes = total_nodes + self.get_node_num(delete_type)
 
             if total_nodes > 0:
+                self.stdout.write('Delete {} nodes:'.format(total_nodes))
                 deleted_nodes = 0
 
                 self.printProgressBar(deleted_nodes, total_nodes)
@@ -105,7 +116,9 @@ class Command(BaseCommand):
 
         [x.delete() for x in NodeHandle.objects.filter(node_type=node_type)]
         deleted_nodes = deleted_nodes + node_num
-        self.printProgressBar(deleted_nodes, total_nodes)
+
+        if node_num > 0:
+            self.printProgressBar(deleted_nodes, total_nodes)
 
         return deleted_nodes
 
