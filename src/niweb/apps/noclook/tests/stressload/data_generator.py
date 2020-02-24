@@ -8,6 +8,7 @@ from apps.nerds.lib.consumer_util import get_user
 from apps.noclook import helpers
 from apps.noclook.models import NodeHandle, NodeType, Dropdown, Choice, NodeHandleContext
 from django.contrib.auth.models import User
+from django.template.defaultfilters import slugify
 from norduniclient import META_TYPES
 
 import apps.noclook.vakt.utils as sriutils
@@ -104,11 +105,12 @@ class NetworkFakeDataGenerator:
         net_ctx = sriutils.get_network_context()
         NodeHandleContext(nodehandle=nh, context=net_ctx).save()
 
-    def get_nodetype(self, type_name):
-        return NodeType.objects.get_or_create(type=type_name, slug=type_name.lower())[0]
+    @staticmethod
+    def get_nodetype(type_name):
+        return NodeType.objects.get_or_create(type=type_name, slug=slugify(type_name))[0]
 
     def get_or_create_node(self, node_name, type_name, meta_type):
-        node_type = self.get_nodetype(type_name)
+        node_type = NetworkFakeDataGenerator.get_nodetype(type_name)
 
         # create object
         nh = NodeHandle.objects.get_or_create(
@@ -123,6 +125,58 @@ class NetworkFakeDataGenerator:
 
     def get_dropdown_keys(self, dropdown_name):
         return [ x[0] for x in Dropdown.get(dropdown_name).as_choices()[1:] ]
+
+    ## Organizations
+
+    def create_customer(self):
+        # create object
+        name = self.fake.company()
+        customer = self.get_or_create_node(
+            name, 'Customer', META_TYPES[2]) # Relation
+
+        data = {
+            'url': self.fake.url(),
+            'description': self.fake.paragraph(),
+        }
+
+        for key, value in data.items():
+            customer.get_node().add_property(key, value)
+
+        return customer
+
+    def create_end_user(self):
+        # create object
+        name = self.fake.company()
+        enduser = self.get_or_create_node(
+            name, 'End User', META_TYPES[2]) # Relation
+
+        data = {
+            'url': self.fake.url(),
+            'description': self.fake.paragraph(),
+        }
+
+        for key, value in data.items():
+            enduser.get_node().add_property(key, value)
+
+        return enduser
+
+    def create_peering_partner(self):
+        # create object
+        name = self.fake.company()
+        peering_partner = self.get_or_create_node(
+            name, 'Peering Partner', META_TYPES[2]) # Relation
+
+        return peering_partner
+
+    def create_peering_group(self):
+        # create object
+        name = self.fake.company()
+        peering_group = self.get_or_create_node(
+            name, 'Peering Group', META_TYPES[1]) # Logical
+
+        return peering_group
+
+    ## Equipment and cables
 
     def create_provider(self):
         provider = self.get_or_create_node(
@@ -174,7 +228,7 @@ class NetworkFakeDataGenerator:
         cable_types = self.get_dropdown_keys('cable_types')
 
         # check if there's any provider or if we should create one
-        provider_type = self.get_nodetype('Provider')
+        provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
         providers = NodeHandle.objects.filter(node_type=provider_type)
 
         max_providers = self.max_cable_providers
@@ -189,7 +243,7 @@ class NetworkFakeDataGenerator:
         port_a = None
         port_b = None
 
-        port_type = self.get_nodetype('Port')
+        port_type = NetworkFakeDataGenerator.get_nodetype('Port')
         total_ports = NodeHandle.objects.filter(node_type=port_type).count()
 
         if total_ports < self.max_ports_total:
