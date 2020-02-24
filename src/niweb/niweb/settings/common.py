@@ -197,7 +197,6 @@ MIDDLEWARE = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'apps.noclook.middleware.SRIJWTCookieMiddleware',
 )
 ########## END MIDDLEWARE CONFIGURATION
 
@@ -241,6 +240,7 @@ THIRD_PARTY_APPS = (
     'attachments',
     'graphene_django',
     'corsheaders',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
 )
 
 LOCAL_APPS = (
