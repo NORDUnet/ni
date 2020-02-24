@@ -184,7 +184,17 @@ class CommentType(DjangoObjectType):
         model = Comment
         interfaces = (relay.Node, )
 
+
+class NINodeType(DjangoObjectType):
+    '''
+    Simple NodeType graphene class
+    '''
+    class Meta:
+        model = NodeType
+
+
 input_fields_clsnames = {}
+
 
 class NIObjectType(DjangoObjectType):
     '''
