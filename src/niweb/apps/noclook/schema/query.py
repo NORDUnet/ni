@@ -21,11 +21,14 @@ def can_load_models():
 
     return can_load
 
+
 class NOCAutoQuery(graphene.ObjectType):
     '''
     This class creates a connection and a getById method for each of the types
     declared on the graphql_types of the NIMeta class of any subclass.
     '''
+
+    connection_classes = {}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -68,12 +71,19 @@ class NOCAutoQuery(graphene.ObjectType):
 
                 connection_input, connection_order = graphql_type.build_filter_and_order()
                 connection_meta = type('Meta', (object, ), dict(node=graphql_type))
-                connection_class = type(
-                    '{}Connection'.format(graphql_type.__name__),
-                    (graphene.relay.Connection,),
-                    #(connection_type,),
-                    dict(Meta=connection_meta)
-                )
+                connection_name = '{}Connection'.format(graphql_type.__name__)
+                connection_class = None
+
+                if connection_name not in cls.connection_classes:
+                    connection_class = type(
+                        connection_name,
+                        (graphene.relay.Connection,),
+                        #(connection_type,),
+                        dict(Meta=connection_meta)
+                    )
+                    cls.connection_classes[connection_name] = connection_class
+                else:
+                    connection_class = cls.connection_classes[connection_name]
 
                 setattr(cls, field_name, graphene.relay.ConnectionField(
                     connection_class,
@@ -198,4 +208,7 @@ class NOCRootQuery(NOCAutoQuery):
         return ret
 
     class NIMeta:
-        graphql_types = [ Group, Address, Phone, Email, Contact, Organization, Procedure, Host ]
+        graphql_types = [
+            Group, Address, Phone, Email, Contact, Organization, Procedure,
+            Host, Cable,
+        ]

@@ -191,6 +191,7 @@ class NINodeType(DjangoObjectType):
     '''
     class Meta:
         model = NodeType
+        exclude_fields = ['nodehandle_set']
 
 
 input_fields_clsnames = {}

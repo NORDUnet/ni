@@ -19,10 +19,11 @@ NOCSCHEMA_TYPES = [
     Group,
     Contact,
     Procedure,
-    Host,
     Address,
     Phone,
     Email,
+    Host,
+    Cable,
 ]
 
 NOCSCHEMA_QUERIES = [

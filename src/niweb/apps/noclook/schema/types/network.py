@@ -10,6 +10,10 @@ class Cable(NIObjectType):
     # providers = NIListField(type_args=(lambda: Provider,), rel_name='Provides', rel_method='get_relations')
     # ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', rel_method='get_outgoing_relations')
 
+    class NIMetaType:
+        ni_type = 'Cable'
+        ni_metatype = NIMETA_PHYSICAL
+
 class Host(NIObjectType):
     '''
     A host in the SRI system
