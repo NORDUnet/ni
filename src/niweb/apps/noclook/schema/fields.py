@@ -127,12 +127,13 @@ class NISingleRelationField(NIBasicField):
     Object list type
     '''
     def __init__(self, field_type=None, manual_resolver=False, type_kwargs=None,
-                    rel_method=None, **kwargs):
+                    rel_method=None, rel_name=None, **kwargs):
 
         self.type_kwargs     = type_kwargs
         self.field_type      = lambda: graphene.Field(field_type)
         self.manual_resolver = manual_resolver
         self.rel_method      = rel_method
+        self.rel_name        = rel_name
 
     def get_resolver(self, **kwargs):
         rel_method = kwargs.get('rel_method')
