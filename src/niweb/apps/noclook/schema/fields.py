@@ -122,6 +122,37 @@ class NIBooleanField(NIBasicField):
         return resolve_node_value
 
 
+class NISingleRelationField(NIBasicField):
+    '''
+    Object list type
+    '''
+    def __init__(self, field_type=None, manual_resolver=False, type_kwargs=None,
+                    rel_method=None, **kwargs):
+
+        self.type_kwargs     = type_kwargs
+        self.field_type      = lambda: graphene.Field(field_type)
+        self.manual_resolver = manual_resolver
+        self.rel_method      = rel_method
+
+    def get_resolver(self, **kwargs):
+        rel_method = kwargs.get('rel_method')
+        rel_name = kwargs.get('rel_name')
+
+        def resolve_relationship_object(instance, info, **kwargs):
+            ret = None
+
+            neo4jnode = self.get_inner_node(instance)
+            relationship = getattr(neo4jnode, rel_method)()
+
+            if relationship and rel_name in relationship:
+                handle_id = relationship[rel_name][0]['node'].data['handle_id']
+                ret = NodeHandle.objects.get(handle_id=handle_id)
+
+            return ret
+
+        return resolve_relationship_object
+
+
 class NIListField(NIBasicField):
     '''
     Object list type

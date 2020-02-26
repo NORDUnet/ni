@@ -320,6 +320,9 @@ class NIObjectType(DjangoObjectType):
     @classmethod
     def get_from_nimetatype(cls, attr):
         ni_metatype = getattr(cls, 'NIMetaType', None)
+        if not hasattr(ni_metatype, attr):
+            raise Exception('The context_method attribute must be set on the NIMetaType class of {}'.format(cls))
+
         return getattr(ni_metatype, attr)
 
     @classmethod

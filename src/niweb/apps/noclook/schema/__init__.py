@@ -22,6 +22,8 @@ NOCSCHEMA_TYPES = [
     Address,
     Phone,
     Email,
+
+    Port,
     Host,
     Cable,
 ]
