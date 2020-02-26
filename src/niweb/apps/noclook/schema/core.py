@@ -27,16 +27,23 @@ from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
 from .scalars import *
 from .fields import *
 from .querybuilders import *
+from .metatypes import *
 from ..models import NodeType, NodeHandle
 
 logger = logging.getLogger(__name__)
 
 ########## RELATION AND NODE TYPES
-
 NIMETA_LOGICAL  = 'logical'
 NIMETA_RELATION = 'relation'
 NIMETA_PHYSICAL = 'physical'
 NIMETA_LOCATION = 'location'
+
+metatype_interfaces = OrderedDict([
+    (NIMETA_LOGICAL, Logical ),
+    (NIMETA_RELATION, Relation),
+    (NIMETA_PHYSICAL, Physical),
+    (NIMETA_LOCATION, Location),
+])
 
 class User(DjangoObjectType):
     '''
@@ -272,8 +279,16 @@ class NIObjectType(DjangoObjectType):
                         .format(name)
                 )
 
+        # add meta types interfaces if present
+        interfaces = [relay.Node, ]
+        if hasattr(cls, 'NIMetaType'):
+            ni_metatype = cls.get_from_nimetatype("ni_metatype")
+            if ni_metatype in metatype_interfaces:
+                metatype_interface = metatype_interfaces[ni_metatype]
+                interfaces.append(metatype_interface)
+
         options['model'] = NIObjectType._meta.model
-        options['interfaces'] = NIObjectType._meta.interfaces
+        options['interfaces'] = interfaces
 
         super(NIObjectType, cls).__init_subclass_with_meta__(
             **options
@@ -320,9 +335,6 @@ class NIObjectType(DjangoObjectType):
     @classmethod
     def get_from_nimetatype(cls, attr):
         ni_metatype = getattr(cls, 'NIMetaType', None)
-        if not hasattr(ni_metatype, attr):
-            raise Exception('The context_method attribute must be set on the NIMetaType class of {}'.format(cls))
-
         return getattr(ni_metatype, attr)
 
     @classmethod
