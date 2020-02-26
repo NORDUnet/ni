@@ -23,6 +23,7 @@ from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions, ErrorType
 from graphql import GraphQLError
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
+from norduniclient import META_TYPES
 
 from .scalars import *
 from .fields import *
@@ -33,10 +34,10 @@ from ..models import NodeType, NodeHandle
 logger = logging.getLogger(__name__)
 
 ########## RELATION AND NODE TYPES
-NIMETA_LOGICAL  = 'logical'
-NIMETA_RELATION = 'relation'
-NIMETA_PHYSICAL = 'physical'
-NIMETA_LOCATION = 'location'
+NIMETA_LOGICAL  = META_TYPES[1]
+NIMETA_RELATION = META_TYPES[2]
+NIMETA_PHYSICAL = META_TYPES[0]
+NIMETA_LOCATION = META_TYPES[3]
 
 metatype_interfaces = OrderedDict([
     (NIMETA_LOGICAL, Logical ),
@@ -1366,7 +1367,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         graphql_type   = getattr(ni_metaclass, 'graphql_type')
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
-        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        node_meta_type = getattr(nimetatype, 'ni_metatype')
 
         # get input values
         noninput_fields = list(inner_fields.keys())
@@ -1561,7 +1562,7 @@ class CreateNIMutation(AbstractNIMutation):
 
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
-        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        node_meta_type = getattr(nimetatype, 'ni_metatype')
 
         has_error      = False
 
@@ -1649,7 +1650,7 @@ class UpdateNIMutation(AbstractNIMutation):
 
         nimetatype      = getattr(graphql_type, 'NIMetaType')
         node_type       = getattr(nimetatype, 'ni_type').lower()
-        node_meta_type  = getattr(nimetatype, 'ni_metatype').capitalize()
+        node_meta_type  = getattr(nimetatype, 'ni_metatype')
         context_method  = getattr(nimetatype, 'context_method')
         id              = request.POST.get('id')
         has_error       = False
