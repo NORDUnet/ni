@@ -134,6 +134,9 @@ class NetworkFakeDataGenerator:
         customer = self.get_or_create_node(
             name, 'Customer', META_TYPES[2]) # Relation
 
+        # add context
+        self.add_network_context(provider)
+
         data = {
             'url': self.fake.url(),
             'description': self.fake.paragraph(),
@@ -149,6 +152,9 @@ class NetworkFakeDataGenerator:
         name = self.fake.company()
         enduser = self.get_or_create_node(
             name, 'End User', META_TYPES[2]) # Relation
+
+        # add context
+        self.add_network_context(provider)
 
         data = {
             'url': self.fake.url(),
@@ -166,6 +172,9 @@ class NetworkFakeDataGenerator:
         peering_partner = self.get_or_create_node(
             name, 'Peering Partner', META_TYPES[2]) # Relation
 
+        # add context
+        self.add_network_context(provider)
+
         return peering_partner
 
     def create_peering_group(self):
@@ -173,6 +182,9 @@ class NetworkFakeDataGenerator:
         name = self.fake.company()
         peering_group = self.get_or_create_node(
             name, 'Peering Group', META_TYPES[1]) # Logical
+
+        # add context
+        self.add_network_context(provider)
 
         return peering_group
 
