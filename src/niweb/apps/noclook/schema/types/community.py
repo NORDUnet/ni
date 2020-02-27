@@ -26,7 +26,7 @@ class Role(DjangoObjectType):
         use_connection = False
 
 
-class Group(NIObjectType):
+class Group(NIObjectType, LogicalMixin):
     '''
     The group type is used to group contacts
     '''
@@ -41,7 +41,7 @@ class Group(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Procedure(NIObjectType):
+class Procedure(NIObjectType, LogicalMixin):
     '''
     The group type is used to group contacts
     '''
@@ -54,7 +54,7 @@ class Procedure(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Address(NIObjectType):
+class Address(NIObjectType, LogicalMixin):
     '''
     Phone entity to be used inside contact
     '''
@@ -73,7 +73,7 @@ class Address(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Organization(NIObjectType):
+class Organization(NIObjectType, RelationMixin):
     '''
     The group type is used to group contacts
     '''
@@ -121,7 +121,7 @@ class RoleRelation(NIRelationType):
         filter_exclude = ('type')
 
 
-class Phone(NIObjectType):
+class Phone(NIObjectType, LogicalMixin):
     '''
     Phone entity to be used inside contact
     '''
@@ -137,7 +137,7 @@ class Phone(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Email(NIObjectType):
+class Email(NIObjectType, LogicalMixin):
     '''
     Email entity to be used inside contact
     '''
@@ -153,7 +153,7 @@ class Email(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Contact(NIObjectType):
+class Contact(NIObjectType, RelationMixin):
     '''
     A contact in the SRI system
     '''

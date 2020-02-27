@@ -3,7 +3,9 @@ __author__ = 'ffuentes'
 
 from apps.noclook.schema.core import *
 
-class Port(NIObjectType):
+
+## Cables and Equipment
+class Port(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     port_type = NIChoiceField()
     description = NIStringField()
@@ -16,7 +18,7 @@ class Port(NIObjectType):
         context_method = sriutils.get_network_context
 
 
-class Cable(NIObjectType):
+class Cable(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     cable_type = NIChoiceField()
     description = NIStringField()
@@ -29,7 +31,7 @@ class Cable(NIObjectType):
         context_method = sriutils.get_network_context
 
 
-class Host(NIObjectType):
+class Host(NIObjectType, PhysicalMixin):
     '''
     A host in the SRI system
     '''

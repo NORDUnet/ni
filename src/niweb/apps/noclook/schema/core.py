@@ -40,10 +40,10 @@ NIMETA_PHYSICAL = META_TYPES[0]
 NIMETA_LOCATION = META_TYPES[3]
 
 metatype_interfaces = OrderedDict([
-    (NIMETA_LOGICAL, Logical ),
-    (NIMETA_RELATION, Relation),
-    (NIMETA_PHYSICAL, Physical),
-    (NIMETA_LOCATION, Location),
+    (NIMETA_LOGICAL,  { 'interface': Logical,  'mixin':  LogicalMixin, } ),
+    (NIMETA_RELATION, { 'interface': Relation, 'mixin':  RelationMixin, }),
+    (NIMETA_PHYSICAL, { 'interface': Physical, 'mixin':  PhysicalMixin, }),
+    (NIMETA_LOCATION, { 'interface': Location, 'mixin':  LocationMixin, }),
 ])
 
 class User(DjangoObjectType):
@@ -285,7 +285,7 @@ class NIObjectType(DjangoObjectType):
         if hasattr(cls, 'NIMetaType'):
             ni_metatype = cls.get_from_nimetatype("ni_metatype")
             if ni_metatype in metatype_interfaces:
-                metatype_interface = metatype_interfaces[ni_metatype]
+                metatype_interface = metatype_interfaces[ni_metatype]['interface']
                 interfaces.append(metatype_interface)
 
         options['model'] = NIObjectType._meta.model
