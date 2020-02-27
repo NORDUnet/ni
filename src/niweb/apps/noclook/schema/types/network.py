@@ -3,6 +3,28 @@ __author__ = 'ffuentes'
 
 from apps.noclook.schema.core import *
 
+## Organizations
+class Customer(NIObjectType, RelationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    url = NIStringField()
+    description = NIStringField()
+
+    class NIMetaType:
+        ni_type = 'Customer'
+        ni_metatype = NIMETA_RELATION
+        context_method = sriutils.get_network_context
+
+
+class EndUser(NIObjectType, RelationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    url = NIStringField()
+    description = NIStringField()
+
+    class NIMetaType:
+        ni_type = 'End User'
+        ni_metatype = NIMETA_RELATION
+        context_method = sriutils.get_network_context
+
 
 ## Cables and Equipment
 class Port(NIObjectType, PhysicalMixin):

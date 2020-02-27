@@ -11,6 +11,7 @@ from .query import *
 from .mutations import *
 
 NOCSCHEMA_TYPES = [
+    # common and community
     User,
     Dropdown,
     Choice,
@@ -23,6 +24,11 @@ NOCSCHEMA_TYPES = [
     Phone,
     Email,
 
+    # Network
+    ## organizations
+    Customer,
+
+    ## cables equipement
     Port,
     Host,
     Cable,
