@@ -7,19 +7,15 @@ import apps.noclook.vakt.utils as sriutils
 
 from apps.noclook import activitylog, helpers
 from apps.noclook.forms import *
-from apps.noclook.models import Dropdown as DropdownModel, Role as RoleModel, \
-    DEFAULT_ROLES, DEFAULT_ROLES, DEFAULT_ROLE_KEY, Choice as ChoiceModel
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.sites.shortcuts import get_current_site
+from apps.noclook.models import Role as RoleModel, \
+    DEFAULT_ROLES, DEFAULT_ROLES, DEFAULT_ROLE_KEY
+from apps.noclook.schema.types import *
 from django.test import RequestFactory
 from django_comments.forms import CommentForm
 from django_comments.models import Comment
 from graphene import Field
 from graphene_django.forms.mutation import DjangoModelFormMutation, BaseDjangoFormMutation
 from django.core.exceptions import ObjectDoesNotExist
-
-from .core import NIMutationFactory, CreateNIMutation, CommentType
-from .types import *
 
 logger = logging.getLogger(__name__)
 
@@ -497,131 +493,6 @@ class DeleteRole(relay.ClientIDMutation):
         return DeleteRole(success=success, id=id)
 
 
-class CreateComment(relay.ClientIDMutation):
-    class Input:
-        object_id = graphene.ID(required=True)
-        comment = graphene.String(required=True)
-
-    comment = Field(CommentType)
-
-    @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
-        object_id = input.get("object_id")
-        object_pk = relay.Node.from_global_id(object_id)[1]
-
-        # check it can write for this node
-        authorized = sriutils.authorice_write_resource(info.context.user, object_pk)
-
-        if not authorized:
-            raise GraphQLAuthException()
-
-        comment = input.get("comment")
-        content_type = ContentType.objects.get(app_label="noclook", model="nodehandle")
-
-        request_factory = RequestFactory()
-        request = request_factory.post('/', data={})
-        site = get_current_site(request)
-
-        comment = Comment(
-            content_type=content_type,
-            object_pk=object_pk,
-            site=site,
-            user=info.context.user,
-            comment=comment,
-        )
-        comment.save()
-
-        return CreateComment(comment=comment)
-
-class UpdateComment(relay.ClientIDMutation):
-    class Input:
-        id = graphene.ID(required=True)
-        comment = graphene.String(required=True)
-
-    comment = Field(CommentType)
-
-    @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
-        id = input.get("id")
-        id = relay.Node.from_global_id(id)[1]
-        comment_txt = input.get("comment")
-
-        comment = Comment.objects.get(id=id)
-        object_pk = comment.object_pk
-
-        # check it can write for this node
-        authorized = sriutils.authorice_write_resource(info.context.user, object_pk)
-
-        if not authorized:
-            raise GraphQLAuthException()
-
-        comment.comment = comment_txt
-        comment.save()
-
-        return UpdateComment(comment=comment)
-
-class DeleteComment(relay.ClientIDMutation):
-    class Input:
-        id = graphene.ID(required=True)
-
-    success = graphene.Boolean(required=True)
-    id = graphene.ID(required=True)
-
-    @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
-        relay_id = input.get("id")
-        id = relay.Node.from_global_id(relay_id)[1]
-        success = False
-
-        try:
-            comment = Comment.objects.get(id=id)
-            object_pk = comment.object_pk
-
-            # check it can write for this node
-            authorized = sriutils.authorice_write_resource(info.context.user, object_pk)
-
-            if not authorized:
-                raise GraphQLAuthException()
-
-            comment.delete()
-            success = True
-        except ObjectDoesNotExist:
-            success = False
-
-        return DeleteComment(success=success, id=relay_id)
-
-
-class CreateOptionForDropdown(relay.ClientIDMutation):
-    class Input:
-        dropdown_name = graphene.String(required=True)
-        name = graphene.String(required=True)
-        value = graphene.String(required=True)
-
-    choice = Field(Choice)
-
-    @classmethod
-    def mutate_and_get_payload(cls, root, info, **input):
-        # only superadmins may add options for dropdowns
-        authorized = sriutils.authorize_superadmin(info.context.user)
-
-        if not authorized:
-            raise GraphQLAuthException()
-
-        dropdown_name = input.get("dropdown_name")
-        name  = input.get("name")
-        value = input.get("value")
-        dropdown = DropdownModel.objects.get(name=dropdown_name)
-
-        choice = ChoiceModel(
-            dropdown=dropdown,
-            name=name,
-            value=value
-        )
-        choice.save()
-
-        return CreateOptionForDropdown(choice=choice)
-
-
 ## Composite mutations
 class CompositeGroupMutation(CompositeMutation):
     class Input:
@@ -1005,47 +876,3 @@ class CompositeContactMutation(CompositeMutation):
         graphql_type = Contact
         graphql_subtype = Email
         context = sriutils.get_community_context()
-
-
-class NOCRootMutation(graphene.ObjectType):
-    create_group        = NIGroupMutationFactory.get_create_mutation().Field()
-    update_group        = NIGroupMutationFactory.get_update_mutation().Field()
-    delete_group        = NIGroupMutationFactory.get_delete_mutation().Field()
-    composite_group     = CompositeGroupMutation.Field()
-
-    create_procedure    = NIProcedureMutationFactory.get_create_mutation().Field()
-    update_procedure    = NIProcedureMutationFactory.get_update_mutation().Field()
-    delete_procedure    = NIProcedureMutationFactory.get_delete_mutation().Field()
-
-    create_phone        = NIPhoneMutationFactory.get_create_mutation().Field()
-    update_phone        = NIPhoneMutationFactory.get_update_mutation().Field()
-    delete_phone        = NIPhoneMutationFactory.get_delete_mutation().Field()
-
-    create_email        = NIEmailMutationFactory.get_create_mutation().Field()
-    update_email        = NIEmailMutationFactory.get_update_mutation().Field()
-    delete_email        = NIEmailMutationFactory.get_delete_mutation().Field()
-
-    create_address      = NIAddressMutationFactory.get_create_mutation().Field()
-    update_address      = NIAddressMutationFactory.get_update_mutation().Field()
-    delete_address      = NIAddressMutationFactory.get_delete_mutation().Field()
-
-    create_contact      = NIContactMutationFactory.get_create_mutation().Field()
-    update_contact      = NIContactMutationFactory.get_update_mutation().Field()
-    delete_contact      = NIContactMutationFactory.get_delete_mutation().Field()
-    composite_contact   = CompositeContactMutation.Field()
-
-    create_organization    = CreateOrganization.Field()
-    update_organization    = UpdateOrganization.Field()
-    delete_organization    = NIOrganizationMutationFactory.get_delete_mutation().Field()
-    composite_organization = CompositeOrganizationMutation.Field()
-
-    create_role = CreateRole.Field()
-    update_role = UpdateRole.Field()
-    delete_role = DeleteRole.Field()
-
-    create_comment = CreateComment.Field()
-    update_comment = UpdateComment.Field()
-    delete_comment = DeleteComment.Field()
-
-    delete_relationship = DeleteRelationship.Field()
-    create_option = CreateOptionForDropdown.Field()
