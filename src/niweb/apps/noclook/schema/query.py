@@ -51,23 +51,26 @@ class NOCAutoQuery(graphene.ObjectType):
                 type_name     = node_type.type
                 type_slug     = node_type.slug
 
+                # relace - in slug for _
+                fmt_type_slug = type_slug.replace('-', '')
+
                 # add simple list attribute and resolver
-                field_name    = 'all_{}s'.format(type_slug)
+                field_name    = 'all_{}s'.format(fmt_type_slug)
                 resolver_name = 'resolve_{}'.format(field_name)
 
                 setattr(cls, field_name, graphene.List(graphql_type))
                 setattr(cls, resolver_name, graphql_type.get_list_resolver())
 
                 # add simple counter
-                field_name    = 'count_{}s'.format(type_slug)
-                resolver_name = 'resolve_{}'.format(field_name)
+                field_name    = 'count_{}s'.format(fmt_type_slug)
+                resolver_name = 'resolve_{}'.format(fmt_type_slug)
 
                 setattr(cls, field_name, graphene.Int())
                 setattr(cls, resolver_name, graphql_type.get_count_resolver())
 
                 # add connection attribute
-                field_name    = '{}s'.format(type_slug)
-                resolver_name = 'resolve_{}'.format(field_name)
+                field_name    = '{}s'.format(fmt_type_slug)
+                resolver_name = 'resolve_{}'.format(fmt_type_slug)
 
                 connection_input, connection_order = graphql_type.build_filter_and_order()
                 connection_meta = type('Meta', (object, ), dict(node=graphql_type))
@@ -93,7 +96,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 setattr(cls, resolver_name, graphql_type.get_connection_resolver())
 
                 ## build field and resolver byid
-                field_name    = 'get{}ById'.format(type_name)
+                field_name    = 'get{}ById'.format(fmt_type_slug)
                 resolver_name = 'resolve_{}'.format(field_name)
 
                 setattr(cls, field_name, graphene.Field(graphql_type, id=graphene.ID()))
@@ -210,6 +213,6 @@ class NOCRootQuery(NOCAutoQuery):
     class NIMeta:
         graphql_types = [
             Group, Address, Phone, Email, Contact, Organization, Procedure,
-            Customer,
+            Customer, EndUser,
             Port, Host, Cable,
         ]

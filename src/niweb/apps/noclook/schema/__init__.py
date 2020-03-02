@@ -27,6 +27,7 @@ NOCSCHEMA_TYPES = [
     # Network
     ## organizations
     Customer,
+    EndUser,
 
     ## cables equipement
     Port,

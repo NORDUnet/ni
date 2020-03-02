@@ -429,7 +429,7 @@ class NIObjectType(DjangoObjectType):
         if cls._connection_input and cls._connection_order:
             return cls._connection_input, cls._connection_order
 
-        ni_type = cls.get_from_nimetatype('ni_type')
+        ni_type = cls.get_from_nimetatype('ni_type').replace(' ', '')
 
         # build filter input class and order enum
         filter_attrib = {}
