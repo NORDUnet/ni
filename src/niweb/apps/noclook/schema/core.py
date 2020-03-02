@@ -701,101 +701,104 @@ class NIObjectType(DjangoObjectType):
 
             if info.context and info.context.user.is_authenticated and \
                 sriutils.authorize_list_module(info.context.user, context):
+
                 # filtering will take a different approach
                 nodes = None
-                node_type = NodeType.objects.get(type=type_name)
-                qs = NodeHandle.objects.filter(node_type=node_type)
 
-                # instead of vakt here, we reduce the original qs
-                # to only the ones the user has right to read
-                qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                if NodeType.objects.filter(type=type_name):
+                    node_type = NodeType.objects.get(type=type_name)
+                    qs = NodeHandle.objects.filter(node_type=node_type)
 
-                # remove default ordering prop if there's no filter
-                if not cls.order_is_empty(orderBy):
-                    if orderBy == 'handle_id_DESC':
-                        orderBy = None
-                        apply_handle_id_order = True
-                        revert_default_order = False
-                    elif orderBy == 'handle_id_ASC':
-                        orderBy = None
-                        apply_handle_id_order = True
-                        revert_default_order = True
+                    # instead of vakt here, we reduce the original qs
+                    # to only the ones the user has right to read
+                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
 
-                qs_order_prop = None
-                qs_order_order = None
+                    # remove default ordering prop if there's no filter
+                    if not cls.order_is_empty(orderBy):
+                        if orderBy == 'handle_id_DESC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = False
+                        elif orderBy == 'handle_id_ASC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = True
 
-                if not cls.order_is_empty(orderBy):
-                    m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
-                    prop = m[1]
-                    order = m[2]
+                    qs_order_prop = None
+                    qs_order_order = None
 
-                    if prop in DateQueryBuilder.fields:
-                        # set model attribute ordering
-                        qs_order_prop  = prop
-                        qs_order_order = order
+                    if not cls.order_is_empty(orderBy):
+                        m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                        prop = m[1]
+                        order = m[2]
 
-                if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
-                    # filter queryset with dates and users
-                    qs = DateQueryBuilder.filter_queryset(filter, qs)
-                    qs = UserQueryBuilder.filter_queryset(filter, qs)
+                        if prop in DateQueryBuilder.fields:
+                            # set model attribute ordering
+                            qs_order_prop  = prop
+                            qs_order_order = order
 
-                    # remove order if is a date order
-                    if qs_order_prop and qs_order_order:
-                        orderBy = None
+                    if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
+                        # filter queryset with dates and users
+                        qs = DateQueryBuilder.filter_queryset(filter, qs)
+                        qs = UserQueryBuilder.filter_queryset(filter, qs)
 
-                    # create query
-                    q = cls.build_filter_query(filter, orderBy, type_name,
-                                    apply_handle_id_order, revert_default_order)
-                    nodes = nc.query_to_list(nc.graphdb.manager, q)
-                    nodes = [ node['n'] for node in nodes]
+                        # remove order if is a date order
+                        if qs_order_prop and qs_order_order:
+                            orderBy = None
 
-                    use_neo4j_query = True
-                else:
-                    use_neo4j_query = False
+                        # create query
+                        q = cls.build_filter_query(filter, orderBy, type_name,
+                                        apply_handle_id_order, revert_default_order)
+                        nodes = nc.query_to_list(nc.graphdb.manager, q)
+                        nodes = [ node['n'] for node in nodes]
 
-                if use_neo4j_query:
-                    ret = []
+                        use_neo4j_query = True
+                    else:
+                        use_neo4j_query = False
 
-                    handle_ids = []
-                    for node in nodes:
-                        if node['handle_id'] not in handle_ids:
-                            handle_ids.append(node['handle_id'])
+                    if use_neo4j_query:
+                        ret = []
 
-                    for handle_id in handle_ids:
-                        nodeqs = qs.filter(handle_id=handle_id)
-                        try:
-                            the_node = nodeqs.first()
-                            if the_node:
-                                ret.append(the_node)
-                        except:
-                            pass # nothing to do if the qs doesn't have elements
+                        handle_ids = []
+                        for node in nodes:
+                            if node['handle_id'] not in handle_ids:
+                                handle_ids.append(node['handle_id'])
 
-                    # apply date order if it applies
-                    if qs_order_prop and qs_order_order:
-                        reverse = True if qs_order_order == 'DESC' else False
-                        ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
-                else:
-                    # do nodehandler attributes ordering now that we have
-                    # the nodes set, if this order is requested
-                    if qs_order_prop and qs_order_order:
-                        reverse = True if qs_order_order == 'DESC' else False
+                        for handle_id in handle_ids:
+                            nodeqs = qs.filter(handle_id=handle_id)
+                            try:
+                                the_node = nodeqs.first()
+                                if the_node:
+                                    ret.append(the_node)
+                            except:
+                                pass # nothing to do if the qs doesn't have elements
 
-                        if reverse:
-                            qs = qs.order_by('{}'.format(qs_order_prop))
-                        else:
-                            qs = qs.order_by('-{}'.format(qs_order_prop))
+                        # apply date order if it applies
+                        if qs_order_prop and qs_order_order:
+                            reverse = True if qs_order_order == 'DESC' else False
+                            ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                    else:
+                        # do nodehandler attributes ordering now that we have
+                        # the nodes set, if this order is requested
+                        if qs_order_prop and qs_order_order:
+                            reverse = True if qs_order_order == 'DESC' else False
 
-                    if apply_handle_id_order:
-                        logger.debug('Apply handle_id order')
+                            if reverse:
+                                qs = qs.order_by('{}'.format(qs_order_prop))
+                            else:
+                                qs = qs.order_by('-{}'.format(qs_order_prop))
 
-                        if not revert_default_order:
-                            logger.debug('Apply descendent handle_id')
-                            qs = qs.order_by('-handle_id')
-                        else:
-                            logger.debug('Apply ascending handle_id')
-                            qs = qs.order_by('handle_id')
+                        if apply_handle_id_order:
+                            logger.debug('Apply handle_id order')
 
-                    ret = list(qs)
+                            if not revert_default_order:
+                                logger.debug('Apply descendent handle_id')
+                                qs = qs.order_by('-handle_id')
+                            else:
+                                logger.debug('Apply ascending handle_id')
+                                qs = qs.order_by('handle_id')
+
+                        ret = list(qs)
 
                 if not ret:
                     ret = []
