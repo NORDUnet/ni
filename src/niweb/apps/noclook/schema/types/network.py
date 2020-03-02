@@ -55,7 +55,7 @@ class Cable(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     cable_type = NIChoiceField()
     description = NIStringField()
-    # providers = NIListField(type_args=(lambda: Provider,), rel_name='Provides', rel_method='get_relations')
+    providers = NIListField(type_args=(lambda: Provider,), rel_name='Provides', rel_method='get_relations')
     ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', rel_method='get_outgoing_relations')
 
     class NIMetaType:
