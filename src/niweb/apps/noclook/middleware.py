@@ -13,7 +13,7 @@ from graphql_jwt.shortcuts import get_token, get_user_by_token
 from graphql_jwt.refresh_token.shortcuts import refresh_token_lazy
 from graphql_jwt.refresh_token.signals import refresh_token_rotated
 from graphql_jwt.utils import get_credentials, get_payload
-from graphql_jwt.exceptions import JSONWebTokenExpired
+from graphql_jwt.exceptions import JSONWebTokenError, JSONWebTokenExpired
 from importlib import import_module
 
 import time
@@ -23,6 +23,8 @@ def token_is_expired(token):
 
     try:
         get_payload(token)
+    except JSONWebTokenError:
+        ret = True
     except JSONWebTokenExpired:
         ret = True
 
