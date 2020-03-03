@@ -178,6 +178,13 @@ class NetworkFakeDataGenerator:
         peering_partner = self.get_or_create_node(
             name, 'Peering Partner', META_TYPES[2]) # Relation
 
+        data = {
+            'as_number' : random.randint(10000, 99999),
+        }
+
+        for key, value in data.items():
+            provider.get_node().add_property(key, value)
+
         # add context
         self.add_network_context(peering_partner)
 
