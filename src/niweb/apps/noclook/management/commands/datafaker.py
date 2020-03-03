@@ -11,7 +11,7 @@ logger = logging.getLogger('noclook.management.datafaker')
 class Command(BaseCommand):
     help = 'Create fake data for the Network module'
     generated_types = [
-        'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group', 'Peering Partner'
+        'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group', 'Peering Partner',
         'Cable', 'Port', 'Host', 'Router', 'Switch']
 
     def add_arguments(self, parser):
