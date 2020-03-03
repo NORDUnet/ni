@@ -10,8 +10,9 @@ logger = logging.getLogger('noclook.management.datafaker')
 
 class Command(BaseCommand):
     help = 'Create fake data for the Network module'
-    generated_types = ['Customer', 'End User',
-            'Cable', 'Provider', 'Port', 'Host', 'Router', 'Switch']
+    generated_types = [
+        'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group', 'Peering Partner',
+        'Cable', 'Port', 'Host', 'Router', 'Switch']
 
     def add_arguments(self, parser):
         parser.add_argument("--organizations",
@@ -63,6 +64,7 @@ class Command(BaseCommand):
             generator.create_end_user,
             generator.create_peering_partner,
             generator.create_peering_group,
+            generator.create_site_owner,
         ]
 
         self.create_entities(numnodes, create_funcs)

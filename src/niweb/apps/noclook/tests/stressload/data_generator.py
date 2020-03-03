@@ -127,10 +127,16 @@ class NetworkFakeDataGenerator:
         return [ x[0] for x in Dropdown.get(dropdown_name).as_choices()[1:] ]
 
     ## Organizations
+    def rand_person_or_company_name(self):
+        person_name = '{} {}'.format(self.fake.first_name(), self.fake.last_name())
+        company_name = self.fake.company()
+        name = random.choice((person_name, company_name))
+
+        return name
 
     def create_customer(self):
         # create object
-        name = self.fake.company()
+        name = self.rand_person_or_company_name()
         customer = self.get_or_create_node(
             name, 'Customer', META_TYPES[2]) # Relation
 
@@ -149,7 +155,7 @@ class NetworkFakeDataGenerator:
 
     def create_end_user(self):
         # create object
-        name = self.fake.company()
+        name = self.rand_person_or_company_name()
         enduser = self.get_or_create_node(
             name, 'End User', META_TYPES[2]) # Relation
 
@@ -188,8 +194,6 @@ class NetworkFakeDataGenerator:
 
         return peering_group
 
-    ## Equipment and cables
-
     def create_provider(self):
         provider = self.get_or_create_node(
             self.fake.company(), 'Provider', META_TYPES[0])
@@ -205,6 +209,27 @@ class NetworkFakeDataGenerator:
             provider.get_node().add_property(key, value)
 
         return provider
+
+    def create_site_owner(self):
+        # create object
+        name = self.rand_person_or_company_name()
+        siteowner = self.get_or_create_node(
+            name, 'Site Owner', META_TYPES[2]) # Relation
+
+        # add context
+        self.add_network_context(siteowner)
+
+        data = {
+            'url': self.fake.url(),
+            'description': self.fake.paragraph(),
+        }
+
+        for key, value in data.items():
+            siteowner.get_node().add_property(key, value)
+
+        return siteowner
+
+    ## Equipment and cables
 
     def create_port(self):
         # create object
