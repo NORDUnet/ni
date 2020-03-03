@@ -37,6 +37,17 @@ class Provider(NIObjectType, RelationMixin):
         context_method = sriutils.get_network_context
 
 
+class SiteOwner(NIObjectType, RelationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    url = NIStringField()
+    description = NIStringField()
+
+    class NIMetaType:
+        ni_type = 'Site Owner'
+        ni_metatype = NIMETA_RELATION
+        context_method = sriutils.get_network_context
+
+
 ## Cables and Equipment
 class Port(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
