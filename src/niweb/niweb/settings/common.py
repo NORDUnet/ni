@@ -192,14 +192,11 @@ SAML_ENABLED = environ.get('SAML_ENABLED', False)
 MIDDLEWARE = (
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'apps.noclook.middleware.SRIJWTAuthMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'apps.noclook.middleware.SRIJWTMiddleware',
 )
 ########## END MIDDLEWARE CONFIGURATION
 
@@ -243,6 +240,7 @@ THIRD_PARTY_APPS = (
     'attachments',
     'graphene_django',
     'corsheaders',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
 )
 
 LOCAL_APPS = (
@@ -360,7 +358,7 @@ GRAPHQL_JWT = {
 ########## SESSION_COOKIE_DOMAIN
 SESSION_COOKIE_HTTPONLY = False
 CORS_ALLOW_CREDENTIALS = True
-COOKIE_DOMAIN = environ.get('COOKIE_DOMAIN', '.ed-integrations.com')
+COOKIE_DOMAIN = environ.get('COOKIE_DOMAIN')
 SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
 ########## END SESSION_COOKIE_DOMAIN

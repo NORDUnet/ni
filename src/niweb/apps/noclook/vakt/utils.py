@@ -83,7 +83,11 @@ def get_list_authaction(aamodel=AuthzAction):
 
 
 def get_context_by_name(name, cmodel=Context):
-    context = cmodel.objects.get(name=name)
+    try:
+        context = cmodel.objects.get(name=name)
+    except:
+        context = None
+
     return context
 
 

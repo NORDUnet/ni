@@ -1017,15 +1017,15 @@ class EditContactForm(NewContactForm):
 class MailPhoneContactForm(EditContactForm):
     # this form adds extra data for the underlying nodes/relations
     # extra email form data
-    email_handle_id = forms.IntegerField(widget=forms.widgets.HiddenInput, required=False)
+    email_id = forms.CharField(widget=forms.widgets.HiddenInput, required=False)
     email = forms.EmailField(required=False)
     email_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
 
-    phone_handle_id = forms.IntegerField(widget=forms.widgets.HiddenInput, required=False)
+    phone_id = forms.CharField(widget=forms.widgets.HiddenInput, required=False)
     phone = forms.CharField(required=False)
     phone_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
 
-    role_handle_id = forms.IntegerField(required=False)
+    role_id = forms.CharField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(MailPhoneContactForm, self).__init__(*args, **kwargs)

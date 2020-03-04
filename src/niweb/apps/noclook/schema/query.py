@@ -86,7 +86,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 field_name    = 'get{}ById'.format(type_name)
                 resolver_name = 'resolve_{}'.format(field_name)
 
-                setattr(cls, field_name, graphene.Field(graphql_type, handle_id=graphene.Int()))
+                setattr(cls, field_name, graphene.Field(graphql_type, id=graphene.ID()))
                 setattr(cls, resolver_name, graphql_type.get_byid_resolver())
 
 
@@ -94,7 +94,7 @@ class NOCRootQuery(NOCAutoQuery):
     getAvailableDropdowns = graphene.List(graphene.String)
     getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
-    checkExistentOrganizationId = graphene.Boolean(organization_id=graphene.String(required=True), handle_id=graphene.Int())
+    checkExistentOrganizationId = graphene.Boolean(organization_id=graphene.String(required=True), id=graphene.ID())
 
     # get roles lookup
     getAvailableRoleGroups = graphene.List(RoleGroup)
@@ -132,8 +132,9 @@ class NOCRootQuery(NOCAutoQuery):
                 qs = qs.order_by('-name')
 
         if filter:
-            if filter.handle_id:
-                qs = qs.filter(handle_id=filter.handle_id)
+            if filter.id:
+                handle_id = relay.Node.from_global_id(filter.id)[1]
+                qs = qs.filter(handle_id=handle_id)
 
             if filter.name:
                 qs = qs.filter(name=filter.name)
@@ -184,9 +185,13 @@ class NOCRootQuery(NOCAutoQuery):
         return ret
 
     def resolve_checkExistentOrganizationId(self, info, **kwargs):
-        # django dropdown resolver
+        id = kwargs.get('id', None)
+        handle_id = None
+
+        if id:
+            _type, handle_id = relay.Node.from_global_id(id)
+
         organization_id = kwargs.get('organization_id')
-        handle_id = kwargs.get('handle_id', None)
 
         ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
 

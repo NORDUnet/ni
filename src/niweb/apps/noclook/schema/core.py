@@ -171,8 +171,18 @@ class CommentType(DjangoObjectType):
     This type represents a comment in the API, it uses the comments model just
     like the rest of noclook
     '''
+    object_id = graphene.ID(required=True)
+
+    def resolve_object_id(self, info, **kwargs):
+        node = NodeHandle.objects.get(handle_id = self.object_pk)
+        object_id = relay.Node.to_global_id(str(node.node_type),
+                                            str(self.object_pk))
+
+        return object_id
+
     class Meta:
         model = Comment
+        interfaces = (relay.Node, )
 
 input_fields_clsnames = {}
 
@@ -371,7 +381,7 @@ class NIObjectType(DjangoObjectType):
 
                         input_fields[name] = binput_field, field._of_type
 
-        input_fields['handle_id'] = graphene.Int
+        input_fields['id'] = graphene.ID
 
         # add 'created' and 'modified' datetime fields
         for date_ffield in DateQueryBuilder.fields:
@@ -479,6 +489,13 @@ class NIObjectType(DjangoObjectType):
 
         filter_input = type('{}Filter'.format(ni_type), (graphene.InputObjectType, ), filter_attrib)
 
+        # add the handle id field manually
+        handle_id_field = 'handle_id'
+        asc_field_name = '{}_{}'.format(handle_id_field, cls._asc_suffix)
+        desc_field_name = '{}_{}'.format(handle_id_field, cls._desc_suffix)
+        enum_options.append([asc_field_name, asc_field_name])
+        enum_options.append([desc_field_name, desc_field_name])
+
         orderBy = graphene.Enum('{}OrderBy'.format(ni_type), enum_options)
 
         # store the created objects
@@ -495,9 +512,16 @@ class NIObjectType(DjangoObjectType):
         type_name = cls.get_type_name()
 
         def generic_byid_resolver(self, info, **args):
-            handle_id = args.get('handle_id')
-            node_type = NodeType.objects.get(type=type_name)
+            id = args.get('id')
+            handle_id = None
+            ret = None
 
+            try:
+                _type, handle_id = relay.Node.from_global_id(id)
+            except:
+                pass # nothing is done, we'll return None
+
+            node_type = NodeType.objects.get(type=type_name)
             ret = None
 
             if info.context and info.context.user.is_authenticated:
@@ -824,6 +848,27 @@ class NIObjectType(DjangoObjectType):
                         is_nested_query = False
                         neo4j_var = ''
 
+                        # transform relay id into handle_id
+                        old_filter_key = filter_key
+
+                        try:
+                            if filter_key.index('id') == 0:
+                                # change value
+                                try: # list value
+                                    nfilter_value = []
+                                    for fval in filter_value:
+                                        handle_id_fval = relay.Node.from_global_id(fval)[1]
+                                        handle_id_fval = int(handle_id_fval)
+                                        nfilter_value.append(handle_id_fval)
+
+                                    filter_value = nfilter_value
+                                except: # single value
+                                    filter_value = relay.Node.from_global_id(filter_value)[1]
+                                    filter_value = int(filter_value)
+                        except ValueError:
+                            pass
+
+
                         if isinstance(filter_value, int) or isinstance(filter_value, str):
                             filter_array = ScalarQueryBuilder.filter_array
                             queryBuilder = ScalarQueryBuilder
@@ -886,9 +931,17 @@ class NIObjectType(DjangoObjectType):
                         suffix = filter_field['suffix']
                         field_type = filter_field['field_type']
 
+
                         # iterate through the keys of the filter array and extracts
                         # the predicate building function
                         for fa_suffix, fa_value in filter_array.items():
+                            # change id field into handle_id for neo4j db
+                            try:
+                                if field.index('id') == 0:
+                                    field = field.replace('id', 'handle_id')
+                            except ValueError:
+                                pass
+
                             if fa_suffix != '':
                                 fa_suffix = '_{}'.format(fa_suffix)
 
@@ -1182,7 +1235,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
         # add handle_id
         if not is_create:
-            inner_fields['handle_id'] = graphene.Int(required=True)
+            inner_fields['id'] = graphene.ID(required=True)
 
         # add Input attribute to class
         inner_class = type('Input', (object,), inner_fields)
@@ -1305,15 +1358,27 @@ class AbstractNIMutation(relay.ClientIDMutation):
         # if it's an edit mutation add handle_id
         # and also add the existent values in the request
         if not is_create:
-            input_params['handle_id'] = input.get('handle_id')
+            input_params['id'] = input.get('id')
+            handle_id = None
+            handle_id = relay.Node.from_global_id(input_params['id'])[1]
 
             # get previous instance
-            nh = NodeHandle.objects.get(handle_id=input_params['handle_id'])
+            nh = NodeHandle.objects.get(handle_id=handle_id)
             node = nh.get_node()
             for noninput_field in noninput_fields:
                 if noninput_field in node.data:
                     input_params[noninput_field] = node.data.get(noninput_field)
 
+        # morph ids for relation processors
+        relations_processors = getattr(ni_metaclass, 'relations_processors', None)
+
+        if relations_processors:
+            for relation_name in relations_processors.keys():
+                relay_id = input.get(relation_name, None)
+
+                if relay_id:
+                    handle_id = relay.Node.from_global_id(relay_id)[1]
+                    input_params[relation_name] = handle_id
 
         # forge request
         request_factory = RequestFactory()
@@ -1395,8 +1460,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
                 node_name = None
 
                 for fform_name, fform_value in fields.items():
-                    if fform_name == 'handle_id':
-                        sub_handle_id = form.cleaned_data.get(fform_value, None)
+                    if fform_name == 'id':
+                        sub_id = form.cleaned_data.get(fform_value, None)
+                        if sub_id:
+                            _type, sub_handle_id = relay.Node.from_global_id(sub_id)
                     else:
                         if fform_name == 'name':
                             node_name = form.cleaned_data.get(fform_value, None)
@@ -1464,6 +1531,7 @@ class CreateNIMutation(AbstractNIMutation):
         nimetaclass    = getattr(cls, 'NIMetaClass')
         graphql_type   = getattr(nimetaclass, 'graphql_type')
         property_update = getattr(nimetaclass, 'property_update', None)
+        relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
@@ -1478,7 +1546,18 @@ class CreateNIMutation(AbstractNIMutation):
             raise GraphQLAuthException()
 
         ## code from role creation
-        form = form_class(request.POST)
+        post_data = request.POST.copy()
+
+        # convert relay ids to django ids
+        if relay_extra_ids:
+            for extra_id in relay_extra_ids:
+                rela_id_val = post_data.get(extra_id)
+                if rela_id_val:
+                    rela_id_val = relay.Node.from_global_id(rela_id_val)[1]
+                    post_data.pop(extra_id)
+                    post_data.update({ extra_id: rela_id_val})
+
+        form = form_class(post_data)
         if form.is_valid():
             try:
                 form_to_nodehandle = cls.get_form_to_nodehandle_func()
@@ -1540,15 +1619,17 @@ class UpdateNIMutation(AbstractNIMutation):
         nimetaclass     = getattr(cls, 'NIMetaClass')
         graphql_type    = getattr(nimetaclass, 'graphql_type')
         property_update = getattr(nimetaclass, 'property_update', None)
+        relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype      = getattr(graphql_type, 'NIMetaType')
         node_type       = getattr(nimetatype, 'ni_type').lower()
         node_meta_type  = getattr(nimetatype, 'ni_metatype').capitalize()
-        context_method = getattr(nimetatype, 'context_method')
-        handle_id       = request.POST.get('handle_id')
+        context_method  = getattr(nimetatype, 'context_method')
+        id              = request.POST.get('id')
         has_error       = False
 
         # check authorization
+        handle_id = relay.Node.from_global_id(id)[1]
         authorized = sriutils.authorice_write_resource(request.user, handle_id)
 
         if not authorized:
@@ -1556,7 +1637,18 @@ class UpdateNIMutation(AbstractNIMutation):
 
         nh, nodehandler = helpers.get_nh_node(handle_id)
         if request.POST:
-            form = form_class(request.POST)
+            post_data = request.POST.copy()
+
+            # convert relay ids to django ids
+            if relay_extra_ids:
+                for extra_id in relay_extra_ids:
+                    rela_id_val = post_data.get(extra_id)
+                    if rela_id_val:
+                        rela_id_val = relay.Node.from_global_id(rela_id_val)[1]
+                        post_data.pop(extra_id)
+                        post_data.update({ extra_id: rela_id_val})
+
+            form = form_class(post_data)
             if form.is_valid():
                 # Generic node update
                 helpers.form_update_node(request.user, nodehandler.handle_id, form, property_update)
@@ -1594,9 +1686,12 @@ class DeleteNIMutation(AbstractNIMutation):
 
     @classmethod
     def do_request(cls, request, **kwargs):
-        handle_id = request.POST.get('handle_id')
+        id              = request.POST.get('id')
+        handle_id = relay.Node.from_global_id(id)[1]
 
-        if not NodeHandle.objects.filter(handle_id=handle_id).exists():
+        if not handle_id or \
+            not NodeHandle.objects.filter(handle_id=handle_id).exists():
+
             has_error = True
             return has_error, [
                 ErrorType(
@@ -1869,6 +1964,7 @@ class NIMutationFactory():
         update_include  = getattr(ni_metaclass, 'update_include', None)
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
+        relay_extra_ids = getattr(ni_metaclass, 'relay_extra_ids', None)
 
         manual_create   = getattr(ni_metaclass, 'manual_create', None)
         manual_update   = getattr(ni_metaclass, 'manual_update', None)
@@ -1902,6 +1998,7 @@ class NIMutationFactory():
             'include': create_include,
             'exclude': create_exclude,
             'property_update': property_update,
+            'relay_extra_ids': relay_extra_ids,
         }
 
         if relations_processors:
@@ -1950,6 +2047,7 @@ class NIMutationFactory():
         del attr_dict['include']
         del attr_dict['exclude']
         del attr_dict['property_update']
+        del attr_dict['relay_extra_ids']
         attr_dict['is_delete'] = True
 
         if relations_processors:

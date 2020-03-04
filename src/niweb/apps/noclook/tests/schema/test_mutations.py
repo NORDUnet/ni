@@ -2,12 +2,13 @@
 __author__ = 'ffuentes'
 
 from collections import OrderedDict
+from graphene import relay
 from niweb.schema import schema
 from pprint import pformat
 from . import Neo4jGraphQLTest
 
-class QueryTest(Neo4jGraphQLTest):
-    def test_mutations(self):
+class JWTTest(Neo4jGraphQLTest):
+    def test_jwt_mutations(self):
         ### jwt mutations
         ## get token
         test_username="test user"
@@ -50,7 +51,8 @@ class QueryTest(Neo4jGraphQLTest):
             "The username from the jwt token doesn't match"
         assert result.data['refresh_token']['token'], result.data['refresh_token']['token']
 
-
+class SingleTest(Neo4jGraphQLTest):
+    def test_single_mutations(self):
         ### Simple entity ###
         ## create ##
         new_group_name = "New test group"
@@ -77,7 +79,8 @@ class QueryTest(Neo4jGraphQLTest):
           groups(filter:{{ AND:[{{ name: "{new_group_name}" }}]}}){{
             edges{{
               node{{
-                handle_id
+                id
+                name
               }}
             }}
           }}
@@ -85,41 +88,43 @@ class QueryTest(Neo4jGraphQLTest):
         '''.format(new_group_name=new_group_name)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        group_handle_id = int(result.data['groups']['edges'][0]['node']['handle_id'])
+        group_handle_id = result.data['groups']['edges'][0]['node']['id']
 
-        expected = OrderedDict([
-            ('create_group',
-                OrderedDict([
-                    ('group',
-                        OrderedDict([
-                            ('handle_id', str(group_handle_id)),
-                            ('name', new_group_name)
-                        ])),
-                    ('clientMutationId', None)
-                ])
-            )
-        ])
-        assert create_group_result == expected, pformat(result.data, indent=1)
+        expected = OrderedDict([('groups',
+                        OrderedDict([('edges',
+                            [
+                                OrderedDict([
+                                    ('node', OrderedDict([
+                                            ('id', group_handle_id),
+                                            ('name', new_group_name)
+                                        ]))
+                                ])
+                            ]
+                        )])
+                    )])
+
+        assert result.data == expected, '{}\n!=\n{}'.format(
+                    pformat(expected, indent=1), pformat(result.data, indent=1))
 
         ## update ##
         query = """
         mutation update_test_group {{
-          update_group(input: {{ handle_id: {handle_id}, name: "A test group"}} ){{
+          update_group(input: {{ id: "{id}", name: "A test group"}} ){{
             group {{
-              handle_id
+              id
               name
             }}
             clientMutationId
           }}
         }}
-        """.format(handle_id=group_handle_id)
+        """.format(id=group_handle_id)
 
         expected = OrderedDict([
             ('update_group',
                 OrderedDict([
                     ('group',
                         OrderedDict([
-                            ('handle_id', str(group_handle_id)),
+                            ('id', group_handle_id),
                             ('name', 'A test group')
                         ])),
                     ('clientMutationId', None)
@@ -135,11 +140,11 @@ class QueryTest(Neo4jGraphQLTest):
         ## delete ##
         query = """
         mutation delete_test_group {{
-          delete_group(input: {{ handle_id: {handle_id} }}){{
+          delete_group(input: {{ id: "{id}" }}){{
             success
           }}
         }}
-        """.format(handle_id=group_handle_id)
+        """.format(id=group_handle_id)
 
         expected = OrderedDict([
             ('delete_group',
@@ -160,7 +165,7 @@ class QueryTest(Neo4jGraphQLTest):
           organizations(orderBy: handle_id_ASC, first: 1) {
             edges {
               node {
-                handle_id
+                id
               }
             }
           }
@@ -169,8 +174,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        organization_id = result.data['organizations']['edges'][0]['node']['handle_id']
-        organization_id = int(organization_id)
+        organization_id = result.data['organizations']['edges'][0]['node']['id']
 
         # get the first group
         # query the api to get the handle_id of the new group
@@ -179,7 +183,7 @@ class QueryTest(Neo4jGraphQLTest):
           groups(orderBy: handle_id_ASC, first: 1) {
             edges {
               node {
-                handle_id
+                id
               }
             }
           }
@@ -188,8 +192,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        group_handle_id = result.data['groups']['edges'][0]['node']['handle_id']
-        group_handle_id = int(group_handle_id)
+        group_handle_id = result.data['groups']['edges'][0]['node']['id']
 
         # get IT-manager role
         query = '''
@@ -197,7 +200,7 @@ class QueryTest(Neo4jGraphQLTest):
           roles(filter: {name: "NOC Manager"}){
             edges{
               node{
-                handle_id
+                id
                 name
               }
             }
@@ -207,7 +210,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        role_handle_id = result.data['roles']['edges'][0]['node']['handle_id']
+        role_id = result.data['roles']['edges'][0]['node']['id']
 
         ## create ##
         note_txt = "Lorem ipsum dolor sit amet"
@@ -220,14 +223,18 @@ class QueryTest(Neo4jGraphQLTest):
               last_name: "Smith"
               title: ""
               contact_type: "person"
-              relationship_works_for: {organization_id}
-              role: {role_handle_id}
-              relationship_member_of: {group_handle_id}
+              relationship_works_for: "{organization_id}"
+              role: "{role_id}"
+              relationship_member_of: "{group_handle_id}"
               notes: "{note_txt}"
             }}
           ){{
+            errors{{
+              field
+              messages
+            }}
             contact{{
-              handle_id
+              id
               name
               first_name
               last_name
@@ -237,7 +244,7 @@ class QueryTest(Neo4jGraphQLTest):
               roles{{
                 name
                 end{{
-                  handle_id
+                  id
                   node_name
                 }}
               }}
@@ -248,15 +255,18 @@ class QueryTest(Neo4jGraphQLTest):
           }}
         }}
         """.format(organization_id=organization_id,
-                    role_handle_id=role_handle_id, group_handle_id=group_handle_id,
+                    role_id=role_id, group_handle_id=group_handle_id,
                     note_txt=note_txt)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        contact_id = result.data['create_contact']['contact']['handle_id']
+        assert not result.data['create_contact']['errors'], \
+            pformat(result.data['create_contact']['errors'], indent=1)
+        contact_id = result.data['create_contact']['contact']['id']
         expected = OrderedDict([('create_contact',
-                      OrderedDict([('contact',
-                        OrderedDict([('handle_id', contact_id),
+                      OrderedDict([('errors', None),
+                      ('contact',
+                        OrderedDict([('id', contact_id),
                                      ('name', 'Jane Smith'),
                                      ('first_name', 'Jane'),
                                      ('last_name', 'Smith'),
@@ -266,7 +276,7 @@ class QueryTest(Neo4jGraphQLTest):
                                       ('roles',
                                        [OrderedDict([('name', 'NOC Manager'),
                                          ('end',
-                                          OrderedDict([('handle_id',
+                                          OrderedDict([('id',
                                             str(organization_id)),
                                            ('node_name',
                                             'organization1')]))])]),
@@ -281,17 +291,17 @@ class QueryTest(Neo4jGraphQLTest):
         mutation update_test_contact {{
           update_contact(
             input: {{
-              handle_id: {contact_id}
+              id: "{contact_id}"
               first_name: "Janet"
               last_name: "Doe"
               contact_type: "person"
-              relationship_works_for: {organization_id}
-              role: {role_handle_id}
-              relationship_member_of: {group_handle_id}
+              relationship_works_for: "{organization_id}"
+              role: "{role_id}"
+              relationship_member_of: "{group_handle_id}"
             }}
           ){{
             contact{{
-              handle_id
+              id
               name
               first_name
               last_name
@@ -300,7 +310,7 @@ class QueryTest(Neo4jGraphQLTest):
               roles{{
                 name
                 end{{
-                  handle_id
+                  id
                   node_name
                 }}
               }}
@@ -311,11 +321,11 @@ class QueryTest(Neo4jGraphQLTest):
           }}
         }}
         """.format(contact_id=contact_id, organization_id=organization_id,
-                    role_handle_id=role_handle_id, group_handle_id=group_handle_id)
+                    role_id=role_id, group_handle_id=group_handle_id)
 
         expected = OrderedDict([('update_contact',
               OrderedDict([('contact',
-                            OrderedDict([('handle_id', contact_id),
+                            OrderedDict([('id', contact_id),
                                          ('name', 'Janet Doe'),
                                          ('first_name', 'Janet'),
                                          ('last_name', 'Doe'),
@@ -324,8 +334,8 @@ class QueryTest(Neo4jGraphQLTest):
                                          ('roles',
                                           [OrderedDict([('name', 'NOC Manager'),
                                             ('end',
-                                             OrderedDict([('handle_id',
-                                               str(organization_id)),
+                                             OrderedDict([('id',
+                                               organization_id),
                                               ('node_name',
                                                'organization1')]))])]),
                                          ('member_of_groups',
@@ -340,13 +350,13 @@ class QueryTest(Neo4jGraphQLTest):
         query = '''
         mutation{{
           update_contact(input:{{
-            handle_id: {contact_id},
+            id: "{contact_id}",
             first_name: "Janet"
             last_name: "Janet"
             contact_type: "doesnt_exists"
           }}){{
             contact{{
-              handle_id
+              id
               name
             }}
             errors{{
@@ -358,20 +368,22 @@ class QueryTest(Neo4jGraphQLTest):
         '''.format(contact_id=contact_id)
 
         result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
         assert 'errors' in result.data['update_contact'], pformat(result.data, indent=1)
 
         # test another erroneous form
+        fake_org_id = relay.Node.to_global_id('Organization', "-1")
         query = '''
         mutation{{
           update_contact(input:{{
-            handle_id: {contact_id},
+            id: "{contact_id}",
             first_name: "Janet"
             last_name: "Janet"
             contact_type: "person"
-            relationship_works_for: {organization_id}
+            relationship_works_for: "{organization_id}"
           }}){{
             contact{{
-              handle_id
+              id
               name
             }}
             errors{{
@@ -380,14 +392,14 @@ class QueryTest(Neo4jGraphQLTest):
             }}
           }}
         }}
-        '''.format(contact_id=contact_id, organization_id=-1)
+        '''.format(contact_id=contact_id, organization_id=fake_org_id)
         result = schema.execute(query, context=self.context)
         assert 'errors' in result.data['update_contact'], pformat(result.data, indent=1)
 
         ## delete ##
         query = """
         mutation delete_test_contact {{
-          delete_contact(input: {{ handle_id: {contact_id} }}){{
+          delete_contact(input: {{ id: "{contact_id}" }}){{
             success
           }}
         }}
@@ -405,6 +417,8 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
+class MultipleEntityTest(Neo4jGraphQLTest):
+    def test_multiple_entity_mutations(self):
         ### Composite entities (Organization) ###
         # get the first organization
         query= """
@@ -412,7 +426,7 @@ class QueryTest(Neo4jGraphQLTest):
           organizations(orderBy: handle_id_ASC, first: 1) {
             edges {
               node {
-                handle_id
+                id
               }
             }
           }
@@ -421,8 +435,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        organization_id = result.data['organizations']['edges'][0]['node']['handle_id']
-        organization_id = int(organization_id)
+        organization_id = result.data['organizations']['edges'][0]['node']['id']
 
         # get the first two contacts
         query= """
@@ -430,7 +443,7 @@ class QueryTest(Neo4jGraphQLTest):
           contacts(orderBy: handle_id_ASC, first: 2){
             edges{
               node{
-                handle_id
+                id
               }
             }
           }
@@ -439,10 +452,8 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        contact_1_id = result.data['contacts']['edges'][0]['node']['handle_id']
-        contact_1_id = int(contact_1_id)
-        contact_2_id = result.data['contacts']['edges'][1]['node']['handle_id']
-        contact_2_id = int(contact_2_id)
+        contact_1_id = result.data['contacts']['edges'][0]['node']['id']
+        contact_2_id = result.data['contacts']['edges'][1]['node']['id']
 
         assert contact_1_id != contact_2_id, 'The contact ids are equal'
 
@@ -457,21 +468,25 @@ class QueryTest(Neo4jGraphQLTest):
               name: "Another org",
               description: "This is the description of the new organization",
               incident_management_info: "{incident_management_info}",
-              relationship_parent_of: {organization_id},
-              abuse_contact: {contact_1_id},
-              primary_contact: {contact_2_id},
-              secondary_contact: {contact_1_id},
-              it_technical_contact: {contact_2_id},
-              it_security_contact: {contact_1_id},
-              it_manager_contact: {contact_2_id},
+              relationship_parent_of: "{organization_id}",
+              abuse_contact: "{contact_1_id}",
+              primary_contact: "{contact_2_id}",
+              secondary_contact: "{contact_1_id}",
+              it_technical_contact: "{contact_2_id}",
+              it_security_contact: "{contact_1_id}",
+              it_manager_contact: "{contact_2_id}",
               affiliation_provider: true,
               affiliation_customer: true,
               website: "{website}",
               organization_number: "{organization_number}"
             }}
           ){{
+            errors{{
+              field
+              messages
+            }}
             organization{{
-              handle_id
+              id
               name
               description
               incident_management_info
@@ -484,11 +499,11 @@ class QueryTest(Neo4jGraphQLTest):
                 relation{{
                   id
                   start{{
-                    handle_id
+                    id
                     node_name
                   }}
                   end{{
-                    handle_id
+                    id
                     node_name
                   }}
                 }}
@@ -503,12 +518,15 @@ class QueryTest(Neo4jGraphQLTest):
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
-        organization_id_2 = result.data['create_organization']['organization']['handle_id']
+        form_errors = result.data['create_organization']['errors']
+        assert not form_errors, pformat(form_errors, indent=1)
+        organization_id_2 = result.data['create_organization']['organization']['id']
         incoming_relations = result.data['create_organization']['organization']['incoming']
 
         expected = OrderedDict([('create_organization',
-              OrderedDict([('organization',
-                            OrderedDict([('handle_id', organization_id_2),
+              OrderedDict([('errors', None),
+                            ('organization',
+                            OrderedDict([('id', organization_id_2),
                                          ('name', 'Another org'),
                                          ('description',
                                           'This is the description of the new '
@@ -525,7 +543,10 @@ class QueryTest(Neo4jGraphQLTest):
         for relation in incoming_relations:
             for k, relation_dict in relation.items():
                 if k == 'name' and relation_dict == 'Parent_of':
-                    if relation['relation']['start']['handle_id'] == str(organization_id):
+                    start_id = relay.Node.from_global_id(relation['relation']['start']['id'])[1]
+                    org_id = relay.Node.from_global_id(organization_id)[1]
+
+                    if start_id == org_id:
                         found_offspring = True
 
         assert found_offspring, pformat(result.data, indent=1)
@@ -539,15 +560,15 @@ class QueryTest(Neo4jGraphQLTest):
         mutation{{
           update_organization(
             input: {{
-              handle_id: {organization_id}
+              id: "{organization_id}"
               name: "Another org",
               description: "This is the description of the new organization",
-              abuse_contact: {contact_1_id},
-              primary_contact: {contact_2_id},
-              secondary_contact: {contact_1_id},
-              it_technical_contact: {contact_2_id},
-              it_security_contact: {contact_1_id},
-              it_manager_contact: {contact_2_id},
+              abuse_contact: "{contact_1_id}",
+              primary_contact: "{contact_2_id}",
+              secondary_contact: "{contact_1_id}",
+              it_technical_contact: "{contact_2_id}",
+              it_security_contact: "{contact_1_id}",
+              it_manager_contact: "{contact_2_id}",
               affiliation_provider: false,
               affiliation_partner: true,
               website: "{website}",
@@ -555,7 +576,7 @@ class QueryTest(Neo4jGraphQLTest):
             }}
           ){{
             organization{{
-              handle_id
+              id
               name
               description
               incident_management_info
@@ -573,7 +594,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected = OrderedDict([('update_organization',
               OrderedDict([('organization',
-                            OrderedDict([('handle_id', organization_id_2),
+                            OrderedDict([('id', organization_id_2),
                                          ('name', 'Another org'),
                                          ('description',
                                           'This is the description of the new '
@@ -600,14 +621,14 @@ class QueryTest(Neo4jGraphQLTest):
         	create_phone(input:{{
               type: "{phone_type}",
               name: "{phone_num}",
-              contact: {contact_id}
+              contact: "{contact_id}"
             }}){{
               errors{{
                 field
                 messages
               }}
               phone{{
-                handle_id
+                id
                 name
                 type
               }}
@@ -619,15 +640,15 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('create_phone',
                       OrderedDict([('errors', None),
                                    ('phone',
-                                    OrderedDict([('handle_id', None),
+                                    OrderedDict([('id', None),
                                                  ('name', phone_num),
                                                  ('type', phone_type)]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        phone_id_str = result.data['create_phone']['phone']['handle_id']
-        expected['create_phone']['phone']['handle_id'] = phone_id_str
+        phone_id_str = result.data['create_phone']['phone']['id']
+        expected['create_phone']['phone']['id'] = phone_id_str
 
         assert result.data == expected, '{} \n != {}'.format(
                                                 pformat(result.data, indent=1),
@@ -637,10 +658,10 @@ class QueryTest(Neo4jGraphQLTest):
         ## read ##
         query = """
         {{
-          getContactById(handle_id: {contact_id}){{
-            handle_id
+          getContactById(id: "{contact_id}"){{
+            id
             phones{{
-              handle_id
+              id
               name
               type
             }}
@@ -649,9 +670,9 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(contact_id=contact_1_id)
 
         expected = OrderedDict([('getContactById',
-                      OrderedDict([('handle_id', str(contact_1_id)),
+                      OrderedDict([('id', contact_1_id),
                                    ('phones',
-                                    [OrderedDict([('handle_id', phone_id_str),
+                                    [OrderedDict([('id', phone_id_str),
                                                   ('name', phone_num),
                                                   ('type', phone_type)])])]))])
 
@@ -668,17 +689,17 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
           mutation{{
         	update_phone(input:{{
-              handle_id: {phone_id}
+              id: "{phone_id}"
               type: "{phone_type}",
               name: "{phone_num}",
-              contact: {contact_id}
+              contact: "{contact_id}"
             }}){{
               errors{{
                 field
                 messages
               }}
               phone{{
-                handle_id
+                id
                 name
                 type
               }}
@@ -690,7 +711,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('update_phone',
                       OrderedDict([('errors', None),
                                    ('phone',
-                                    OrderedDict([('handle_id', phone_id_str),
+                                    OrderedDict([('id', phone_id_str),
                                                  ('name', new_phone_num),
                                                  ('type', phone_type)]))]))])
 
@@ -705,7 +726,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
         mutation{{
           delete_phone(input: {{
-            handle_id: {phone_id}
+            id: "{phone_id}"
           }}){{
             errors{{
               field
@@ -737,14 +758,14 @@ class QueryTest(Neo4jGraphQLTest):
         	create_email(input:{{
               type: "{email_type}",
               name: "{email_str}",
-              contact: {contact_id}
+              contact: "{contact_id}"
             }}){{
               errors{{
                 field
                 messages
               }}
               email{{
-                handle_id
+                id
                 name
                 type
               }}
@@ -756,15 +777,15 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('create_email',
                       OrderedDict([('errors', None),
                                    ('email',
-                                    OrderedDict([('handle_id', None),
+                                    OrderedDict([('id', None),
                                                  ('name', email_str),
                                                  ('type', email_type)]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        email_id_str = result.data['create_email']['email']['handle_id']
-        expected['create_email']['email']['handle_id'] = email_id_str
+        email_id_str = result.data['create_email']['email']['id']
+        expected['create_email']['email']['id'] = email_id_str
 
         assert result.data == expected, '{} \n != {}'.format(
                                                 pformat(result.data, indent=1),
@@ -774,10 +795,10 @@ class QueryTest(Neo4jGraphQLTest):
         ## read ##
         query = """
         {{
-          getContactById(handle_id: {contact_id}){{
-            handle_id
+          getContactById(id: "{contact_id}"){{
+            id
             emails{{
-              handle_id
+              id
               name
               type
             }}
@@ -786,9 +807,9 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(contact_id=contact_1_id)
 
         expected = OrderedDict([('getContactById',
-                      OrderedDict([('handle_id', str(contact_1_id)),
+                      OrderedDict([('id', str(contact_1_id)),
                                    ('emails',
-                                    [OrderedDict([('handle_id', email_id_str),
+                                    [OrderedDict([('id', email_id_str),
                                                   ('name', email_str),
                                                   ('type', email_type)])])]))])
 
@@ -805,17 +826,17 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
           mutation{{
         	update_email(input:{{
-              handle_id: {email_id}
+              id: "{email_id}"
               type: "{email_type}",
               name: "{email_str}",
-              contact: {contact_id}
+              contact: "{contact_id}"
             }}){{
               errors{{
                 field
                 messages
               }}
               email{{
-                handle_id
+                id
                 name
                 type
               }}
@@ -827,7 +848,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('update_email',
                       OrderedDict([('errors', None),
                                    ('email',
-                                    OrderedDict([('handle_id', email_id_str),
+                                    OrderedDict([('id', email_id_str),
                                                  ('name', new_email),
                                                  ('type', email_type)]))]))])
 
@@ -842,7 +863,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
         mutation{{
           delete_email(input: {{
-            handle_id: {email_id}
+            id: "{email_id}"
           }}){{
             errors{{
               field
@@ -877,7 +898,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
           mutation{{
         	create_address(input:{{
-              organization: {organization_id},
+              organization: "{organization_id}",
               name: "{address_name}",
               phone: "{address_phone}",
               street: "{address_street}",
@@ -889,7 +910,7 @@ class QueryTest(Neo4jGraphQLTest):
                 messages
               }}
               address{{
-                handle_id
+                id
                 name
                 phone
                 street
@@ -907,7 +928,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('create_address',
                       OrderedDict([('errors', None),
                                    ('address',
-                                    OrderedDict([('handle_id', None),
+                                    OrderedDict([('id', None),
                                                  ('name', address_name),
                                                  ('phone', address_phone),
                                                  ('street', address_street),
@@ -918,8 +939,8 @@ class QueryTest(Neo4jGraphQLTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        address_id_str = result.data['create_address']['address']['handle_id']
-        expected['create_address']['address']['handle_id'] = address_id_str
+        address_id_str = result.data['create_address']['address']['id']
+        expected['create_address']['address']['id'] = address_id_str
 
         assert result.data == expected, '{} \n != {}'.format(
                                                 pformat(result.data, indent=1),
@@ -929,10 +950,10 @@ class QueryTest(Neo4jGraphQLTest):
         ## read ##
         query = """
         {{
-          getOrganizationById(handle_id: {organization_id}){{
-            handle_id
+          getOrganizationById(id: "{organization_id}"){{
+            id
             addresses{{
-              handle_id
+              id
               name
               phone
               street
@@ -944,9 +965,9 @@ class QueryTest(Neo4jGraphQLTest):
         """.format(organization_id=organization_id)
 
         expected = OrderedDict([('getOrganizationById',
-                      OrderedDict([('handle_id', str(organization_id)),
+                      OrderedDict([('id', organization_id),
                                    ('addresses',
-                                    [OrderedDict([('handle_id', address_id_str),
+                                    [OrderedDict([('id', address_id_str),
                                                   ('name', address_name),
                                                   ('phone', address_phone),
                                                   ('street', address_street),
@@ -967,8 +988,8 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
           mutation{{
         	update_address(input:{{
-              handle_id: {address_id},
-              organization: {organization_id},
+              id: "{address_id}",
+              organization: "{organization_id}",
               name: "{address_name}",
               phone: "{address_phone}",
               street: "{address_street}",
@@ -980,7 +1001,7 @@ class QueryTest(Neo4jGraphQLTest):
                 messages
               }}
               address{{
-                handle_id
+                id
                 name
                 phone
                 street
@@ -998,7 +1019,7 @@ class QueryTest(Neo4jGraphQLTest):
         expected = OrderedDict([('update_address',
                       OrderedDict([('errors', None),
                                    ('address',
-                                    OrderedDict([('handle_id', address_id_str),
+                                    OrderedDict([('id', address_id_str),
                                                  ('name', address_name),
                                                  ('phone', address_phone),
                                                  ('street', address_street),
@@ -1016,7 +1037,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
         mutation{{
           delete_address(input: {{
-            handle_id: {address_id}
+            id: "{address_id}"
           }}){{
             errors{{
               field
@@ -1038,20 +1059,23 @@ class QueryTest(Neo4jGraphQLTest):
                                                 pformat(result.data, indent=1),
                                                 pformat(expected, indent=1)
                                             )
-
+class CommentsTest(Neo4jGraphQLTest):
+    def test_comments_mutations(self):
         ### Comments tests ###
+        organization_id = relay.Node.to_global_id('Organization',
+                                            str(self.organization1.handle_id))
 
         ## create ##
         query = """
         mutation{{
           create_comment(
             input:{{
-              object_pk: {organization_id},
+              object_id: "{organization_id}",
               comment: "This comment was added using the graphql api"
             }}
           ){{
             comment{{
-              object_pk
+              object_id
               comment
               is_public
             }}
@@ -1061,7 +1085,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected =  OrderedDict([('create_comment',
               OrderedDict([('comment',
-                            OrderedDict([('object_pk', str(organization_id)),
+                            OrderedDict([('object_id', organization_id),
                                          ('comment',
                                           'This comment was added using the '
                                           'graphql api'),
@@ -1074,7 +1098,7 @@ class QueryTest(Neo4jGraphQLTest):
         ## read ##
         query = """
         {{
-          getOrganizationById(handle_id: {organization_id}){{
+          getOrganizationById(id: "{organization_id}"){{
             comments{{
               id
               comment
@@ -1092,7 +1116,7 @@ class QueryTest(Neo4jGraphQLTest):
         mutation{{
           update_comment(
             input:{{
-              id: {comment_id},
+              id: "{comment_id}",
               comment: "This comment was added using SRI's graphql api"
             }}
           ){{
@@ -1122,7 +1146,7 @@ class QueryTest(Neo4jGraphQLTest):
         query = """
         mutation{{
           delete_comment(input:{{
-            id: {comment_id}
+            id: "{comment_id}"
           }}){{
             success
             id
@@ -1132,7 +1156,7 @@ class QueryTest(Neo4jGraphQLTest):
 
         expected = OrderedDict([
             ('delete_comment',
-                OrderedDict([('success', True), ('id', int(comment_id))])
+                OrderedDict([('success', True), ('id', comment_id)])
             )
         ])
 
@@ -1140,16 +1164,20 @@ class QueryTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
+class ValidationTest(Neo4jGraphQLTest):
     def test_node_validation(self):
         # add an abuse contact first
-        organization_id = self.organization1.handle_id
-        organization2_id = self.organization2.handle_id
-        contact_1 = self.contact1.handle_id
+        organization_id = relay.Node.to_global_id('Organization',
+                                            str(self.organization1.handle_id))
+        organization2_id = relay.Node.to_global_id('Organization',
+                                            str(self.organization2.handle_id))
+        contact_1 = relay.Node.to_global_id('Contact',
+                                            str(self.organization2.handle_id))
 
         query = '''
         mutation{{
           update_organization(input: {{
-            handle_id: {organization_id}
+            id: "{organization_id}"
             name: "Organization 1"
           }}){{
             errors{{
@@ -1157,7 +1185,7 @@ class QueryTest(Neo4jGraphQLTest):
               messages
             }}
             organization{{
-              handle_id
+              id
               name
               incoming{{
                 name
@@ -1167,7 +1195,7 @@ class QueryTest(Neo4jGraphQLTest):
                     value
                   }}
                   start{{
-                    handle_id
+                    id
                     node_name
                   }}
                 }}
@@ -1186,16 +1214,16 @@ class QueryTest(Neo4jGraphQLTest):
         query = '''
         mutation{{
           update_organization(input: {{
-            handle_id: {organization_id}
+            id: "{organization_id}"
             name: "Organization 1"
-            relationship_parent_of: {organization_2}
+            relationship_parent_of: "{organization_2}"
           }}){{
             errors{{
               field
               messages
             }}
             organization{{
-              handle_id
+              id
               name
               incoming{{
                 name
@@ -1205,7 +1233,7 @@ class QueryTest(Neo4jGraphQLTest):
                     value
                   }}
                   start{{
-                    handle_id
+                    id
                     node_name
                   }}
                 }}
