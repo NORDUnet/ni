@@ -10,7 +10,8 @@ class NINode(graphene.Node):
 
 
 class Logical(NINode):
-    pass
+    part_of = graphene.Field(lambda:Physical)
+
 
 class Relation(NINode):
     name = graphene.String(required= True)
@@ -53,21 +54,9 @@ class ResolverUtils:
         return ret
 
 class LogicalMixin:
-    def resolve_location(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
-            info, self.get_node(), 'get_location', 'Located_in')
-
-    def resolve_has(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
-            info, self.get_node(), 'get_has', 'Has')
-
     def resolve_part_of(self, info, **kwargs):
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_part_of', 'Part_of')
-
-    def resolve_parent(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
-            info, self.get_node(), 'get_parent', 'Has')
 
 
 class RelationMixin:
@@ -100,7 +89,21 @@ class RelationMixin:
 
 
 class PhysicalMixin:
-    pass
+    def resolve_location(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_location', 'Located_in')
+
+    def resolve_has(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_has', 'Has')
+
+    def resolve_part_of(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_part_of', 'Part_of')
+
+    def resolve_parent(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_parent', 'Has')
 
 
 class LocationMixin:
