@@ -13,7 +13,9 @@ class Relation(graphene.Node):
     name = graphene.String(required= True)
     with_same_name = graphene.List(lambda:Relation)
     uses = graphene.Field(Logical)
-    provides = graphene.Field(lambda:Physical)
+    provides = graphene.Field(graphene.Node)
+    owns = graphene.Field(lambda:Physical)
+    responsible_for = graphene.Field(lambda:Location)
 
 
 class Physical(graphene.Node):
@@ -66,6 +68,14 @@ class RelationMixin:
     def resolve_provides(self, info, **kwargs):
         return RelationMixin.single_relation_resolver(
             info, self.get_node(), 'get_provides', 'Provides')
+
+    def resolve_owns(self, info, **kwargs):
+        return RelationMixin.single_relation_resolver(
+            info, self.get_node(), 'get_owns', 'Owns')
+
+    def resolve_responsible_for(self, info, **kwargs):
+        return RelationMixin.single_relation_resolver(
+            info, self.get_node(), 'get_responsible_for', 'Responsible_for')
 
 
 class PhysicalMixin:
