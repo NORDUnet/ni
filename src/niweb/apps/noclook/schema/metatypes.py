@@ -13,6 +13,7 @@ class Relation(graphene.Node):
     name = graphene.String(required= True)
     with_same_name = graphene.List(lambda:Relation)
     uses = graphene.Field(Logical)
+    provides = graphene.Field(lambda:Physical)
 
 
 class Physical(graphene.Node):
@@ -29,6 +30,24 @@ class LogicalMixin:
 
 
 class RelationMixin:
+    @staticmethod
+    def single_relation_resolver(info, node, method_name, relation_label):
+        ret = None
+
+        if info.context and info.context.user.is_authenticated:
+            method = getattr(node, method_name)
+            relation = method()
+
+            if relation.get(relation_label):
+                handle_id = relation[relation_label][0]['node'].handle_id
+
+                if handle_id and \
+                    NodeHandle.objects.filter(handle_id=handle_id):
+
+                    ret = NodeHandle.objects.get(handle_id=handle_id)
+
+        return ret
+
     def resolve_with_same_name(self, info, **kwargs):
         ret = None
 
@@ -41,20 +60,12 @@ class RelationMixin:
         return ret
 
     def resolve_uses(self, info, **kwargs):
-        ret = None
+        return RelationMixin.single_relation_resolver(
+            info, self.get_node(), 'get_uses', 'Uses')
 
-        if info.context and info.context.user.is_authenticated:
-            uses = self.get_node().get_uses()
-            if uses.get('Uses'):
-                uses_handle_id = uses['Uses'][0]['node'].handle_id
-
-                # check permission?
-                if uses_handle_id and \
-                    NodeHandle.objects.filter(handle_id=uses_handle_id):
-                    pass
-                    ret = NodeHandle.objects.get(handle_id=uses_handle_id)
-
-        return ret
+    def resolve_provides(self, info, **kwargs):
+        return RelationMixin.single_relation_resolver(
+            info, self.get_node(), 'get_provides', 'Provides')
 
 
 class PhysicalMixin:
