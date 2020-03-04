@@ -5,33 +5,32 @@ from apps.noclook.models import NodeHandle
 import graphene
 
 ## metatype interfaces
-class Logical(graphene.Node):
+class NINode(graphene.Node):
     name = graphene.String(required= True)
 
 
-class Relation(graphene.Node):
+class Logical(NINode):
+    pass
+
+class Relation(NINode):
     name = graphene.String(required= True)
     with_same_name = graphene.List(lambda:Relation)
     uses = graphene.Field(Logical)
-    provides = graphene.Field(graphene.Node)
+    provides = graphene.Field(NINode) # Physical or Logical
     owns = graphene.Field(lambda:Physical)
     responsible_for = graphene.Field(lambda:Location)
 
 
-class Physical(graphene.Node):
-    name = graphene.String(required= True)
+class Physical(NINode):
+    location = graphene.Field(lambda:Location)
 
 
-class Location(graphene.Node):
-    name = graphene.String(required= True)
-
-
-## metatype resolver mixins
-class LogicalMixin:
+class Location(NINode):
     pass
 
 
-class RelationMixin:
+## metatype resolver mixins
+class ResolverUtils:
     @staticmethod
     def single_relation_resolver(info, node, method_name, relation_label):
         ret = None
@@ -50,6 +49,13 @@ class RelationMixin:
 
         return ret
 
+class LogicalMixin:
+    def resolve_uses(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_location', 'Located_in')
+
+
+class RelationMixin:
     def resolve_with_same_name(self, info, **kwargs):
         ret = None
 
@@ -62,19 +68,19 @@ class RelationMixin:
         return ret
 
     def resolve_uses(self, info, **kwargs):
-        return RelationMixin.single_relation_resolver(
+        return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_uses', 'Uses')
 
     def resolve_provides(self, info, **kwargs):
-        return RelationMixin.single_relation_resolver(
+        return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_provides', 'Provides')
 
     def resolve_owns(self, info, **kwargs):
-        return RelationMixin.single_relation_resolver(
+        return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_owns', 'Owns')
 
     def resolve_responsible_for(self, info, **kwargs):
-        return RelationMixin.single_relation_resolver(
+        return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_responsible_for', 'Responsible_for')
 
 

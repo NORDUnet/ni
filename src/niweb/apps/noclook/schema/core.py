@@ -281,7 +281,7 @@ class NIObjectType(DjangoObjectType):
                 )
 
         # add meta types interfaces if present
-        interfaces = [relay.Node, ]
+        interfaces = [NINode, ]
         if hasattr(cls, 'NIMetaType'):
             ni_metatype = cls.get_from_nimetatype("ni_metatype")
             if ni_metatype in metatype_interfaces:
@@ -1118,7 +1118,6 @@ class NIObjectType(DjangoObjectType):
 
     class Meta:
         model = NodeHandle
-        interfaces = (relay.Node, )
 
 ########## END RELATION AND NODE TYPES
 

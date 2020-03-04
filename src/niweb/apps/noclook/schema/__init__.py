@@ -11,12 +11,17 @@ from .query import *
 from .mutations import *
 
 NOCSCHEMA_TYPES = [
-    # common and community
+    # Interfaces
+    NINode,
+
+    # common
     User,
     Dropdown,
     Choice,
     Neo4jChoice,
     NodeHandler,
+
+    # Community
     Group,
     Contact,
     Procedure,
