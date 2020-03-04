@@ -30,7 +30,9 @@ class Physical(NINode):
 
 
 class Location(NINode):
-    pass
+    parent = graphene.Field(lambda:Location)
+    located_in = graphene.Field(lambda:Physical)
+    has = graphene.Field(lambda:Physical)
 
 
 ## metatype resolver mixins
@@ -107,4 +109,14 @@ class PhysicalMixin:
 
 
 class LocationMixin:
-    pass
+    def resolve_parent(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_parent', 'Has')
+
+    def resolve_located_in(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_located_in', 'Located_in')
+
+    def resolve_has(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_has', 'Has')
