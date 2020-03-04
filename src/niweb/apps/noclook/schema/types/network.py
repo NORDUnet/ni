@@ -64,7 +64,7 @@ class Port(NIObjectType, PhysicalMixin):
     port_type = NIChoiceField()
     description = NIStringField()
     parent = NISingleRelationField(field_type=Physical, rel_name='Has', rel_method='get_parent')
-    connected_to = NIListField(type_args=(lambda: NodeHandler,), rel_name='Connected_to', rel_method='get_relations')
+    connected_to = NIListField(type_args=(lambda: Physical,), rel_name='Connected_to', rel_method='get_relations')
 
     class NIMetaType:
         ni_type = 'Port'
