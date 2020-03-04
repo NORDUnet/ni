@@ -23,6 +23,9 @@ class Relation(NINode):
 
 class Physical(NINode):
     location = graphene.Field(lambda:Location)
+    has = graphene.Field(lambda:Physical)
+    part_of = graphene.Field(lambda:Logical)
+    parent = graphene.Field(lambda:Physical)
 
 
 class Location(NINode):
@@ -50,9 +53,21 @@ class ResolverUtils:
         return ret
 
 class LogicalMixin:
-    def resolve_uses(self, info, **kwargs):
+    def resolve_location(self, info, **kwargs):
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_location', 'Located_in')
+
+    def resolve_has(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_has', 'Has')
+
+    def resolve_part_of(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_part_of', 'Part_of')
+
+    def resolve_parent(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_parent', 'Has')
 
 
 class RelationMixin:
