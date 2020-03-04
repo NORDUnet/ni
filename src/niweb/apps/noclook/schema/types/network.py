@@ -26,6 +26,16 @@ class EndUser(NIObjectType, RelationMixin):
         context_method = sriutils.get_network_context
 
 
+class PeeringPartner(NIObjectType, RelationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    as_number = NIStringField()
+
+    class NIMetaType:
+        ni_type = 'Peering Partner'
+        ni_metatype = NIMETA_RELATION
+        context_method = sriutils.get_network_context
+
+
 class Provider(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     url = NIStringField()
