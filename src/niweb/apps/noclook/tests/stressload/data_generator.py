@@ -9,6 +9,7 @@ from apps.noclook import helpers
 from apps.noclook.models import NodeHandle, NodeType, Dropdown, Choice, NodeHandleContext
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
+import norduniclient as nc
 from norduniclient import META_TYPES
 
 import apps.noclook.vakt.utils as sriutils
@@ -84,6 +85,51 @@ class FakeDataGenerator:
         return group_dict
 
 
+class DataRelationMaker:
+    def __init__(self):
+        self.user = get_user()
+
+
+class LogicalDataRelationMaker(DataRelationMaker):
+    def add_part_of(self, logical_nh, physical_nh):
+        physical_node = physical_nh.get_node()
+        logical_handle_id = logical_nh.handle_id
+        helpers.set_part_of(self.user, physical_node, logical_handle_id)
+
+
+class RelationDataRelationMaker(DataRelationMaker):
+    def add_provides(self, relation_nh, phylogical_nh):
+        the_node = phylogical_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_provider(self.user, the_node, relation_handle_id)
+
+    def add_owns(self, relation_nh, physical_nh):
+        physical_node = physical_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_owner(self.user, physical_node, relation_handle_id)
+
+    def add_responsible_for(self, relation_nh, location_nh):
+        location_node = location_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_responsible_for(self.user, location_node, relation_handle_id)
+
+
+class PhysicalDataRelationMaker(DataRelationMaker):
+    def add_parent(self, physical_nh, physical_parent_nh):
+        handle_id = physical_nh.handle_id
+        parent_handle_id = physical_parent_nh.handle_id
+
+        q = """
+            MATCH   (n:Node:Physical {handle_id: {handle_id}}),
+                    (p:Node:Physical {parent_handle_id: {parent_handle_id}})
+            MERGE (n)<-[r:Has]-(p)
+            RETURN n, r, p
+            """
+
+        result = nc.query_to_dict(nc.graphdb.manager, q,
+                        handle_id=handle_id, parent_handle_id=parent_handle_id)
+
+
 class NetworkFakeDataGenerator:
     def __init__(self, seed=None):
         locales = OrderedDict([
@@ -95,7 +141,7 @@ class NetworkFakeDataGenerator:
         if seed:
             self.fake.seed_instance(seed)
 
-        self.user = user = get_user()
+        self.user = get_user()
 
         # set vars
         self.max_cable_providers = 5
@@ -179,7 +225,7 @@ class NetworkFakeDataGenerator:
             name, 'Peering Partner', META_TYPES[2]) # Relation
 
         data = {
-            'as_number' : str(random.randint(10000, 99999)),
+            'as_number' : str(random.randint(0, 99999)).zfill(5),
         }
 
         for key, value in data.items():
