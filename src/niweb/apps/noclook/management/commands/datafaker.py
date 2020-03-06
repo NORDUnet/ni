@@ -14,29 +14,33 @@ class Command(BaseCommand):
         'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group', 'Peering Partner',
         'Cable', 'Port', 'Host', 'Router', 'Switch']
 
+    option_organizations = 'organizations'
+    option_equipment = 'equipmentcables'
+    option_deleteall = 'deleteall'
+
     def add_arguments(self, parser):
-        parser.add_argument("--organizations",
+        parser.add_argument("--{}".format(self.option_organizations),
                     help="Create organization nodes", type=int, default=0)
-        parser.add_argument("--equipmentcables",
+        parser.add_argument("--{}".format(self.option_equipment),
                     help="Create equipment and cables nodes", type=int, default=0)
-        parser.add_argument("-d", "--deleteall", action='store_true',
+        parser.add_argument("-d", "--{}".format(self.option_deleteall), action='store_true',
                     help="BEWARE: This command deletes information in the database")
 
     def handle(self, *args, **options):
-        if options['deleteall']:
+        if options[self.option_deleteall]:
             self.delete_network_nodes()
             return
 
-        if options['organizations']:
-            numnodes = options['organizations']
+        if options[self.option_organizations]:
+            numnodes = options[self.option_organizations]
             if numnodes > 0:
                 self.stdout\
                     .write('Forging fake organizations: {} for each subtype:'\
                     .format(numnodes))
                 self.create_organizations(numnodes)
 
-        if options['equipmentcables']:
-            numnodes = options['equipmentcables']
+        if options[self.option_equipment]:
+            numnodes = options[self.option_equipment]
             if numnodes > 0:
                 self.stdout\
                     .write('Forging fake equipement & cables: {} for each subtype:'\
