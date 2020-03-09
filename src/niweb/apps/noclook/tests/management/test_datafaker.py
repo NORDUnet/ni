@@ -14,7 +14,7 @@ from ..neo4j_base import NeoTestCase
 
 
 class DataFakerTest(NeoTestCase):
-    cmd_name = 'datafaker'
+    cmd_name = DFCommand.cmd_name
     test_node_num = 5
 
     @override_settings(DEBUG=True)

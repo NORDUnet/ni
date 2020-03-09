@@ -17,6 +17,7 @@ class Command(BaseCommand):
     option_organizations = 'organizations'
     option_equipment = 'equipmentcables'
     option_deleteall = 'deleteall'
+    cmd_name = 'datafaker'
 
     def add_arguments(self, parser):
         parser.add_argument("--{}".format(self.option_organizations),

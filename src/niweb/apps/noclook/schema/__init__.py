@@ -33,7 +33,6 @@ NOCSCHEMA_TYPES = [
     ## organizations
     Customer,
     EndUser,
-    PeeringPartner,
     Provider,
     SiteOwner,
 
@@ -41,6 +40,10 @@ NOCSCHEMA_TYPES = [
     Port,
     Host,
     Cable,
+
+    ## Peering
+    PeeringGroup,
+    PeeringPartner,
 ]
 
 NOCSCHEMA_QUERIES = [

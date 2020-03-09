@@ -217,6 +217,7 @@ class NOCRootQuery(NOCAutoQuery):
     class NIMeta:
         graphql_types = [
             Group, Address, Phone, Email, Contact, Organization, Procedure,
-            Customer, EndUser, PeeringPartner, Provider, SiteOwner,
+            Customer, EndUser, Provider, SiteOwner,
             Port, Host, Cable,
+            PeeringPartner, PeeringGroup, 
         ]

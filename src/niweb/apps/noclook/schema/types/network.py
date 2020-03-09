@@ -36,6 +36,15 @@ class PeeringPartner(NIObjectType, RelationMixin):
         context_method = sriutils.get_network_context
 
 
+class PeeringGroup(NIObjectType, RelationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+
+    class NIMetaType:
+        ni_type = 'Peering Group'
+        ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_network_context
+
+
 class Provider(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     url = NIStringField()
