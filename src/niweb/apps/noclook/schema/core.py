@@ -747,7 +747,8 @@ class NIObjectType(DjangoObjectType):
                             orderBy = None
 
                         # create query
-                        q = cls.build_filter_query(filter, orderBy, type_name,
+                        fmt_type_name = type_name.replace(' ', '_')
+                        q = cls.build_filter_query(filter, orderBy, fmt_type_name,
                                         apply_handle_id_order, revert_default_order)
                         nodes = nc.query_to_list(nc.graphdb.manager, q)
                         nodes = [ node['n'] for node in nodes]
