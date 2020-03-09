@@ -54,6 +54,9 @@ class NOCAutoQuery(graphene.ObjectType):
                 # relace - in slug for _
                 fmt_type_slug = type_slug.replace('-', '')
                 fmt_type_name = type_name.replace(' ', '')
+                components = type_name.split(' ')
+                # type name camelcased
+                type_name_cc = components[0].lower() + ''.join(x.title() for x in components[1:])
 
                 # add simple list attribute and resolver
                 field_name    = 'all_{}s'.format(fmt_type_slug)
@@ -70,12 +73,12 @@ class NOCAutoQuery(graphene.ObjectType):
                 setattr(cls, resolver_name, graphql_type.get_count_resolver())
 
                 # add connection attribute
-                field_name    = '{}s'.format(fmt_type_slug)
+                field_name    = '{}s'.format(type_name_cc)
                 resolver_name = 'resolve_{}'.format(field_name)
 
                 connection_input, connection_order = graphql_type.build_filter_and_order()
                 connection_meta = type('Meta', (object, ), dict(node=graphql_type))
-                connection_name = '{}Connection'.format(graphql_type.__name__)
+                connection_name = '{}Connection'.format(type_name_cc)
                 connection_class = None
 
                 if connection_name not in cls.connection_classes:
