@@ -175,6 +175,7 @@ class NetworkFakeDataGenerator:
     ## Organizations
     def rand_person_or_company_name(self):
         person_name = '{} {}'.format(self.fake.first_name(), self.fake.last_name())
+        person_name = person_name.replace("''", "\'")
         company_name = self.fake.company()
         name = random.choice((person_name, company_name))
 
