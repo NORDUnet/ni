@@ -65,7 +65,7 @@ class Neo4jGraphQLNetworkTest(NeoTestCase):
         ).save()
 
         # create nodes
-        entity_num = 5
+        entity_num = 3
 
         self.create_organization_nodes(5)
         self.create_equicables_nodes(5)
