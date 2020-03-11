@@ -128,7 +128,7 @@ network_type_resolver = {
     'Peering Partner': PeeringPartner,
     'Peering Group': PeeringGroup,
     'Provider': Provider,
-    'SiteOwner': SiteOwner,
+    'Site Owner': SiteOwner,
     'Port': Port,
     'Cable': Cable,
     'Host': Host,
