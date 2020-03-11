@@ -26,6 +26,16 @@ class FakeDataGenerator:
         if seed:
             self.fake.seed_instance(seed)
 
+    def company_name(self):
+        return self.fake.company().replace("''", "\'")
+
+    def first_name(self):
+        return self.fake.first_name().replace("''", "\'")
+
+    def last_name(self):
+        return self.fake.last_name().replace("''", "\'")
+
+class CommunityFakeDataGenerator(FakeDataGenerator):
     def create_fake_contact(self):
         salutations = ['Ms.', 'Mr.', 'Dr.', 'Mrs.', 'Mx.']
         contact_types_drop = Dropdown.objects.get(name='contact_type')
@@ -34,8 +44,8 @@ class FakeDataGenerator:
 
         contact_dict = {
             'salutation': random.choice(salutations),
-            'first_name': self.fake.first_name(),
-            'last_name': self.fake.last_name(),
+            'first_name': self.first_name(),
+            'last_name': self.last_name(),
             'title': '',
             'contact_role': self.fake.job(),
             'contact_type': random.choice(contact_types),
@@ -56,7 +66,7 @@ class FakeDataGenerator:
         return contact_dict
 
     def create_fake_organization(self):
-        organization_name = self.fake.company()
+        organization_name = self.company_name()
         organization_id = organization_name.upper()
 
         org_types_drop = Dropdown.objects.get(name='organization_types')
@@ -85,61 +95,9 @@ class FakeDataGenerator:
         return group_dict
 
 
-class DataRelationMaker:
-    def __init__(self):
-        self.user = get_user()
-
-
-class LogicalDataRelationMaker(DataRelationMaker):
-    def add_part_of(self, logical_nh, physical_nh):
-        physical_node = physical_nh.get_node()
-        logical_handle_id = logical_nh.handle_id
-        helpers.set_part_of(self.user, physical_node, logical_handle_id)
-
-
-class RelationDataRelationMaker(DataRelationMaker):
-    def add_provides(self, relation_nh, phylogical_nh):
-        the_node = phylogical_nh.get_node()
-        relation_handle_id = relation_nh.handle_id
-        helpers.set_provider(self.user, the_node, relation_handle_id)
-
-    def add_owns(self, relation_nh, physical_nh):
-        physical_node = physical_nh.get_node()
-        relation_handle_id = relation_nh.handle_id
-        helpers.set_owner(self.user, physical_node, relation_handle_id)
-
-    def add_responsible_for(self, relation_nh, location_nh):
-        location_node = location_nh.get_node()
-        relation_handle_id = relation_nh.handle_id
-        helpers.set_responsible_for(self.user, location_node, relation_handle_id)
-
-
-class PhysicalDataRelationMaker(DataRelationMaker):
-    def add_parent(self, physical_nh, physical_parent_nh):
-        handle_id = physical_nh.handle_id
-        parent_handle_id = physical_parent_nh.handle_id
-
-        q = """
-            MATCH   (n:Node:Physical {handle_id: {handle_id}}),
-                    (p:Node:Physical {parent_handle_id: {parent_handle_id}})
-            MERGE (n)<-[r:Has]-(p)
-            RETURN n, r, p
-            """
-
-        result = nc.query_to_dict(nc.graphdb.manager, q,
-                        handle_id=handle_id, parent_handle_id=parent_handle_id)
-
-
-class NetworkFakeDataGenerator:
+class NetworkFakeDataGenerator(FakeDataGenerator):
     def __init__(self, seed=None):
-        locales = OrderedDict([
-            ('en_GB', 1),
-            ('sv_SE', 2),
-        ])
-        self.fake = Faker(locales)
-
-        if seed:
-            self.fake.seed_instance(seed)
+        super().__init__()
 
         self.user = get_user()
 
@@ -174,9 +132,8 @@ class NetworkFakeDataGenerator:
 
     ## Organizations
     def rand_person_or_company_name(self):
-        person_name = '{} {}'.format(self.fake.first_name(), self.fake.last_name())
-        person_name = person_name.replace("''", "\'")
-        company_name = self.fake.company().replace("''", "\'")
+        person_name = '{} {}'.format(self.first_name(), self.last_name())
+        company_name = self.company_name()
         name = random.choice((person_name, company_name))
 
         return name
@@ -221,7 +178,7 @@ class NetworkFakeDataGenerator:
 
     def create_peering_partner(self):
         # create object
-        name = self.fake.company()
+        name = self.company_name()
         peering_partner = self.get_or_create_node(
             name, 'Peering Partner', META_TYPES[2]) # Relation
 
@@ -239,7 +196,7 @@ class NetworkFakeDataGenerator:
 
     def create_peering_group(self):
         # create object
-        name = self.fake.company()
+        name = self.company_name()
         peering_group = self.get_or_create_node(
             name, 'Peering Group', META_TYPES[1]) # Logical
 
@@ -250,7 +207,7 @@ class NetworkFakeDataGenerator:
 
     def create_provider(self):
         provider = self.get_or_create_node(
-            self.fake.company(), 'Provider', META_TYPES[0])
+            self.company_name(), 'Provider', META_TYPES[0])
 
         # add context
         self.add_network_context(provider)
@@ -409,7 +366,7 @@ class NetworkFakeDataGenerator:
             'os': os_choice[0],
             'os_version': random.choice(os_choice[1]),
             'model': self.fake.license_plate(),
-            'vendor': self.fake.company(),
+            'vendor': self.company_name(),
             'service_tag': self.fake.license_plate(),
         }
 
@@ -457,3 +414,48 @@ class NetworkFakeDataGenerator:
 
         for key, value in data.items():
             switch.get_node().add_property(key, value)
+
+
+class DataRelationMaker:
+    def __init__(self):
+        self.user = get_user()
+
+
+class LogicalDataRelationMaker(DataRelationMaker):
+    def add_part_of(self, logical_nh, physical_nh):
+        physical_node = physical_nh.get_node()
+        logical_handle_id = logical_nh.handle_id
+        helpers.set_part_of(self.user, physical_node, logical_handle_id)
+
+
+class RelationDataRelationMaker(DataRelationMaker):
+    def add_provides(self, relation_nh, phylogical_nh):
+        the_node = phylogical_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_provider(self.user, the_node, relation_handle_id)
+
+    def add_owns(self, relation_nh, physical_nh):
+        physical_node = physical_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_owner(self.user, physical_node, relation_handle_id)
+
+    def add_responsible_for(self, relation_nh, location_nh):
+        location_node = location_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_responsible_for(self.user, location_node, relation_handle_id)
+
+
+class PhysicalDataRelationMaker(DataRelationMaker):
+    def add_parent(self, physical_nh, physical_parent_nh):
+        handle_id = physical_nh.handle_id
+        parent_handle_id = physical_parent_nh.handle_id
+
+        q = """
+            MATCH   (n:Node:Physical {handle_id: {handle_id}}),
+                    (p:Node:Physical {parent_handle_id: {parent_handle_id}})
+            MERGE (n)<-[r:Has]-(p)
+            RETURN n, r, p
+            """
+
+        result = nc.query_to_dict(nc.graphdb.manager, q,
+                        handle_id=handle_id, parent_handle_id=parent_handle_id)

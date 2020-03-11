@@ -9,7 +9,7 @@ from apps.nerds.lib.consumer_util import get_user
 from django.core.management import call_command
 from niweb.schema import schema
 
-from .data_generator import FakeDataGenerator
+from .data_generator import CommunityFakeDataGenerator
 from ..management.fileutils import write_string_to_disk
 from ..neo4j_base import NeoTestCase
 
@@ -89,7 +89,7 @@ query='''{query_value}'''
     """
 
     def load_nodes(self):
-        generator = FakeDataGenerator()
+        generator = CommunityFakeDataGenerator()
 
         # create organization's file
         org_list = []
