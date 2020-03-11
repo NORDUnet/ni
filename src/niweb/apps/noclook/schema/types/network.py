@@ -120,3 +120,16 @@ class Host(NIObjectType, PhysicalMixin):
         ni_type = 'Host'
         ni_metatype = NIMETA_LOGICAL
         context_method = sriutils.get_network_context
+
+
+network_type_resolver = {
+    'Customer': Customer,
+    'End User': EndUser,
+    'Peering Partner': PeeringPartner,
+    'Peering Group': PeeringGroup,
+    'Provider': Provider,
+    'SiteOwner': SiteOwner,
+    'Port': Port,
+    'Cable': Cable,
+    'Host': Host,
+}

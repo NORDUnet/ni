@@ -3,10 +3,30 @@ __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle
 import graphene
+import logging
+import importlib
+
+logger = logging.getLogger(__name__)
 
 ## metatype interfaces
 class NINode(graphene.Node):
+    handle_id = graphene.Int(required=True)
     name = graphene.String(required= True)
+
+    @classmethod
+    def resolve_type(cls, instance, info):
+        mod_types = importlib.import_module('apps.noclook.schema.types')
+        community_type_resolver = getattr(mod_types, 'community_type_resolver')
+        network_type_resolver = getattr(mod_types, 'network_type_resolver')
+
+        type_name = instance.node_type.type
+
+        if type_name in community_type_resolver.keys():
+            return community_type_resolver[type_name]
+        elif type_name in network_type_resolver.keys():
+            return network_type_resolver[type_name]
+        else:
+            super().resolve_type(instance, info)
 
 
 class Logical(NINode):

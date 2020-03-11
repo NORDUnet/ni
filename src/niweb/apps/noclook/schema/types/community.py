@@ -195,3 +195,15 @@ class RoleOrderBy(graphene.Enum):
     name_DESC='name_DESC'
     handle_id_ASC='handle_id_ASC'
     handle_id_DESC='handle_id_DESC'
+
+
+community_type_resolver = {
+    'Group' : Group,
+    'Procedure' : Procedure,
+    'Address' : Address,
+    'Organization' : Organization,
+    'Phone' : Phone,
+    'Email' : Email,
+    'Contact' : Contact,
+    'Contact' : Contact,
+}
