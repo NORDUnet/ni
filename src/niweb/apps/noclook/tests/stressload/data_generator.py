@@ -207,7 +207,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
     def create_provider(self):
         provider = self.get_or_create_node(
-            self.company_name(), 'Provider', META_TYPES[0])
+            self.company_name(), 'Provider', META_TYPES[2]) # Relation
 
         # add context
         self.add_network_context(provider)
