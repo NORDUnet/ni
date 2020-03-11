@@ -27,13 +27,13 @@ class FakeDataGenerator:
             self.fake.seed_instance(seed)
 
     def company_name(self):
-        return self.fake.company().replace("''", "\'")
+        return self.fake.company().replace("'", "\'")
 
     def first_name(self):
-        return self.fake.first_name().replace("''", "\'")
+        return self.fake.first_name().replace("'", "\'")
 
     def last_name(self):
-        return self.fake.last_name().replace("''", "\'")
+        return self.fake.last_name().replace("'", "\'")
 
 class CommunityFakeDataGenerator(FakeDataGenerator):
     def create_fake_contact(self):

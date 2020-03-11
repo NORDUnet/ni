@@ -52,7 +52,6 @@ class SimpleListTest(Neo4jGraphQLNetworkTest):
             {{
               all_{}s {{
                 id
-                handle_id
                 node_name
               }}
             }}
@@ -66,7 +65,6 @@ class SimpleListTest(Neo4jGraphQLNetworkTest):
                                 graph_type_name, str(node.handle_id))
                 node_dict = OrderedDict([
                     ('id', str(relay_id)),
-                    ('handle_id', str(node.handle_id)),
                     ('node_name', node.node_name)
                 ])
                 node_dict = dict(node_dict)
@@ -90,7 +88,6 @@ class SimpleConnectionTest(Neo4jGraphQLNetworkTest):
                 edges{{
                   node{{
                     id
-                    handle_id
                     name
                   }}
                 }}
@@ -106,7 +103,6 @@ class SimpleConnectionTest(Neo4jGraphQLNetworkTest):
                                 graph_type_name, str(node.handle_id))
                 node_dict = OrderedDict([
                     ('id', str(relay_id)),
-                    ('handle_id', str(node.handle_id)),
                     ('name', node.node_name)
                 ])
                 node_dict = dict(node_dict)
@@ -138,7 +134,6 @@ class FilteredConnectionTest(Neo4jGraphQLNetworkTest):
                     edges{{
                       node{{
                         id
-                        handle_id
                         name
                       }}
                     }}
@@ -153,7 +148,6 @@ class FilteredConnectionTest(Neo4jGraphQLNetworkTest):
                                     graph_type_name, str(node.handle_id))
                     node_dict = OrderedDict([
                         ('id', str(relay_id)),
-                        ('handle_id', str(node.handle_id)),
                         ('name', node.node_name)
                     ])
                     node_dict = dict(node_dict)
