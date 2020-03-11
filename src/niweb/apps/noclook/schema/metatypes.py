@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle
+from apps.noclook.vakt import utils as sriutils
 import graphene
 import logging
 import importlib
@@ -10,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 ## metatype interfaces
 class NINode(graphene.Node):
-    handle_id = graphene.Int(required=True)
     name = graphene.String(required= True)
 
     @classmethod
@@ -69,7 +69,9 @@ class ResolverUtils:
                 handle_id = relation[relation_label][0]['node'].handle_id
 
                 if handle_id and \
-                    NodeHandle.objects.filter(handle_id=handle_id):
+                    NodeHandle.objects.filter(handle_id=handle_id) and \
+                    sriutils.authorice_read_resource(\
+                        info.context.user, nh.handle_id):
 
                     ret = NodeHandle.objects.get(handle_id=handle_id)
 
@@ -85,11 +87,14 @@ class RelationMixin:
     def resolve_with_same_name(self, info, **kwargs):
         ret = None
 
-        # check permission?
         if info.context and info.context.user.is_authenticated:
             ids_samename = self.get_node().with_same_name().get('ids', None)
-            if ids_samename and len(ids_samename) > 0:
-                ret = NodeHandle.objects.filter(handle_id__in=ids_samename)
+            if ids_samename and len(self.get_node().with_same_name()) > 0:
+                ret = []
+                for nh in NodeHandle.objects.filter(handle_id__in=ids_samename):
+                    if sriutils.authorice_read_resource(\
+                        info.context.user, nh.handle_id):
+                        ret.append(nh)
 
         return ret
 
