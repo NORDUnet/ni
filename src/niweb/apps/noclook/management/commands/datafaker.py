@@ -57,7 +57,17 @@ class Command(BaseCommand):
 
         for create_func in create_funcs:
             for i in range(numnodes):
-                node = create_func()
+                # dirty hack to get rid of accidental unscaped strings
+                loop_lock = True
+                safe_tries = 5
+
+                while loop_lock and safe_tries > 0:
+                    try:
+                        node = create_func()
+                        loop_lock = False
+                    except:
+                        safe_tries = safe_tries - 1
+
                 created_nodes = created_nodes + 1
                 self.printProgressBar(created_nodes, total_nodes)
 

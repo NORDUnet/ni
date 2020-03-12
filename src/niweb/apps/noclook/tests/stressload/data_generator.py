@@ -26,14 +26,18 @@ class FakeDataGenerator:
         if seed:
             self.fake.seed_instance(seed)
 
+    def escape_quotes(self, str_in):
+        return str_in.replace("'", "\'")
+
     def company_name(self):
-        return self.fake.company().replace("'", "\'")
+        return self.escape_quotes( self.fake.company() )
 
     def first_name(self):
-        return self.fake.first_name().replace("'", "\'")
+        return self.escape_quotes( self.fake.first_name() )
 
     def last_name(self):
-        return self.fake.last_name().replace("'", "\'")
+        return self.escape_quotes( self.fake.last_name() )
+
 
 class CommunityFakeDataGenerator(FakeDataGenerator):
     def create_fake_contact(self):
