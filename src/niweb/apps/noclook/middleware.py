@@ -4,6 +4,7 @@ __author__ = 'ffuentes'
 from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.middleware import get_user
+from django.shortcuts import redirect
 from django.utils.cache import patch_vary_headers
 from django.utils.functional import SimpleLazyObject
 from django.utils.http import cookie_date
@@ -17,6 +18,9 @@ from graphql_jwt.exceptions import JSONWebTokenError, JSONWebTokenExpired
 from importlib import import_module
 
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 def token_is_expired(token):
     ret = False
@@ -57,12 +61,32 @@ class SRIJWTAuthMiddleware(object):
             request.session.save()
             session_created = True
 
-        # process response with inner middleware
-        response = self.get_response(request)
 
         max_age = request.session.get_expiry_age()
         expires_time = time.time() + max_age
+        anti_expires_time = time.time() - max_age
         cookie_expires = cookie_date(expires_time)
+
+        if token and token_is_expired(token):
+            cookie_token = request.COOKIES.get(jwt_settings.JWT_COOKIE_NAME)
+
+            if cookie_token and cookie_token != '""':
+                response = redirect('/')
+                response.set_cookie(
+                    jwt_settings.JWT_COOKIE_NAME,
+                    '',
+                    domain=settings.COOKIE_DOMAIN,
+                    expires=anti_expires_time,
+                    httponly=False,
+                    secure=jwt_settings.JWT_COOKIE_SECURE,
+                )
+                response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
+                patch_vary_headers(response, ('Cookie',))
+
+                return response
+
+        # process response with inner middleware
+        response = self.get_response(request)
 
         if request.user.is_authenticated and not has_token:
             token = get_token(request.user)
