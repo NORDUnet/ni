@@ -4,6 +4,9 @@ __author__ = 'ffuentes'
 from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.middleware import get_user
+from django.contrib.auth.models import User
+from django.contrib.sessions.models import Session
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect
 from django.utils.cache import patch_vary_headers
 from django.utils.functional import SimpleLazyObject
@@ -33,6 +36,15 @@ def token_is_expired(token):
         ret = True
 
     return ret
+
+
+def get_user_from_session_key(session_key):
+    session = Session.objects.get(session_key=session_key)
+    session_data = session.get_decoded()
+    uid = session_data.get('_auth_user_id')
+    user = User.objects.get(id=uid)
+
+    return user
 
 
 class SRIJWTAuthMiddleware(object):
@@ -69,21 +81,36 @@ class SRIJWTAuthMiddleware(object):
 
         if token and token_is_expired(token):
             cookie_token = request.COOKIES.get(jwt_settings.JWT_COOKIE_NAME)
+            session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
 
             if cookie_token and cookie_token != '""':
-                response = redirect('/')
-                response.set_cookie(
-                    jwt_settings.JWT_COOKIE_NAME,
-                    '',
-                    domain=settings.COOKIE_DOMAIN,
-                    expires=anti_expires_time,
-                    httponly=False,
-                    secure=jwt_settings.JWT_COOKIE_SECURE,
-                )
-                response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
-                patch_vary_headers(response, ('Cookie',))
+                try:
+                    user = get_user_from_session_key(session_key)
+                    request.user = user
+                    refresh_token_lazy(request.user)
+                    token = get_token(request.user)
+                    refresh_token_rotated.send(
+                        sender=SRIJWTAuthMiddleware,
+                        request=request,
+                        refresh_token=self,
+                    )
+                    signals.token_issued.send(
+                        sender=SRIJWTAuthMiddleware, request=request, user=request.user)
+                except ObjectDoesNotExist:
+                    ## fallback solution
+                    response = redirect(request.get_full_path())
+                    response.set_cookie(
+                        jwt_settings.JWT_COOKIE_NAME,
+                        '',
+                        domain=settings.COOKIE_DOMAIN,
+                        expires=anti_expires_time,
+                        httponly=False,
+                        secure=jwt_settings.JWT_COOKIE_SECURE,
+                    )
+                    response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
+                    patch_vary_headers(response, ('Cookie',))
 
-                return response
+                    return response
 
         # process response with inner middleware
         response = self.get_response(request)
