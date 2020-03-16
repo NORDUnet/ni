@@ -9,26 +9,29 @@ from pprint import pformat
 from . import Neo4jGraphQLNetworkTest
 
 ## Organizations
-class CustomerTest(Neo4jGraphQLNetworkTest):
-    def test_crud(self):
+class GenericOrganizationTest(Neo4jGraphQLNetworkTest):
+    def create(self, create_mutation=None, entityname=None):
+        if not create_mutation:
+            raise Exception('Missconfigured test {}'.format(type(self)))
+
         data_generator = FakeDataGenerator()
-        customer_name = data_generator.rand_person_or_company_name()
-        customer_url = data_generator.fake.url()
-        customer_description = data_generator.fake.paragraph()
+        the_name = data_generator.rand_person_or_company_name()
+        the_url = data_generator.fake.url()
+        the_description = data_generator.fake.paragraph()
 
         ## create
         query = """
         mutation{{
-          create_customer(input:{{
-            name: "{customer_name}",
-            url: "{customer_url}",
-            description: "{customer_description}"
+          {create_mutation}(input:{{
+            name: "{the_name}",
+            url: "{the_url}",
+            description: "{the_description}"
           }}){{
             errors{{
               field
               messages
             }}
-            customer{{
+            {entityname}{{
               id
               name
               url
@@ -36,27 +39,38 @@ class CustomerTest(Neo4jGraphQLNetworkTest):
             }}
           }}
         }}
-        """.format(customer_name=customer_name, customer_url=customer_url,
-                    customer_description=customer_description)
+        """.format(create_mutation=create_mutation, the_name=the_name,
+                    the_url=the_url, the_description=the_description,
+                    entityname=entityname)
 
         expected = OrderedDict([('create_customer',
-              {'customer': {'description': customer_description,
+                    {
+                        entityname: {
                             'id': None,
-                            'name': customer_name,
-                            'url': customer_url},
-               'errors': None})])
+                            'name': the_name,
+                            'url': the_url,
+                            'description': the_description,
+                        },
+                        'errors': None
+                    }
+                )])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        customer_id_str = result.data['create_customer']['customer']['id']
-        expected['create_customer']['customer']['id'] = customer_id_str
+        id_str = result.data[create_mutation][entityname]['id']
+        expected[create_mutation][entityname]['id'] = id_str
 
         assert result.data == expected, '{} \n != {}'.format(
                                                 pformat(result.data, indent=1),
                                                 pformat(expected, indent=1)
                                             )
 
-        ## edit
-        customer_url = data_generator.fake.url()
-        customer_description = data_generator.fake.paragraph()
+        return id_str
+
+class CustomerTest(GenericOrganizationTest):
+    def test_crud(self):
+        customer_id = self.create(
+            create_mutation='create_customer',
+            entityname='customer'
+        )
