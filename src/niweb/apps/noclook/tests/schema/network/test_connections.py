@@ -45,7 +45,17 @@ def simple_type_loop(self, test_f):
         simple_type_check(self, test_f, type_name)
 
 
-class SimpleListTest(Neo4jGraphQLNetworkTest):
+class NetworkListTest(Neo4jGraphQLNetworkTest):
+    def setUp(self):
+        super(NetworkListTest, self).setUp()
+        # create nodes
+        entity_num = 3
+
+        self.create_organization_nodes(entity_num)
+        self.create_equicables_nodes(entity_num)
+
+
+class SimpleListTest(NetworkListTest):
     def test_simple_list(self):
         def test_f(self, nodetype, type_name_cc, graph_type_name, fmt_type_name):
             query = '''
@@ -79,7 +89,7 @@ class SimpleListTest(Neo4jGraphQLNetworkTest):
         simple_type_loop(self, test_f)
 
 
-class SimpleConnectionTest(Neo4jGraphQLNetworkTest):
+class SimpleConnectionTest(NetworkListTest):
     def test_simple_connection_list(self):
         def test_f(self, nodetype, type_name_cc, graph_type_name, fmt_type_name):
             query = '''
@@ -119,7 +129,7 @@ class SimpleConnectionTest(Neo4jGraphQLNetworkTest):
         simple_type_loop(self, test_f)
 
 
-class FilteredConnectionTest(Neo4jGraphQLNetworkTest):
+class FilteredConnectionTest(NetworkListTest):
     def test_filtered_connection_list(self):
         def get_test_f(self, filter_field, filterd_qs, field_value):
             filter_str_base = ", filter:{{ AND:[{{ {filter_field}: \"{field_value}\" }}] }}"

@@ -64,12 +64,6 @@ class Neo4jGraphQLNetworkTest(NeoTestCase):
             context = self.network_ctxt
         ).save()
 
-        # create nodes
-        entity_num = 3
-
-        self.create_organization_nodes(5)
-        self.create_equicables_nodes(5)
-
     def create_organization_nodes(self, entity_num):
         call_command(DFCommand.cmd_name,
             **{

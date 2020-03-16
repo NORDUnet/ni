@@ -3,9 +3,11 @@ __author__ = 'ffuentes'
 
 from .common import *
 from .community import *
+from .network import *
 
 
 class NOCRootMutation(graphene.ObjectType):
+    ## Community mutations
     create_group        = NIGroupMutationFactory.get_create_mutation().Field()
     update_group        = NIGroupMutationFactory.get_update_mutation().Field()
     delete_group        = NIGroupMutationFactory.get_delete_mutation().Field()
@@ -40,6 +42,11 @@ class NOCRootMutation(graphene.ObjectType):
     create_role = CreateRole.Field()
     update_role = UpdateRole.Field()
     delete_role = DeleteRole.Field()
+
+    ## Network mutations
+    create_customer = NICustomersMutationFactory.get_create_mutation().Field()
+    update_customer = NICustomersMutationFactory.get_update_mutation().Field()
+    delete_customer = NICustomersMutationFactory.get_delete_mutation().Field()
 
     create_comment = CreateComment.Field()
     update_comment = UpdateComment.Field()

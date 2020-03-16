@@ -38,6 +38,13 @@ class FakeDataGenerator:
     def last_name(self):
         return self.escape_quotes( self.fake.last_name() )
 
+    def rand_person_or_company_name(self):
+        person_name = '{} {}'.format(self.first_name(), self.last_name())
+        company_name = self.company_name()
+        name = random.choice((person_name, company_name))
+
+        return name
+
 
 class CommunityFakeDataGenerator(FakeDataGenerator):
     def create_fake_contact(self):
@@ -135,13 +142,6 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         return [ x[0] for x in Dropdown.get(dropdown_name).as_choices()[1:] ]
 
     ## Organizations
-    def rand_person_or_company_name(self):
-        person_name = '{} {}'.format(self.first_name(), self.last_name())
-        company_name = self.company_name()
-        name = random.choice((person_name, company_name))
-
-        return name
-
     def create_customer(self):
         # create object
         name = self.rand_person_or_company_name()
