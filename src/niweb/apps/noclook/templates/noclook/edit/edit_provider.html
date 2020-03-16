@@ -6,6 +6,7 @@
 {{ block.super }}
     <div class="well">
         {{ form.name | as_crispy_field}}
+        {{ form.description |as_crispy_field }}
     </div>
     <div class="accordion" id="edit-accordion">
         {% accordion 'Information URL (optional)' 'infourl' '#edit-accordion' %}
@@ -13,4 +14,3 @@
         {% endaccordion %}
     </div>
 {% endblock %}
-

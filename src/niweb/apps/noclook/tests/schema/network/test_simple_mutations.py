@@ -43,7 +43,7 @@ class GenericOrganizationTest(Neo4jGraphQLNetworkTest):
                     the_url=the_url, the_description=the_description,
                     entityname=entityname)
 
-        expected = OrderedDict([('create_customer',
+        expected = OrderedDict([(create_mutation,
                     {
                         entityname: {
                             'id': None,
@@ -74,3 +74,27 @@ class CustomerTest(GenericOrganizationTest):
             create_mutation='create_customer',
             entityname='customer'
         )
+
+
+'''class EndUserTest(GenericOrganizationTest):
+    def test_crud(self):
+        customer_id = self.create(
+            create_mutation='create_enduser',
+            entityname='enduser'
+        )'''
+
+
+class ProviderTest(GenericOrganizationTest):
+    def test_crud(self):
+        customer_id = self.create(
+            create_mutation='create_provider',
+            entityname='provider'
+        )
+
+
+'''class SiteOwnerTest(GenericOrganizationTest):
+    def test_crud(self):
+        customer_id = self.create(
+            create_mutation='create_siteowner',
+            entityname='siteowner'
+        )'''

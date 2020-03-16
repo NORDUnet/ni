@@ -218,6 +218,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         data = {
             'url' : self.fake.url(),
+            'description': self.fake.paragraph(),
         }
 
         for key, value in data.items():

@@ -48,6 +48,19 @@ class NOCRootMutation(graphene.ObjectType):
     update_customer = NICustomersMutationFactory.get_update_mutation().Field()
     delete_customer = NICustomersMutationFactory.get_delete_mutation().Field()
 
+    '''create_enduser = NIEndUsersMutationFactory.get_create_mutation().Field()
+    update_enduser = NIEndUsersMutationFactory.get_update_mutation().Field()
+    delete_enduser = NIEndUsersMutationFactory.get_delete_mutation().Field()'''
+
+    create_provider = NIProvidersMutationFactory.get_create_mutation().Field()
+    update_provider = NIProvidersMutationFactory.get_update_mutation().Field()
+    delete_provider = NIProvidersMutationFactory.get_delete_mutation().Field()
+
+    '''create_siteowner = NISiteOwnersMutationFactory.get_create_mutation().Field()
+    update_siteowner = NISiteOwnersMutationFactory.get_update_mutation().Field()
+    delete_siteowner = NISiteOwnersMutationFactory.get_delete_mutation().Field()'''
+
+    ## Common mutations
     create_comment = CreateComment.Field()
     update_comment = UpdateComment.Field()
     delete_comment = DeleteComment.Field()
