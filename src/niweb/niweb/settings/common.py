@@ -211,7 +211,7 @@ AUTHENTICATION_BACKENDS = (
 )
 if SAML_ENABLED:
     AUTHENTICATION_BACKENDS += (
-        'djangosaml2.backends.Saml2Backend',
+        environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
     )
     MIDDLEWARE += (
         'apps.saml2auth.middleware.HandleUnsupportedBinding',
