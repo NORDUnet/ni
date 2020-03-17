@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from saml2.s_utils import UnsupportedBinding
+from djangosaml2.backends import Saml2Backend
 
 
 class HandleUnsupportedBinding:
@@ -22,3 +23,13 @@ class HandleUnsupportedBinding:
         else:
             # Not something that we handle
             return None
+
+
+class NDNOnlySaml2Backend(Saml2Backend):
+    def is_authorized(self, attributes, attribute_mapping):
+        # check if employee or member
+        affiliations = attributes.get('eduPersonScopedAffiliation', [])
+        for ok_val in ['employee@nordu.net', 'member@nordu.net']:
+            if ok_val in affiliations:
+                return True
+        return False
