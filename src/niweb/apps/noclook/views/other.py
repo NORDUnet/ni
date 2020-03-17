@@ -234,7 +234,7 @@ def typeahead_slugs(request, slug='Node'):
     if to_find:
         # split for search
         match_q = regex_escape(to_find.split())
-        labels = [s.replace('-', '_').title() for s in slug.split('+')]
+        labels = [helpers.slug_to_node_type(slug).get_label() for s in slug.split('+')]
         try:
             q = """
                 MATCH (n:Node)
