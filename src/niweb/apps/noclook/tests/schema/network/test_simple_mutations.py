@@ -77,7 +77,7 @@ class GenericOrganizationTest(Neo4jGraphQLNetworkTest):
         the_url = data_generator.fake.url()
         the_description = data_generator.fake.paragraph()
 
-        ## create
+        ## update
         query = """
         mutation{{
           {update_mutation}(input:{{
@@ -124,6 +124,42 @@ class GenericOrganizationTest(Neo4jGraphQLNetworkTest):
 
         return id_str
 
+    def delete(self, delete_mutation=None, id_str=None):
+        if not delete_mutation or not id_str:
+            raise Exception('Missconfigured test {}'.format(type(self)))
+
+        ## delete
+        query = """
+        mutation{{
+          {delete_mutation}(input:{{
+            id: "{id_str}"
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            success
+          }}
+        }}
+        """.format(delete_mutation=delete_mutation, id_str=id_str)
+
+        expected = OrderedDict([(delete_mutation,
+                    {
+                        'success': True,
+                        'errors': None
+                    }
+                )])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        return result.data[delete_mutation]['success']
+
 class CustomerTest(GenericOrganizationTest):
     def test_crud(self):
         id_str = self.create(
@@ -135,6 +171,11 @@ class CustomerTest(GenericOrganizationTest):
             id_str=id_str,
             update_mutation='update_customer',
             entityname='customer'
+        )
+
+        success = self.delete(
+            id_str=id_str,
+            delete_mutation='delete_customer'
         )
 
 
@@ -151,6 +192,11 @@ class EndUserTest(GenericOrganizationTest):
             entityname='enduser'
         )
 
+        success = self.delete(
+            id_str=id_str,
+            delete_mutation='delete_enduser'
+        )
+
 
 class ProviderTest(GenericOrganizationTest):
     def test_crud(self):
@@ -165,6 +211,11 @@ class ProviderTest(GenericOrganizationTest):
             entityname='provider'
         )
 
+        success = self.delete(
+            id_str=id_str,
+            delete_mutation='delete_provider'
+        )
+
 
 class SiteOwnerTest(GenericOrganizationTest):
     def test_crud(self):
@@ -177,4 +228,9 @@ class SiteOwnerTest(GenericOrganizationTest):
             id_str=id_str,
             update_mutation='update_siteowner',
             entityname='siteowner'
+        )
+
+        success = self.delete(
+            id_str=id_str,
+            delete_mutation='delete_siteowner'
         )
