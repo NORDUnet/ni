@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.tests.stressload.data_generator import FakeDataGenerator
+from apps.noclook.models import NodeHandle
 from collections import OrderedDict
 from graphene import relay
 from niweb.schema import schema
@@ -66,6 +67,16 @@ class GenericOrganizationTest(Neo4jGraphQLNetworkTest):
                                                 pformat(expected, indent=1)
                                             )
 
+        # check node creation
+        handle_id = relay.Node.from_global_id(id_str)[1]
+        nh = NodeHandle.objects.get(handle_id=handle_id)
+        test_data = {
+            'name': the_name,
+            'url': the_url,
+            'description': the_description,
+        }
+        self.assertDictContainsSubset(test_data, nh.get_node().data)
+
         return id_str
 
     def edit(self, update_mutation=None, entityname=None, id_str=None):
@@ -122,6 +133,16 @@ class GenericOrganizationTest(Neo4jGraphQLNetworkTest):
                                                 pformat(expected, indent=1)
                                             )
 
+        # check node update
+        handle_id = relay.Node.from_global_id(id_str)[1]
+        nh = NodeHandle.objects.get(handle_id=handle_id)
+        test_data = {
+            'name': the_name,
+            'url': the_url,
+            'description': the_description,
+        }
+        self.assertDictContainsSubset(test_data, nh.get_node().data)
+
         return id_str
 
     def delete(self, delete_mutation=None, id_str=None):
@@ -157,6 +178,11 @@ class GenericOrganizationTest(Neo4jGraphQLNetworkTest):
                                                 pformat(result.data, indent=1),
                                                 pformat(expected, indent=1)
                                             )
+
+        # check node delete
+        handle_id = relay.Node.from_global_id(id_str)[1]
+        exists = NodeHandle.objects.filter(handle_id=handle_id).exists()
+        self.assertFalse(exists)
 
         return result.data[delete_mutation]['success']
 
