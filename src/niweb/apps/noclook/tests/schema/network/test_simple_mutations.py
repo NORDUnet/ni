@@ -9,8 +9,50 @@ from niweb.schema import schema
 from pprint import pformat
 from . import Neo4jGraphQLNetworkTest
 
+class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
+        def delete(self, delete_mutation=None, id_str=None):
+            if not delete_mutation or not id_str:
+                raise Exception('Missconfigured test {}'.format(type(self)))
+
+            ## delete
+            query = """
+            mutation{{
+              {delete_mutation}(input:{{
+                id: "{id_str}"
+              }}){{
+                errors{{
+                  field
+                  messages
+                }}
+                success
+              }}
+            }}
+            """.format(delete_mutation=delete_mutation, id_str=id_str)
+
+            expected = OrderedDict([(delete_mutation,
+                        {
+                            'success': True,
+                            'errors': None
+                        }
+                    )])
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            assert result.data == expected, '{} \n != {}'.format(
+                                                    pformat(result.data, indent=1),
+                                                    pformat(expected, indent=1)
+                                                )
+
+            # check node delete
+            handle_id = relay.Node.from_global_id(id_str)[1]
+            exists = NodeHandle.objects.filter(handle_id=handle_id).exists()
+            self.assertFalse(exists)
+
+            return result.data[delete_mutation]['success']
+
 ## Organizations
-class GenericOrganizationTest(Neo4jGraphQLNetworkTest):
+class GenericOrganizationTest(GenericNetworkMutationTest):
     def create(self, create_mutation=None, entityname=None):
         if not create_mutation or not entityname:
             raise Exception('Missconfigured test {}'.format(type(self)))
