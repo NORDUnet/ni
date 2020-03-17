@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2020-03-17
+### Added
+- The ability to change which saml backend class to use for authentication - set using `SAML_BACKEND`
+- NDNOnly saml backend
+
 ## 2020-02-11
 ### Fixed
 - Typeahead search had a problem with `-` in python 3 due to bad regex escaping.
