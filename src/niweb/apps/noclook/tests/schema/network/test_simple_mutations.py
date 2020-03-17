@@ -76,12 +76,12 @@ class CustomerTest(GenericOrganizationTest):
         )
 
 
-'''class EndUserTest(GenericOrganizationTest):
+class EndUserTest(GenericOrganizationTest):
     def test_crud(self):
         customer_id = self.create(
             create_mutation='create_enduser',
             entityname='enduser'
-        )'''
+        )
 
 
 class ProviderTest(GenericOrganizationTest):
@@ -92,9 +92,9 @@ class ProviderTest(GenericOrganizationTest):
         )
 
 
-'''class SiteOwnerTest(GenericOrganizationTest):
+class SiteOwnerTest(GenericOrganizationTest):
     def test_crud(self):
         customer_id = self.create(
             create_mutation='create_siteowner',
             entityname='siteowner'
-        )'''
+        )

@@ -2019,7 +2019,10 @@ class NIMutationFactory():
             update_form = form
 
         # create mutations
-        class_name = 'Create{}'.format(node_type.capitalize())
+        components = node_type.split(' ')
+        mutation_name_cc = components[0].lower() + ''.join(x.title() for x in components[1:])
+
+        class_name = 'Create{}'.format(mutation_name_cc)
         attr_dict = {
             'django_form': create_form,
             'request_path': request_path,
@@ -2050,7 +2053,7 @@ class NIMutationFactory():
         else:
             cls._create_mutation = manual_create
 
-        class_name = 'Update{}'.format(node_type.capitalize())
+        class_name = 'Update{}'.format(mutation_name_cc)
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
         attr_dict['include']       = update_include
@@ -2072,7 +2075,7 @@ class NIMutationFactory():
         else:
             cls._update_mutation = manual_update
 
-        class_name = 'Delete{}'.format(node_type.capitalize())
+        class_name = 'Delete{}'.format(mutation_name_cc)
         del attr_dict['django_form']
         del attr_dict['include']
         del attr_dict['exclude']
@@ -2100,7 +2103,7 @@ class NIMutationFactory():
         )
 
         # make multiple mutation
-        class_name = 'Multiple{}'.format(node_type.capitalize())
+        class_name = 'Multiple{}'.format(mutation_name_cc)
 
         # create input class
         multi_attr_input_list = {
