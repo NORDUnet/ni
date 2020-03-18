@@ -12,6 +12,15 @@ logger = logging.getLogger(__name__)
 ## metatype interfaces
 class NINode(graphene.Node):
     name = graphene.String(required= True)
+    relation_id = graphene.Int()
+
+    def resolve_relation_id(self, info, **kwargs):
+        ret = None
+
+        if sriutils.authorice_read_resource(info.context.user, self.handle_id):
+            ret = getattr(self, 'relation_id', None)
+
+        return ret
 
     @classmethod
     def resolve_type(cls, instance, info):

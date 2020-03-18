@@ -178,14 +178,21 @@ class NIListField(NIBasicField):
             relations = getattr(neo4jnode, rel_method)()
             nodes = relations.get(rel_name)
 
-            handle_id_list = []
+            id_list = []
             if nodes:
                 for node in nodes:
+                    relation_id = node['relationship_id']
                     node = node['node']
                     node_id = node.data.get('handle_id')
-                    handle_id_list.append(node_id)
+                    id_list.append((node_id, relation_id))
 
-            ret = NodeHandle.objects.filter(handle_id__in=handle_id_list).order_by('handle_id')
+            id_list = sorted(id_list, key=lambda x: x[0])
+
+            ret = []
+            for handle_id, relation_id in id_list:
+                nh = NodeHandle.objects.get(handle_id=handle_id)
+                nh.relation_id = relation_id
+                ret.append(nh)
 
             return ret
 
