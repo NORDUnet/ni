@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from apps.noclook.tests.stressload.data_generator import FakeDataGenerator
+from apps.noclook.tests.stressload.data_generator import FakeDataGenerator,\
+                                                        NetworkFakeDataGenerator
 from apps.noclook.models import NodeHandle
 from collections import OrderedDict
 from graphene import relay
 from niweb.schema import schema
 from pprint import pformat
 from . import Neo4jGraphQLNetworkTest
+
+import random
 
 class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
     def create_mutation(self, create_mutation=None, entityname=None, data=None):
@@ -289,4 +292,56 @@ class SiteOwnerTest(GenericOrganizationTest):
         success = self.delete_mutation(
             id_str=id_str,
             delete_mutation='delete_siteowner'
+        )
+
+## Equipment and cables
+class PortTest(GenericNetworkMutationTest):
+    def create_mutation(self, create_mutation=None, entityname=None):
+        data_generator = NetworkFakeDataGenerator()
+        port_types = data_generator.get_dropdown_keys('port_types')
+
+        data = {
+            'name': data_generator.get_port_name,
+            'port_type': lambda: random.choice(port_types),
+            'description': data_generator.fake.paragraph,
+        }
+
+        return super().create_mutation(
+            create_mutation=create_mutation,
+            entityname=entityname,
+            data=data
+        )
+
+    def edit_mutation(self, update_mutation=None, entityname=None, id_str=None):
+        data_generator = NetworkFakeDataGenerator()
+        port_types = data_generator.get_dropdown_keys('port_types')
+
+        data = {
+            'name': data_generator.rand_person_or_company_name,
+            'port_type': lambda: random.choice(port_types),
+            'description': data_generator.fake.paragraph,
+        }
+
+        return super().edit_mutation(
+            update_mutation=update_mutation,
+            entityname=entityname,
+            id_str=id_str,
+            data=data
+        )
+
+    def test_crud(self):
+        id_str = self.create_mutation(
+            create_mutation='create_port',
+            entityname='port'
+        )
+
+        id_str = self.edit_mutation(
+            id_str=id_str,
+            update_mutation='update_port',
+            entityname='port'
+        )
+
+        success = self.delete_mutation(
+            id_str=id_str,
+            delete_mutation='delete_port'
         )

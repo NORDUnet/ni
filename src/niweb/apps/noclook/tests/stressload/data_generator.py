@@ -120,6 +120,9 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         net_ctx = sriutils.get_network_context()
         NodeHandleContext(nodehandle=nh, context=net_ctx).save()
 
+    def get_port_name(self):
+        return str(random.randint(0, 50000))
+
     @staticmethod
     def get_nodetype(type_name):
         return NodeType.objects.get_or_create(type=type_name, slug=slugify(type_name))[0]
@@ -250,7 +253,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
     def create_port(self):
         # create object
         port = self.get_or_create_node(
-            str(random.randint(0, 50000)), 'Port', META_TYPES[0])
+            self.get_port_name(), 'Port', META_TYPES[0])
 
         # add context
         self.add_network_context(port)
