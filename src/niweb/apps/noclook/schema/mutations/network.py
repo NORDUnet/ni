@@ -11,7 +11,7 @@ from graphene import Field
 
 logger = logging.getLogger(__name__)
 
-
+## Organizations
 class NICustomersMutationFactory(NIMutationFactory):
     class NIMetaClass:
         create_form    = NewCustomerForm
@@ -51,6 +51,18 @@ class NISiteOwnersMutationFactory(NIMutationFactory):
         update_form    = EditSiteOwnerForm
         request_path   = '/'
         graphql_type   = SiteOwner
+
+    class Meta:
+        abstract = False
+
+
+## Cables and Equipment
+class NIPortMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewPortForm
+        update_form    = EditPortForm
+        request_path   = '/'
+        graphql_type   = Port
 
     class Meta:
         abstract = False

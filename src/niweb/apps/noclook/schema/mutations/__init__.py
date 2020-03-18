@@ -44,6 +44,7 @@ class NOCRootMutation(graphene.ObjectType):
     delete_role = DeleteRole.Field()
 
     ## Network mutations
+    # Organizations
     create_customer = NICustomersMutationFactory.get_create_mutation().Field()
     update_customer = NICustomersMutationFactory.get_update_mutation().Field()
     delete_customer = NICustomersMutationFactory.get_delete_mutation().Field()
@@ -59,6 +60,11 @@ class NOCRootMutation(graphene.ObjectType):
     create_siteowner = NISiteOwnersMutationFactory.get_create_mutation().Field()
     update_siteowner = NISiteOwnersMutationFactory.get_update_mutation().Field()
     delete_siteowner = NISiteOwnersMutationFactory.get_delete_mutation().Field()
+
+    # Cables and Equipment
+    create_port = NIPortMutationFactory.get_create_mutation().Field()
+    update_port = NIPortMutationFactory.get_update_mutation().Field()
+    delete_port = NIPortMutationFactory.get_delete_mutation().Field()
 
     ## Common mutations
     create_comment = CreateComment.Field()
