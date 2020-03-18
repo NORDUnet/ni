@@ -66,3 +66,14 @@ class NIPortMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+class NICableMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewCableForm
+        update_form    = EditCableForm
+        request_path   = '/'
+        graphql_type   = Cable
+
+    class Meta:
+        abstract = False

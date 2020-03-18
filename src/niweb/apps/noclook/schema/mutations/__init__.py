@@ -66,6 +66,10 @@ class NOCRootMutation(graphene.ObjectType):
     update_port = NIPortMutationFactory.get_update_mutation().Field()
     delete_port = NIPortMutationFactory.get_delete_mutation().Field()
 
+    create_cable = NICableMutationFactory.get_create_mutation().Field()
+    update_cable = NICableMutationFactory.get_update_mutation().Field()
+    delete_cable = NICableMutationFactory.get_delete_mutation().Field()
+
     ## Common mutations
     create_comment = CreateComment.Field()
     update_comment = UpdateComment.Field()
