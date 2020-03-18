@@ -55,6 +55,7 @@ class Port(NIObjectType, PhysicalMixin):
     description = NIStringField()
     parent = NISingleRelationField(field_type=Physical, rel_name='Has', rel_method='get_parent')
     connected_to = NIListField(type_args=(lambda: Physical,), rel_name='Connected_to', rel_method='_incoming')
+    connected_to_relations = NIRelationListField(rel_name='Connected_to', rel_method='_incoming', graphene_type=lambda: Physical)
 
     class NIMetaType:
         ni_type = 'Port'
@@ -67,7 +68,9 @@ class Cable(NIObjectType, PhysicalMixin):
     cable_type = NIChoiceField()
     description = NIStringField()
     providers = NIListField(type_args=(lambda: Provider,), rel_name='Provides', rel_method='_incoming')
+    providers_relations = NIRelationListField(rel_name='Provides', rel_method='_incoming', graphene_type=lambda: Provider)
     ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', rel_method='_outgoing')
+    ports_relations = NIRelationListField(rel_name='Connected_to', rel_method='_outgoing', graphene_type=lambda: Port)
 
     class NIMetaType:
         ni_type = 'Cable'
