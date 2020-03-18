@@ -77,8 +77,73 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
 
         return id_str
 
+    def edit_mutation(self, update_mutation=None, entityname=None, id_str=None, data=None):
+        if not update_mutation or not entityname or not data:
+            raise Exception('Missconfigured test {}'.format(type(self)))
 
-    def delete(self, delete_mutation=None, id_str=None):
+        input_str = None
+        inputs = []
+        values = {}
+
+        for data_name, data_f in data.items():
+            data_f_val = data_f()
+
+            inputs.append('{data_name}: "{data_f}",'.format(
+                data_name=data_name,
+                data_f=data_f_val
+            ))
+            values[data_name] = data_f_val
+
+        values['id'] = id_str
+
+        input_str = "\n".join(inputs)
+        query_attr = "\n".join(data.keys())
+
+        ## create
+        query = """
+        mutation{{
+          {update_mutation}(input:{{
+            id: "{id_str}"
+            {input_str}
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            {entityname}{{
+              id
+              {query_attr}
+            }}
+          }}
+        }}
+        """.format(update_mutation=update_mutation, id_str=id_str,
+                    input_str=input_str, query_attr=query_attr,
+                    entityname=entityname)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected = OrderedDict([(update_mutation,
+            {
+                entityname: values,
+                'errors': None
+            }
+        )])
+
+        assert result.data == expected, '{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+
+        # check node creation
+        values.pop('id', None)
+        handle_id = relay.Node.from_global_id(id_str)[1]
+        nh = NodeHandle.objects.get(handle_id=handle_id)
+        self.assertDictContainsSubset(values, nh.get_node().data)
+
+        return id_str
+
+    def delete_mutation(self, delete_mutation=None, id_str=None):
         if not delete_mutation or not id_str:
             raise Exception('Missconfigured test {}'.format(type(self)))
 
@@ -135,112 +200,21 @@ class GenericOrganizationTest(GenericNetworkMutationTest):
             data=data
         )
 
-    def edit(self, update_mutation=None, entityname=None, id_str=None):
-        if not update_mutation or not entityname or not id_str:
-            raise Exception('Missconfigured test {}'.format(type(self)))
-
+    def edit_mutation(self, update_mutation=None, entityname=None, id_str=None):
         data_generator = FakeDataGenerator()
-        the_name = data_generator.rand_person_or_company_name()
-        the_url = data_generator.fake.url()
-        the_description = data_generator.fake.paragraph()
-
-        ## update
-        query = """
-        mutation{{
-          {update_mutation}(input:{{
-            id: "{id_str}"
-            name: "{the_name}",
-            url: "{the_url}",
-            description: "{the_description}"
-          }}){{
-            errors{{
-              field
-              messages
-            }}
-            {entityname}{{
-              id
-              name
-              url
-              description
-            }}
-          }}
-        }}
-        """.format(update_mutation=update_mutation, id_str=id_str,
-                    the_name=the_name, the_url=the_url,
-                    the_description=the_description, entityname=entityname)
-
-        expected = OrderedDict([(update_mutation,
-                    {
-                        entityname: {
-                            'id': id_str,
-                            'name': the_name,
-                            'url': the_url,
-                            'description': the_description,
-                        },
-                        'errors': None
-                    }
-                )])
-
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-
-        assert result.data == expected, '{} \n != {}'.format(
-                                                pformat(result.data, indent=1),
-                                                pformat(expected, indent=1)
-                                            )
-
-        # check node update
-        handle_id = relay.Node.from_global_id(id_str)[1]
-        nh = NodeHandle.objects.get(handle_id=handle_id)
-        test_data = {
-            'name': the_name,
-            'url': the_url,
-            'description': the_description,
+        data = {
+            'name': data_generator.rand_person_or_company_name,
+            'url': data_generator.fake.url,
+            'description': data_generator.fake.paragraph,
         }
-        self.assertDictContainsSubset(test_data, nh.get_node().data)
 
-        return id_str
+        return super().edit_mutation(
+            update_mutation=update_mutation,
+            entityname=entityname,
+            id_str=id_str,
+            data=data
+        )
 
-    def delete(self, delete_mutation=None, id_str=None):
-        if not delete_mutation or not id_str:
-            raise Exception('Missconfigured test {}'.format(type(self)))
-
-        ## delete
-        query = """
-        mutation{{
-          {delete_mutation}(input:{{
-            id: "{id_str}"
-          }}){{
-            errors{{
-              field
-              messages
-            }}
-            success
-          }}
-        }}
-        """.format(delete_mutation=delete_mutation, id_str=id_str)
-
-        expected = OrderedDict([(delete_mutation,
-                    {
-                        'success': True,
-                        'errors': None
-                    }
-                )])
-
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-
-        assert result.data == expected, '{} \n != {}'.format(
-                                                pformat(result.data, indent=1),
-                                                pformat(expected, indent=1)
-                                            )
-
-        # check node delete
-        handle_id = relay.Node.from_global_id(id_str)[1]
-        exists = NodeHandle.objects.filter(handle_id=handle_id).exists()
-        self.assertFalse(exists)
-
-        return result.data[delete_mutation]['success']
 
 class CustomerTest(GenericOrganizationTest):
     def test_crud(self):
@@ -249,13 +223,13 @@ class CustomerTest(GenericOrganizationTest):
             entityname='customer'
         )
 
-        id_str = self.edit(
+        id_str = self.edit_mutation(
             id_str=id_str,
             update_mutation='update_customer',
             entityname='customer'
         )
 
-        success = self.delete(
+        success = self.delete_mutation(
             id_str=id_str,
             delete_mutation='delete_customer'
         )
@@ -268,13 +242,13 @@ class EndUserTest(GenericOrganizationTest):
             entityname='enduser'
         )
 
-        id_str = self.edit(
+        id_str = self.edit_mutation(
             id_str=id_str,
             update_mutation='update_enduser',
             entityname='enduser'
         )
 
-        success = self.delete(
+        success = self.delete_mutation(
             id_str=id_str,
             delete_mutation='delete_enduser'
         )
@@ -287,13 +261,13 @@ class ProviderTest(GenericOrganizationTest):
             entityname='provider'
         )
 
-        id_str = self.edit(
+        id_str = self.edit_mutation(
             id_str=id_str,
             update_mutation='update_provider',
             entityname='provider'
         )
 
-        success = self.delete(
+        success = self.delete_mutation(
             id_str=id_str,
             delete_mutation='delete_provider'
         )
@@ -306,13 +280,13 @@ class SiteOwnerTest(GenericOrganizationTest):
             entityname='siteowner'
         )
 
-        id_str = self.edit(
+        id_str = self.edit_mutation(
             id_str=id_str,
             update_mutation='update_siteowner',
             entityname='siteowner'
         )
 
-        success = self.delete(
+        success = self.delete_mutation(
             id_str=id_str,
             delete_mutation='delete_siteowner'
         )
