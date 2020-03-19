@@ -63,6 +63,8 @@ class NIPortMutationFactory(NIMutationFactory):
         update_form    = EditPortForm
         request_path   = '/'
         graphql_type   = Port
+        create_exclude = ('relationship_parent', )
+        update_exclude = ('relationship_parent', )
 
     class Meta:
         abstract = False
@@ -74,6 +76,8 @@ class NICableMutationFactory(NIMutationFactory):
         update_form    = EditCableForm
         request_path   = '/'
         graphql_type   = Cable
+        create_exclude = ('relationship_provider', )
+        update_exclude = ('relationship_provider', )
 
     class Meta:
         abstract = False
