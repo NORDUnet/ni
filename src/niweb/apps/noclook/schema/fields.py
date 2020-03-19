@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle
+from apps.noclook.vakt import utils as sriutils
 from .scalars import ChoiceScalar
 
 import graphene
