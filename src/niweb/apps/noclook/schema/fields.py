@@ -192,7 +192,9 @@ class NIListField(NIBasicField):
             for handle_id, relation_id in id_list:
                 nh = NodeHandle.objects.get(handle_id=handle_id)
                 nh.relation_id = relation_id
-                ret.append(nh)
+
+                if sriutils.authorice_read_resource(info.context.user, nh.handle_id):
+                    ret.append(nh)
 
             return ret
 

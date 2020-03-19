@@ -53,7 +53,6 @@ class Port(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     port_type = NIChoiceField()
     description = NIStringField()
-    parent = NISingleRelationField(field_type=Physical, rel_name='Has', rel_method='get_parent')
     connected_to = NIListField(type_args=(lambda: Physical,), rel_name='Connected_to', rel_method='_incoming')
 
     class NIMetaType:

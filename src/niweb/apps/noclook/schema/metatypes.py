@@ -55,7 +55,7 @@ class Physical(NINode):
     location = graphene.Field(lambda:Location)
     has = graphene.Field(lambda:Physical)
     part_of = graphene.Field(lambda:Logical)
-    parent = graphene.Field(lambda:Physical)
+    parent = graphene.List(lambda:Physical)
 
 
 class Location(NINode):
@@ -76,13 +76,45 @@ class ResolverUtils:
 
             if relation.get(relation_label):
                 handle_id = relation[relation_label][0]['node'].handle_id
+                relation_id = relation[relation_label][0]['relationship_id']
 
                 if handle_id and \
                     NodeHandle.objects.filter(handle_id=handle_id) and \
                     sriutils.authorice_read_resource(\
-                        info.context.user, nh.handle_id):
+                        info.context.user, handle_id):
 
                     ret = NodeHandle.objects.get(handle_id=handle_id)
+                    ret.relation_id = relation_id
+
+        return ret
+
+    @staticmethod
+    def multiple_relation_resolver(info, node, method_name, relation_label):
+        ret = None
+
+        if info.context and info.context.user.is_authenticated:
+            relations = getattr(node, method_name)()
+            nodes = relations.get(relation_label)
+
+            id_list = []
+            if nodes:
+                for node in nodes:
+                    relation_id = node['relationship_id']
+                    node = node['node']
+                    node_id = node.data.get('handle_id')
+                    id_list.append((node_id, relation_id))
+
+            id_list = sorted(id_list, key=lambda x: x[0])
+
+            ret = []
+            for handle_id, relation_id in id_list:
+                nh = NodeHandle.objects.get(handle_id=handle_id)
+                nh.relation_id = relation_id
+
+                if sriutils.authorice_read_resource\
+                    (info.context.user, nh.handle_id):
+
+                    ret.append(nh)
 
         return ret
 
@@ -138,7 +170,7 @@ class PhysicalMixin:
             info, self.get_node(), 'get_part_of', 'Part_of')
 
     def resolve_parent(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
+        return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_parent', 'Has')
 
 
