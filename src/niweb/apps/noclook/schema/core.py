@@ -1293,10 +1293,15 @@ class AbstractNIMutation(relay.ClientIDMutation):
         )
 
     @classmethod
+    def get_returntype_name(cls, graphql_typename):
+        fmt_name = graphql_typename[0].lower() + graphql_typename[1:]
+
+        return fmt_name
+
+    @classmethod
     def add_return_type(cls, graphql_type):
         if graphql_type:
-            payload_name = graphql_type.__name__
-            payload_name = payload_name[0].lower() + payload_name[1:]
+            payload_name = cls.get_returntype_name(graphql_type.__name__)
 
             setattr(cls, payload_name, graphene.Field(graphql_type))
 
@@ -1615,7 +1620,7 @@ class CreateNIMutation(AbstractNIMutation):
                 nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
                 cls.process_subentities(request, form, nodehandler, context)
 
-            return has_error, { graphql_type.__name__.lower(): nh }
+            return has_error, { cls.get_returntype_name(graphql_type.__name__): nh }
         else:
             # get the errors and return them
             has_error = True
@@ -1692,7 +1697,7 @@ class UpdateNIMutation(AbstractNIMutation):
                 # process subentities if implemented
                 cls.process_subentities(request, form, nodehandler, context)
 
-                return has_error, { graphql_type.__name__.lower(): nh }
+                return has_error, { cls.get_returntype_name(graphql_type.__name__): nh }
             else:
                 has_error = True
                 errordict = cls.format_error_array(form.errors)

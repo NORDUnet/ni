@@ -242,13 +242,13 @@ class EndUserTest(GenericOrganizationTest):
     def test_crud(self):
         id_str = self.create_mutation(
             create_mutation='create_endUser',
-            entityname='enduser'
+            entityname='endUser'
         )
 
         id_str = self.edit_mutation(
             id_str=id_str,
             update_mutation='update_endUser',
-            entityname='enduser'
+            entityname='endUser'
         )
 
         success = self.delete_mutation(
@@ -280,13 +280,13 @@ class SiteOwnerTest(GenericOrganizationTest):
     def test_crud(self):
         id_str = self.create_mutation(
             create_mutation='create_siteOwner',
-            entityname='siteowner'
+            entityname='siteOwner'
         )
 
         id_str = self.edit_mutation(
             id_str=id_str,
             update_mutation='update_siteOwner',
-            entityname='siteowner'
+            entityname='siteOwner'
         )
 
         success = self.delete_mutation(
