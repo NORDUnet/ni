@@ -45,6 +45,10 @@ class FakeDataGenerator:
 
         return name
 
+    @staticmethod
+    def clean_rogue_nodetype():
+        NodeType.objects.filter(type="").delete()
+
 
 class CommunityFakeDataGenerator(FakeDataGenerator):
     def create_fake_contact(self):

@@ -71,6 +71,9 @@ class Command(BaseCommand):
                 created_nodes = created_nodes + 1
                 self.printProgressBar(created_nodes, total_nodes)
 
+        NetworkFakeDataGenerator.clean_rogue_nodetype()
+
+
     def create_organizations(self, numnodes):
         generator = NetworkFakeDataGenerator()
 
