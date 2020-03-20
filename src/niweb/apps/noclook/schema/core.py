@@ -1295,7 +1295,10 @@ class AbstractNIMutation(relay.ClientIDMutation):
     @classmethod
     def add_return_type(cls, graphql_type):
         if graphql_type:
-            setattr(cls, graphql_type.__name__.lower(), graphene.Field(graphql_type))
+            payload_name = graphql_type.__name__
+            payload_name = payload_name[0].lower() + payload_name[1:]
+
+            setattr(cls, payload_name, graphene.Field(graphql_type))
 
     @classmethod
     def form_to_graphene_field(cls, form_field, include=None, exclude=None):
