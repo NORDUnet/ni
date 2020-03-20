@@ -2019,8 +2019,7 @@ class NIMutationFactory():
             update_form = form
 
         # create mutations
-        components = node_type.split(' ')
-        mutation_name_cc = components[0].lower() + ''.join(x.title() for x in components[1:])
+        mutation_name_cc = node_type.title().replace(' ', ''  )
 
         class_name = 'Create{}'.format(mutation_name_cc)
         attr_dict = {
