@@ -241,19 +241,19 @@ class CustomerTest(GenericOrganizationTest):
 class EndUserTest(GenericOrganizationTest):
     def test_crud(self):
         id_str = self.create_mutation(
-            create_mutation='create_enduser',
+            create_mutation='create_endUser',
             entityname='enduser'
         )
 
         id_str = self.edit_mutation(
             id_str=id_str,
-            update_mutation='update_enduser',
+            update_mutation='update_endUser',
             entityname='enduser'
         )
 
         success = self.delete_mutation(
             id_str=id_str,
-            delete_mutation='delete_enduser'
+            delete_mutation='delete_endUser'
         )
 
 
@@ -279,19 +279,19 @@ class ProviderTest(GenericOrganizationTest):
 class SiteOwnerTest(GenericOrganizationTest):
     def test_crud(self):
         id_str = self.create_mutation(
-            create_mutation='create_siteowner',
+            create_mutation='create_siteOwner',
             entityname='siteowner'
         )
 
         id_str = self.edit_mutation(
             id_str=id_str,
-            update_mutation='update_siteowner',
+            update_mutation='update_siteOwner',
             entityname='siteowner'
         )
 
         success = self.delete_mutation(
             id_str=id_str,
-            delete_mutation='delete_siteowner'
+            delete_mutation='delete_siteOwner'
         )
 
 ## Equipment and cables

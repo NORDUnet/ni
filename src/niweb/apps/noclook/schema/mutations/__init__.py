@@ -49,17 +49,17 @@ class NOCRootMutation(graphene.ObjectType):
     update_customer = NICustomersMutationFactory.get_update_mutation().Field()
     delete_customer = NICustomersMutationFactory.get_delete_mutation().Field()
 
-    create_enduser = NIEndUsersMutationFactory.get_create_mutation().Field()
-    update_enduser = NIEndUsersMutationFactory.get_update_mutation().Field()
-    delete_enduser = NIEndUsersMutationFactory.get_delete_mutation().Field()
+    create_endUser = NIEndUsersMutationFactory.get_create_mutation().Field()
+    update_endUser = NIEndUsersMutationFactory.get_update_mutation().Field()
+    delete_endUser = NIEndUsersMutationFactory.get_delete_mutation().Field()
 
     create_provider = NIProvidersMutationFactory.get_create_mutation().Field()
     update_provider = NIProvidersMutationFactory.get_update_mutation().Field()
     delete_provider = NIProvidersMutationFactory.get_delete_mutation().Field()
 
-    create_siteowner = NISiteOwnersMutationFactory.get_create_mutation().Field()
-    update_siteowner = NISiteOwnersMutationFactory.get_update_mutation().Field()
-    delete_siteowner = NISiteOwnersMutationFactory.get_delete_mutation().Field()
+    create_siteOwner = NISiteOwnersMutationFactory.get_create_mutation().Field()
+    update_siteOwner = NISiteOwnersMutationFactory.get_update_mutation().Field()
+    delete_siteOwner = NISiteOwnersMutationFactory.get_delete_mutation().Field()
 
     # Cables and Equipment
     create_port = NIPortMutationFactory.get_create_mutation().Field()
