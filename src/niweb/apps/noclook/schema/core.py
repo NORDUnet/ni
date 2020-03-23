@@ -16,6 +16,7 @@ from django import forms
 from django.contrib.auth.models import User as DjangoUser
 from django.forms.utils import ValidationError
 from django.test import RequestFactory
+from django.utils.text import slugify
 from django_comments.models import Comment
 from graphene import relay
 from graphene.types import Scalar, DateTime
@@ -1572,7 +1573,7 @@ class CreateNIMutation(AbstractNIMutation):
         relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype     = getattr(graphql_type, 'NIMetaType')
-        node_type      = getattr(nimetatype, 'ni_type').lower()
+        node_type      = slugify(getattr(nimetatype, 'ni_type'))
         node_meta_type = getattr(nimetatype, 'ni_metatype')
 
         has_error      = False
@@ -1660,7 +1661,7 @@ class UpdateNIMutation(AbstractNIMutation):
         relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype      = getattr(graphql_type, 'NIMetaType')
-        node_type       = getattr(nimetatype, 'ni_type').lower()
+        node_type       = slugify(getattr(nimetatype, 'ni_type'))
         node_meta_type  = getattr(nimetatype, 'ni_metatype')
         context_method  = getattr(nimetatype, 'context_method')
         id              = request.POST.get('id')
