@@ -13,7 +13,18 @@ from . import Neo4jGraphQLNetworkTest
 import random
 
 class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
-    def create_mutation(self, create_mutation=None, entityname=None, data=None):
+    def assert_correct(self, result, expected):
+        fmt_str = '{} \n != {}'.format(
+                                    pformat(result.data, indent=1),
+                                    pformat(expected, indent=1)
+                                )
+        self.assertEquals(result.data, expected, fmt_str)
+
+    def assert_failure(self, result):
+        assert result.errors, pformat(result.errors, indent=1)
+
+    def create_mutation(self, create_mutation=None, entityname=None, data=None,
+                        correct=True):
         if not create_mutation or not entityname or not data:
             raise Exception('Missconfigured test {}'.format(type(self)))
 
@@ -55,30 +66,31 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
                     query_attr=query_attr, entityname=entityname)
 
         result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
 
-        id_str = result.data[create_mutation][entityname]['id']
-        values['id'] = id_str
+        if correct:
+            assert not result.errors, pformat(result.errors, indent=1)
 
-        expected = OrderedDict([(create_mutation,
-            {
-                entityname: values,
-                'errors': None
-            }
-        )])
+            id_str = result.data[create_mutation][entityname]['id']
+            values['id'] = id_str
 
-        assert result.data == expected, '{} \n != {}'.format(
-                                                pformat(result.data, indent=1),
-                                                pformat(expected, indent=1)
-                                            )
+            expected = OrderedDict([(create_mutation,
+                {
+                    entityname: values,
+                    'errors': None
+                }
+            )])
 
-        # check node creation
-        values.pop('id', None)
-        handle_id = relay.Node.from_global_id(id_str)[1]
-        nh = NodeHandle.objects.get(handle_id=handle_id)
-        self.assertDictContainsSubset(values, nh.get_node().data)
+            self.assert_correct(result, expected)
 
-        return id_str
+            # check node creation
+            values.pop('id', None)
+            handle_id = relay.Node.from_global_id(id_str)[1]
+            nh = NodeHandle.objects.get(handle_id=handle_id)
+            self.assertDictContainsSubset(values, nh.get_node().data)
+
+            return id_str
+        else:
+            self.assert_failure(result)
 
     def edit_mutation(self, update_mutation=None, entityname=None, id_str=None, data=None):
         if not update_mutation or not entityname or not data:
@@ -187,6 +199,28 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
 
         return result.data[delete_mutation]['success']
 
+    def crud(self, create_mutation=None, update_mutation=None,
+                delete_mutation=None, entityname=None):
+        if not create_mutation or not update_mutation or not delete_mutation\
+            or not entityname:
+            raise Exception('Missconfigured test {}'.format(type(self)))
+
+        id_str = self.create_mutation(
+            create_mutation=create_mutation,
+            entityname=entityname
+        )
+
+        id_str = self.edit_mutation(
+            id_str=id_str,
+            update_mutation=update_mutation,
+            entityname=entityname
+        )
+
+        success = self.delete_mutation(
+            id_str=id_str,
+            delete_mutation=delete_mutation
+        )
+
 ## Organizations
 class GenericOrganizationTest(GenericNetworkMutationTest):
     def create_mutation(self, create_mutation=None, entityname=None):
@@ -221,77 +255,41 @@ class GenericOrganizationTest(GenericNetworkMutationTest):
 
 class CustomerTest(GenericOrganizationTest):
     def test_crud(self):
-        id_str = self.create_mutation(
+        self.crud(
             create_mutation='create_customer',
-            entityname='customer'
-        )
-
-        id_str = self.edit_mutation(
-            id_str=id_str,
             update_mutation='update_customer',
+            delete_mutation='delete_customer',
             entityname='customer'
-        )
-
-        success = self.delete_mutation(
-            id_str=id_str,
-            delete_mutation='delete_customer'
         )
 
 
 class EndUserTest(GenericOrganizationTest):
     def test_crud(self):
-        id_str = self.create_mutation(
+        self.crud(
             create_mutation='create_endUser',
-            entityname='endUser'
-        )
-
-        id_str = self.edit_mutation(
-            id_str=id_str,
             update_mutation='update_endUser',
+            delete_mutation='delete_endUser',
             entityname='endUser'
-        )
-
-        success = self.delete_mutation(
-            id_str=id_str,
-            delete_mutation='delete_endUser'
         )
 
 
 class ProviderTest(GenericOrganizationTest):
     def test_crud(self):
-        id_str = self.create_mutation(
+        self.crud(
             create_mutation='create_provider',
-            entityname='provider'
-        )
-
-        id_str = self.edit_mutation(
-            id_str=id_str,
             update_mutation='update_provider',
+            delete_mutation='delete_provider',
             entityname='provider'
-        )
-
-        success = self.delete_mutation(
-            id_str=id_str,
-            delete_mutation='delete_provider'
         )
 
 
 class SiteOwnerTest(GenericOrganizationTest):
     def test_crud(self):
-        id_str = self.create_mutation(
+        self.crud(
             create_mutation='create_siteOwner',
-            entityname='siteOwner'
-        )
-
-        id_str = self.edit_mutation(
-            id_str=id_str,
             update_mutation='update_siteOwner',
+            delete_mutation='delete_siteOwner',
             entityname='siteOwner'
-        )
-
-        success = self.delete_mutation(
-            id_str=id_str,
-            delete_mutation='delete_siteOwner'
         )
 
 ## Equipment and cables
@@ -330,18 +328,9 @@ class PortTest(GenericNetworkMutationTest):
         )
 
     def test_crud(self):
-        id_str = self.create_mutation(
+        self.crud(
             create_mutation='create_port',
-            entityname='port'
-        )
-
-        id_str = self.edit_mutation(
-            id_str=id_str,
             update_mutation='update_port',
+            delete_mutation='delete_port',
             entityname='port'
-        )
-
-        success = self.delete_mutation(
-            id_str=id_str,
-            delete_mutation='delete_port'
         )
