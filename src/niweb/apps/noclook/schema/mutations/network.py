@@ -18,6 +18,7 @@ class NICustomersMutationFactory(NIMutationFactory):
         update_form    = EditCustomerForm
         request_path   = '/'
         graphql_type   = Customer
+        unique_node    = True
 
     class Meta:
         abstract = False
@@ -29,6 +30,7 @@ class NIEndUsersMutationFactory(NIMutationFactory):
         update_form    = EditEndUserForm
         request_path   = '/'
         graphql_type   = EndUser
+        unique_node    = True
 
     class Meta:
         abstract = False
@@ -40,6 +42,7 @@ class NIProvidersMutationFactory(NIMutationFactory):
         update_form    = EditProviderForm
         request_path   = '/'
         graphql_type   = Provider
+        unique_node    = True
 
     class Meta:
         abstract = False
@@ -51,6 +54,7 @@ class NISiteOwnersMutationFactory(NIMutationFactory):
         update_form    = EditSiteOwnerForm
         request_path   = '/'
         graphql_type   = SiteOwner
+        unique_node    = True
 
     class Meta:
         abstract = False

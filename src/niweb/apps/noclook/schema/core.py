@@ -2004,6 +2004,7 @@ class NIMutationFactory():
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
         relay_extra_ids = getattr(ni_metaclass, 'relay_extra_ids', None)
+        unique_node     = getattr(ni_metaclass, 'unique_node', False)
 
         manual_create   = getattr(ni_metaclass, 'manual_create', None)
         manual_update   = getattr(ni_metaclass, 'manual_update', None)
@@ -2029,6 +2030,9 @@ class NIMutationFactory():
 
         # create mutations
         mutation_name_cc = node_type.title().replace(' ', ''  )
+
+        if unique_node:
+            cls.create_mutation_class = CreateUniqueNIMutation
 
         class_name = 'Create{}'.format(mutation_name_cc)
         attr_dict = {
