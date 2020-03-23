@@ -361,9 +361,13 @@ COOKIE_DOMAIN = environ.get('COOKIE_DOMAIN')
 SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
 
-CORS_ALLOW_CREDENTIALS = False
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = [
-    environ.get('SRI_FRONTEND_URL', 'https://sri.sunet.se')
+    'https://{}'.format( environ.get('SRI_FRONTEND_URL', 'sri.sunet.se') )
+]
+CSRF_TRUSTED_ORIGINS = [
+    environ.get('SRI_FRONTEND_URL', 'sri.sunet.se'),
 ]
 ########## END SESSION_COOKIE_DOMAIN
 
