@@ -20,11 +20,12 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
                                 )
         self.assertEquals(result.data, expected, fmt_str)
 
-    def assert_failure(self, result):
-        assert result.errors, pformat(result.errors, indent=1)
+    def assert_failure(self, result, create_mutation):
+        assert result.data[create_mutation]['errors'],\
+            pformat(result.data[create_mutation]['errors'], indent=1)
 
     def create_mutation(self, create_mutation=None, entityname=None, data=None,
-                        correct=True):
+                        correct=True, generated_data=True):
         if not create_mutation or not entityname or not data:
             raise Exception('Missconfigured test {}'.format(type(self)))
 
@@ -33,7 +34,10 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
         values = {}
 
         for data_name, data_f in data.items():
-            data_f_val = data_f()
+            data_f_val = data_f
+
+            if generated_data:
+                data_f_val = data_f()
 
             inputs.append('{data_name}: "{data_f}",'.format(
                 data_name=data_name,
@@ -90,7 +94,7 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
 
             return id_str
         else:
-            self.assert_failure(result)
+            self.assert_failure(result, create_mutation)
 
     def edit_mutation(self, update_mutation=None, entityname=None, id_str=None, data=None):
         if not update_mutation or not entityname or not data:
@@ -145,10 +149,7 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
             }
         )])
 
-        assert result.data == expected, '{} \n != {}'.format(
-                                                pformat(result.data, indent=1),
-                                                pformat(expected, indent=1)
-                                            )
+        self.assert_correct(result, expected)
 
         # check node creation
         values.pop('id', None)
@@ -250,6 +251,50 @@ class GenericOrganizationTest(GenericNetworkMutationTest):
             entityname=entityname,
             id_str=id_str,
             data=data
+        )
+
+    def unique_mutation(self, create_mutation=None, entityname=None):
+        # this part should work
+        data_generator = FakeDataGenerator()
+        data = {
+            'name': data_generator.rand_person_or_company_name(),
+            'url': data_generator.fake.url(),
+            'description': data_generator.fake.paragraph(),
+        }
+
+        id = GenericNetworkMutationTest.create_mutation(
+            self,
+            create_mutation=create_mutation,
+            entityname=entityname,
+            data=data,
+            correct=True,
+            generated_data=False
+        )
+
+        # this part should fail
+        GenericNetworkMutationTest.create_mutation(
+            self,
+            create_mutation=create_mutation,
+            entityname=entityname,
+            data=data,
+            correct=False,
+            generated_data=False
+        )
+
+    def crud(self, create_mutation=None, update_mutation=None,
+                delete_mutation=None, entityname=None):
+        # test simple crud
+        super().crud(
+            create_mutation=create_mutation,
+            update_mutation=update_mutation,
+            delete_mutation=delete_mutation,
+            entityname=entityname
+        )
+
+        # test unique_mutation
+        self.unique_mutation(
+            create_mutation=create_mutation,
+            entityname=entityname
         )
 
 
