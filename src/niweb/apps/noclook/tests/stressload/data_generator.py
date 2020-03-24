@@ -144,10 +144,25 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
 
         return group_dict
 
+    def create_fake_procedure(self):
+        procedure_dict = {
+            'name': self.fake.sentence(),
+            'description': self.fake.paragraph(),
+        }
+
+        return procedure_dict
+
     def create_group(self):
         return self.create_entity(
             data_f=self.create_fake_group,
             type_name='Group',
+            metatype=META_TYPES[1], # Logical
+        )
+
+    def create_procedure(self):
+        return self.create_entity(
+            data_f=self.create_fake_procedure,
+            type_name='Procedure',
             metatype=META_TYPES[1], # Logical
         )
 

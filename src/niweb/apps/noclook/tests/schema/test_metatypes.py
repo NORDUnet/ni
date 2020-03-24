@@ -6,6 +6,7 @@ from apps.noclook.tests.stressload.data_generator import *
 from collections import OrderedDict
 from graphene import relay
 from niweb.schema import schema
+from pprint import pformat
 
 class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
     pass
@@ -67,6 +68,34 @@ class Neo4jGraphQLLogicalTest(Neo4jGraphQLMetatypeTest):
         has_relation = result.data[by_id_query][graphql_attr] != None
         self.assertTrue(has_relation)
 
+    def test_part_of(self):
+        community_generator = CommunityFakeDataGenerator()
+        network_generator = NetworkFakeDataGenerator()
+
+        test_types = (
+            # Group
+            dict(
+                logical_f=community_generator.create_group,
+                physical_f=network_generator.create_port,
+                type_name='Group',
+                by_id_query='getGroupById',
+                graphql_attr='part_of',
+                relation_name='Part_of'
+            ),
+            # Procedure
+            dict(
+                logical_f=community_generator.create_procedure,
+                physical_f=network_generator.create_port,
+                type_name='Procedure',
+                by_id_query='getProcedureById',
+                graphql_attr='part_of',
+                relation_name='Part_of'
+            ),
+        )
+
+        for type_kwargs in test_types:
+            self.part_of(**type_kwargs)
+
 
 class Neo4jGraphQLRelationTest(Neo4jGraphQLMetatypeTest):
     pass
@@ -78,18 +107,3 @@ class Neo4jGraphQLPhysicalTest(Neo4jGraphQLMetatypeTest):
 
 class Neo4jGraphQLLocationTest(Neo4jGraphQLMetatypeTest):
     pass
-
-
-class Neo4jGraphQLGroupTest(Neo4jGraphQLLogicalTest):
-    def test_part_of(self):
-        community_generator = CommunityFakeDataGenerator()
-        network_generator = NetworkFakeDataGenerator()
-
-        self.part_of(
-            logical_f=community_generator.create_group,
-            physical_f=network_generator.create_port,
-            type_name='Group',
-            by_id_query='getGroupById',
-            graphql_attr='part_of',
-            relation_name='Part_of'
-        )
