@@ -2,3 +2,4 @@
 __author__ = 'ffuentes'
 
 from .community import *
+from .network import *
