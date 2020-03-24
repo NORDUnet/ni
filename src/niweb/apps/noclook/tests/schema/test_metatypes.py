@@ -12,7 +12,60 @@ class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
 
 
 class Neo4jGraphQLLogicalTest(Neo4jGraphQLMetatypeTest):
-    pass
+    def part_of(self, logical_f=None, physical_f=None, type_name=None,
+                by_id_query=None, graphql_attr=None, relation_name=None):
+
+        relation_maker = LogicalDataRelationMaker()
+
+        logical_node = logical_f()
+        physical_node = physical_f()
+
+        # check that there's no relation
+        # on the backend
+        has_relation = relation_name in logical_node.get_node()._outgoing()
+        self.assertFalse(has_relation)
+
+        has_relation = relation_name in physical_node.get_node()._incoming()
+        self.assertFalse(has_relation)
+
+        # on the graphql api
+        id = relay.Node.to_global_id(type_name, str(logical_node.handle_id))
+
+        query = """
+        {{
+          {by_id_query}(id: "{id}"){{
+            id
+            name
+            part_of{{
+              id
+              name
+            }}
+          }}
+        }}
+        """.format(by_id_query=by_id_query, id=id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        has_relation = result.data[by_id_query][graphql_attr] != None
+        self.assertFalse(has_relation)
+
+        # add relation
+        relation_maker.add_part_of(logical_node, physical_node)
+
+        # check that the relation exists now
+        # on the backend
+        has_relation = relation_name in logical_node.get_node()._outgoing()
+        self.assertTrue(has_relation)
+
+        has_relation = relation_name in physical_node.get_node()._incoming()
+        self.assertTrue(has_relation)
+
+        # on the graphql api
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        has_relation = result.data[by_id_query][graphql_attr] != None
+        self.assertTrue(has_relation)
 
 
 class Neo4jGraphQLRelationTest(Neo4jGraphQLMetatypeTest):
@@ -31,55 +84,12 @@ class Neo4jGraphQLGroupTest(Neo4jGraphQLLogicalTest):
     def test_part_of(self):
         community_generator = CommunityFakeDataGenerator()
         network_generator = NetworkFakeDataGenerator()
-        relation_maker = LogicalDataRelationMaker()
 
-        group = community_generator.create_group()
-        physical_node = network_generator.create_port()
-
-        # check that there's no relation
-        # on the backend
-        has_relation = 'Part_of' in group.get_node()._outgoing()
-        self.assertFalse(has_relation)
-
-        has_relation = 'Part_of' in physical_node.get_node()._incoming()
-        self.assertFalse(has_relation)
-
-        # on the graphql api
-        group_id = relay.Node.to_global_id(
-            'Group', str(group.handle_id))
-
-        query = """
-        {{
-          getGroupById(id: "{group_id}"){{
-            id
-            name
-            part_of{{
-              id
-              name
-            }}
-          }}
-        }}
-        """.format(group_id=group_id)
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-
-        has_relation = result.data['getGroupById']['part_of'] != None
-        self.assertFalse(has_relation)
-
-        # add relation
-        relation_maker.add_part_of(group, physical_node)
-
-        # check that the relation exists now
-        # on the backend
-        has_relation = 'Part_of' in group.get_node()._outgoing()
-        self.assertTrue(has_relation)
-
-        has_relation = 'Part_of' in physical_node.get_node()._incoming()
-        self.assertTrue(has_relation)
-
-        # on the graphql api
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, pformat(result.errors, indent=1)
-
-        has_relation = result.data['getGroupById']['part_of'] != None
-        self.assertTrue(has_relation)
+        self.part_of(
+            logical_f=community_generator.create_group,
+            physical_f=network_generator.create_port,
+            type_name='Group',
+            by_id_query='getGroupById',
+            graphql_attr='part_of',
+            relation_name='Part_of'
+        )
