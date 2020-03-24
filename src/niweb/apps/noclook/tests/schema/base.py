@@ -7,12 +7,20 @@ from django.db import connection
 
 from apps.noclook.models import NodeHandle, Group, GroupContextAuthzAction
 from apps.noclook.tests.neo4j_base import NeoTestCase
+from pprint import pformat
 
 class TestContext():
     def __init__(self, user, *ignore):
         self.user = user
 
 class Neo4jGraphQLGenericTest(NeoTestCase):
+    def assert_correct(self, result, expected):
+        fmt_str = '{} \n != {}'.format(
+                                    pformat(result.data, indent=1),
+                                    pformat(expected, indent=1)
+                                )
+        self.assertEquals(result.data, expected, fmt_str)
+
     def setUp(self):
         super(Neo4jGraphQLGenericTest, self).setUp()
         self.context = TestContext(self.user)

@@ -13,13 +13,6 @@ from . import Neo4jGraphQLNetworkTest
 import random
 
 class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
-    def assert_correct(self, result, expected):
-        fmt_str = '{} \n != {}'.format(
-                                    pformat(result.data, indent=1),
-                                    pformat(expected, indent=1)
-                                )
-        self.assertEquals(result.data, expected, fmt_str)
-
     def assert_failure(self, result, create_mutation):
         assert result.data[create_mutation]['errors'],\
             pformat(result.data[create_mutation]['errors'], indent=1)
