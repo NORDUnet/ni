@@ -536,8 +536,6 @@ class NIObjectType(DjangoObjectType):
                             ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=int_id)
                         except ValueError:
                             ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
-                    else:
-                        raise GraphQLAuthException()
                 else:
                     raise GraphQLError('A handle_id must be provided')
 
@@ -572,8 +570,6 @@ class NIObjectType(DjangoObjectType):
 
                     # the node list is trimmed to the nodes that the user can read
                     qs = sriutils.trim_readable_queryset(qs, info.context.user)
-                else:
-                    raise GraphQLAuthException()
             else:
                 raise GraphQLAuthException()
 
@@ -603,8 +599,6 @@ class NIObjectType(DjangoObjectType):
 
                     # the node list is trimmed to the nodes that the user can read
                     qs = sriutils.trim_readable_queryset(qs, info.context.user)
-                else:
-                    raise GraphQLAuthException()
             else:
                 raise GraphQLAuthException()
 
@@ -774,8 +768,6 @@ class NIObjectType(DjangoObjectType):
                     ret = []
 
                 return ret
-            else:
-                raise GraphQLAuthException()
 
         return generic_list_resolver
 
