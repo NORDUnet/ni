@@ -747,6 +747,8 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         org_addr_pcode3 = "41001"
         org_addr_parea3 = "Sevilla"
 
+        parent_org_id = relay.Node.to_global_id('Organization', str(self.organization2.handle_id))
+
         nondefault_role = Role.objects.all().first()
         nondefault_roleid = relay.Node.to_global_id("Role", nondefault_role.handle_id)
 
@@ -760,6 +762,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
               affiliation_site_owner: false
               affiliation_partner: true
               organization_id: "{org_id}"
+              relationship_parent_of: "{parent_org_id}"
               website: "{org_web}"
               organization_number: "{org_num}"
             }}
@@ -981,8 +984,8 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
           }}
         }}
         '''.format(org_id=organization_id, org_name=org_name,
-                    org_type=org_type, org_web=org_web,
-                    org_num=org_num, c3_first_name=c3_first_name,
+                    org_type=org_type, parent_org_id=parent_org_id,
+                    org_web=org_web, org_num=org_num, c3_first_name=c3_first_name,
                     c3_last_name=c3_last_name, contact_type=contact_type,
                     c3_email=c3_email, email_type=email_type, c3_phone=c3_phone,
                     phone_type=phone_type, nondefault_roleid=nondefault_roleid,

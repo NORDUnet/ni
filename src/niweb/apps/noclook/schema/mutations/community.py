@@ -16,6 +16,7 @@ from django_comments.models import Comment
 from graphene import Field
 from graphene_django.forms.mutation import DjangoModelFormMutation, BaseDjangoFormMutation
 from django.core.exceptions import ObjectDoesNotExist
+from binascii import Error as BinasciiError
 
 logger = logging.getLogger(__name__)
 
@@ -212,10 +213,21 @@ class CreateOrganization(CreateNIMutation):
 
             for field, roledict in DEFAULT_ROLES.items():
                 if field in post_data:
-                    contact_id = post_data.get(field)
-                    contact_id = relay.Node.from_global_id(contact_id)[1]
+                    handle_id = post_data.get(field)
+                    handle_id = relay.Node.from_global_id(handle_id)[1]
                     post_data.pop(field)
-                    post_data.update({field: contact_id})
+                    post_data.update({field: handle_id})
+
+            relay_extra_ids = ('relationship_parent_of', 'relationship_uses_a')
+            for field in relay_extra_ids:
+                handle_id = post_data.get(field)
+                if handle_id:
+                    try:
+                        handle_id = relay.Node.from_global_id(handle_id)[1]
+                        post_data.pop(field)
+                        post_data.update({field: handle_id})
+                    except BinasciiError:
+                        pass # the id is already in handle_id format
 
             form = form_class(post_data)
             form.strict_validation = True
@@ -326,10 +338,18 @@ class UpdateOrganization(UpdateNIMutation):
             # replace relay ids for handle_id in contacts if present
             for field, roledict in DEFAULT_ROLES.items():
                 if field in post_data:
-                    contact_id = post_data.get(field)
-                    contact_id = relay.Node.from_global_id(contact_id)[1]
+                    handle_id = post_data.get(field)
+                    handle_id = relay.Node.from_global_id(handle_id)[1]
                     post_data.pop(field)
-                    post_data.update({field: contact_id})
+                    post_data.update({field: handle_id})
+
+            relay_extra_ids = ('relationship_parent_of', 'relationship_uses_a')
+            for field in relay_extra_ids:
+                handle_id = post_data.get(field)
+                if handle_id:
+                    handle_id = relay.Node.from_global_id(handle_id)[1]
+                    post_data.pop(field)
+                    post_data.update({field: handle_id})
 
             form = form_class(post_data)
             form.strict_validation = True
@@ -364,10 +384,10 @@ class UpdateOrganization(UpdateNIMutation):
 
                 # Set child organizations
                 if form.cleaned_data['relationship_parent_of']:
-                    organization_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent_of'])
+                    organization_nh = NodeHandle.objects.get(handle_id=form.cleaned_data['relationship_parent_of'])
                     helpers.set_parent_of(request.user, organization, organization_nh.handle_id)
                 if form.cleaned_data['relationship_uses_a']:
-                    procedure_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_uses_a'])
+                    procedure_nh = NodeHandle.objects.get(handle_id=form.cleaned_data['relationship_uses_a'])
                     helpers.set_uses_a(request.user, organization, procedure_nh.handle_id)
 
                 return has_error, { graphql_type.__name__.lower(): nh }
