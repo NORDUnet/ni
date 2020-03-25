@@ -1172,7 +1172,7 @@ class ValidationTest(Neo4jGraphQLTest):
         organization2_id = relay.Node.to_global_id('Organization',
                                             str(self.organization2.handle_id))
         contact_1 = relay.Node.to_global_id('Contact',
-                                            str(self.organization2.handle_id))
+                                            str(self.contact1.handle_id))
 
         query = '''
         mutation{{
