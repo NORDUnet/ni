@@ -165,9 +165,9 @@ def relationship_field(name, select=False, validators=[]):
     }
     label = labels.get(name, name.title())
     if select:
-        return forms.ChoiceField(required=False, label=label, widget=forms.widgets.Select, validators=[])
+        return forms.ChoiceField(required=False, label=label, widget=forms.widgets.Select, validators=validators)
     else:
-        return forms.IntegerField(required=False, label=label, widget=forms.widgets.HiddenInput, validators=[])
+        return forms.IntegerField(required=False, label=label, widget=forms.widgets.HiddenInput, validators=validators)
 
 
 class ReserveIdForm(forms.Form):
@@ -905,7 +905,7 @@ class EditOrganizationForm(NewOrganizationForm):
         self.fields['it_security_contact'].choices = contact_choices
         self.fields['it_manager_contact'].choices = contact_choices
 
-    relationship_parent_of = relationship_field('organization', True, [validate_contact])
+    relationship_parent_of = relationship_field('organization', True, [validate_organization])
     relationship_uses_a = relationship_field('procedure', True, [validate_procedure])
 
     abuse_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Abuse", validators=[validate_contact])
@@ -932,6 +932,8 @@ class EditOrganizationForm(NewOrganizationForm):
 
                     if not self.strict_validation and field in self._errors:
                         del self._errors[field]
+
+        return cleaned_data
 
     def clean_organization_id(self):
         organization_id = self.cleaned_data['organization_id']
