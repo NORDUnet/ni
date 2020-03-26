@@ -36,6 +36,10 @@ DEBUG = True
 
 ########## END DEBUG CONFIGURATION
 
+########## SESSION_COOKIE_DOMAIN
+SESSION_COOKIE_HTTPONLY = False
+########## END SESSION_COOKIE_DOMAIN
+
 ########## EMAIL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -77,3 +81,8 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 GOOGLE_MAPS_API_KEY = environ.get('GOOGLE_MAPS_API_KEY', 'no-apikey')
 CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+
+########## GRAPHQL CONFIGURATION
+USE_GRAPHIQL = True
+########## END GRAPHQL CONFIGURATION

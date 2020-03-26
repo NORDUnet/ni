@@ -1,5 +1,6 @@
 from datetime import datetime
 from django import forms
+from django.utils.translation import gettext_lazy as _
 from django.forms.utils import ErrorDict, ErrorList, ValidationError
 from django.forms.widgets import HiddenInput, Textarea
 from django.db import IntegrityError
@@ -10,6 +11,8 @@ from apps.noclook.models import NodeType, NodeHandle, RoleGroup, Role,\
                                 UniqueIdGenerator, ServiceType,\
                                 NordunetUniqueId, Dropdown, DEFAULT_ROLES,\
                                 DEFAULT_ROLE_KEY, DEFAULT_ROLEGROUP_NAME
+
+from .validators import *
 from .. import unique_ids
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
@@ -22,6 +25,14 @@ import ipaddress
 def country_codes():
     codes = Dropdown.get('countries').as_values()
     return zip(codes, codes)
+
+
+def email_choices():
+    return Dropdown.get('email_type').as_choices()
+
+
+def phone_choices():
+    return Dropdown.get('phone_type').as_choices()
 
 
 def countries():
@@ -149,14 +160,14 @@ def description_field(name):
                            help_text=u'Short description of the {}.'.format(name))
 
 
-def relationship_field(name, select=False):
+def relationship_field(name, select=False, validators=[]):
     labels = {
     }
     label = labels.get(name, name.title())
     if select:
-        return forms.ChoiceField(required=False, label=label, widget=forms.widgets.Select)
+        return forms.ChoiceField(required=False, label=label, widget=forms.widgets.Select, validators=validators)
     else:
-        return forms.IntegerField(required=False, label=label, widget=forms.widgets.HiddenInput)
+        return forms.IntegerField(required=False, label=label, widget=forms.widgets.HiddenInput, validators=validators)
 
 
 class ReserveIdForm(forms.Form):
@@ -825,18 +836,38 @@ class CsvForm(forms.Form):
 
 
 class NewOrganizationForm(forms.Form):
-    account_id = forms.CharField(required=False)
+    organization_number = forms.CharField(required=False)
     name = forms.CharField()
     description = description_field('organization')
-    phone = forms.CharField(required=False)
     website = forms.CharField(required=False)
-    customer_id = forms.CharField(required=False)
+    organization_id = forms.CharField(required=False)
     type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
     incident_management_info = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Additional info for incident Mgmt")
+    affiliation_customer = forms.BooleanField(required=False)
+    affiliation_end_customer = forms.BooleanField(required=False)
+    affiliation_provider = forms.BooleanField(required=False)
+    affiliation_partner = forms.BooleanField(required=False)
+    affiliation_host_user = forms.BooleanField(required=False)
+    affiliation_site_owner = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(NewOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['type'].choices = Dropdown.get('organization_types').as_choices()
+
+
+    def clean_organization_id(self):
+        organization_id = self.cleaned_data['organization_id']
+
+        # if it's not empty
+        if organization_id:
+            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id)
+            if exists:
+                raise ValidationError(
+                    _('The Organization ID %(organization_id)s already exist on the system'),
+                    params={'organization_id': organization_id},
+                )
+
+        return organization_id
 
 
 class EditOrganizationForm(NewOrganizationForm):
@@ -845,46 +876,46 @@ class EditOrganizationForm(NewOrganizationForm):
         initial = {} if 'initial' not in kwargs else kwargs['initial']
 
         if 'handle_id' in args[0]:
-            organization_id = args[0]['handle_id']
+            handle_id = args[0]['handle_id']
+            self.cached_handle_id = handle_id
 
             for field, roledict in DEFAULT_ROLES.items():
                 role = Role.objects.get(slug=field)
-                possible_contact = helpers.get_contact_for_orgrole(organization_id, role)
+                possible_contact = helpers.get_contact_for_orgrole(handle_id, role)
 
                 if possible_contact:
                     args[0][field] = possible_contact.handle_id
+
+        self.strict_validation = False
 
         super(EditOrganizationForm, self).__init__(*args, **kwargs)
         self.fields['relationship_parent_of'].choices = get_node_type_tuples('Organization')
         self.fields['relationship_uses_a'].choices = get_node_type_tuples('Procedure')
 
         # contact choices
-        if 'handle_id' in args[0]:
-            organization_id = args[0]['handle_id']
-            contact_choices = get_contacts_for_organization(organization_id)
-            contact_type = NodeType.objects.get(slug='contact')
-            contact_choices = [('', '')] + list(NodeHandle.objects.filter(node_type=contact_type).values_list('handle_id', 'node_name'))
+        contact_type = NodeType.objects.get(slug='contact')
+        contact_choices = [('', '')] + list(NodeHandle.objects.filter(node_type=contact_type).values_list('handle_id', 'node_name'))
 
-            self.fields['abuse_contact'].choices = contact_choices
-            self.fields['primary_contact'].choices = contact_choices
-            self.fields['secondary_contact'].choices = contact_choices
-            self.fields['it_technical_contact'].choices = contact_choices
-            self.fields['it_security_contact'].choices = contact_choices
-            self.fields['it_manager_contact'].choices = contact_choices
+        self.fields['abuse_contact'].choices = contact_choices
+        self.fields['primary_contact'].choices = contact_choices
+        self.fields['secondary_contact'].choices = contact_choices
+        self.fields['it_technical_contact'].choices = contact_choices
+        self.fields['it_security_contact'].choices = contact_choices
+        self.fields['it_manager_contact'].choices = contact_choices
 
-    relationship_parent_of = relationship_field('organization', True)
-    relationship_uses_a = relationship_field('procedure', True)
+    relationship_parent_of = relationship_field('organization', True, [validate_organization])
+    relationship_uses_a = relationship_field('procedure', True, [validate_procedure])
 
-    abuse_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Abuse")
-    primary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Primary contact at incidents") # Primary contact at incidents
-    secondary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Secondary contact at incidents") # Secondary contact at incidents
-    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Technical") # NOC Technical
-    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Security") # NOC Security
-    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Manager") # NOC Manager
+    abuse_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Abuse", validators=[validate_contact])
+    primary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Primary contact at incidents", validators=[validate_contact]) # Primary contact at incidents
+    secondary_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Secondary contact at incidents", validators=[validate_contact]) # Secondary contact at incidents
+    it_technical_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Technical", validators=[validate_contact]) # NOC Technical
+    it_security_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Security", validators=[validate_contact]) # NOC Security
+    it_manager_contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="NOC Manager", validators=[validate_contact]) # NOC Manager
 
     def clean(self):
         """
-        Sets name from first and second name
+        Sets the default roles
         """
         cleaned_data = super(EditOrganizationForm, self).clean()
         for field, roledict in DEFAULT_ROLES.items():
@@ -897,8 +928,25 @@ class EditOrganizationForm(NewOrganizationForm):
                     except ValueError:
                         cleaned_data[field] = value
 
-                    if field in self._errors:
+                    if not self.strict_validation and field in self._errors:
                         del self._errors[field]
+
+        return cleaned_data
+
+    def clean_organization_id(self):
+        organization_id = self.cleaned_data['organization_id']
+        handle_id = getattr(self, 'cached_handle_id', None)
+
+        # if it's not empty
+        if organization_id and self.strict_validation:
+            exists = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id)
+            if exists:
+                raise ValidationError(
+                    _('The Organization ID %(organization_id)s already exist on the system'),
+                    params={'organization_id': organization_id},
+                )
+
+        return organization_id
 
 
 class NewContactForm(forms.Form):
@@ -909,15 +957,12 @@ class NewContactForm(forms.Form):
     first_name = forms.CharField()
     last_name = forms.CharField()
     contact_type = forms.ChoiceField(widget=forms.widgets.Select)
-    mobile = forms.CharField(required=False)
-    phone = forms.CharField(required=False)
-    email = forms.CharField(required=False)
-    other_email = forms.CharField(required=False)
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     title = forms.CharField(required=False)
-    PGP_fingerprint = forms.CharField(required=False)
+    pgp_fingerprint = forms.CharField(required=False, label='PGP fingerprint')
+    notes = forms.CharField(widget=forms.widgets.Textarea, required=False, label="Notes")
 
-    def clean(self, is_create=True):
+    def clean(self):
         """
         Sets name from first and second name
         """
@@ -945,15 +990,15 @@ class EditContactForm(NewContactForm):
         self.fields['relationship_member_of'].choices = get_node_type_tuples('Group')
         self.fields['role'].choices = [('', '')] + list(Role.objects.all().values_list('handle_id', 'name'))
 
-    relationship_works_for = relationship_field('organization', True)
-    relationship_member_of = relationship_field('group', True)
+    relationship_works_for = relationship_field('organization', True, [validate_organization])
+    relationship_member_of = relationship_field('group', True, [validate_group])
     role = forms.ChoiceField(required=False, widget=forms.widgets.Select)
 
     def clean(self):
         """
         Check empty role, set to employee
         """
-        cleaned_data = super(EditContactForm, self).clean(False)
+        cleaned_data = super(EditContactForm, self).clean()
         role_id = cleaned_data.get("role")
 
         if not role_id:
@@ -968,6 +1013,26 @@ class EditContactForm(NewContactForm):
         if 'role' in self.data:
             self.data = self.data.copy()
             del self.data['role']
+
+
+class MailPhoneContactForm(EditContactForm):
+    # this form adds extra data for the underlying nodes/relations
+    # extra email form data
+    email_id = forms.CharField(widget=forms.widgets.HiddenInput, required=False)
+    email = forms.EmailField(required=False)
+    email_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+
+    phone_id = forms.CharField(widget=forms.widgets.HiddenInput, required=False)
+    phone = forms.CharField(required=False)
+    phone_type = forms.ChoiceField(widget=forms.widgets.Select, required=False)
+
+    role_id = forms.CharField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(MailPhoneContactForm, self).__init__(*args, **kwargs)
+        self.fields['email_type'].choices = email_choices()
+        self.fields['phone_type'].choices = phone_choices()
+
 
 class NewProcedureForm(forms.Form):
     name = forms.CharField()
@@ -988,7 +1053,7 @@ class EditGroupForm(NewGroupForm):
         super(EditGroupForm, self).__init__(*args, **kwargs)
         self.fields['relationship_member_of'].choices = get_node_type_tuples('Contact')
 
-    relationship_member_of = relationship_field('contact', True)
+    relationship_member_of = relationship_field('contact', True, [validate_contact])
 
     def clean(self):
         if 'relationship_member_of' in self.data:
@@ -1000,6 +1065,7 @@ class NewRoleForm(forms.ModelForm):
     class Meta:
         model = Role
         fields = ['name', 'description']
+
 
 class EditRoleForm(forms.ModelForm):
     def save(self, commit=True):
@@ -1016,3 +1082,38 @@ class EditRoleForm(forms.ModelForm):
     class Meta:
         model = Role
         fields = ['name', 'description']
+
+
+class PhoneForm(forms.Form):
+    contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Contact", validators=[validate_contact])
+    name = forms.CharField()
+    type = forms.ChoiceField(widget=forms.widgets.Select)
+
+    def __init__(self, *args, **kwargs):
+        super(PhoneForm, self).__init__(*args, **kwargs)
+        self.fields['contact'].choices = get_node_type_tuples('Contact')
+        self.fields['type'].choices = phone_choices()
+
+
+class EmailForm(forms.Form):
+    contact = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Contact", validators=[validate_contact])
+    name = forms.CharField()
+    type = forms.ChoiceField(widget=forms.widgets.Select)
+
+    def __init__(self, *args, **kwargs):
+        super(EmailForm, self).__init__(*args, **kwargs)
+        self.fields['contact'].choices = get_node_type_tuples('Contact')
+        self.fields['type'].choices = email_choices()
+
+
+class AddressForm(forms.Form):
+    organization = forms.ChoiceField(widget=forms.widgets.Select, required=False, label="Organizations", validators=[validate_organization])
+    name = forms.CharField()
+    phone = forms.CharField(required=False)
+    street = forms.CharField(required=False)
+    postal_code = forms.CharField(required=False)
+    postal_area = forms.CharField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(AddressForm, self).__init__(*args, **kwargs)
+        self.fields['organization'].choices = get_node_type_tuples('Organization')

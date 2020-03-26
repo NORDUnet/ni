@@ -4,9 +4,11 @@ __author__ = 'lundberg'
 # -*- coding: utf-8 -*-
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
+from django.middleware.csrf import get_token
+from graphql_jwt.settings import jwt_settings
 from re import escape as re_escape
 import json
 
@@ -14,6 +16,10 @@ from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph
 from apps.noclook import helpers
 import norduniclient as nc
+
+
+def csrf(request):
+    return JsonResponse({'csrfToken': get_token(request)})
 
 
 def index(request):
@@ -25,8 +31,13 @@ def logout_page(request):
     """
     Log users out and redirects them to the index.
     """
+    response = render(request, 'noclook/logout.html', {'cookie_domain': settings.COOKIE_DOMAIN })
+    response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
+    request.session.flush()
+
     logout(request)
-    return redirect('/')
+
+    return response
 
 
 # Visualization views

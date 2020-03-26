@@ -970,7 +970,8 @@ def set_of_member(user, node, contact_id):
     return relationship, created
 
 
-def link_contact_role_for_organization(user, node, contact_handle_id, role):
+def link_contact_role_for_organization(user, node, contact_handle_id, role, \
+                                        relationship_id=None):
     """
     :param user: Django user
     :param node: norduniclient organization model
@@ -978,19 +979,32 @@ def link_contact_role_for_organization(user, node, contact_handle_id, role):
     :param role: the selected role
     :return: contact
     """
+    relationship = None
 
-    relationship = nc.models.RoleRelationship.link_contact_organization(
-        contact_handle_id,
-        node.handle_id,
-        role.name
-    )
+    if not relationship_id:
+        relationship = nc.models.RoleRelationship.link_contact_organization(
+            contact_handle_id,
+            node.handle_id,
+            role.name
+        )
+    else:
+        relationship = nc.models.RoleRelationship.update_contact_organization(
+            contact_handle_id,
+            node.handle_id,
+            role.name,
+            relationship_id
+        )
 
     if not relationship:
-        relationship = RoleRelationship()
-        relationship.load_from_nodes(contact_id, organization_id)
+        relationship = nc.models.RoleRelationship(nc.graphdb.manager)
+        relationship.load_from_nodes(contact_handle_id, node.handle_id)
 
     node = node.reload()
-    created = node.incoming.get('Works_for')[0].get('created')
+    created = False
+    works_for = node.incoming.get('Works_for')
+    if works_for:
+        created = works_for[0].get('created')
+
     if created:
         activitylog.create_relationship(user, relationship)
 
@@ -1044,3 +1058,63 @@ def get_contact_for_orgrole(organization_id, role):
         contact = NodeHandle.objects.get(handle_id=contact_handle_id)
 
         return contact
+
+
+def add_phone_contact(user, phone, contact_id):
+    """
+    :param user: Django user
+    :param phone: norduniclient model (phone)
+    :param contact_id: contact id to associate to the phone instance
+    :return: norduniclient model, boolean
+    """
+    contact = NodeHandle.objects.get(handle_id=contact_id)
+    result = contact.get_node().add_phone(phone.handle_id)
+
+    relationship_id = result.get('Has_phone')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_phone')[0].get('created')
+
+    if created:
+        activitylog.create_relationship(user, relationship)
+
+    return relationship, created
+
+
+
+def add_email_contact(user, email, contact_id):
+    """
+    :param user: Django user
+    :param email: norduniclient model (email)
+    :param contact_id: contact id to associate to the email instance
+    :return: norduniclient model, boolean
+    """
+    contact = NodeHandle.objects.get(handle_id=contact_id)
+    result = contact.get_node().add_email(email.handle_id)
+
+    relationship_id = result.get('Has_email')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_email')[0].get('created')
+
+    if created:
+        activitylog.create_relationship(user, relationship)
+
+    return relationship, created
+
+def add_address_organization(user, address, organization_id):
+    """
+    :param user: Django user
+    :param address: norduniclient model (address)
+    :param organization_id: organization id to associate to the address instance
+    :return: norduniclient model, boolean
+    """
+    organization = NodeHandle.objects.get(handle_id=organization_id)
+    result = organization.get_node().add_address(address.handle_id)
+
+    relationship_id = result.get('Has_address')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_address')[0].get('created')
+
+    if created:
+        activitylog.create_relationship(user, relationship)
+
+    return relationship, created
