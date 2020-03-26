@@ -7,15 +7,11 @@ import apps.noclook.vakt.utils as sriutils
 
 def forwards_func(apps, schema_editor):
     # get models
-    User = apps.get_model('auth', 'User')
     Group = apps.get_model('auth', 'Group')
     Context = apps.get_model('noclook', 'Context')
     AuthzAction = apps.get_model('noclook', 'AuthzAction')
     GroupContextAuthzAction = apps.get_model('noclook', 'GroupContextAuthzAction')
     NodeHandleContext = apps.get_model('noclook', 'NodeHandleContext')
-
-    # get staff users only
-    users = User.objects.filter(is_staff=True)
 
     contexts = Context.objects.all()
 
@@ -31,21 +27,15 @@ def forwards_func(apps, schema_editor):
         groupl, created = Group.objects.get_or_create(name=gl_name)
         groupa, created = Group.objects.get_or_create(name=ga_name)
 
-        for user in users:
-            groupr.user_set.add(user)
-            groupw.user_set.add(user)
-            groupl.user_set.add(user)
-            groupa.user_set.add(user)
+        aa_read  = sriutils.get_read_authaction(AuthzAction)
+        aa_write = sriutils.get_write_authaction(AuthzAction)
+        aa_list = sriutils.get_list_authaction(AuthzAction)
+        aa_admin = sriutils.get_admin_authaction(AuthzAction)
 
-            aa_read  = sriutils.get_read_authaction(AuthzAction)
-            aa_write = sriutils.get_write_authaction(AuthzAction)
-            aa_list = sriutils.get_list_authaction(AuthzAction)
-            aa_admin = sriutils.get_admin_authaction(AuthzAction)
-
-            GroupContextAuthzAction.objects.get_or_create( group = groupr, authzprofile = aa_read, context = context )
-            GroupContextAuthzAction.objects.get_or_create( group = groupw, authzprofile = aa_write, context = context )
-            GroupContextAuthzAction.objects.get_or_create( group = groupl, authzprofile = aa_list, context = context )
-            GroupContextAuthzAction.objects.get_or_create( group = groupa, authzprofile = aa_admin, context = context )
+        GroupContextAuthzAction.objects.get_or_create( group = groupr, authzprofile = aa_read, context = context )
+        GroupContextAuthzAction.objects.get_or_create( group = groupw, authzprofile = aa_write, context = context )
+        GroupContextAuthzAction.objects.get_or_create( group = groupl, authzprofile = aa_list, context = context )
+        GroupContextAuthzAction.objects.get_or_create( group = groupa, authzprofile = aa_admin, context = context )
 
 
 def backwards_func(apps, schema_editor):
