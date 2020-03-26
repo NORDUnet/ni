@@ -1,0 +1,74 @@
+{% load static %}
+{% load noclook_tags %}
+<script language="javascript" type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
+<script type="text/javascript">
+$(document).ready(
+    function(){
+
+        //Typeahed.js
+          var ports = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            remote: {
+                url: '/search/typeahead/ports?query=%Q',
+                wildcard: '%Q'
+            }
+          });
+          ports.initialize();
+
+        $("[data-typeahead]").typeahead({
+            minLength: 3,
+            highlight: true
+          },{
+          name: 'ports',
+          displayKey: 'name',
+          source: ports.ttAdapter(),
+          limit: 10
+        }).on('click', function (e){
+          e.preventDefault()
+        }).on('typeahead:open', function() {
+            $(this).closest('.accordion-body').css('overflow','visible');
+        }).on('typeahead:close', function() {
+            $(this).closest('.accordion-body').css('overflow','hidden');
+        });
+
+        $("#typeahead_relationship_end_a").on('typeahead:selected', function(event, data){
+          $("#id_relationship_end_a").val(data.handle_id);
+          $("#parent_relationship_end_a").val(data.parent_id);
+        });
+
+       $("[data-add-port]").on("click", function(e) {
+          e.preventDefault()
+          var target = $(this).data("target");
+          var parent_id = $("#"+target).val()
+          if (parent_id) {
+            window.open("/new/port/parent/" + parent_id + "/");
+          }
+          ports.clearRemoteCache();
+        });
+    });
+</script>
+
+
+<div class="row">
+  <div class="span4">
+      {{ form.relationship_end_a }}
+      <input type="text" data-typeahead id="typeahead_relationship_end_a" placeholder="Site sw et1" />
+      <input type="hidden" id="parent_relationship_end_a" />
+  </div>
+</div>
+
+{% if connections %}
+  {% load noclook_tags %}
+  <h4>Remove Connection</h4>
+  {% for item in connections %}
+      <div class="row">
+          <div class="span5">
+              Connected to <a href="{% noclook_node_to_url item.end.handle_id %}">{{ item.end.name }}</a> <a href="{% noclook_node_to_url item.port.handle_id %}">{{ item.port.name }}</a>
+          </div>
+          <div class="span1">
+              <a href="relationship/{{ item.rel_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+          </div>
+      </div>
+  {% endfor %}
+{% endif %}

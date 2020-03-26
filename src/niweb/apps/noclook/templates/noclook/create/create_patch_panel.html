@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+{% load static %}
+
+{% block js %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% static 'js/jquery/jquery.jCombo.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/jquery/typeahead.bundle.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+    <h1>Create new Patch Panel</h1>
+    <form action="" method="post" class="form-horizontal">{% csrf_token %}
+      <div class="well">
+            {{ form.name | as_crispy_field }}
+            {{ form.description | as_crispy_field }}
+            {{ form.operational_state | as_crispy_field }}
+
+            {% include "noclook/create/includes/location_group.html" %}
+
+      </div>
+      <div class="accordion" id="create-accordion">
+          {% accordion 'Ports' 'ports' '#create-accordion' %}
+            {{ ports_form | crispy }}
+          {% endaccordion %}
+      </div>
+      <input type="submit" value="Save" class="btn btn-primary" />
+      <a href="/new/" class="btn">Cancel</a>
+    </form>
+{% endblock %}
+

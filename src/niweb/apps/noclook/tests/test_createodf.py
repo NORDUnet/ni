@@ -18,7 +18,7 @@ class CreateODFCase(NeoTestCase):
         nh, node = self.get_node(self.data['name'])
         odf_data = node.data
 
-        self.assertRedirects(resp, self.get_full_url(nh))
+        self.assertRedirects(resp, self.get_absolute_url(nh))
         self.assertEqual(u'test odf', odf_data['name'])
         self.assertEqual(u'48', odf_data['max_number_of_ports'])
         ports = self.get_ports(node)

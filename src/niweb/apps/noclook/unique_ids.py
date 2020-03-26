@@ -45,7 +45,7 @@ def is_free_unique_id(unique_id_collection, unique_id):
     return False
 
 
-def get_collection_unique_id(unique_id_generator, unique_id_collection):
+def get_collection_unique_id(unique_id_generator, unique_id_collection=NordunetUniqueId):
     """
     Return the next available unique id by counting up the id generator until an available id is found
     in the unique id collection.

@@ -3,7 +3,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
-from apps.noclook.models import NodeType, Role
+from apps.noclook.models import NodeType, NodeHandle, Role
 from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
@@ -102,27 +102,40 @@ def list_by_type(request, slug):
                   {'table': table, 'name': '{}s'.format(node_type), 'urls': urls})
 
 
+def _cable_end(end):
+    equpment = end.get('equipment') or ''
+    port_name = end.get('port') or ''
+    return {
+        'name': '{} - {}'.format(equpment, port_name),
+        'handle_id': end.get('handle_id')
+    }
+
+
 def _cable_table(wrapped_cable):
     cable = wrapped_cable.get('cable')
-    row = TableRow(cable, cable.get('cable_type'), wrapped_cable.get('end'))
+    equipment = [e.get('equipment') for e in wrapped_cable.get('end') if e.get('equipment').get('handle_id')]
+    ports = [e.get('port') for e in wrapped_cable.get('end') if e.get('port').get('handle_id')]
+    row = TableRow(cable, cable.get('cable_type'), equipment, ports)
     _set_expired(row, cable)
     return row
 
 
 @login_required
 def list_cables(request):
+    # MK: not 100% sure this gives the correct end+port pairs
+    # Due to the <-[:Has*1..10]
     q = """
         MATCH (cable:Cable)
         OPTIONAL MATCH (cable)-[r:Connected_to]->(port:Port)
         OPTIONAL MATCH (port)<-[:Has*1..10]-(end)
         WHERE NOT((end)<-[:Has]-())
-        RETURN cable, collect(end) as end order by cable.name
+        RETURN cable, collect({equipment: {name: end.name, handle_id: end.handle_id}, port: {name: port.name, handle_id: port.handle_id}}) as end order by cable.name
         """
     cable_list = nc.query_to_list(nc.graphdb.manager, q)
     cable_list = _filter_expired(cable_list, request, select=lambda n: n.get('cable'))
     urls = get_node_urls(cable_list)
 
-    table = Table('Name', 'Cable type', 'End equipment')
+    table = Table('Name', 'Cable type', 'End equipment', 'Port')
     table.rows = [_cable_table(item) for item in cable_list]
     _set_filters_expired(table, request)
 
@@ -264,19 +277,10 @@ def list_firewalls(request):
 
 
 def _odf_table(item):
-    location = item.get('location')
-    location_view = None
     odf = item.get('odf')
-    site = item.get('site')
-    # manipulate location name to include site name
-    location_names = []
-    if site and site.get('name'):
-        location_names.append(site.get('name'))
-    if location:
-        if location.get('name'):
-            location_names.append(location.get('name'))
-        location_view = {'name': ' '.join(location_names), 'handle_id': location.get('handle_id')}
-    row = TableRow(location_view, odf)
+    location_path = item.get('location_path')
+
+    row = TableRow(odf, location_path)
     _set_operational_state(row, odf)
     return row
 
@@ -285,22 +289,95 @@ def _odf_table(item):
 def list_odfs(request):
     q = """
         MATCH (odf:ODF)
-        OPTIONAL MATCH (odf)-[:Located_in]->(location)
-        OPTIONAL MATCH (location)<-[:Has]-(site)
-        RETURN odf, location, site
-        ORDER BY site.name, location.name, odf.name
+        OPTIONAL MATCH (odf)-[:Located_in]->(r)
+        OPTIONAL MATCH p=()-[:Has*0..20]->(r)
+        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, odf
+        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, odf AS odf
+        UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
+        RETURN odf, location_path
+        ORDER BY odf.name
         """
     odf_list = nc.query_to_list(nc.graphdb.manager, q)
     odf_list = _filter_operational_state(odf_list, request, select=lambda n: n.get('odf'))
     urls = get_node_urls(odf_list)
 
-    table = Table("Location", "Name")
+
+    table = Table("Name", "Location")
     table.rows = [_odf_table(item) for item in odf_list]
     # Filter out
     _set_filters_operational_state(table, request)
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'ODFs', 'urls': urls})
+
+def _outlet_table(item):
+    outlet = item.get('outlet')
+    location_path = item.get('location_path')
+
+    row = TableRow(outlet, location_path)
+    _set_operational_state(row, outlet)
+    return row
+
+
+@login_required
+def list_outlet(request):
+    q = """
+        MATCH (outlet:Outlet)
+        OPTIONAL MATCH (outlet)-[:Located_in]->(r)
+        OPTIONAL MATCH p=()-[:Has*0..20]->(r)
+        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, outlet
+        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, outlet
+        UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
+        RETURN outlet, location_path
+        ORDER BY outlet.name
+        """
+    outlet_list = nc.query_to_list(nc.graphdb.manager, q)
+    outlet_list = _filter_operational_state(outlet_list, request, select=lambda n: n.get('outlet'))
+    urls = get_node_urls(outlet_list)
+
+
+    table = Table("Name", "Location" )
+    table.rows = [_outlet_table(item) for item in outlet_list]
+    # Filter out
+    _set_filters_operational_state(table, request)
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'Outlets', 'urls': urls})
+
+
+def _patch_panel_table(item):
+    patch_panel = item.get('patch_panel')
+    location_path = item.get('location_path')
+
+    row = TableRow(patch_panel, location_path)
+    _set_operational_state(row, patch_panel)
+    return row
+
+
+@login_required
+def list_patch_panels(request):
+    q = """
+        MATCH (patch_panel:Patch_Panel)
+        OPTIONAL MATCH (patch_panel)-[:Located_in]->(r)
+        OPTIONAL MATCH p=()-[:Has*0..20]->(r)
+        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, patch_panel
+        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, patch_panel AS patch_panel
+        UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
+        RETURN patch_panel, location_path
+        ORDER BY patch_panel.name
+        """
+    patch_panel_list = nc.query_to_list(nc.graphdb.manager, q)
+    patch_panel_list = _filter_operational_state(patch_panel_list, request, select=lambda n: n.get('patch_panel'))
+    urls = get_node_urls(patch_panel_list)
+
+
+    table = Table("Name", "Location" )
+    table.rows = [_patch_panel_table(item) for item in patch_panel_list]
+    # Filter out
+    _set_filters_operational_state(table, request)
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'Patch Panels', 'urls': urls})
 
 
 def _optical_link_table(link, dependencies):
@@ -456,20 +533,53 @@ def list_peering_partners(request):
 def list_racks(request):
     q = """
         MATCH (rack:Rack)
-        OPTIONAL MATCH (rack)<-[:Has]-(site)
-        RETURN rack, site
-        ORDER BY site.name, rack.name
+        OPTIONAL MATCH (rack)<-[:Has]-(loc)
+        OPTIONAL MATCH p=(loc)<-[:Has*0..20]-()
+        WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, rack AS rack
+        WITH FILTER(path IN paths WHERE length(path)=maxLength) AS longestPaths, rack AS rack
+        UNWIND CASE WHEN longestPaths = [] THEN [null] ELSE longestPaths END as location_path
+        RETURN rack, reverse(location_path) as location_path
+        ORDER BY rack.name
         """
 
     rack_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(rack_list)
 
-    table = Table('Site', 'Name')
-    table.rows = [TableRow(item['site'], item['rack']) for item in rack_list]
+    table = Table('Name', 'Location')
     table.no_badges = True
+
+    for item in rack_list:
+        rack = item.get('rack')
+        location_path = item.get('location_path')
+        table.rows.append(TableRow(rack, location_path))
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Racks', 'urls': urls})
+
+
+@login_required
+def list_rooms(request):
+    q = """
+        MATCH (room:Room)
+        RETURN room
+        ORDER BY room.name
+        """
+
+    room_list = nc.query_to_list(nc.graphdb.manager, q)
+    urls = get_node_urls(room_list)
+
+    table = Table('Name', 'Location')
+    for item in room_list:
+        room = item.get('room')
+        nh = get_object_or_404(NodeHandle, pk=room.get('handle_id'))
+        node = nh.get_node()
+        location_path = node.get_location_path()
+        table.rows.append(TableRow(item['room'], location_path.get('location_path')))
+
+    table.no_badges = True
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'Rooms', 'urls': urls})
 
 
 def _router_table(router):
@@ -696,3 +806,30 @@ def list_roles(request):
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Roles', 'urls': role_list})
+
+def _pdu_table(pdu):
+    row = TableRow(pdu, pdu.get('type'), pdu.get('description'))
+    _set_expired(row, pdu)
+    return row
+
+
+@login_required
+def list_pdu(request):
+    q = """
+        MATCH (pdu:PDU)
+        RETURN pdu
+        ORDER BY pdu.name
+        """
+
+    pdu_list = nc.query_to_list(nc.graphdb.manager, q)
+    pdu_list = _filter_expired(pdu_list, request, select=lambda n: n.get('pdu'))
+    pdu_list = _filter_operational_state(pdu_list, request, select=lambda n: n.get('pdu'))
+    urls = get_node_urls(pdu_list)
+
+    table = Table('Name', 'Type', 'Description')
+    table.rows = [_pdu_table(item['pdu']) for item in pdu_list]
+    _set_filters_expired(table, request)
+    _set_filters_operational_state(table, request)
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'PDUs', 'urls': urls})

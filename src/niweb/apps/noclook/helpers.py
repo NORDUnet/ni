@@ -635,7 +635,6 @@ def set_user(user, node, user_id):
     result = node.set_user(user_id)
     relationship_id = result.get('Uses')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
-    activitylog.create_relationship(user, relationship)
     created = result.get('Uses')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
@@ -811,10 +810,10 @@ def find_recursive(key, target):
 
 
 def get_node_urls(*args):
-    ids = []
+    ids = set()
     for arg in args:
-        ids += set(find_recursive("handle_id", arg))
-    nodes = NodeHandle.objects.filter(handle_id__in=ids)
+        ids.update(find_recursive("handle_id", arg))
+    nodes = NodeHandle.objects.filter(handle_id__in=ids).select_related('node_type')
     urls = {}
     for n in nodes:
         urls[n.handle_id] = n.get_absolute_url()
@@ -1118,3 +1117,21 @@ def add_address_organization(user, address, organization_id):
         activitylog.create_relationship(user, relationship)
 
     return relationship, created
+
+def relationship_to_str(relationship):
+    """
+    Takes a relationship and returns a string representation of the relationship:
+    ("":Router)<-[:Has]-("":Port)
+    """
+    if isinstance(relationship, int):
+        rel = nc.get_relationship_model(nc.graphdb.manager, relationship)
+    else:
+        rel = relationship
+    return '({a_name} ({a_handle_id}))-[{rel_id}:{rel_type}]->({b_name} ({b_handle_id}))'.format(
+        a_name=rel.start['name'],
+        a_handle_id=rel.start['handle_id'],
+        rel_id=rel.id,
+        rel_type=rel.type,
+        b_name=rel.end['name'],
+        b_handle_id=rel.end['handle_id'],
+    )

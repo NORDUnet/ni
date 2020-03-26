@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html>
 <head>
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
@@ -9,7 +10,7 @@
     </style>
     <title>NOCLook Google Maps</title>
 {% load noclook_tags %}
-<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}js/jquery/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="{% static "js/jquery/jquery-3.3.1.min.js" %}"></script>
 <script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&key={{ maps_api_key }}" type="text/javascript"></script>
 <script type="text/javascript">
     function initialize() {
@@ -33,14 +34,18 @@
                 );
             });
             json.edges.forEach(function(edge) {
-                addLine(
+                if (edge.end_points && edge.end_points.length == 2) {
+                  addLine(
                         edge.end_points[0].lat,
                         edge.end_points[0].lng,
                         edge.end_points[1].lat,
                         edge.end_points[1].lng,
                         edge.name,
                         edge.url
-                );
+                  );
+                }else{
+                  console.log('Edge', edge.name, 'does not have two endpoints', edge)
+                }
             });
 
             function addMarker(lat,lng,label,url){

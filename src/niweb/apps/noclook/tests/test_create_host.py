@@ -17,7 +17,7 @@ class CreateHostView(NeoTestCase):
 
         nh, node = self.get_node('awesome.nordu.net')
         node_data = node.data
-        self.assertRedirects(resp, self.get_full_url(nh))
+        self.assertRedirects(resp, self.get_absolute_url(nh))
         self.assertEqual('awesome.nordu.net', nh.node_name)
         self.assertEqual('awesome.nordu.net', node_data['name'])
         self.assertEqual('In service', node_data['operational_state'])
@@ -28,4 +28,4 @@ class CreateHostView(NeoTestCase):
 
         self.data['name'] = 'Awesome.NORDU.NET'
         resp = self.create(self.data)
-        self.assertEquals(1, len(resp.context['form'].errors))
+        self.assertEqual(1, len(resp.context['form'].errors))

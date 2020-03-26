@@ -12,7 +12,7 @@ services:
     networks:
       - dev
   neo4j:
-    image: neo4j:latest
+    image: neo4j:3.5
     volumes:
       - ./data/neo4j:/data
     ports:
@@ -21,7 +21,7 @@ services:
     networks:
       - dev
   neo4j-test:
-    image: neo4j:latest
+    image: neo4j:3.5
     volumes:
       - ./data/neo4j-test:/data
     ports:
@@ -44,6 +44,7 @@ services:
       - DB_HOST=postgres
       - DJANGO_SETTINGS_MODULE=niweb.settings.dev
       - REPORTS_TO=markus@nordu.net
+      - LOGO_SUBTEXT=DOCKER
     volumes:
       - ../src/niweb:/app/niweb
       - ../src/scripts:/app/scripts
