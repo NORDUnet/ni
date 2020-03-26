@@ -796,10 +796,10 @@ class NIObjectType(DjangoObjectType):
 
                         ret = list(qs)
 
-                if not ret:
-                    ret = []
+            if not ret:
+                ret = []
 
-                return ret
+            return ret
 
         return generic_list_resolver
 
