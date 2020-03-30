@@ -76,8 +76,12 @@ class SRIJWTAuthMiddleware(object):
 
         max_age = request.session.get_expiry_age()
         expires_time = time.time() + max_age
-        anti_expires_time = time.time() - max_age
+        anti_expires_time = cookie_date(time.time() - max_age)
         cookie_expires = cookie_date(expires_time)
+
+        if request.session.get_expire_at_browser_close():
+            max_age = None
+            cookie_expires = None
 
         if token and token_is_expired(token):
             cookie_token = request.COOKIES.get(jwt_settings.JWT_COOKIE_NAME)
@@ -137,6 +141,7 @@ class SRIJWTAuthMiddleware(object):
                 jwt_settings.JWT_COOKIE_NAME,
                 token,
                 domain=settings.COOKIE_DOMAIN,
+                max_age=max_age,
                 expires=cookie_expires,
                 httponly=False,
                 secure=jwt_settings.JWT_COOKIE_SECURE,
@@ -171,14 +176,6 @@ class SRIJWTAuthMiddleware(object):
                 SESSION_SAVE_EVERY_REQUEST = None
 
             if (modified or SESSION_SAVE_EVERY_REQUEST) and not empty or create_session_cookie:
-                if request.session.get_expire_at_browser_close():
-                    max_age = None
-                    expires = None
-                else:
-                    max_age = request.session.get_expiry_age()
-                    expires_time = time.time() + max_age
-                    expires = cookie_date(expires_time)
-
                 # Save the session data and refresh the client cookie.
                 # Skip session save for 500 responses, refs #3881.
                 if response.status_code != 500:
