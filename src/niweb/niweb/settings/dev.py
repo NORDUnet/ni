@@ -38,7 +38,6 @@ DEBUG = True
 
 ########## SESSION_COOKIE_DOMAIN
 SESSION_COOKIE_HTTPONLY = False
-CORS_ALLOW_CREDENTIALS = True
 ########## END SESSION_COOKIE_DOMAIN
 
 ########## EMAIL CONFIGURATION
@@ -77,11 +76,12 @@ SECRET_KEY = environ.get('SECRET_KEY', 'development')
 ########## END SECRET CONFIGURATION
 
 ########## TESTING
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+#TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 ########## END TESTING
 
 GOOGLE_MAPS_API_KEY = environ.get('GOOGLE_MAPS_API_KEY', 'no-apikey')
 CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 ########## GRAPHQL CONFIGURATION
 USE_GRAPHIQL = True

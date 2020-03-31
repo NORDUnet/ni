@@ -56,6 +56,12 @@ DEBUG = False
 
 ########## BRAND / HOME ORGANISATION
 BRAND = environ.get('BRAND', 'NORDUnet')
+
+LOGO_COLOR = environ.get('LOGO_COLOR', '')
+LOGO_SUBTEXT = environ.get('LOGO_SUBTEXT', '')
+LINK_COLOR = environ.get('LINK_COLOR', '')
+LINK_HOVER = environ.get('LINK_HOVER', '')
+
 ########## END BRAND / HOME ORGANISATION
 
 ########## ALLOWED HOSTS CONFIGURATION
@@ -192,14 +198,11 @@ SAML_ENABLED = environ.get('SAML_ENABLED', False)
 MIDDLEWARE = (
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'apps.noclook.middleware.SRIJWTAuthMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'apps.noclook.middleware.SRIJWTMiddleware',
 )
 ########## END MIDDLEWARE CONFIGURATION
 
@@ -210,8 +213,13 @@ AUTHENTICATION_BACKENDS = (
 )
 if SAML_ENABLED:
     AUTHENTICATION_BACKENDS += (
-        'djangosaml2.backends.Saml2Backend',
+        environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
     )
+    MIDDLEWARE += (
+        'apps.saml2auth.middleware.HandleUnsupportedBinding',
+    )
+    # Needed since django 2+ sets lax per default
+    SESSION_COOKIE_SAMESITE = None
 ######### END AUTHENTICATION BACKENDS CONFIGURATION
 
 ########## URL CONFIGURATION
@@ -243,6 +251,7 @@ THIRD_PARTY_APPS = (
     'attachments',
     'graphene_django',
     'corsheaders',
+    'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
 )
 
 LOCAL_APPS = (
@@ -358,11 +367,21 @@ GRAPHQL_JWT = {
 ########## END GRAPHQL JWT CONFIGURATION
 
 ########## SESSION_COOKIE_DOMAIN
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_HTTPONLY = False
-CORS_ALLOW_CREDENTIALS = True
-COOKIE_DOMAIN = environ.get('COOKIE_DOMAIN', '.ed-integrations.com')
+
+COOKIE_DOMAIN = environ.get('COOKIE_DOMAIN')
 SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = [
+    'https://{}'.format( environ.get('SRI_FRONTEND_URL', 'sri.sunet.se') )
+]
+CSRF_TRUSTED_ORIGINS = [
+    environ.get('SRI_FRONTEND_URL', 'sri.sunet.se'),
+]
 ########## END SESSION_COOKIE_DOMAIN
 
 ########## GRAPHQL CONFIGURATION

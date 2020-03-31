@@ -28,8 +28,9 @@ def userprofile_detail(request, userprofile_id):
     except EmptyPage:
         # If page is out of range (e.g. 9999), deliver last page of results.
         activities = paginator.page(paginator.num_pages)
+    total_activities = '{:,}'.format(activities.paginator.count)
     return render(request, 'userprofile/userprofile_detail.html',
-                  {'profile': profile, 'activities': activities})
+                  {'profile': profile, 'activities': activities, 'total_activities': total_activities})
 
     display_name = fields.CharField('display_name')
     email = fields.CharField('user__email')
@@ -43,15 +44,21 @@ def userprofile_detail(request, userprofile_id):
 @login_required
 def whoami(request):
     if request.method == 'GET':
+        user_profile = getattr(request.user, 'profile', None)
+
+        if not user_profile:
+            user_profile = UserProfile(user=request.user, email=request.user.email)
+            user_profile.save()
+
         user = {
             'userid': request.user.pk,
-            'display_name': request.user.profile.display_name,
+            'display_name': user_profile.display_name,
             'email': request.user.email,
-            'landing_page': request.user.profile.landing_page,
-            'landing_choices': request.user.profile.LANDING_CHOICES,
-            'view_network': request.user.profile.view_network,
-            'view_services': request.user.profile.view_services,
-            'view_community': request.user.profile.view_community
+            'landing_page': user_profile.landing_page,
+            'landing_choices': user_profile.LANDING_CHOICES,
+            'view_network': user_profile.view_network,
+            'view_services': user_profile.view_services,
+            'view_community': user_profile.view_community
         }
         return JsonResponse(user)
     return httpResponse(status_code=405)

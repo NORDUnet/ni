@@ -11,7 +11,7 @@ class ImportSiteTest(NeoTestCase):
         resp, site = self.import_to_site({
           "import": True,
         })
-        self.assertRedirects(resp, self.get_full_url(site))
+        self.assertRedirects(resp, self.get_absolute_url(site))
 
     def test_import_form(self):
         resp,site = self.import_to_site({
@@ -30,28 +30,28 @@ class ImportSiteTest(NeoTestCase):
           "Rack1.ODF1.Port1.port_type": "E2000",
         })
 
-        self.assertRedirects(resp, self.get_full_url(site))
+        self.assertRedirects(resp, self.get_absolute_url(site))
         
         node = site.get_node()
         racks = node.get_has()
-        self.assertEquals(1, len(racks))
+        self.assertEqual(1, len(racks))
         
         rack = racks["Has"][0]["node"]
-        self.assertEquals("Sweet rack1", rack.data["name"])
-        self.assertEquals("48", rack.data["rack_units"])
+        self.assertEqual("Sweet rack1", rack.data["name"])
+        self.assertEqual("48", rack.data["rack_units"])
         
         equipment = rack.get_located_in()
         self.assertEqual(1, len(equipment))
 
         odf = equipment["Located_in"][0]["node"]
-        self.assertEquals("TEST-ODF-01", odf.data["name"])
-        self.assertEquals("2", odf.data["rack_units"])
+        self.assertEqual("TEST-ODF-01", odf.data["name"])
+        self.assertEqual("2", odf.data["rack_units"])
         
         ports = odf.get_ports()
         self.assertEqual(1, len(ports))
         port = ports["Has"][0]["node"]
-        self.assertEquals("1+2", port.data["name"])
-        self.assertEquals("E2000", port.data["port_type"])
+        self.assertEqual("1+2", port.data["name"])
+        self.assertEqual("E2000", port.data["port_type"])
 
     def test_import_form_with_one_error(self):
         resp,site = self.import_to_site({
@@ -61,7 +61,7 @@ class ImportSiteTest(NeoTestCase):
         })
 
         #Make sure we got an error page
-        self.assertEquals(200, resp.status_code)
+        self.assertEqual(200, resp.status_code)
         self.assertContains(resp, "There is one error please fix it.")
 
     def test_import_form_with_two_errors(self):
@@ -74,7 +74,7 @@ class ImportSiteTest(NeoTestCase):
         })
 
         #Make sure we got an error page
-        self.assertEquals(200, resp.status_code)
+        self.assertEqual(200, resp.status_code)
         self.assertContains(resp, "There are 2 errors please fix them.")
 
     def test_import_direct_empty_file(self):
@@ -82,7 +82,7 @@ class ImportSiteTest(NeoTestCase):
             "import": True,
             "file": io.StringIO(u"[]"),
         })
-        self.assertRedirects(resp, self.get_full_url(site))
+        self.assertRedirects(resp, self.get_absolute_url(site))
 
     def test_import_file(self):
         fake_file = u'''[{
@@ -103,9 +103,9 @@ class ImportSiteTest(NeoTestCase):
         resp, site = self.import_to_site({
             "file": io.StringIO(fake_file),
         })
-        self.assertEquals(200, resp.status_code)
+        self.assertEqual(200, resp.status_code)
         site_data = site.get_node().data
-        self.assertContains(resp, 'Import into Site: '+site_data['name'])
+        self.assertContains(resp, 'Import into Site: ' + site_data['name'])
         self.assertContains(resp, 'name="Rack1.node_type" value="Rack"')
         self.assertContains(resp, 'name="Rack1.name" value="RC/P01"')
         self.assertContains(resp, 'name="Rack1.width" value=""')
@@ -128,11 +128,11 @@ class ImportSiteTest(NeoTestCase):
             "Optical Node1.rack_units": "2",
         })
         # Maybe we should have an error page instad?
-        self.assertRedirects(resp, self.get_full_url(site))
+        self.assertRedirects(resp, self.get_absolute_url(site))
 
     def import_to_site(self,data):
         site = self.create_site()
-        resp = self.client.post(self.get_full_url(site)+"import", data)
+        resp = self.client.post(self.get_absolute_url(site)+"import", data)
         return resp, site
 
     def create_site(self, name="Test site"):

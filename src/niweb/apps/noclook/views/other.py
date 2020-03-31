@@ -8,6 +8,7 @@ from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
 from django.middleware.csrf import get_token
+from graphql_jwt.settings import jwt_settings
 from re import escape as re_escape
 import json
 
@@ -30,8 +31,13 @@ def logout_page(request):
     """
     Log users out and redirects them to the index.
     """
+    response = render(request, 'noclook/logout.html', {'cookie_domain': settings.COOKIE_DOMAIN })
+    response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
+    request.session.flush()
+
     logout(request)
-    return redirect('/')
+
+    return response
 
 
 # Visualization views
@@ -134,10 +140,10 @@ def search_autocomplete(request):
     return False
 
 
-def neo4j_escape(_in):
+def regex_escape(_in):
     if type(_in) is list:
-        return map(neo4j_escape, _in)
-    return re_escape(_in).replace('\\', '\\\\')
+        return map(regex_escape, _in)
+    return re_escape(_in)
 
 
 @login_required
@@ -147,25 +153,24 @@ def search_port_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = neo4j_escape(to_find.split())
+        match_q = regex_escape(to_find.split())
         try:
             q = """
                 MATCH (port:Port)<-[:Has]-(n:Node)
                 OPTIONAL MATCH (n)-[:Located_in]->(n2:Node)
-                OPTIONAL MATCH (n2)<-[:Has]-(s:Site)
-                WITH port.handle_id as handle_id,
-                n.handle_id as parent_id,
-                CASE WHEN n2 IS null THEN
-                  ""
-                WHEN s IS null THEN
-                    n2.name + " "
-                ELSE
-                    s.name + " " + n2.name + " "
-                END + n.name+" "+port.name as name
-                WHERE name =~ '(?i).*{}.*'
+                OPTIONAL MATCH p = () - [:Has * 0..20]->(n2)
+                WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength,
+                 port.handle_id AS handle_id, n.handle_id AS parent_id,
+                 port.name AS port_name, n.name AS node_name
+                WITH FILTER(path IN paths WHERE length(path) = maxLength) AS longestPaths,
+                 handle_id AS handle_id, parent_id AS parent_id, port_name AS port_name, node_name AS node_name
+                UNWIND(longestPaths) AS location_path
+                WITH REDUCE(s = "", n IN location_path | s + n.name + " ") + node_name + " " + port_name AS name, handle_id, parent_id
+                WHERE name =~ $name_re
                 RETURN name, handle_id, parent_id
-                """.format(".*".join(match_q))
-            result = nc.query_to_list(nc.graphdb.manager, q)
+                """
+            name_re = '(?i).*{}.*'.format('.*'.join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q, name_re=name_re)
         except Exception as e:
             raise e
     json.dump(result, response)
@@ -179,27 +184,25 @@ def search_location_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = neo4j_escape(to_find.split())
+        match_q = regex_escape(to_find.split())
         try:
+            # find all has relations to the top
             q = """
-                MATCH (l:Node)
-                WHERE l:Site or l:Rack
-                OPTIONAL MATCH (s:Node)-[:Has]->(l)
-                WITH l.handle_id as handle_id,
-                    CASE WHEN s IS null THEN
-                      ""
-                    ELSE
-                        s.name + " "
-                    END + l.name as name
-                WHERE name =~ '(?i).*{}.*'
-                 RETURN name, handle_id
-                """.format(".*".join(match_q))
-            result = nc.query_to_list(nc.graphdb.manager, q)
+                MATCH (l:Location) WHERE l.name =~ $name_re
+                MATCH p = () - [:Has * 0..20]->(l)
+                WITH COLLECT(nodes(p)) as paths, MAX(length(nodes(p))) AS maxLength, l.handle_id as handle_id
+                WITH FILTER(path IN paths WHERE length(path) = maxLength) AS longestPaths, handle_id as handle_id
+                UNWIND(longestPaths) AS location_path
+                RETURN REDUCE(s = "", n IN location_path | s + n.name + " ") AS name, handle_id
+                """
+            name_re = '(?i).*{}.*'.format('.*'.join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q, name_re=name_re)
         except Exception as e:
             raise e
     json.dump(result, response)
     return response
 
+# UNWIND(longestPaths) as location_path
 
 @login_required
 def search_non_location_typeahead(request):
@@ -208,7 +211,7 @@ def search_non_location_typeahead(request):
     result = []
     if to_find:
         # split for search
-        match_q = neo4j_escape(to_find.split())
+        match_q = regex_escape(to_find.split())
         try:
             q = """
                 MATCH (n:Node)
@@ -217,10 +220,12 @@ def search_non_location_typeahead(request):
                 WITH n.handle_id as handle_id,
                      coalesce(e.name, "") + " "+ n.name as name,
                      labels(n) as labels
-                WHERE name =~ '(?i).*{}.*'
+                WHERE name =~ $name_re
                 RETURN handle_id, trim(name) as name, labels ORDER BY name
-                """.format(".*".join(match_q))
-            result = nc.query_to_list(nc.graphdb.manager, q)
+                """
+            name_re = '(?i).*{}.*'.format('.*'.join(match_q))
+
+            result = nc.query_to_list(nc.graphdb.manager, q, name_re=name_re)
         except Exception as e:
             raise e
     for r in result:
@@ -233,28 +238,28 @@ def search_non_location_typeahead(request):
 
 
 @login_required
-def typeahead_slug(request, slug='Node'):
+def typeahead_slugs(request, slug='Node'):
     response = HttpResponse(content_type='application/json')
     to_find = request.GET.get('query', None)
     result = []
     if to_find:
         # split for search
-        match_q = neo4j_escape(to_find.split())
-        # TODO: optical-node => Optical_Node
-        label = slug.replace('-', '_').title()
+        match_q = regex_escape(to_find.split())
+        labels = [helpers.slug_to_node_type(slug).get_label() for s in slug.split('+')]
         try:
             q = """
-                MATCH (n:{})
+                MATCH (n:Node)
+                WHERE any(label in labels(n) where label in $labels)
                 OPTIONAL MATCH (n)<-[:Has]-(e:Node)
                 WITH n.handle_id as handle_id,
                      coalesce(e.name, "") + " "+ n.name as name
-                WHERE name =~ '(?i).*{}.*'
+                WHERE name =~ $name_re
                 RETURN handle_id, trim(name) as name
-                """.format(label, ".*".join(match_q),)
-            result = nc.query_to_list(nc.graphdb.manager, q)
+                """
+            name_re = '(?i).*{}.*'.format('.*'.join(match_q))
+            result = nc.query_to_list(nc.graphdb.manager, q, labels=labels, name_re=name_re)
         except Exception as e:
             raise e
-    # TODO: do stuff with labels
     json.dump(result, response)
     return response
 
@@ -410,7 +415,7 @@ def gmaps_optical_nodes(request):
         else:
             edges[item['cable']['name']] = edge
     response = HttpResponse(content_type='application/json')
-    json.dump({'nodes': nodes.values(), 'edges': edges.values()}, response)
+    json.dump({'nodes': list(nodes.values()), 'edges': list(edges.values())}, response)
     return response
 
 

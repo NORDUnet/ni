@@ -36,27 +36,22 @@ def menu_mode():
 
 
 @register.simple_tag(takes_context=True)
-def noclook_node_to_url(context,handle_id):
+def noclook_node_to_url(context, handle_id):
     """G
     Takes a node id as a string and returns the absolute url for a node.
     """
-    #handle fallback
+    # handle fallback
     urls = context.get('urls')
     if urls and handle_id in urls:
-      return urls.get(handle_id)
+        return urls.get(handle_id)
     else:
       return "/nodes/%s" % handle_id
-   #else:
-      #
-      #try:
-      #  return get_node_url(handle_id)
-      #except ObjectDoesNotExist:
-      #  return ''
 
 
 @register.simple_tag(takes_context=True)
 def noclook_node_to_link(context, node):
-    if "handle_id" in node:
+
+    if node and "handle_id" in node:
         url = noclook_node_to_url(context, node.get("handle_id"))
         result = format_html(u'<a class="handle" href="{}" title="{}">{}</a>', url, node.get("name"), node.get("name"))
     else:
@@ -64,20 +59,7 @@ def noclook_node_to_link(context, node):
     return result
 
 
-@register.assignment_tag
-def noclook_node_to_node_handle(node):
-    """
-    :param node: Neo4j node
-    :return node_handle: Django NodeHandle or None
-    """
-    try:
-        node_handle = NodeHandle.objects.get(handle_id = node.getProperty('handle_id', ''))
-    except NodeHandle.DoesNotExist:
-        return None
-    return node_handle
-
-
-@register.assignment_tag
+@register.simple_tag
 def noclook_last_seen_to_dt(noclook_last_seen):
     """
     Returns noclook_last_seen property (ex. 2011-11-01T14:37:13.713434) as a
@@ -103,7 +85,7 @@ def noclook_last_seen_as_td(date):
     return {'last_seen': last_seen}
 
 
-@register.assignment_tag
+@register.simple_tag
 def timestamp_to_td(seconds):
     """
     Converts a UNIX timestamp to a timedelta object.
@@ -115,7 +97,7 @@ def timestamp_to_td(seconds):
     return td
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_has_expired(item):
     """
     Returns True if the item has a noclook_last_seen property and it has expired.
@@ -124,7 +106,7 @@ def noclook_has_expired(item):
     return expired
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_get_model(handle_id):
     """
     :param handle_id: unique id
@@ -136,7 +118,7 @@ def noclook_get_model(handle_id):
         return ''
 
 
-@register.assignment_tag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def noclook_get_type(context, handle_id):
     urls = context.get('urls')
     if urls and handle_id in urls:
@@ -149,7 +131,7 @@ def noclook_get_type(context, handle_id):
             return ''
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_get_ports(handle_id):
     """
     Return port nodes that are either dependencies or connected to item. Also returns the
@@ -160,12 +142,12 @@ def noclook_get_ports(handle_id):
     return nc.get_node_model(nc.graphdb.manager, handle_id).get_ports()
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_get_location(handle_id):
     return nc.get_node_model(nc.graphdb.manager, handle_id).get_location()
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_report_age(item, old, very_old):
     """
     :param item: Neo4j node
@@ -386,8 +368,8 @@ def _equipment_spacer(units):
 
 
 def _rack_sort(item):
-    pos = item.get('node').data.get('rack_position', -1)
-    size = item.get('node').data.get('rack_units', 0) * -1
+    pos = int(item.get('node').data.get('rack_position', -1))
+    size = int(item.get('node').data.get('rack_units', 0)) * -1
 
     return (pos, size)
 
@@ -395,11 +377,11 @@ RACK_SIZE_PX=20
 
 def _equipment(item):
     data = item.get('node').data
-    units = data.get('rack_units', 1)
+    units = int(data.get('rack_units', 1))
     return {
         'units': units,
         'position': data.get('rack_position'),
-        'position_end': units + data.get('rack_position', 1) - 1,
+        'position_end': units + int(data.get('rack_position', 1)) - 1,
         'height': "{}px".format(units * RACK_SIZE_PX),
         'sub_equipment': [],
         'data': data,
@@ -417,7 +399,7 @@ def noclook_rack(rack, equipment):
     last_eq = None
     for item in equipment:
         view_data = _equipment(item)
-        ridx = view_data.get('position')
+        ridx = int(view_data.get('position', 0) or 0)
         if ridx and ridx > 0:
             spacing = ridx - idx
             if spacing < 0:

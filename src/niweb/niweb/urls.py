@@ -8,16 +8,19 @@ from django.views.decorators.csrf import csrf_exempt
 from apps.noclook.schema import AuthGraphQLView
 from graphql_jwt.decorators import jwt_cookie
 from apps.noclook.views.redirect import redirect_back
+from django.conf.urls.static import static
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
+
 
 def if_installed(appname, *args, **kwargs):
     ret = url(*args, **kwargs)
     if appname not in settings.INSTALLED_APPS:
         ret.resolve = lambda *args: None
     return ret
+
 
 v1_api = Api(api_name='v1')
 # Resources
@@ -107,3 +110,6 @@ urlpatterns += [
     # NOCLook URLs
     url(r'', include('apps.noclook.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

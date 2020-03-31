@@ -60,30 +60,18 @@ class NodeType(models.Model):
     delete.alters_data = True
 
 
-# XXX: Does not handle slug renaming
-slug_cache = {}
-
-
-def get_slug(slug_id):
-    if slug_id in slug_cache:
-        return slug_cache[slug_id]
-    else:
-        slug_cache[slug_id] = NodeType.objects.get(pk=slug_id).get_slug()
-    return slug_cache[slug_id]
-
-
 @python_2_unicode_compatible
 class NodeHandle(models.Model):
     # Handle <-> Node data
     handle_id = models.AutoField(primary_key=True)
     # Data shared with the node
     node_name = models.CharField(max_length=200)
-    node_type = models.ForeignKey(NodeType)
+    node_type = models.ForeignKey(NodeType, on_delete=models.CASCADE)
     node_meta_type = models.CharField(max_length=255, choices=NODE_META_TYPE_CHOICES)
     # Meta information
-    creator = models.ForeignKey(User, related_name='creator')
+    creator = models.ForeignKey(User, related_name='creator', null=True, on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
-    modifier = models.ForeignKey(User, related_name='modifier')
+    modifier = models.ForeignKey(User, related_name='modifier', null=True, on_delete=models.SET_NULL)
     modified = models.DateTimeField(auto_now=True)
     contexts = models.ManyToManyField(
         'Context',
@@ -104,18 +92,23 @@ class NodeHandle(models.Model):
         return self.url()
 
     def url(self):
-        return reverse('generic_detail', args=[get_slug(self.node_type_id), self.handle_id])
+        return reverse('generic_detail', args=[self.node_type.get_slug(), self.handle_id])
+
+    def _create_node(self, label=None):
+        if not label:
+            label = self.node_type.get_label()
+        try:
+            nc.create_node(nc.graphdb.manager, self.node_name, self.node_meta_type, label, self.handle_id)
+        except CypherError:
+            #  A node associated with this handle_id already exists
+            pass
 
     def save(self, *args, **kwargs):
         """
         Create a new node and associate it to the handle.
         """
         super(NodeHandle, self).save(*args, **kwargs)
-        try:
-            nc.create_node(nc.graphdb.manager, self.node_name, self.node_meta_type, self.node_type.get_label(), self.handle_id)
-        except CypherError:
-            #  A node associated with this handle_id already exists
-            pass
+        self._create_node()
         return self
 
     save.alters_data = True
@@ -249,9 +242,9 @@ class UniqueIdGenerator(models.Model):
     last_id = models.CharField(max_length=256, editable=False)
     next_id = models.CharField(max_length=256, editable=False)
     # Meta
-    creator = models.ForeignKey(User, related_name='unique_id_creator')
+    creator = models.ForeignKey(User, related_name='unique_id_creator', null=True, on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
-    modifier = models.ForeignKey(User, null=True, blank=True, related_name='unique_id_modifier')
+    modifier = models.ForeignKey(User, null=True, blank=True, related_name='unique_id_modifier', on_delete=models.SET_NULL)
     modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -311,8 +304,8 @@ class UniqueId(models.Model):
     unique_id = models.CharField(max_length=256, unique=True)
     reserved = models.BooleanField(default=False)
     reserve_message = models.CharField(max_length=512, null=True, blank=True)
-    reserver = models.ForeignKey(User, null=True, blank=True)
-    site = models.ForeignKey(NodeHandle, null=True, blank=True)
+    reserver = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    site = models.ForeignKey(NodeHandle, null=True, blank=True, on_delete=models.SET_NULL)
     # Meta
     created = models.DateTimeField(auto_now_add=True)
 
@@ -353,7 +346,7 @@ class ServiceClass(models.Model):
 @python_2_unicode_compatible
 class ServiceType(models.Model):
     name = models.CharField(unique=True, max_length=255)
-    service_class = models.ForeignKey(ServiceClass)
+    service_class = models.ForeignKey(ServiceClass, on_delete=models.CASCADE)
 
     def as_choice(self):
         return self.name, u'{} - {}'.format(self.service_class.name, self.name)
@@ -417,6 +410,20 @@ class Choice(models.Model):
 
     def __str__(self):
         return u"{} ({})".format(self.name, self.dropdown.name)
+
+@python_2_unicode_compatible
+class SwitchType(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    ports = models.CharField(max_length=1024, blank=True, help_text="Autogenerate ports. \",\" separator. ex: Et1,Et2,Et3 alt ge-0/0/0,ge-0/0/1")
+
+    @classmethod
+    def as_choices(self):
+        choices=[('','')]
+        choices.extend([(val.pk, val.name) for val in SwitchType.objects.all()])
+        return choices
+
+    def __str__(self):
+        return "{}".format(self.name)
 
 
 # -- Signals

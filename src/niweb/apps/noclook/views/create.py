@@ -14,7 +14,7 @@ from django.shortcuts import render, redirect
 from dynamic_preferences.registries import global_preferences_registry
 from apps.noclook import forms
 from apps.noclook.forms import common as common_forms
-from apps.noclook.models import NodeHandle, Dropdown
+from apps.noclook.models import NodeHandle, Dropdown, SwitchType
 from apps.noclook import helpers
 from apps.noclook import unique_ids
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
@@ -181,7 +181,7 @@ def new_cable(request, **kwargs):
 
 
 def _csv_to_cable_form(data):
-    data['cable_type'] = data.get('cable_type', '').strip().title()
+    data['cable_type'] = data.get('cable_type', '').strip()
     if data.get('name'):
         data['name'] = data['name'].strip()
     return forms.NewCableForm(data)
@@ -423,6 +423,54 @@ def new_optical_multiplex_section(request, **kwargs):
 
 
 @staff_member_required
+def new_outlet(request, **kwargs):
+    if request.POST:
+        form = forms.NewOutletForm(request.POST)
+        ports_form = forms.BulkPortsForm(request.POST)
+        if form.is_valid() and ports_form.is_valid():
+            nh = helpers.form_to_generic_node_handle(request, form, 'outlet', 'Physical')
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            data = form.cleaned_data
+            node = nh.get_node()
+            if data['relationship_location']:
+                location = NodeHandle.objects.get(pk=data['relationship_location'])
+                helpers.set_location(request.user, node, location.handle_id)
+            if not ports_form.cleaned_data['no_ports']:
+                data = ports_form.cleaned_data
+                helpers.bulk_create_ports(nh.get_node(), request.user, **data)
+
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewPatchPannelForm()
+        ports_form = forms.BulkPortsForm({'port_type': 'RJ45', 'offset': 1, 'num_ports': '0'})
+    return render(request, 'noclook/create/create_outlet.html', {'form': form, 'ports_form': ports_form})
+
+@staff_member_required
+def new_patch_panel(request, **kwargs):
+    if request.POST:
+        form = forms.NewPatchPannelForm(request.POST)
+        ports_form = forms.BulkPortsForm(request.POST)
+        if form.is_valid() and ports_form.is_valid():
+            nh = helpers.form_to_generic_node_handle(request, form, 'patch-panel', 'Physical')
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            data = form.cleaned_data
+            node = nh.get_node()
+            if data['relationship_location']:
+                location = NodeHandle.objects.get(pk=data['relationship_location'])
+                helpers.set_location(request.user, node, location.handle_id)
+            if not ports_form.cleaned_data['no_ports']:
+                data = ports_form.cleaned_data
+                helpers.bulk_create_ports(nh.get_node(), request.user, **data)
+
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewPatchPannelForm()
+        ports_form = forms.BulkPortsForm({'port_type': 'RJ45', 'offset': 1, 'num_ports': '0'})
+    return render(request, 'noclook/create/create_patch_panel.html', {'form': form, 'ports_form': ports_form})
+
+
+
+@staff_member_required
 def new_port(request, **kwargs):
     if request.POST:
         form = forms.NewPortForm(request.POST)
@@ -501,6 +549,24 @@ def new_site(request, **kwargs):
 
 
 @staff_member_required
+def new_room(request, **kwargs):
+    if request.POST:
+        form = forms.NewRoomForm(request.POST)
+        if form.is_valid():
+            nh = helpers.form_to_generic_node_handle(request, form, 'room', 'Location')
+            helpers.form_update_node(request.user, nh.handle_id, form)
+
+            if form.cleaned_data['relationship_location']:
+                parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_location'])
+                helpers.set_has(request.user, parent_nh.get_node(), nh.handle_id)
+
+            return redirect(nh.get_absolute_url())
+    else:
+        form = forms.NewRoomForm()
+    return render(request, 'noclook/create/create_room.html', {'form': form})
+
+
+@staff_member_required
 def new_site_owner(request, **kwargs):
     if request.POST:
         form = forms.NewSiteOwnerForm(request.POST)
@@ -573,6 +639,36 @@ def reserve_id_sequence(request, slug=None):
     else:
         form = forms.ReserveIdForm()
         return render(request, 'noclook/edit/reserve_id.html', {'form': form, 'slug': slug})
+
+@staff_member_required
+def new_switch(request, **kwargs):
+    if request.POST:
+        form = forms.NewSwitchForm(request.POST)
+        if form.is_valid():
+            try:
+                nh = helpers.form_to_unique_node_handle(request, form, 'switch', 'Physical')
+            except UniqueNodeError:
+                form = forms.NewSwitchForm(request.POST)
+                form.add_error('name', 'A Switch with that name already exists.')
+                return render(request, 'noclook/create/create_switch.html', {'form': form})
+            helpers.form_update_node(request.user, nh.handle_id, form)
+            node = nh.get_node()
+            if form.cleaned_data['relationship_provider']:
+                provider_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
+                helpers.set_provider(request.user, node, provider_nh.handle_id)
+            if form.cleaned_data['switch_type']:
+                switch_type = SwitchType.objects.get(pk=form.cleaned_data['switch_type'])
+                helpers.dict_update_node(request.user, nh.handle_id, {"model":switch_type.name})
+                if switch_type.ports:
+                    for port in switch_type.ports.split(","):
+                        helpers.create_port(node, port.strip(), request.user)
+
+            return redirect(nh.get_absolute_url())
+    else:
+        name = kwargs.get('name', None)
+        initial = {'name': name}
+        form = forms.NewSwitchForm(initial=initial)
+    return render(request, 'noclook/create/create_switch.html', {'form': form })
 
 
 @staff_member_required
@@ -670,14 +766,18 @@ NEW_FUNC = {
     'optical-link': new_optical_link,
     'optical-multiplex-section': new_optical_multiplex_section,
     'optical-path': new_optical_path,
+    'outlet': new_outlet,
+    'patch-panel': new_patch_panel,
     'port': new_port,
     'provider': new_provider,
     'procedure': new_procedure,
     'rack': new_rack,
     'role': new_role,
+    'room': new_room,
     'service': new_service,
     'site': new_site,
     'site-owner': new_site_owner,
+    'switch' : new_switch,
     'optical-node': new_optical_node,
     'organization': new_organization,
 }

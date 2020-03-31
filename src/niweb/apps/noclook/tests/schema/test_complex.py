@@ -8,6 +8,7 @@ from . import Neo4jGraphQLTest
 from niweb.schema import schema
 from pprint import pformat
 from . import Neo4jGraphQLTest
+from graphene import relay
 
 class GroupComplexTest(Neo4jGraphQLTest):
     def test_composite_group(self):
@@ -80,11 +81,11 @@ class GroupComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               group{{
-                handle_id
+                id
                 name
                 description
                 contacts{{
-                  handle_id
+                  id
                   first_name
                   last_name
                 }}
@@ -96,15 +97,15 @@ class GroupComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 emails{{
-                  handle_id
+                  id
                   name
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                 }}
                 member_of_groups{{
@@ -136,15 +137,15 @@ class GroupComplexTest(Neo4jGraphQLTest):
 
         # get the ids
         result_data = result.data['composite_group']
-        group_handle_id = result_data['created']['group']['handle_id']
-        c1_handle_id = result_data['subcreated'][0]['contact']['handle_id']
-        c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['handle_id']
-        c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
-        c2_handle_id = result_data['subcreated'][1]['contact']['handle_id']
-        c2_email_id = result_data['subcreated'][1]['contact']['emails'][0]['handle_id']
-        c3_handle_id = result_data['subcreated'][2]['contact']['handle_id']
-        c3_email_id = result_data['subcreated'][2]['contact']['emails'][0]['handle_id']
-        c3_phone_id = result_data['subcreated'][2]['contact']['phones'][0]['handle_id']
+        group_id = result_data['created']['group']['id']
+        c1_id = result_data['subcreated'][0]['contact']['id']
+        c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['id']
+        c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['id']
+        c2_id = result_data['subcreated'][1]['contact']['id']
+        c2_email_id = result_data['subcreated'][1]['contact']['emails'][0]['id']
+        c3_id = result_data['subcreated'][2]['contact']['id']
+        c3_email_id = result_data['subcreated'][2]['contact']['emails'][0]['id']
+        c3_phone_id = result_data['subcreated'][2]['contact']['phones'][0]['id']
 
         # check the integrity of the data
         created_data = result_data['created']['group']
@@ -227,7 +228,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
         mutation {{
           composite_group(input: {{
             update_input: {{
-              handle_id: {group_handle_id},
+              id: "{group_id}",
               name: "{group_name}"
               description: "{description_group}"
           	}}
@@ -244,24 +245,24 @@ class GroupComplexTest(Neo4jGraphQLTest):
             ]
             update_subinputs:[
               {{
-                handle_id: {c1_handle_id}
+                id: "{c1_id}"
                 first_name: "{c1_first_name}"
                 last_name: "{c1_last_name}"
                 contact_type: "{contact_type}"
-                email_handle_id: {c1_email_id}
+                email_id: "{c1_email_id}"
                 email: "{c1_mail}"
                 email_type: "{email_type}"
-                email_handle_id: {c1_email_id}
+                email_id: "{c1_email_id}"
                 phone: "{c1_phone}"
                 phone_type: "{phone_type2}"
-                phone_handle_id: {c1_phone_id}
+                phone_id: "{c1_phone_id}"
               }}
               {{
-                handle_id: {c2_handle_id}
+                id: "{c2_id}"
                 first_name: "{c2_first_name}"
                 last_name: "{c2_last_name}"
                 contact_type: "{contact_type}"
-                email_handle_id: {c2_email_id}
+                email_id: "{c2_email_id}"
                 email: "{c2_mail}"
                 email_type: "{email_type}"
                 phone: "{c2_phone}"
@@ -270,7 +271,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
             ]
             delete_subinputs:[
               {{
-                handle_id: {c3_handle_id}
+                id: "{c3_id}"
               }}
             ]
           }})
@@ -281,7 +282,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               group{{
-                handle_id
+                id
                 name
                 description
               }}
@@ -292,11 +293,11 @@ class GroupComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -304,7 +305,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -322,11 +323,11 @@ class GroupComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -334,7 +335,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -355,18 +356,18 @@ class GroupComplexTest(Neo4jGraphQLTest):
             }}
           }}
         }}
-        '''.format(group_handle_id=group_handle_id, group_name=group_name,
+        '''.format(group_id=group_id, group_name=group_name,
                     description_group=description_group,
                     c4_first_name=c4_first_name, c4_last_name=c4_last_name,
                     contact_type=contact_type, c4_mail=c4_mail,
                     email_type=email_type, c4_phone=c4_phone,
-                    phone_type2=phone_type2, c1_handle_id=c1_handle_id,
+                    phone_type2=phone_type2, c1_id=c1_id,
                     c1_first_name=c1_first_name, c1_last_name=c1_last_name,
                     c1_email_id=c1_email_id, c1_mail=c1_mail,
                     c1_phone=c1_phone, c1_phone_id=c1_phone_id,
-                    c2_handle_id=c2_handle_id, c2_first_name=c2_first_name,
+                    c2_id=c2_id, c2_first_name=c2_first_name,
                     c2_last_name=c2_last_name, c2_email_id=c2_email_id,
-                    c2_mail=c2_mail, c2_phone=c2_phone, c3_handle_id=c3_handle_id)
+                    c2_mail=c2_mail, c2_phone=c2_phone, c3_id=c3_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -386,7 +387,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
 
         # get the ids
         result_data = result.data['composite_group']
-        c4_handle_id = result_data['subcreated'][0]['contact']['handle_id']
+        c4_id = result_data['subcreated'][0]['contact']['id']
 
         # check the integrity of the data
         updated_data = result_data['updated']['group']
@@ -464,7 +465,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         org_name = "PyPI"
         org_type = "partner"
         org_id = "AABA"
-        parent_org_id = self.organization1.handle_id
+        parent_org_id = relay.Node.to_global_id('Organization', str(self.organization1.handle_id))
         org_web = "pypi.org"
         org_num = "55446"
 
@@ -502,7 +503,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
               type: "{org_type}"
               affiliation_site_owner: true
               organization_id: "{org_id}"
-              relationship_parent_of: {parent_org_id}
+              relationship_parent_of: "{parent_org_id}"
               website: "{org_web}"
               organization_number: "{org_num}"
             }}
@@ -547,7 +548,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               organization{{
-                handle_id
+                id
                 type{{
                   name
                   value
@@ -555,14 +556,14 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 name
                 description
                 addresses{{
-                  handle_id
+                  id
                   name
                   street
                   postal_code
                   postal_area
                 }}
                 contacts{{
-                  handle_id
+                  id
                   first_name
                   last_name
                   contact_type{{
@@ -570,7 +571,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                     value
                   }}
                   emails{{
-                    handle_id
+                    id
                     name
                     type{{
                       name
@@ -578,7 +579,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                     }}
                   }}
                   phones{{
-                    handle_id
+                    id
                     name
                     type{{
                       name
@@ -594,7 +595,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 contact_type{{
@@ -602,7 +603,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   value
                 }}
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -610,7 +611,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -618,19 +619,19 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 organizations{{
-                  handle_id
+                  id
                   name
                 }}
                 roles{{
                   relation_id
                   name
                   start{{
-                    handle_id
+                    id
                     first_name
                     last_name
                   }}
                   end{{
-                    handle_id
+                    id
                     name
                   }}
                 }}
@@ -642,7 +643,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               address{{
-                handle_id
+                id
                 name
                 street
                 postal_code
@@ -679,14 +680,14 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
 
         # get the ids
         result_data = result.data['composite_organization']
-        organization_handle_id = result_data['created']['organization']['handle_id']
-        c1_handle_id = result_data['subcreated'][0]['contact']['handle_id']
-        c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['handle_id']
-        c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['handle_id']
+        organization_id = result_data['created']['organization']['id']
+        c1_id = result_data['subcreated'][0]['contact']['id']
+        c1_email_id = result_data['subcreated'][0]['contact']['emails'][0]['id']
+        c1_phone_id = result_data['subcreated'][0]['contact']['phones'][0]['id']
         c1_org_rel_id = result_data['subcreated'][0]['contact']['roles'][0]['relation_id']
-        c2_handle_id = result_data['subcreated'][1]['contact']['handle_id']
-        address1_id = result_data['address_created'][0]['address']['handle_id']
-        address2_id = result_data['address_created'][1]['address']['handle_id']
+        c2_id = result_data['subcreated'][1]['contact']['id']
+        address1_id = result_data['address_created'][0]['address']['id']
+        address2_id = result_data['address_created'][1]['address']['id']
 
         # check the integrity of the data
         created_data = result_data['created']['organization']
@@ -779,19 +780,22 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         org_addr_pcode3 = "41001"
         org_addr_parea3 = "Sevilla"
 
+        parent_org_id = relay.Node.to_global_id('Organization', str(self.organization2.handle_id))
+
         nondefault_role = Role.objects.all().first()
-        nondefault_roleid = nondefault_role.handle_id
+        nondefault_roleid = relay.Node.to_global_id("Role", nondefault_role.handle_id)
 
         query = '''
         mutation{{
           composite_organization(input:{{
             update_input: {{
-              handle_id: {org_handle_id}
+              id: "{org_id}"
               name: "{org_name}"
               type: "{org_type}"
               affiliation_site_owner: false
               affiliation_partner: true
               organization_id: "{org_id}"
+              relationship_parent_of: "{parent_org_id}"
               website: "{org_web}"
               organization_number: "{org_num}"
             }}
@@ -803,22 +807,22 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
               email_type: "{email_type}"
               phone: "{c3_phone}"
               phone_type: "{phone_type}"
-              role_handle_id: {nondefault_roleid}
+              role_id: "{nondefault_roleid}"
             }}]
             update_subinputs:[{{
-              handle_id: {c1_handle_id}
+              id: "{c1_id}"
               first_name: "{c1_first_name}"
               last_name: "{c1_last_name}"
               contact_type: "{contact_type}"
               email: "{c1_email}"
               email_type: "{email_type}"
-              email_handle_id: {c1_email_id}
+              email_id: "{c1_email_id}"
               phone: "{c1_phone}"
               phone_type: "{phone_type}"
-              role_handle_id: {nondefault_roleid}
+              role_id: "{nondefault_roleid}"
             }}]
             delete_subinputs:[{{
-              handle_id: {c2_handle_id}
+              id: "{c2_id}"
             }}]
             create_address:[{{
               name: "{org_addr_name3}"
@@ -827,14 +831,14 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
               postal_area: "{org_addr_parea3}"
             }}]
             update_address:[{{
-              handle_id: {address1_id}
+              id: "{address1_id}"
               name: "{org_addr_name}"
               street: "{org_addr_st}"
               postal_code: "{org_addr_pcode}"
               postal_area: "{org_addr_parea}"
             }}]
             delete_address:[{{
-              handle_id: {address2_id}
+              id: "{address2_id}"
             }}]
             unlink_subinputs:[{{
               relation_id: {c1_org_rel_id}
@@ -846,7 +850,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               organization{{
-                handle_id
+                id
                 type{{
                   name
                   value
@@ -854,14 +858,14 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 name
                 description
                 addresses{{
-                  handle_id
+                  id
                   name
                   street
                   postal_code
                   postal_area
                 }}
                 contacts{{
-                  handle_id
+                  id
                   first_name
                   last_name
                   contact_type{{
@@ -869,7 +873,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                     value
                   }}
                   emails{{
-                    handle_id
+                    id
                     name
                     type{{
                       name
@@ -877,7 +881,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                     }}
                   }}
                   phones{{
-                    handle_id
+                    id
                     name
                     type{{
                       name
@@ -885,19 +889,19 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                     }}
                   }}
                   organizations{{
-                    handle_id
+                    id
                     name
                   }}
                   roles{{
                     relation_id
                     name
                     start{{
-                      handle_id
+                      id
                       first_name
                       last_name
                     }}
                     end{{
-                      handle_id
+                      id
                       name
                     }}
                   }}
@@ -910,7 +914,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 contact_type{{
@@ -918,7 +922,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   value
                 }}
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -926,7 +930,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -934,19 +938,19 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 organizations{{
-                  handle_id
+                  id
                   name
                 }}
                 roles{{
                   relation_id
                   name
                   start{{
-                    handle_id
+                    id
                     first_name
                     last_name
                   }}
                   end{{
-                    handle_id
+                    id
                     name
                   }}
                 }}
@@ -958,7 +962,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 contact_type{{
@@ -966,7 +970,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   value
                 }}
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -974,7 +978,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -982,19 +986,19 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 organizations{{
-                  handle_id
+                  id
                   name
                 }}
                 roles{{
                   relation_id
                   name
                   start{{
-                    handle_id
+                    id
                     first_name
                     last_name
                   }}
                   end{{
-                    handle_id
+                    id
                     name
                   }}
                 }}
@@ -1013,7 +1017,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               address{{
-                handle_id
+                id
                 name
                 street
                 postal_code
@@ -1026,7 +1030,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               address{{
-                handle_id
+                id
                 name
                 street
                 postal_code
@@ -1042,16 +1046,16 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
             }}
           }}
         }}
-        '''.format(org_handle_id=organization_handle_id, org_name=org_name,
-                    org_type=org_type, org_id=org_id, org_web=org_web,
-                    org_num=org_num, c3_first_name=c3_first_name,
+        '''.format(org_id=organization_id, org_name=org_name,
+                    org_type=org_type, parent_org_id=parent_org_id,
+                    org_web=org_web, org_num=org_num, c3_first_name=c3_first_name,
                     c3_last_name=c3_last_name, contact_type=contact_type,
                     c3_email=c3_email, email_type=email_type, c3_phone=c3_phone,
                     phone_type=phone_type, nondefault_roleid=nondefault_roleid,
-                    c1_handle_id=c1_handle_id, c1_first_name=c1_first_name,
+                    c1_id=c1_id, c1_first_name=c1_first_name,
                     c1_last_name=c1_last_name, c1_email=c1_email,
                     c1_email_id=c1_email_id, c1_phone=c1_phone,
-                    c2_handle_id=c2_handle_id, org_addr_name3=org_addr_name3,
+                    c2_id=c2_id, org_addr_name3=org_addr_name3,
                     org_addr_st3=org_addr_st3, org_addr_pcode3=org_addr_pcode3,
                     org_addr_parea3=org_addr_parea3, address1_id=address1_id,
                     org_addr_name=org_addr_name, org_addr_st=org_addr_st,
@@ -1085,8 +1089,8 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
 
         # get the ids
         result_data = result.data['composite_organization']
-        address3_id = result_data['address_created'][0]['address']['handle_id']
-        c3_handle_id = result_data['subcreated'][0]['contact']['handle_id']
+        address3_id = result_data['address_created'][0]['address']['id']
+        c3_id = result_data['subcreated'][0]['contact']['id']
 
         # check the integrity of the data
         updated_data = result_data['updated']['organization']
@@ -1104,9 +1108,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         address_node_3 = None
 
         for address_node in updated_data['addresses']:
-            if address_node['handle_id'] == address1_id:
+            if address_node['id'] == address1_id:
                 address_node_1 = address_node
-            elif address_node['handle_id'] == address3_id:
+            elif address_node['id'] == address3_id:
                 address_node_3 = address_node
 
         self.assertIsNotNone(address_node_1)
@@ -1143,9 +1147,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         contact_3 = None
 
         for contact_node in updated_data['contacts']:
-            if contact_node['handle_id'] == c1_handle_id:
+            if contact_node['id'] == c1_id:
                 contact_1 = contact_node
-            elif contact_node['handle_id'] == c3_handle_id:
+            elif contact_node['id'] == c3_id:
                 contact_3 = contact_node
 
         self.assertIsNotNone(contact_1)
@@ -1191,12 +1195,14 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert len(contact_3['roles']) == 1, "1st contact has two roles"
 
         # check for deleted address and contact
+        c2_handle_id = relay.Node.from_global_id(c2_id)[1]
         c2_handle_id = int(c2_handle_id)
         assert not NodeHandle.objects.filter(handle_id=c2_handle_id).exists(), \
             "Second contact of this organization should have been deleted"
 
-        address2_id = int(address2_id)
-        assert not NodeHandle.objects.filter(handle_id=address2_id).exists(), \
+        address2_handle_id = relay.Node.from_global_id(address2_id)[1]
+        address2_handle_id = int(address2_handle_id)
+        assert not NodeHandle.objects.filter(handle_id=address2_handle_id).exists(), \
             "Second address of this organization should have been deleted"
 
 
@@ -1214,8 +1220,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         c2_phone = "+34600789456"
         c2_phone_type = "personal"
 
-        role_handle_id = Role.objects.all().first().handle_id
-        organization_id = self.organization1.handle_id
+        role_id = relay.Node.to_global_id(
+            'Role', str(Role.objects.all().first().handle_id))
+        organization_id = relay.Node.to_global_id(
+            'Organization', str(self.organization1.handle_id))
 
         query = '''
         mutation{{
@@ -1247,8 +1255,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             ]
             link_rolerelations:[
               {{
-                role_handle_id: {role_handle_id}
-                organization_handle_id: {organization_id}
+                role_id: "{role_id}"
+                organization_id: "{organization_id}"
               }}
             ]
           }}){{
@@ -1258,7 +1266,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 contact_type{{
@@ -1266,7 +1274,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                   value
                 }}
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -1274,7 +1282,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -1289,7 +1297,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               email{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -1303,7 +1311,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               phone{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -1320,12 +1328,12 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 relation_id
                 type
                 start{{
-                  handle_id
+                  id
                   first_name
                   last_name
                 }}
                 end{{
-                  handle_id
+                  id
                   name
                 }}
               }}
@@ -1337,7 +1345,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                     c1_email_type=c1_email_type, c2_email=c2_email,
                     c2_email_type=c2_email_type, c1_phone=c1_phone,
                     c1_phone_type=c1_phone_type, c2_phone=c2_phone,
-                    c2_phone_type=c2_phone_type, role_handle_id=role_handle_id,
+                    c2_phone_type=c2_phone_type, role_id=role_id,
                     organization_id=organization_id)
 
         result = schema.execute(query, context=self.context)
@@ -1358,11 +1366,11 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         # get the ids
         result_data = result.data['composite_contact']
-        c1_handle_id = result_data['created']['contact']['handle_id']
-        c1_email_id = result_data['subcreated'][0]['email']['handle_id']
-        c1_email_id2 = result_data['subcreated'][1]['email']['handle_id']
-        c1_phone_id = result_data['phones_created'][0]['phone']['handle_id']
-        c1_phone_id2 = result_data['phones_created'][1]['phone']['handle_id']
+        c1_id = result_data['created']['contact']['id']
+        c1_email_id = result_data['subcreated'][0]['email']['id']
+        c1_email_id2 = result_data['subcreated'][1]['email']['id']
+        c1_phone_id = result_data['phones_created'][0]['phone']['id']
+        c1_phone_id2 = result_data['phones_created'][1]['phone']['id']
         role_relation_id = result_data['rolerelations'][0]['rolerelation']['relation_id']
 
         # check the integrity of the data
@@ -1379,9 +1387,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         # check email
         created_email_data = result_data['subcreated'][0]['email']
 
-        assert c1_email_id == created_data['emails'][0]['handle_id'], \
-            "Contact's email handle_id doesn't match \n{} != {}"\
-                .format(c1_email_id, created_data['emails'][0]['handle_id'])
+        assert c1_email_id == created_data['emails'][0]['id'], \
+            "Contact's email id doesn't match \n{} != {}"\
+                .format(c1_email_id, created_data['emails'][0]['id'])
         assert c1_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, created_email_data['name'])
@@ -1391,9 +1399,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         created_email_data = result_data['subcreated'][1]['email']
 
-        assert c1_email_id2 == created_data['emails'][1]['handle_id'], \
-            "Contact's email handle_id doesn't match \n{} != {}"\
-                .format(c1_email_id2, created_data['emails'][1]['handle_id'])
+        assert c1_email_id2 == created_data['emails'][1]['id'], \
+            "Contact's email id doesn't match \n{} != {}"\
+                .format(c1_email_id2, created_data['emails'][1]['id'])
         assert c2_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c2_email, created_email_data['name'])
@@ -1404,9 +1412,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         # check phone
         created_phone_data = result_data['phones_created'][0]['phone']
 
-        assert c1_phone_id == created_data['phones'][0]['handle_id'], \
-            "Contact's phone handle_id doesn't match \n{} != {}"\
-                .format(c1_phone_id, created_data['phones'][0]['handle_id'])
+        assert c1_phone_id == created_data['phones'][0]['id'], \
+            "Contact's phone id doesn't match \n{} != {}"\
+                .format(c1_phone_id, created_data['phones'][0]['id'])
         assert c1_phone == created_phone_data['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, created_phone_data['name'])
@@ -1417,12 +1425,12 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         # check rolerelation
         rolerelation = result_data['rolerelations'][0]['rolerelation']
 
-        assert c1_handle_id == rolerelation['start']['handle_id'], \
-            "Contact's handle_id doesn't match with the one present in the relation \n\
-                {} != {}".format(c1_handle_id , rolerelation['start']['handle_id'],)
-        assert int(organization_id) == int(rolerelation['end']['handle_id']), \
-            "Organization's handle_id doesn't match with the one present in the relation\n\
-                {} != {}".format(organization_id , rolerelation['end']['handle_id'],)
+        assert c1_id == rolerelation['start']['id'], \
+            "Contact's id doesn't match with the one present in the relation \n\
+                {} != {}".format(c1_id , rolerelation['start']['id'],)
+        assert organization_id == rolerelation['end']['id'], \
+            "Organization's id doesn't match with the one present in the relation\n\
+                {} != {}".format(organization_id , rolerelation['end']['id'],)
 
         # Update mutation
         c1_first_name = "Anne"
@@ -1435,14 +1443,14 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         c3_phone = "+34600111222"
         c3_phone_type = "personal"
 
-        role_handle_id = Role.objects.all().last().handle_id
-        organization_id = self.organization2.handle_id
+        role_id = relay.Node.to_global_id('Role', str(Role.objects.all().last().handle_id))
+        organization_id = relay.Node.to_global_id('Organization', str(self.organization2.handle_id))
 
         query = '''
         mutation{{
           composite_contact(input:{{
             update_input:{{
-              handle_id: {c1_handle_id}
+              id: "{c1_id}"
               first_name: "{c1_first_name}"
               last_name: "{c1_last_name}"
               contact_type: "{c1_contact_type}"
@@ -1452,28 +1460,28 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               type: "{c3_email_type}"
             }}]
             update_subinputs:[{{
-              handle_id: {c1_email_id}
+              id: "{c1_email_id}"
               name: "{c1_email}"
               type: "{c1_email_type}"
             }}]
             delete_subinputs:[{{
-              handle_id: {c1_email_id2}
+              id: "{c1_email_id2}"
             }}]
             create_phones:[{{
               name: "{c3_phone}"
               type: "{c3_phone_type}"
             }}]
             update_phones:[{{
-              handle_id: {c1_phone_id}
+              id: "{c1_phone_id}"
               name: "{c1_phone}"
               type: "{c1_phone_type}"
             }}]
             link_rolerelations:[{{
-              role_handle_id: {role_handle_id}
-              organization_handle_id: {organization_id}
+              role_id: "{role_id}"
+              organization_id: "{organization_id}"
             }}]
             delete_phones:[{{
-              handle_id: {c1_phone_id2}
+              id: "{c1_phone_id2}"
             }}]
             unlink_subinputs:[{{
               relation_id: {role_relation_id}
@@ -1485,7 +1493,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 contact_type{{
@@ -1493,7 +1501,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                   value
                 }}
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -1501,7 +1509,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -1511,11 +1519,11 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 roles{{
                   relation_id
                   start{{
-                    handle_id
+                    id
                     first_name
                   }}
                   end{{
-                    handle_id
+                    id
                     name
                   }}
                 }}
@@ -1527,7 +1535,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               email{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -1541,7 +1549,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               email{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -1555,7 +1563,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               phone{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -1569,7 +1577,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               phone{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -1586,12 +1594,12 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 relation_id
                 type
                 start{{
-                  handle_id
+                  id
                   first_name
                   last_name
                 }}
                 end{{
-                  handle_id
+                  id
                   name
                 }}
               }}
@@ -1602,14 +1610,14 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             }}
           }}
         }}
-        '''.format(c1_handle_id=c1_handle_id, c1_first_name=c1_first_name,
+        '''.format(c1_id=c1_id, c1_first_name=c1_first_name,
                     c1_last_name=c1_last_name, c1_contact_type=c1_contact_type,
                     c3_email=c3_email, c3_email_type=c3_email_type,
                     c1_email_id=c1_email_id, c1_email=c1_email,
                     c1_email_type=c1_email_type, c1_email_id2=c1_email_id2,
                     c3_phone=c3_phone, c3_phone_type=c3_phone_type,
                     c1_phone_id=c1_phone_id, c1_phone=c1_phone,
-                    c1_phone_type=c1_phone_type, role_handle_id=role_handle_id,
+                    c1_phone_type=c1_phone_type, role_id=role_id,
                     organization_id=organization_id, c1_phone_id2=c1_phone_id2,
                     role_relation_id=role_relation_id)
 
@@ -1637,8 +1645,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         # get the ids
         result_data = result.data['composite_contact']
-        c1_email_id3 = result_data['subcreated'][0]['email']['handle_id']
-        c1_phone_id3 = result_data['phones_created'][0]['phone']['handle_id']
+        c1_email_id3 = result_data['subcreated'][0]['email']['id']
+        c1_phone_id3 = result_data['phones_created'][0]['phone']['id']
         role_relation_id2 = result_data['rolerelations'][0]['rolerelation']['relation_id']
 
         # check the integrity of the data
@@ -1657,16 +1665,16 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         email3_node = None
 
         for email_node in updated_data['emails']:
-            if email_node['handle_id'] == c1_email_id:
+            if email_node['id'] == c1_email_id:
                 email1_node = email_node
-            elif email_node['handle_id'] == c1_email_id3:
+            elif email_node['id'] == c1_email_id3:
                 email3_node = email_node
 
         self.assertIsNotNone(email1_node)
 
-        assert c1_email_id == email1_node['handle_id'], \
-            "Contact's email handle_id doesn't match \n{} != {}"\
-                .format(c1_email_id, email1_node['handle_id'])
+        assert c1_email_id == email1_node['id'], \
+            "Contact's email id doesn't match \n{} != {}"\
+                .format(c1_email_id, email1_node['id'])
         assert c1_email == email1_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, email1_node['name'])
@@ -1676,9 +1684,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         self.assertIsNotNone(email3_node)
 
-        assert c1_email_id3 == email3_node['handle_id'], \
-            "Contact's email handle_id doesn't match \n{} != {}"\
-                .format(c1_phone_id3, email3_node['handle_id'])
+        assert c1_email_id3 == email3_node['id'], \
+            "Contact's email id doesn't match \n{} != {}"\
+                .format(c1_phone_id3, email3_node['id'])
         assert c3_email == email3_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c3_email, email3_node['name'])
@@ -1692,16 +1700,16 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         phone3_node = None
 
         for phone_node in updated_data['phones']:
-            if phone_node['handle_id'] == c1_phone_id:
+            if phone_node['id'] == c1_phone_id:
                 phone1_node = phone_node
-            elif phone_node['handle_id'] == c1_phone_id3:
+            elif phone_node['id'] == c1_phone_id3:
                 phone3_node = phone_node
 
         self.assertIsNotNone(phone1_node)
 
-        assert c1_phone_id == phone1_node['handle_id'], \
-            "Contact's phone handle_id doesn't match \n{} != {}"\
-                .format(c1_phone_id, phone1_node['handle_id'])
+        assert c1_phone_id == phone1_node['id'], \
+            "Contact's phone id doesn't match \n{} != {}"\
+                .format(c1_phone_id, phone1_node['id'])
         assert c1_phone == phone1_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, phone1_node['name'])
@@ -1711,9 +1719,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         self.assertIsNotNone(phone3_node)
 
-        assert c1_phone_id3 == phone3_node['handle_id'], \
-            "Contact's phone handle_id doesn't match \n{} != {}"\
-                .format(c1_phone_id, phone3_node['handle_id'])
+        assert c1_phone_id3 == phone3_node['id'], \
+            "Contact's phone id doesn't match \n{} != {}"\
+                .format(c1_phone_id, phone3_node['id'])
         assert c3_phone == phone3_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c3_phone, phone3_node['name'])
@@ -1726,20 +1734,22 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             'This contact should only have one role'
         rolerelation = result_data['rolerelations'][0]['rolerelation']
 
-        assert c1_handle_id == rolerelation['start']['handle_id'], \
-            "Contact's handle_id doesn't match with the one present in the relation \n\
-                {} != {}".format(c1_handle_id , rolerelation['start']['handle_id'],)
-        assert int(organization_id) == int(rolerelation['end']['handle_id']), \
-            "Organization's handle_id doesn't match with the one present in the relation\n\
-                {} != {}".format(organization_id , rolerelation['end']['handle_id'],)
+        assert c1_id == rolerelation['start']['id'], \
+            "Contact's id doesn't match with the one present in the relation \n\
+                {} != {}".format(c1_id , rolerelation['start']['id'],)
+        assert organization_id == rolerelation['end']['id'], \
+            "Organization's id doesn't match with the one present in the relation\n\
+                {} != {}".format(organization_id , rolerelation['end']['id'],)
 
         # check for deleted email and phone
-        c1_email_id2 = int(c1_email_id2)
-        assert not NodeHandle.objects.filter(handle_id=c1_email_id2).exists(), \
+        c1_email_hid2 = relay.Node.from_global_id(c1_email_id2)[1]
+        c1_email_hid2 = int(c1_email_hid2)
+        assert not NodeHandle.objects.filter(handle_id=c1_email_hid2).exists(), \
             "This email node should had been deleted"
 
-        c1_phone_id2 = int(c1_phone_id2)
-        assert not NodeHandle.objects.filter(handle_id=c1_phone_id2).exists(), \
+        c1_phone_hid2 = relay.Node.from_global_id(c1_phone_id2)[1]
+        c1_phone_hid2 = int(c1_phone_hid2)
+        assert not NodeHandle.objects.filter(handle_id=c1_phone_hid2).exists(), \
             "This phone node should had been deleted"
 
     def test_multiple_mutation_2(self):
@@ -1755,8 +1765,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         c2_phone = "+34600789456"
         c2_phone_type = "personal"
 
-        role_handle_id = Role.objects.all().first().handle_id
-        organization_id = self.organization1.handle_id
+        role_id = relay.Node.to_global_id('Role', str(Role.objects.all().first().handle_id))
+        organization_id = relay.Node.to_global_id('Organization', str(self.organization1.handle_id))
 
         query = '''
         mutation{{
@@ -1788,8 +1798,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
             ]
             link_rolerelations:[
               {{
-                role_handle_id: {role_handle_id}
-                organization_handle_id: {organization_id}
+                role_id: "{role_id}"
+                organization_id: "{organization_id}"
               }}
             ]
           }}){{
@@ -1799,7 +1809,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 contact_type{{
@@ -1807,7 +1817,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                   value
                 }}
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -1815,7 +1825,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -1830,7 +1840,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               email{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -1844,7 +1854,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               phone{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -1861,12 +1871,12 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 relation_id
                 type
                 start{{
-                  handle_id
+                  id
                   first_name
                   last_name
                 }}
                 end{{
-                  handle_id
+                  id
                   name
                 }}
               }}
@@ -1878,7 +1888,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                     c1_email_type=c1_email_type, c2_email=c2_email,
                     c2_email_type=c2_email_type, c1_phone=c1_phone,
                     c1_phone_type=c1_phone_type, c2_phone=c2_phone,
-                    c2_phone_type=c2_phone_type, role_handle_id=role_handle_id,
+                    c2_phone_type=c2_phone_type, role_id=role_id,
                     organization_id=organization_id)
 
         result = schema.execute(query, context=self.context)
@@ -1896,11 +1906,11 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         # get the ids
         result_data = result.data['composite_contact']
-        c1_handle_id = result_data['created']['contact']['handle_id']
-        c1_email_id = result_data['subcreated'][0]['email']['handle_id']
-        c1_email_id2 = result_data['subcreated'][1]['email']['handle_id']
-        c1_phone_id = result_data['phones_created'][0]['phone']['handle_id']
-        c1_phone_id2 = result_data['phones_created'][1]['phone']['handle_id']
+        c1_id = result_data['created']['contact']['id']
+        c1_email_id = result_data['subcreated'][0]['email']['id']
+        c1_email_id2 = result_data['subcreated'][1]['email']['id']
+        c1_phone_id = result_data['phones_created'][0]['phone']['id']
+        c1_phone_id2 = result_data['phones_created'][1]['phone']['id']
         role_relation_id = result_data['rolerelations'][0]['rolerelation']['relation_id']
 
         # check the integrity of the data
@@ -1917,9 +1927,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         # check email
         created_email_data = result_data['subcreated'][0]['email']
 
-        assert c1_email_id == created_data['emails'][0]['handle_id'], \
-            "Contact's email handle_id doesn't match \n{} != {}"\
-                .format(c1_email_id, created_data['emails'][0]['handle_id'])
+        assert c1_email_id == created_data['emails'][0]['id'], \
+            "Contact's email id doesn't match \n{} != {}"\
+                .format(c1_email_id, created_data['emails'][0]['id'])
         assert c1_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, created_email_data['name'])
@@ -1929,9 +1939,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         created_email_data = result_data['subcreated'][1]['email']
 
-        assert c1_email_id2 == created_data['emails'][1]['handle_id'], \
-            "Contact's email handle_id doesn't match \n{} != {}"\
-                .format(c1_email_id2, created_data['emails'][1]['handle_id'])
+        assert c1_email_id2 == created_data['emails'][1]['id'], \
+            "Contact's email id doesn't match \n{} != {}"\
+                .format(c1_email_id2, created_data['emails'][1]['id'])
         assert c2_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c2_email, created_email_data['name'])
@@ -1942,9 +1952,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         # check phone
         created_phone_data = result_data['phones_created'][0]['phone']
 
-        assert c1_phone_id == created_data['phones'][0]['handle_id'], \
-            "Contact's phone handle_id doesn't match \n{} != {}"\
-                .format(c1_phone_id, created_data['phones'][0]['handle_id'])
+        assert c1_phone_id == created_data['phones'][0]['id'], \
+            "Contact's phone id doesn't match \n{} != {}"\
+                .format(c1_phone_id, created_data['phones'][0]['id'])
         assert c1_phone == created_phone_data['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, created_phone_data['name'])
@@ -1966,13 +1976,13 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         c3_phone = "+34600111222"
         c3_phone_type = "personal"
 
-        role_handle_id = Role.objects.all().last().handle_id
+        role_id = relay.Node.to_global_id('Role', str(Role.objects.all().last().handle_id))
 
         query = '''
         mutation{{
           composite_contact(input:{{
             update_input:{{
-              handle_id: {c1_handle_id}
+              id: "{c1_id}"
               first_name: "{c1_first_name}"
               last_name: "{c1_last_name}"
               contact_type: "{c1_contact_type}"
@@ -1982,29 +1992,29 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               type: "{c3_email_type}"
             }}]
             update_subinputs:[{{
-              handle_id: {c1_email_id}
+              id: "{c1_email_id}"
               name: "{c1_email}"
               type: "{c1_email_type}"
             }}]
             delete_subinputs:[{{
-              handle_id: {c1_email_id2}
+              id: "{c1_email_id2}"
             }}]
             create_phones:[{{
               name: "{c3_phone}"
               type: "{c3_phone_type}"
             }}]
             update_phones:[{{
-              handle_id: {c1_phone_id}
+              id: "{c1_phone_id}"
               name: "{c1_phone}"
               type: "{c1_phone_type}"
             }}]
             link_rolerelations:[{{
-              role_handle_id: {role_handle_id}
-              organization_handle_id: {organization_id}
+              role_id: "{role_id}"
+              organization_id: "{organization_id}"
               relation_id: {role_relation_id}
             }}]
             delete_phones:[{{
-              handle_id: {c1_phone_id2}
+              id: "{c1_phone_id2}"
             }}]
           }}){{
             updated{{
@@ -2013,7 +2023,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               contact{{
-                handle_id
+                id
                 first_name
                 last_name
                 contact_type{{
@@ -2021,7 +2031,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                   value
                 }}
                 emails{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -2029,7 +2039,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                   }}
                 }}
                 phones{{
-                  handle_id
+                  id
                   name
                   type{{
                     name
@@ -2039,11 +2049,11 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 roles{{
                   relation_id
                   start{{
-                    handle_id
+                    id
                     first_name
                   }}
                   end{{
-                    handle_id
+                    id
                     name
                   }}
                 }}
@@ -2055,7 +2065,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               email{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -2069,7 +2079,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               email{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -2083,7 +2093,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               phone{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -2097,7 +2107,7 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 messages
               }}
               phone{{
-                handle_id
+                id
                 name
                 type{{
                   name
@@ -2114,26 +2124,26 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 relation_id
                 type
                 start{{
-                  handle_id
+                  id
                   first_name
                   last_name
                 }}
                 end{{
-                  handle_id
+                  id
                   name
                 }}
               }}
             }}
           }}
         }}
-        '''.format(c1_handle_id=c1_handle_id, c1_first_name=c1_first_name,
+        '''.format(c1_id=c1_id, c1_first_name=c1_first_name,
                     c1_last_name=c1_last_name, c1_contact_type=c1_contact_type,
                     c3_email=c3_email, c3_email_type=c3_email_type,
                     c1_email_id=c1_email_id, c1_email=c1_email,
                     c1_email_type=c1_email_type, c1_email_id2=c1_email_id2,
                     c3_phone=c3_phone, c3_phone_type=c3_phone_type,
                     c1_phone_id=c1_phone_id, c1_phone=c1_phone,
-                    c1_phone_type=c1_phone_type, role_handle_id=role_handle_id,
+                    c1_phone_type=c1_phone_type, role_id=role_id,
                     organization_id=organization_id,
                     role_relation_id=role_relation_id, c1_phone_id2=c1_phone_id2)
 
@@ -2161,8 +2171,8 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         # get the ids
         result_data = result.data['composite_contact']
-        c1_email_id3 = result_data['subcreated'][0]['email']['handle_id']
-        c1_phone_id3 = result_data['phones_created'][0]['phone']['handle_id']
+        c1_email_id3 = result_data['subcreated'][0]['email']['id']
+        c1_phone_id3 = result_data['phones_created'][0]['phone']['id']
         role_relation_id2 = result_data['rolerelations'][0]['rolerelation']['relation_id']
 
         # check the integrity of the data
@@ -2181,16 +2191,16 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         email3_node = None
 
         for email_node in updated_data['emails']:
-            if email_node['handle_id'] == c1_email_id:
+            if email_node['id'] == c1_email_id:
                 email1_node = email_node
-            elif email_node['handle_id'] == c1_email_id3:
+            elif email_node['id'] == c1_email_id3:
                 email3_node = email_node
 
         self.assertIsNotNone(email1_node)
 
-        assert c1_email_id == email1_node['handle_id'], \
-            "Contact's email handle_id doesn't match \n{} != {}"\
-                .format(c1_email_id, email1_node['handle_id'])
+        assert c1_email_id == email1_node['id'], \
+            "Contact's email id doesn't match \n{} != {}"\
+                .format(c1_email_id, email1_node['id'])
         assert c1_email == email1_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, email1_node['name'])
@@ -2200,9 +2210,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         self.assertIsNotNone(email3_node)
 
-        assert c1_email_id3 == email3_node['handle_id'], \
-            "Contact's email handle_id doesn't match \n{} != {}"\
-                .format(c1_phone_id3, email3_node['handle_id'])
+        assert c1_email_id3 == email3_node['id'], \
+            "Contact's email id doesn't match \n{} != {}"\
+                .format(c1_phone_id3, email3_node['id'])
         assert c3_email == email3_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c3_email, email3_node['name'])
@@ -2216,16 +2226,16 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         phone3_node = None
 
         for phone_node in updated_data['phones']:
-            if phone_node['handle_id'] == c1_phone_id:
+            if phone_node['id'] == c1_phone_id:
                 phone1_node = phone_node
-            elif phone_node['handle_id'] == c1_phone_id3:
+            elif phone_node['id'] == c1_phone_id3:
                 phone3_node = phone_node
 
         self.assertIsNotNone(phone1_node)
 
-        assert c1_phone_id == phone1_node['handle_id'], \
-            "Contact's phone handle_id doesn't match \n{} != {}"\
-                .format(c1_phone_id, phone1_node['handle_id'])
+        assert c1_phone_id == phone1_node['id'], \
+            "Contact's phone id doesn't match \n{} != {}"\
+                .format(c1_phone_id, phone1_node['id'])
         assert c1_phone == phone1_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, phone1_node['name'])
@@ -2235,9 +2245,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
 
         self.assertIsNotNone(phone3_node)
 
-        assert c1_phone_id3 == phone3_node['handle_id'], \
-            "Contact's phone handle_id doesn't match \n{} != {}"\
-                .format(c1_phone_id, phone3_node['handle_id'])
+        assert c1_phone_id3 == phone3_node['id'], \
+            "Contact's phone id doesn't match \n{} != {}"\
+                .format(c1_phone_id, phone3_node['id'])
         assert c3_phone == phone3_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c3_phone, phone3_node['name'])
@@ -2255,18 +2265,20 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert len(roles_data) == 1, \
             'This contact should only have one role'
 
-        assert c1_handle_id == rolerelation['start']['handle_id'], \
-            "Contact's handle_id doesn't match with the one present in the relation \n\
-                {} != {}".format(c1_handle_id , rolerelation['start']['handle_id'],)
-        assert int(organization_id) == int(rolerelation['end']['handle_id']), \
-            "Organization's handle_id doesn't match with the one present in the relation\n\
-                {} != {}".format(organization_id , rolerelation['end']['handle_id'],)
+        assert c1_id == rolerelation['start']['id'], \
+            "Contact's id doesn't match with the one present in the relation \n\
+                {} != {}".format(c1_id , rolerelation['start']['id'],)
+        assert organization_id == rolerelation['end']['id'], \
+            "Organization's id doesn't match with the one present in the relation\n\
+                {} != {}".format(organization_id , rolerelation['end']['id'],)
 
         # check for deleted email and phone
-        c1_email_id2 = int(c1_email_id2)
-        assert not NodeHandle.objects.filter(handle_id=c1_email_id2).exists(), \
+        c1_email_hid2 = relay.Node.from_global_id(c1_email_id2)[1]
+        c1_email_hid2 = int(c1_email_hid2)
+        assert not NodeHandle.objects.filter(handle_id=c1_email_hid2).exists(), \
             "This email node should had been deleted"
 
-        c1_phone_id2 = int(c1_phone_id2)
-        assert not NodeHandle.objects.filter(handle_id=c1_phone_id2).exists(), \
+        c1_phone_hid2 = relay.Node.from_global_id(c1_phone_id2)[1]
+        c1_phone_hid2 = int(c1_phone_hid2)
+        assert not NodeHandle.objects.filter(handle_id=c1_phone_hid2).exists(), \
             "This phone node should had been deleted"
