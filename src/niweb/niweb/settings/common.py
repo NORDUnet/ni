@@ -56,6 +56,12 @@ DEBUG = False
 
 ########## BRAND / HOME ORGANISATION
 BRAND = environ.get('BRAND', 'NORDUnet')
+
+LOGO_COLOR = environ.get('LOGO_COLOR', '')
+LOGO_SUBTEXT = environ.get('LOGO_SUBTEXT', '')
+LINK_COLOR = environ.get('LINK_COLOR', '')
+LINK_HOVER = environ.get('LINK_HOVER', '')
+
 ########## END BRAND / HOME ORGANISATION
 
 ########## ALLOWED HOSTS CONFIGURATION
@@ -207,8 +213,13 @@ AUTHENTICATION_BACKENDS = (
 )
 if SAML_ENABLED:
     AUTHENTICATION_BACKENDS += (
-        'djangosaml2.backends.Saml2Backend',
+        environ.get('SAML_BACKEND', 'djangosaml2.backends.Saml2Backend'),
     )
+    MIDDLEWARE += (
+        'apps.saml2auth.middleware.HandleUnsupportedBinding',
+    )
+    # Needed since django 2+ sets lax per default
+    SESSION_COOKIE_SAMESITE = None
 ######### END AUTHENTICATION BACKENDS CONFIGURATION
 
 ########## URL CONFIGURATION

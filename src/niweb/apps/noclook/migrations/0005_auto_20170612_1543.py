@@ -29,6 +29,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='choice',
             name='dropdown',
-            field=models.ForeignKey(to='noclook.Dropdown'),
+            field=models.ForeignKey(to='noclook.Dropdown', on_delete=models.CASCADE),
         ),
     ]

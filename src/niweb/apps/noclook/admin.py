@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 
 from .models import NodeHandle, NodeType, Role, RoleGroup, UniqueIdGenerator,\
     NordunetUniqueId, OpticalNodeType, ServiceType, ServiceClass, Dropdown, \
-    Choice, GroupContextAuthzAction, NodeHandleContext
+    Choice, GroupContextAuthzAction, NodeHandleContext, SwitchType
 
 class UserModelAdmin(UserAdmin):
     inlines = [ApiKeyInline]
@@ -89,6 +89,9 @@ class DropdownAdmin(admin.ModelAdmin):
 class ChoiceAdmin(admin.ModelAdmin):
     list_display = ('name', 'dropdown')
 
+class SwitchTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'ports')
+
 admin.site.register(NodeHandle, NodeHandleAdmin)
 admin.site.register(NodeType, NodeTypeAdmin)
 admin.site.register(ApiAccess)
@@ -105,3 +108,4 @@ admin.site.register(RoleGroup)
 admin.site.register(Role)
 admin.site.register(GroupContextAuthzAction)
 admin.site.register(NodeHandleContext)
+admin.site.register(SwitchType, SwitchTypeAdmin)

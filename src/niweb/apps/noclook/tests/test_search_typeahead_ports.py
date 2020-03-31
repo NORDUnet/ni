@@ -27,37 +27,43 @@ class SearchTypeaheadPortsCase(NeoTestCase):
         helpers.set_location(self.user, router_node, site.handle_id)
         helpers.create_port(router_node, "ge-0/0/1", self.user)
         helpers.create_port(router_node, "ge-0/0/2", self.user)
-        helpers.create_port(router_node, "ge-0/1/1", self.user)
+        helpers.create_port(router_node, "ge-1/1/1", self.user)
 
     def test_one_result(self):
         resp = self.client.get(self.typeahead_url, {"query": "hex odf 3+4"})
         result = resp.json()
-        self.assertEquals(1, len(result))
+        self.assertEqual(1, len(result))
         odf = result[0]
-        self.assertEquals("UK-HEX A.01 test-odf1 3+4", odf.get("name"))
+        self.assertEqual("UK-HEX A.01 test-odf1 3+4", odf.get("name"))
+
+    def test_search_with_dash(self):
+        resp = self.client.get(self.typeahead_url, {"query": "ge-1"})
+        result = resp.json()
+        self.assertEqual(1, len(result))
+        port = result[0]
+        self.assertEqual('UK-HEX uk-hex.nordu.net ge-1/1/1', port.get("name"))
 
     def test_no_result(self):
         resp = self.client.get(self.typeahead_url, {"query": "ore2 odf"})
         result = resp.json()
-        self.assertEquals(0, len(result))
+        self.assertEqual(0, len(result))
 
     def test_multiple_results(self):
         resp = self.client.get(self.typeahead_url, {"query": "ge-"})
         result = resp.json()
-        self.assertEquals(3, len(result))
+        self.assertEqual(3, len(result))
 
     def test_empty_query(self):
         resp = self.client.get(self.typeahead_url, {"query": ""})
         result = resp.json()
-        self.assertEquals(0, len(result))
+        self.assertEqual(0, len(result))
 
     def test_no_query(self):
         resp = self.client.get(self.typeahead_url, {})
         result = resp.json()
-        self.assertEquals(0, len(result))
+        self.assertEqual(0, len(result))
 
     def test_escapes_regex(self):
         resp = self.client.get(self.typeahead_url, {"query": ".*"})
         result = resp.json()
-        self.assertEquals(0, len(result))
-
+        self.assertEqual(0, len(result))

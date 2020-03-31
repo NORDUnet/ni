@@ -1,0 +1,50 @@
+{% extends "noclook/edit/base_edit.html" %}
+{% load crispy_forms_tags %}
+{% load noclook_tags %}
+
+{% block content %}
+
+
+{{ block.super }}
+  {% if connected_to.Connected_to %}
+      {% load noclook_tags %}
+      <h4>Remove Connection</h4>
+
+      {% for item in connected_to.Connected_to %}
+          <div class="row">
+              <div class="span5">
+                  Connected to <a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a>
+              </div>
+              <div class="span1">
+                  <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+              </div>
+          </div>
+      {% endfor %}
+  <hr>
+  {% endif %}
+
+  <h1>Create and connect new cable</h1>
+
+    <div class="well">
+        <b>Connect to</b> {% include "noclook/edit/includes/connection_single_group.html" %}
+        <tr>{{ form.name | as_crispy_field}}</tr>
+        <tr>{{ form.cable_type | as_crispy_field}}</tr>
+
+    </div>
+
+{% endblock %}
+
+{% block content_footer %}
+        <br><br>
+        <div class="row">
+            <div class="span5">
+                <div class="btn-toolbar">
+                    <div class="btn-group">
+                        <input type="submit" name="saveanddone" class="btn btn-primary" value="Save">
+                        <a href="{{ redirect_url }}" class="btn">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}

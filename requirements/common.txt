@@ -1,5 +1,4 @@
--i https://pypi.sunet.se/simple
-Django<1.12
+Django<3.0
 django-activity-stream<0.9
 django-jsonfield==1.2.0
 django-jsonfield-compat
@@ -8,10 +7,10 @@ norduniclient<1.4
 psycopg2-binary<2.9
 python-dateutil<2.7
 xlwt<1.3
-django-crispy-forms<1.7
-django-contrib-comments<1.9
+django-crispy-forms<2.0
+django-contrib-comments<2.0
 django-dotenv<1.5
-django-dynamic-preferences<1.4
+django-dynamic-preferences<2.0
 django-attachments<2.0
 configparser
 graphene-django>=2.0

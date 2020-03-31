@@ -4,6 +4,7 @@ from apps.noclook import helpers
 from apps.noclook.models import Role
 from actstream.models import actor_stream
 from norduniclient.exceptions import UniqueNodeError
+import norduniclient as nc
 
 
 class Neo4jHelpersTest(NeoTestCase):
@@ -131,3 +132,28 @@ class Neo4jHelpersTest(NeoTestCase):
             self.role
         )
         self.assertEqual(contact, None)
+
+    def test_relationship_to_str_with_id(self):
+        nh1 = self.create_node('Router1', 'router')
+        router1 = nh1.get_node()
+
+        nh2 = self.create_node('Port1', 'port')
+        result = router1.set_has(nh2.handle_id)
+        relationship_id = result['Has'][0]['relationship_id']
+
+        out = helpers.relationship_to_str(relationship_id)
+        expected = '(Router1 ({a_id}))-[{r_id}:Has]->(Port1 ({b_id}))'.format(a_id=nh1.handle_id, r_id=relationship_id, b_id=nh2.handle_id)
+        self.assertEqual(expected, out)
+
+    def test_relationship_to_str_with_model(self):
+        nh1 = self.create_node('Router1', 'router')
+        router1 = nh1.get_node()
+
+        nh2 = self.create_node('Port1', 'port')
+        result = router1.set_has(nh2.handle_id)
+        relationship_id = result['Has'][0]['relationship_id']
+        rel = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+
+        out = helpers.relationship_to_str(rel)
+        expected = '(Router1 ({a_id}))-[{r_id}:Has]->(Port1 ({b_id}))'.format(a_id=nh1.handle_id, r_id=relationship_id, b_id=nh2.handle_id)
+        self.assertEqual(expected, out)

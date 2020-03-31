@@ -14,7 +14,7 @@ class UserProfile(models.Model):
         ('community', 'Community'),
     )
 
-    user = models.OneToOneField(User, related_name='profile')
+    user = models.OneToOneField(User, related_name='profile', on_delete=models.CASCADE)
     email = models.CharField(max_length=255, blank=True, null=True)
     display_name = models.CharField(max_length=255, blank=True, null=True)
     avatar = models.ImageField(null=True)

@@ -13,11 +13,15 @@ from django.http import Http404, JsonResponse
 from django.utils import six
 from django.shortcuts import get_object_or_404, render, redirect
 import json
-from apps.noclook.models import NodeHandle, Role, RoleGroup, Dropdown, DEFAULT_ROLES
+from apps.noclook.models import NodeHandle, Dropdown, UniqueIdGenerator,\
+                                NordunetUniqueId, Role, RoleGroup, DEFAULT_ROLES
+from django.core.exceptions import ObjectDoesNotExist
 from apps.noclook import forms
 from apps.noclook import activitylog
 from apps.noclook import helpers
+from apps.noclook import unique_ids
 import norduniclient as nc
+from norduniclient.exceptions import UniqueNodeError
 
 
 # Helper functions
@@ -447,6 +451,150 @@ def edit_odf(request, handle_id):
     return render(request, 'noclook/edit/edit_odf.html',
                   {'node_handle': nh, 'node': odf, 'form': form, 'location': location, 'ports': ports})
 
+@staff_member_required
+def edit_outlet(request, handle_id):
+    # Get needed data from node
+    nh, outlet = helpers.get_nh_node(handle_id)
+    location = outlet.get_location()
+    location_path = outlet.get_location_path()
+    ports = outlet.get_ports()
+    if request.POST:
+        form = forms.EditOutletForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, outlet.handle_id, form)
+            # ODF specific updates
+            _handle_location(request.user,
+                             outlet,
+                             form.cleaned_data['relationship_location'])
+            _handle_ports(outlet,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditOutletForm(outlet.data)
+    return render(request, 'noclook/edit/edit_outlet.html',
+                  {'node_handle': nh, 'node': outlet, 'form': form, 'location': location,
+                   'location_path': location_path, 'ports': ports})
+
+
+def _handle_trunk_cable(node, form, user):
+    # sanity checks
+    if form.is_valid():
+        if form.cleaned_data['trunk_num_ports'] < 1:
+            # no ports to handle
+            return True
+        # get base cable id
+        base_name = form.cleaned_data['trunk_base_name']
+        if not base_name:
+            # check uniqueIDgennerator
+            try:
+                id_generator = UniqueIdGenerator.objects.filter(name__endswith='cable_id').get()
+                base_name = unique_ids.get_collection_unique_id(id_generator)
+            except ObjectDoesNotExist:
+                form.add_error('trunk_base_name', 'No unique id generator found, so base name is required')
+                return False
+
+        # get other equipment
+        try:
+            target_nh, target_node = helpers.get_nh_node(form.cleaned_data['trunk_relationship_other'])
+        except Exception:
+            form.add_error('trunk_relationship_other', 'Other equipment cannot be found')
+            return False
+
+        def port_map(ports_raw):
+            ports = ports_raw.get('Has', {})
+            return {p.get('node').data.get('name'): p.get('node') for p in ports}
+        ports = port_map(node.get_ports())
+        target_ports = port_map(target_node.get_ports())
+        first_port = form.cleaned_data['trunk_first_port']
+        end_port = first_port + form.cleaned_data['trunk_num_ports']
+        create_missing = form.cleaned_data['trunk_create_missing_ports']
+        trunk_prefix = form.cleaned_data['trunk_prefix']
+
+        ports_to_connect = []
+        for i in range(first_port, end_port):
+            port_name = '{}{}'.format(trunk_prefix, i)
+            port_a = ports.get(port_name)
+            port_b = target_ports.get(port_name)
+
+            # check if cable exis
+            cable_name = '{}_{}'.format(base_name, port_name)
+            cable_count = NodeHandle.objects.filter(node_name=cable_name, node_type__type='Cable').count()
+            if cable_count != 0:
+                form.add_error('trunk_base_name', '{} already exist'.format(cable_name))
+            elif port_a and port_b:
+                ports_to_connect.append((port_a, port_b))
+            elif create_missing:
+                if not port_a:
+                    port_a = helpers.create_port(node, port_name, user)
+                if not port_b:
+                    port_b = helpers.create_port(target_node, port_name, user)
+                ports_to_connect.append((port_a, port_b))
+            else:
+                form.add_error('trunk_create_missing_ports', '{} missing on one of the endpoints'.format(port_name))
+
+        if form.errors:
+            return False
+
+        # create cables between ports
+        for a, b in ports_to_connect:
+            port_name = a.data.get('name')
+            cable_name = '{}_{}'.format(base_name, port_name)
+            unique_ids.register_unique_id(NordunetUniqueId, cable_name)
+            cable_nh = helpers.create_unique_node_handle(user, cable_name, 'cable', 'Physical')
+            cable_node = cable_nh.get_node()
+            # update cable type
+            helpers.dict_update_node(user, cable_node.handle_id, {'cable_type': 'Fixed'})
+            helpers.set_connected_to(user, cable_node, a.handle_id)
+            helpers.set_connected_to(user, cable_node, b.handle_id)
+        return True
+
+
+@staff_member_required
+def edit_patch_panel(request, handle_id):
+    # Get needed data from node
+    nh, patch_panel = helpers.get_nh_node(handle_id)
+    location = patch_panel.get_location()
+    location_path = patch_panel.get_location_path()
+    ports = patch_panel.get_ports()
+
+    trunk_form = forms.TrunkCableForm(request.POST or None)
+    if request.POST:
+        form = forms.EditPatchPanelForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, patch_panel.handle_id, form)
+            # ODF specific updates
+            _handle_location(request.user,
+                             patch_panel,
+                             form.cleaned_data['relationship_location'])
+            _handle_ports(patch_panel,
+                          form.cleaned_data['relationship_ports'],
+                          request.user)
+            if not _handle_trunk_cable(patch_panel, trunk_form, request.user):
+                # fall through to default return
+                form.add_error(None, 'Error in trunk cable')
+            elif 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditPatchPanelForm(patch_panel.data)
+    return render(
+        request,
+        'noclook/edit/edit_patch_panel.html',
+        {'node_handle': nh,
+         'node': patch_panel,
+         'form': form,
+         'trunk_form': trunk_form,
+         'location': location,
+         'location_path': location_path,
+         'ports': ports})
+
 
 @staff_member_required
 def edit_optical_fillter(request, handle_id):
@@ -725,6 +873,62 @@ def edit_port(request, handle_id):
 
 
 @staff_member_required
+def connect_port(request, handle_id):
+    nh, port = helpers.get_nh_node(handle_id)
+    location_path = port.get_location_path()
+
+    tmp_connected_to = port.get_connected_to()
+
+    # Remove all "Fixed" cables, reduce risk for user to remove building cables
+    connected_to = {'Connected_to': []}
+    if tmp_connected_to.get('Connected_to'):
+        for item in tmp_connected_to['Connected_to']:
+            if item['node'].data['cable_type'] != 'Fixed':
+                connected_to['Connected_to'].append(item)
+
+    connections_categories = Dropdown.get('cable_types').as_values(False)
+    cable_types = u', '.join([u'"{}"'.format(val) for val in Dropdown.get('cable_types').as_values()])
+
+    # retunr to device the port is connected to
+    redirect_url = helpers.get_node_url(port.handle_id)
+    parent = port.get_parent().get('Has', [])
+    if parent:
+        redirect_url = helpers.get_node_url(parent[0]['node'].handle_id)
+
+    if request.POST:
+        form = forms.ConnectPortForm(request.POST)
+        if form.is_valid():
+            if not form.cleaned_data['relationship_end_a']:
+                form.add_error('relationship_end_a', 'Please select other end of cable')
+            else:
+                try:
+                    new_cable_nh = helpers.form_to_unique_node_handle(request, form, 'cable', 'Physical')
+                except UniqueNodeError:
+                    form = forms.ConnectPortForm(request.POST)
+                    form.add_error('name', 'A Cable with that name already exists.')
+                    return render(request, 'noclook/edit/connect_port.html', {'form': form})
+
+                #Update cable
+                helpers.form_update_node(request.user, new_cable_nh.handle_id, form)
+
+                # Connect cable to first port
+                helpers.set_connected_to(request.user, new_cable_nh.get_node(), port.handle_id)
+
+                # Connect cable to selected port
+                end_a_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_end_a'])
+                helpers.set_connected_to(request.user, new_cable_nh.get_node(), end_a_nh.handle_id)
+
+                return redirect(redirect_url)
+    else:
+        initial = {'name': None}
+        form = forms.ConnectPortForm(initial=initial)
+
+    return render(request, 'noclook/edit/connect_port.html',
+                  {'node_handle': nh, 'form': form, 'node': port, 'redirect_url': redirect_url,
+                      'connected_to': connected_to, 'cable_types': cable_types,
+                   'connections_categories': connections_categories, 'location_path': location_path})
+
+@staff_member_required
 def edit_provider(request, handle_id):
     # Get needed data from node
     nh, provider = helpers.get_nh_node(handle_id)
@@ -770,6 +974,33 @@ def edit_rack(request, handle_id):
         form = forms.EditRackForm(rack.data)
     return render(request, 'noclook/edit/edit_rack.html',
                   {'node_handle': nh, 'form': form, 'parent': parent, 'node': rack,
+                      'located_in': located_in, 'parent_categories': 'site', 'located_in_categories': located_in_categories})
+
+
+@staff_member_required
+def edit_room(request, handle_id):
+    # Get needed data from node
+    nh, room = helpers.get_nh_node(handle_id)
+    parent = room.get_parent()
+    located_in = room.get_located_in()
+    located_in_categories = ['rack', 'host', 'odf', 'optical-node', 'router']
+    if request.POST:
+        form = forms.EditRoomForm(request.POST)
+        if form.is_valid():
+            # Generic node update
+            helpers.form_update_node(request.user, room.handle_id, form)
+            # Room specific updates
+            if form.cleaned_data['relationship_parent']:
+                parent_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_parent'])
+                helpers.set_has(request.user, parent_nh.get_node(), room.handle_id)
+            if 'saveanddone' in request.POST:
+                return redirect(nh.get_absolute_url())
+            else:
+                return redirect('%sedit' % nh.get_absolute_url())
+    else:
+        form = forms.EditRoomForm(room.data)
+    return render(request, 'noclook/edit/edit_room.html',
+                  {'node_handle': nh, 'form': form, 'parent': parent, 'node': room,
                       'located_in': located_in, 'parent_categories': 'site', 'located_in_categories': located_in_categories})
 
 
@@ -1141,6 +1372,8 @@ EDIT_FUNC = {
     'optical-link': edit_optical_link,
     'optical-multiplex-section': edit_optical_multiplex_section,
     'optical-path': edit_optical_path,
+    'outlet': edit_outlet,
+    'patch-panel': edit_patch_panel,
     'pdu': edit_pdu,
     'peering-partner': edit_peering_partner,
     'peering-group': edit_peering_group,
@@ -1151,6 +1384,7 @@ EDIT_FUNC = {
     'role': edit_role,
     'router': edit_router,
     'site': edit_site,
+    'room': edit_room,
     'site-owner': edit_site_owner,
     'switch': edit_switch,
     'organization': edit_organization,

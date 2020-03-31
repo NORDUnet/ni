@@ -138,8 +138,15 @@ def insert_services(service_dict, host_node, external_check=False):
     meta_type = 'Logical'
     services_locked = host_node.data.get('services_locked', False)
     # Expected service data from nmap
-    property_keys = ['ip_address', 'protocol', 'port', 'conf', 'extrainfo',
-                     'name', 'product', 'reason', 'state', 'version']
+    property_keys = [
+        'ip_address',
+        'protocol',
+        'port',
+        'conf',
+        'name',
+        'product',
+        'state',
+    ]
     if external_check:
         property_keys.extend(['public', 'noclook_last_external_check'])
         external_dict = {
@@ -151,10 +158,18 @@ def insert_services(service_dict, host_node, external_check=False):
         for protocol in service_dict[address].keys():
             for port in service_dict[address][protocol].keys():
                 service = service_dict[address][protocol][port]
-                if service['state'] in ['open' , 'open|filtered']:
+                # Ignore anything but open
+                if service['state'] == 'open':
                     service_name = service['name']
                     if not service_name:  # Blank
-                        service_name = 'unknown'
+                        logger.warn(
+                            'Skipping unknown service on port: %s (%s), address: %s, hostname: %s, data: %s',
+                            port,
+                            protocol,
+                            address,
+                            host_node.data.get('name'),
+                            service)
+                        continue
                     service_node_handle = utils.get_unique_node_handle(service_name, node_type, meta_type)
                     service_node = service_node_handle.get_node()
                     helpers.update_noclook_auto_manage(service_node)
@@ -229,16 +244,6 @@ def insert_nmap(json_list, external_check=False):
             'hostnames': i['host']['nmap_services_py']['hostnames'],
             'ip_addresses': addresses
         }
-        if 'os' in i['host']['nmap_services_py']:
-            if 'class' in i['host']['nmap_services_py']['os']:
-                properties['os'] = i['host']['nmap_services_py']['os']['class']['osfamily']
-                properties['os_version'] = i['host']['nmap_services_py']['os']['class']['osgen']
-            elif 'match' in i['host']['nmap_services_py']['os']:
-                if i['host']['nmap_services_py']['os']['match']:
-                    properties['os'] = i['host']['nmap_services_py']['os'].get('match', {}).get('name')
-        if 'uptime' in i['host']['nmap_services_py']:
-            properties['lastboot'] = i['host']['nmap_services_py']['uptime']['lastboot']
-            properties['uptime'] = i['host']['nmap_services_py']['uptime']['seconds']
 
         insert_services(i['host']['nmap_services_py']['services'], node, external_check)
         # Check if the host has backup

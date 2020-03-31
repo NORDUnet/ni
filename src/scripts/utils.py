@@ -62,17 +62,19 @@ def generate_password(n):
     return ''.join([random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789@#$%^&*(-_=+)') for i in range(n)])
 
 
+NODE_TYPE_CACHE = {}
+
+
 def get_node_type(type_name):
     """
     Returns or creates and returns the NodeType object with the supplied
     name.
     """
-    try:
-        node_type = NodeType.objects.get(type=type_name)
-    except NodeType.DoesNotExist:
-        # The NodeType was not found, create one
-        node_type = NodeType(type=type_name, slug=slugify(type_name))
-        node_type.save()
+    if type_name in NODE_TYPE_CACHE:
+        return NODE_TYPE_CACHE[type_name]
+
+    node_type, created = NodeType.objects.get_or_create(type=type_name, defaults={'slug': slugify(type_name)})
+    NODE_TYPE_CACHE[type_name] = node_type
     return node_type
 
 
