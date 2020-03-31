@@ -1,0 +1,23 @@
+# Before vacuum full
+#  public | actstream_action                                 | table    | ni    | 3218 MB    |
+# Vacuum after cleanup_peering_partner.py:
+#  public | actstream_action                                 | table    | ni    | 2480 MB    |
+# Vacuum after cleanup_host_services.py --purge:
+# public | actstream_action                                 | table    | ni    | 431 MB     |
+
+
+select count(*) from actstream_action where actor_object_id='2' and verb='update' and data LIKE '%property": "uptime"%';
+# 922706
+
+select count(*) from actstream_action where actor_object_id='2' and verb='update' and data LIKE '%property": "os"%';
+# 281450
+
+select count(*) from actstream_action where actor_object_id='2' and verb='update' and data LIKE '%property": "lastboot"%';
+# 586798
+
+select count(*) from actstream_action where actor_object_id='2' and verb='update' and data LIKE '%property": "os_version"%';
+# 46956
+
+vacuum FULL ANALYZE actstream_action;
+# After vacuum:
+# public | actstream_action                                 | table    | ni    | 43 MB     |

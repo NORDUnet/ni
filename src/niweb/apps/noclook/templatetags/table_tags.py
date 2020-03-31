@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import collections
+from collections.abc import Iterable
 
 from django import template
 from apps.noclook.templatetags.noclook_tags import noclook_node_to_link
@@ -19,7 +19,7 @@ def table_column(context, item):
                                   u'{}', ([table_column(context, i)] for i in item))
     elif isinstance(item, six.text_type):
         result = item
-    elif isinstance(item, collections.Iterable):
+    elif isinstance(item, Iterable):
         if "handle_id" in item:
             # item is a node
             result = noclook_node_to_link(context, item)

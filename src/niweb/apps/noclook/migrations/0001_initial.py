@@ -20,8 +20,8 @@ class Migration(migrations.Migration):
                 ('node_meta_type', models.CharField(max_length=255, choices=[(b'Physical', b'Physical'), (b'Logical', b'Logical'), (b'Relation', b'Relation'), (b'Location', b'Location')])),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
-                ('creator', models.ForeignKey(related_name='creator', to=settings.AUTH_USER_MODEL)),
-                ('modifier', models.ForeignKey(related_name='modifier', to=settings.AUTH_USER_MODEL)),
+                ('creator', models.ForeignKey(related_name='creator', to=settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)),
+                ('modifier', models.ForeignKey(related_name='modifier', to=settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)),
             ],
         ),
         migrations.CreateModel(
@@ -40,8 +40,8 @@ class Migration(migrations.Migration):
                 ('reserved', models.BooleanField(default=False)),
                 ('reserve_message', models.CharField(max_length=512, null=True, blank=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
-                ('reserver', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True)),
-                ('site', models.ForeignKey(blank=True, to='noclook.NodeHandle', null=True)),
+                ('reserver', models.ForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)),
+                ('site', models.ForeignKey(blank=True, to='noclook.NodeHandle', null=True, on_delete=models.SET_NULL)),
             ],
             options={
                 'abstract': False,
@@ -61,13 +61,13 @@ class Migration(migrations.Migration):
                 ('next_id', models.CharField(max_length=256, editable=False)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
-                ('creator', models.ForeignKey(related_name='unique_id_creator', to=settings.AUTH_USER_MODEL)),
-                ('modifier', models.ForeignKey(related_name='unique_id_modifier', blank=True, to=settings.AUTH_USER_MODEL, null=True)),
+                ('creator', models.ForeignKey(related_name='unique_id_creator', to=settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)),
+                ('modifier', models.ForeignKey(related_name='unique_id_modifier', blank=True, to=settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)),
             ],
         ),
         migrations.AddField(
             model_name='nodehandle',
             name='node_type',
-            field=models.ForeignKey(to='noclook.NodeType'),
+            field=models.ForeignKey(to='noclook.NodeType', on_delete=models.CASCADE),
         ),
     ]

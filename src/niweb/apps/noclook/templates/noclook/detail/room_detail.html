@@ -1,0 +1,57 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }} | {{ node.node_type }} Detail{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span3">
+        <table class="table">
+            {% if node.data.floor %}
+                <tr>
+                    <th>Floor:</th><td>{{ node.data.floor }}</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th>More information:</th>
+                <td>
+                    {% if node.data.url %}
+                        <a href="{{ node.data.url }}" target="_blank">Link</a>
+                    {% else %}
+                        <a href="{% more_info_url node.data.name %}" target="_blank">To Portal</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% include "noclook/detail/includes/last_changed.html" with inline=True %}
+        </table>
+    </div>
+</div>
+{% if user.is_staff %}
+    <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+{% endif %}
+<div class="section">
+    <div class="pull-right">
+        {% table_search "locations" %}
+    </div>
+    {% include "noclook/detail/includes/equipment.html" with equipment=equipment_relationships title="Local equipment" %}
+    <h3>Racks and equipment</h3>
+    {% blockvar th %}
+      {% for header in racks_table.headers %}
+        <th>{{header}}</th>
+      {% endfor %}
+    {% endblockvar %}
+    {% load table_tags %}
+    {% blockvar tbody %}
+            {% for row in racks_table.rows %}
+              <tr{% if row.classes %} class="{{row.classes}}"{% endif %}>
+                {% for col in row.cols %}
+                  <td>{% table_column col %}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+    {% endblockvar %}
+    {% table th tbody id="locations" %}
+</div>
+{% endblock %}
+

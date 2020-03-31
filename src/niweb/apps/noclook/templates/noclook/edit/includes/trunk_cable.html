@@ -1,0 +1,21 @@
+{% load noclook_tags %}
+{% load crispy_forms_tags %}
+
+{% if trunk_form %}
+  {% accordion 'Trunk cable (optional)' 'trunk_cables' '#edit-accordion' %}
+    <h4>Add trunk cable</h4>
+    <div class="row">
+        <div class="span4">
+          {{ trunk_form.trunk_base_name | as_crispy_field}}
+          {% if not trunk_typeahead_url %}
+            {% url 'typeahead_slugs' slug=node_handle.node_type.slug as trunk_typeahead_url %}
+          {% endif %}
+          {% typeahead trunk_form.trunk_relationship_other trunk_typeahead_url placeholder='Ex: dk-ore' min_length=2 %}
+          {{ trunk_form.trunk_create_missing_ports | as_crispy_field }}
+          {{ trunk_form.trunk_first_port | as_crispy_field }}
+          {{ trunk_form.trunk_num_ports | as_crispy_field }}
+          {{ trunk_form.trunk_prefix | as_crispy_field }}
+        </div>
+    </div>
+  {% endaccordion %}
+{% endif %}

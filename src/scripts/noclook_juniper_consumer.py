@@ -32,7 +32,7 @@ from apps.noclook import helpers
 from apps.noclook import activitylog
 import norduniclient as nc
 from dynamic_preferences.registries import global_preferences_registry
-from apps.noclook.models import UniqueIdGenerator
+from apps.noclook.models import UniqueIdGenerator, NodeHandle
 
 logger = logging.getLogger('noclook_consumer.juniper')
 
@@ -40,7 +40,7 @@ logger = logging.getLogger('noclook_consumer.juniper')
 # NERDS producers juniper_config to the NOCLook database viewer.
 #
 # JSON format used:
-#{["host": {
+# {["host": {
 #   "juniper_conf": {
 #       "bgp_peerings": [
 #            {
@@ -82,7 +82,7 @@ logger = logging.getLogger('noclook_consumer.juniper')
 #        "version": 1,
 #        "name": ""
 #    }
-#]}
+# ]}
 
 PEER_AS_CACHE = {}
 REMOTE_IP_MATCH_CACHE = {}
@@ -133,8 +133,9 @@ def insert_interface_unit(iface_node, unit, service_id_regex):
     # Auto depend service on unit
     auto_depend_services(unit_node.handle_id, unit.get('description', ''), service_id_regex, 'Unit')
 
+
 def cleanup_hardware_v1(router_node, user):
-    p = "^\d+/\d+/\d+$"
+    p = r"^\d+/\d+/\d+$"
     bad_interfaces = re.compile(p)
 
     # Cleanup ni hardware info v1...
@@ -164,6 +165,7 @@ def cleanup_hardware_v1(router_node, user):
     for hw in old_hardware:
         helpers.delete_node(user, hw['handle_id'])
 
+
 def _service_id_regex():
     global_preferences = global_preferences_registry.manager()
     service_id_generator_name = global_preferences.get('id_generators__services')
@@ -172,16 +174,17 @@ def _service_id_regex():
         try:
             id_generator = UniqueIdGenerator.objects.get(name=service_id_generator_name)
             regex = id_generator.get_regex()
-        except UniqueIdGenerator.DoesNotExist as e:
+        except UniqueIdGenerator.DoesNotExist:
             pass
     return regex
+
 
 def _find_service(service_id):
     # Consider using cypher...
     service = None
     try:
         service = nc.get_unique_node_by_name(nc.graphdb.manager, service_id, 'Service')
-    except:
+    except Exception:
         pass
     return service
 
@@ -193,18 +196,18 @@ def auto_depend_services(handle_id, description, service_id_regex, _type="Port")
     if not service_id_regex:
         return
     if not description:
-        description=""
+        description = ""
 
     desc_services = service_id_regex.findall(description)
 
-    for service_id in  desc_services:
+    for service_id in desc_services:
         service = _find_service(service_id)
         if service:
             if service.data.get('operational_state') == 'Decommissioned':
-                logger.warning('{} {} description mentions decommissioned service {}'.format(_type,handle_id, service_id))
+                logger.warning('{} {} description mentions decommissioned service {}'.format(_type, handle_id, service_id))
             else:
-                #Add it
-                #logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
+                # Add it
+                # logger.warning('Service {} should depend on port {}'.format(service_id, handle_id))
                 helpers.set_depends_on(utils.get_user(), service, handle_id)
         else:
             logger.info('{} {} description mentions unknown service {}'.format(_type, handle_id, service_id))
@@ -215,10 +218,11 @@ def auto_depend_services(handle_id, description, service_id_regex, _type="Port")
         RETURN collect(s) as unregistered
         """
     result = nc.query_to_dict(nc.graphdb.manager, q, handle_id=handle_id, desc_services=','.join(desc_services)).get('unregistered', [])
-    unregistered_services = [ u"{}({})".format(s['name'],s['handle_id']) for s in result ]
-    
+    unregistered_services = [u"{}({})".format(s['name'], s['handle_id']) for s in result]
+
     if unregistered_services:
         logger.info(u"{} {} has services depending on it that is not in description: {}".format(_type, handle_id, ','.join(unregistered_services)))
+
 
 def insert_juniper_interfaces(router_node, interfaces):
     """
@@ -226,7 +230,7 @@ def insert_juniper_interfaces(router_node, interfaces):
     relationship from the router_node. Some filtering is done for
     interface names that are not interesting.
     """
-    p = """
+    p = r"""
         .*\*|\.|all|tap|fxp.*|pfe.*|pfh.*|mt.*|pd.*|pe.*|vt.*|bcm.*|dsc.*|em.*|gre.*|ipip.*|lsi.*|mtun.*|pimd.*|pime.*|
         pp.*|pip.*|irb.*|demux.*|cbp.*|me.*|lo.*
         """
@@ -240,7 +244,7 @@ def insert_juniper_interfaces(router_node, interfaces):
         port_name = interface['name']
         if port_name and not not_interesting_interfaces.match(port_name) and not interface.get('inactive', False):
             result = router_node.get_port(port_name)
-            if 'Has' in  result:
+            if 'Has' in result:
                 port_node = result.get('Has')[0].get('node')
             else:
                 node_handle = utils.create_node_handle(port_name, 'Port', 'Physical')
@@ -274,31 +278,60 @@ def get_peering_partner(peering):
     user = utils.get_user()
     peer_node = None
     peer_properties = {
-        'name':  'Missing description',
+        'name': 'Missing description',
         'as_number': '0'
     }
+    # neither description or as_number error and return
+    if not (peering.get('description') or peering.get('as_number')):
+        logger.error('Neither AS number nor description in peering %s', peering)
+        return None
     if peering.get('description'):
         peer_properties['name'] = peering.get('description')
     if peering.get('as_number'):
         peer_properties['as_number'] = peering.get('as_number')
+        # as number is most important
         hits = nc.get_nodes_by_value(nc.graphdb.manager, prop='as_number', value=peer_properties['as_number'])
         found = 0
         for node in hits:
             peer_node = nc.get_node_model(nc.graphdb.manager, node['handle_id'])
             helpers.set_noclook_auto_manage(peer_node, True)
             if peer_node.data['name'] == 'Missing description' and peer_properties['name'] != 'Missing description':
-                    helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
+                helpers.dict_update_node(user, peer_node.handle_id, peer_properties)
             logger.info('Peering Partner {name} fetched.'.format(name=peer_properties['name']))
             found += 1
         if found > 1:
             logger.error('Found more then one Peering Partner with AS number {!s}'.format(peer_properties['as_number']))
 
-    if not peer_node:
-        node_handle = utils.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
-        peer_node = node_handle.get_node()
+        if not peer_node:
+            # since we have a AS number we will create a new Peering Partner, even if name is missing or exists
+            node_handle = utils.create_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
+            peer_node = node_handle.get_node()
+            helpers.set_noclook_auto_manage(peer_node, True)
+            helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
+            logger.info('Peering Partner %s AS(%s) created.', peer_properties['name'], peer_properties['as_number'])
+
+    # Handle peer with name only
+    if not peer_node and peering.get('description'):
+        # Try and get peer_partners
+        res = NodeHandle.objects.filter(node_name__iexact=peer_properties['name'], node_type__type='Peering Partner').order_by('-modified')
+        for ph in res:
+            peer_node = ph.get_node()
+            break
+        if not peer_node:
+            # create
+            peer_nh = utils.get_unique_node_handle(peer_properties['name'], 'Peering Partner', 'Relation')
+            peer_node = peer_nh.get_node()
+        if not peer_node.data.get('as_number'):
+            # Peering partner did not exist
+            logger.warning('Peering Partner %s without AS number created for peering: %s', peer_node.data.get('name'), peering)
+            # AS number is going to be 0, but that is ok
+            helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
+
+        elif peer_node.data.get('as_number') != '0':
+            # warn about as number not being in peering
+            logger.warning('Peering found for Peering Partner %s without the AS number %s mentioned. Peering: %s', peer_properties['name'], peer_node.data.get('as_number'), peering)
         helpers.set_noclook_auto_manage(peer_node, True)
-        helpers.dict_update_node(user, peer_node.handle_id, peer_properties, peer_properties.keys())
-        logger.info('Peering Partner {name} created.'.format(name=peer_properties['name']))
+
     PEER_AS_CACHE[peering['as_number']] = peer_node
     return peer_node
 
@@ -362,6 +395,9 @@ def insert_external_bgp_peering(peering, peering_group):
     user = utils.get_user()
     # Get or create the peering partner, unique per AS
     peer_node = get_peering_partner(peering)
+    if peer_node is None:
+        # We are done. This is a broken peering.
+        return
     # Get all relationships with this ip address, should never be more than one
     remote_address = peering.get('remote_address', None).lower()
     if remote_address:
@@ -375,7 +411,6 @@ def insert_external_bgp_peering(peering, peering_group):
             result = peer_node.set_peering_group(peering_group.handle_id, remote_address)
         relationship_id = result.get('Uses')[0]['relationship_id']
         relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
-        activitylog.create_relationship(user, relationship)
         helpers.set_noclook_auto_manage(relationship, True)
         if result.get('Uses')[0].get('created', False):
             activitylog.create_relationship(user, relationship)
@@ -399,14 +434,14 @@ def insert_juniper_bgp_peerings(bgp_peerings):
     This is to be able to get all the peerings associated to the right interfaces.
     """
     for peering in bgp_peerings:
-        peering_group = peering.get('group', 'Unknown Peering Group')
-        peering_group_handle = utils.get_unique_node_handle(peering_group, 'Peering Group', 'Logical', case_insensitive=False)
-        peering_group_node = peering_group_handle.get_node()
-        helpers.set_noclook_auto_manage(peering_group_node, True)
         peering_type = peering.get('type')
         if peering_type == 'internal':
             continue  # Not implemented
         elif peering_type == 'external':
+            peering_group = peering.get('group', 'Unknown Peering Group')
+            peering_group_handle = utils.get_unique_node_handle(peering_group, 'Peering Group', 'Logical', case_insensitive=False)
+            peering_group_node = peering_group_handle.get_node()
+            helpers.set_noclook_auto_manage(peering_group_node, True)
             insert_external_bgp_peering(peering, peering_group_node)
 
 
@@ -414,7 +449,7 @@ def insert_juniper_hardware(router_node, hardware):
     if hardware:
         # Upload hardware info as json file.
         hw_str = json.dumps(hardware)
-        name = "{}-hardware.json".format(router_node.data.get('name','router'))
+        name = "{}-hardware.json".format(router_node.data.get('name', 'router'))
         user = utils.get_user()
         # Store it! (or overwrite)
         helpers.attach_as_file(router_node.handle_id, name, hw_str, user, overwrite=True)
@@ -459,14 +494,14 @@ def remove_router_conf(user, data_age):
             last_seen, expired = helpers.neo4j_data_age(logical.data, data_age)
             if expired:
                 helpers.delete_node(user, logical.handle_id)
-                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
+                logger.warning('Deleted logical router: %s (%s).', logical.data.get('name'), handle_id)
     for handle_id in router_result.get('physical', []):
         physical = nc.get_node_model(nc.graphdb.manager, handle_id)
         if physical:
             last_seen, expired = helpers.neo4j_data_age(physical.data, data_age)
             if expired:
                 helpers.delete_node(user, physical.handle_id)
-                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
+                logger.warning('Deleted physical router: %s (%s).', physical.data.get('name'), handle_id)
 
 
 def remove_peer_conf(user, data_age):
@@ -483,15 +518,16 @@ def remove_peer_conf(user, data_age):
         if relationship:
             last_seen, expired = helpers.neo4j_data_age(relationship.data, data_age)
             if expired:
+                rel_info = helpers.relationship_to_str(relationship)
                 helpers.delete_relationship(user, relationship.id)
-                logger.info('Deleted relationship {relationship_id}'.format(relationship_id=relationship_id))
+                logger.warning('Deleted relationship {rel_info}'.format(rel_info=rel_info))
     for handle_id in peer_result.get('peer_groups', []):
         peer_group = nc.get_node_model(nc.graphdb.manager, handle_id)
         if peer_group:
             last_seen, expired = helpers.neo4j_data_age(peer_group.data, data_age)
             if expired:
                 helpers.delete_node(user, peer_group.handle_id)
-                logger.info('Deleted node {handle_id}.'.format(handle_id=handle_id))
+                logger.warning('Deleted node {name} ({handle_id}).'.format(name=peer_group.data.get('name'), handle_id=handle_id))
 
 
 def remove_juniper_conf(data_age):
@@ -535,6 +571,7 @@ def main():
     if config and config.has_option('delete_data', 'juniper_conf') and config.getboolean('delete_data', 'juniper_conf'):
         remove_juniper_conf(config.get('data_age', 'juniper_conf'))
     return 0
+
 
 if __name__ == '__main__':
     if not len(logger.handlers):

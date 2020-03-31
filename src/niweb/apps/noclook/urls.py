@@ -1,4 +1,5 @@
 # This also imports the include function
+from django.conf import settings
 from django.conf.urls import url
 from django.contrib.auth import views as auth_views
 from .views import other, create, edit, import_nodes, report, detail, redirect, debug, list as _list
@@ -31,7 +32,7 @@ urlpatterns = [
     url(r'^search/typeahead/ports$', other.search_port_typeahead),
     url(r'^search/typeahead/locations$', other.search_location_typeahead),
     url(r'^search/typeahead/non-locations$', other.search_non_location_typeahead),
-    url(r'^search/typeahead/(?P<slug>[-\w]+)$', other.typeahead_slug),
+    url(r'^search/typeahead/(?P<slug>[-\+\w]+)/?$', other.typeahead_slugs, name='typeahead_slugs'),
     url(r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.search),
     # QR lookup
     url(r'^lu/(?P<name>[-\w]+)/$', other.qr_lookup),
@@ -52,6 +53,7 @@ urlpatterns = [
     # -- edit views
     url(r'^role/(?P<handle_id>\d+)/delete$', edit.delete_role),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit$', edit.edit_node, name='generic_edit'),
+    url(r'^port/(?P<handle_id>\d+)/edit_connect$', edit.connect_port),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/edit/disable-noclook-auto-manage/$', edit.disable_noclook_auto_manage),
     url(r'^host/(?P<handle_id>\d+)/edit/convert-to/(?P<slug>[-\w]+)/$', edit.convert_host),
     url(r'^(?P<slug>[-\w]+)/(?P<handle_id>\d+)/delete$', edit.delete_node),
@@ -92,14 +94,18 @@ urlpatterns = [
     url(r'^organization/$', _list.list_organizations),
     url(r'^contact/$', _list.list_contacts),
     url(r'^role/$', _list.list_roles),
+    url(r'^outlet/$', _list.list_outlet),
+    url(r'^patch-panel/$', _list.list_patch_panels),
     url(r'^router/$', _list.list_routers),
     url(r'^rack/$', _list.list_racks),
+    url(r'^room/$', _list.list_rooms),
     url(r'^odf/$', _list.list_odfs),
     url(r'^cable/$', _list.list_cables),
     url(r'^switch/$', _list.list_switches),
     url(r'^firewall/$', _list.list_firewalls),
     url(r'^customer/$', _list.list_customers),
     url(r'^port/$', _list.list_ports),
+    url(r'^pdu/$', _list.list_pdu),
     # Generic list
     url(r'^(?P<slug>[-\w]+)/$', _list.list_by_type, name='generic_list'),
 
@@ -116,10 +122,13 @@ urlpatterns = [
     url(r'^host-user/(?P<handle_id>\d+)/$', detail.host_user_detail),
     url(r'^odf/(?P<handle_id>\d+)/$', detail.odf_detail),
     url(r'^optical-filter/(?P<handle_id>\d+)/$', detail.optical_filter_detail),
+    url(r'^outlet/(?P<handle_id>\d+)/$', detail.outlet_detail),
+    url(r'^patch-panel/(?P<handle_id>\d+)/$', detail.patch_panel_detail),
     url(r'^port/(?P<handle_id>\d+)/$', detail.port_detail),
     url(r'^site/(?P<handle_id>\d+)/$', detail.site_detail),
     url(r'^role/(?P<handle_id>\d+)/$', detail.role_detail),
     url(r'^rack/(?P<handle_id>\d+)/$', detail.rack_detail),
+    url(r'^room/(?P<handle_id>\d+)/$', detail.room_detail),
     url(r'^site-owner/(?P<handle_id>\d+)/$', detail.site_owner_detail),
     url(r'^service/(?P<handle_id>\d+)/$', detail.service_detail),
     url(r'^optical-link/(?P<handle_id>\d+)/$', detail.optical_link_detail),
@@ -148,3 +157,6 @@ urlpatterns = [
     # -- debug view
     url(r'^nodes/(?P<handle_id>\d+)/debug$', debug.generic_debug, name='debug'),
 ]
+
+if not settings.DJANGO_LOGIN_DISABLED:
+    urlpatterns = [url(r'^login/$', auth_views.LoginView.as_view())] + urlpatterns

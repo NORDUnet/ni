@@ -1,0 +1,33 @@
+{% load noclook_tags %}
+{% load crispy_forms_tags %}
+  {% if node.meta_type == 'Logical' %}
+      <div class="alert alert-danger">Setting a location will convert it to a physical {{ node_handle.node_type }}. Which will remove dependencies.</div>
+  {% endif %}
+  {% if location.Located_in %}
+      <label>Current location</label>
+      {% for item in location.Located_in %}
+          <div class="row">
+              <div class="span3">
+                  <a href="{% noclook_node_to_url item.node.handle_id %}">
+                      {% for location in node.get_location_path.location_path %}
+                          {% if forloop.last %}
+                              {{ item.node.data.name }}
+                          {% else %}
+                              {{ location.name }}
+                          {% endif %}
+                      {% endfor %}
+                  </a>
+              </div>
+              <div class="span1">
+                  <a href="relationship/{{ item.relationship_id }}/delete" class="label label-important relationship-confirm">Delete</a>
+              </div>
+          </div>
+      {% endfor %}
+  {% endif %}
+  <hr>
+  {% typeahead form.relationship_location '/search/typeahead/locations' placeholder='room rack' min_length=2 %}
+  <hr>
+  {% if form.rack_units %}
+    {{ form.rack_units | as_crispy_field }}
+    {{ form.rack_position | as_crispy_field }}
+  {% endif %}

@@ -67,7 +67,7 @@ def get_unique_node(name, node_type, meta_type):
     return node
 
 
-def restore_node(handle_id, node_name, node_type_name, node_meta_type):
+def restore_node(handle_id, node_name, node_type_name, node_meta_type, fallback_user):
     """
     Tries to get a existing node handle from the SQL database before creating
     a new handle with an old handle id.
@@ -75,19 +75,21 @@ def restore_node(handle_id, node_name, node_type_name, node_meta_type):
     When we are setting the handle_id explicitly we need to run django-admin.py
     sqlsequencereset noclook and paste that SQL statements in to the dbhell.
     """
-    user = utils.get_user()
     node_type = utils.get_node_type(node_type_name)
     defaults = {
         'node_name': node_name,
         'node_type': node_type,
         'node_meta_type': node_meta_type,
-        'creator': user,
-        'modifier': user
+        'creator': fallback_user,
+        'modifier': fallback_user,
     }
     node_handle, created = NodeHandle.objects.get_or_create(handle_id=handle_id, defaults=defaults)
     if not created:
-        node_handle.node_meta_type = node_meta_type
-    node_handle.save()  # Make sure data is saved in neo4j as well.
+        if node_handle.node_meta_type != node_meta_type:
+            node_handle.node_meta_type = node_meta_type
+            node_handle.save()
+    # rather than calling .save() which will do a db fetch of node_type
+    node_handle._create_node(node_type.get_label())  # Make sure data is saved in neo4j as well.
     return node_handle
 
 
@@ -103,7 +105,7 @@ def set_comment(node_handle, comment):
     c.save()
 
 
-def _consume_node(item):
+def _consume_node(item, fallback_user):
     try:
         properties = item.get('properties')
         node_name = properties.get('name')
@@ -111,7 +113,7 @@ def _consume_node(item):
         node_type = item.get('node_type')
         meta_type = item.get('meta_type')
         # Get a node handle
-        nh = restore_node(handle_id, node_name, node_type, meta_type)
+        nh = restore_node(handle_id, node_name, node_type, meta_type, fallback_user)
         nc.set_node_properties(nc.graphdb.manager, nh.handle_id, properties)
         logger.info('Added node {handle_id}.'.format(handle_id=handle_id))
     except Exception as e:
@@ -127,11 +129,12 @@ def consume_noclook(nodes, relationships):
     """
     tot_nodes = 0
     tot_rels = 0
+    fallback_user = utils.get_user()
     # Loop through all files starting with node
     for i in nodes:
         item = i['host']['noclook_producer']
         if i['host']['name'].startswith('node'):
-            _consume_node(item)
+            _consume_node(item, fallback_user)
             tot_nodes += 1
     print('Added {!s} nodes.'.format(tot_nodes))
 

@@ -3,7 +3,7 @@ image: python:3
 
 services:
   - postgres:latest
-  - neo4j:latest
+  - neo4j:3.5
 
 variables:
   POSTGRES_DB: norduni
@@ -36,4 +36,7 @@ test:
   script:
     - for i in $(seq 1 60); do if nc -z neo4j 7474; then break; fi; sleep 1; done
     - cd src/niweb
-    - python manage.py test
+    - coverage run --source='.' manage.py test
+    - coverage report
+  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
+

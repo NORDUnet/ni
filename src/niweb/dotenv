@@ -41,3 +41,11 @@ SECRET_KEY=
 
 # Google apis key
 GOOGLE_MAPS_API_KEY=
+
+# BRANDING
+#BRAND=NORDUnet
+#LOGO_COLOR='#cc00af'
+#LOGO_SUBTEXT=Example
+#LINK_COLOR='#cc00af'
+#LINK_HOVER='#6f005f'
+

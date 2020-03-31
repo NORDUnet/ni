@@ -1,0 +1,48 @@
+{% extends "noclook/detail/base_detail.html" %}
+
+{% block title %}{{ block.super }}{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% load noclook_tags %}
+<div class="row">
+    <div class="span4">
+        <table class="table">
+            <tr>
+                <th>Name:</th><td>{{ node.data.name }}</td>
+            </tr>
+            <tr>
+                <th>Operational State:</th><td>{{ node.data.operational_state|default:'Unknown' }}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="span3">
+        <table class="table">
+                {% if node.data.max_number_of_ports %}
+                    <tr>
+                        <th>Max ports:</th><td>{{ node.data.max_number_of_ports }}</td>
+                    </tr>
+                {% endif %}
+            {% include "noclook/detail/includes/last_changed.html" with inline=True %}
+        </table>
+    </div>
+    {% if node.data.description %}
+        <div class="span7">
+            <table class="table">
+                {% if node.data.description %}
+                    <tr>
+                        <th>Description:</th><td>{{ node.data.description }}</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+    {% endif %}
+</div>
+
+{% if user.is_staff %}
+        <a href="edit" class="btn btn-info"><i class="icon-edit icon-white"></i> Edit</a>
+        {% csrf_token %}
+{% endif %}
+{% include "noclook/detail/includes/depend_include.html" %}
+{% include "noclook/detail/includes/connections.html" with connections=connections user=user only %}
+{% endblock %}

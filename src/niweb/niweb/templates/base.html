@@ -66,6 +66,13 @@
     });
     </script>
     {% block js %}{% endblock %}
+    {% if noclook.link_color %}
+      <style type="text/css" media="all">
+        a { color: {{noclook.link_color}}; }
+        a:hover { color: {{noclook.link_hover}}; }
+    </style>
+    {% endif %}
+
 </head>
 <body>
     <br>
@@ -178,7 +185,8 @@
                     </div>
                     <div class="span4">
                         {% if user.is_authenticated %}
-                            <div class="pull-right">Logged in as <a href="{{ user.get_profile.get_absolute_url }}">{{ user }}</a> <a href="/logout/" class="btn btn-small btn-info"><i class="icon-user icon-white"></i> Log out</a></div>
+                            {% load userprofile_tags %}
+                            <div class="pull-right">Logged in as {% userprofile_link user %} <a href="/logout/" class="btn btn-small btn-info"><i class="icon-user icon-white"></i> Log out</a></div>
                         {% endif %}
                     </div>
                 </div>

@@ -72,6 +72,7 @@
     {% table th tbody id="connections" %}
 </div>
 {% if hardware_modules %}
+{% load attachments_tags %}
 <div class="accordion" id="hardware">
     <div class="accordion-group">
         <div class="accordion-heading">
@@ -84,6 +85,11 @@
                 <dl>
                     <dt>Model: </dt><dd>{{node.data.model}}</dd>
                     <dt>Serial number: </dt><dd>{{node.data.serial_number}}</dd>
+                    <dt>Download: </dt>
+                      {% get_attachments_for node_handle as attachments %}
+                      {% for attachment in attachments %}
+                      <dd><a href="{{ attachment.attachment_file.url }}">{{ attachment.filename }}</a></dd>
+                    {% endfor %}
                 </dl>
                 <pre>{% for module in  hardware_modules %}
 {% hardware_module module %}

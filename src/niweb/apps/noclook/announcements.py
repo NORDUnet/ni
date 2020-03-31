@@ -8,4 +8,3 @@ def page_flash(request):
     if msg == 'None' or msg is None or not msg.strip():
         msg = ''
     return {'page_flash': {'level': level, 'message': msg}}
-

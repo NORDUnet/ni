@@ -1,0 +1,60 @@
+<svg class="logo" viewBox="0 0 279 105" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <style>
+      svg {
+        background-color: #f5f5f5;
+        fill: {{noclook.logo_color}};
+        font: bold 50px Verdana;
+      }
+      .small {font-size: 10px;}
+    </style>
+    <defs>
+        <linearGradient id="fadeToGray" gradientTransform="rotate(90)">
+          <stop offset="45%" stop-color="#f5f5f5" />
+          <stop offset="95%"  stop-color="{{noclook.logo_color}}" />
+        </linearGradient>
+        <mask id="spot">
+          <rect x="0" y="0" width="100%" height="100%" fill="#999"/>
+          <ellipse  cx="139" cy="70" rx="130" ry="53" fill="black" />
+        </mask>
+        <linearGradient id="spiralGrad" gradientTransform="rotate(90)">
+            <stop offset="10%" stop-color="#666" />
+            <stop offset="45%" stop-color="#ccc" />
+            <stop offset="95%"  stop-color="#333" />
+        </linearGradient>
+        <linearGradient id="coverGrad" gradientTransform="rotate(90)">
+            <stop offset="10%" stop-color="#8eff55" />
+            <stop offset="45%" stop-color="#6edf22" />
+            <stop offset="95%"  stop-color="#9eff55" />
+        </linearGradient>
+    </defs>
+    <g id="logoText">
+      {% if noclook.logo_subtext %}
+      <text x="12" y="21" class="small">{{noclook.logo_subtext}}</text>
+      {% endif %}
+      <text x="8" y="60" id="mainText">NOCLook</text>
+    </g>
+    <!-- Reflection -->
+    <g transform="scale(1 -1)" fill="url(#fadeToGray)">
+      <use xlink:href="#mainText" y="-140"  />
+    </g>
+
+    <!-- highligt spot -->
+    <rect x="0" y="0" width="100%" height="100%" mask="url(#spot)" fill="#f5f5f5"/>
+
+    <!-- notebook icon -->
+    <g id="block" transform="translate(250 -10) rotate(25)" >
+      <rect x="11" y="11" width="20" height="27" rx="2"
+        fill="#f3f3f3" stroke="#ccc" stroke-width="0.4" />
+
+      <rect x="12" y="10" width="22" height="26" rx="2"
+        fill="url(#coverGrad)" fill-opacity="0.8" transform="skewX(-10)" />
+
+      <g id="spiral">
+          <rect x="13" y="12" width="3" height="2" rx="1" fill="black"/>
+          <rect x="14" y="7" width="1" height="6" fill="url(#spiralGrad)"/>
+      </g>
+      <use xlink:href="#spiral" x="4" />
+      <use xlink:href="#spiral" x="8" />
+      <use xlink:href="#spiral" x="12" />
+    </g>
+  </svg>

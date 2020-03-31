@@ -10,7 +10,8 @@ from apps.noclook import helpers
 from apps.noclook.models import NodeType, NodeHandle, RoleGroup, Role,\
                                 UniqueIdGenerator, ServiceType,\
                                 NordunetUniqueId, Dropdown, DEFAULT_ROLES,\
-                                DEFAULT_ROLE_KEY, DEFAULT_ROLEGROUP_NAME
+                                DEFAULT_ROLE_KEY, DEFAULT_ROLEGROUP_NAME,\
+                                SwitchType
 
 from .validators import *
 from .. import unique_ids
@@ -135,8 +136,8 @@ class JSONField(forms.CharField):
 
 class JSONInput(HiddenInput):
 
-    def render(self, name, value, attrs=None):
-        return super(JSONInput, self).render(name, json.dumps(value), attrs)
+    def render(self, name, value, attrs=None, renderer=None):
+        return super(JSONInput, self).render(name, json.dumps(value), attrs, renderer)
 
 
 class NodeChoiceField(forms.ModelChoiceField):
@@ -275,6 +276,64 @@ class EditCableForm(NewCableForm):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
+class NewSwitchForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewSwitchForm, self).__init__(*args, **kwargs)
+        self.fields['switch_type'].choices = SwitchType.as_choices()
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
+    name = forms.CharField()
+    operational_state = forms.ChoiceField(initial='Reserved')
+    switch_type = forms.ChoiceField(widget=forms.widgets.Select)
+    description = description_field('switch')
+    relationship_provider = relationship_field('provider', True)
+
+
+class ConnectPortForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(ConnectPortForm, self).__init__(*args, **kwargs)
+        self.fields['cable_type'].choices = Dropdown.get('cable_types').as_choices()
+        #self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+
+    name = forms.CharField(label='Cable label',
+                           help_text="Leave blank for next available cable ID.",
+                           required=False)
+    cable_type = forms.ChoiceField(widget=forms.widgets.Select, initial='Patch')
+
+    class Meta:
+        id_generator_name = 'Cable'
+        id_generator_name = 'nordunet_cable_id'
+        id_collection = NordunetUniqueId
+
+    def clean(self):
+        """
+        Sets name to next generated ID or register the name in the ID collection.
+        """
+        cleaned_data = super(ConnectPortForm, self).clean()
+        # Set name to a generated id if the cable is not a manually named cable.
+        name = cleaned_data.get("name")
+        if self.is_valid():
+            if not name:
+                if not self.Meta.id_generator_name or not self.Meta.id_collection:
+                    raise Exception('You have to set id_generator_name and id_collection in form Meta class.')
+                try:
+                    id_generator = UniqueIdGenerator.objects.get(name=self.Meta.id_generator_name)
+                    cleaned_data['name'] = unique_ids.get_collection_unique_id(id_generator, self.Meta.id_collection)
+                except UniqueIdGenerator.DoesNotExist as e:
+                    raise e
+            else:
+                try:
+                    unique_ids.register_unique_id(self.Meta.id_collection, name)
+                except IntegrityError as e:
+                    if NodeHandle.objects.filter(node_name=name):
+                        self.add_error('name', str(e))
+        return cleaned_data
+
+    relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
+
+
 
 class OpticalNodeForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -322,6 +381,21 @@ class EditRackForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     relationship_parent = relationship_field('parent')
     relationship_located_in = relationship_field('located in')
+
+class NewRoomForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewRoomForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_location'].choices = get_node_type_tuples('Site')
+
+    name = forms.CharField(help_text='Room need to be uniq to the building')
+    floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
+    relationship_location = relationship_field('location', True)
+
+class EditRoomForm(forms.Form):
+    name = forms.CharField(help_text='Name need to be uniq to the building')
+    floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
+    relationship_parent = relationship_field('parent')
+    #relationship_located_in = relationship_field('located in')
 
 
 class NewHostForm(forms.Form):
@@ -390,6 +464,10 @@ class EditFirewallForm(EditHostForm):
 
 
 class EditPDUForm(EditHostForm):
+    def __init__(self, *args, **kwargs):
+        super(EditPDUForm, self).__init__(*args, **kwargs)
+        self.fields['type'].choices = Dropdown.get('pdu_types').as_choices()
+    type = forms.ChoiceField(required=False)
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
@@ -424,6 +502,35 @@ class NewOdfForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
 
+class NewPatchPannelForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(NewPatchPannelForm, self).__init__(*args, **kwargs)
+        # Set max number of ports to choose from
+        max_num_of_ports = 48
+        choices = [(x, x) for x in range(1, max_num_of_ports + 1) if x]
+        self.fields['max_number_of_ports'].choices = choices
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField()
+    description = description_field('Patch Panel')
+    max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select, initial="In service")
+    relationship_location = relationship_field('location')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+
+class NewOutletForm(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(NewOutletForm, self).__init__(*args, **kwargs)
+        # Set max number of ports to choose from
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField()
+    description = description_field('Patch Panel')
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select, initial="In service")
+    relationship_location = relationship_field('location')
 
 class BulkPortsForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -448,6 +555,31 @@ class EditOdfForm(forms.Form):
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
+    relationship_location = relationship_field('location')
+
+class EditPatchPanelForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditPatchPanelForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField()
+    description = description_field('Patch Panel')
+    max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+    operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
+    relationship_ports = JSONField(required=False, widget=JSONInput)
+    relationship_location = relationship_field('location')
+
+class EditOutletForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(EditOutletForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+
+    name = forms.CharField()
+    description = description_field('Outlet')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
@@ -976,7 +1108,6 @@ class NewContactForm(forms.Form):
             last_name  = last_name.encode('utf-8')
 
         full_name = '{} {}'.format(first_name, last_name)
-        node_type = NodeType.objects.get(type="Contact")
         cleaned_data['name'] = full_name
 
         return cleaned_data
@@ -1118,3 +1249,16 @@ class AddressForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(AddressForm, self).__init__(*args, **kwargs)
         self.fields['organization'].choices = get_node_type_tuples('Organization')
+
+
+class TrunkCableForm(forms.Form):
+    trunk_base_name = forms.CharField(
+        required=False,
+        help_text='Basename for the trunk cable, each cable will be prefixed with this. If empty a new cable ID will be taken.')
+    trunk_relationship_other = relationship_field('other equipment')
+    # trunk_bundled = forms.BooleanField(required=False, help_text='Are the ports bundled? That is named e.g. 1+2')
+    trunk_port_type = forms.ChoiceField(required=False)
+    trunk_first_port = forms.IntegerField(required=False, min_value=0, initial=1, label='First port')
+    trunk_num_ports = forms.IntegerField(required=False, min_value=0, initial=0, label='Number of ports', help_text='Also number of cables that is in the trunk cable')
+    trunk_prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0', label='Port prefix')
+    trunk_create_missing_ports = forms.BooleanField(required=False, help_text='Force create missing ports', label='Create missing ports')
