@@ -11,7 +11,10 @@ register = template.Library()
 def userprofile_link(user):
     # if user is django user, find profile..
     if isinstance(user, User):
-        userprofile = UserProfile.objects.get(user=user)
+        userprofile = UserProfile.objects.get_or_create(
+            user=user,
+            email=user.email,
+        )[0]
     elif isinstance(user, UserProfile):
         # if profile just do the url lookup
         userprofile = user
