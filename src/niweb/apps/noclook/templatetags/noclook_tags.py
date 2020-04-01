@@ -159,7 +159,7 @@ def noclook_report_age(item, old, very_old):
         return ''
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_as_dict(obj):
     """
     :param obj: Neo4j object
@@ -171,7 +171,7 @@ def noclook_as_dict(obj):
         return dict()
 
 
-@register.assignment_tag
+@register.simple_tag
 def noclook_has_rogue_ports(handle_id):
     """
     :param handle_id: unique id
