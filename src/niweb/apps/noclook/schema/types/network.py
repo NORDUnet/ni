@@ -80,6 +80,7 @@ class Host(NIObjectType, PhysicalMixin):
     A host in the SRI system
     '''
     name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
     operational_state = NIStringField(type_kwargs={ 'required': True })
     os = NIStringField()
     os_version = NIStringField()
