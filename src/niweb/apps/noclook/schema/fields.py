@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle
+from apps.noclook.vakt import utils as sriutils
 from .scalars import ChoiceScalar
 
 import graphene
@@ -122,6 +123,38 @@ class NIBooleanField(NIBasicField):
         return resolve_node_value
 
 
+class NISingleRelationField(NIBasicField):
+    '''
+    Object list type
+    '''
+    def __init__(self, field_type=None, manual_resolver=False, type_kwargs=None,
+                    rel_method=None, rel_name=None, **kwargs):
+
+        self.type_kwargs     = type_kwargs
+        self.field_type      = lambda: graphene.Field(field_type)
+        self.manual_resolver = manual_resolver
+        self.rel_method      = rel_method
+        self.rel_name        = rel_name
+
+    def get_resolver(self, **kwargs):
+        rel_method = kwargs.get('rel_method')
+        rel_name = kwargs.get('rel_name')
+
+        def resolve_relationship_object(instance, info, **kwargs):
+            ret = None
+
+            neo4jnode = self.get_inner_node(instance)
+            relationship = getattr(neo4jnode, rel_method)()
+
+            if relationship and rel_name in relationship:
+                handle_id = relationship[rel_name][0]['node'].data['handle_id']
+                ret = NodeHandle.objects.get(handle_id=handle_id)
+
+            return ret
+
+        return resolve_relationship_object
+
+
 class NIListField(NIBasicField):
     '''
     Object list type
@@ -146,14 +179,23 @@ class NIListField(NIBasicField):
             relations = getattr(neo4jnode, rel_method)()
             nodes = relations.get(rel_name)
 
-            handle_id_list = []
+            id_list = []
             if nodes:
                 for node in nodes:
+                    relation_id = node['relationship_id']
                     node = node['node']
                     node_id = node.data.get('handle_id')
-                    handle_id_list.append(node_id)
+                    id_list.append((node_id, relation_id))
 
-            ret = NodeHandle.objects.filter(handle_id__in=handle_id_list).order_by('handle_id')
+            id_list = sorted(id_list, key=lambda x: x[0])
+
+            ret = []
+            for handle_id, relation_id in id_list:
+                nh = NodeHandle.objects.get(handle_id=handle_id)
+                nh.relation_id = relation_id
+
+                if sriutils.authorice_read_resource(info.context.user, nh.handle_id):
+                    ret.append(nh)
 
             return ret
 

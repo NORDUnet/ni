@@ -26,6 +26,8 @@ class FakeDataGenerator:
         if seed:
             self.fake.seed_instance(seed)
 
+        self.user = get_user()
+
     def escape_quotes(self, str_in):
         return str_in.replace("'", "\'")
 
@@ -49,8 +51,41 @@ class FakeDataGenerator:
     def clean_rogue_nodetype():
         NodeType.objects.filter(type="").delete()
 
+    def get_or_create_node(self, node_name, type_name, meta_type):
+        node_type = NetworkFakeDataGenerator.get_nodetype(type_name)
+
+        # create object
+        nh = NodeHandle.objects.get_or_create(
+            node_name=node_name,
+            node_type=node_type,
+            node_meta_type=meta_type,
+            creator=self.user,
+            modifier=self.user
+        )[0]
+
+        return nh
+
+    def create_entity(self, data_f=None, type_name=None, metatype=None):
+        data = data_f()
+        name = data['name']
+
+        nh = self.get_or_create_node(
+            name, type_name, metatype) # Logical
+
+        # add context
+        self.add_community_context(nh)
+
+        for key, value in data.items():
+            nh.get_node().add_property(key, value)
+
+        return nh
+
 
 class CommunityFakeDataGenerator(FakeDataGenerator):
+    def add_community_context(self, nh):
+        com_ctx = sriutils.get_community_context()
+        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
+
     def create_fake_contact(self):
         salutations = ['Ms.', 'Mr.', 'Dr.', 'Mrs.', 'Mx.']
         contact_types_drop = Dropdown.objects.get(name='contact_type')
@@ -109,12 +144,32 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
 
         return group_dict
 
+    def create_fake_procedure(self):
+        procedure_dict = {
+            'name': self.fake.sentence(),
+            'description': self.fake.paragraph(),
+        }
+
+        return procedure_dict
+
+    def create_group(self):
+        return self.create_entity(
+            data_f=self.create_fake_group,
+            type_name='Group',
+            metatype=META_TYPES[1], # Logical
+        )
+
+    def create_procedure(self):
+        return self.create_entity(
+            data_f=self.create_fake_procedure,
+            type_name='Procedure',
+            metatype=META_TYPES[1], # Logical
+        )
+
 
 class NetworkFakeDataGenerator(FakeDataGenerator):
     def __init__(self, seed=None):
         super().__init__()
-
-        self.user = get_user()
 
         # set vars
         self.max_cable_providers = 5
@@ -124,23 +179,12 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         net_ctx = sriutils.get_network_context()
         NodeHandleContext(nodehandle=nh, context=net_ctx).save()
 
+    def get_port_name(self):
+        return str(random.randint(0, 50000))
+
     @staticmethod
     def get_nodetype(type_name):
         return NodeType.objects.get_or_create(type=type_name, slug=slugify(type_name))[0]
-
-    def get_or_create_node(self, node_name, type_name, meta_type):
-        node_type = NetworkFakeDataGenerator.get_nodetype(type_name)
-
-        # create object
-        nh = NodeHandle.objects.get_or_create(
-            node_name=node_name,
-            node_type=node_type,
-            node_meta_type=meta_type,
-            creator=self.user,
-            modifier=self.user
-        )[0]
-
-        return nh
 
     def get_dropdown_keys(self, dropdown_name):
         return [ x[0] for x in Dropdown.get(dropdown_name).as_choices()[1:] ]
@@ -254,7 +298,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
     def create_port(self):
         # create object
         port = self.get_or_create_node(
-            str(random.randint(0, 50000)), 'Port', META_TYPES[0])
+            self.get_port_name(), 'Port', META_TYPES[0]) # Physical
 
         # add context
         self.add_network_context(port)
@@ -276,7 +320,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
     def create_cable(self):
         # create object
         cable = self.get_or_create_node(
-            self.fake.hostname(), 'Cable', META_TYPES[0])
+            self.fake.hostname(), 'Cable', META_TYPES[0]) # Physical
 
         # add context
         self.add_network_context(cable)

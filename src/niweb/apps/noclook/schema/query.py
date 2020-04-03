@@ -21,11 +21,14 @@ def can_load_models():
 
     return can_load
 
+
 class NOCAutoQuery(graphene.ObjectType):
     '''
     This class creates a connection and a getById method for each of the types
     declared on the graphql_types of the NIMeta class of any subclass.
     '''
+
+    connection_classes = {}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -48,32 +51,46 @@ class NOCAutoQuery(graphene.ObjectType):
                 type_name     = node_type.type
                 type_slug     = node_type.slug
 
+                # relace - in slug for _
+                fmt_type_slug = type_slug.replace('-', '')
+                fmt_type_name = type_name.replace(' ', '')
+                components = type_name.split(' ')
+                # type name camelcased
+                type_name_cc = components[0].lower() + ''.join(x.title() for x in components[1:])
+
                 # add simple list attribute and resolver
-                field_name    = 'all_{}s'.format(type_slug)
+                field_name    = 'all_{}s'.format(fmt_type_slug)
                 resolver_name = 'resolve_{}'.format(field_name)
 
                 setattr(cls, field_name, graphene.List(graphql_type))
                 setattr(cls, resolver_name, graphql_type.get_list_resolver())
 
                 # add simple counter
-                field_name    = 'count_{}s'.format(type_slug)
-                resolver_name = 'resolve_{}'.format(field_name)
+                field_name    = 'count_{}s'.format(fmt_type_slug)
+                resolver_name = 'resolve_{}'.format(fmt_type_slug)
 
                 setattr(cls, field_name, graphene.Int())
                 setattr(cls, resolver_name, graphql_type.get_count_resolver())
 
                 # add connection attribute
-                field_name    = '{}s'.format(type_slug)
+                field_name    = '{}s'.format(type_name_cc)
                 resolver_name = 'resolve_{}'.format(field_name)
 
                 connection_input, connection_order = graphql_type.build_filter_and_order()
                 connection_meta = type('Meta', (object, ), dict(node=graphql_type))
-                connection_class = type(
-                    '{}Connection'.format(graphql_type.__name__),
-                    (graphene.relay.Connection,),
-                    #(connection_type,),
-                    dict(Meta=connection_meta)
-                )
+                connection_name = '{}Connection'.format(type_name_cc)
+                connection_class = None
+
+                if connection_name not in cls.connection_classes:
+                    connection_class = type(
+                        connection_name,
+                        (graphene.relay.Connection,),
+                        #(connection_type,),
+                        dict(Meta=connection_meta)
+                    )
+                    cls.connection_classes[connection_name] = connection_class
+                else:
+                    connection_class = cls.connection_classes[connection_name]
 
                 setattr(cls, field_name, graphene.relay.ConnectionField(
                     connection_class,
@@ -83,7 +100,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 setattr(cls, resolver_name, graphql_type.get_connection_resolver())
 
                 ## build field and resolver byid
-                field_name    = 'get{}ById'.format(type_name)
+                field_name    = 'get{}ById'.format(fmt_type_name)
                 resolver_name = 'resolve_{}'.format(field_name)
 
                 setattr(cls, field_name, graphene.Field(graphql_type, id=graphene.ID()))
@@ -198,4 +215,9 @@ class NOCRootQuery(NOCAutoQuery):
         return ret
 
     class NIMeta:
-        graphql_types = [ Group, Address, Phone, Email, Contact, Organization, Procedure, Host ]
+        graphql_types = [
+            Group, Address, Phone, Email, Contact, Organization, Procedure,
+            Customer, EndUser, Provider, SiteOwner,
+            Port, Host, Cable, Router, 
+            PeeringPartner, PeeringGroup,
+        ]
