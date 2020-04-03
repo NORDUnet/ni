@@ -218,6 +218,6 @@ class NOCRootQuery(NOCAutoQuery):
         graphql_types = [
             Group, Address, Phone, Email, Contact, Organization, Procedure,
             Customer, EndUser, Provider, SiteOwner,
-            Port, Host, Cable,
-            PeeringPartner, PeeringGroup, 
+            Port, Host, Cable, Router, 
+            PeeringPartner, PeeringGroup,
         ]

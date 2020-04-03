@@ -104,6 +104,20 @@ class Host(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+class Router(NIObjectType, PhysicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    operational_state = NIChoiceField()
+    model = NIStringField()
+    version = NIStringField()
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
+
+    class NIMetaType:
+        ni_type = 'Router'
+        ni_metatype = NIMETA_PHYSICAL
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })

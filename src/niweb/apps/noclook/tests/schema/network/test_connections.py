@@ -14,7 +14,7 @@ from . import Neo4jGraphQLNetworkTest
 
 test_types = [
     'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group', 'Peering Partner',
-    'Cable', 'Port', 'Host']
+    'Cable', 'Port', 'Host', 'Router']
 
 logger = logging.getLogger(__name__)
 
