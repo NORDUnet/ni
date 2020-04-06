@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.middleware import get_user
 from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session
+from django.contrib.sessions.backends.base import UpdateError
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import redirect
 from django.utils.cache import patch_vary_headers
@@ -69,10 +70,23 @@ class SRIJWTAuthMiddleware(object):
         if not hasattr(request, 'session'):
             session_engine = import_module(settings.SESSION_ENGINE)
             session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
-            request.session = session_engine.SessionStore(session_key)
-            request.session.save()
-            session_created = True
 
+            # if the session cannot be saved, start with an empty session
+            try:
+                request.session = session_engine.SessionStore(session_key)
+                request.session.save()
+                session_created = True
+            except UpdateError:
+                response = redirect(request.get_full_path())
+                response.delete_cookie(
+                    settings.SESSION_COOKIE_NAME,
+                    path=settings.SESSION_COOKIE_PATH,
+                    domain=settings.SESSION_COOKIE_DOMAIN,
+                )
+                response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
+                patch_vary_headers(response, ('Cookie',))
+                
+                return response
 
         max_age = request.session.get_expiry_age()
         expires_time = time.time() + max_age
