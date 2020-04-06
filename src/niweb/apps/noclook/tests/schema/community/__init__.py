@@ -10,9 +10,9 @@ from apps.noclook.models import NodeHandle, Dropdown, Choice, Role, Group, Group
 from apps.noclook.tests.neo4j_base import NeoTestCase
 from apps.noclook.tests.schema.base import Neo4jGraphQLGenericTest
 
-class Neo4jGraphQLTest(Neo4jGraphQLGenericTest):
+class Neo4jGraphQLCommunityTest(Neo4jGraphQLGenericTest):
     def setUp(self):
-        super(Neo4jGraphQLTest, self).setUp()
+        super(Neo4jGraphQLCommunityTest, self).setUp()
 
         # create nodes
         self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
@@ -95,7 +95,7 @@ class Neo4jGraphQLTest(Neo4jGraphQLGenericTest):
         ch2.save()
 
     def tearDown(self):
-        super(Neo4jGraphQLTest, self).tearDown()
+        super(Neo4jGraphQLCommunityTest, self).tearDown()
 
         # reset sql database
         NodeHandle.objects.all().delete()

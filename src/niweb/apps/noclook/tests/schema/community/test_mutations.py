@@ -5,9 +5,9 @@ from collections import OrderedDict
 from graphene import relay
 from niweb.schema import schema
 from pprint import pformat
-from . import Neo4jGraphQLTest
+from . import Neo4jGraphQLCommunityTest
 
-class JWTTest(Neo4jGraphQLTest):
+class JWTTest(Neo4jGraphQLCommunityTest):
     def test_jwt_mutations(self):
         ### jwt mutations
         ## get token
@@ -51,7 +51,7 @@ class JWTTest(Neo4jGraphQLTest):
             "The username from the jwt token doesn't match"
         assert result.data['refresh_token']['token'], result.data['refresh_token']['token']
 
-class SingleTest(Neo4jGraphQLTest):
+class SingleTest(Neo4jGraphQLCommunityTest):
     def test_single_mutations(self):
         ### Simple entity ###
         ## create ##
@@ -417,7 +417,7 @@ class SingleTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
-class MultipleEntityTest(Neo4jGraphQLTest):
+class MultipleEntityTest(Neo4jGraphQLCommunityTest):
     def test_multiple_entity_mutations(self):
         ### Composite entities (Organization) ###
         # get the first organization
@@ -1059,7 +1059,7 @@ class MultipleEntityTest(Neo4jGraphQLTest):
                                                 pformat(result.data, indent=1),
                                                 pformat(expected, indent=1)
                                             )
-class CommentsTest(Neo4jGraphQLTest):
+class CommentsTest(Neo4jGraphQLCommunityTest):
     def test_comments_mutations(self):
         ### Comments tests ###
         organization_id = relay.Node.to_global_id('Organization',
@@ -1164,7 +1164,7 @@ class CommentsTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
         assert result.data == expected, pformat(result.data, indent=1)
 
-class ValidationTest(Neo4jGraphQLTest):
+class ValidationTest(Neo4jGraphQLCommunityTest):
     def test_node_validation(self):
         # add an abuse contact first
         organization_id = relay.Node.to_global_id('Organization',
