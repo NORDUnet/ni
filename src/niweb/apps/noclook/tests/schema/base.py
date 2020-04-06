@@ -33,11 +33,13 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
         # get contexts
         self.network_ctxt = sriutils.get_network_context()
         self.community_ctxt = sriutils.get_community_context()
+        self.contracts_ctxt = sriutils.get_contracts_context()
 
         # add contexts and profiles for network
         iter_contexts = (
             self.community_ctxt,
             self.network_ctxt,
+            self.contracts_ctxt,
         )
 
         for acontext in iter_contexts:
