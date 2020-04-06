@@ -11,8 +11,8 @@ from apps.noclook.tests.neo4j_base import NeoTestCase
 from apps.noclook.tests.schema.base import Neo4jGraphQLGenericTest
 
 class Neo4jGraphQLCommunityTest(Neo4jGraphQLGenericTest):
-    def setUp(self):
-        super(Neo4jGraphQLCommunityTest, self).setUp()
+    def setUp(self, group_dict=None):
+        super(Neo4jGraphQLCommunityTest, self).setUp(group_dict=group_dict)
 
         # create nodes
         self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
