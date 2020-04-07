@@ -15,6 +15,8 @@ from .base import Neo4jGraphQLGenericTest
 
 # we'll use the community test to build a few entities
 class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
+    create_nodes = 3
+
     def setUp(self, group_dict=None):
         super(Neo4jGraphQLAuthAuzTest, self).setUp(group_dict=group_dict)
         self.test_user = self.user
@@ -31,13 +33,13 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
 
 
     def loop_over_types(self, loop_dict=None, iter_func=None):
-        for node_type, resolv_dict in NOCRootQuery.by_id_type_resolvers.items():
+        for node_type, resolv_dict in loop_dict.items():
             graphql_type = resolv_dict['fmt_type_name']
-            byid_method = resolv_dict['field_name']
+            api_method = resolv_dict['field_name']
 
             iter_func(
                 graphql_type=graphql_type,
-                byid_method=byid_method,
+                api_method=api_method,
                 node_type=node_type,
             )
 
@@ -47,8 +49,14 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
             iter_func=self.iter_get_byid,
         )
 
-    def check_get_byid(self, graphql_type, byid_method, node_type ,\
-                        has_errors=False, expected=None, error_msg=None):
+    def loop_get_all(self):
+        self.loop_over_types(
+            loop_dict=NOCRootQuery.all_type_resolvers,
+            iter_func=self.iter_get_all,
+        )
+
+    def check_get_byid(self, graphql_type, api_method, node_type ,\
+                        has_errors=False, error_msg=None):
         # get first node and get relay id
         nh = self.create_node("Test node {}".format(graphql_type), node_type.slug)
 
@@ -56,15 +64,14 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
                                             str(nh.handle_id))
         query = '''
         {{
-        	{byid_method}(id:"{relay_id}"){{
+        	{api_method}(id:"{relay_id}"){{
               id
               name
             }}
         }}
-        '''.format(byid_method=byid_method, relay_id=relay_id)
+        '''.format(api_method=api_method, relay_id=relay_id)
 
-        if not expected:
-            expected = { byid_method: None }
+        expected = { api_method: None }
 
         result = schema.execute(query, context=self.context)
 
@@ -85,12 +92,51 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
                         error_msg
                     )
 
-    def check_get_all(self, graphql_type, byid_method, node_type ,\
-                        has_errors=False, expected=None, error_msg=None):
-        pass
+    def check_get_all(self, graphql_type, api_method, node_type ,\
+                        has_errors=False, error_msg=None):
+        # create 3 nodes for this type
+        for i in range(0, self.create_nodes):
+            node_name = "Test {} {}".format(graphql_type, i)
+            nh = self.create_node(node_name.format(graphql_type), node_type.slug)
+
+        query = """
+        {{
+          {api_method}{{
+            id
+            name
+          }}
+        }}
+        """.format(api_method=api_method)
+
+        expected = {
+            api_method: []
+        }
+
+        result = schema.execute(query, context=self.context)
+
+        if not has_errors:
+            assert not result.errors, pformat(result.errors, indent=1)
+            assert result.data == expected, '\n{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+        else:
+            assert result.errors
+
+            if error_msg:
+                error_msg_query = getattr(result.errors[0], 'message')
+                assert error_msg_query == error_msg, \
+                    '\n{} != {}'.format(
+                        error_msg_query,
+                        error_msg
+                    )
+
 
     def run_test_get_byid(self):
         self.loop_get_byid()
+
+    def run_test_get_all(self):
+        self.loop_get_all()
 
 class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
     def setUp(self):
@@ -98,11 +144,11 @@ class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
         self.user = AnonymousUser()
         self.context.user = self.user
 
-    def iter_get_byid(self, graphql_type, byid_method, node_type):
+    def iter_get_byid(self, graphql_type, api_method, node_type):
         error_msg = GraphQLAuthException.default_msg.format('')
         self.check_get_byid(
             graphql_type=graphql_type,
-            byid_method=byid_method,
+            api_method=api_method,
             node_type=node_type,
             has_errors=True,
             error_msg=error_msg
@@ -121,12 +167,22 @@ class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
         }
         super(Neo4jGraphQLAuthorizationTest, self).setUp(group_dict=group_dict)
 
-    def iter_get_byid(self, graphql_type, byid_method, node_type):
+    def iter_get_byid(self, graphql_type, api_method, node_type):
         self.check_get_byid(
             graphql_type=graphql_type,
-            byid_method=byid_method,
+            api_method=api_method,
+            node_type=node_type
+        )
+
+    def iter_get_all(self, graphql_type, api_method, node_type):
+        self.check_get_all(
+            graphql_type=graphql_type,
+            api_method=api_method,
             node_type=node_type
         )
 
     def test_get_byid(self):
         self.run_test_get_byid()
+
+    def test_get_all(self):
+        self.run_test_get_all()

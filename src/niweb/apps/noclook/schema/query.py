@@ -30,6 +30,7 @@ class NOCAutoQuery(graphene.ObjectType):
 
     connection_classes = {}
     by_id_type_resolvers = {}
+    all_type_resolvers = {}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -62,6 +63,11 @@ class NOCAutoQuery(graphene.ObjectType):
                 # add simple list attribute and resolver
                 field_name    = 'all_{}s'.format(fmt_type_slug)
                 resolver_name = 'resolve_{}'.format(field_name)
+
+                cls.all_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
 
                 setattr(cls, field_name, graphene.List(graphql_type))
                 setattr(cls, resolver_name, graphql_type.get_list_resolver())
