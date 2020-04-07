@@ -30,16 +30,22 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
         return nh
 
 
-    def loop_get_byid(self):
+    def loop_over_types(self, loop_dict=None, iter_func=None):
         for node_type, resolv_dict in NOCRootQuery.by_id_type_resolvers.items():
             graphql_type = resolv_dict['fmt_type_name']
             byid_method = resolv_dict['field_name']
 
-            self.iter_get_byid(
+            iter_func(
                 graphql_type=graphql_type,
                 byid_method=byid_method,
                 node_type=node_type,
             )
+
+    def loop_get_byid(self):
+        self.loop_over_types(
+            loop_dict=NOCRootQuery.by_id_type_resolvers,
+            iter_func=self.iter_get_byid,
+        )
 
     def check_get_byid(self, graphql_type, byid_method, node_type ,\
                         has_errors=False, expected=None, error_msg=None):
@@ -78,6 +84,10 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
                         error_msg_query,
                         error_msg
                     )
+
+    def check_get_all(self, graphql_type, byid_method, node_type ,\
+                        has_errors=False, expected=None, error_msg=None):
+        pass
 
     def run_test_get_byid(self):
         self.loop_get_byid()
