@@ -29,6 +29,7 @@ class NOCAutoQuery(graphene.ObjectType):
     '''
 
     connection_classes = {}
+    by_id_type_resolvers = {}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -102,6 +103,10 @@ class NOCAutoQuery(graphene.ObjectType):
                 ## build field and resolver byid
                 field_name    = 'get{}ById'.format(fmt_type_name)
                 resolver_name = 'resolve_{}'.format(field_name)
+                cls.by_id_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
 
                 setattr(cls, field_name, graphene.Field(graphql_type, id=graphene.ID()))
                 setattr(cls, resolver_name, graphql_type.get_byid_resolver())
@@ -218,6 +223,6 @@ class NOCRootQuery(NOCAutoQuery):
         graphql_types = [
             Group, Address, Phone, Email, Contact, Organization, Procedure,
             Customer, EndUser, Provider, SiteOwner,
-            Port, Host, Cable, Router, 
+            Port, Host, Cable, Router,
             PeeringPartner, PeeringGroup,
         ]

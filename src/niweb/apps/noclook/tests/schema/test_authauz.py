@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook.schema import GraphQLAuthException
+from apps.noclook.schema.query import NOCRootQuery
 from django.contrib.auth.models import AnonymousUser
 from django.template.defaultfilters import slugify
 from graphene import relay
@@ -10,18 +11,42 @@ from graphql.error.located_error import GraphQLLocatedError
 from niweb.schema import schema
 from pprint import pformat
 
-from .community import Neo4jGraphQLCommunityTest
+from .base import Neo4jGraphQLGenericTest
 
 # we'll use the community test to build a few entities
-class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLCommunityTest):
-    test_type = 'Organization'
-    byid_method = 'getOrganizationById'
+class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
+    def setUp(self):
+        super(Neo4jGraphQLAuthAuzTest, self).setUp()
+        self.test_user = self.user
 
-    def check_get_byid(self, has_errors=False, expected=None, error_msg=None):
+    def create_node(self, name, _type, meta='Physical'):
+        # in order to perform the node creation with an AnonymousUser
+        # we use this simple workaround
+        buff_user = self.user
+        self.user = self.test_user
+        nh = super().create_node(name, _type, meta)
+        self.user = buff_user
+
+        return nh
+
+
+    def loop_get_byid(self):
+        for node_type, resolv_dict in NOCRootQuery.by_id_type_resolvers.items():
+            graphql_type = resolv_dict['fmt_type_name']
+            byid_method = resolv_dict['field_name']
+
+            self.iter_get_byid(
+                graphql_type=graphql_type,
+                byid_method=byid_method,
+                node_type=node_type,
+            )
+
+    def check_get_byid(self, graphql_type, byid_method, node_type ,\
+                        has_errors=False, expected=None, error_msg=None):
         # get first node and get relay id
-        node_type = self.get_nodetype(self.test_type)
-        nh = NodeHandle.objects.filter(node_type=node_type).first()
-        relay_id = relay.Node.to_global_id(str(node_type),
+        nh = self.create_node("Test node {}".format(graphql_type), node_type.slug)
+
+        relay_id = relay.Node.to_global_id(str(graphql_type),
                                             str(nh.handle_id))
         query = '''
         {{
@@ -30,10 +55,10 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLCommunityTest):
               name
             }}
         }}
-        '''.format(byid_method=self.byid_method, relay_id=relay_id)
+        '''.format(byid_method=byid_method, relay_id=relay_id)
 
         if not expected:
-            expected = { self.byid_method: None }
+            expected = { byid_method: None }
 
         result = schema.execute(query, context=self.context)
 
@@ -57,16 +82,24 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLCommunityTest):
     def get_nodetype(self, type_name):
         return NodeType.objects.get_or_create(type=type_name, slug=slugify(type_name))[0]
 
+    def test_get_byid(self):
+        self.loop_get_byid()
+
 class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
     def setUp(self):
         super(Neo4jGraphQLAuthenticationTest, self).setUp()
-
         self.user = AnonymousUser()
         self.context.user = self.user
 
-    def test_get_byid(self):
+    def iter_get_byid(self, graphql_type, byid_method, node_type):
         error_msg = GraphQLAuthException.default_msg.format('')
-        self.check_get_byid(has_errors=True, error_msg=error_msg)
+        self.check_get_byid(
+            graphql_type=graphql_type,
+            byid_method=byid_method,
+            node_type=node_type,
+            has_errors=True,
+            error_msg=error_msg
+        )
 
 
 class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
@@ -78,5 +111,9 @@ class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
         }
         super(Neo4jGraphQLAuthorizationTest, self).setUp(group_dict=group_dict)
 
-    def test_get_byid(self):
-        self.check_get_byid()
+    def iter_get_byid(self, graphql_type, byid_method, node_type):
+        self.check_get_byid(
+            graphql_type=graphql_type,
+            byid_method=byid_method,
+            node_type=node_type
+        )
