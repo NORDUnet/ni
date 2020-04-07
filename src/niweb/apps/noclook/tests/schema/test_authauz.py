@@ -154,8 +154,21 @@ class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
             error_msg=error_msg
         )
 
+    def iter_get_all(self, graphql_type, api_method, node_type):
+        error_msg = GraphQLAuthException.default_msg.format('')
+        self.check_get_all(
+            graphql_type=graphql_type,
+            api_method=api_method,
+            node_type=node_type,
+            has_errors=True,
+            error_msg=error_msg
+        )
+
     def test_get_byid(self):
         self.run_test_get_byid()
+
+    def test_get_all(self):
+        self.run_test_get_all()
 
 
 class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
