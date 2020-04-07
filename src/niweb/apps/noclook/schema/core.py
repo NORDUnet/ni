@@ -547,7 +547,8 @@ class NIObjectType(DjangoObjectType):
             try:
                 _type, handle_id = relay.Node.from_global_id(id)
             except:
-                pass # nothing is done, we'll return None
+                # we'll return None
+                handle_id = None
 
             node_type = NodeType.objects.get(type=type_name)
             ret = None
@@ -569,9 +570,6 @@ class NIObjectType(DjangoObjectType):
                         pass
                 else:
                     raise GraphQLError('A handle_id must be provided')
-
-                if not ret:
-                    raise GraphQLError("There isn't any {} with handle_id {}".format(type_name, handle_id))
 
                 return ret
             else:
@@ -2186,8 +2184,10 @@ class GraphQLAuthException(Exception):
     '''
     Simple auth exception
     '''
+    default_msg = 'You must be logged in the system: {}'
+
     def __init__(self, message=None):
-        message = 'You must be logged in the system: {}'.format(
+        message = self.default_msg.format(
             ': {}'.format(message) if message else ''
         )
         super().__init__(message)
