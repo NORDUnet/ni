@@ -15,8 +15,8 @@ from .base import Neo4jGraphQLGenericTest
 
 # we'll use the community test to build a few entities
 class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
-    def setUp(self):
-        super(Neo4jGraphQLAuthAuzTest, self).setUp()
+    def setUp(self, group_dict=None):
+        super(Neo4jGraphQLAuthAuzTest, self).setUp(group_dict=group_dict)
         self.test_user = self.user
 
     def create_node(self, name, _type, meta='Physical'):
@@ -79,10 +79,7 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
                         error_msg
                     )
 
-    def get_nodetype(self, type_name):
-        return NodeType.objects.get_or_create(type=type_name, slug=slugify(type_name))[0]
-
-    def test_get_byid(self):
+    def run_test_get_byid(self):
         self.loop_get_byid()
 
 class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
@@ -101,6 +98,9 @@ class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
             error_msg=error_msg
         )
 
+    def test_get_byid(self):
+        self.run_test_get_byid()
+
 
 class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
     def setUp(self):
@@ -117,3 +117,6 @@ class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
             byid_method=byid_method,
             node_type=node_type
         )
+
+    def test_get_byid(self):
+        self.run_test_get_byid()
