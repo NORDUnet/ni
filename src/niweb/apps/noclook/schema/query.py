@@ -241,15 +241,28 @@ class NOCRootQuery(NOCAutoQuery):
         return ret
 
     def resolve_checkExistentOrganizationId(self, info, **kwargs):
-        id = kwargs.get('id', None)
-        handle_id = None
+        ret = False
 
-        if id:
-            _type, handle_id = relay.Node.from_global_id(id)
+        if info.context and info.context.user.is_authenticated:
+            # well use the community context to check if the user
+            # can read the rolegroup list
+            community_context = sriutils.get_community_context()
+            authorized = sriutils.authorize_list_module(
+                info.context.user, community_context
+            )
 
-        organization_id = kwargs.get('organization_id')
+            if not authorized:
+                id = kwargs.get('id', None)
+                handle_id = None
 
-        ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
+                if id:
+                    _type, handle_id = relay.Node.from_global_id(id)
+
+                organization_id = kwargs.get('organization_id')
+
+                ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
+        else:
+            raise GraphQLAuthException()
 
         return ret
 

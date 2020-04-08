@@ -12,6 +12,7 @@ from niweb.schema import schema
 from pprint import pformat
 
 from .base import Neo4jGraphQLGenericTest
+from ..stressload.data_generator import CommunityFakeDataGenerator
 
 # we'll use the community test to build a few entities
 class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
@@ -293,8 +294,42 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
                         error_msg
                     )
 
-    def run_test_checkExistentOrganizationId(self):
-        pass
+    def run_test_checkExistentOrganizationId(self, \
+                                            has_errors=False, error_msg=None):
+        generator = CommunityFakeDataGenerator()
+        org_nh = generator.create_organization()
+        existent_orgid = org_nh.get_node()
+
+        query = """
+        {{
+          checkExistentOrganizationId(organization_id:"{organization_id}")
+        }}
+        """.format(organization_id=existent_orgid)
+
+        expected = {
+            'checkExistentOrganizationId': False
+        }
+
+        result = schema.execute(query, context=self.context)
+
+        if not has_errors:
+            assert not result.errors, pformat(result.errors, indent=1)
+            assert result.data == expected, '\n{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+        else:
+            assert result.errors
+
+            if error_msg:
+                error_msg_query = getattr(result.errors[0], 'message')
+                assert error_msg_query == error_msg, \
+                    '\n{} != {}'.format(
+                        error_msg_query,
+                        error_msg
+                    )
+
+
 
     def run_test_availableRoleGroups_rolesFromRoleGroup(self):
         pass
@@ -352,6 +387,12 @@ class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
 
     def test_roles(self):
         self.run_test_roles(
+            has_errors=True,
+            error_msg=self.error_msg
+        )
+
+    def test_checkExistentOrganizationId(self):
+        self.run_test_checkExistentOrganizationId(
             has_errors=True,
             error_msg=self.error_msg
         )
