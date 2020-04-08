@@ -115,7 +115,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 ## build field and resolver byid
                 field_name    = 'get{}ById'.format(fmt_type_name)
                 resolver_name = 'resolve_{}'.format(field_name)
-                
+
                 cls.by_id_type_resolvers[node_type] = {
                     'field_name': field_name,
                     'fmt_type_name': fmt_type_name,
@@ -136,19 +136,25 @@ class NOCRootQuery(NOCAutoQuery):
     getRolesFromRoleGroup = graphene.List(Role, name=graphene.String())
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
-        django_dropdowns = [d.name for d in DropdownModel.objects.all()]
+        if info.context and info.context.user.is_authenticated:
+            django_dropdowns = [d.name for d in DropdownModel.objects.all()]
 
-        return django_dropdowns
+            return django_dropdowns
+        else:
+            raise GraphQLAuthException()
 
     def resolve_getChoicesForDropdown(self, info, **kwargs):
-        # django dropdown resolver
-        name = kwargs.get('name')
-        ddqs = DropdownModel.get(name)
+        if info.context and info.context.user.is_authenticated:
+            # django dropdown resolver
+            name = kwargs.get('name')
+            ddqs = DropdownModel.get(name)
 
-        if not isinstance(ddqs, DummyDropdown):
-            return ddqs.choice_set.order_by('name')
+            if not isinstance(ddqs, DummyDropdown):
+                return ddqs.choice_set.order_by('name')
+            else:
+                raise Exception(u'Could not find dropdown with name \'{}\'. Please create it using /admin/'.format(name))
         else:
-            raise Exception(u'Could not find dropdown with name \'{}\'. Please create it using /admin/'.format(name))
+            raise GraphQLAuthException()
 
     def resolve_roles(self, info, **kwargs):
         filter = kwargs.get('filter')

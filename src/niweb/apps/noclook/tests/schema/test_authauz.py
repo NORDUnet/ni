@@ -192,6 +192,78 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
     def run_test_get_connection(self):
         self.loop_get_connection()
 
+    def run_availableDropdowns_choicesForDropdown(self, has_errors=False, \
+                                                    error_msg=None):
+        dropdown_name = 'email_type'
+
+        query1 = """
+        {
+          getAvailableDropdowns
+        }
+        """
+
+        query2 = """
+        {{
+          getChoicesForDropdown(name: "{dropdown_name}"){{
+            name
+            value
+          }}
+        }}
+        """
+
+        result = schema.execute(query1, context=self.context)
+
+        if not has_errors:
+            # only check for errors
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # get the last one and overwrite
+            dropdown_name = result.data['getAvailableDropdowns'][-1]
+            query = query2.format(dropdown_name=dropdown_name)
+
+            # run second query, check that there are no errors
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check that the result isn't empty
+            assert result.data['getChoicesForDropdown']
+
+        else:
+            # there should be errors here
+            assert result.errors
+
+            if error_msg:
+                error_msg_query = getattr(result.errors[0], 'message')
+                assert error_msg_query == error_msg, \
+                    '\n{} != {}'.format(
+                        error_msg_query,
+                        error_msg
+                    )
+
+            # run the other query to check that there's errors too
+            query = query2.format(dropdown_name=dropdown_name)
+            result = schema.execute(query, context=self.context)
+
+            assert result.errors
+
+            if error_msg:
+                error_msg_query = getattr(result.errors[0], 'message')
+                assert error_msg_query == error_msg, \
+                    '\n{} != {}'.format(
+                        error_msg_query,
+                        error_msg
+                    )
+
+    def run_test_roles(self):
+        pass
+
+    def run_test_checkExistentOrganizationId(self):
+        pass
+
+    def run_test_availableRoleGroups_rolesFromRoleGroup(self):
+        pass
+
+
 class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
     def setUp(self):
         super(Neo4jGraphQLAuthenticationTest, self).setUp()
@@ -223,6 +295,13 @@ class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
 
     def test_get_all(self):
         self.run_test_get_all()
+
+    def test_availableDropdowns_choicesForDropdown(self):
+        error_msg = GraphQLAuthException.default_msg.format('')
+        self.run_availableDropdowns_choicesForDropdown(
+            has_errors=True,
+            error_msg=error_msg
+        )
 
 
 class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
@@ -263,3 +342,6 @@ class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
 
     def test_get_connection(self):
         self.run_test_get_connection()
+
+    def test_availableDropdowns_choicesForDropdown(self):
+        self.run_availableDropdowns_choicesForDropdown()
