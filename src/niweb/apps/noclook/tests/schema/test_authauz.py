@@ -254,8 +254,44 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
                         error_msg
                     )
 
-    def run_test_roles(self):
-        pass
+    def run_test_roles(self, has_errors=False, error_msg=None):
+        query = """
+        {
+          roles{
+            edges{
+              node{
+                id
+                name
+              }
+            }
+          }
+        }
+        """
+
+        expected = {
+            'roles': {
+                'edges': []
+            }
+        }
+
+        result = schema.execute(query, context=self.context)
+
+        if not has_errors:
+            assert not result.errors, pformat(result.errors, indent=1)
+            assert result.data == expected, '\n{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+        else:
+            assert result.errors
+
+            if error_msg:
+                error_msg_query = getattr(result.errors[0], 'message')
+                assert error_msg_query == error_msg, \
+                    '\n{} != {}'.format(
+                        error_msg_query,
+                        error_msg
+                    )
 
     def run_test_checkExistentOrganizationId(self):
         pass
@@ -265,29 +301,38 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
 
 
 class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
+    error_msg = GraphQLAuthException.default_msg.format('')
+
     def setUp(self):
         super(Neo4jGraphQLAuthenticationTest, self).setUp()
         self.user = AnonymousUser()
         self.context.user = self.user
 
     def iter_get_byid(self, graphql_type, api_method, node_type):
-        error_msg = GraphQLAuthException.default_msg.format('')
         self.check_get_byid(
             graphql_type=graphql_type,
             api_method=api_method,
             node_type=node_type,
             has_errors=True,
-            error_msg=error_msg
+            error_msg=self.error_msg
         )
 
     def iter_get_all(self, graphql_type, api_method, node_type):
-        error_msg = GraphQLAuthException.default_msg.format('')
         self.check_get_all(
             graphql_type=graphql_type,
             api_method=api_method,
             node_type=node_type,
             has_errors=True,
-            error_msg=error_msg
+            error_msg=self.error_msg
+        )
+
+    def iter_get_connection(self, graphql_type, api_method, node_type):
+        self.check_get_connection(
+            graphql_type=graphql_type,
+            api_method=api_method,
+            node_type=node_type,
+            has_errors=True,
+            error_msg=self.error_msg
         )
 
     def test_get_byid(self):
@@ -296,11 +341,19 @@ class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
     def test_get_all(self):
         self.run_test_get_all()
 
+    def test_get_connection(self):
+        self.run_test_get_connection()
+
     def test_availableDropdowns_choicesForDropdown(self):
-        error_msg = GraphQLAuthException.default_msg.format('')
         self.run_availableDropdowns_choicesForDropdown(
             has_errors=True,
-            error_msg=error_msg
+            error_msg=self.error_msg
+        )
+
+    def test_roles(self):
+        self.run_test_roles(
+            has_errors=True,
+            error_msg=self.error_msg
         )
 
 
@@ -345,3 +398,6 @@ class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
 
     def test_availableDropdowns_choicesForDropdown(self):
         self.run_availableDropdowns_choicesForDropdown()
+
+    def test_roles(self):
+        self.run_test_roles()

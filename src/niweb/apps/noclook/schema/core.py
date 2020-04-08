@@ -809,7 +809,7 @@ class NIObjectType(DjangoObjectType):
                     pass
             else:
                 # 401
-                pass
+                raise GraphQLAuthException()
 
             if not ret:
                 ret = []

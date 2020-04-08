@@ -157,30 +157,45 @@ class NOCRootQuery(NOCAutoQuery):
             raise GraphQLAuthException()
 
     def resolve_roles(self, info, **kwargs):
-        filter = kwargs.get('filter')
-        order_by = kwargs.get('orderBy')
+        qs = RoleModel.objects.none()
 
-        qs = RoleModel.objects.all()
+        if info.context and info.context.user.is_authenticated:
+            context = sriutils.get_community_context()
+            authorized = sriutils.authorize_list_module(
+                info.context.user, context
+            )
 
-        if order_by:
-            if order_by == RoleOrderBy.handle_id_ASC:
-                qs = qs.order_by('handle_id')
-            elif order_by == RoleOrderBy.handle_id_DESC:
-                qs = qs.order_by('-handle_id')
-            elif order_by == RoleOrderBy.name_ASC:
-                qs = qs.order_by('name')
-            elif order_by == RoleOrderBy.name_DESC:
-                qs = qs.order_by('-name')
+            if authorized:
+                filter = kwargs.get('filter')
+                order_by = kwargs.get('orderBy')
 
-        if filter:
-            if filter.id:
-                handle_id = relay.Node.from_global_id(filter.id)[1]
-                qs = qs.filter(handle_id=handle_id)
+                qs = RoleModel.objects.all()
 
-            if filter.name:
-                qs = qs.filter(name=filter.name)
+                if order_by:
+                    if order_by == RoleOrderBy.handle_id_ASC:
+                        qs = qs.order_by('handle_id')
+                    elif order_by == RoleOrderBy.handle_id_DESC:
+                        qs = qs.order_by('-handle_id')
+                    elif order_by == RoleOrderBy.name_ASC:
+                        qs = qs.order_by('name')
+                    elif order_by == RoleOrderBy.name_DESC:
+                        qs = qs.order_by('-name')
 
-        return qs
+                if filter:
+                    if filter.id:
+                        handle_id = relay.Node.from_global_id(filter.id)[1]
+                        qs = qs.filter(handle_id=handle_id)
+
+                    if filter.name:
+                        qs = qs.filter(name=filter.name)
+
+                return qs
+            else:
+                #403
+                return qs
+        else:
+            # 401
+            raise GraphQLAuthException()
 
     def resolve_getAvailableRoleGroups(self, info, **kwargs):
         ret = []
