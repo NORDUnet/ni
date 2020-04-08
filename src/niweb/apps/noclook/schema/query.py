@@ -31,6 +31,7 @@ class NOCAutoQuery(graphene.ObjectType):
     connection_classes = {}
     by_id_type_resolvers = {}
     all_type_resolvers = {}
+    connection_type_resolvers = {}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -83,6 +84,11 @@ class NOCAutoQuery(graphene.ObjectType):
                 field_name    = '{}s'.format(type_name_cc)
                 resolver_name = 'resolve_{}'.format(field_name)
 
+                cls.connection_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
+
                 connection_input, connection_order = graphql_type.build_filter_and_order()
                 connection_meta = type('Meta', (object, ), dict(node=graphql_type))
                 connection_name = '{}Connection'.format(type_name_cc)
@@ -109,6 +115,7 @@ class NOCAutoQuery(graphene.ObjectType):
                 ## build field and resolver byid
                 field_name    = 'get{}ById'.format(fmt_type_name)
                 resolver_name = 'resolve_{}'.format(field_name)
+                
                 cls.by_id_type_resolvers[node_type] = {
                     'field_name': field_name,
                     'fmt_type_name': fmt_type_name,

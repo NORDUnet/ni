@@ -55,6 +55,12 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
             iter_func=self.iter_get_all,
         )
 
+    def loop_get_connection(self):
+        self.loop_over_types(
+            loop_dict=NOCRootQuery.connection_type_resolvers,
+            iter_func=self.iter_get_connection,
+        )
+
     def check_get_byid(self, graphql_type, api_method, node_type ,\
                         has_errors=False, error_msg=None):
         # get first node and get relay id
@@ -131,12 +137,60 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
                         error_msg
                     )
 
+    def check_get_connection(self, graphql_type, api_method, node_type ,\
+                        has_errors=False, error_msg=None):
+        # create 3 nodes for this type
+        for i in range(0, self.create_nodes):
+            node_name = "Test {} {}".format(graphql_type, i)
+            nh = self.create_node(node_name.format(graphql_type), node_type.slug)
+
+        query = """
+        {{
+          {api_method}{{
+            edges{{
+              node{{
+                id
+                name
+              }}
+            }}
+          }}
+        }}
+        """.format(api_method=api_method)
+
+        expected = {
+            api_method: {
+                'edges': []
+            }
+        }
+
+        result = schema.execute(query, context=self.context)
+
+        if not has_errors:
+            assert not result.errors, pformat(result.errors, indent=1)
+            assert result.data == expected, '\n{} \n != {}'.format(
+                                                pformat(result.data, indent=1),
+                                                pformat(expected, indent=1)
+                                            )
+        else:
+            assert result.errors
+
+            if error_msg:
+                error_msg_query = getattr(result.errors[0], 'message')
+                assert error_msg_query == error_msg, \
+                    '\n{} != {}'.format(
+                        error_msg_query,
+                        error_msg
+                    )
+
 
     def run_test_get_byid(self):
         self.loop_get_byid()
 
     def run_test_get_all(self):
         self.loop_get_all()
+
+    def run_test_get_connection(self):
+        self.loop_get_connection()
 
 class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
     def setUp(self):
@@ -194,8 +248,18 @@ class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
             node_type=node_type
         )
 
+    def iter_get_connection(self, graphql_type, api_method, node_type):
+        self.check_get_connection(
+            graphql_type=graphql_type,
+            api_method=api_method,
+            node_type=node_type
+        )
+
     def test_get_byid(self):
         self.run_test_get_byid()
 
     def test_get_all(self):
         self.run_test_get_all()
+
+    def test_get_connection(self):
+        self.run_test_get_connection()
