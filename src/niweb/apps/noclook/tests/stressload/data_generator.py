@@ -65,9 +65,11 @@ class FakeDataGenerator:
 
         return nh
 
-    def create_entity(self, data_f=None, type_name=None, metatype=None):
+    def create_entity(self, data_f=None, type_name=None, metatype=None, \
+                        name_alias=None):
         data = data_f()
-        name = data['name']
+        name_key = 'name' if not name_alias else name_alias
+        name = data.get(name_key, None)
 
         nh = self.get_or_create_node(
             name, type_name, metatype) # Logical
@@ -164,6 +166,14 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
             data_f=self.create_fake_procedure,
             type_name='Procedure',
             metatype=META_TYPES[1], # Logical
+        )
+
+    def create_organization(self):
+        return self.create_entity(
+            data_f=self.create_fake_organization,
+            type_name='Organization',
+            metatype=META_TYPES[2], # Relation
+            name_alias='account_name',
         )
 
 

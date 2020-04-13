@@ -4,13 +4,13 @@ __author__ = 'ffuentes'
 from apps.noclook.models import NodeHandle, Dropdown, Choice, Role, Group, \
     GroupContextAuthzAction, NodeHandleContext, DEFAULT_ROLEGROUP_NAME
 from collections import OrderedDict
-from . import Neo4jGraphQLTest
+from . import Neo4jGraphQLCommunityTest
 from niweb.schema import schema
 from pprint import pformat
-from . import Neo4jGraphQLTest
+from . import Neo4jGraphQLCommunityTest
 from graphene import relay
 
-class GroupComplexTest(Neo4jGraphQLTest):
+class GroupComplexTest(Neo4jGraphQLCommunityTest):
     def test_composite_group(self):
         group_name = "The Pendletones"
         description_group = "In sodales nisl et turpis sollicitudin, nec \
@@ -448,7 +448,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
         assert subdeleted_data[0]['success'], "The requested contact couldn't be deleted"
 
 
-class OrganizationComplexTest(Neo4jGraphQLTest):
+class OrganizationComplexTest(Neo4jGraphQLCommunityTest):
     def test_composite_organization(self):
         org_name = "PyPI"
         org_type = "partner"
@@ -1143,7 +1143,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
             "Second address of this organization should have been deleted"
 
 
-class ContactsComplexTest(Neo4jGraphQLTest):
+class ContactsComplexTest(Neo4jGraphQLCommunityTest):
     def test_multiple_mutation(self):
         c1_first_name = "Jane"
         c1_last_name  = "Doe"
