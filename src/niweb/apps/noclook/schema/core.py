@@ -16,6 +16,7 @@ from django import forms
 from django.contrib.auth.models import User as DjangoUser
 from django.forms.utils import ValidationError
 from django.test import RequestFactory
+from django.utils.text import slugify
 from django_comments.models import Comment
 from graphene import relay
 from graphene.types import Scalar, DateTime
@@ -23,20 +24,28 @@ from graphene_django import DjangoObjectType
 from graphene_django.types import DjangoObjectTypeOptions, ErrorType
 from graphql import GraphQLError
 from norduniclient.exceptions import UniqueNodeError, NoRelationshipPossible
+from norduniclient import META_TYPES
 
 from .scalars import *
 from .fields import *
 from .querybuilders import *
-from ..models import NodeType, NodeHandle, Choice as ChoiceModel
+from .metatypes import *
+from ..models import NodeType, NodeHandle
 
 logger = logging.getLogger(__name__)
 
 ########## RELATION AND NODE TYPES
+NIMETA_LOGICAL  = META_TYPES[1]
+NIMETA_RELATION = META_TYPES[2]
+NIMETA_PHYSICAL = META_TYPES[0]
+NIMETA_LOCATION = META_TYPES[3]
 
-NIMETA_LOGICAL  = 'logical'
-NIMETA_RELATION = 'relation'
-NIMETA_PHYSICAL = 'physical'
-NIMETA_LOCATION = 'location'
+metatype_interfaces = OrderedDict([
+    (NIMETA_LOGICAL,  { 'interface': Logical,  'mixin':  LogicalMixin, } ),
+    (NIMETA_RELATION, { 'interface': Relation, 'mixin':  RelationMixin, }),
+    (NIMETA_PHYSICAL, { 'interface': Physical, 'mixin':  PhysicalMixin, }),
+    (NIMETA_LOCATION, { 'interface': Location, 'mixin':  LocationMixin, }),
+])
 
 class User(DjangoObjectType):
     '''
@@ -59,14 +68,6 @@ class NINodeHandlerType(DjangoObjectType):
     class Meta:
         model = NodeHandle
         interfaces = (relay.Node, )
-
-class Choice(DjangoObjectType):
-    '''
-    This class is used for the choices available in a dropdown
-    '''
-    class Meta:
-        model = ChoiceModel
-        interfaces = (KeyValue, )
 
 
 class NIRelationType(graphene.ObjectType):
@@ -193,7 +194,18 @@ class CommentType(DjangoObjectType):
         model = Comment
         interfaces = (relay.Node, )
 
+
+class NINodeType(DjangoObjectType):
+    '''
+    Simple NodeType graphene class
+    '''
+    class Meta:
+        model = NodeType
+        exclude_fields = ['nodehandle_set']
+
+
 input_fields_clsnames = {}
+
 
 class NIObjectType(DjangoObjectType):
     '''
@@ -276,8 +288,16 @@ class NIObjectType(DjangoObjectType):
                         .format(name)
                 )
 
+        # add meta types interfaces if present
+        interfaces = [NINode, ]
+        if hasattr(cls, 'NIMetaType'):
+            ni_metatype = cls.get_from_nimetatype("ni_metatype")
+            if ni_metatype in metatype_interfaces:
+                metatype_interface = metatype_interfaces[ni_metatype]['interface']
+                interfaces.append(metatype_interface)
+
         options['model'] = NIObjectType._meta.model
-        options['interfaces'] = NIObjectType._meta.interfaces
+        options['interfaces'] = interfaces
 
         super(NIObjectType, cls).__init_subclass_with_meta__(
             **options
@@ -420,7 +440,7 @@ class NIObjectType(DjangoObjectType):
         if cls._connection_input and cls._connection_order:
             return cls._connection_input, cls._connection_order
 
-        ni_type = cls.get_from_nimetatype('ni_type')
+        ni_type = cls.get_from_nimetatype('ni_type').replace(' ', '')
 
         # build filter input class and order enum
         filter_attrib = {}
@@ -686,101 +706,105 @@ class NIObjectType(DjangoObjectType):
 
             if info.context and info.context.user.is_authenticated and \
                 sriutils.authorize_list_module(info.context.user, context):
+
                 # filtering will take a different approach
                 nodes = None
-                node_type = NodeType.objects.get(type=type_name)
-                qs = NodeHandle.objects.filter(node_type=node_type)
 
-                # instead of vakt here, we reduce the original qs
-                # to only the ones the user has right to read
-                qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                if NodeType.objects.filter(type=type_name):
+                    node_type = NodeType.objects.get(type=type_name)
+                    qs = NodeHandle.objects.filter(node_type=node_type)
 
-                # remove default ordering prop if there's no filter
-                if not cls.order_is_empty(orderBy):
-                    if orderBy == 'handle_id_DESC':
-                        orderBy = None
-                        apply_handle_id_order = True
-                        revert_default_order = False
-                    elif orderBy == 'handle_id_ASC':
-                        orderBy = None
-                        apply_handle_id_order = True
-                        revert_default_order = True
+                    # instead of vakt here, we reduce the original qs
+                    # to only the ones the user has right to read
+                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
 
-                qs_order_prop = None
-                qs_order_order = None
+                    # remove default ordering prop if there's no filter
+                    if not cls.order_is_empty(orderBy):
+                        if orderBy == 'handle_id_DESC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = False
+                        elif orderBy == 'handle_id_ASC':
+                            orderBy = None
+                            apply_handle_id_order = True
+                            revert_default_order = True
 
-                if not cls.order_is_empty(orderBy):
-                    m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
-                    prop = m[1]
-                    order = m[2]
+                    qs_order_prop = None
+                    qs_order_order = None
 
-                    if prop in DateQueryBuilder.fields:
-                        # set model attribute ordering
-                        qs_order_prop  = prop
-                        qs_order_order = order
+                    if not cls.order_is_empty(orderBy):
+                        m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                        prop = m[1]
+                        order = m[2]
 
-                if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
-                    # filter queryset with dates and users
-                    qs = DateQueryBuilder.filter_queryset(filter, qs)
-                    qs = UserQueryBuilder.filter_queryset(filter, qs)
+                        if prop in DateQueryBuilder.fields:
+                            # set model attribute ordering
+                            qs_order_prop  = prop
+                            qs_order_order = order
 
-                    # remove order if is a date order
-                    if qs_order_prop and qs_order_order:
-                        orderBy = None
+                    if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
+                        # filter queryset with dates and users
+                        qs = DateQueryBuilder.filter_queryset(filter, qs)
+                        qs = UserQueryBuilder.filter_queryset(filter, qs)
 
-                    # create query
-                    q = cls.build_filter_query(filter, orderBy, type_name,
-                                    apply_handle_id_order, revert_default_order)
-                    nodes = nc.query_to_list(nc.graphdb.manager, q)
-                    nodes = [ node['n'] for node in nodes]
+                        # remove order if is a date order
+                        if qs_order_prop and qs_order_order:
+                            orderBy = None
 
-                    use_neo4j_query = True
-                else:
-                    use_neo4j_query = False
+                        # create query
+                        fmt_type_name = type_name.replace(' ', '_')
+                        q = cls.build_filter_query(filter, orderBy, fmt_type_name,
+                                        apply_handle_id_order, revert_default_order)
+                        nodes = nc.query_to_list(nc.graphdb.manager, q)
+                        nodes = [ node['n'] for node in nodes]
 
-                if use_neo4j_query:
-                    ret = []
+                        use_neo4j_query = True
+                    else:
+                        use_neo4j_query = False
 
-                    handle_ids = []
-                    for node in nodes:
-                        if node['handle_id'] not in handle_ids:
-                            handle_ids.append(node['handle_id'])
+                    if use_neo4j_query:
+                        ret = []
 
-                    for handle_id in handle_ids:
-                        nodeqs = qs.filter(handle_id=handle_id)
-                        try:
-                            the_node = nodeqs.first()
-                            if the_node:
-                                ret.append(the_node)
-                        except:
-                            pass # nothing to do if the qs doesn't have elements
+                        handle_ids = []
+                        for node in nodes:
+                            if node['handle_id'] not in handle_ids:
+                                handle_ids.append(node['handle_id'])
 
-                    # apply date order if it applies
-                    if qs_order_prop and qs_order_order:
-                        reverse = True if qs_order_order == 'DESC' else False
-                        ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
-                else:
-                    # do nodehandler attributes ordering now that we have
-                    # the nodes set, if this order is requested
-                    if qs_order_prop and qs_order_order:
-                        reverse = True if qs_order_order == 'DESC' else False
+                        for handle_id in handle_ids:
+                            nodeqs = qs.filter(handle_id=handle_id)
+                            try:
+                                the_node = nodeqs.first()
+                                if the_node:
+                                    ret.append(the_node)
+                            except:
+                                pass # nothing to do if the qs doesn't have elements
 
-                        if reverse:
-                            qs = qs.order_by('{}'.format(qs_order_prop))
-                        else:
-                            qs = qs.order_by('-{}'.format(qs_order_prop))
+                        # apply date order if it applies
+                        if qs_order_prop and qs_order_order:
+                            reverse = True if qs_order_order == 'DESC' else False
+                            ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                    else:
+                        # do nodehandler attributes ordering now that we have
+                        # the nodes set, if this order is requested
+                        if qs_order_prop and qs_order_order:
+                            reverse = True if qs_order_order == 'DESC' else False
 
-                    if apply_handle_id_order:
-                        logger.debug('Apply handle_id order')
+                            if reverse:
+                                qs = qs.order_by('{}'.format(qs_order_prop))
+                            else:
+                                qs = qs.order_by('-{}'.format(qs_order_prop))
 
-                        if not revert_default_order:
-                            logger.debug('Apply descendent handle_id')
-                            qs = qs.order_by('-handle_id')
-                        else:
-                            logger.debug('Apply ascending handle_id')
-                            qs = qs.order_by('handle_id')
+                        if apply_handle_id_order:
+                            logger.debug('Apply handle_id order')
 
-                    ret = list(qs)
+                            if not revert_default_order:
+                                logger.debug('Apply descendent handle_id')
+                                qs = qs.order_by('-handle_id')
+                            else:
+                                logger.debug('Apply ascending handle_id')
+                                qs = qs.order_by('handle_id')
+
+                        ret = list(qs)
 
             if not ret:
                 ret = []
@@ -1098,7 +1122,6 @@ class NIObjectType(DjangoObjectType):
 
     class Meta:
         model = NodeHandle
-        interfaces = (relay.Node, )
 
 ########## END RELATION AND NODE TYPES
 
@@ -1273,9 +1296,17 @@ class AbstractNIMutation(relay.ClientIDMutation):
         )
 
     @classmethod
+    def get_returntype_name(cls, graphql_typename):
+        fmt_name = graphql_typename[0].lower() + graphql_typename[1:]
+
+        return fmt_name
+
+    @classmethod
     def add_return_type(cls, graphql_type):
         if graphql_type:
-            setattr(cls, graphql_type.__name__.lower(), graphene.Field(graphql_type))
+            payload_name = cls.get_returntype_name(graphql_type.__name__)
+
+            setattr(cls, payload_name, graphene.Field(graphql_type))
 
     @classmethod
     def form_to_graphene_field(cls, form_field, include=None, exclude=None):
@@ -1350,7 +1381,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
         graphql_type   = getattr(ni_metaclass, 'graphql_type')
         nimetatype     = getattr(graphql_type, 'NIMetaType')
         node_type      = getattr(nimetatype, 'ni_type').lower()
-        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        node_meta_type = getattr(nimetatype, 'ni_metatype')
 
         # get input values
         noninput_fields = list(inner_fields.keys())
@@ -1544,8 +1575,8 @@ class CreateNIMutation(AbstractNIMutation):
         relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype     = getattr(graphql_type, 'NIMetaType')
-        node_type      = getattr(nimetatype, 'ni_type').lower()
-        node_meta_type = getattr(nimetatype, 'ni_metatype').capitalize()
+        node_type      = slugify(getattr(nimetatype, 'ni_type'))
+        node_meta_type = getattr(nimetatype, 'ni_metatype')
 
         has_error      = False
 
@@ -1592,7 +1623,7 @@ class CreateNIMutation(AbstractNIMutation):
                 nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
                 cls.process_subentities(request, form, nodehandler, context)
 
-            return has_error, { graphql_type.__name__.lower(): nh }
+            return has_error, { cls.get_returntype_name(graphql_type.__name__): nh }
         else:
             # get the errors and return them
             has_error = True
@@ -1632,8 +1663,8 @@ class UpdateNIMutation(AbstractNIMutation):
         relay_extra_ids = getattr(nimetaclass, 'relay_extra_ids', None)
 
         nimetatype      = getattr(graphql_type, 'NIMetaType')
-        node_type       = getattr(nimetatype, 'ni_type').lower()
-        node_meta_type  = getattr(nimetatype, 'ni_metatype').capitalize()
+        node_type       = slugify(getattr(nimetatype, 'ni_type'))
+        node_meta_type  = getattr(nimetatype, 'ni_metatype')
         context_method  = getattr(nimetatype, 'context_method')
         id              = request.POST.get('id')
         has_error       = False
@@ -1669,7 +1700,7 @@ class UpdateNIMutation(AbstractNIMutation):
                 # process subentities if implemented
                 cls.process_subentities(request, form, nodehandler, context)
 
-                return has_error, { graphql_type.__name__.lower(): nh }
+                return has_error, { cls.get_returntype_name(graphql_type.__name__): nh }
             else:
                 has_error = True
                 errordict = cls.format_error_array(form.errors)
@@ -1975,6 +2006,7 @@ class NIMutationFactory():
         update_exclude  = getattr(ni_metaclass, 'update_exclude', None)
         property_update = getattr(ni_metaclass, 'property_update', None)
         relay_extra_ids = getattr(ni_metaclass, 'relay_extra_ids', None)
+        unique_node     = getattr(ni_metaclass, 'unique_node', False)
 
         manual_create   = getattr(ni_metaclass, 'manual_create', None)
         manual_update   = getattr(ni_metaclass, 'manual_update', None)
@@ -1999,7 +2031,12 @@ class NIMutationFactory():
             update_form = form
 
         # create mutations
-        class_name = 'Create{}'.format(node_type.capitalize())
+        mutation_name_cc = node_type.title().replace(' ', ''  )
+
+        if unique_node:
+            cls.create_mutation_class = CreateUniqueNIMutation
+
+        class_name = 'Create{}'.format(mutation_name_cc)
         attr_dict = {
             'django_form': create_form,
             'request_path': request_path,
@@ -2030,7 +2067,7 @@ class NIMutationFactory():
         else:
             cls._create_mutation = manual_create
 
-        class_name = 'Update{}'.format(node_type.capitalize())
+        class_name = 'Update{}'.format(mutation_name_cc)
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
         attr_dict['include']       = update_include
@@ -2052,7 +2089,7 @@ class NIMutationFactory():
         else:
             cls._update_mutation = manual_update
 
-        class_name = 'Delete{}'.format(node_type.capitalize())
+        class_name = 'Delete{}'.format(mutation_name_cc)
         del attr_dict['django_form']
         del attr_dict['include']
         del attr_dict['exclude']
@@ -2080,7 +2117,7 @@ class NIMutationFactory():
         )
 
         # make multiple mutation
-        class_name = 'Multiple{}'.format(node_type.capitalize())
+        class_name = 'Multiple{}'.format(mutation_name_cc)
 
         # create input class
         multi_attr_input_list = {

@@ -3,73 +3,10 @@ __author__ = 'ffuentes'
 
 import graphene
 
-import apps.noclook.vakt.utils as sriutils
+from graphene_django import DjangoObjectType
+from apps.noclook.models import Role as RoleModel, RoleGroup as RoleGroupModel
+from apps.noclook.schema.core import *
 from norduniclient.models import RoleRelationship
-from graphene import relay, ObjectType, String, Field
-from .core import *
-from ..models import Dropdown as DropdownModel, Choice as ChoiceModel,\
-        Role as RoleModel, RoleGroup as RoleGroupModel
-
-
-class Dropdown(DjangoObjectType):
-    '''
-    This class represents a dropdown to use in forms
-    '''
-    class Meta:
-        only_fields = ('id', 'name')
-        model = DropdownModel
-
-
-# choice field needs
-class NIChoiceField(NIBasicField, ComplexField):
-    '''
-    Choice type
-    '''
-    def __init__(self, field_type=Choice, manual_resolver=False,
-                    dropdown_name=None, type_kwargs=None, **kwargs):
-        self.dropdown_name = dropdown_name
-        super(NIChoiceField, self).__init__(field_type, manual_resolver,
-                        type_kwargs, **kwargs)
-
-    def get_resolver(self, **kwargs):
-        field_name = kwargs.get('field_name')
-
-        if not field_name:
-            raise Exception(
-                'Field name for field {} should not be empty for a {}'.format(
-                    field_name, self.__class__
-                )
-            )
-
-        dropdown_name = kwargs.get('dropdown_name')
-
-        if not dropdown_name:
-            raise Exception(
-                'Dropdown name for field {} should not be empty for a {}'.format(
-                    field_name, self.__class__
-                )
-            )
-
-        def resolve_node_value(self, info, **kwargs):
-            # resolve dropdown
-            dropdown = DropdownModel.objects.get(name=dropdown_name)
-
-            # resolve choice
-            node_value = self.get_node().data.get(field_name)
-            choice_val = ChoiceModel.objects.filter(
-                dropdown=dropdown,
-                value=node_value
-            ).first()
-
-            return choice_val
-
-        return resolve_node_value
-
-
-class Neo4jChoice(graphene.ObjectType):
-    class Meta:
-        interfaces = (KeyValue, )
-
 
 class RoleGroup(DjangoObjectType):
     '''
@@ -85,11 +22,11 @@ class Role(DjangoObjectType):
     '''
     class Meta:
         model = RoleModel
-        interfaces = (relay.Node, )
+        interfaces = (graphene.relay.Node, )
         use_connection = False
 
 
-class Group(NIObjectType):
+class Group(NIObjectType, LogicalMixin):
     '''
     The group type is used to group contacts
     '''
@@ -104,7 +41,7 @@ class Group(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Procedure(NIObjectType):
+class Procedure(NIObjectType, LogicalMixin):
     '''
     The group type is used to group contacts
     '''
@@ -117,7 +54,7 @@ class Procedure(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Address(NIObjectType):
+class Address(NIObjectType, LogicalMixin):
     '''
     Phone entity to be used inside contact
     '''
@@ -136,7 +73,7 @@ class Address(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Organization(NIObjectType):
+class Organization(NIObjectType, RelationMixin):
     '''
     The group type is used to group contacts
     '''
@@ -184,12 +121,12 @@ class RoleRelation(NIRelationType):
         filter_exclude = ('type')
 
 
-class Phone(NIObjectType):
+class Phone(NIObjectType, LogicalMixin):
     '''
     Phone entity to be used inside contact
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="phone_type")
+    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="phone_types")
 
     class Meta:
         only_fields = ('handle_id',)
@@ -200,12 +137,12 @@ class Phone(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Email(NIObjectType):
+class Email(NIObjectType, LogicalMixin):
     '''
     Email entity to be used inside contact
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="email_type")
+    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="email_types")
 
     class Meta:
         only_fields = ('handle_id',)
@@ -216,7 +153,7 @@ class Email(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Contact(NIObjectType):
+class Contact(NIObjectType, RelationMixin):
     '''
     A contact in the SRI system
     '''
@@ -225,7 +162,7 @@ class Contact(NIObjectType):
     last_name = NIStringField(type_kwargs={ 'required': True })
     title = NIStringField()
     salutation = NIStringField()
-    contact_type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="contact_type")
+    contact_type = NIChoiceField(dropdown_name="contact_types")
     phones = NIListField(type_args=(Phone,), rel_name='Has_phone', rel_method='get_outgoing_relations')
     phones_relations = NIRelationListField(rel_name='Has_phone', rel_method='get_outgoing_relations', graphene_type=Phone)
     emails = NIListField(type_args=(Email,), rel_name='Has_email', rel_method='get_outgoing_relations')
@@ -243,34 +180,7 @@ class Contact(NIObjectType):
         context_method = sriutils.get_community_context
 
 
-class Host(NIObjectType):
-    '''
-    A host in the SRI system
-    '''
-    name = NIStringField(type_kwargs={ 'required': True })
-    operational_state = NIStringField(type_kwargs={ 'required': True })
-    os = NIStringField()
-    os_version = NIStringField()
-    vendor = NIStringField()
-    backup = NIStringField()
-    managed_by = NIStringField()
-    ip_addresses = IPAddr()
-    description = NIStringField()
-    responsible_group = NIStringField()
-    support_group = NIStringField()
-    security_class = NIStringField()
-    security_comment = NIStringField()
-
-    def resolve_ip_addresses(self, info, **kwargs):
-        '''Manual resolver for the ip field'''
-        return self.get_node().data.get('ip_addresses', None)
-
-    class NIMetaType:
-        ni_type = 'Host'
-        ni_metatype = NIMETA_LOGICAL
-
-
-class RoleConnection(relay.Connection):
+class RoleConnection(graphene.relay.Connection):
     class Meta:
         node = Role
 
@@ -285,3 +195,15 @@ class RoleOrderBy(graphene.Enum):
     name_DESC='name_DESC'
     handle_id_ASC='handle_id_ASC'
     handle_id_DESC='handle_id_DESC'
+
+
+community_type_resolver = {
+    'Group' : Group,
+    'Procedure' : Procedure,
+    'Address' : Address,
+    'Organization' : Organization,
+    'Phone' : Phone,
+    'Email' : Email,
+    'Contact' : Contact,
+    'Contact' : Contact,
+}
