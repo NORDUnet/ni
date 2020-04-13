@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from apps.noclook.models import NodeHandle, NodeType
+from apps.noclook.models import NodeHandle, NodeType, DEFAULT_ROLEGROUP_NAME
 from apps.noclook.schema import GraphQLAuthException
 from apps.noclook.schema.query import NOCRootQuery
 from django.contrib.auth.models import AnonymousUser
@@ -331,8 +331,72 @@ class Neo4jGraphQLAuthAuzTest(Neo4jGraphQLGenericTest):
 
 
 
-    def run_test_availableRoleGroups_rolesFromRoleGroup(self):
-        pass
+    def run_test_availableRoleGroups_rolesFromRoleGroup(self, \
+                                            has_errors=False, error_msg=None):
+        default_rolegroup = 'default'
+
+        query1 = """
+        {
+          getAvailableRoleGroups {
+            id
+            name
+          }
+        }
+        """
+
+        query2 = """
+        {{
+          getRolesFromRoleGroup(name: "{rolegroup}"){{
+            id
+            name
+          }}
+        }}
+        """
+
+        result = schema.execute(query1, context=self.context)
+
+        if not has_errors:
+            # only check for errors
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # if we don't have permissions over community we shouldn't see the combo
+            assert not result.data['getAvailableRoleGroups'], result.data
+
+            default_rolegroup = DEFAULT_ROLEGROUP_NAME
+            query = query2.format(rolegroup=default_rolegroup)
+
+            # run second query, check that there are no errors
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check that the result is empty
+            assert not result.data['getRolesFromRoleGroup']
+
+        else:
+            # there should be errors here
+            assert result.errors
+
+            if error_msg:
+                error_msg_query = getattr(result.errors[0], 'message')
+                assert error_msg_query == error_msg, \
+                    '\n{} != {}'.format(
+                        error_msg_query,
+                        error_msg
+                    )
+
+            # run the other query to check that there's errors too
+            query = query2.format(rolegroup=default_rolegroup)
+            result = schema.execute(query, context=self.context)
+
+            assert result.errors
+
+            if error_msg:
+                error_msg_query = getattr(result.errors[0], 'message')
+                assert error_msg_query == error_msg, \
+                    '\n{} != {}'.format(
+                        error_msg_query,
+                        error_msg
+                    )
 
 
 class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
@@ -397,6 +461,12 @@ class Neo4jGraphQLAuthenticationTest(Neo4jGraphQLAuthAuzTest):
             error_msg=self.error_msg
         )
 
+    def test_availableRoleGroups_rolesFromRoleGroup(self):
+        self.run_test_availableRoleGroups_rolesFromRoleGroup(
+            has_errors=True,
+            error_msg=self.error_msg
+        )
+
 
 class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
     def setUp(self):
@@ -442,3 +512,6 @@ class Neo4jGraphQLAuthorizationTest(Neo4jGraphQLAuthAuzTest):
 
     def test_roles(self):
         self.run_test_roles()
+
+    def test_availableRoleGroups_rolesFromRoleGroup(self):
+        self.run_test_availableRoleGroups_rolesFromRoleGroup()

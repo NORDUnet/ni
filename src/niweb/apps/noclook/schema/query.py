@@ -208,11 +208,10 @@ class NOCRootQuery(NOCAutoQuery):
                 info.context.user, community_context
             )
 
-            if not authorized:
-                raise GraphQLAuthException()
-
-            ret = RoleGroupModel.objects.all()
+            if authorized:
+                ret = RoleGroupModel.objects.all()
         else:
+            #401
             raise GraphQLAuthException()
 
         return ret
@@ -230,12 +229,11 @@ class NOCRootQuery(NOCAutoQuery):
                 info.context.user, community_context
             )
 
-            if not authorized:
-                raise GraphQLAuthException()
-
-            role_group = RoleGroupModel.objects.get(name=name)
-            ret = RoleModel.objects.filter(role_group=role_group)
+            if authorized:
+                role_group = RoleGroupModel.objects.get(name=name)
+                ret = RoleModel.objects.filter(role_group=role_group)
         else:
+            #401
             raise GraphQLAuthException()
 
         return ret
