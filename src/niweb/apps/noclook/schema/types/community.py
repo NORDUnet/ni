@@ -126,7 +126,7 @@ class Phone(NIObjectType, LogicalMixin):
     Phone entity to be used inside contact
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="phone_types")
+    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="phone_type")
 
     class Meta:
         only_fields = ('handle_id',)
@@ -142,7 +142,7 @@ class Email(NIObjectType, LogicalMixin):
     Email entity to be used inside contact
     '''
     name = NIStringField(type_kwargs={ 'required': True })
-    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="email_types")
+    type = NIChoiceField(type_kwargs={ 'required': True }, dropdown_name="email_type")
 
     class Meta:
         only_fields = ('handle_id',)
@@ -162,7 +162,7 @@ class Contact(NIObjectType, RelationMixin):
     last_name = NIStringField(type_kwargs={ 'required': True })
     title = NIStringField()
     salutation = NIStringField()
-    contact_type = NIChoiceField(dropdown_name="contact_types")
+    contact_type = NIChoiceField(dropdown_name="contact_type")
     phones = NIListField(type_args=(Phone,), rel_name='Has_phone', rel_method='get_outgoing_relations')
     phones_relations = NIRelationListField(rel_name='Has_phone', rel_method='get_outgoing_relations', graphene_type=Phone)
     emails = NIListField(type_args=(Email,), rel_name='Has_email', rel_method='get_outgoing_relations')
