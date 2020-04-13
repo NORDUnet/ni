@@ -249,7 +249,7 @@ class InputFieldQueryBuilder(AbstractQueryBuilder):
             value = "toLower('{}')".format(value)
             is_string = True
 
-        if key is 'relation_id':
+        if key == 'relation_id':
             ret = cls.id_expression.format(
                 neo4j_var=neo4j_var,
                 op=op,
