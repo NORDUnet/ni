@@ -21,49 +21,76 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
                                 )
         self.assertEquals(result.data, expected, fmt_str)
 
-    def setUp(self):
+    def setUp(self, group_dict=None):
         super(Neo4jGraphQLGenericTest, self).setUp()
         self.context = TestContext(self.user)
-
-        # create group for read in community context
-        self.group_read  = Group( name="Group can read the community context" )
-        self.group_read.save()
-
-        # create group for write in community context
-        self.group_write = Group( name="Group can write for the community context" )
-        self.group_write.save()
-
-        # create group for list in community context
-        self.group_list = Group( name="Group can list for the community context" )
-        self.group_list.save()
-
-        # add user to this group
-        self.group_read.user_set.add(self.user)
-        self.group_write.user_set.add(self.user)
-        self.group_list.user_set.add(self.user)
 
         # get read aa
         self.get_read_authaction  = sriutils.get_read_authaction()
         self.get_write_authaction = sriutils.get_write_authaction()
         self.get_list_authaction  = sriutils.get_list_authaction()
 
-        # get network context
+        # get contexts
         self.network_ctxt = sriutils.get_network_context()
         self.community_ctxt = sriutils.get_community_context()
+        self.contracts_ctxt = sriutils.get_contracts_context()
 
         # add contexts and profiles for network
         iter_contexts = (
             self.community_ctxt,
             self.network_ctxt,
-        )
-
-        group_aaction = (
-            (self.group_read, self.get_read_authaction),
-            (self.group_write, self.get_write_authaction),
-            (self.group_list, self.get_list_authaction),
+            self.contracts_ctxt,
         )
 
         for acontext in iter_contexts:
+            # create group for read in community context
+            context_name = acontext.name.lower()
+            group_read  = Group( name="{} read".format(context_name) )
+
+            # create group for write in community context
+            group_write = Group( name="{} write".format(context_name) )
+
+            # create group for list in community context
+            group_list  = Group( name="{} list".format(context_name) )
+
+            add_read  = False
+            add_write = False
+            add_list  = False
+
+            if group_dict and context_name in group_dict:
+                if group_dict[context_name].get('read', False):
+                    add_read  = True
+
+                if group_dict[context_name].get('write', False):
+                    add_write = True
+
+                if group_dict[context_name].get('list', False):
+                    add_list  = True
+
+            if not group_dict:
+                add_read  = True
+                add_write = True
+                add_list  = True
+
+            # save and add user to the group
+            group_aaction = []
+
+            if add_read:
+                group_read.save()
+                group_read.user_set.add(self.user)
+                group_aaction.append((group_read, self.get_read_authaction))
+
+            if add_write:
+                group_write.save()
+                group_write.user_set.add(self.user)
+                group_aaction.append((group_write, self.get_write_authaction))
+
+            if add_list:
+                group_list.save()
+                group_list.user_set.add(self.user)
+                group_aaction.append((group_list, self.get_list_authaction))
+
+            # add the correct actions fot each group
             for group, aaction in group_aaction:
                 GroupContextAuthzAction(
                     group = group,

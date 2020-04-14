@@ -8,11 +8,11 @@ from django.utils.dateparse import parse_datetime
 from graphene import relay
 from niweb.schema import schema
 from pprint import pformat
-from . import Neo4jGraphQLTest
+from . import Neo4jGraphQLCommunityTest
 
 from datetime import datetime
 
-class SimpleListTest(Neo4jGraphQLTest):
+class SimpleListTest(Neo4jGraphQLCommunityTest):
     def test_simple_list(self):
         # query all available types
         test_types = {
@@ -52,7 +52,7 @@ class SimpleListTest(Neo4jGraphQLTest):
                                                 pformat(expected, indent=1)
                                             )
 
-class ConnectionsTest(Neo4jGraphQLTest):
+class ConnectionsTest(Neo4jGraphQLCommunityTest):
     def test_connections(self):
         # test contacts: slicing and ordering
         query = '''
@@ -521,7 +521,7 @@ class ConnectionsTest(Neo4jGraphQLTest):
         assert result.data == expected, pformat(result.data, indent=1)
 
 
-class DropdownTest(Neo4jGraphQLTest):
+class DropdownTest(Neo4jGraphQLCommunityTest):
     def test_dropdown(self):
         query = '''
         {
@@ -546,7 +546,7 @@ class DropdownTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
 
-class RelationResolversTest(Neo4jGraphQLTest):
+class RelationResolversTest(Neo4jGraphQLCommunityTest):
     def test_relation_resolvers(self):
         ## get aux entities types
         # get phone types
@@ -1178,7 +1178,7 @@ class RelationResolversTest(Neo4jGraphQLTest):
         )
 
 
-class CascadeDeleteTest(Neo4jGraphQLTest):
+class CascadeDeleteTest(Neo4jGraphQLCommunityTest):
     def test_cascade_delete(self):
         ## get aux entities types
         # get contact types
@@ -1462,7 +1462,7 @@ class CascadeDeleteTest(Neo4jGraphQLTest):
         assert result.errors, pformat(result, indent=1)
 
 
-class RoleGroupTest(Neo4jGraphQLTest):
+class RoleGroupTest(Neo4jGraphQLCommunityTest):
     def test_rolegroup(self):
         query = '''
         {

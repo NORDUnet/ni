@@ -557,7 +557,8 @@ class NIObjectType(DjangoObjectType):
             try:
                 _type, handle_id = relay.Node.from_global_id(id)
             except:
-                pass # nothing is done, we'll return None
+                # we'll return None
+                handle_id = None
 
             node_type = NodeType.objects.get(type=type_name)
             ret = None
@@ -574,14 +575,15 @@ class NIObjectType(DjangoObjectType):
                             ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=int_id)
                         except ValueError:
                             ret = NodeHandle.objects.filter(node_type=node_type).get(handle_id=handle_id)
+                    else:
+                        # 403
+                        pass
                 else:
                     raise GraphQLError('A handle_id must be provided')
 
-                if not ret:
-                    raise GraphQLError("There isn't any {} with handle_id {}".format(type_name, handle_id))
-
                 return ret
             else:
+                # 401
                 raise GraphQLAuthException()
 
         return generic_byid_resolver
@@ -608,7 +610,11 @@ class NIObjectType(DjangoObjectType):
 
                     # the node list is trimmed to the nodes that the user can read
                     qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                else:
+                    # 403
+                    pass
             else:
+                # 401
                 raise GraphQLAuthException()
 
             return qs
@@ -637,7 +643,11 @@ class NIObjectType(DjangoObjectType):
 
                     # the node list is trimmed to the nodes that the user can read
                     qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                else:
+                    # 403
+                    pass
             else:
+                # 401
                 raise GraphQLAuthException()
 
             return qs.count()
@@ -704,107 +714,112 @@ class NIObjectType(DjangoObjectType):
 
             context = cls.get_type_context()
 
-            if info.context and info.context.user.is_authenticated and \
-                sriutils.authorize_list_module(info.context.user, context):
+            if info.context and info.context.user.is_authenticated:
+                if sriutils.authorize_list_module(info.context.user, context):
+                    # filtering will take a different approach
+                    nodes = None
 
-                # filtering will take a different approach
-                nodes = None
+                    if NodeType.objects.filter(type=type_name):
+                        node_type = NodeType.objects.get(type=type_name)
+                        qs = NodeHandle.objects.filter(node_type=node_type)
 
-                if NodeType.objects.filter(type=type_name):
-                    node_type = NodeType.objects.get(type=type_name)
-                    qs = NodeHandle.objects.filter(node_type=node_type)
+                        # instead of vakt here, we reduce the original qs
+                        # to only the ones the user has right to read
+                        qs = sriutils.trim_readable_queryset(qs, info.context.user)
 
-                    # instead of vakt here, we reduce the original qs
-                    # to only the ones the user has right to read
-                    qs = sriutils.trim_readable_queryset(qs, info.context.user)
+                        # remove default ordering prop if there's no filter
+                        if not cls.order_is_empty(orderBy):
+                            if orderBy == 'handle_id_DESC':
+                                orderBy = None
+                                apply_handle_id_order = True
+                                revert_default_order = False
+                            elif orderBy == 'handle_id_ASC':
+                                orderBy = None
+                                apply_handle_id_order = True
+                                revert_default_order = True
 
-                    # remove default ordering prop if there's no filter
-                    if not cls.order_is_empty(orderBy):
-                        if orderBy == 'handle_id_DESC':
-                            orderBy = None
-                            apply_handle_id_order = True
-                            revert_default_order = False
-                        elif orderBy == 'handle_id_ASC':
-                            orderBy = None
-                            apply_handle_id_order = True
-                            revert_default_order = True
+                        qs_order_prop = None
+                        qs_order_order = None
 
-                    qs_order_prop = None
-                    qs_order_order = None
+                        if not cls.order_is_empty(orderBy):
+                            m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
+                            prop = m[1]
+                            order = m[2]
 
-                    if not cls.order_is_empty(orderBy):
-                        m = re.match(r"([\w|\_]*)_(ASC|DESC)", orderBy)
-                        prop = m[1]
-                        order = m[2]
+                            if prop in DateQueryBuilder.fields:
+                                # set model attribute ordering
+                                qs_order_prop  = prop
+                                qs_order_order = order
 
-                        if prop in DateQueryBuilder.fields:
-                            # set model attribute ordering
-                            qs_order_prop  = prop
-                            qs_order_order = order
+                        if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
+                            # filter queryset with dates and users
+                            qs = DateQueryBuilder.filter_queryset(filter, qs)
+                            qs = UserQueryBuilder.filter_queryset(filter, qs)
 
-                    if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
-                        # filter queryset with dates and users
-                        qs = DateQueryBuilder.filter_queryset(filter, qs)
-                        qs = UserQueryBuilder.filter_queryset(filter, qs)
+                            # remove order if is a date order
+                            if qs_order_prop and qs_order_order:
+                                orderBy = None
 
-                        # remove order if is a date order
-                        if qs_order_prop and qs_order_order:
-                            orderBy = None
+                            # create query
+                            fmt_type_name = type_name.replace(' ', '_')
+                            q = cls.build_filter_query(filter, orderBy, fmt_type_name,
+                                            apply_handle_id_order, revert_default_order)
+                            nodes = nc.query_to_list(nc.graphdb.manager, q)
+                            nodes = [ node['n'] for node in nodes]
 
-                        # create query
-                        fmt_type_name = type_name.replace(' ', '_')
-                        q = cls.build_filter_query(filter, orderBy, fmt_type_name,
-                                        apply_handle_id_order, revert_default_order)
-                        nodes = nc.query_to_list(nc.graphdb.manager, q)
-                        nodes = [ node['n'] for node in nodes]
+                            use_neo4j_query = True
+                        else:
+                            use_neo4j_query = False
 
-                        use_neo4j_query = True
-                    else:
-                        use_neo4j_query = False
+                        if use_neo4j_query:
+                            ret = []
 
-                    if use_neo4j_query:
-                        ret = []
+                            handle_ids = []
+                            for node in nodes:
+                                if node['handle_id'] not in handle_ids:
+                                    handle_ids.append(node['handle_id'])
 
-                        handle_ids = []
-                        for node in nodes:
-                            if node['handle_id'] not in handle_ids:
-                                handle_ids.append(node['handle_id'])
+                            for handle_id in handle_ids:
+                                nodeqs = qs.filter(handle_id=handle_id)
+                                try:
+                                    the_node = nodeqs.first()
+                                    if the_node:
+                                        ret.append(the_node)
+                                except:
+                                    pass # nothing to do if the qs doesn't have elements
 
-                        for handle_id in handle_ids:
-                            nodeqs = qs.filter(handle_id=handle_id)
-                            try:
-                                the_node = nodeqs.first()
-                                if the_node:
-                                    ret.append(the_node)
-                            except:
-                                pass # nothing to do if the qs doesn't have elements
+                            # apply date order if it applies
+                            if qs_order_prop and qs_order_order:
+                                reverse = True if qs_order_order == 'DESC' else False
+                                ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
+                        else:
+                            # do nodehandler attributes ordering now that we have
+                            # the nodes set, if this order is requested
+                            if qs_order_prop and qs_order_order:
+                                reverse = True if qs_order_order == 'DESC' else False
 
-                        # apply date order if it applies
-                        if qs_order_prop and qs_order_order:
-                            reverse = True if qs_order_order == 'DESC' else False
-                            ret.sort(key=lambda x: getattr(x, qs_order_prop, ''), reverse=reverse)
-                    else:
-                        # do nodehandler attributes ordering now that we have
-                        # the nodes set, if this order is requested
-                        if qs_order_prop and qs_order_order:
-                            reverse = True if qs_order_order == 'DESC' else False
+                                if reverse:
+                                    qs = qs.order_by('{}'.format(qs_order_prop))
+                                else:
+                                    qs = qs.order_by('-{}'.format(qs_order_prop))
 
-                            if reverse:
-                                qs = qs.order_by('{}'.format(qs_order_prop))
-                            else:
-                                qs = qs.order_by('-{}'.format(qs_order_prop))
+                            if apply_handle_id_order:
+                                logger.debug('Apply handle_id order')
 
-                        if apply_handle_id_order:
-                            logger.debug('Apply handle_id order')
+                                if not revert_default_order:
+                                    logger.debug('Apply descendent handle_id')
+                                    qs = qs.order_by('-handle_id')
+                                else:
+                                    logger.debug('Apply ascending handle_id')
+                                    qs = qs.order_by('handle_id')
 
-                            if not revert_default_order:
-                                logger.debug('Apply descendent handle_id')
-                                qs = qs.order_by('-handle_id')
-                            else:
-                                logger.debug('Apply ascending handle_id')
-                                qs = qs.order_by('handle_id')
-
-                        ret = list(qs)
+                            ret = list(qs)
+                else:
+                    # 403
+                    pass
+            else:
+                # 401
+                raise GraphQLAuthException()
 
             if not ret:
                 ret = []
@@ -2179,8 +2194,10 @@ class GraphQLAuthException(Exception):
     '''
     Simple auth exception
     '''
+    default_msg = 'You must be logged in the system: {}'
+
     def __init__(self, message=None):
-        message = 'You must be logged in the system: {}'.format(
+        message = self.default_msg.format(
             ': {}'.format(message) if message else ''
         )
         super().__init__(message)

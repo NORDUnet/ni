@@ -3,10 +3,10 @@ __author__ = 'ffuentes'
 
 from collections import OrderedDict
 from pprint import pformat
-from . import Neo4jGraphQLTest
+from . import Neo4jGraphQLCommunityTest
 from niweb.schema import schema
 
-class OrganizationConnectionTest(Neo4jGraphQLTest):
+class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
     def test_organizations_order(self):
         ## order by name
         query = '''
@@ -333,7 +333,7 @@ class OrganizationConnectionTest(Neo4jGraphQLTest):
         )
 
 
-class ContactConnectionTest(Neo4jGraphQLTest):
+class ContactConnectionTest(Neo4jGraphQLCommunityTest):
     def test_organizations_order(self):
         ## order by name
         query = '''
@@ -474,7 +474,7 @@ class ContactConnectionTest(Neo4jGraphQLTest):
         )
 
 
-class ConnectionTest(Neo4jGraphQLTest):
+class ConnectionTest(Neo4jGraphQLCommunityTest):
     def test_filter(self):
         ## create ##
         query = '''
