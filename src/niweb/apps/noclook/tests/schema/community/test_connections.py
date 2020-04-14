@@ -145,7 +145,10 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
             edges{
               node{
                 node_name
-                type
+                type{
+                  name
+                  value
+                }
               }
             }
           }
@@ -158,12 +161,21 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
                            OrderedDict([('node_name',
                              'organization2'),
                             ('type',
-                             'university_coldep')]))]),
+                             OrderedDict([('name',
+                               'University, '
+                               'College '
+                               'dep'),
+                              ('value',
+                               'university_coldep')]))]))]),
                          OrderedDict([('node',
                            OrderedDict([('node_name',
                              'organization1'),
                             ('type',
-                             'university_college')]))])])]))])
+                             OrderedDict([('name',
+                               'University, '
+                               'College'),
+                              ('value',
+                               'university_college')]))]))])])]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, result.errors
@@ -178,7 +190,10 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
             edges{
               node{
                 name
-                type
+                type{
+                  name
+                  value
+                }
               }
             }
           }
@@ -188,16 +203,24 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
         expected = OrderedDict([('organizations',
                       OrderedDict([('edges',
                         [OrderedDict([('node',
-                          OrderedDict([('name',
-                            'organization1'),
-                           ('type',
-                            'university_college')]))]),
-                        OrderedDict([('node',
+                           OrderedDict([('name',
+                             'organization1'),
+                            ('type',
+                             OrderedDict([('name',
+                               'University, '
+                               'College'),
+                              ('value',
+                               'university_college')]))]))]),
+                         OrderedDict([('node',
                            OrderedDict([('name',
                              'organization2'),
                             ('type',
-                             'university_coldep')]))]),
-                             ])]))])
+                             OrderedDict([('name',
+                               'University, '
+                               'College '
+                               'dep'),
+                              ('value',
+                               'university_coldep')]))]))])])]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, result.errors
@@ -220,7 +243,10 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
             edges{
               node{
                 name
-                type
+                type{
+                  name
+                  value
+                }
               }
             }
           }
@@ -230,11 +256,14 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
         expected = OrderedDict([('organizations',
                       OrderedDict([('edges',
                         [OrderedDict([('node',
-                          OrderedDict([('name',
-                            'organization1'),
-                           ('type',
-                            'university_college')]))])
-                             ])]))])
+                           OrderedDict([('name',
+                             'organization1'),
+                            ('type',
+                             OrderedDict([('name',
+                               'University, '
+                               'College'),
+                              ('value',
+                               'university_college')]))]))])])]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, result.errors
@@ -256,7 +285,10 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
             edges{
               node{
                 name
-                type
+                type{
+                  name
+                  value
+                }
               }
             }
           }
@@ -283,7 +315,10 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
             edges{
               node{
                 name
-                type
+                type{
+                  name
+                  value
+                }
               }
             }
           }

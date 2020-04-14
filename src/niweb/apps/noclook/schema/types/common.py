@@ -3,9 +3,9 @@ __author__ = 'ffuentes'
 
 import graphene
 
-from apps.noclook.models import Dropdown, Choice
-from apps.noclook.schema.core import KeyValue
+from apps.noclook.models import Dropdown, Choice as ChoiceModel
 from graphene_django import DjangoObjectType
+from apps.noclook.schema.fields import *
 
 class Dropdown(DjangoObjectType):
     '''
@@ -14,15 +14,6 @@ class Dropdown(DjangoObjectType):
     class Meta:
         only_fields = ('id', 'name')
         model = Dropdown
-
-
-class Choice(DjangoObjectType):
-    '''
-    This class is used for the choices available in a dropdown
-    '''
-    class Meta:
-        model = Choice
-        interfaces = (KeyValue, )
 
 
 class Neo4jChoice(graphene.ObjectType):

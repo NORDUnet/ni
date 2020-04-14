@@ -69,6 +69,7 @@ class NINodeHandlerType(DjangoObjectType):
         model = NodeHandle
         interfaces = (relay.Node, )
 
+
 class NIRelationType(graphene.ObjectType):
     '''
     This class represents a relationship and its properties
@@ -249,17 +250,22 @@ class NIObjectType(DjangoObjectType):
             rel_name        = field_fields.get('rel_name')
             rel_method      = field_fields.get('rel_method')
             not_null_list   = field_fields.get('not_null_list')
+            dropdown_name   = field_fields.get('dropdown_name')
 
             # adding the field
             field_value = None
-            if type_kwargs:
-                field_value = field_type(**type_kwargs)
-            elif type_args:
-                field_value = field_type(*type_args)
-                if not_null_list:
-                    field_value = graphene.NonNull(field_type(*type_args))
+
+            if not isinstance(field, ComplexField):
+                if type_kwargs:
+                    field_value = field_type(**type_kwargs)
+                elif type_args:
+                    field_value = field_type(*type_args)
+                    if not_null_list:
+                        field_value = graphene.NonNull(field_type(*type_args))
+                else:
+                    field_value = field_type(**{})
             else:
-                field_value = field_type(**{})
+                field_value = graphene.Field(field.get_field_type())
 
             setattr(cls, name, field_value)
 
@@ -270,6 +276,7 @@ class NIObjectType(DjangoObjectType):
                         field_name=name,
                         rel_name=rel_name,
                         rel_method=rel_method,
+                        dropdown_name=dropdown_name,
                     )
                 )
 
@@ -408,6 +415,9 @@ class NIObjectType(DjangoObjectType):
                             binput_field = input_fields_clsnames[ifield_clsname]
 
                         input_fields[name] = binput_field, field._of_type
+                elif isinstance(field, graphene.types.field.Field) and\
+                    field.type == Choice:
+                    input_fields[name] = ChoiceScalar
 
         input_fields['id'] = graphene.ID
 

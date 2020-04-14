@@ -1,18 +1,27 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, Choice as ChoiceModel, Dropdown as DropdownModel
 from apps.noclook.vakt import utils as sriutils
+from graphene_django import DjangoObjectType
 from .scalars import ChoiceScalar
 
 import graphene
-import types
-
 
 ########## KEYVALUE TYPES
 class KeyValue(graphene.Interface):
     name = graphene.String(required=True)
     value = graphene.String(required=True)
+
+
+class Choice(DjangoObjectType):
+    '''
+    This class is used for the choices available in a dropdown
+    '''
+    class Meta:
+        model = ChoiceModel
+        interfaces = (KeyValue, )
+
 
 class DictEntryType(graphene.ObjectType):
     '''
@@ -22,6 +31,7 @@ class DictEntryType(graphene.ObjectType):
 
     class Meta:
         interfaces = (KeyValue, )
+
 
 def resolve_nidata(self, info, **kwargs):
     '''
@@ -84,15 +94,6 @@ class NIIntField(NIBasicField):
     def __init__(self, field_type=graphene.Int, manual_resolver=False,
                     type_kwargs=None, **kwargs):
         super(NIIntField, self).__init__(field_type, manual_resolver,
-                        type_kwargs, **kwargs)
-
-class NIChoiceField(NIBasicField):
-    '''
-    Choice type
-    '''
-    def __init__(self, field_type=ChoiceScalar, manual_resolver=False,
-                    type_kwargs=None, **kwargs):
-        super(NIChoiceField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
 
 
@@ -200,6 +201,63 @@ class NIListField(NIBasicField):
             return ret
 
         return resolve_relationship_list
+
+
+# convenience class
+class ComplexField():
+    pass
+
+
+class NIChoiceField(NIBasicField, ComplexField):
+    '''
+    Choice type
+    '''
+    def __init__(self, field_type=Choice, manual_resolver=False,
+                    dropdown_name=None, type_kwargs=None, **kwargs):
+        self.dropdown_name = dropdown_name
+        super(NIChoiceField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+
+        dropdown_name = kwargs.get('dropdown_name')
+
+        if not dropdown_name:
+            raise Exception(
+                'Dropdown name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+
+        def resolve_node_value(self, info, **kwargs):
+            # resolve dropdown
+            if DropdownModel.objects.filter(name=dropdown_name):
+                dropdown = DropdownModel.objects.get(name=dropdown_name)
+
+                # resolve choice
+                node_value = self.get_node().data.get(field_name)
+                choice_val = ChoiceModel.objects.filter(
+                    dropdown=dropdown,
+                    value=node_value
+                ).first()
+
+                return choice_val
+            else:
+
+                raise Exception('Not valid dropdown "{}\n Available choices are:\n{}"'.format(
+                    dropdown_name,
+                    ', '.join([x.name for x in DropdownModel.objects.all()])
+                ))
+
+        return resolve_node_value
 
 
 class IDRelation(graphene.ObjectType):

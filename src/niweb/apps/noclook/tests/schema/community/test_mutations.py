@@ -239,7 +239,10 @@ class SingleTest(Neo4jGraphQLCommunityTest):
               first_name
               last_name
               title
-              contact_type
+              contact_type{{
+                name
+                value
+              }}
               notes
               roles{{
                 name
@@ -271,7 +274,9 @@ class SingleTest(Neo4jGraphQLCommunityTest):
                                      ('first_name', 'Jane'),
                                      ('last_name', 'Smith'),
                                      ('title', None),
-                                     ('contact_type', 'person'),
+                                     ('contact_type',
+                                      OrderedDict([('name', 'Person'),
+                                       ('value', 'person')])),
                                      ('notes', note_txt),
                                       ('roles',
                                        [OrderedDict([('name', 'NOC Manager'),
@@ -306,7 +311,10 @@ class SingleTest(Neo4jGraphQLCommunityTest):
               first_name
               last_name
               title
-              contact_type
+              contact_type{{
+                name
+                value
+              }}
               roles{{
                 name
                 end{{
@@ -330,7 +338,9 @@ class SingleTest(Neo4jGraphQLCommunityTest):
                                          ('first_name', 'Janet'),
                                          ('last_name', 'Doe'),
                                          ('title', None),
-                                         ('contact_type', 'person'),
+                                         ('contact_type',
+                                          OrderedDict([('name', 'Person'),
+                                           ('value', 'person')])),
                                          ('roles',
                                           [OrderedDict([('name', 'NOC Manager'),
                                             ('end',
@@ -630,7 +640,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
               phone{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
           }}
@@ -642,7 +655,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
                                    ('phone',
                                     OrderedDict([('id', None),
                                                  ('name', phone_num),
-                                                 ('type', phone_type)]))]))])
+                                                 ('type', OrderedDict(
+                                                    [('name', 'Work'),
+                                                    ('value', 'work')])
+                                                    )]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -663,7 +679,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
             phones{{
               id
               name
-              type
+              type{{
+                name
+                value
+              }}
             }}
           }}
         }}
@@ -674,7 +693,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
                                    ('phones',
                                     [OrderedDict([('id', phone_id_str),
                                                   ('name', phone_num),
-                                                  ('type', phone_type)])])]))])
+                                                  ('type', OrderedDict(
+                                                     [('name', 'Work'),
+                                                     ('value', 'work')]
+                                                 ))])])]))])
 
 
         result = schema.execute(query, context=self.context)
@@ -701,7 +723,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
               phone{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
           }}
@@ -713,7 +738,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
                                    ('phone',
                                     OrderedDict([('id', phone_id_str),
                                                  ('name', new_phone_num),
-                                                 ('type', phone_type)]))]))])
+                                                 ('type', OrderedDict(
+                                                    [('name', 'Work'),
+                                                    ('value', 'work')]
+                                                ))]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -767,7 +795,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
               email{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
           }}
@@ -779,7 +810,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
                                    ('email',
                                     OrderedDict([('id', None),
                                                  ('name', email_str),
-                                                 ('type', email_type)]))]))])
+                                                 ('type', OrderedDict(
+                                                    [('name', 'Work'),
+                                                    ('value', 'work')]
+                                                ))]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -800,7 +834,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
             emails{{
               id
               name
-              type
+              type{{
+                name
+                value
+              }}
             }}
           }}
         }}
@@ -811,7 +848,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
                                    ('emails',
                                     [OrderedDict([('id', email_id_str),
                                                   ('name', email_str),
-                                                  ('type', email_type)])])]))])
+                                                  ('type', OrderedDict(
+                                                     [('name', 'Work'),
+                                                     ('value', 'work')]
+                                                 ))])])]))])
 
 
         result = schema.execute(query, context=self.context)
@@ -838,7 +878,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
               email{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
           }}
@@ -850,7 +893,10 @@ class MultipleEntityTest(Neo4jGraphQLCommunityTest):
                                    ('email',
                                     OrderedDict([('id', email_id_str),
                                                  ('name', new_email),
-                                                 ('type', email_type)]))]))])
+                                                 ('type', OrderedDict(
+                                                    [('name', 'Work'),
+                                                    ('value', 'work')]
+                                                ))]))]))])
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
