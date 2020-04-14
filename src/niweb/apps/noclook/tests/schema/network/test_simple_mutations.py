@@ -3,7 +3,7 @@ __author__ = 'ffuentes'
 
 from apps.noclook.tests.stressload.data_generator import FakeDataGenerator,\
                                                         NetworkFakeDataGenerator
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, Dropdown
 from collections import OrderedDict
 from graphene import relay
 from niweb.schema import schema
@@ -24,24 +24,67 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
 
         input_str = None
         inputs = []
+        attrs = []
         values = {}
+        node_data_test = {}
+
+        input_tmpl = '{data_name}: "{data_f}",'
 
         for data_name, data_f in data.items():
             data_f_val = data_f
+            subinput_str = None
+            attr_str = None
 
-            if generated_data:
-                data_f_val = data_f()
+            try:
+                # throw the exception if isn't a dict
+                data_f.items()
 
-            inputs.append('{data_name}: "{data_f}",'.format(
-                data_name=data_name,
-                data_f=data_f_val
-            ))
-            values[data_name] = data_f_val
+                if generated_data:
+                    data_f_val = data_f['name']()
+                else:
+                    data_f_val = data_f['name']
+
+                node_data_test[data_name] = data_f_val
+
+                subinput_str = input_tmpl.format(
+                    data_name=data_name,
+                    data_f=data_f_val
+                )
+
+                attr_str = '{}{{\n\tname\n\tvalue \n}}'.format(data_name)
+
+                values[data_name] = {}
+
+                for k, v in data_f.items():
+                    val = v
+                    if generated_data:
+                        val = v()
+
+                    values[data_name][k] = val
+
+            except AttributeError:
+                if generated_data:
+                    data_f_val = data_f()
+
+                node_data_test[data_name] = data_f_val
+
+                subinput_str = input_tmpl.format(
+                    data_name=data_name,
+                    data_f=data_f_val
+                )
+                values[data_name] = data_f_val
+                attr_str = data_name
+
+            if subinput_str:
+                inputs.append(subinput_str)
+
+            if attr_str:
+                attrs.append(attr_str)
 
         values['id'] = None
 
         input_str = "\n".join(inputs)
-        query_attr = "\n".join(data.keys())
+        query_attr = "\n".join(attrs)
 
         ## create
         query = """
@@ -83,7 +126,7 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
             values.pop('id', None)
             handle_id = relay.Node.from_global_id(id_str)[1]
             nh = NodeHandle.objects.get(handle_id=handle_id)
-            self.assertDictContainsSubset(values, nh.get_node().data)
+            self.assertDictContainsSubset(node_data_test, nh.get_node().data)
 
             return id_str
         else:
@@ -95,21 +138,56 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
 
         input_str = None
         inputs = []
+        attrs = []
         values = {}
+        node_data_test = {}
+
+        input_tmpl = '{data_name}: "{data_f}",'
 
         for data_name, data_f in data.items():
-            data_f_val = data_f()
+            data_f_val = data_f
+            subinput_str = None
+            attr_str = None
 
-            inputs.append('{data_name}: "{data_f}",'.format(
-                data_name=data_name,
-                data_f=data_f_val
-            ))
-            values[data_name] = data_f_val
+            try:
+                # throw the exception if isn't a dict
+                data_f.items()
+                data_f_val = data_f['name']()
+                node_data_test[data_name] = data_f_val
+
+                subinput_str = input_tmpl.format(
+                    data_name=data_name,
+                    data_f=data_f_val
+                )
+
+                attr_str = '{}{{\n\tname\n\tvalue \n}}'.format(data_name)
+
+                values[data_name] = {}
+
+                for k, v in data_f.items():
+                    values[data_name][k] = v()
+
+            except AttributeError:
+                data_f_val = data_f()
+                node_data_test[data_name] = data_f_val
+
+                subinput_str = input_tmpl.format(
+                    data_name=data_name,
+                    data_f=data_f_val
+                )
+                values[data_name] = data_f_val
+                attr_str = data_name
+
+            if subinput_str:
+                inputs.append(subinput_str)
+
+            if attr_str:
+                attrs.append(attr_str)
 
         values['id'] = id_str
 
         input_str = "\n".join(inputs)
-        query_attr = "\n".join(data.keys())
+        query_attr = "\n".join(attrs)
 
         ## create
         query = """
@@ -148,7 +226,7 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
         values.pop('id', None)
         handle_id = relay.Node.from_global_id(id_str)[1]
         nh = NodeHandle.objects.get(handle_id=handle_id)
-        self.assertDictContainsSubset(values, nh.get_node().data)
+        self.assertDictContainsSubset(node_data_test, nh.get_node().data)
 
         return id_str
 
@@ -334,11 +412,18 @@ class SiteOwnerTest(GenericOrganizationTest):
 class PortTest(GenericNetworkMutationTest):
     def create_mutation(self, create_mutation=None, entityname=None):
         data_generator = NetworkFakeDataGenerator()
-        port_types = data_generator.get_dropdown_keys('port_types')
+        port_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:]
+        )
+        port_type_name  = lambda: port_type[0]
+        port_type_value = lambda: port_type[1]
 
         data = {
             'name': data_generator.get_port_name,
-            'port_type': lambda: random.choice(port_types),
+            'port_type': {
+                'name': port_type_name,
+                'value': port_type_value,
+            },
             'description': data_generator.fake.paragraph,
         }
 
@@ -350,11 +435,18 @@ class PortTest(GenericNetworkMutationTest):
 
     def edit_mutation(self, update_mutation=None, entityname=None, id_str=None):
         data_generator = NetworkFakeDataGenerator()
-        port_types = data_generator.get_dropdown_keys('port_types')
+        port_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:]
+        )
+        port_type_name  = lambda: port_type[0]
+        port_type_value = lambda: port_type[1]
 
         data = {
             'name': data_generator.rand_person_or_company_name,
-            'port_type': lambda: random.choice(port_types),
+            'port_type': {
+                'name': port_type_name,
+                'value': port_type_value,
+            },
             'description': data_generator.fake.paragraph,
         }
 
