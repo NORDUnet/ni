@@ -1522,3 +1522,59 @@ class RoleGroupTest(Neo4jGraphQLCommunityTest):
             pformat(no_args_roles, indent=1),
             pformat(args_roles, indent=1)
         )
+
+class CheckExistentOrganizationIdTest(Neo4jGraphQLCommunityTest):
+    def test_check_organization_id(self):
+        # first try and check one that exists
+        nh = self.organization1
+        organization1_id = relay.Node.to_global_id(str(nh.node_type),
+                                            str(nh.handle_id))
+        organization1_orgid = nh.get_node().data.get('organization_id')
+
+        query = '''
+        {{
+          checkExistentOrganizationId(organization_id: "{organization1_orgid}")
+        }}
+        '''.format(organization1_orgid=organization1_orgid)
+
+        expected = {'checkExistentOrganizationId': True}
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '\n{} \n != {}'.format(
+                                            pformat(result.data, indent=1),
+                                            pformat(expected, indent=1)
+                                        )
+
+        # then check that it returns false when the id is passed
+        query = '''
+        {{
+          checkExistentOrganizationId(organization_id: "{organization1_orgid}", id: "{organization1_id}")
+        }}
+        '''.format(organization1_orgid=organization1_orgid, organization1_id=organization1_id)
+
+        expected = {'checkExistentOrganizationId': False}
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '\n{} \n != {}'.format(
+                                            pformat(result.data, indent=1),
+                                            pformat(expected, indent=1)
+                                        )
+
+        # last, check that an organization id that doesn't exists
+        organization1_orgid = "ORG3"
+        query = '''
+        {{
+          checkExistentOrganizationId(organization_id: "{organization1_orgid}")
+        }}
+        '''.format(organization1_orgid=organization1_orgid)
+
+        expected = {'checkExistentOrganizationId': False}
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '\n{} \n != {}'.format(
+                                            pformat(result.data, indent=1),
+                                            pformat(expected, indent=1)
+                                        )
