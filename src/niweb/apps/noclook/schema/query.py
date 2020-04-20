@@ -249,7 +249,7 @@ class NOCRootQuery(NOCAutoQuery):
                 info.context.user, community_context
             )
 
-            if not authorized:
+            if authorized:
                 id = kwargs.get('id', None)
                 handle_id = None
 
