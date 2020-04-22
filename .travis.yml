@@ -8,15 +8,15 @@ services:
   - neo4j
 
 env:
-  - DJANGO=2.2.12
+  - NEO4J_VERSION=3.5
 
 before_install:
   - export DJANGO_SETTINGS_MODULE=niweb.settings.dev
   - export PIP_INDEX_URL=https://pypi.sunet.se
-  - export NEO4J_RESOURCE_URI=bolt://neo4j:7474
+  - export NEO4J_RESOURCE_URI=bolt://localhost:7474
   - export NEO4J_USERNAME=neo4j
   - export NEO4J_PASSWORD=neo4j
-  - export TEST_NEO4J_URI=bolt://neo4j:7474
+  - export TEST_NEO4J_URI=bolt://localhost:7474
   - export TEST_NEO4J_USERNAME=neo4j
   - export TEST_NEO4J_PASSWORD=neo4j
 
