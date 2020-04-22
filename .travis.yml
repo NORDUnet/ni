@@ -37,10 +37,10 @@ before_install:
         --name neo4j_test \
         -p7470:7474 -p7680:7687 \
         -d \
-        -v $HOME/neo4j/data:/data \
-        -v $HOME/neo4j/logs:/logs \
-        -v $HOME/neo4j/import:/var/lib/neo4j/import \
-        -v $HOME/neo4j/plugins:/plugins \
+        -v $HOME/neo4j-test/data:/data \
+        -v $HOME/neo4j-test/logs:/logs \
+        -v $HOME/neo4j-test/import:/var/lib/neo4j/import \
+        -v $HOME/neo4j-test/plugins:/plugins \
         --env NEO4J_AUTH=neo4j/test \
         neo4j:3.5
 
