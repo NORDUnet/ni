@@ -1,0 +1,33 @@
+language: python
+
+python:
+  - 3.4
+
+services:
+  - postgresql
+  - neo4j
+
+env:
+  - DJANGO=2.2.12
+  - TEST_NEO4J_URI=bolt://neo4j:7687
+  - TEST_NEO4J_USERNAME=neo4j
+  - TEST_NEO4J_PASSWORD=neo4j
+
+before_install:
+  - export DJANGO_SETTINGS_MODULE=niweb.settings.dev
+  - export PIP_INDEX_URL=https://pypi.sunet.se
+
+install:
+  - pip install -r requirements/dev.txt
+  - pip install django==$DJANGO --quiet
+
+before_script:
+  - psql -c "CREATE DATABASE norduni;" -U postgres
+  - psql -c "CREATE USER ni PASSWORD 'docker';" -U postgres
+  - psql -c "ALTER USER ni CREATEDB;" -U postgres
+  - psql -c "GRANT ALL PRIVILEGES on DATABASE norduni to ni;" -U postgres
+  - sleep 3 # give xvfb some time to start
+
+script:
+  - python manage.py migrate
+  - python manage.py test apps.noclook.tests
