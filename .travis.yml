@@ -1,3 +1,4 @@
+sudo: required
 language: python
 
 python:
@@ -15,10 +16,13 @@ before_install:
   - export PIP_INDEX_URL=https://pypi.sunet.se
   - export NEO4J_RESOURCE_URI=bolt://localhost:7474
   - export NEO4J_USERNAME=neo4j
-  - export NEO4J_PASSWORD=neo4j
+  - export NEO4J_PASSWORD=docker
   - export TEST_NEO4J_URI=bolt://localhost:7474
   - export TEST_NEO4J_USERNAME=neo4j
-  - export TEST_NEO4J_PASSWORD=neo4j
+  - export TEST_NEO4J_PASSWORD=docker
+  - sudo service neo4j restart
+  - sudo service neo4j status
+  - curl -H "Content-Type: application/json" -X POST -d '{"password":"docker"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
 
 install:
   - pip install -r requirements/dev.txt
