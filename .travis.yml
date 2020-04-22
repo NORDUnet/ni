@@ -16,10 +16,10 @@ before_install:
   - export PIP_INDEX_URL=https://pypi.sunet.se
   - export NEO4J_RESOURCE_URI=bolt://localhost:7687
   - export NEO4J_USERNAME=neo4j
-  - export NEO4J_PASSWORD=password
+  - export NEO4J_PASSWORD=test
   - export TEST_NEO4J_URI=bolt://localhost:7680
   - export TEST_NEO4J_USERNAME=neo4j
-  - export TEST_NEO4J_PASSWORD=password
+  - export TEST_NEO4J_PASSWORD=test
   - >
     docker run \
         --name neo4j_db \
@@ -31,7 +31,7 @@ before_install:
         -v $HOME/neo4j/plugins:/plugins \
         --env NEO4J_AUTH=neo4j/test \
         neo4j:3.5
-  - sleep 20s
+  - sleep 5s
   - >
     docker run \
         --name neo4j_test \
@@ -43,12 +43,6 @@ before_install:
         -v $HOME/neo4j/plugins:/plugins \
         --env NEO4J_AUTH=neo4j/test \
         neo4j:3.5
-  - sleep 20s
-  - >
-    curl -H "Content-Type: application/json" -X POST -d '{"password":"password"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
-  - sleep 5s
-  - >
-    curl -H "Content-Type: application/json" -X POST -d '{"password":"password"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
 
 install:
   - pip install -r requirements/dev.txt
