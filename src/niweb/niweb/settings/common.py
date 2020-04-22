@@ -136,7 +136,7 @@ MEDIA_URL = environ.get('MEDIA_URL', '/media/')
 STATIC_ROOT = environ.get('STATIC_ROOT', normpath(join(DJANGO_ROOT, 'static')))
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
-STATIC_URL = environ.get('STATIC_URL', '/api/static/')
+STATIC_URL = environ.get('STATIC_URL', '/static/')
 
 # See: https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
 STATICFILES_DIRS = (
