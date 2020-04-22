@@ -15,7 +15,7 @@ env
 *.sqlite3
 *.swp
 src/niweb/sitestatic
-src/niweb/static
+src/niweb/niweb/static
 src/niweb/media
 tools/nerds
 docker/data
