@@ -136,7 +136,7 @@ MEDIA_URL = environ.get('MEDIA_URL', '/media/')
 STATIC_ROOT = environ.get('STATIC_ROOT', normpath(join(DJANGO_ROOT, 'static')))
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
-STATIC_URL = environ.get('STATIC_URL', '/static/')
+STATIC_URL = environ.get('STATIC_URL', '/api/static/')
 
 # See: https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
 STATICFILES_DIRS = (
@@ -389,3 +389,9 @@ USE_GRAPHIQL = False
 ########## END GRAPHQL CONFIGURATION
 
 SILENCED_SYSTEM_CHECKS=['admin.E408', 'admin.E410']
+
+FORCE_SCRIPT_NAME=environ.get('SCRIPT_NAME', '/')
+LOGIN_URL='{}login/'.format(FORCE_SCRIPT_NAME)
+LOGOUT_URL='{}logout/'.format(FORCE_SCRIPT_NAME)
+LOGIN_REDIRECT_URL='{}logout/'.format(FORCE_SCRIPT_NAME)
+ADMIN_MEDIA_PREFIX='{}admin_media/'.format(FORCE_SCRIPT_NAME)
