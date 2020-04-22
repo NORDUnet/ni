@@ -31,6 +31,7 @@ before_install:
         -v $HOME/neo4j/plugins:/plugins \
         --env NEO4J_AUTH=neo4j/test \
         neo4j:3.5
+  - sleep 20s
   - >
     curl -H "Content-Type: application/json" -X POST -d '{"password":"password"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
 
