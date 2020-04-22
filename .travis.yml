@@ -16,10 +16,10 @@ before_install:
   - export PIP_INDEX_URL=https://pypi.sunet.se
   - export NEO4J_RESOURCE_URI=bolt://localhost:7687
   - export NEO4J_USERNAME=neo4j
-  - export NEO4J_PASSWORD=docker
+  - export NEO4J_PASSWORD=password
   - export TEST_NEO4J_URI=bolt://localhost:7680
   - export TEST_NEO4J_USERNAME=neo4j
-  - export TEST_NEO4J_PASSWORD=docker
+  - export TEST_NEO4J_PASSWORD=password
   - >
     docker run \
         --name neo4j_db \
