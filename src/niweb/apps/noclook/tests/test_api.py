@@ -6,7 +6,7 @@ from django.test import TestCase
 from tastypie.models import ApiKey
 from apps.noclook.models import NodeHandle, NodeType, UniqueIdGenerator
 from apps.noclook import helpers
-from apps.noclook.tests.testing import nc
+from apps.noclook.tests.testing import nc, strip_force_script_name
 
 __author__ = 'lundberg'
 
@@ -53,7 +53,8 @@ class ApiTest(ResourceTestCaseMixin, TestCase):
         }
         resp = self.api_client.post('/api/v1/rack/', data=data, format='json', authentication=self.get_credentials())
         self.assertEqual(resp.status_code, 201)
-        resp = self.api_client.get(resp.get('Location'), format='json', authentication=self.get_credentials())
+        parsed_location = strip_force_script_name(resp.get('Location'),)
+        resp = self.api_client.get(parsed_location, format='json', authentication=self.get_credentials())
         self.assertValidJSONResponse(resp)
         self.assertEqual(self.deserialize(resp).get('node_name'), node_name)
 
