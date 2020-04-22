@@ -14,10 +14,10 @@ env:
 before_install:
   - export DJANGO_SETTINGS_MODULE=niweb.settings.dev
   - export PIP_INDEX_URL=https://pypi.sunet.se
-  - export NEO4J_RESOURCE_URI=bolt://localhost:7474
+  - export NEO4J_RESOURCE_URI=bolt://localhost:7687
   - export NEO4J_USERNAME=neo4j
   - export NEO4J_PASSWORD=docker
-  - export TEST_NEO4J_URI=bolt://localhost:7474
+  - export TEST_NEO4J_URI=bolt://localhost:7680
   - export TEST_NEO4J_USERNAME=neo4j
   - export TEST_NEO4J_PASSWORD=docker
   - >
@@ -32,6 +32,21 @@ before_install:
         --env NEO4J_AUTH=neo4j/test \
         neo4j:3.5
   - sleep 20s
+  - >
+    docker run \
+        --name neo4j_test \
+        -p7470:7474 -p7680:7687 \
+        -d \
+        -v $HOME/neo4j/data:/data \
+        -v $HOME/neo4j/logs:/logs \
+        -v $HOME/neo4j/import:/var/lib/neo4j/import \
+        -v $HOME/neo4j/plugins:/plugins \
+        --env NEO4J_AUTH=neo4j/test \
+        neo4j:3.5
+  - sleep 20s
+  - >
+    curl -H "Content-Type: application/json" -X POST -d '{"password":"password"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
+  - sleep 5s
   - >
     curl -H "Content-Type: application/json" -X POST -d '{"password":"password"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
 
