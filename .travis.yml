@@ -1,20 +1,12 @@
 sudo: required
 language: python
 
-addons:
-  apt:
-    sources:
-      - sourceline: 'deb https://debian.neo4j.org/repo stable/'
-        key_url: 'https://debian.neo4j.org/neotechnology.gpg.key'
-    packages:
-      - neo4j
-
 python:
   - 3.7
 
 services:
   - postgresql
-  - neo4j
+  - docker
 
 env:
   - NEO4J_VERSION=3.5
@@ -28,6 +20,17 @@ before_install:
   - export TEST_NEO4J_URI=bolt://localhost:7474
   - export TEST_NEO4J_USERNAME=neo4j
   - export TEST_NEO4J_PASSWORD=docker
+  - >
+    docker run \
+        --name neo4j_db \
+        -p7474:7474 -p7687:7687 \
+        -d \
+        -v $HOME/neo4j/data:/data \
+        -v $HOME/neo4j/logs:/logs \
+        -v $HOME/neo4j/import:/var/lib/neo4j/import \
+        -v $HOME/neo4j/plugins:/plugins \
+        --env NEO4J_AUTH=neo4j/test \
+        neo4j:3.5
   - >
     curl -H "Content-Type: application/json" -X POST -d '{"password":"password"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
 
