@@ -13,7 +13,7 @@ env:
 before_install:
   - export DJANGO_SETTINGS_MODULE=niweb.settings.dev
   - export PIP_INDEX_URL=https://pypi.sunet.se
-  - export TEST_NEO4J_URI=bolt://neo4j:7687
+  - export TEST_NEO4J_URI=bolt://neo4j:7474
   - export TEST_NEO4J_USERNAME=neo4j
   - export TEST_NEO4J_PASSWORD=neo4j
 
