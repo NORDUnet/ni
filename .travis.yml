@@ -20,7 +20,8 @@ before_install:
   - export TEST_NEO4J_URI=bolt://localhost:7474
   - export TEST_NEO4J_USERNAME=neo4j
   - export TEST_NEO4J_PASSWORD=docker
-  - curl -H "Content-Type: application/json" -X POST -d '{"password":"docker"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
+  - >
+    curl -H "Content-Type: application/json" -X POST -d '{"password":"password"}' -u neo4j:neo4j http://localhost:7474/user/neo4j/password
 
 install:
   - pip install -r requirements/dev.txt
