@@ -55,5 +55,5 @@ before_script:
   - sleep 3 # give xvfb some time to start
 
 script:
-  - python src/niweb/manage.py migrate
-  - python src/niweb/manage.py test apps.noclook.tests
+  - python src/niweb/manage.py migrate --settings=niweb.settings.dev
+  - python src/niweb/manage.py test --settings=niweb.settings.dev apps.noclook.tests
