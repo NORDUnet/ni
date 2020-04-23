@@ -7,7 +7,7 @@ from graphene_django import DjangoObjectType
 from .scalars import ChoiceScalar
 
 import graphene
-import types
+import types as pytypes
 
 ########## KEYVALUE TYPES
 class KeyValue(graphene.Interface):
@@ -267,7 +267,7 @@ class IDRelation(graphene.ObjectType):
 
 
 def is_lambda_function(obj):
-    return isinstance(obj, types.LambdaType) and obj.__name__ == "<lambda>"
+    return isinstance(obj, pytypes.LambdaType) and obj.__name__ == "<lambda>"
 
 
 class NIRelationListField(NIBasicField):
