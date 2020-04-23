@@ -21,11 +21,17 @@ def can_load_models():
 
     return can_load
 
+
 class NOCAutoQuery(graphene.ObjectType):
     '''
     This class creates a connection and a getById method for each of the types
     declared on the graphql_types of the NIMeta class of any subclass.
     '''
+
+    connection_classes = {}
+    by_id_type_resolvers = {}
+    all_type_resolvers = {}
+    connection_type_resolvers = {}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -48,32 +54,56 @@ class NOCAutoQuery(graphene.ObjectType):
                 type_name     = node_type.type
                 type_slug     = node_type.slug
 
+                # relace - in slug for _
+                fmt_type_slug = type_slug.replace('-', '')
+                fmt_type_name = type_name.replace(' ', '')
+                components = type_name.split(' ')
+                # type name camelcased
+                type_name_cc = components[0].lower() + ''.join(x.title() for x in components[1:])
+
                 # add simple list attribute and resolver
-                field_name    = 'all_{}s'.format(type_slug)
+                field_name    = 'all_{}s'.format(fmt_type_slug)
                 resolver_name = 'resolve_{}'.format(field_name)
+
+                cls.all_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
 
                 setattr(cls, field_name, graphene.List(graphql_type))
                 setattr(cls, resolver_name, graphql_type.get_list_resolver())
 
                 # add simple counter
-                field_name    = 'count_{}s'.format(type_slug)
-                resolver_name = 'resolve_{}'.format(field_name)
+                field_name    = 'count_{}s'.format(fmt_type_slug)
+                resolver_name = 'resolve_{}'.format(fmt_type_slug)
 
                 setattr(cls, field_name, graphene.Int())
                 setattr(cls, resolver_name, graphql_type.get_count_resolver())
 
                 # add connection attribute
-                field_name    = '{}s'.format(type_slug)
+                field_name    = '{}s'.format(type_name_cc)
                 resolver_name = 'resolve_{}'.format(field_name)
+
+                cls.connection_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
 
                 connection_input, connection_order = graphql_type.build_filter_and_order()
                 connection_meta = type('Meta', (object, ), dict(node=graphql_type))
-                connection_class = type(
-                    '{}Connection'.format(graphql_type.__name__),
-                    (graphene.relay.Connection,),
-                    #(connection_type,),
-                    dict(Meta=connection_meta)
-                )
+                connection_name = '{}Connection'.format(type_name_cc)
+                connection_class = None
+
+                if connection_name not in cls.connection_classes:
+                    connection_class = type(
+                        connection_name,
+                        (graphene.relay.Connection,),
+                        #(connection_type,),
+                        dict(Meta=connection_meta)
+                    )
+                    cls.connection_classes[connection_name] = connection_class
+                else:
+                    connection_class = cls.connection_classes[connection_name]
 
                 setattr(cls, field_name, graphene.relay.ConnectionField(
                     connection_class,
@@ -83,8 +113,13 @@ class NOCAutoQuery(graphene.ObjectType):
                 setattr(cls, resolver_name, graphql_type.get_connection_resolver())
 
                 ## build field and resolver byid
-                field_name    = 'get{}ById'.format(type_name)
+                field_name    = 'get{}ById'.format(fmt_type_name)
                 resolver_name = 'resolve_{}'.format(field_name)
+
+                cls.by_id_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
 
                 setattr(cls, field_name, graphene.Field(graphql_type, id=graphene.ID()))
                 setattr(cls, resolver_name, graphql_type.get_byid_resolver())
@@ -101,45 +136,66 @@ class NOCRootQuery(NOCAutoQuery):
     getRolesFromRoleGroup = graphene.List(Role, name=graphene.String())
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
-        django_dropdowns = [d.name for d in DropdownModel.objects.all()]
+        if info.context and info.context.user.is_authenticated:
+            django_dropdowns = [d.name for d in DropdownModel.objects.all()]
 
-        return django_dropdowns
+            return django_dropdowns
+        else:
+            raise GraphQLAuthException()
 
     def resolve_getChoicesForDropdown(self, info, **kwargs):
-        # django dropdown resolver
-        name = kwargs.get('name')
-        ddqs = DropdownModel.get(name)
+        if info.context and info.context.user.is_authenticated:
+            # django dropdown resolver
+            name = kwargs.get('name')
+            ddqs = DropdownModel.get(name)
 
-        if not isinstance(ddqs, DummyDropdown):
-            return ddqs.choice_set.order_by('name')
+            if not isinstance(ddqs, DummyDropdown):
+                return ddqs.choice_set.order_by('name')
+            else:
+                raise Exception(u'Could not find dropdown with name \'{}\'. Please create it using /admin/'.format(name))
         else:
-            raise Exception(u'Could not find dropdown with name \'{}\'. Please create it using /admin/'.format(name))
+            raise GraphQLAuthException()
 
     def resolve_roles(self, info, **kwargs):
-        filter = kwargs.get('filter')
-        order_by = kwargs.get('orderBy')
+        qs = RoleModel.objects.none()
 
-        qs = RoleModel.objects.all()
+        if info.context and info.context.user.is_authenticated:
+            context = sriutils.get_community_context()
+            authorized = sriutils.authorize_list_module(
+                info.context.user, context
+            )
 
-        if order_by:
-            if order_by == RoleOrderBy.handle_id_ASC:
-                qs = qs.order_by('handle_id')
-            elif order_by == RoleOrderBy.handle_id_DESC:
-                qs = qs.order_by('-handle_id')
-            elif order_by == RoleOrderBy.name_ASC:
-                qs = qs.order_by('name')
-            elif order_by == RoleOrderBy.name_DESC:
-                qs = qs.order_by('-name')
+            if authorized:
+                filter = kwargs.get('filter')
+                order_by = kwargs.get('orderBy')
 
-        if filter:
-            if filter.id:
-                handle_id = relay.Node.from_global_id(filter.id)[1]
-                qs = qs.filter(handle_id=handle_id)
+                qs = RoleModel.objects.all()
 
-            if filter.name:
-                qs = qs.filter(name=filter.name)
+                if order_by:
+                    if order_by == RoleOrderBy.handle_id_ASC:
+                        qs = qs.order_by('handle_id')
+                    elif order_by == RoleOrderBy.handle_id_DESC:
+                        qs = qs.order_by('-handle_id')
+                    elif order_by == RoleOrderBy.name_ASC:
+                        qs = qs.order_by('name')
+                    elif order_by == RoleOrderBy.name_DESC:
+                        qs = qs.order_by('-name')
 
-        return qs
+                if filter:
+                    if filter.id:
+                        handle_id = relay.Node.from_global_id(filter.id)[1]
+                        qs = qs.filter(handle_id=handle_id)
+
+                    if filter.name:
+                        qs = qs.filter(name=filter.name)
+
+                return qs
+            else:
+                #403
+                return qs
+        else:
+            # 401
+            raise GraphQLAuthException()
 
     def resolve_getAvailableRoleGroups(self, info, **kwargs):
         ret = []
@@ -152,11 +208,10 @@ class NOCRootQuery(NOCAutoQuery):
                 info.context.user, community_context
             )
 
-            if not authorized:
-                raise GraphQLAuthException()
-
-            ret = RoleGroupModel.objects.all()
+            if authorized:
+                ret = RoleGroupModel.objects.all()
         else:
+            #401
             raise GraphQLAuthException()
 
         return ret
@@ -174,28 +229,45 @@ class NOCRootQuery(NOCAutoQuery):
                 info.context.user, community_context
             )
 
-            if not authorized:
-                raise GraphQLAuthException()
-
-            role_group = RoleGroupModel.objects.get(name=name)
-            ret = RoleModel.objects.filter(role_group=role_group)
+            if authorized:
+                role_group = RoleGroupModel.objects.get(name=name)
+                ret = RoleModel.objects.filter(role_group=role_group)
         else:
+            #401
             raise GraphQLAuthException()
 
         return ret
 
     def resolve_checkExistentOrganizationId(self, info, **kwargs):
-        id = kwargs.get('id', None)
-        handle_id = None
+        ret = False
 
-        if id:
-            _type, handle_id = relay.Node.from_global_id(id)
+        if info.context and info.context.user.is_authenticated:
+            # well use the community context to check if the user
+            # can read the rolegroup list
+            community_context = sriutils.get_community_context()
+            authorized = sriutils.authorize_list_module(
+                info.context.user, community_context
+            )
 
-        organization_id = kwargs.get('organization_id')
+            if authorized:
+                id = kwargs.get('id', None)
+                handle_id = None
 
-        ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
+                if id:
+                    _type, handle_id = relay.Node.from_global_id(id)
+
+                organization_id = kwargs.get('organization_id')
+
+                ret = nc.models.OrganizationModel.check_existent_organization_id(organization_id, handle_id, nc.graphdb.manager)
+        else:
+            raise GraphQLAuthException()
 
         return ret
 
     class NIMeta:
-        graphql_types = [ Group, Address, Phone, Email, Contact, Organization, Procedure, Host ]
+        graphql_types = [
+            Group, Address, Phone, Email, Contact, Organization, Procedure,
+            Customer, EndUser, Provider, SiteOwner,
+            Port, Host, Cable, Router,
+            PeeringPartner, PeeringGroup,
+        ]

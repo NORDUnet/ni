@@ -36,7 +36,14 @@ class BelongsContext(Rule):
         satisfied = False
 
         if nodehandle:
-            possible_contexts = nodehandle.contexts.filter(pk=self.context.pk)
+            context_pk = None
+
+            try:
+                context_pk = self.context.pk
+            except AttributeError:
+                context_pk = self.context.context.pk
+
+            possible_contexts = nodehandle.contexts.filter(pk=context_pk)
             if possible_contexts:
                 satisfied = True
         else:

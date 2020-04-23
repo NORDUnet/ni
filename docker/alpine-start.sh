@@ -17,6 +17,7 @@ case "$*" in
     done
 
     yes no | python $MANAGE_PY migrate
+    yes yes | python $MANAGE_PY collectstatic
     exec python $MANAGE_PY runserver 0.0.0.0:8000
     ;;
   shell)

@@ -4,13 +4,13 @@ __author__ = 'ffuentes'
 from apps.noclook.models import NodeHandle, Dropdown, Choice, Role, Group, \
     GroupContextAuthzAction, NodeHandleContext, DEFAULT_ROLEGROUP_NAME
 from collections import OrderedDict
-from . import Neo4jGraphQLTest
+from . import Neo4jGraphQLCommunityTest
 from niweb.schema import schema
 from pprint import pformat
-from . import Neo4jGraphQLTest
+from . import Neo4jGraphQLCommunityTest
 from graphene import relay
 
-class GroupComplexTest(Neo4jGraphQLTest):
+class GroupComplexTest(Neo4jGraphQLCommunityTest):
     def test_composite_group(self):
         group_name = "The Pendletones"
         description_group = "In sodales nisl et turpis sollicitudin, nec \
@@ -299,12 +299,18 @@ class GroupComplexTest(Neo4jGraphQLTest):
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 member_of_groups{{
                   name
@@ -323,12 +329,18 @@ class GroupComplexTest(Neo4jGraphQLTest):
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 member_of_groups{{
                   name
@@ -448,7 +460,7 @@ class GroupComplexTest(Neo4jGraphQLTest):
         assert subdeleted_data[0]['success'], "The requested contact couldn't be deleted"
 
 
-class OrganizationComplexTest(Neo4jGraphQLTest):
+class OrganizationComplexTest(Neo4jGraphQLCommunityTest):
     def test_composite_organization(self):
         org_name = "PyPI"
         org_type = "partner"
@@ -537,7 +549,10 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
               }}
               organization{{
                 id
-                type
+                type{{
+                  name
+                  value
+                }}
                 name
                 description
                 addresses{{
@@ -551,16 +566,25 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   id
                   first_name
                   last_name
-                  contact_type
+                  contact_type{{
+                    name
+                    value
+                  }}
                   emails{{
                     id
                     name
-                    type
+                    type{{
+                      name
+                      value
+                    }}
                   }}
                   phones{{
                     id
                     name
-                    type
+                    type{{
+                      name
+                      value
+                    }}
                   }}
                 }}
               }}
@@ -574,16 +598,25 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 organizations{{
                   id
@@ -663,9 +696,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert created_data['name'] == org_name, \
             "Organization name doesn't match \n{} != {}"\
                 .format(created_data['name'], org_name)
-        assert created_data['type'] == org_type, \
+        assert created_data['type']['value'] == org_type, \
             "Organization type doesn't match \n{} != {}"\
-                .format(created_data['type'], org_type)
+                .format(created_data['type']['value'], org_type)
 
         # check subnodes
         # address
@@ -818,7 +851,10 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
               }}
               organization{{
                 id
-                type
+                type{{
+                  name
+                  value
+                }}
                 name
                 description
                 addresses{{
@@ -832,16 +868,25 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                   id
                   first_name
                   last_name
-                  contact_type
+                  contact_type{{
+                    name
+                    value
+                  }}
                   emails{{
                     id
                     name
-                    type
+                    type{{
+                      name
+                      value
+                    }}
                   }}
                   phones{{
                     id
                     name
-                    type
+                    type{{
+                      name
+                      value
+                    }}
                   }}
                   organizations{{
                     id
@@ -872,16 +917,25 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 organizations{{
                   id
@@ -911,16 +965,25 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
                 id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 organizations{{
                   id
@@ -1036,9 +1099,9 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
         assert updated_data['name'] == org_name, \
             "Organization name doesn't match \n{} != {}"\
                 .format(updated_data['name'], org_name)
-        assert updated_data['type'] == org_type, \
+        assert updated_data['type']['value'] == org_type, \
             "Organization type doesn't match \n{} != {}"\
-                .format(updated_data['type'], org_type)
+                .format(updated_data['type']['value'], org_type)
 
         # check subnodes (address and contacts)
         address_node_1 = None
@@ -1143,7 +1206,7 @@ class OrganizationComplexTest(Neo4jGraphQLTest):
             "Second address of this organization should have been deleted"
 
 
-class ContactsComplexTest(Neo4jGraphQLTest):
+class ContactsComplexTest(Neo4jGraphQLCommunityTest):
     def test_multiple_mutation(self):
         c1_first_name = "Jane"
         c1_last_name  = "Doe"
@@ -1206,16 +1269,25 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
               }}
             }}
@@ -1227,7 +1299,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_created{{
@@ -1238,7 +1313,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             rolerelations{{
@@ -1315,9 +1393,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, created_email_data['name'])
-        assert c1_email_type == created_email_data['type'], \
+        assert c1_email_type == created_email_data['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c1_email_type, created_email_data['type'])
+                .format(c1_email_type, created_email_data['type']['value'])
 
         created_email_data = result_data['subcreated'][1]['email']
 
@@ -1327,9 +1405,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c2_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c2_email, created_email_data['name'])
-        assert c2_email_type == created_email_data['type'], \
+        assert c2_email_type == created_email_data['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c2_email_type, created_email_data['type'])
+                .format(c2_email_type, created_email_data['type']['value'])
 
         # check phone
         created_phone_data = result_data['phones_created'][0]['phone']
@@ -1340,9 +1418,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_phone == created_phone_data['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, created_phone_data['name'])
-        assert c1_phone_type == created_phone_data['type'], \
+        assert c1_phone_type == created_phone_data['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c1_phone_type, created_phone_data['type'])
+                .format(c1_phone_type, created_phone_data['type']['value'])
 
         # check rolerelation
         rolerelation = result_data['rolerelations'][0]['rolerelation']
@@ -1418,16 +1496,25 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 roles{{
                   relation_id
@@ -1450,7 +1537,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             subupdated{{
@@ -1461,7 +1551,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_created{{
@@ -1472,7 +1565,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_updated{{
@@ -1483,7 +1579,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             rolerelations{{
@@ -1579,9 +1678,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_email == email1_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, email1_node['name'])
-        assert c1_email_type == email1_node['type'], \
+        assert c1_email_type == email1_node['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c1_email_type, email1_node['type'])
+                .format(c1_email_type, email1_node['type']['value'])
 
         self.assertIsNotNone(email3_node)
 
@@ -1591,9 +1690,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c3_email == email3_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c3_email, email3_node['name'])
-        assert c3_email_type == email3_node['type'], \
+        assert c3_email_type == email3_node['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c3_email_type, email3_node['type'])
+                .format(c3_email_type, email3_node['type']['value'])
 
 
         # get phones and check them
@@ -1614,9 +1713,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_phone == phone1_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, phone1_node['name'])
-        assert c1_phone_type == phone1_node['type'], \
+        assert c1_phone_type == phone1_node['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c1_phone_type, phone1_node['type'])
+                .format(c1_phone_type, phone1_node['type']['value'])
 
         self.assertIsNotNone(phone3_node)
 
@@ -1626,9 +1725,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c3_phone == phone3_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c3_phone, phone3_node['name'])
-        assert c3_phone_type == phone3_node['type'], \
+        assert c3_phone_type == phone3_node['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c3_phone_type, phone3_node['type'])
+                .format(c3_phone_type, phone3_node['type']['value'])
 
         # check rolerelation
         assert len(result_data['rolerelations']) == 1, \
@@ -1713,16 +1812,25 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
               }}
             }}
@@ -1734,7 +1842,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_created{{
@@ -1745,7 +1856,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             rolerelations{{
@@ -1819,9 +1933,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, created_email_data['name'])
-        assert c1_email_type == created_email_data['type'], \
+        assert c1_email_type == created_email_data['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c1_email_type, created_email_data['type'])
+                .format(c1_email_type, created_email_data['type']['value'])
 
         created_email_data = result_data['subcreated'][1]['email']
 
@@ -1831,9 +1945,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c2_email == created_email_data['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c2_email, created_email_data['name'])
-        assert c2_email_type == created_email_data['type'], \
+        assert c2_email_type == created_email_data['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c2_email_type, created_email_data['type'])
+                .format(c2_email_type, created_email_data['type']['value'])
 
         # check phone
         created_phone_data = result_data['phones_created'][0]['phone']
@@ -1844,9 +1958,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_phone == created_phone_data['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, created_phone_data['name'])
-        assert c1_phone_type == created_phone_data['type'], \
+        assert c1_phone_type == created_phone_data['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c1_phone_type, created_phone_data['type'])
+                .format(c1_phone_type, created_phone_data['type']['value'])
 
         # assert role relation
         self.assertIsNotNone(role_relation_id, 'Role relation shouldn\'t be none')
@@ -1912,16 +2026,25 @@ class ContactsComplexTest(Neo4jGraphQLTest):
                 id
                 first_name
                 last_name
-                contact_type
+                contact_type{{
+                  name
+                  value
+                }}
                 emails{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 phones{{
                   id
                   name
-                  type
+                  type{{
+                    name
+                    value
+                  }}
                 }}
                 roles{{
                   relation_id
@@ -1944,7 +2067,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             subupdated{{
@@ -1955,7 +2081,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               email{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_created{{
@@ -1966,7 +2095,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             phones_updated{{
@@ -1977,7 +2109,10 @@ class ContactsComplexTest(Neo4jGraphQLTest):
               phone{{
                 id
                 name
-                type
+                type{{
+                  name
+                  value
+                }}
               }}
             }}
             rolerelations{{
@@ -2069,9 +2204,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_email == email1_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c1_email, email1_node['name'])
-        assert c1_email_type == email1_node['type'], \
+        assert c1_email_type == email1_node['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c1_email_type, email1_node['type'])
+                .format(c1_email_type, email1_node['type']['value'])
 
         self.assertIsNotNone(email3_node)
 
@@ -2081,9 +2216,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c3_email == email3_node['name'], \
             "Contact's email doesn't match \n{} != {}"\
                 .format(c3_email, email3_node['name'])
-        assert c3_email_type == email3_node['type'], \
+        assert c3_email_type == email3_node['type']['value'], \
             "Contact's email type doesn't match \n{} != {}"\
-                .format(c3_email_type, email3_node['type'])
+                .format(c3_email_type, email3_node['type']['value'])
 
 
         # get phones and check them
@@ -2104,9 +2239,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c1_phone == phone1_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c1_phone, phone1_node['name'])
-        assert c1_phone_type == phone1_node['type'], \
+        assert c1_phone_type == phone1_node['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c1_phone_type, phone1_node['type'])
+                .format(c1_phone_type, phone1_node['type']['value'])
 
         self.assertIsNotNone(phone3_node)
 
@@ -2116,9 +2251,9 @@ class ContactsComplexTest(Neo4jGraphQLTest):
         assert c3_phone == phone3_node['name'], \
             "Contact's phone doesn't match \n{} != {}"\
                 .format(c3_phone, phone3_node['name'])
-        assert c3_phone_type == phone3_node['type'], \
+        assert c3_phone_type == phone3_node['type']['value'], \
             "Contact's phone type doesn't match \n{} != {}"\
-                .format(c3_phone_type, phone3_node['type'])
+                .format(c3_phone_type, phone3_node['type']['value'])
 
         # check rolerelation
         assert len(result_data['rolerelations']) == 1, \

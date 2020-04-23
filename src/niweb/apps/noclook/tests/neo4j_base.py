@@ -11,10 +11,23 @@ from apps.noclook.models import NodeHandle
 from dynamic_preferences.registries import global_preferences_registry
 from apps.noclook import forms, helpers
 from django.template.defaultfilters import slugify
-from apps.noclook.tests.testing import nc
+from apps.noclook.tests.testing import nc, strip_force_script_name
+
+from urllib.parse import urlparse
 
 # We instantiate a manager for our global preferences
 global_preferences = global_preferences_registry.manager()
+
+class NOCClient(Client):
+    '''
+    This class overrides the django default testing client.
+    It does strip each request's path from the FORCE_SCRIPT_NAME settings value
+    '''
+    def _get_path(self, parsed):
+        path = super()._get_path(parsed)
+        path = strip_force_script_name(path)
+
+        return path
 
 
 @tag('db', 'neo4j')
@@ -27,7 +40,7 @@ class NeoTestCase(TestCase):
         user.save()
         self.user = user
         # Set up client
-        self.client = Client()
+        self.client = NOCClient()
         self.client.login(username='test user', password='test')
         # Load the default forms
         global_preferences['general__data_domain'] = 'common'

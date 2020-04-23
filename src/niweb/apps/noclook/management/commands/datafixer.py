@@ -34,7 +34,10 @@ class Command(BaseCommand):
 
         organization_type = NodeType.objects.get_or_create(
             type='Organization', slug='organization')[0] # organization
+        contact_type = NodeType.objects.get_or_create(
+            type='Contact', slug='contact')[0] # organization
 
+        # fix all organizations
         all_organizations = NodeHandle.objects.filter(node_type=organization_type)
 
 
@@ -61,6 +64,14 @@ class Command(BaseCommand):
 
         total_lines = total_lines + len(organization_ids)
 
+        # fix all contacts
+        all_contacts = NodeHandle.objects.filter(node_type=contact_type)
+
+        con_types_drop = Dropdown.objects.get(name='contact_type')
+        con_types = Choice.objects.filter(dropdown=con_types_drop)
+
+        total_lines = total_lines + all_contacts.count()
+
         # fix organization type
         for organization in all_organizations:
             self.printProgressBar(current_line, total_lines)
@@ -84,6 +95,33 @@ class Command(BaseCommand):
 
                     orgnode.remove_property(first_field)
                     orgnode.add_property(first_field, selected_type.value)
+
+            current_line = current_line + 1
+
+        # fix contact type
+        con_type_field = 'contact_type'
+        for contact in all_contacts:
+            self.printProgressBar(current_line, total_lines)
+
+            connode = contact.get_node()
+            con_type = connode.data.get(con_type_field, None)
+
+            if con_type:
+                correct_type = con_types.filter(value=con_type).exists()
+
+                if not correct_type:
+                    # get the first value as default
+                    selected_type = con_types.first()
+
+                    # check if exist choice with that name
+                    if con_types.filter(name__icontains=con_type).exists():
+                        selected_type = con_types.filter(name__icontains=con_type).first()
+                    elif con_types.filter(value__icontains=org_type).exists():
+                        # if not, check if exists with that value
+                        selected_type = con_types.filter(value__icontains=con_type).first()
+
+                    connode.remove_property(con_type_field)
+                    connode.add_property(con_type_field, selected_type.value)
 
             current_line = current_line + 1
 
