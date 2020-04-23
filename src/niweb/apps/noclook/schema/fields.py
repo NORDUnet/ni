@@ -7,6 +7,7 @@ from graphene_django import DjangoObjectType
 from .scalars import ChoiceScalar
 
 import graphene
+import types
 
 ########## KEYVALUE TYPES
 class KeyValue(graphene.Interface):
