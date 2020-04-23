@@ -48,11 +48,12 @@ class NOCAutoQuery(graphene.ObjectType):
             ni_metatype = graphql_type.get_from_nimetatype('ni_metatype')
             assert ni_metatype, '{} has not set its ni_metatype attribute'.format(cls.__name__)
 
-            node_type     = NodeType.objects.filter(type=ni_type).first() if can_load_models() else None
+            sluggy = slugify(ni_type)
+            node_type = NodeType.objects.get_or_create(type=ni_type, slug=sluggy)[0] if can_load_models() else None
 
             if node_type:
-                type_name     = node_type.type
-                type_slug     = node_type.slug
+                type_name = node_type.type
+                type_slug = node_type.slug
 
                 # relace - in slug for _
                 fmt_type_slug = type_slug.replace('-', '')
