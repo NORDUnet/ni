@@ -23,6 +23,11 @@ def forwards_func(apps, schema_editor):
     NodeHandle = apps.get_model('noclook', 'NodeHandle')
     NodeHandleContext = apps.get_model('noclook', 'NodeHandleContext')
 
+    # create nodetypes
+    for slug_type_str in for_types:
+        type_str = slug_type_str.title()
+        NodeType.objects.get_or_create(type=type_str, slug=slug_type_str)
+
     default_context = sriutils.get_default_context(Context)
     types_qs = NodeType.objects.filter(slug__in=for_types)
     nodes = NodeHandle.objects.filter(node_type__in=types_qs)
