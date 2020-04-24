@@ -20,6 +20,8 @@ before_install:
   - export TEST_NEO4J_URI=bolt://localhost:7680
   - export TEST_NEO4J_USERNAME=neo4j
   - export TEST_NEO4J_PASSWORD=test
+  - export TEST_NEO4J_PASSWORD=test
+  - export REPORTS_TO=markus@nordu.net
   - >
     docker run \
         --name neo4j_db \
