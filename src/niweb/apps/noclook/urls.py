@@ -6,10 +6,10 @@ from .views import other, create, edit, import_nodes, report, detail, redirect, 
 
 urlpatterns = [
     url(r'^csrf/$', other.csrf),
-    url(r'^login/$', auth_views.LoginView.as_view()),
+    url(r'^login/$', auth_views.LoginView.as_view(), name="login"),
     url(r'^$', other.index),
     # Log out
-    url(r'^logout/$', other.logout_page),
+    url(r'^logout/$', other.logout_page, name="logout"),
     # Visualize views
     url(r'^visualize/(?P<handle_id>\d+)\.json$', other.visualize_json, name='visualize_json'),
     url(r'^visualize/(?P<slug>[-\w]+)/(?P<handle_id>\d+)/maximized/$', other.visualize_maximize),
