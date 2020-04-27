@@ -390,8 +390,8 @@ USE_GRAPHIQL = False
 
 SILENCED_SYSTEM_CHECKS=['admin.E408', 'admin.E410']
 
-FORCE_SCRIPT_NAME=environ.get('SCRIPT_NAME', '/')
-LOGIN_URL='{}login/'.format(FORCE_SCRIPT_NAME)
-LOGOUT_URL='{}logout/'.format(FORCE_SCRIPT_NAME)
-LOGIN_REDIRECT_URL='{}logout/'.format(FORCE_SCRIPT_NAME)
-ADMIN_MEDIA_PREFIX='{}admin_media/'.format(FORCE_SCRIPT_NAME)
+FORCE_SCRIPT_NAME=environ.get('SCRIPT_NAME', '')
+LOGIN_URL='{}/login/'.format(FORCE_SCRIPT_NAME)
+LOGOUT_URL='{}/logout/'.format(FORCE_SCRIPT_NAME)
+LOGIN_REDIRECT_URL='{}/'.format(FORCE_SCRIPT_NAME)
+ADMIN_MEDIA_PREFIX='{}/admin_media/'.format(FORCE_SCRIPT_NAME)
