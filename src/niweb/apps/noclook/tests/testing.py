@@ -26,10 +26,10 @@ def strip_force_script_name(path):
 
     # strip FORCE_SCRIPT_NAME value from path
     if path.startswith(prepend_path):
-        path = path[ len(prepend_path) - 1: ]
+        path = path[ len(prepend_path): ]
     else:
         warnings.warn(
-            "The requested path {} may be hardcoded".format(path), 
+            "The requested path {} may be hardcoded".format(path),
             RuntimeWarning
         )
 
