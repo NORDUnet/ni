@@ -11,18 +11,39 @@ from .query import *
 from .mutations import *
 
 NOCSCHEMA_TYPES = [
+    # Interfaces
+    NINode,
+
+    # common
     User,
     Dropdown,
     Choice,
     Neo4jChoice,
     NodeHandler,
+
+    # Community
     Group,
     Contact,
     Procedure,
-    Host,
     Address,
     Phone,
     Email,
+
+    # Network
+    ## organizations
+    Customer,
+    EndUser,
+    Provider,
+    SiteOwner,
+
+    ## cables equipement
+    Port,
+    Host,
+    Cable,
+
+    ## Peering
+    PeeringGroup,
+    PeeringPartner,
 ]
 
 NOCSCHEMA_QUERIES = [

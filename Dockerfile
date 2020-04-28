@@ -11,7 +11,7 @@ WORKDIR /app
 ADD src /app
 ADD requirements /app/requirements
 RUN apk add --no-cache --virtual build-dependencies postgresql-dev musl-dev gcc python3-dev && \
-      pip3 install -r requirements/dev.txt && \
+      pip3 install -r requirements/dev.txt --index-url https://pypi.sunet.se/ && \
       apk del build-dependencies && \
       if [ ! -e /usr/bin/pip ]; then ln -s pip3 /usr/bin/pip ; fi && \
       if [[ ! -e /usr/bin/python ]]; then ln -sf /usr/bin/python3 /usr/bin/python; fi && \

@@ -8,11 +8,11 @@ from django.utils.dateparse import parse_datetime
 from graphene import relay
 from niweb.schema import schema
 from pprint import pformat
-from . import Neo4jGraphQLTest
+from . import Neo4jGraphQLCommunityTest
 
 from datetime import datetime
 
-class SimpleListTest(Neo4jGraphQLTest):
+class SimpleListTest(Neo4jGraphQLCommunityTest):
     def test_simple_list(self):
         # query all available types
         test_types = {
@@ -52,7 +52,7 @@ class SimpleListTest(Neo4jGraphQLTest):
                                                 pformat(expected, indent=1)
                                             )
 
-class ConnectionsTest(Neo4jGraphQLTest):
+class ConnectionsTest(Neo4jGraphQLCommunityTest):
     def test_connections(self):
         # test contacts: slicing and ordering
         query = '''
@@ -270,7 +270,10 @@ class ConnectionsTest(Neo4jGraphQLTest):
             edges{
               node{
                 name
-                type
+                type{
+                  name
+                  value
+                }
               }
             }
           }
@@ -279,12 +282,16 @@ class ConnectionsTest(Neo4jGraphQLTest):
 
         expected = OrderedDict([('organizations',
                     OrderedDict([('edges',
-                        [OrderedDict([('node',
-                            OrderedDict([
-                                ('name',
-                                 'organization1'),
-                                ('type',
-                                 'university_college')]))])])]))])
+                    [OrderedDict([('node',
+                       OrderedDict([('name',
+                         'organization1'),
+                        ('type',
+                         OrderedDict([('name',
+                           'University, '
+                           'College'),
+                          ('value',
+                           'university_college')]))]))])])]))])
+
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -514,7 +521,7 @@ class ConnectionsTest(Neo4jGraphQLTest):
         assert result.data == expected, pformat(result.data, indent=1)
 
 
-class DropdownTest(Neo4jGraphQLTest):
+class DropdownTest(Neo4jGraphQLCommunityTest):
     def test_dropdown(self):
         query = '''
         {
@@ -539,7 +546,7 @@ class DropdownTest(Neo4jGraphQLTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
 
-class RelationResolversTest(Neo4jGraphQLTest):
+class RelationResolversTest(Neo4jGraphQLCommunityTest):
     def test_relation_resolvers(self):
         ## get aux entities types
         # get phone types
@@ -606,7 +613,10 @@ class RelationResolversTest(Neo4jGraphQLTest):
                 id
                 first_name
                 last_name
-                contact_type
+                contact_type{
+                  name
+                  value
+                }
               }
             }
           }
@@ -640,7 +650,10 @@ class RelationResolversTest(Neo4jGraphQLTest):
             phone{{
               id
               name
-              type
+              type{{
+                name
+                value
+              }}
             }}
           }}
         }}
@@ -670,7 +683,10 @@ class RelationResolversTest(Neo4jGraphQLTest):
             email{{
               id
               name
-              type
+              type{{
+                name
+                value
+              }}
             }}
           }}
         }}
@@ -1162,7 +1178,7 @@ class RelationResolversTest(Neo4jGraphQLTest):
         )
 
 
-class CascadeDeleteTest(Neo4jGraphQLTest):
+class CascadeDeleteTest(Neo4jGraphQLCommunityTest):
     def test_cascade_delete(self):
         ## get aux entities types
         # get contact types
@@ -1446,7 +1462,7 @@ class CascadeDeleteTest(Neo4jGraphQLTest):
         assert result.errors, pformat(result, indent=1)
 
 
-class RoleGroupTest(Neo4jGraphQLTest):
+class RoleGroupTest(Neo4jGraphQLCommunityTest):
     def test_rolegroup(self):
         query = '''
         {
@@ -1506,3 +1522,59 @@ class RoleGroupTest(Neo4jGraphQLTest):
             pformat(no_args_roles, indent=1),
             pformat(args_roles, indent=1)
         )
+
+class CheckExistentOrganizationIdTest(Neo4jGraphQLCommunityTest):
+    def test_check_organization_id(self):
+        # first try and check one that exists
+        nh = self.organization1
+        organization1_id = relay.Node.to_global_id(str(nh.node_type),
+                                            str(nh.handle_id))
+        organization1_orgid = nh.get_node().data.get('organization_id')
+
+        query = '''
+        {{
+          checkExistentOrganizationId(organization_id: "{organization1_orgid}")
+        }}
+        '''.format(organization1_orgid=organization1_orgid)
+
+        expected = {'checkExistentOrganizationId': True}
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '\n{} \n != {}'.format(
+                                            pformat(result.data, indent=1),
+                                            pformat(expected, indent=1)
+                                        )
+
+        # then check that it returns false when the id is passed
+        query = '''
+        {{
+          checkExistentOrganizationId(organization_id: "{organization1_orgid}", id: "{organization1_id}")
+        }}
+        '''.format(organization1_orgid=organization1_orgid, organization1_id=organization1_id)
+
+        expected = {'checkExistentOrganizationId': False}
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '\n{} \n != {}'.format(
+                                            pformat(result.data, indent=1),
+                                            pformat(expected, indent=1)
+                                        )
+
+        # last, check that an organization id that doesn't exists
+        organization1_orgid = "ORG3"
+        query = '''
+        {{
+          checkExistentOrganizationId(organization_id: "{organization1_orgid}")
+        }}
+        '''.format(organization1_orgid=organization1_orgid)
+
+        expected = {'checkExistentOrganizationId': False}
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        assert result.data == expected, '\n{} \n != {}'.format(
+                                            pformat(result.data, indent=1),
+                                            pformat(expected, indent=1)
+                                        )

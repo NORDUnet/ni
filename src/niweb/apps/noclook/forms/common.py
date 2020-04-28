@@ -408,6 +408,7 @@ class NewHostForm(forms.Form):
         self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
 
     name = forms.CharField(help_text="The hostname")
+    description = description_field('host')
     ip_addresses = IPAddrField(help_text="One ip per line", required=False)
     rack_units = forms.IntegerField(required=False,
                                     label='Equipment height',
@@ -648,11 +649,13 @@ class EditEndUserForm(NewEndUserForm):
 class NewProviderForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
 
 
 class EditProviderForm(forms.Form):
     name = forms.CharField()
     url = forms.URLField(required=False, help_text='Link to more information.')
+    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': '120', 'rows': '3'}))
 
 
 class NewServiceForm(forms.Form):

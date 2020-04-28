@@ -17,6 +17,7 @@ class Command(BaseCommand):
     option_organizations = 'organizations'
     option_equipment = 'equipmentcables'
     option_deleteall = 'deleteall'
+    option_progress = 'progress'
     cmd_name = 'datafaker'
 
     def add_arguments(self, parser):
@@ -26,8 +27,14 @@ class Command(BaseCommand):
                     help="Create equipment and cables nodes", type=int, default=0)
         parser.add_argument("-d", "--{}".format(self.option_deleteall), action='store_true',
                     help="BEWARE: This command deletes information in the database")
+        parser.add_argument("-p", "--{}".format(self.option_progress), action='store_true',
+                    help="Show progress bar")
 
     def handle(self, *args, **options):
+        self.show_progress = False
+        if options[self.option_progress]:
+            self.show_progress = True
+
         if options[self.option_deleteall]:
             self.delete_network_nodes()
             return
@@ -35,17 +42,19 @@ class Command(BaseCommand):
         if options[self.option_organizations]:
             numnodes = options[self.option_organizations]
             if numnodes > 0:
-                self.stdout\
-                    .write('Forging fake organizations: {} for each subtype:'\
-                    .format(numnodes))
+                if self.show_progress:
+                    self.stdout\
+                        .write('Forging fake organizations: {} for each subtype:'\
+                        .format(numnodes))
                 self.create_organizations(numnodes)
 
         if options[self.option_equipment]:
             numnodes = options[self.option_equipment]
             if numnodes > 0:
-                self.stdout\
-                    .write('Forging fake equipement & cables: {} for each subtype:'\
-                    .format(numnodes))
+                if self.show_progress:
+                    self.stdout\
+                        .write('Forging fake equipement & cables: {} for each subtype:'\
+                        .format(numnodes))
                 self.create_equipment_cables(numnodes)
 
         return
@@ -109,7 +118,8 @@ class Command(BaseCommand):
                 total_nodes = total_nodes + self.get_node_num(delete_type)
 
             if total_nodes > 0:
-                self.stdout.write('Delete {} nodes:'.format(total_nodes))
+                if self.show_progress:
+                    self.stdout.write('Delete {} nodes:'.format(total_nodes))
                 deleted_nodes = 0
 
                 self.printProgressBar(deleted_nodes, total_nodes)
@@ -158,7 +168,10 @@ class Command(BaseCommand):
         percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
         filledLength = int(length * iteration // total)
         bar = fill * filledLength + '-' * (length - filledLength)
-        self.stdout.write('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), ending = '\r')
+        if self.show_progress:
+            self.stdout.write('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), ending = '\r')
+
         # Print New Line on Complete
         if iteration == total:
-            self.stdout.write('')
+            if self.show_progress:
+                self.stdout.write('')

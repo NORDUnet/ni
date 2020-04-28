@@ -11,7 +11,7 @@ from pprint import pformat
 
 from ..neo4j_base import NeoTestCase
 
-class Neo4jGraphQLTest(NeoTestCase):
+class Neo4jGraphQLCommunityTest(NeoTestCase):
     def test_validators(self):
         # create nodes
         self.organization1 = self.create_node('organization1', 'organization', meta='Logical')
