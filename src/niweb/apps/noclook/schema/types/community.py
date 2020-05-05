@@ -92,7 +92,7 @@ class Organization(NIObjectType, RelationMixin):
     affiliation_partner = NIBooleanField()
     affiliation_host_user = NIBooleanField()
     affiliation_site_owner = NIBooleanField()
-    parent_organization = NIListField(type_args=(lambda: Organization,), rel_name='Parent_of', rel_method='get_relations')
+    parent_organization = NISingleRelationField(field_type=(lambda: Organization), rel_name="Parent_of", rel_method="get_relations")
     contacts = NIListField(type_args=(lambda: Contact,), rel_name='Works_for', rel_method='get_relations')
     contacts_relations = NIRelationListField(rel_name='Works_for', rel_method='get_relations', graphene_type=lambda: Contact)
 
