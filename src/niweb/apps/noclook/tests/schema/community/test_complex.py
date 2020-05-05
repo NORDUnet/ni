@@ -555,6 +555,9 @@ class OrganizationComplexTest(Neo4jGraphQLCommunityTest):
                 }}
                 name
                 description
+                parent_organization{{
+                  id
+                }}
                 addresses{{
                   id
                   name
@@ -699,6 +702,11 @@ class OrganizationComplexTest(Neo4jGraphQLCommunityTest):
         assert created_data['type']['value'] == org_type, \
             "Organization type doesn't match \n{} != {}"\
                 .format(created_data['type']['value'], org_type)
+
+        # check parent organization id
+        assert created_data['parent_organization']['id'] == parent_org_id, \
+            "Organization's parent_organization doesn't match \n{} != {}"\
+                .format(created_data['parent_organization']['id'], parent_org_id)
 
         # check subnodes
         # address
@@ -857,6 +865,9 @@ class OrganizationComplexTest(Neo4jGraphQLCommunityTest):
                 }}
                 name
                 description
+                parent_organization{{
+                  id
+                }}
                 addresses{{
                   id
                   name
@@ -1102,6 +1113,11 @@ class OrganizationComplexTest(Neo4jGraphQLCommunityTest):
         assert updated_data['type']['value'] == org_type, \
             "Organization type doesn't match \n{} != {}"\
                 .format(updated_data['type']['value'], org_type)
+
+        # check parent organization id
+        assert updated_data['parent_organization']['id'] == parent_org_id, \
+            "Organization's parent_organization doesn't match \n{} != {}"\
+                .format(updated_data['parent_organization']['id'], parent_org_id)
 
         # check subnodes (address and contacts)
         address_node_1 = None
