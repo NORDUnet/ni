@@ -9,41 +9,39 @@ from niweb.schema import schema
 from pprint import pformat
 
 class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
-    pass
+    def relation_test(self, node_1_f=None, node_2_f=None, node_1_relfname = None,
+                node_2_relfname = None, type_name=None, by_id_query=None,
+                graphql_attr=None, relation_name=None, relation_maker=None,
+                bind_method_name=None):
 
-
-class Neo4jGraphQLLogicalTest(Neo4jGraphQLMetatypeTest):
-    def part_of(self, logical_f=None, physical_f=None, type_name=None,
-                by_id_query=None, graphql_attr=None, relation_name=None):
-
-        relation_maker = LogicalDataRelationMaker()
-
-        logical_node = logical_f()
-        physical_node = physical_f()
+        node_1 = node_1_f()
+        node_2 = node_2_f()
 
         # check that there's no relation
         # on the backend
-        has_relation = relation_name in logical_node.get_node()._outgoing()
+        relations_1 = getattr(node_1.get_node(), node_1_relfname)()
+        has_relation = relation_name in relations_1
         self.assertFalse(has_relation)
 
-        has_relation = relation_name in physical_node.get_node()._incoming()
+        relations_2 = getattr(node_2.get_node(), node_2_relfname)()
+        has_relation = relation_name in relations_1
         self.assertFalse(has_relation)
 
         # on the graphql api
-        id = relay.Node.to_global_id(type_name, str(logical_node.handle_id))
+        id = relay.Node.to_global_id(type_name, str(node_1.handle_id))
 
         query = """
         {{
           {by_id_query}(id: "{id}"){{
             id
             name
-            part_of{{
+            {graphql_attr}{{
               id
               name
             }}
           }}
         }}
-        """.format(by_id_query=by_id_query, id=id)
+        """.format(by_id_query=by_id_query, id=id, graphql_attr=graphql_attr)
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
@@ -51,14 +49,16 @@ class Neo4jGraphQLLogicalTest(Neo4jGraphQLMetatypeTest):
         self.assertFalse(has_relation)
 
         # add relation
-        relation_maker.add_part_of(logical_node, physical_node)
+        getattr(relation_maker, bind_method_name)(node_1, node_2)
 
         # check that the relation exists now
         # on the backend
-        has_relation = relation_name in logical_node.get_node()._outgoing()
+        relations_1 = getattr(node_1.get_node(), node_1_relfname)()
+        has_relation = relation_name in relations_1
         self.assertTrue(has_relation)
 
-        has_relation = relation_name in physical_node.get_node()._incoming()
+        relations_2 = getattr(node_2.get_node(), node_2_relfname)()
+        has_relation = relation_name in relations_1
         self.assertTrue(has_relation)
 
         # on the graphql api
@@ -67,6 +67,18 @@ class Neo4jGraphQLLogicalTest(Neo4jGraphQLMetatypeTest):
 
         has_relation = result.data[by_id_query][graphql_attr] != None
         self.assertTrue(has_relation)
+
+
+class Neo4jGraphQLLogicalTest(Neo4jGraphQLMetatypeTest):
+    def part_of(self, logical_f=None, physical_f=None, type_name=None,
+                by_id_query=None, graphql_attr=None, relation_name=None):
+        
+        super().relation_test(node_1_f=logical_f, node_2_f=physical_f,
+            node_1_relfname="_outgoing", node_2_relfname="_incoming",
+            type_name=type_name, by_id_query=by_id_query,
+            graphql_attr=graphql_attr, relation_name=relation_name,
+            relation_maker=LogicalDataRelationMaker(),
+            bind_method_name="add_part_of")
 
     def test_part_of(self):
         community_generator = CommunityFakeDataGenerator()
