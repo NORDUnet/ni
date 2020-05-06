@@ -45,7 +45,7 @@ class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        has_relation = result.data[by_id_query][graphql_attr] != None
+        has_relation = True if result.data[by_id_query][graphql_attr] else False
         self.assertFalse(has_relation)
 
         # add relation
@@ -65,14 +65,14 @@ class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        has_relation = result.data[by_id_query][graphql_attr] != None
+        has_relation = True if result.data[by_id_query][graphql_attr] else False
         self.assertTrue(has_relation)
 
 
 class Neo4jGraphQLLogicalTest(Neo4jGraphQLMetatypeTest):
     def part_of(self, logical_f=None, physical_f=None, type_name=None,
                 by_id_query=None, graphql_attr=None, relation_name=None):
-        
+
         super().relation_test(node_1_f=logical_f, node_2_f=physical_f,
             node_1_relfname="_outgoing", node_2_relfname="_incoming",
             type_name=type_name, by_id_query=by_id_query,
@@ -114,7 +114,32 @@ class Neo4jGraphQLRelationTest(Neo4jGraphQLMetatypeTest):
 
 
 class Neo4jGraphQLPhysicalTest(Neo4jGraphQLMetatypeTest):
-    pass
+    def parent(self, physical_f=None, type_name=None,
+                by_id_query=None, graphql_attr=None, relation_name=None):
+
+        super().relation_test(node_1_f=physical_f, node_2_f=physical_f,
+            node_1_relfname="_incoming", node_2_relfname="_outgoing",
+            type_name=type_name, by_id_query=by_id_query,
+            graphql_attr=graphql_attr, relation_name=relation_name,
+            relation_maker=PhysicalDataRelationMaker(),
+            bind_method_name="add_parent")
+
+    def test_parent(self):
+        network_generator = NetworkFakeDataGenerator()
+
+        test_types = (
+            # Port
+            dict(
+                physical_f=network_generator.create_port,
+                type_name='Port',
+                by_id_query='getPortById',
+                graphql_attr='parent',
+                relation_name='Has'
+            ),
+        )
+
+        for type_kwargs in test_types:
+            self.parent(**type_kwargs)
 
 
 class Neo4jGraphQLLocationTest(Neo4jGraphQLMetatypeTest):

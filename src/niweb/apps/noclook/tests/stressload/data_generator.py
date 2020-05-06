@@ -515,7 +515,7 @@ class PhysicalDataRelationMaker(DataRelationMaker):
 
         q = """
             MATCH   (n:Node:Physical {handle_id: {handle_id}}),
-                    (p:Node:Physical {parent_handle_id: {parent_handle_id}})
+                    (p:Node:Physical {handle_id: {parent_handle_id}})
             MERGE (n)<-[r:Has]-(p)
             RETURN n, r, p
             """
