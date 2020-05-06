@@ -478,6 +478,8 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         for key, value in data.items():
             switch.get_node().add_property(key, value)
 
+        return switch
+
 
 class DataRelationMaker:
     def __init__(self):

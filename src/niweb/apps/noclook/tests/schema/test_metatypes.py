@@ -136,6 +136,22 @@ class Neo4jGraphQLPhysicalTest(Neo4jGraphQLMetatypeTest):
                 graphql_attr='parent',
                 relation_name='Has'
             ),
+            # Cable
+            dict(
+                physical_f=network_generator.create_cable,
+                type_name='Cable',
+                by_id_query='getCableById',
+                graphql_attr='parent',
+                relation_name='Has'
+            ),
+            # Router
+            dict(
+                physical_f=network_generator.create_router,
+                type_name='Router',
+                by_id_query='getRouterById',
+                graphql_attr='parent',
+                relation_name='Has'
+            ),
         )
 
         for type_kwargs in test_types:
