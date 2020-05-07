@@ -24,7 +24,7 @@ class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
         self.assertFalse(has_relation)
 
         relations_2 = getattr(node_2.get_node(), node_2_relfname)()
-        has_relation = relation_name in relations_1
+        has_relation = relation_name in relations_2
         self.assertFalse(has_relation)
 
         # on the graphql api
@@ -58,7 +58,7 @@ class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
         self.assertTrue(has_relation)
 
         relations_2 = getattr(node_2.get_node(), node_2_relfname)()
-        has_relation = relation_name in relations_1
+        has_relation = relation_name in relations_2
         self.assertTrue(has_relation)
 
         # on the graphql api
@@ -110,7 +110,34 @@ class Neo4jGraphQLLogicalTest(Neo4jGraphQLMetatypeTest):
 
 
 class Neo4jGraphQLRelationTest(Neo4jGraphQLMetatypeTest):
-    pass
+    def owns(self, relation_f=None, physical_f=None, type_name=None,
+                by_id_query=None, graphql_attr=None, relation_name=None):
+
+        super().relation_test(node_1_f=relation_f, node_2_f=physical_f,
+            node_1_relfname="_outgoing", node_2_relfname="_incoming",
+            type_name=type_name, by_id_query=by_id_query,
+            graphql_attr=graphql_attr, relation_name=relation_name,
+            relation_maker=RelationDataRelationMaker(),
+            bind_method_name="add_owns")
+
+    def test_owns(self):
+        community_generator = CommunityFakeDataGenerator()
+        network_generator = NetworkFakeDataGenerator()
+
+        test_types = (
+            # Organization
+            dict(
+                relation_f=community_generator.create_organization,
+                physical_f=network_generator.create_port,
+                type_name='Organization',
+                by_id_query='getOrganizationById',
+                graphql_attr='owns',
+                relation_name='Owns'
+            ),
+        )
+
+        for type_kwargs in test_types:
+            self.owns(**type_kwargs)
 
 
 class Neo4jGraphQLPhysicalTest(Neo4jGraphQLMetatypeTest):
