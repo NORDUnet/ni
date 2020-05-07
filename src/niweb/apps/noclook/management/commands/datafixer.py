@@ -11,6 +11,7 @@ from time import sleep
 import argparse
 import norduniclient as nc
 import logging
+import random
 import traceback
 import sys
 
@@ -79,22 +80,24 @@ class Command(BaseCommand):
             orgnode = organization.get_node()
             org_type = orgnode.data.get(first_field, None)
 
+            # get the first value as default
+            selected_type = org_types.first()
+
             if org_type:
                 correct_type = org_types.filter(value=org_type).exists()
 
                 if not correct_type:
-                    # get the first value as default
-                    selected_type = org_types.first()
-
                     # check if exist choice with that name
                     if org_types.filter(name__icontains=org_type).exists():
                         selected_type = org_types.filter(name__icontains=org_type).first()
                     elif org_types.filter(value__icontains=org_type).exists():
                         # if not, check if exists with that value
                         selected_type = org_types.filter(value__icontains=org_type).first()
+            else:
+                selected_type = random.choice(org_types)
 
-                    orgnode.remove_property(first_field)
-                    orgnode.add_property(first_field, selected_type.value)
+            orgnode.remove_property(first_field)
+            orgnode.add_property(first_field, selected_type.value)
 
             current_line = current_line + 1
 
