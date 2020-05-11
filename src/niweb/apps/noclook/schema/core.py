@@ -47,6 +47,14 @@ metatype_interfaces = OrderedDict([
     (NIMETA_LOCATION, { 'interface': Location, 'mixin':  LocationMixin, }),
 ])
 
+# association dict between interface and mixin
+subclasses_interfaces = OrderedDict([
+    (Logical, []),
+    (Relation, []),
+    (Physical, []),
+    (Location, []),
+])
+
 class User(DjangoObjectType):
     '''
     The django user type
@@ -55,11 +63,13 @@ class User(DjangoObjectType):
         model = DjangoUser
         only_fields = ['id', 'username', 'first_name', 'last_name', 'email']
 
+
 class UserInputType(graphene.InputObjectType):
     '''
     This object represents an input for an user used in connections
     '''
     username = graphene.String(required=True)
+
 
 class NINodeHandlerType(DjangoObjectType):
     '''
@@ -168,6 +178,7 @@ class NIRelationType(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node, )
 
+
 class DictRelationType(graphene.ObjectType):
     '''
     This type represents an key value pair for a relationship dictionary,
@@ -175,6 +186,7 @@ class DictRelationType(graphene.ObjectType):
     '''
     name = graphene.String(required=True)
     relation = graphene.Field(NIRelationType, required=True)
+
 
 class CommentType(DjangoObjectType):
     '''
@@ -290,11 +302,13 @@ class NIObjectType(DjangoObjectType):
 
         # add meta types interfaces if present
         interfaces = [NINode, ]
-        if hasattr(cls, 'NIMetaType'):
-            ni_metatype = cls.get_from_nimetatype("ni_metatype")
-            if ni_metatype in metatype_interfaces:
-                metatype_interface = metatype_interfaces[ni_metatype]['interface']
-                interfaces.append(metatype_interface)
+        metatype_interface = cls.get_metatype_interface()
+
+        if metatype_interface:
+            interfaces.append(metatype_interface)
+
+            # add also this class to the subclasses list
+            subclasses_interfaces[metatype_interface].append(cls)
 
         options['model'] = NIObjectType._meta.model
         options['interfaces'] = interfaces
@@ -308,6 +322,17 @@ class NIObjectType(DjangoObjectType):
     incoming = graphene.List(DictRelationType)
     outgoing = graphene.List(DictRelationType)
     comments = graphene.List(CommentType)
+
+    @classmethod
+    def get_metatype_interface(cls):
+        metatype_interface = None
+
+        if hasattr(cls, 'NIMetaType'):
+            ni_metatype = cls.get_from_nimetatype("ni_metatype")
+            if ni_metatype in metatype_interfaces:
+                metatype_interface = metatype_interfaces[ni_metatype]['interface']
+
+        return metatype_interface
 
     def resolve_incoming(self, info, **kwargs):
         '''
@@ -1847,38 +1872,106 @@ class CompositeMutation(relay.ClientIDMutation):
         graphql_subtype = getattr(ni_metaclass, 'graphql_subtype', None)
         main_mutation_f = getattr(ni_metaclass, 'main_mutation_f', None)
         secondary_mutation_f = getattr(ni_metaclass, 'secondary_mutation_f', None)
+        include_metafields = getattr(ni_metaclass, 'include_metafields', None)
+        exclude_metafields = getattr(ni_metaclass, 'exclude_metafields', None)
 
-        if main_mutation_f and secondary_mutation_f:
+        # get mandatory input
+        cls_input = getattr(cls, 'Input')
+
+        if not cls_input:
+            raise Exception('{} should define an Input class (it can be empty)')
+
+        # if both are set
+        if exclude_metafields and include_metafields:
+            raise Exception("Only exclude_metafields or include_metafields can"\
+                            " be defined on {} NIMetaClass".format(cls))
+
+        # add main mutation fields if present
+        if main_mutation_f:
             # add metaclass attributes
             ni_metaclass.create_mutation = main_mutation_f.get_create_mutation()
             ni_metaclass.update_mutation = main_mutation_f.get_update_mutation()
 
+            # add payload attributes
+            cls.created = graphene.Field(main_mutation_f.get_create_mutation())
+            cls.updated = graphene.Field(main_mutation_f.get_update_mutation())
+
+            # add regular inputs
+            cls_input.create_input = graphene.Field(main_mutation_f.get_create_mutation().Input)
+            cls_input.update_input = graphene.Field(main_mutation_f.get_update_mutation().Input)
+
+        if secondary_mutation_f:
+            # add metaclass attributes
             ni_metaclass.create_submutation = secondary_mutation_f.get_create_mutation()
             ni_metaclass.update_submutation = secondary_mutation_f.get_update_mutation()
             ni_metaclass.delete_submutation = secondary_mutation_f.get_delete_mutation()
 
-            ni_metaclass.unlink_submutation = DeleteRelationship
-
             # add payload attributes
-            cls.created = graphene.Field(main_mutation_f.get_create_mutation())
-            cls.updated = graphene.Field(main_mutation_f.get_update_mutation())
             cls.subcreated = graphene.List(secondary_mutation_f.get_create_mutation())
             cls.subupdated = graphene.List(secondary_mutation_f.get_update_mutation())
             cls.subdeleted = graphene.List(secondary_mutation_f.get_delete_mutation())
-            cls.unlinked = graphene.List(DeleteRelationship)
 
-            # add input attributes
-            cls_input = getattr(cls, 'Input')
-
-            if not cls_input:
-                raise Exception('{} should define an Input class (it can be empty)')
-
-            cls_input.create_input = graphene.Field(main_mutation_f.get_create_mutation().Input)
-            cls_input.update_input = graphene.Field(main_mutation_f.get_update_mutation().Input)
+            # add regular inputs
             cls_input.create_subinputs = graphene.List(secondary_mutation_f.get_create_mutation().Input)
             cls_input.update_subinputs = graphene.List(secondary_mutation_f.get_update_mutation().Input)
             cls_input.delete_subinputs = graphene.List(secondary_mutation_f.get_delete_mutation().Input)
-            cls_input.unlink_subinputs = graphene.List(DeleteRelationship.Input)
+
+        # add unlink_submutation to metaclass, payload and input
+        # as these are present on every composite mutation
+        ni_metaclass.unlink_submutation = DeleteRelationship
+        cls.unlinked = graphene.List(DeleteRelationship)
+        cls_input.unlink_subinputs = graphene.List(DeleteRelationship.Input)
+
+        # add metatype input fields
+        metatype_interface = graphql_type.get_metatype_interface()
+        avoid_fields = ('__module__', '__doc__', '_meta', 'name', 'with_same_name')
+
+        if metatype_interface:
+            print('\n=={}==\n\n'.format(metatype_interface))
+
+            # go over attributes that aren't in the avoid list
+            # or in the include and exclude params
+            for metafield_name, metafield in metatype_interface.__dict__.items():
+                if metafield_name in avoid_fields:
+                    continue
+
+                if include_metafields and metafield_name not in include_metafields:
+                    continue
+
+                if exclude_metafields and metafield_name in exclude_metafields:
+                    continue
+
+                metafield_interface = None
+                is_list = False
+
+                if isinstance(metafield, graphene.types.field.Field):
+                    metafield_interface = metafield._type
+                elif isinstance(metafield, graphene.types.structures.List):
+                    metafield_interface = metafield._of_type
+                    is_list = True
+
+                # we'll try to resolve the lambda if that's the case
+                try:
+                    metafield_interface = metafield_interface()
+                except:
+                    pass
+
+                # process skip NINode
+                if metafield_interface == NINode:
+                    continue
+
+                # get all types that implement metafield_interface
+                # we need to add a mutation for each one
+                subclass_list = subclasses_interfaces[metafield_interface]
+
+                for a_subclass in subclass_list:
+                    '''print('{}: Add an {} field for each of this: {}\n'\
+                        .format(is_list, metafield_name, a_subclass))'''
+                    pass
+
+                    # add to payload
+                    # add to input
+
 
             setattr(cls, 'Input', cls_input)
 
