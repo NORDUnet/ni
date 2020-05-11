@@ -516,19 +516,7 @@ class DeleteRole(relay.ClientIDMutation):
 ## Composite mutations
 class CompositeGroupMutation(CompositeMutation):
     class Input:
-        create_input = graphene.Field(NIGroupMutationFactory.get_create_mutation().Input)
-        update_input = graphene.Field(NIGroupMutationFactory.get_update_mutation().Input)
-        create_subinputs = graphene.List(NIContactMutationFactory.get_create_mutation().Input)
-        update_subinputs = graphene.List(NIContactMutationFactory.get_update_mutation().Input)
-        delete_subinputs = graphene.List(NIContactMutationFactory.get_delete_mutation().Input)
-        unlink_subinputs = graphene.List(DeleteRelationship.Input)
-
-    created = graphene.Field(NIGroupMutationFactory.get_create_mutation())
-    updated = graphene.Field(NIGroupMutationFactory.get_update_mutation())
-    subcreated = graphene.List(NIContactMutationFactory.get_create_mutation())
-    subupdated = graphene.List(NIContactMutationFactory.get_update_mutation())
-    subdeleted = graphene.List(NIContactMutationFactory.get_delete_mutation())
-    unlinked = graphene.List(DeleteRelationship)
+        pass
 
     @classmethod
     def link_slave_to_master(cls, user, master_nh, slave_nh):
@@ -772,26 +760,12 @@ class RoleRelationMutation(relay.ClientIDMutation):
 
 class CompositeContactMutation(CompositeMutation):
     class Input:
-        create_input = graphene.Field(NIContactMutationFactory.get_create_mutation().Input)
-        update_input = graphene.Field(NIContactMutationFactory.get_update_mutation().Input)
-        create_subinputs = graphene.List(NIEmailMutationFactory.get_create_mutation().Input)
-        update_subinputs = graphene.List(NIEmailMutationFactory.get_update_mutation().Input)
-        delete_subinputs = graphene.List(NIEmailMutationFactory.get_delete_mutation().Input)
-        unlink_subinputs = graphene.List(DeleteRelationship.Input)
-
         create_phones = graphene.List(NIPhoneMutationFactory.get_create_mutation().Input)
         update_phones = graphene.List(NIPhoneMutationFactory.get_update_mutation().Input)
         delete_phones = graphene.List(NIPhoneMutationFactory.get_delete_mutation().Input)
 
         link_rolerelations = graphene.List(RoleRelationMutation.Input)
 
-
-    created = graphene.Field(NIContactMutationFactory.get_create_mutation())
-    updated = graphene.Field(NIContactMutationFactory.get_update_mutation())
-    subcreated = graphene.List(NIEmailMutationFactory.get_create_mutation())
-    subupdated = graphene.List(NIEmailMutationFactory.get_update_mutation())
-    subdeleted = graphene.List(NIEmailMutationFactory.get_delete_mutation())
-    unlinked = graphene.List(DeleteRelationship)
     phones_created = graphene.List(NIPhoneMutationFactory.get_create_mutation())
     phones_updated = graphene.List(NIPhoneMutationFactory.get_update_mutation())
     phones_deleted = graphene.List(NIPhoneMutationFactory.get_delete_mutation())

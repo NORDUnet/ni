@@ -1831,6 +1831,9 @@ class MultipleMutation(relay.ClientIDMutation):
 
 
 class CompositeMutation(relay.ClientIDMutation):
+    class Input:
+        pass
+
     @classmethod
     def __init_subclass_with_meta__(
         cls, **options
@@ -1857,8 +1860,27 @@ class CompositeMutation(relay.ClientIDMutation):
             ni_metaclass.unlink_submutation = DeleteRelationship
 
             # add payload attributes
+            cls.created = graphene.Field(main_mutation_f.get_create_mutation())
+            cls.updated = graphene.Field(main_mutation_f.get_update_mutation())
+            cls.subcreated = graphene.List(secondary_mutation_f.get_create_mutation())
+            cls.subupdated = graphene.List(secondary_mutation_f.get_update_mutation())
+            cls.subdeleted = graphene.List(secondary_mutation_f.get_delete_mutation())
+            cls.unlinked = graphene.List(DeleteRelationship)
 
             # add input attributes
+            cls_input = getattr(cls, 'Input')
+
+            if not cls_input:
+                raise Exception('{} should define an Input class (it can be empty)')
+
+            cls_input.create_input = graphene.Field(main_mutation_f.get_create_mutation().Input)
+            cls_input.update_input = graphene.Field(main_mutation_f.get_update_mutation().Input)
+            cls_input.create_subinputs = graphene.List(secondary_mutation_f.get_create_mutation().Input)
+            cls_input.update_subinputs = graphene.List(secondary_mutation_f.get_update_mutation().Input)
+            cls_input.delete_subinputs = graphene.List(secondary_mutation_f.get_delete_mutation().Input)
+            cls_input.unlink_subinputs = graphene.List(DeleteRelationship.Input)
+
+            setattr(cls, 'Input', cls_input)
 
         super(CompositeMutation, cls).__init_subclass_with_meta__(
             **options
