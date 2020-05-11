@@ -59,6 +59,10 @@ class NIBasicField():
         self.manual_resolver = manual_resolver
         self.type_kwargs     = type_kwargs
 
+    def get_default_value(self):
+        # this will trigger a exception for fields that don't define this method
+        return None
+
     def get_resolver(self, **kwargs):
         field_name = kwargs.get('field_name')
         if not field_name:
@@ -69,7 +73,12 @@ class NIBasicField():
             )
         def resolve_node_value(instance, info, **kwargs):
             node = self.get_inner_node(instance)
-            return node.data.get(field_name)
+            value = node.data.get(field_name)
+
+            if not value and self.type_kwargs.get('required', False):
+                value = self.get_default_value()
+
+            return value
 
         return resolve_node_value
 
@@ -86,7 +95,8 @@ class NIStringField(NIBasicField):
     '''
     String type
     '''
-    pass
+    def get_default_value(self):
+        return ''
 
 class NIIntField(NIBasicField):
     '''
@@ -97,6 +107,9 @@ class NIIntField(NIBasicField):
         super(NIIntField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
 
+    def get_default_value(self):
+        return -1
+
 
 class NIBooleanField(NIBasicField):
     '''
@@ -106,6 +119,9 @@ class NIBooleanField(NIBasicField):
                     type_kwargs=None, **kwargs):
         super(NIBooleanField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
+
+    def get_default_value(self):
+        return False
 
     def get_resolver(self, **kwargs):
         field_name = kwargs.get('field_name')
