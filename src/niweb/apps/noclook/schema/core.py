@@ -1832,6 +1832,39 @@ class MultipleMutation(relay.ClientIDMutation):
 
 class CompositeMutation(relay.ClientIDMutation):
     @classmethod
+    def __init_subclass_with_meta__(
+        cls, **options
+    ):
+        '''
+        In this method we'll build the default inputs for a composite mutation
+        '''
+        # get types and mutation factories
+        ni_metaclass = getattr(cls, 'NIMetaClass')
+        graphql_type = getattr(ni_metaclass, 'graphql_type', None)
+        graphql_subtype = getattr(ni_metaclass, 'graphql_subtype', None)
+        main_mutation_f = getattr(ni_metaclass, 'main_mutation_f', None)
+        secondary_mutation_f = getattr(ni_metaclass, 'secondary_mutation_f', None)
+
+        if main_mutation_f and secondary_mutation_f:
+            # add metaclass attributes
+            ni_metaclass.create_mutation = main_mutation_f.get_create_mutation()
+            ni_metaclass.update_mutation = main_mutation_f.get_update_mutation()
+
+            ni_metaclass.create_submutation = secondary_mutation_f.get_create_mutation()
+            ni_metaclass.update_submutation = secondary_mutation_f.get_update_mutation()
+            ni_metaclass.delete_submutation = secondary_mutation_f.get_delete_mutation()
+
+            ni_metaclass.unlink_submutation = DeleteRelationship
+
+            # add payload attributes
+
+            # add input attributes
+
+        super(CompositeMutation, cls).__init_subclass_with_meta__(
+            **options
+        )
+
+    @classmethod
     def get_link_kwargs(cls, master_input, slave_input):
         return {}
 

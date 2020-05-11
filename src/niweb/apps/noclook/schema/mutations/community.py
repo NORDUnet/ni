@@ -535,14 +535,10 @@ class CompositeGroupMutation(CompositeMutation):
         helpers.set_member_of(user, slave_nh.get_node(), master_nh.handle_id)
 
     class NIMetaClass:
-        create_mutation = NIGroupMutationFactory.get_create_mutation()
-        update_mutation = NIGroupMutationFactory.get_update_mutation()
-        create_submutation = NIContactMutationFactory.get_create_mutation()
-        update_submutation = NIContactMutationFactory.get_update_mutation()
-        delete_submutation = NIContactMutationFactory.get_delete_mutation()
-        unlink_submutation = DeleteRelationship
         graphql_type = Group
         graphql_subtype = Contact
+        main_mutation_f = NIGroupMutationFactory
+        secondary_mutation_f = NIContactMutationFactory
         context = sriutils.get_community_context()
 
 
@@ -883,16 +879,12 @@ class CompositeContactMutation(CompositeMutation):
                     rolerelations=ret_rolerelations)
 
     class NIMetaClass:
-        create_mutation = NIContactMutationFactory.get_create_mutation()
-        update_mutation = NIContactMutationFactory.get_update_mutation()
-        create_submutation = NIEmailMutationFactory.get_create_mutation()
-        update_submutation = NIEmailMutationFactory.get_update_mutation()
-        delete_submutation = NIEmailMutationFactory.get_delete_mutation()
-        unlink_submutation = DeleteRelationship
         phones_created = NIPhoneMutationFactory.get_create_mutation()
         phones_updated = NIPhoneMutationFactory.get_update_mutation()
         phones_deleted = NIPhoneMutationFactory.get_delete_mutation()
         rolerelation_mutation = RoleRelationMutation
         graphql_type = Contact
         graphql_subtype = Email
+        main_mutation_f = NIContactMutationFactory
+        secondary_mutation_f = NIEmailMutationFactory
         context = sriutils.get_community_context()
