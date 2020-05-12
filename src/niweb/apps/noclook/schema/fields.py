@@ -74,8 +74,12 @@ class NIBasicField():
         def resolve_node_value(instance, info, **kwargs):
             node = self.get_inner_node(instance)
             value = node.data.get(field_name)
+            is_required = False
 
-            if not value and self.type_kwargs.get('required', False):
+            if self.type_kwargs and self.type_kwargs.get('required', False):
+                is_required = True
+
+            if value == None and is_required:
                 value = self.get_default_value()
 
             return value
@@ -134,7 +138,7 @@ class NIBooleanField(NIBasicField):
         def resolve_node_value(instance, info, **kwargs):
             possible_value = self.get_inner_node(instance).data.get(field_name)
             if possible_value == None:
-                possible_value = False
+                possible_value = self.get_default_value()
 
             return possible_value
 
@@ -187,6 +191,9 @@ class NIListField(NIBasicField):
         self.rel_name        = rel_name
         self.rel_method      = rel_method
         self.not_null_list   = not_null_list
+
+    def get_default_value(self):
+        return []
 
     def get_resolver(self, **kwargs):
         rel_name   = kwargs.get('rel_name')
