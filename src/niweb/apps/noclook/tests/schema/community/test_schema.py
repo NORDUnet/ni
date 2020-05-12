@@ -1578,3 +1578,37 @@ class CheckExistentOrganizationIdTest(Neo4jGraphQLCommunityTest):
                                             pformat(result.data, indent=1),
                                             pformat(expected, indent=1)
                                         )
+
+
+class EmptyCommunityDataTest(Neo4jGraphQLCommunityTest):
+    def test_contact_empty_first_name(self):
+        # remove first_name from contact1
+        c1_node = self.contact1.get_node()
+        c1_node.remove_property('first_name')
+
+        contact_1_id = relay.Node.to_global_id(str(self.contact1.node_type),
+                                            str(self.contact1.handle_id))
+
+        # do a simple contact query and check that there's no errors
+        query = """
+        {{
+          getContactById(id: "{contact_1_id}"){{
+            id
+            first_name
+          }}
+        }}
+        """.format(contact_1_id=contact_1_id)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected = {
+            'getContactById': {
+                'id': contact_1_id,
+                'first_name': '',
+            }
+        }
+
+        assert result.data == expected, '{} \n != {}'.format(
+                                            pformat(result.data, indent=1),
+                                            pformat(expected, indent=1)
+                                        )
