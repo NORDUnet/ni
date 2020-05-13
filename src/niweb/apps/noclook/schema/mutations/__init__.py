@@ -5,6 +5,7 @@ from .common import *
 from .community import *
 from .network import *
 
+from .composite.community import *
 
 class NOCRootMutation(graphene.ObjectType):
     ## Community mutations
