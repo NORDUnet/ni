@@ -426,6 +426,11 @@ class NIOrganizationMutationFactory(NIMutationFactory):
     class Meta:
         abstract = False
 
+## add the create and update manual mutations for Organization
+## before its composite mutation is built, and after its factory is built
+Organization.set_create_mutation(CreateOrganization)
+Organization.set_update_mutation(UpdateOrganization)
+
 
 class CreateRole(DjangoModelFormMutation):
     @classmethod
