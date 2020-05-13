@@ -313,6 +313,11 @@ class NIObjectType(DjangoObjectType):
         options['model'] = NIObjectType._meta.model
         options['interfaces'] = interfaces
 
+        # init mutations inner attributes (to be filled by the mutation factory)
+        setattr(cls, 'create_mutation', None)
+        setattr(cls, 'update_mutation', None)
+        setattr(cls, 'delete_mutation', None)
+
         super(NIObjectType, cls).__init_subclass_with_meta__(
             **options
         )
@@ -385,6 +390,30 @@ class NIObjectType(DjangoObjectType):
             context_resolver = sriutils.get_default_context
 
         return context_resolver()
+
+    @classmethod
+    def get_create_mutation(cls):
+        return cls.create_mutation
+
+    @classmethod
+    def set_create_mutation(cls, create_mutation):
+        cls.create_mutation = create_mutation
+
+    @classmethod
+    def get_update_mutation(cls):
+        return cls.update_mutation
+
+    @classmethod
+    def set_update_mutation(cls, update_mutation):
+        cls.update_mutation = update_mutation
+
+    @classmethod
+    def get_delete_mutation(cls):
+        return cls.delete_mutation
+
+    @classmethod
+    def set_delete_mutation(cls, delete_mutation):
+        cls.delete_mutation = delete_mutation
 
     @classmethod
     def get_filter_input_fields(cls):
@@ -1927,8 +1956,6 @@ class CompositeMutation(relay.ClientIDMutation):
         avoid_fields = ('__module__', '__doc__', '_meta', 'name', 'with_same_name')
 
         if metatype_interface:
-            print('\n=={}==\n\n'.format(metatype_interface))
-
             # go over attributes that aren't in the avoid list
             # or in the include and exclude params
             for metafield_name, metafield in metatype_interface.__dict__.items():
@@ -1965,13 +1992,68 @@ class CompositeMutation(relay.ClientIDMutation):
                 subclass_list = subclasses_interfaces[metafield_interface]
 
                 for a_subclass in subclass_list:
-                    '''print('{}: Add an {} field for each of this: {}\n'\
-                        .format(is_list, metafield_name, a_subclass))'''
-                    pass
+                    # get mutations for each attribute
+                    create_mutation = graphql_type.get_create_mutation()
+                    update_mutation = graphql_type.get_update_mutation()
+                    delete_mutation = graphql_type.get_delete_mutation()
 
-                    # add to payload
-                    # add to input
+                    # payload names
+                    name_prefix = '{}_{}'.format(
+                        metafield_name, graphql_type.__name__.lower())
+                    created_name = '{}_created'.format(name_prefix)
+                    updated_name = '{}_updated'.format(name_prefix)
+                    deleted_name = '{}_deleted'.format(name_prefix)
 
+                    # get inputs for each input attribute
+                    # input names
+                    create_name = 'create_{}'.format(name_prefix)
+                    update_name = 'update_{}'.format(name_prefix)
+                    delete_name = 'deleted_{}'.format(name_prefix)
+
+                    if create_mutation:
+                        # add to payload
+                        payload_field = graphene.Field(create_mutation)
+                        if is_list:
+                            payload_field = graphene.List(create_mutation)
+
+                        setattr(cls, created_name, payload_field)
+
+                        # add to input
+                        input_field = graphene.Field(create_mutation.Input)
+                        if is_list:
+                            input_field = graphene.List(create_mutation.Input)
+
+                        setattr(cls_input, create_name, input_field)
+
+                    if update_mutation:
+                        # add to payload
+                        payload_field = graphene.Field(update_mutation)
+                        if is_list:
+                            payload_field = graphene.List(update_mutation)
+
+                        setattr(cls, updated_name, payload_field)
+
+                        # add to input
+                        input_field = graphene.Field(update_mutation.Input)
+                        if is_list:
+                            input_field = graphene.List(update_mutation.Input)
+
+                        setattr(cls_input, update_name, input_field)
+
+                    if delete_mutation:
+                        # add to payload
+                        payload_field = graphene.Field(delete_mutation)
+                        if is_list:
+                            payload_field = graphene.List(delete_mutation)
+
+                        setattr(cls, deleted_name, payload_field)
+
+                        # add to input
+                        input_field = graphene.Field(delete_mutation.Input)
+                        if is_list:
+                            input_field = graphene.List(delete_mutation.Input)
+
+                        setattr(cls_input, delete_name, input_field)
 
             setattr(cls, 'Input', cls_input)
 
@@ -2230,6 +2312,8 @@ class NIMutationFactory():
         else:
             cls._create_mutation = manual_create
 
+        graphql_type.set_create_mutation(cls._create_mutation)
+
         class_name = 'Update{}'.format(mutation_name_cc)
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
@@ -2251,6 +2335,8 @@ class NIMutationFactory():
             )
         else:
             cls._update_mutation = manual_update
+
+        graphql_type.set_update_mutation(cls._update_mutation)
 
         class_name = 'Delete{}'.format(mutation_name_cc)
         del attr_dict['django_form']
@@ -2278,6 +2364,8 @@ class NIMutationFactory():
                 metaclass_name: delete_metaclass,
             },
         )
+
+        graphql_type.set_delete_mutation(cls._delete_mutation)
 
         # make multiple mutation
         class_name = 'Multiple{}'.format(mutation_name_cc)
