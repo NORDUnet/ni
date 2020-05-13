@@ -1993,13 +1993,13 @@ class CompositeMutation(relay.ClientIDMutation):
 
                 for a_subclass in subclass_list:
                     # get mutations for each attribute
-                    create_mutation = graphql_type.get_create_mutation()
-                    update_mutation = graphql_type.get_update_mutation()
-                    delete_mutation = graphql_type.get_delete_mutation()
+                    create_mutation = a_subclass.get_create_mutation()
+                    update_mutation = a_subclass.get_update_mutation()
+                    delete_mutation = a_subclass.get_delete_mutation()
 
                     # payload names
                     name_prefix = '{}_{}'.format(
-                        metafield_name, graphql_type.__name__.lower())
+                        metafield_name, a_subclass.__name__.lower())
                     created_name = '{}_created'.format(name_prefix)
                     updated_name = '{}_updated'.format(name_prefix)
                     deleted_name = '{}_deleted'.format(name_prefix)
