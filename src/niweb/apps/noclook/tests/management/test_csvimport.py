@@ -6,7 +6,7 @@ import norduniclient as nc
 from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 import norduniclient.models as ncmodels
 
-from apps.noclook.models import NodeHandle, NodeType, User, Role, DEFAULT_ROLE_KEY
+from apps.noclook.models import NodeHandle, NodeType, NodeHandleContext, User, Role, DEFAULT_ROLE_KEY
 import apps.noclook.vakt.rules as srirules
 import apps.noclook.vakt.utils as sriutils
 
@@ -424,6 +424,66 @@ class CsvImportTest(NeoTestCase):
             org_id_val = organization.get_node().data.get(new_field1, None)
             self.assertIsNotNone(org_id_val)
 
+
+    def test_fix_community_context(self):
+        # call csvimport command (verbose 0) to import test organizations
+        call_command(
+            self.cmd_name,
+            organizations=self.organizations_file,
+            verbosity=0,
+        )
+
+        # and contacts
+        call_command(
+            self.cmd_name,
+            contacts=self.contacts_file,
+            verbosity=0,
+        )
+
+        # get types and contexts
+        com_ctx = sriutils.get_community_context()
+
+        email_type = NodeType.objects.get(type="Email")
+        phone_type = NodeType.objects.get(type="Phone")
+        address_type = NodeType.objects.get(type="Address")
+
+        all_emails = NodeHandle.objects.filter(node_type=email_type)
+        all_phones = NodeHandle.objects.filter(node_type=phone_type)
+        all_address = NodeHandle.objects.filter(node_type=address_type)
+
+        # delete context from all these nodes
+        NodeHandleContext.objects.filter(
+            context=com_ctx, nodehandle__in=all_emails).delete()
+        NodeHandleContext.objects.filter(
+            context=com_ctx, nodehandle__in=all_phones).delete()
+        NodeHandleContext.objects.filter(
+            context=com_ctx, nodehandle__in=all_emails).delete()
+
+        # fix it
+        call_command(
+            self.cmd_name,
+            contextfix=True,
+            verbosity=0,
+        )
+
+        # check that every node have a context
+        comm_emails_num = NodeHandleContext.objects.filter(
+            context=com_ctx, nodehandle__in=all_emails).count()
+        emails_num = all_emails.count()
+
+        self.assertEqual(comm_emails_num, emails_num)
+
+        comm_phones_num = NodeHandleContext.objects.filter(
+            context=com_ctx, nodehandle__in=all_phones).count()
+        phones_num = all_phones.count()
+
+        self.assertEqual(comm_phones_num, phones_num)
+
+        comm_address_num = NodeHandleContext.objects.filter(
+            context=com_ctx, nodehandle__in=all_address).count()
+        address_num = all_address.count()
+
+        self.assertEqual(comm_address_num, address_num)
 
     def write_string_to_disk(self, string):
         # get random file

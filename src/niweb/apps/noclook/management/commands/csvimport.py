@@ -23,7 +23,7 @@ class Command(BaseCommand):
 
     def add_community_context(self, nh):
         com_ctx = sriutils.get_community_context()
-        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
+        NodeHandleContext.objects.get_or_create(nodehandle=nh, context=com_ctx)[0]
 
     def add_arguments(self, parser):
         parser.add_argument("-o", "--organizations", help="organizations CSV file",
@@ -42,6 +42,8 @@ class Command(BaseCommand):
                     action='store_true', help="move organizations' website back from address")
         parser.add_argument("-r", "--reorgprops",
                     action='store_true', help="rename organization properties")
+        parser.add_argument("-C", "--contextfix",
+                    action='store_true', help="add community context to address, phone and email")
         parser.add_argument('-d', "--delimiter", nargs='?', default=';',
                             help='Delimiter to use use. Default ";".')
 
@@ -61,14 +63,19 @@ class Command(BaseCommand):
             self.fix_organizations_address()
             return
 
-        # check if the addressfix option has been called, do it and exit
+        # check if the movewebsite option has been called, do it and exit
         if options['movewebsite']:
             self.fix_website_field()
             return
 
-        # check if the addressfix option has been called, do it and exit
+        # check if the reorgprops option has been called, do it and exit
         if options['reorgprops']:
             self.fix_organizations_fields()
+            return
+
+        # check if the reorgprops option has been called, do it and exit
+        if options['contextfix']:
+            self.fix_community_context()
             return
 
         relation_meta_type = 'Relation'
@@ -416,7 +423,11 @@ class Command(BaseCommand):
 
     def fix_website_field(self):
         self.user = get_user()
+
         address_type = NodeType.objects.get_or_create(type='Address', slug='address', hidden=True)[0] # address
+        address_type.hidden = True
+        address_type.save()
+
         organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
         all_organizations = NodeHandle.objects.filter(node_type=organization_type)
 
@@ -456,6 +467,52 @@ class Command(BaseCommand):
             if org_id_val:
                 orgnode.remove_property(old_field1)
                 orgnode.add_property(new_field1, org_id_val)
+
+    def fix_community_context(self):
+        com_ctx = sriutils.get_community_context()
+
+        organization_type = NodeType.objects.get(type="Organization")
+        contact_type = NodeType.objects.get(type="Contact")
+        email_type = NodeType.objects.get(type="Email")
+        phone_type = NodeType.objects.get(type="Phone")
+        address_type = NodeType.objects.get(type="Address")
+
+        all_contacts = NodeHandle.objects.filter(node_type=contact_type)
+        community_contacts = NodeHandleContext.objects.filter(
+            context=com_ctx, nodehandle__in=all_contacts)
+
+        # add ctx to contacts' phones and emails
+        for com_contact in community_contacts:
+            contact = com_contact.nodehandle
+            contact_node = contact.get_node()
+
+            relations = contact_node.get_outgoing_relations()
+            relation_keys = list(relations.keys())
+
+            self.add_subentity_to_community(relations, 'Has_phone')
+            self.add_subentity_to_community(relations, 'Has_email')
+
+        all_organizations = NodeHandle.objects.filter(node_type=organization_type)
+        community_organizations = NodeHandleContext.objects.filter(
+            context=com_ctx, nodehandle__in=all_organizations)
+
+        for com_organization in community_organizations:
+            organization = com_organization.nodehandle
+            organizationt_node = organization.get_node()
+
+            relations = organizationt_node.get_outgoing_relations()
+            relation_keys = list(relations.keys())
+
+            self.add_subentity_to_community(relations, 'Has_address')
+
+    def add_subentity_to_community(self, relations, relation_key):
+        relation_keys = list(relations.keys())
+
+        if relation_key in relation_keys:
+            for node_rel in relations[relation_key]:
+                node = node_rel['node']
+                nh = NodeHandle.objects.get(handle_id=node.handle_id)
+                self.add_community_context(nh)
 
     def count_lines(self, file):
         '''
