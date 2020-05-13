@@ -7,6 +7,8 @@ from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 import norduniclient.models as ncmodels
 
 from apps.noclook.models import NodeHandle, NodeType, User, Role, DEFAULT_ROLE_KEY
+import apps.noclook.vakt.rules as srirules
+import apps.noclook.vakt.utils as sriutils
 
 from ..neo4j_base import NeoTestCase
 from .fileutils import write_string_to_disk
@@ -182,6 +184,12 @@ class CsvImportTest(NeoTestCase):
         has_phone = 'phone' in address_node.data
         self.assertTrue(has_phone)
 
+        # check address has the community context
+        address_nh = NodeHandle.objects.get(handle_id=address_node.handle_id)
+        com_ctx = sriutils.get_community_context()
+        rule = srirules.BelongsContext(com_ctx)
+        self.assertTrue(rule.satisfied(address_nh))
+
     def test_fix_emails_phones(self):
         # call csvimport command (verbose 0) to import test contacts
         call_command(
@@ -269,11 +277,23 @@ class CsvImportTest(NeoTestCase):
             check_phone = test_dict['phone'][phone_type]
             self.assertEquals(check_phone, phone_node.data['name'])
 
+            # check phone has the community context
+            phone_nh = NodeHandle.objects.get(handle_id=phone_node.handle_id)
+            com_ctx = sriutils.get_community_context()
+            rule = srirules.BelongsContext(com_ctx)
+            self.assertTrue(rule.satisfied(phone_nh))
+
         for email_rel in relations['Has_email']:
             email_node = email_rel['node']
             email_type = email_node.data['type']
             check_email = test_dict['email'][email_type]
             self.assertEquals(check_email, email_node.data['name'])
+
+            # check phone has the community context
+            email_nh = NodeHandle.objects.get(handle_id=email_node.handle_id)
+            com_ctx = sriutils.get_community_context()
+            rule = srirules.BelongsContext(com_ctx)
+            self.assertTrue(rule.satisfied(email_nh))
 
     def test_secroles_import(self):
         # call csvimport command (verbose 0)

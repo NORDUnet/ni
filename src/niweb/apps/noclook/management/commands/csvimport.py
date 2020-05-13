@@ -2,12 +2,13 @@
 __author__ = 'ffuentes'
 
 from apps.noclook import helpers
-from apps.noclook.models import User, NodeType, NodeHandle, Role, Dropdown, NODE_META_TYPE_CHOICES, DEFAULT_ROLE_KEY
+from apps.noclook.models import User, NodeType, NodeHandle, NodeHandleContext, Role, Dropdown, NODE_META_TYPE_CHOICES, DEFAULT_ROLE_KEY
 from apps.nerds.lib.consumer_util import get_user
 from django.core.management.base import BaseCommand, CommandError
 from pprint import pprint
 from time import sleep
 
+import apps.noclook.vakt.utils as sriutils
 import argparse
 import norduniclient as nc
 import logging
@@ -19,6 +20,10 @@ logger = logging.getLogger('noclook.management.csvimport')
 class Command(BaseCommand):
     help = 'Imports csv files from Salesforce'
     new_types = ['Organization', 'Procedure', 'Contact', 'Group', 'Role']
+
+    def add_community_context(self, nh):
+        com_ctx = sriutils.get_community_context()
+        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
 
     def add_arguments(self, parser):
         parser.add_argument("-o", "--organizations", help="organizations CSV file",
@@ -352,6 +357,7 @@ class Command(BaseCommand):
                         creator=self.user,
                         modifier=self.user,
                     )[0]
+                    self.add_community_context(new_phone)
                     contact_node.add_phone(new_phone.handle_id)
                     contact_node.remove_property(old_phone_field)
                     new_phone.get_node().add_property('type', assigned_type)
@@ -367,6 +373,7 @@ class Command(BaseCommand):
                         creator=self.user,
                         modifier=self.user,
                     )[0]
+                    self.add_community_context(new_email)
                     contact_node.add_email(new_email.handle_id)
                     contact_node.remove_property(old_email_field)
                     new_email.get_node().add_property('type', assigned_type)
@@ -399,6 +406,8 @@ class Command(BaseCommand):
                     creator=self.user,
                     modifier=self.user,
                 )[0]
+
+                self.add_community_context(new_address)
 
                 new_address.get_node().add_property(phone_field, old_phone)
                 organization_node.remove_property(phone_field)
