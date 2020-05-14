@@ -2,11 +2,14 @@
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 
 from apps.noclook.models import NodeType, NodeHandle, Role
 from apps.noclook.views.helpers import Table, TableRow
 from apps.noclook.helpers import get_node_urls, neo4j_data_age
 import norduniclient as nc
+
+from . import detail
 
 __author__ = 'lundberg'
 
@@ -683,11 +686,6 @@ def list_sites(request):
                   {'table': table, 'name': 'Sites', 'urls': urls})
 
 def _organization_table(org, parent_orgs):
-    organization_link = {
-            'url': u'/organization/{}/'.format(org.get('handle_id')),
-            'name': u'{}'.format(org.get('name', ''))
-            }
-
     parent_org_link = ''
 
     parent_links = []
@@ -700,7 +698,7 @@ def _organization_table(org, parent_orgs):
             parent_links.append(parent_org_link)
 
     name = org.get('organization_id')
-    row = TableRow(organization_link, parent_links)
+    row = TableRow(org, parent_links)
     return row
 
 @login_required
@@ -738,15 +736,17 @@ def list_organizations(request):
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'Organizations', 'urls': urls})
 
-def _contact_table(con, org_name):
+def _contact_table(con, con_name):
+    contact_handle_id = con.get('handle_id')
+    url = reverse(detail.contact_detail, kwargs=dict(handle_id=contact_handle_id))
     contact_link = {
-            'url': u'/contact/{}/'.format(con.get('handle_id')),
+            'url': url,
             'name': u'{}'.format(con.get('name', ''))
             }
-    if not org_name:
-        org_name = ''
+    if not con_name:
+        con_name = ''
 
-    row = TableRow(contact_link, org_name)
+    row = TableRow(contact_link, con_name)
     return row
 
 @login_required
@@ -790,8 +790,9 @@ def list_contacts(request):
                   {'table': table, 'name': 'Contacts', 'urls': urls})
 
 def _role_table(role):
+    url = reverse(detail.role_detail, kwargs=dict(handle_id=role.handle_id))
     role_link = {
-        'url': u'/role/{}/'.format(role.handle_id),
+        'url': url,
         'name': u'{}'.format(role.name)
     }
     return TableRow(role_link, role.description)
