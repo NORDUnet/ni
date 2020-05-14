@@ -7,6 +7,7 @@ from norduniclient.exceptions import UniqueNodeError, NodeNotFound
 import norduniclient.models as ncmodels
 
 from apps.noclook.models import NodeHandle, NodeType, NodeHandleContext, User, Role, DEFAULT_ROLE_KEY
+from apps.noclook.management.commands.csvimport import Command as CSVCommand
 import apps.noclook.vakt.rules as srirules
 import apps.noclook.vakt.utils as sriutils
 
@@ -443,9 +444,10 @@ class CsvImportTest(NeoTestCase):
         # get types and contexts
         com_ctx = sriutils.get_community_context()
 
-        email_type = NodeType.objects.get(type="Email")
-        phone_type = NodeType.objects.get(type="Phone")
-        address_type = NodeType.objects.get(type="Address")
+        csvcommand = CSVCommand()
+        email_type = csvcommand.get_nodetype(type='Email', slug='email', hidden=True)
+        phone_type = csvcommand.get_nodetype(type='Phone', slug='phone', hidden=True)
+        address_type = csvcommand.get_nodetype(type='Address', slug='address', hidden=True)
 
         all_emails = NodeHandle.objects.filter(node_type=email_type)
         all_phones = NodeHandle.objects.filter(node_type=phone_type)

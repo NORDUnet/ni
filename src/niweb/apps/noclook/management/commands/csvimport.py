@@ -25,6 +25,15 @@ class Command(BaseCommand):
         com_ctx = sriutils.get_community_context()
         NodeHandleContext.objects.get_or_create(nodehandle=nh, context=com_ctx)[0]
 
+    def get_nodetype(self, type, slug, hidden=False):
+        node_type = NodeType.objects.get_or_create(type=type, slug=slug)[0]
+
+        if hidden:
+            node_type.hidden = True
+            node_type.save()
+
+        return node_type
+
     def add_arguments(self, parser):
         parser.add_argument("-o", "--organizations", help="organizations CSV file",
                     type=argparse.FileType('r'))
@@ -337,16 +346,11 @@ class Command(BaseCommand):
             raise Exception('Work/Personal values are not available for the \
                                 Email/phone dropdown types')
 
-        contact_type = NodeType.objects.get_or_create(type='Contact', slug='contact')[0]
+        contact_type = self.get_nodetype(type='Contact', slug='contact')
 
         # set hidden types
-        email_type = NodeType.objects.get_or_create(type='Email', slug='email')[0]
-        email_type.hidden = True
-        email_type.save()
-
-        phone_type = NodeType.objects.get_or_create(type='Phone', slug='phone')[0]
-        phone_type.hidden = True
-        phone_type.save()
+        email_type = self.get_nodetype(type='Email', slug='email', hidden=True)
+        phone_type = self.get_nodetype(type='Phone', slug='phone', hidden=True)
 
         all_contacts = NodeHandle.objects.filter(node_type=contact_type)
 
@@ -387,12 +391,8 @@ class Command(BaseCommand):
 
     def fix_organizations_address(self):
         self.user = get_user()
-        address_type = NodeType.objects.get_or_create(type='Address', slug='address')[0] # address
-        # set it to hidden
-        address_type.hidden=True
-        address_type.save()
-
-        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
+        address_type = self.get_nodetype(type='Address', slug='address', hidden=True)
+        organization_type = self.get_nodetype(type='Organization', slug='organization')
         all_organizations = NodeHandle.objects.filter(node_type=organization_type)
         logical_meta_type = 'Logical'
 
@@ -424,11 +424,8 @@ class Command(BaseCommand):
     def fix_website_field(self):
         self.user = get_user()
 
-        address_type = NodeType.objects.get_or_create(type='Address', slug='address', hidden=True)[0] # address
-        address_type.hidden = True
-        address_type.save()
-
-        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
+        address_type = self.get_nodetype(type='Address', slug='address', hidden=True)
+        organization_type = self.get_nodetype(type='Organization', slug='organization')
         all_organizations = NodeHandle.objects.filter(node_type=organization_type)
 
         website_field = 'website'
@@ -455,7 +452,7 @@ class Command(BaseCommand):
 
     def fix_organizations_fields(self):
         self.user = get_user()
-        organization_type = NodeType.objects.get_or_create(type='Organization', slug='organization')[0] # organization
+        organization_type = self.get_nodetype(type='Organization', slug='organization')
         all_organizations = NodeHandle.objects.filter(node_type=organization_type)
 
         old_field1 = 'customer_id'
@@ -471,11 +468,11 @@ class Command(BaseCommand):
     def fix_community_context(self):
         com_ctx = sriutils.get_community_context()
 
-        organization_type = NodeType.objects.get(type="Organization")
-        contact_type = NodeType.objects.get(type="Contact")
-        email_type = NodeType.objects.get(type="Email")
-        phone_type = NodeType.objects.get(type="Phone")
-        address_type = NodeType.objects.get(type="Address")
+        organization_type = self.get_nodetype(type='Organization', slug='organization')
+        contact_type = self.get_nodetype(type='Contact', slug='contact')
+        email_type = self.get_nodetype(type='Email', slug='email', hidden=True)
+        phone_type = self.get_nodetype(type='Phone', slug='phone', hidden=True)
+        address_type = self.get_nodetype(type='Address', slug='address', hidden=True)
 
         all_contacts = NodeHandle.objects.filter(node_type=contact_type)
         community_contacts = NodeHandleContext.objects.filter(
