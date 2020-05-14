@@ -2125,7 +2125,7 @@ class CompositeMutation(relay.ClientIDMutation):
         main_input = create_input if create else update_input
 
         # extract handle_id from the returned payload
-        extract_param = graphql_type.get_from_nimetatype('ni_type').lower()
+        extract_param = AbstractNIMutation.get_returntype_name(graphql_type)
         main_nh = getattr(main_ret, extract_param, None)
         main_handle_id = None
 
@@ -2144,7 +2144,7 @@ class CompositeMutation(relay.ClientIDMutation):
             update_subinputs = input.get("update_subinputs")
             delete_subinputs = input.get("delete_subinputs")
             unlink_subinputs = input.get("unlink_subinputs")
-            
+
             create_submutation = getattr(nimetaclass, 'create_submutation', None)
             update_submutation = getattr(nimetaclass, 'update_submutation', None)
             delete_submutation = getattr(nimetaclass, 'delete_submutation', None)
