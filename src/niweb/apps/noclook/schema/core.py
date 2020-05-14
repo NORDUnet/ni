@@ -1365,7 +1365,8 @@ class AbstractNIMutation(relay.ClientIDMutation):
         )
 
     @classmethod
-    def get_returntype_name(cls, graphql_typename):
+    def get_returntype_name(cls, graphql_type):
+        graphql_typename = graphql_type.__name__
         fmt_name = graphql_typename[0].lower() + graphql_typename[1:]
 
         return fmt_name
@@ -1373,7 +1374,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
     @classmethod
     def add_return_type(cls, graphql_type):
         if graphql_type:
-            payload_name = cls.get_returntype_name(graphql_type.__name__)
+            payload_name = cls.get_returntype_name(graphql_type)
 
             setattr(cls, payload_name, graphene.Field(graphql_type))
 
@@ -1692,7 +1693,7 @@ class CreateNIMutation(AbstractNIMutation):
                 nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
                 cls.process_subentities(request, form, nodehandler, context)
 
-            return has_error, { cls.get_returntype_name(graphql_type.__name__): nh }
+            return has_error, { cls.get_returntype_name(graphql_type): nh }
         else:
             # get the errors and return them
             has_error = True
@@ -1769,7 +1770,7 @@ class UpdateNIMutation(AbstractNIMutation):
                 # process subentities if implemented
                 cls.process_subentities(request, form, nodehandler, context)
 
-                return has_error, { cls.get_returntype_name(graphql_type.__name__): nh }
+                return has_error, { cls.get_returntype_name(graphql_type): nh }
             else:
                 has_error = True
                 errordict = cls.format_error_array(form.errors)
@@ -2139,17 +2140,17 @@ class CompositeMutation(relay.ClientIDMutation):
 
         # if everything went fine, proceed with the subentity list
         if main_handle_id and not errors:
-            extract_param = graphql_subtype.get_from_nimetatype('ni_type').lower()
-
             create_subinputs = input.get("create_subinputs")
             update_subinputs = input.get("update_subinputs")
             delete_subinputs = input.get("delete_subinputs")
             unlink_subinputs = input.get("unlink_subinputs")
-
+            
             create_submutation = getattr(nimetaclass, 'create_submutation', None)
             update_submutation = getattr(nimetaclass, 'update_submutation', None)
             delete_submutation = getattr(nimetaclass, 'delete_submutation', None)
             unlink_submutation = getattr(nimetaclass, 'unlink_submutation', None)
+
+            extract_param = AbstractNIMutation.get_returntype_name(graphql_subtype)
 
             if create_subinputs:
                 ret_subcreated = []
