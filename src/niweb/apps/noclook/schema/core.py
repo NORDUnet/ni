@@ -1958,6 +1958,7 @@ class CompositeMutation(relay.ClientIDMutation):
 
         cls.metafields_payload = {}
         cls.metafields_input = {}
+        cls.metafields_classes = {}
 
         if metatype_interface:
             # go over attributes that aren't in the avoid list
@@ -1971,6 +1972,9 @@ class CompositeMutation(relay.ClientIDMutation):
 
                 if exclude_metafields and metafield_name in exclude_metafields:
                     continue
+
+                # add field class array
+                cls.metafields_classes[metafield_name] = []
 
                 metafield_interface = None
                 is_list = False
@@ -1996,17 +2000,22 @@ class CompositeMutation(relay.ClientIDMutation):
                 subclass_list = subclasses_interfaces[metafield_interface]
 
                 for a_subclass in subclass_list:
+                    # add class to dict with
+                    cls.metafields_classes[metafield_name].append(a_subclass)
+
                     # init internal attribute storage
                     cls.metafields_payload[a_subclass] = {
-                        'created': { 'name': None, 'is_list': is_list },
-                        'updated': { 'name': None, 'is_list': is_list },
-                        'deleted': { 'name': None, 'is_list': is_list },
+                        'created': { 'name': None },
+                        'updated': { 'name': None },
+                        'deleted': { 'name': None },
+                        'is_list': is_list,
                     }
 
                     cls.metafields_input[a_subclass] = {
-                        'create': { 'name': None, 'is_list': is_list },
-                        'update': { 'name': None, 'is_list': is_list },
-                        'delete': { 'name': None, 'is_list': is_list },
+                        'create': { 'name': None },
+                        'update': { 'name': None },
+                        'delete': { 'name': None },
+                        'is_list': is_list,
                     }
 
                     # get mutations for each attribute
@@ -2104,7 +2113,128 @@ class CompositeMutation(relay.ClientIDMutation):
 
     @classmethod
     def process_extra_subentities(cls, user, master_nh, root, info, input, context):
-        return dict()
+        pass
+
+    @classmethod
+    def process_metatype_subentities(cls, user, master_nh, root, info, input, context):
+        ret = dict()
+
+        for metafield_name, subclass_list in cls.metafields_classes.items():
+            for a_subclass in subclass_list:
+                created_ifield = cls.metafields_input[a_subclass]['create']['name']
+                updated_ifield = cls.metafields_input[a_subclass]['update']['name']
+                deleted_ifield = cls.metafields_input[a_subclass]['delete']['name']
+
+                is_list = cls.metafields_payload[a_subclass]['is_list']
+
+                create_subinputs = input.get(created_ifield)
+                update_subinputs = input.get(updated_ifield)
+                delete_subinputs = input.get(deleted_ifield)
+
+                create_submutation = a_subclass.get_create_mutation()
+                update_submutation = a_subclass.get_update_mutation()
+                delete_submutation = a_subclass.get_delete_mutation()
+
+                extract_param = AbstractNIMutation.get_returntype_name(a_subclass)
+                ret_subcreated = None
+                ret_subupdated = None
+                ret_subdeleted = None
+
+                link_method_name = 'link_{}'.format(metafield_name)
+                link_method = getattr(a_subclass, link_method_name, None)
+
+                # process create
+                if create_subinputs:
+                    ret_subcreated = []
+
+                    if is_list:
+                        for subinput in create_subinputs:
+                            subinput['context'] = context
+                            ret = create_submutation\
+                                .mutate_and_get_payload(root, info, **subinput)
+                            ret_subcreated.append(ret)
+
+                            # link if it's possible
+                            sub_errors = getattr(ret, 'errors', None)
+                            sub_created = getattr(ret, extract_param, None)
+
+                            if not sub_errors and sub_created and link_method:
+                                link_method(user, main_nh, sub_created)
+                    else:
+                        subinput = create_subinputs
+                        subinput['context'] = context
+                        ret = create_submutation\
+                            .mutate_and_get_payload(root, info, **subinput)
+
+                        # link if it's possible
+                        sub_errors = getattr(ret, 'errors', None)
+                        sub_created = getattr(ret, extract_param, None)
+
+                        if not sub_errors and sub_created and link_method:
+                            link_method(user, main_nh, sub_created)
+
+                        ret_subcreated = ret
+
+                # process update
+                if update_subinputs:
+                    ret_subcreated = []
+
+                    if is_list:
+                        for subinput in update_subinputs:
+                            subinput['context'] = context
+                            ret = update_submutation\
+                                .mutate_and_get_payload(root, info, **subinput)
+                            ret_subupdated.append(ret)
+
+                            # link if it's possible
+                            sub_errors = getattr(ret, 'errors', None)
+                            sub_edited = getattr(ret, extract_param, None)
+
+                            if not sub_errors and sub_edited and link_method:
+                                link_method(user, main_nh, sub_edited)
+                    else:
+                        subinput = update_subinputs
+                        subinput['context'] = context
+                        ret = update_submutation\
+                            .mutate_and_get_payload(root, info, **subinput)
+
+                        # link if it's possible
+                        sub_errors = getattr(ret, 'errors', None)
+                        sub_edited = getattr(ret, extract_param, None)
+
+                        if not sub_errors and sub_edited and link_method:
+                            link_method(user, main_nh, sub_edited)
+
+                        ret_subcreated = ret
+
+                # process delete
+                if delete_subinputs:
+                    ret_subdeleted = []
+
+                    if is_list:
+                        for subinput in delete_subinputs:
+                            ret = delete_submutation\
+                                .mutate_and_get_payload(root, info, **subinput)
+                            ret_subdeleted.append(ret)
+                    else:
+                        ret_subdeleted = delete_submutation\
+                            .mutate_and_get_payload(root, info, **delete_subinputs)
+
+                # add the payload results
+                create_payload = cls.metafields_payload[a_subclass]['created']['name']
+                update_payload = cls.metafields_payload[a_subclass]['updated']['name']
+                delete_payload = cls.metafields_payload[a_subclass]['deleted']['name']
+
+                if create_payload:
+                    ret[create_payload] = ret_subcreated
+
+                if update_payload:
+                    ret[update_payload] = ret_subupdated
+
+                if delete_payload:
+                    ret[delete_payload] = ret_subdeleted
+        
+        return ret
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
@@ -2165,6 +2295,7 @@ class CompositeMutation(relay.ClientIDMutation):
 
         # extra params for return
         ret_extra_subentities = {}
+        ret_metatype_subentities = {}
 
         # if everything went fine, proceed with the subentity list
         if main_handle_id and not errors:
@@ -2229,6 +2360,9 @@ class CompositeMutation(relay.ClientIDMutation):
             ret_extra_subentities = \
                 cls.process_extra_subentities(user, main_nh, root, info, input, context)
 
+            ret_metatype_subentities = \
+                cls.process_metatype_subentities(user, main_nh, root, info, input, context)
+
         payload_kwargs = dict(
             created=ret_created, updated=ret_updated,
             subcreated=ret_subcreated, subupdated=ret_subupdated,
@@ -2237,6 +2371,9 @@ class CompositeMutation(relay.ClientIDMutation):
 
         if ret_extra_subentities:
             payload_kwargs = {**payload_kwargs, **ret_extra_subentities}
+
+        if ret_metatype_subentities:
+            payload_kwargs = {**payload_kwargs, **ret_metatype_subentities}
 
         return cls.forge_payload(
             **payload_kwargs

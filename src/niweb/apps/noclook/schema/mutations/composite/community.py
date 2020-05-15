@@ -74,10 +74,6 @@ class CompositeOrganizationMutation(CompositeMutation):
 
     @classmethod
     def process_extra_subentities(cls, user, main_nh, root, info, input, context):
-        # process metatypes inputs
-        composite_ret = CompositeMutation\
-            .process_extra_subentities(user, main_nh, root, info, input, context)
-
         extract_param = 'address'
         ret_subcreated = None
         ret_subupdated = None
@@ -141,9 +137,6 @@ class CompositeOrganizationMutation(CompositeMutation):
                     address_updated=ret_subupdated,
                     address_deleted=ret_subdeleted)
 
-        if composite_ret:
-            ret = {**ret, **composite_ret}
-
         return ret
 
     class NIMetaClass:
@@ -180,10 +173,6 @@ class CompositeContactMutation(CompositeMutation):
 
     @classmethod
     def process_extra_subentities(cls, user, main_nh, root, info, input, context):
-        # process metatypes inputs
-        composite_ret = CompositeMutation\
-            .process_extra_subentities(user, main_nh, root, info, input, context)
-
         extract_param = 'phone'
         ret_subcreated = None
         ret_subupdated = None
@@ -258,9 +247,6 @@ class CompositeContactMutation(CompositeMutation):
                     phones_updated=ret_subupdated,
                     phones_deleted=ret_subdeleted,
                     rolerelations=ret_rolerelations)
-
-        if composite_ret:
-            ret = {**ret, **composite_ret}
 
         return ret
 
