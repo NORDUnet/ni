@@ -2127,15 +2127,24 @@ class CompositeMutation(relay.ClientIDMutation):
 
                 is_list = cls.metafields_payload[a_subclass]['is_list']
 
-                create_subinputs = input.get(created_ifield)
-                update_subinputs = input.get(updated_ifield)
-                delete_subinputs = input.get(deleted_ifield)
+                create_subinputs = None
+                update_subinputs = None
+                delete_subinputs = None
+
+                if created_ifield:
+                    create_subinputs = input.get(created_ifield)
+
+                if updated_ifield:
+                    update_subinputs = input.get(updated_ifield)
+
+                if deleted_ifield:
+                    delete_subinputs = input.get(deleted_ifield)
 
                 create_submutation = a_subclass.get_create_mutation()
                 update_submutation = a_subclass.get_update_mutation()
                 delete_submutation = a_subclass.get_delete_mutation()
-
                 extract_param = AbstractNIMutation.get_returntype_name(a_subclass)
+                
                 ret_subcreated = None
                 ret_subupdated = None
                 ret_subdeleted = None
@@ -2233,7 +2242,7 @@ class CompositeMutation(relay.ClientIDMutation):
 
                 if delete_payload:
                     ret[delete_payload] = ret_subdeleted
-        
+
         return ret
 
     @classmethod
