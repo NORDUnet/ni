@@ -1998,15 +1998,15 @@ class CompositeMutation(relay.ClientIDMutation):
                 for a_subclass in subclass_list:
                     # init internal attribute storage
                     cls.metafields_payload[a_subclass] = {
-                        'created': None,
-                        'updated': None,
-                        'deleted': None,
+                        'created': { 'name': None, 'is_list': is_list },
+                        'updated': { 'name': None, 'is_list': is_list },
+                        'deleted': { 'name': None, 'is_list': is_list },
                     }
 
                     cls.metafields_input[a_subclass] = {
-                        'create': None,
-                        'update': None,
-                        'delete': None,
+                        'create': { 'name': None, 'is_list': is_list },
+                        'update': { 'name': None, 'is_list': is_list },
+                        'delete': { 'name': None, 'is_list': is_list },
                     }
 
                     # get mutations for each attribute
@@ -2034,7 +2034,8 @@ class CompositeMutation(relay.ClientIDMutation):
                             payload_field = graphene.List(create_mutation)
 
                         setattr(cls, created_name, payload_field)
-                        cls.metafields_payload[a_subclass]['created'] = created_name
+                        cls.metafields_payload[a_subclass]['created']['name']\
+                            = created_name
 
                         # add to input
                         input_field = graphene.Field(create_mutation.Input)
@@ -2042,7 +2043,8 @@ class CompositeMutation(relay.ClientIDMutation):
                             input_field = graphene.List(create_mutation.Input)
 
                         setattr(cls_input, create_name, input_field)
-                        cls.metafields_input[a_subclass]['create'] = create_name
+                        cls.metafields_input[a_subclass]['create']['name']\
+                            = create_name
 
                     if update_mutation:
                         # add to payload
@@ -2051,7 +2053,8 @@ class CompositeMutation(relay.ClientIDMutation):
                             payload_field = graphene.List(update_mutation)
 
                         setattr(cls, updated_name, payload_field)
-                        cls.metafields_payload[a_subclass]['updated'] = updated_name
+                        cls.metafields_payload[a_subclass]['updated']['name']\
+                            = updated_name
 
                         # add to input
                         input_field = graphene.Field(update_mutation.Input)
@@ -2059,7 +2062,8 @@ class CompositeMutation(relay.ClientIDMutation):
                             input_field = graphene.List(update_mutation.Input)
 
                         setattr(cls_input, update_name, input_field)
-                        cls.metafields_input[a_subclass]['update'] = update_name
+                        cls.metafields_input[a_subclass]['update']['name']\
+                            = update_name
 
                     if delete_mutation:
                         # add to payload
@@ -2068,7 +2072,8 @@ class CompositeMutation(relay.ClientIDMutation):
                             payload_field = graphene.List(delete_mutation)
 
                         setattr(cls, deleted_name, payload_field)
-                        cls.metafields_payload[a_subclass]['deleted'] = deleted_name
+                        cls.metafields_payload[a_subclass]['deleted']['name']\
+                            = deleted_name
 
                         # add to input
                         input_field = graphene.Field(delete_mutation.Input)
@@ -2076,7 +2081,8 @@ class CompositeMutation(relay.ClientIDMutation):
                             input_field = graphene.List(delete_mutation.Input)
 
                         setattr(cls_input, delete_name, input_field)
-                        cls.metafields_input[a_subclass]['delete'] = delete_name
+                        cls.metafields_input[a_subclass]['delete']['name']\
+                            = delete_name
 
             setattr(cls, 'Input', cls_input)
 
@@ -2098,7 +2104,7 @@ class CompositeMutation(relay.ClientIDMutation):
 
     @classmethod
     def process_extra_subentities(cls, user, master_nh, root, info, input, context):
-        pass
+        return dict()
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):

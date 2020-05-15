@@ -74,6 +74,10 @@ class CompositeOrganizationMutation(CompositeMutation):
 
     @classmethod
     def process_extra_subentities(cls, user, main_nh, root, info, input, context):
+        # process metatypes inputs
+        composite_ret = CompositeMutation\
+            .process_extra_subentities(user, main_nh, root, info, input, context)
+
         extract_param = 'address'
         ret_subcreated = None
         ret_subupdated = None
@@ -133,9 +137,14 @@ class CompositeOrganizationMutation(CompositeMutation):
                     ret = address_deleted.mutate_and_get_payload(root, info, **input)
                     ret_subdeleted.append(ret)
 
-        return dict(address_created=ret_subcreated,
+        ret = dict(address_created=ret_subcreated,
                     address_updated=ret_subupdated,
                     address_deleted=ret_subdeleted)
+
+        if composite_ret:
+            ret = {**ret, **composite_ret}
+
+        return ret
 
     class NIMetaClass:
         create_mutation = CreateOrganization
@@ -171,6 +180,10 @@ class CompositeContactMutation(CompositeMutation):
 
     @classmethod
     def process_extra_subentities(cls, user, main_nh, root, info, input, context):
+        # process metatypes inputs
+        composite_ret = CompositeMutation\
+            .process_extra_subentities(user, main_nh, root, info, input, context)
+
         extract_param = 'phone'
         ret_subcreated = None
         ret_subupdated = None
@@ -241,10 +254,15 @@ class CompositeContactMutation(CompositeMutation):
                     ret = rolerelation_mutation.mutate_and_get_payload(root, info, **input)
                     ret_rolerelations.append(ret)
 
-        return dict(phones_created=ret_subcreated,
+        ret = dict(phones_created=ret_subcreated,
                     phones_updated=ret_subupdated,
                     phones_deleted=ret_subdeleted,
                     rolerelations=ret_rolerelations)
+
+        if composite_ret:
+            ret = {**ret, **composite_ret}
+
+        return ret
 
     class NIMetaClass:
         phones_created = NIPhoneMutationFactory.get_create_mutation()
