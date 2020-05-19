@@ -2,6 +2,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render, get_object_or_404
+from django.urls import reverse
 import ipaddress
 import json
 import logging
@@ -847,13 +848,16 @@ def group_detail(request, handle_id):
                   {'node_handle': nh, 'node': node, 'location_path': location_path})
 
 def _contact_with_role_table(con, org=None):
+    con_url = reverse(contact_detail, kwargs=dict(handle_id=con.handle_id))
+    org_url = reverse(organization_detail, kwargs=dict(handle_id=org.handle_id))
+
     contact_link = {
-            'url': u'/contact/{}/'.format(con.handle_id),
+            'url': con_url,
             'name': u'{}'.format(con.node_name)
             }
 
     organization_link = {
-            'url': u'/organization/{}/'.format(org.handle_id),
+            'url': org_url,
             'name': u'{}'.format(org.node_name)
             }
 

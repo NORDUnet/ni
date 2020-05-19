@@ -169,8 +169,12 @@ class NISingleRelationField(NIBasicField):
             relationship = getattr(neo4jnode, rel_method)()
 
             if relationship and rel_name in relationship:
-                handle_id = relationship[rel_name][0]['node'].data['handle_id']
+                node = relationship[rel_name][0]
+                relation_id = node['relationship_id']
+                handle_id = node['node'].data['handle_id']
                 ret = NodeHandle.objects.get(handle_id=handle_id)
+                # add relationship_id
+                ret.relation_id = relation_id
 
             return ret
 
