@@ -27,4 +27,5 @@
     {% endif %}
     <br><br><br>
     {% include "noclook/detail/includes/user_services.html" with services=uses_relationships.Uses %}
+    {% include "noclook/detail/includes/equipment.html" with equipment=owned_equipment.Owns title='Owned Equipment' %}
 {% endblock %}

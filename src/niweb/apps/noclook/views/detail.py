@@ -73,12 +73,23 @@ def customer_detail(request, handle_id):
     same_name_relations = NodeHandle.objects.in_bulk((result.get('ids'))).values()
     # Handle relationships
     uses_relationships = customer.get_uses()
+    owned_equipment = customer.get_owns()
 
-    urls = helpers.get_node_urls(customer, same_name_relations, uses_relationships)
-    return render(request, 'noclook/detail/customer_detail.html',
-                  {'node_handle': nh, 'node': customer, 'last_seen': last_seen, 'expired': expired,
-                   'same_name_relations': same_name_relations, 'uses_relationships': uses_relationships,
-                   'history': True, 'urls': urls})
+    urls = helpers.get_node_urls(customer, same_name_relations, uses_relationships, owned_equipment)
+    return render(
+        request,
+        'noclook/detail/customer_detail.html',
+        {
+            'node_handle': nh,
+            'node': customer,
+            'last_seen': last_seen,
+            'expired': expired,
+            'same_name_relations': same_name_relations,
+            'uses_relationships': uses_relationships,
+            'owned_equipment': owned_equipment,
+            'history': True,
+            'urls': urls,
+        })
 
 
 @login_required
