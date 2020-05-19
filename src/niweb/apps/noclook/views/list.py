@@ -709,3 +709,28 @@ def list_pdu(request):
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'PDUs', 'urls': urls})
+
+
+def _external_equipment_table(equipment, owner):
+    row = TableRow(equipment, equipment.get('description'), owner)
+    _set_expired(row, equipment)
+    return row
+
+
+@login_required
+def list_external_equipment(request):
+    q = """
+        MATCH (equipment:External_Equipment)
+        OPTIONAL MATCH (equipment)<-[:Owns]-(owner:Node)
+        RETURN equipment, owner
+        ORDER BY equipment.name
+        """
+    equipment_list = nc.query_to_list(nc.graphdb.manager, q)
+
+    urls = get_node_urls(equipment_list)
+
+    table = Table('Name', 'Description', 'Owner')
+    table.rows = [_external_equipment_table(item['equipment'], item['owner']) for item in equipment_list]
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'External Equipment', 'urls': urls})

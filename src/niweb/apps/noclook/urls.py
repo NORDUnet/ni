@@ -100,6 +100,7 @@ urlpatterns = [
     url(r'^customer/$', _list.list_customers),
     url(r'^port/$', _list.list_ports),
     url(r'^pdu/$', _list.list_pdu),
+    url(r'^external-equipment/$', _list.list_external_equipment),
     # Generic list
     url(r'^(?P<slug>[-\w]+)/$', _list.list_by_type, name='generic_list'),
 
