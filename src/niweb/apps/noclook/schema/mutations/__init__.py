@@ -6,6 +6,7 @@ from .community import *
 from .network import *
 
 from .composite.community import *
+from .composite.network import *
 
 class NOCRootMutation(graphene.ObjectType):
     ## Community mutations
@@ -66,6 +67,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_port = NIPortMutationFactory.get_create_mutation().Field()
     update_port = NIPortMutationFactory.get_update_mutation().Field()
     delete_port = NIPortMutationFactory.get_delete_mutation().Field()
+    composite_port = CompositePortMutation.Field()
 
     create_cable = NICableMutationFactory.get_create_mutation().Field()
     update_cable = NICableMutationFactory.get_update_mutation().Field()
