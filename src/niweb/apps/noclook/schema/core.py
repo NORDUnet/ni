@@ -2117,7 +2117,7 @@ class CompositeMutation(relay.ClientIDMutation):
 
     @classmethod
     def process_metatype_subentities(cls, user, master_nh, root, info, input, context):
-        ret = dict()
+        master_ret = dict()
 
         for metafield_name, subclass_list in cls.metafields_classes.items():
             for a_subclass in subclass_list:
@@ -2144,7 +2144,7 @@ class CompositeMutation(relay.ClientIDMutation):
                 update_submutation = a_subclass.get_update_mutation()
                 delete_submutation = a_subclass.get_delete_mutation()
                 extract_param = AbstractNIMutation.get_returntype_name(a_subclass)
-                
+
                 ret_subcreated = None
                 ret_subupdated = None
                 ret_subdeleted = None
@@ -2168,7 +2168,7 @@ class CompositeMutation(relay.ClientIDMutation):
                             sub_created = getattr(ret, extract_param, None)
 
                             if not sub_errors and sub_created and link_method:
-                                link_method(user, main_nh, sub_created)
+                                link_method(user, master_nh, sub_created)
                     else:
                         subinput = create_subinputs
                         subinput['context'] = context
@@ -2180,7 +2180,7 @@ class CompositeMutation(relay.ClientIDMutation):
                         sub_created = getattr(ret, extract_param, None)
 
                         if not sub_errors and sub_created and link_method:
-                            link_method(user, main_nh, sub_created)
+                            link_method(user, master_nh, sub_created)
 
                         ret_subcreated = ret
 
@@ -2200,7 +2200,7 @@ class CompositeMutation(relay.ClientIDMutation):
                             sub_edited = getattr(ret, extract_param, None)
 
                             if not sub_errors and sub_edited and link_method:
-                                link_method(user, main_nh, sub_edited)
+                                link_method(user, master_nh, sub_edited)
                     else:
                         subinput = update_subinputs
                         subinput['context'] = context
@@ -2212,7 +2212,7 @@ class CompositeMutation(relay.ClientIDMutation):
                         sub_edited = getattr(ret, extract_param, None)
 
                         if not sub_errors and sub_edited and link_method:
-                            link_method(user, main_nh, sub_edited)
+                            link_method(user, master_nh, sub_edited)
 
                         ret_subcreated = ret
 
@@ -2235,15 +2235,15 @@ class CompositeMutation(relay.ClientIDMutation):
                 delete_payload = cls.metafields_payload[a_subclass]['deleted']['name']
 
                 if create_payload:
-                    ret[create_payload] = ret_subcreated
+                    master_ret[create_payload] = ret_subcreated
 
                 if update_payload:
-                    ret[update_payload] = ret_subupdated
+                    master_ret[update_payload] = ret_subupdated
 
                 if delete_payload:
-                    ret[delete_payload] = ret_subdeleted
+                    master_ret[delete_payload] = ret_subdeleted
 
-        return ret
+        return master_ret
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
