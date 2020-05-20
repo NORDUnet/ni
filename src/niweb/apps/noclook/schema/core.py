@@ -2186,7 +2186,7 @@ class CompositeMutation(relay.ClientIDMutation):
 
                 # process update
                 if update_subinputs:
-                    ret_subcreated = []
+                    ret_subupdated = []
 
                     if is_list:
                         for subinput in update_subinputs:
