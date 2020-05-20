@@ -18,7 +18,7 @@ class PortCompositeTest(Neo4jGraphQLNetworkTest):
             "taciti sociosqu ad litora torquent per conubia nostra, per "\
             "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
             "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
-            "eget sollicitudin dui. "
+            "eget sollicitudin dui."
 
         cable_name = "Test cable"
         cable_type = "Patch"
@@ -65,13 +65,29 @@ class PortCompositeTest(Neo4jGraphQLNetworkTest):
               port{{
                 id
                 name
+                port_type{{
+                  value
+                }}
+                description
                 parent{{
                   id
                   name
+                  ...on Port{{
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
                 }}
                 connected_to{{
                   id
                   name
+                  ...on Cable{{
+                    description
+                    cable_type{{
+                      value
+                    }}
+                  }}
                 }}
               }}
             }}
@@ -83,6 +99,10 @@ class PortCompositeTest(Neo4jGraphQLNetworkTest):
               cable{{
                 id
                 name
+                description
+                cable_type{{
+                  value
+                }}
               }}
             }}
             parent_port_created{{
@@ -93,6 +113,10 @@ class PortCompositeTest(Neo4jGraphQLNetworkTest):
               port{{
                 id
                 name
+                port_type{{
+                  value
+                }}
+                description
               }}
             }}
           }}
@@ -125,6 +149,33 @@ class PortCompositeTest(Neo4jGraphQLNetworkTest):
 
         # check the integrity of the data
         created_data = result_data['created']['port']
+
+        # check main port
+        self.assertEqual(created_data['name'], port_name)
+        self.assertEqual(created_data['port_type']['value'], port_type)
+        self.assertEqual(created_data['description'], port_description)
+
+        # check cable in both payload and metatype attribute
+        check_cables = [
+            result_data['subcreated'][0]['cable'],
+            created_data['connected_to'][0],
+        ]
+
+        for check_cable in check_cables:
+            self.assertEqual(check_cable['name'], cable_name)
+            self.assertEqual(check_cable['cable_type']['value'], cable_type)
+            self.assertEqual(check_cable['description'], cable_description)
+
+        # check parent port in payload and in metatype attribute
+        created_parents = [
+            result_data['parent_port_created'][0]['port'],
+            created_data['parent'][0],
+        ]
+
+        for created_parent in created_parents:
+            self.assertEqual(created_parent['name'], pport_name)
+            self.assertEqual(created_parent['port_type']['value'], pport_type)
+            self.assertEqual(created_parent['description'], pport_description)
 
         # check their relations id
         test_cable_id = created_data['connected_to'][0]['id']
