@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+from apps.noclook import helpers
 from apps.noclook.models import NodeHandle
 from apps.noclook.vakt import utils as sriutils
 import graphene
 import logging
 import importlib
+import norduniclient as nc
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +125,12 @@ class LogicalMixin:
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_part_of', 'Part_of')
 
+    @classmethod
+    def link_part_of(cls, user, logical_nh, physical_nh):
+        physical_node = physical_nh.get_node()
+        logical_handle_id = logical_nh.handle_id
+        helpers.set_part_of(user, physical_node, logical_handle_id)
+
 
 class RelationMixin:
     def resolve_with_same_name(self, info, **kwargs):
@@ -155,6 +163,24 @@ class RelationMixin:
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_responsible_for', 'Responsible_for')
 
+    @classmethod
+    def link_provides(cls, user, relation_nh, phylogical_nh):
+        the_node = phylogical_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_provider(user, the_node, relation_handle_id)
+
+    @classmethod
+    def link_owns(cls, user, relation_nh, physical_nh):
+        physical_node = physical_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_owner(user, physical_node, relation_handle_id)
+
+    @classmethod
+    def link_responsible_for(cls, user, relation_nh, location_nh):
+        location_node = location_nh.get_node()
+        relation_handle_id = relation_nh.handle_id
+        helpers.set_responsible_for(user, location_node, relation_handle_id)
+
 
 class PhysicalMixin:
     def resolve_location(self, info, **kwargs):
@@ -172,6 +198,21 @@ class PhysicalMixin:
     def resolve_parent(self, info, **kwargs):
         return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_parent', 'Has')
+
+    @classmethod
+    def link_parent(cls, user, physical_nh, physical_parent_nh):
+        handle_id = physical_nh.handle_id
+        parent_handle_id = physical_parent_nh.handle_id
+
+        q = """
+            MATCH   (n:Node:Physical {handle_id: {handle_id}}),
+                    (p:Node:Physical {handle_id: {parent_handle_id}})
+            MERGE (n)<-[r:Has]-(p)
+            RETURN n, r, p
+            """
+
+        result = nc.query_to_dict(nc.graphdb.manager, q,
+                        handle_id=handle_id, parent_handle_id=parent_handle_id)
 
 
 class LocationMixin:
