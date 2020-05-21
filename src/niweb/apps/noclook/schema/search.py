@@ -26,10 +26,17 @@ class SearchQueryConnection(graphene.relay.Connection):
 
     @classmethod
     def get_query_field_resolver(cls):
-        return {
-            'field': ('search_port', cls.get_connection_field()),
-            'resolver': ('resolve_search_port', cls.get_connection_resolver()),
+        type_slug = cls.get_type().slug
+
+        field_name = 'search_{}'.format(type_slug)
+        resolver_name = 'resolve_search_{}'.format(type_slug)
+
+        ret = {
+            'field': (field_name, cls.get_connection_field()),
+            'resolver': (resolver_name, cls.get_connection_resolver()),
         }
+
+        return ret
 
     @classmethod
     def get_from_nimetatype(cls, attr, default=None):
@@ -37,10 +44,14 @@ class SearchQueryConnection(graphene.relay.Connection):
         return getattr(ni_metatype, attr, default)
 
     @classmethod
-    def get_type_name(cls):
+    def get_type(cls):
         ni_type = cls.get_from_nimetatype('ni_type')
         node_type = NodeType.objects.filter(type=ni_type).first()
-        return node_type.type
+        return node_type
+
+    @classmethod
+    def get_type_name(cls):
+        return cls.get_type().type
 
     @classmethod
     def from_filter_to_request(cls, user, filter):
@@ -77,11 +88,11 @@ class SearchQueryConnection(graphene.relay.Connection):
 
     @classmethod
     def get_connection_resolver(cls):
-        type_name = cls.get_type_name()
+        type_name = cls.get_type().type
 
         def search_list_resolver(self, info, **args):
             ret = []
-            filter = kwargs.get('filter', None)
+            filter = args.get('filter', None)
 
             if info.context and info.context.user.is_authenticated:
                 # check the context only if it's set
