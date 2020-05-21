@@ -10,6 +10,7 @@ from graphql import GraphQLError
 from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown,\
                 RoleGroup as RoleGroupModel, DEFAULT_ROLEGROUP_NAME
 from .types import *
+from .search import *
 
 def can_load_models():
     can_load = True
@@ -124,6 +125,17 @@ class NOCAutoQuery(graphene.ObjectType):
 
                 setattr(cls, field_name, graphene.Field(graphql_type, id=graphene.ID()))
                 setattr(cls, resolver_name, graphql_type.get_byid_resolver())
+
+        ## add search queries
+        search_queries = getattr(_nimeta, 'search_queries')
+
+        for search_query in search_queries:
+            field_resolver = search_query.get_query_field_resolver()
+            # set field
+            setattr(cls, field_resolver['field'][0], field_resolver['field'][1])
+
+            # set resolver
+            setattr(cls, field_resolver['resolver'][0], field_resolver['resolver'][1])
 
 
 class NOCRootQuery(NOCAutoQuery):
@@ -271,4 +283,8 @@ class NOCRootQuery(NOCAutoQuery):
             Customer, EndUser, Provider, SiteOwner,
             Port, Host, Cable, Router,
             PeeringPartner, PeeringGroup,
+        ]
+
+        search_queries = [
+            PortSearchConnection,
         ]
