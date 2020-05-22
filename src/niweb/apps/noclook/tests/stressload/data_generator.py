@@ -305,10 +305,13 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
     ## Equipment and cables
 
-    def create_port(self):
+    def create_port(self, port_name=None):
+        if not port_name:
+            port_name = self.get_port_name()
+
         # create object
         port = self.get_or_create_node(
-            self.get_port_name(), 'Port', META_TYPES[0]) # Physical
+            port_name, 'Port', META_TYPES[0]) # Physical
 
         # add context
         self.add_network_context(port)

@@ -2,12 +2,12 @@
 __author__ = 'ffuentes'
 
 import graphene
+import json
 
+from apps.noclook.views.other import search_port_typeahead, search_simple_port_typeahead
 from django.test import RequestFactory
 
 from .types import *
-
-from apps.noclook.views.other import search_port_typeahead
 
 
 class GenericFilter(graphene.InputObjectType):
@@ -73,16 +73,26 @@ class SearchQueryConnection(graphene.relay.Connection):
 
         # get view
         search_view = cls.get_from_nimetatype('search_view')
+        json_id_attr = cls.get_from_nimetatype('json_id_attr')
+
         # forge request
         request = cls.from_filter_to_request(user, filter)
         # process
         response = search_view(request)
 
-        # for elem in json
-        # get handle_id from json
-        # does it have permission? (or should we get list permission?)
-        # ret result_list
+        # get json array and parse to dict
+        if response.content:
+            elements = json.loads(response.content)
 
+            # for elem in json
+            for element in elements:
+                try:
+                    # get handle_id from json
+                    handle_id = element[json_id_attr]
+                    nh = NodeHandle.objects.get(handle_id=handle_id)
+                    ret.append(nh)
+                except:
+                    pass
         return ret
 
 
@@ -107,7 +117,7 @@ class SearchQueryConnection(graphene.relay.Connection):
                     authorized = True
 
                 if authorized:
-                    cls.get_result_query(info.context.user, filter)
+                    ret = cls.get_result_query(info.context.user, filter)
                 else:
                     #403
                     pass
@@ -126,8 +136,9 @@ class PortSearchConnection(SearchQueryConnection):
     class NIMetaType:
         context = sriutils.get_network_context()
         query_var_name = 'query'
-        search_view = search_port_typeahead
+        search_view = search_simple_port_typeahead
         ni_type = Port
+        json_id_attr = 'handle_id'
 
     class Meta:
         node = Port
