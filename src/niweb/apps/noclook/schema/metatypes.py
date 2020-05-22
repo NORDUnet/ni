@@ -66,6 +66,13 @@ class Location(NINode):
     has = graphene.Field(lambda:Physical)
 
 
+class MetaType(graphene.Enum):
+    Logical = 'Logical'
+    Relation = 'Relation'
+    Physical = 'Physical'
+    Location = 'Location'
+
+
 ## metatype resolver mixins
 class ResolverUtils:
     @staticmethod
