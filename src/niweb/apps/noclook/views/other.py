@@ -178,6 +178,30 @@ def search_port_typeahead(request):
 
 
 @login_required
+def search_simple_port_typeahead(request):
+    '''
+    This view is a simplification of the above search_port_typeahead
+    to be used by PortSearchConnection as a typeahead simple port name search
+    '''
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        try:
+            q = """
+                MATCH (port:Port)
+                WHERE port.name CONTAINS $name
+                RETURN port.name AS name, port.handle_id AS handle_id, null as parent_id
+                """
+            result = nc.query_to_list(nc.graphdb.manager, q, name=to_find)
+        except Exception as e:
+            raise e
+    json.dump(result, response)
+    return response
+
+
+@login_required
 def search_location_typeahead(request):
     response = HttpResponse(content_type='application/json')
     to_find = request.GET.get('query', None)
