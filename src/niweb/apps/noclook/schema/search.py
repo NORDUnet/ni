@@ -5,7 +5,9 @@ import graphene
 import json
 
 from apps.noclook.views.other import search_port_typeahead, search_simple_port_typeahead
+from django.db.utils import ProgrammingError
 from django.test import RequestFactory
+from django.utils.text import slugify
 
 from .types import *
 
@@ -26,7 +28,8 @@ class SearchQueryConnection(graphene.relay.Connection):
 
     @classmethod
     def get_query_field_resolver(cls):
-        type_slug = cls.get_type().slug
+        ni_type = cls.get_from_nimetatype('ni_type')
+        type_slug = slugify(ni_type)
 
         field_name = 'search_{}'.format(type_slug)
         resolver_name = 'resolve_search_{}'.format(type_slug)
@@ -46,7 +49,8 @@ class SearchQueryConnection(graphene.relay.Connection):
     @classmethod
     def get_type(cls):
         ni_type = cls.get_from_nimetatype('ni_type')
-        node_type = NodeType.objects.filter(type=ni_type).first()
+        node_type = NodeType.objects.get(type=ni_type)
+
         return node_type
 
     @classmethod
@@ -98,7 +102,7 @@ class SearchQueryConnection(graphene.relay.Connection):
 
     @classmethod
     def get_connection_resolver(cls):
-        type_name = cls.get_type().type
+        ni_type = cls.get_from_nimetatype('ni_type')
 
         def search_list_resolver(self, info, **args):
             ret = []
