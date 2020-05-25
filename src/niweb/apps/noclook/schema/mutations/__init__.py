@@ -72,6 +72,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_cable = NICableMutationFactory.get_create_mutation().Field()
     update_cable = NICableMutationFactory.get_update_mutation().Field()
     delete_cable = NICableMutationFactory.get_delete_mutation().Field()
+    composite_cable = CompositeCableMutation.Field()
 
     ## Common mutations
     create_comment = CreateComment.Field()
