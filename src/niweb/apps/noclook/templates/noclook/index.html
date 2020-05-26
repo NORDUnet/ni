@@ -21,7 +21,7 @@
             <br />
             <br />
             {% if user.is_authenticated %}
-                <form action="/search/" method="post" class="form-search text-centered">{% csrf_token %}
+                <form action="{% url 'search' %}"/" method="post" class="form-search text-centered">{% csrf_token %}
                     <input class="xlarge search-query" type="search" id="index" name="q" /> <button class="btn primary" type="submit">Search</button>
                 </form>
             {% endif %}

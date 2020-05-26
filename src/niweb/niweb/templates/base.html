@@ -123,7 +123,7 @@
                             <li class="divider-vertical"></li>
                             {% if user.is_authenticated %}
                             <li class="pull-left">
-                                <form action="/search/" method="post" class="navbar-search">{% csrf_token %}
+                                <form action="{% url 'search' %}"/" method="post" class="navbar-search">{% csrf_token %}
                                     <input class="xlarge search-query" type="search" id="mobile" name="q" placeholder="Search" />
                                 </form>
                              </li>
