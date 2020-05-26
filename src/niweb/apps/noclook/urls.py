@@ -27,7 +27,7 @@ urlpatterns = [
     url(r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.find_all),
     url(r'^findin/(?P<slug>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.find_all),
     # Search
-    url(r'^search/$', other.search),
+    url(r'^search/$', other.search, name="search"),
     url(r'^search/autocomplete$', other.search_autocomplete),
     url(r'^search/typeahead/ports$', other.search_port_typeahead),
     url(r'^search/typeahead/locations$', other.search_location_typeahead),

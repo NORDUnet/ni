@@ -178,7 +178,7 @@
                 <div class="row visible-desktop">
                     <div class="span5">
                         {% if user.is_authenticated %}
-                            <form id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
+                            <form id="test" action="{% url 'search' %}" method="post" class="form-search">{% csrf_token %}
                                 <input class="xlarge search-query" type="search" id="main" name="q" /> <button class="btn primary" type="submit">Search</button>
                             </form>
                         {% endif %}
