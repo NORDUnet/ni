@@ -90,9 +90,11 @@ def search(request, value='', form=None):
     """
     result = []
     posted = False
+
     if request.POST:
         value = request.POST.get('q', '')
         posted = True
+    
     if value:
         query = u'(?i).*{}.*'.format(re_escape(value))
         # nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
@@ -105,6 +107,8 @@ def search(request, value='', form=None):
             return helpers.dicts_to_csv_response([n['n'] for n in nodes])
         elif form == 'xls':
             return helpers.dicts_to_xls_response([n['n'] for n in nodes])
+        elif form == 'json':
+            return helpers.dicts_to_json_response([n['n'] for n in nodes])
         for node in nodes:
             nh = get_object_or_404(NodeHandle, pk=node['n']['handle_id'])
             item = {'node': node['n'], 'nh': nh}
