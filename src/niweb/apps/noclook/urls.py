@@ -42,7 +42,7 @@ urlpatterns = [
     url(r'^download/tabletofile/$', other.json_table_to_file),
 
     # -- create views
-    url(r'^new/$', create.new_node),
+    url(r'^new/$', create.new_node, name="new_node"),
     url(r'^new/(?P<slug>[-\w]+)/$', create.new_node, name='create_node'),
     url(r'^new/(?P<slug>[-\w]+)/parent/(?P<parent_id>\d+)/$', create.new_node),
     url(r'^new/(?P<slug>[-\w]+)/name/(?P<name>[-\w]+)/$', create.new_node),

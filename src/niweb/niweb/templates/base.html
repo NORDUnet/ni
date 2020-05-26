@@ -116,7 +116,7 @@
                                 </ul>
                             </li>
                             {% if user.is_staff %}
-                                <li><a href="/new/">Create new</a></li>
+                                <li><a href="{% url 'new_node' %}">Create new</a></li>
                                 <li><a href="/reserve-id/">Reserve IDs</a></li>
                                 <li><a href="/userprofile/">Users</a></li>
                             {% endif %}
@@ -163,7 +163,7 @@
                             <li class="divider"></li>
                             <li class="nav-header"><i class="icon-wrench"></i> Admin</li>
                             {% if user.is_staff %}
-                                <li><a href="/new/">Create new</a></li>
+                                <li><a href="{% url 'new_node' %}">Create new</a></li>
                                 {% ifequal menu_mode 'ni' %}
                                     <li><a href="/reserve-id/">Reserve IDs</a></li>
                                 {% endifequal %}
