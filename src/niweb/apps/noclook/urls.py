@@ -33,7 +33,7 @@ urlpatterns = [
     url(r'^search/typeahead/locations$', other.search_location_typeahead),
     url(r'^search/typeahead/non-locations$', other.search_non_location_typeahead),
     url(r'^search/typeahead/(?P<slug>[-\+\w]+)/?$', other.typeahead_slugs, name='typeahead_slugs'),
-    url(r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.search),
+    url(r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.search, name="search_file"),
     # QR lookup
     url(r'^lu/(?P<name>[-\w]+)/$', other.qr_lookup),
     # Hostname lookup
