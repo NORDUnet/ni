@@ -365,5 +365,6 @@ class NOCRootQuery(NOCAutoQuery):
         ]
 
         search_queries = [
+            GeneralSearchConnection,
             PortSearchConnection,
         ]

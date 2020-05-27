@@ -4,9 +4,11 @@ __author__ = 'ffuentes'
 import graphene
 import json
 
-from apps.noclook.views.other import search_port_typeahead, search_simple_port_typeahead
+from apps.noclook.views.other import search_port_typeahead,\
+    search_simple_port_typeahead, search
 from django.db.utils import ProgrammingError
 from django.test import RequestFactory
+from django.urls import reverse_lazy
 from django.utils.text import slugify
 
 from .types import *
@@ -58,15 +60,33 @@ class SearchQueryConnection(graphene.relay.Connection):
         return cls.get_type().type
 
     @classmethod
-    def from_filter_to_request(cls, user, filter):
+    def get_filter_query_value(cls, filter):
         query_varname = cls.get_from_nimetatype('query_varname', \
             cls._default_query_varname)
-
         query_value = getattr(filter, query_varname, None)
+
+        return query_value
+
+    @classmethod
+    def from_filter_to_request(cls, user, filter, is_post=False):
+        view_params_query = cls.get_from_nimetatype('view_params_query', False)
+        query_varname = cls.get_from_nimetatype('query_varname', \
+            cls._default_query_varname)
+        query_value = cls.get_filter_query_value(filter)
 
         # forge request
         request_factory = RequestFactory()
-        request = request_factory.get('/', { query_varname: query_value })
+        request_path = '/'
+        request_params = { query_varname: query_value }
+
+        if view_params_query:
+            request_params = None
+
+        request = request_factory.get(request_path, request_params)
+
+        if is_post:
+            request = request_factory.post(request_path, request_params)
+
         request.user = user
 
         return request
@@ -76,13 +96,35 @@ class SearchQueryConnection(graphene.relay.Connection):
         ret = []
 
         # get view
+        is_post = cls.get_from_nimetatype('is_post', False)
         search_view = cls.get_from_nimetatype('search_view')
         json_id_attr = cls.get_from_nimetatype('json_id_attr')
+        view_extra_params = cls.get_from_nimetatype('view_extra_params')
+        view_search_varname = cls.get_from_nimetatype('view_search_varname')
 
         # forge request
-        request = cls.from_filter_to_request(user, filter)
+        request = cls.from_filter_to_request(user, filter, is_post)
+
+        # if the query is passed by view params
+        view_params = {}
+        view_params_query = cls.get_from_nimetatype('view_params_query', False)
+
+        if view_params_query:
+            query_value = cls.get_filter_query_value(filter)
+            view_params = {
+                view_search_varname: query_value
+            }
+
+            if view_extra_params:
+                view_params = {
+                    **view_params,
+                    **view_extra_params,
+                }
+
+        print(view_params)
+
         # process
-        response = search_view(request)
+        response = search_view(request, **view_params)
 
         # get json array and parse to dict
         if response.content:
@@ -134,12 +176,26 @@ class SearchQueryConnection(graphene.relay.Connection):
         return search_list_resolver
 
 
+class GeneralSearchConnection(SearchQueryConnection):
+    pass
+
+    class NIMetaType:
+        view_params_query = True
+        view_search_varname = 'value'
+        view_extra_params = { 'form': 'json' }
+        search_view = search
+        ni_type = NINode
+        json_id_attr = 'handle_id'
+
+    class Meta:
+        node = NINode
+
+
 class PortSearchConnection(SearchQueryConnection):
     pass
 
     class NIMetaType:
         context = sriutils.get_network_context()
-        query_var_name = 'query'
         search_view = search_simple_port_typeahead
         ni_type = Port
         json_id_attr = 'handle_id'
