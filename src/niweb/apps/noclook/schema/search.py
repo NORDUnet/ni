@@ -121,8 +121,6 @@ class SearchQueryConnection(graphene.relay.Connection):
                     **view_extra_params,
                 }
 
-        print(view_params)
-
         # process
         response = search_view(request, **view_params)
 
