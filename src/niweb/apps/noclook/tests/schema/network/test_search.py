@@ -43,7 +43,6 @@ class GlobalSearchTest(Neo4jGraphQLNetworkTest):
 
         # check length
         results = result.data['search_ninode']['edges']
-        print(NodeHandle.objects.all())
         self.assertEqual(len(results), 4)
 
         # search first pattern

@@ -15,6 +15,7 @@ import json
 from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook import arborgraph
 from apps.noclook import helpers
+import apps.noclook.vakt.utils as sriutils
 import norduniclient as nc
 
 
@@ -83,7 +84,7 @@ def visualize_maximize(request, slug, handle_id):
 
 # Search views
 @login_required
-def search(request, value='', form=None):
+def search(request, value='', form=None, permission_filter=False):
     """
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/ or /slug/value/.
@@ -94,14 +95,26 @@ def search(request, value='', form=None):
     if request.POST:
         value = request.POST.get('q', '')
         posted = True
-    
+
     if value:
         query = u'(?i).*{}.*'.format(re_escape(value))
+
+        permission_clause = ''
+        if permission_filter:
+            readable_ids = sriutils.get_ids_user_canread(request.user)
+            readable_ids = [ str(x) for x in readable_ids ] # string conversion
+            ids = ', '.join(readable_ids)
+            permission_clause = 'AND n.handle_id in [{ids}]'.format(ids=ids)
+
         # nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
         # TODO: when search uses the above go back to that
         q = """
-            match (n:Node) where any(prop in keys(n) where n[prop] =~ {search}) return n
-            """
+            match (n:Node)
+            where any(prop in keys(n) where n[prop] =~ {{search}})
+            {}
+            return n
+            """.format(permission_clause)
+
         nodes = nc.query_to_list(nc.graphdb.manager, q, search=query)
         if form == 'csv':
             return helpers.dicts_to_csv_response([n['n'] for n in nodes])

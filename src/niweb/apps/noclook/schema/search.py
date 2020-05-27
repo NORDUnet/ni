@@ -180,7 +180,7 @@ class GeneralSearchConnection(SearchQueryConnection):
     class NIMetaType:
         view_params_query = True
         view_search_varname = 'value'
-        view_extra_params = { 'form': 'json' }
+        view_extra_params = { 'form': 'json', 'permission_filter': True }
         search_view = search
         ni_type = NINode
         json_id_attr = 'handle_id'
