@@ -215,3 +215,30 @@ def authorize_superadmin(user, cmodel=Context):
             break
 
     return is_superadmin
+
+
+def get_ids_user_canread(user):
+    user_groups = user.groups.all()
+    read_aa = get_read_authaction()
+
+    gcaas = GroupContextAuthzAction.objects.filter(
+        group__in=user_groups,
+        authzprofile=read_aa
+    )
+
+    readable_contexts = []
+    for gcaa in gcaas:
+        readable_contexts.append(gcaa.context)
+
+    ret = []
+
+    if readable_contexts:
+        readable_ids = NodeHandleContext.objects.filter(
+            context__in=readable_contexts
+        ).values_list('nodehandle_id', flat=True)
+
+        for id in readable_ids:
+            if id not in ret:
+                ret.append(id)
+
+    return ret
