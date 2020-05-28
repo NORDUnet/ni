@@ -407,8 +407,15 @@ def dicts_to_json_response(dict_list, header=None):
     """
     # Create the HttpResponse object with the appropriate Excel header.
     response = HttpResponse(content_type='application/json')
-    handle_id_list = [
-        {'handle_id': x.get('handle_id')} for x in dict_list]
+
+    handle_id_list = []
+    for x in dict_list:
+        elem = {
+            'handle_id': x[0].get('handle_id'),
+            'match_txt': x[1],
+        }
+        handle_id_list.append(elem)
+
     json.dump(handle_id_list, response)
     return response
 

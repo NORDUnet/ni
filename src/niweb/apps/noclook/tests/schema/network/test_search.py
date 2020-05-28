@@ -26,12 +26,15 @@ class GlobalSearchTest(Neo4jGraphQLNetworkTest):
         # search common pattern
         query = '''
         {
-          search_ninode(filter:{query: "-0"}){
+          search_generalsearch(filter:{query: "-0"}){
             edges{
               node{
-                id
-                name
-                __typename
+                ninode{
+                  id
+                  name
+                  __typename
+                }
+                match_txt
               }
             }
           }
@@ -42,18 +45,21 @@ class GlobalSearchTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check length
-        results = result.data['search_ninode']['edges']
+        results = result.data['search_generalsearch']['edges']
         self.assertEqual(len(results), 4)
 
         # search first pattern
         query = '''
         {
-          search_ninode(filter:{query: "-01"}){
+          search_generalsearch(filter:{query: "-01"}){
             edges{
               node{
-                id
-                name
-                __typename
+                ninode{
+                  id
+                  name
+                  __typename
+                }
+                match_txt
               }
             }
           }
@@ -64,18 +70,21 @@ class GlobalSearchTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check length
-        results = result.data['search_ninode']['edges']
+        results = result.data['search_generalsearch']['edges']
         self.assertEqual(len(results), 2)
 
         # search second pattern
         query = '''
         {
-          search_ninode(filter:{query: "-02"}){
+          search_generalsearch(filter:{query: "-02"}){
             edges{
               node{
-                id
-                name
-                __typename
+                ninode{
+                  id
+                  name
+                  __typename
+                }
+                match_txt
               }
             }
           }
@@ -86,7 +95,7 @@ class GlobalSearchTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check length
-        results = result.data['search_ninode']['edges']
+        results = result.data['search_generalsearch']['edges']
         self.assertEqual(len(results), 2)
 
 

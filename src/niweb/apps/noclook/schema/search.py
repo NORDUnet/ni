@@ -134,11 +134,31 @@ class SearchQueryConnection(graphene.relay.Connection):
                     # get handle_id from json
                     handle_id = element[json_id_attr]
                     nh = NodeHandle.objects.get(handle_id=handle_id)
-                    ret.append(nh)
+                    list_elem = cls.wrap_node(nh, element)
+                    ret.append(list_elem)
                 except:
                     pass
         return ret
 
+
+    @classmethod
+    def wrap_node(cls, nh, element):
+        ni_type = cls.get_from_nimetatype('ni_type')
+        is_nodewrapper = cls.get_from_nimetatype('is_nodewrapper', False)
+
+        if is_nodewrapper:
+            wrapper_args = dict(ninode=nh)
+
+            extra_attr_wrap = cls.get_from_nimetatype('extra_attr_wrap')
+            if extra_attr_wrap:
+                wrapper_args = {
+                    **wrapper_args,
+                    **{ extra_attr_wrap: element.get(extra_attr_wrap, None) }
+                }
+
+            return ni_type(**wrapper_args)
+        else:
+            return nh
 
     @classmethod
     def get_connection_resolver(cls):
@@ -174,6 +194,11 @@ class SearchQueryConnection(graphene.relay.Connection):
         return search_list_resolver
 
 
+class GeneralSearch(graphene.ObjectType):
+    ninode = graphene.Field(NINode, required=True)
+    match_txt = graphene.String()
+
+
 class GeneralSearchConnection(SearchQueryConnection):
     pass
 
@@ -182,11 +207,13 @@ class GeneralSearchConnection(SearchQueryConnection):
         view_search_varname = 'value'
         view_extra_params = { 'form': 'json', 'permission_filter': True }
         search_view = search
-        ni_type = NINode
+        ni_type = GeneralSearch
         json_id_attr = 'handle_id'
+        is_nodewrapper = True
+        extra_attr_wrap = 'match_txt'
 
     class Meta:
-        node = NINode
+        node = GeneralSearch
 
 
 class PortSearchConnection(SearchQueryConnection):

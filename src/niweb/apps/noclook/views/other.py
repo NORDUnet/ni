@@ -109,10 +109,11 @@ def search(request, value='', form=None, permission_filter=False):
         # nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
         # TODO: when search uses the above go back to that
         q = """
-            match (n:Node)
-            where any(prop in keys(n) where n[prop] =~ {{search}})
+            MATCH (n:Node)
+            WHERE any(prop in keys(n) WHERE n[prop] =~ {{search}})
             {}
-            return n
+            WITH n, [prop IN keys(n) WHERE n[prop] =~ {{search}}] AS match_props
+            RETURN n, reduce(s = "", prop IN match_props | s + prop + ':' + n[prop] + ';') AS match_txt
             """.format(permission_clause)
 
         nodes = nc.query_to_list(nc.graphdb.manager, q, search=query)
@@ -121,7 +122,7 @@ def search(request, value='', form=None, permission_filter=False):
         elif form == 'xls':
             return helpers.dicts_to_xls_response([n['n'] for n in nodes])
         elif form == 'json':
-            return helpers.dicts_to_json_response([n['n'] for n in nodes])
+            return helpers.dicts_to_json_response([(n['n'], n['match_txt']) for n in nodes])
         for node in nodes:
             nh = get_object_or_404(NodeHandle, pk=node['n']['handle_id'])
             item = {'node': node['n'], 'nh': nh}
