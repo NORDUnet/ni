@@ -79,16 +79,24 @@ class SRIVaktUtilsTest(NeoTestCase):
         )
         self.user3.save()
 
+        self.user4 = User(
+            first_name="Pedro", last_name="Zutano", email="pzutano@sunet.se",
+            is_staff=False, is_active=True, username="pzutano",
+        )
+        self.user4.save()
+
         # create groups
-        self.group1 = Group( name="Group can read the three contexts" )
-        self.group2 = Group( name="Group can write for the community and contracts" )
-        self.group3 = Group( name="Group can admin for the community module" )
-        self.group4 = Group( name="Group can list for the community and contracts" )
+        self.group1 = Group( name="Group can read all contexts" )
+        self.group2 = Group( name="Group can write community and contracts" )
+        self.group3 = Group( name="Group can admin community module" )
+        self.group4 = Group( name="Group can list community and contracts" )
+        self.group5 = Group( name="Group can read community contracts" )
 
         self.group1.save()
         self.group2.save()
         self.group3.save()
         self.group4.save()
+        self.group5.save()
 
         # add contexts and actions
         # first group
@@ -101,13 +109,20 @@ class SRIVaktUtilsTest(NeoTestCase):
                 context = context
             ).save()
 
-        # second group
+        # second and fifth group
         contexts = [self.community_ctxt, self.contracts_ctxt]
 
         for context in contexts:
             GroupContextAuthzAction(
                 group = self.group2,
                 authzprofile = self.get_write_authaction,
+                context = context
+            ).save()
+
+        for context in contexts:
+            GroupContextAuthzAction(
+                group = self.group5,
+                authzprofile = self.get_read_authaction,
                 context = context
             ).save()
 
@@ -138,6 +153,18 @@ class SRIVaktUtilsTest(NeoTestCase):
         self.group4.user_set.add(self.user1)
         self.group4.user_set.add(self.user2)
         self.group4.user_set.add(self.user3)
+
+        self.group5.user_set.add(self.user4)
+
+    def test_ids_user_canread(self):
+        readable_ids = sriutils.get_ids_user_canread(self.user4)
+        expected_ids = [
+            self.organization1.handle_id,
+            self.contact1.handle_id,
+            self.contact2.handle_id,
+        ]
+
+        self.assertEqual(readable_ids, expected_ids)
 
     def test_read_resource(self):
         # check if the three users can read the organization1

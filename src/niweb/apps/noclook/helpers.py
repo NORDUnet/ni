@@ -16,6 +16,7 @@ from actstream.models import action_object_stream, target_stream
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils import six
 import csv
+import json
 import xlwt
 import re
 import os
@@ -397,6 +398,25 @@ def dicts_to_xls_response(dict_list, header=None):
         key_set = header
     wb = dicts_to_xls(dict_list, key_set, 'NOCLook result')
     wb.save(response)
+    return response
+
+
+def dicts_to_json_response(dict_list, header=None):
+    """
+    Takes a list of dicts and returns a response object with and JSON file.
+    """
+    # Create the HttpResponse object with the appropriate Excel header.
+    response = HttpResponse(content_type='application/json')
+
+    handle_id_list = []
+    for x in dict_list:
+        elem = {
+            'handle_id': x[0].get('handle_id'),
+            'match_txt': x[1],
+        }
+        handle_id_list.append(elem)
+
+    json.dump(handle_id_list, response)
     return response
 
 
