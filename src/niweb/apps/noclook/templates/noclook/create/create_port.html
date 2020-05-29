@@ -15,6 +15,6 @@
               {{ form.port_type | as_crispy_field }}
       </div>
       <input type="submit" value="Save" class="btn btn-primary" />
-      <a href="/new/" class="btn">Cancel</a>
+      <a href="{% url 'new_node' %}" class="btn">Cancel</a>
     </form>
 {% endblock %}

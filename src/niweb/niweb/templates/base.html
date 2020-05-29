@@ -116,14 +116,14 @@
                                 </ul>
                             </li>
                             {% if user.is_staff %}
-                                <li><a href="/new/">Create new</a></li>
+                                <li><a href="{% url 'new_node' %}">Create new</a></li>
                                 <li><a href="/reserve-id/">Reserve IDs</a></li>
                                 <li><a href="/userprofile/">Users</a></li>
                             {% endif %}
                             <li class="divider-vertical"></li>
                             {% if user.is_authenticated %}
                             <li class="pull-left">
-                                <form action="/search/" method="post" class="navbar-search">{% csrf_token %}
+                                <form action="{% url 'search' %}"/" method="post" class="navbar-search">{% csrf_token %}
                                     <input class="xlarge search-query" type="search" id="mobile" name="q" placeholder="Search" />
                                 </form>
                              </li>
@@ -163,7 +163,7 @@
                             <li class="divider"></li>
                             <li class="nav-header"><i class="icon-wrench"></i> Admin</li>
                             {% if user.is_staff %}
-                                <li><a href="/new/">Create new</a></li>
+                                <li><a href="{% url 'new_node' %}">Create new</a></li>
                                 {% ifequal menu_mode 'ni' %}
                                     <li><a href="/reserve-id/">Reserve IDs</a></li>
                                 {% endifequal %}
@@ -178,7 +178,7 @@
                 <div class="row visible-desktop">
                     <div class="span5">
                         {% if user.is_authenticated %}
-                            <form id="test" action="/search/" method="post" class="form-search">{% csrf_token %}
+                            <form id="test" action="{% url 'search' %}" method="post" class="form-search">{% csrf_token %}
                                 <input class="xlarge search-query" type="search" id="main" name="q" /> <button class="btn primary" type="submit">Search</button>
                             </form>
                         {% endif %}
