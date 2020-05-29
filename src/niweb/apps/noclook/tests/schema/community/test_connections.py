@@ -331,8 +331,6 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
             NodeHandleContext.objects.get_or_create(nodehandle=self.organization2, \
                 context=self.community_ctxt)[0]
 
-        print(self.perm_rel_org2)
-
     def test_organizations_filter(self):
         # filter by name
         query = '''
