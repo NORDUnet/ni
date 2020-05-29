@@ -814,10 +814,15 @@ class NIObjectType(DjangoObjectType):
                             if qs_order_prop and qs_order_order:
                                 orderBy = None
 
+                            # get filter clause
+                            readable_ids = sriutils.get_ids_user_canread(info.context.user)
+
                             # create query
                             fmt_type_name = type_name.replace(' ', '_')
+
                             q = cls.build_filter_query(filter, orderBy, fmt_type_name,
-                                            apply_handle_id_order, revert_default_order)
+                                            apply_handle_id_order, revert_default_order,
+                                            readable_ids)
                             nodes = nc.query_to_list(nc.graphdb.manager, q)
                             nodes = [ node['n'] for node in nodes]
 
@@ -883,7 +888,8 @@ class NIObjectType(DjangoObjectType):
         return generic_list_resolver
 
     @classmethod
-    def build_filter_query(cls, filter, orderBy, nodetype, handle_id_order=False, revert_order=False):
+    def build_filter_query(cls, filter, orderBy, nodetype,\
+        handle_id_order=False, revert_order=False, readable_ids=None):
         build_query = ''
         order_query = ''
         optional_matches = ''
@@ -1168,15 +1174,24 @@ class NIObjectType(DjangoObjectType):
             order_nibble = 'ASC' if revert_order else 'DESC'
             order_query = "ORDER BY n.handle_id {}".format(order_nibble)
 
+        # create filter query; this will filter out nodes that the user is
+        # not allowed to see
+        readable_ids = [ str(x) for x in readable_ids ] # string conversion
+        ids = ', '.join(readable_ids)
+        filter_prefix = 'AND' if build_query else 'WHERE'
+        filter_query = '{prefix} n.handle_id in [{ids}]'.format(prefix=filter_prefix, ids=ids)
+
         q = """
             MATCH {node_match_clause}
             {optional_matches}
             {build_query}
+            {filter_query}
             RETURN n
             {order_query}
             """.format(node_match_clause=node_match_clause,
                         optional_matches=optional_matches,
-                        build_query=build_query, order_query=order_query)
+                        build_query=build_query, filter_query=filter_query,
+                        order_query=order_query)
 
         logger.debug('Neo4j connection filter query:\n{}\n'.format(q))
 

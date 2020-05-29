@@ -4,6 +4,7 @@ __author__ = 'ffuentes'
 from collections import OrderedDict
 from pprint import pformat
 from . import Neo4jGraphQLCommunityTest
+from apps.noclook.models import NodeHandleContext
 from niweb.schema import schema
 
 class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
@@ -228,6 +229,109 @@ class OrganizationConnectionTest(Neo4jGraphQLCommunityTest):
             pformat(expected, indent=1),
             pformat(result.data, indent=1)
         )
+
+        # test read permission
+        # delete permission over organization2
+        self.perm_rel_org2.delete()
+
+        # no order
+        query = '''
+        {
+          organizations{
+            edges{
+              node{
+                name
+              }
+            }
+          }
+        }
+        '''
+
+        expected = OrderedDict([('organizations',
+                      OrderedDict([('edges',
+                        [OrderedDict([('node',
+                           OrderedDict([('name',
+                             'organization1')]))])])]))])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        # order by id
+        query = '''
+        {
+          organizations( orderBy: handle_id_DESC ){
+            edges{
+              node{
+                name
+              }
+            }
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        # order by name
+        query = '''
+        {
+          organizations( orderBy:name_ASC ){
+            edges{
+              node{
+                name
+              }
+            }
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        # name startswith
+        query = '''
+        {
+          organizations(
+            filter:{
+              AND:[{
+                name_starts_with: "organization"
+              }]
+            }
+        	){
+            edges{
+              node{
+                name
+              }
+            }
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+        assert result.data == expected, '{}\n!=\n{}'.format(
+            pformat(expected, indent=1),
+            pformat(result.data, indent=1)
+        )
+
+        # recreate permission over organization2
+        self.perm_rel_org2 = \
+            NodeHandleContext.objects.get_or_create(nodehandle=self.organization2, \
+                context=self.community_ctxt)[0]
+
+        print(self.perm_rel_org2)
 
     def test_organizations_filter(self):
         # filter by name

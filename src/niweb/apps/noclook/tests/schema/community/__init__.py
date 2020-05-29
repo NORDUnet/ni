@@ -25,8 +25,16 @@ class Neo4jGraphQLCommunityTest(Neo4jGraphQLGenericTest):
         self.role2 = Role(name='role2').save()
 
         # add nodes to the appropiate context
-        NodeHandleContext(nodehandle=self.organization1, context=self.community_ctxt).save()
-        NodeHandleContext(nodehandle=self.organization2, context=self.community_ctxt).save()
+        self.perm_rel_org1 = \
+            NodeHandleContext(nodehandle=self.organization1, \
+                context=self.community_ctxt)
+        self.perm_rel_org1.save()
+
+        self.perm_rel_org2 = \
+            NodeHandleContext(nodehandle=self.organization2, \
+                context=self.community_ctxt)
+        self.perm_rel_org2.save()
+
         NodeHandleContext(nodehandle=self.contact1, context=self.community_ctxt).save()
         NodeHandleContext(nodehandle=self.contact2, context=self.community_ctxt).save()
         NodeHandleContext(nodehandle=self.group1, context=self.community_ctxt).save()
