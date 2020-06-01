@@ -4,7 +4,6 @@ from tastypie.api import Api
 import apps.noclook.api.resources as niapi
 import apps.userprofile.resources as profile_api
 from django.contrib.auth import views as auth_views
-from django.views.decorators.csrf import csrf_exempt
 from apps.noclook.schema import AuthGraphQLView
 from graphql_jwt.decorators import jwt_cookie
 from django.conf.urls.static import static
@@ -87,7 +86,7 @@ urlpatterns += [
     url(r'^api/', include(v1_api.urls)),
 
     # GraphQL endpoint
-    url(r'^graphql/', csrf_exempt(jwt_cookie(AuthGraphQLView.as_view(graphiql=settings.USE_GRAPHIQL)))),
+    url(r'^graphql/', jwt_cookie(AuthGraphQLView.as_view(graphiql=settings.USE_GRAPHIQL))),
 
     # Django Generic Comments
     url(r'^comments/', include('django_comments.urls')),
