@@ -85,7 +85,7 @@ class SRIJWTAuthMiddleware(object):
                 )
                 response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
                 patch_vary_headers(response, ('Cookie',))
-                
+
                 return response
 
         max_age = request.session.get_expiry_age()
@@ -122,8 +122,8 @@ class SRIJWTAuthMiddleware(object):
                         '',
                         domain=settings.COOKIE_DOMAIN,
                         expires=anti_expires_time,
-                        httponly=False,
-                        secure=jwt_settings.JWT_COOKIE_SECURE,
+                        secure=settings.JWT_COOKIE_SECURE or None,
+                        httponly=settings.JWT_COOKIE_HTTPONLY or None,
                     )
                     response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
                     patch_vary_headers(response, ('Cookie',))
@@ -157,8 +157,8 @@ class SRIJWTAuthMiddleware(object):
                 domain=settings.COOKIE_DOMAIN,
                 max_age=max_age,
                 expires=cookie_expires,
-                httponly=False,
-                secure=jwt_settings.JWT_COOKIE_SECURE,
+                secure=settings.JWT_COOKIE_SECURE or None,
+                httponly=settings.JWT_COOKIE_HTTPONLY or None,
             )
             patch_vary_headers(response, ('Cookie',))
 
