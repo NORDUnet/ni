@@ -27,13 +27,13 @@ urlpatterns = [
     url(r'^findin/(?P<slug>[-\w]+)/(?P<key>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.find_all),
     url(r'^findin/(?P<slug>[-\w]+)/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.find_all),
     # Search
-    url(r'^search/$', other.search),
+    url(r'^search/$', other.search, name="search"),
     url(r'^search/autocomplete$', other.search_autocomplete),
     url(r'^search/typeahead/ports$', other.search_port_typeahead),
     url(r'^search/typeahead/locations$', other.search_location_typeahead),
     url(r'^search/typeahead/non-locations$', other.search_non_location_typeahead),
     url(r'^search/typeahead/(?P<slug>[-\+\w]+)/?$', other.typeahead_slugs, name='typeahead_slugs'),
-    url(r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.search),
+    url(r'^search/(?P<value>.*)/(result.)?(?P<form>(csv|json|xls)?)$', other.search, name="search_file"),
     # QR lookup
     url(r'^lu/(?P<name>[-\w]+)/$', other.qr_lookup),
     # Hostname lookup
@@ -42,7 +42,7 @@ urlpatterns = [
     url(r'^download/tabletofile/$', other.json_table_to_file),
 
     # -- create views
-    url(r'^new/$', create.new_node),
+    url(r'^new/$', create.new_node, name="new_node"),
     url(r'^new/(?P<slug>[-\w]+)/$', create.new_node, name='create_node'),
     url(r'^new/(?P<slug>[-\w]+)/parent/(?P<parent_id>\d+)/$', create.new_node),
     url(r'^new/(?P<slug>[-\w]+)/name/(?P<name>[-\w]+)/$', create.new_node),
