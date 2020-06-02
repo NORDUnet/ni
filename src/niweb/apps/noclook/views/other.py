@@ -21,6 +21,7 @@ import apps.noclook.vakt.utils as sriutils
 import norduniclient as nc
 
 
+@login_required
 def csrf(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
