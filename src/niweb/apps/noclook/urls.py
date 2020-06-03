@@ -7,7 +7,7 @@ from .views import other, create, edit, import_nodes, report, detail, redirect, 
 urlpatterns = [
     url(r'^csrf/$', other.csrf),
     url(r'^login/$', auth_views.LoginView.as_view(), name="login"),
-    url(r'^$', other.index),
+    url(r'^$', other.index, name="home"),
     # Log out
     url(r'^logout/$', other.logout_page, name="logout"),
     # Visualize views
