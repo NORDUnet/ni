@@ -1688,7 +1688,7 @@ class CreateNIMutation(AbstractNIMutation):
             try:
                 form_to_nodehandle = cls.get_form_to_nodehandle_func()
                 nh = form_to_nodehandle(request, form,
-                        node_type, node_meta_type)
+                        node_type, node_meta_type, context)
             except UniqueNodeError:
                 has_error = True
                 return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]

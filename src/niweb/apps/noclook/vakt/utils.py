@@ -247,3 +247,7 @@ def get_ids_user_canread(user):
 
 def get_nh_contexts(nh):
     return [ c.name for c in nh.contexts.all() ]
+
+
+def get_nh_named_contexts(nh):
+    return [ { 'context_name': c } for c in get_nh_contexts(nh) ]

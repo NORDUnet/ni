@@ -235,7 +235,7 @@ class CreateOrganization(CreateNIMutation):
             if form.is_valid():
                 try:
                     nh = helpers.form_to_generic_node_handle(request, form,
-                            node_type, node_meta_type)
+                            node_type, node_meta_type, context)
                 except UniqueNodeError:
                     has_error = True
                     return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]

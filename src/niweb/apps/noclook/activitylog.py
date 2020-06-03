@@ -20,7 +20,7 @@ def update_node_property(user, action_object, property_key, value_before, value_
     :param value_after: JSON supported value
     :return: None
     """
-    contexts = sriutils.get_nh_contexts(action_object)
+    contexts = sriutils.get_nh_named_contexts(action_object)
     action_object.modifier = user
     action_object.save()
 
@@ -38,13 +38,16 @@ def update_node_property(user, action_object, property_key, value_before, value_
     )
 
 
-def create_node(user, action_object):
+def create_node(user, action_object, context=None):
     """
     :param user: Django user instance
     :param action_object: NodeHandle instance
     :return: None
     """
-    contexts = sriutils.get_nh_contexts(action_object)
+    contexts = []
+
+    if context:
+        contexts = [{ 'context_name': context.name }]
 
     action.send(
         user,
@@ -63,7 +66,7 @@ def delete_node(user, action_object):
     :param action_object: NodeHandle instance
     :return: None
     """
-    contexts = sriutils.get_nh_contexts(action_object)
+    contexts = sriutils.get_nh_named_contexts(action_object)
 
     action.send(
         user,
@@ -93,9 +96,13 @@ def update_relationship_property(user, relationship, property_key, value_before,
     end_nh.modifier = user
     end_nh.save()
 
-    contexts_start = sriutils.get_nh_contexts(start_nh)
-    contexts_end = sriutils.get_nh_contexts(end_nh)
-    contexts = contexts_start + contexts_end
+    contexts_start = sriutils.get_nh_named_contexts(start_nh)
+    contexts_end = sriutils.get_nh_named_contexts(end_nh)
+    contexts = contexts_start
+
+    for c in contexts_end:
+        if c not in contexts:
+            contexts.append(c)
 
     action.send(
         user,
@@ -126,9 +133,13 @@ def create_relationship(user, relationship):
     end_nh.modifier = user
     end_nh.save()
 
-    contexts_start = sriutils.get_nh_contexts(start_nh)
-    contexts_end = sriutils.get_nh_contexts(end_nh)
-    contexts = contexts_start + contexts_end
+    contexts_start = sriutils.get_nh_named_contexts(start_nh)
+    contexts_end = sriutils.get_nh_named_contexts(end_nh)
+    contexts = contexts_start
+
+    for c in contexts_end:
+        if c not in contexts:
+            contexts.append(c)
 
     action.send(
         user,
@@ -156,9 +167,13 @@ def delete_relationship(user, relationship):
     end_nh.modifier = user
     end_nh.save()
 
-    contexts_start = sriutils.get_nh_contexts(start_nh)
-    contexts_end = sriutils.get_nh_contexts(end_nh)
-    contexts = contexts_start + contexts_end
+    contexts_start = sriutils.get_nh_named_contexts(start_nh)
+    contexts_end = sriutils.get_nh_named_contexts(end_nh)
+    contexts = contexts_start
+
+    for c in contexts_end:
+        if c not in contexts:
+            contexts.append(c)
 
     action.send(
         user,
