@@ -80,6 +80,7 @@ class FakeDataGenerator:
         self.add_community_context(nh)
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             nh.get_node().add_property(key, value)
 
         return nh
