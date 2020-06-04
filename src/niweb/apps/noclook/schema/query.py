@@ -177,6 +177,12 @@ class NOCRootQuery(NOCAutoQuery):
     getMetatypes = graphene.List(MetaType)
     getTypesForMetatype = graphene.List(TypeInfo, metatype=graphene.Argument(MetaType))
 
+    # activity connection
+    getAvailableContexts = graphene.List(graphene.String, resolver=resolve_available_contexts)
+    getContextActivity = relay.ConnectionField(
+        ActionConnection, filter=graphene.Argument(ActionFilter),
+        orderBy=graphene.Argument(ActionOrderBy), resolver=resolve_context_activity)
+
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             django_dropdowns = [d.name for d in DropdownModel.objects.all()]

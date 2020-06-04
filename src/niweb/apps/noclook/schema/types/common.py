@@ -3,9 +3,13 @@ __author__ = 'ffuentes'
 
 import graphene
 
-from apps.noclook.models import Dropdown, Choice as ChoiceModel
+from apps.noclook.models import Dropdown, Choice as ChoiceModel, \
+                                Context as ContextModel
+from apps.noclook.feeds import context_feed
 from graphene_django import DjangoObjectType
 from apps.noclook.schema.fields import *
+from actstream.models import Action as ActionModel
+
 
 class Dropdown(DjangoObjectType):
     '''
@@ -26,3 +30,66 @@ class TypeInfo(graphene.ObjectType):
     connection_name = graphene.String(required=True)
     byid_name = graphene.String(required=True)
     all_name = graphene.String(required=True)
+
+
+class Action(DjangoObjectType):
+    '''
+    This class represents an Action from the activity log
+    '''
+    text = graphene.String(required=True)
+
+    def resolve_text(self, info, **kwargs):
+        ret = ''
+
+        if self:
+            ret = str(self)
+
+        return ret
+
+    class Meta:
+        model = ActionModel
+        interfaces = (graphene.relay.Node, )
+        use_connection = False
+        fields = ("actor_content_type", "actor_object_id", "verb",
+                    "description", "target_content_type", "target_object_id",
+                    "action_object_content_type", "action_object_object_id",
+                    "timestamp", "public")
+
+
+class ActionOrderBy(graphene.Enum):
+    timestamp_ASC='timestamp_ASC'
+    timestamp_DESC='timestamp_DESC'
+
+
+class ActionFilter(graphene.InputObjectType):
+    context = graphene.String(required=True)
+
+
+class ActionConnection(graphene.relay.Connection):
+    class Meta:
+        node = Action
+
+
+def resolve_available_contexts(self, info, **kwargs):
+    return [ x.name for x in ContextModel.objects.all()]
+
+
+def resolve_context_activity(self, info, **kwargs):
+    qs = ActionModel.objects.none()
+
+    if info.context and info.context.user.is_authenticated:
+        # TODO: no permission check
+        filter = kwargs.get('filter')
+        order_by = kwargs.get('orderBy')
+
+        qs = context_feed(filter.context)
+
+        if order_by:
+            if order_by == ActionOrderBy.timestamp_ASC:
+                qs = qs.order_by('timestamp')
+            elif order_by == ActionOrderBy.timestamp_DESC:
+                qs = qs.order_by('-timestamp')
+        else:
+            qs = qs.order_by('-timestamp')
+
+    return qs
