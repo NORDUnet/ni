@@ -8,7 +8,6 @@ from apps.noclook.views.other import search_port_typeahead,\
     search_simple_port_typeahead, search
 from django.db.utils import ProgrammingError
 from django.test import RequestFactory
-from django.urls import reverse_lazy
 from django.utils.text import slugify
 
 from .types import *

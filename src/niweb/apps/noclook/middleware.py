@@ -48,6 +48,20 @@ def get_user_from_session_key(session_key):
     return user
 
 
+def delete_jwt_cookie(request, response):
+    max_age = request.session.get_expiry_age()
+    anti_expires_time = cookie_date(time.time() - max_age)
+
+    response.set_cookie(
+        jwt_settings.JWT_COOKIE_NAME,
+        '',
+        domain=settings.COOKIE_DOMAIN,
+        expires=anti_expires_time,
+        secure=settings.JWT_COOKIE_SECURE or None,
+        httponly=settings.JWT_COOKIE_HTTPONLY or None,
+    )
+
+
 class SRIJWTAuthMiddleware(object):
     def __init__(self, get_response):
         self.get_response = get_response
@@ -85,7 +99,7 @@ class SRIJWTAuthMiddleware(object):
                 )
                 response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
                 patch_vary_headers(response, ('Cookie',))
-                
+
                 return response
 
         max_age = request.session.get_expiry_age()
@@ -117,15 +131,7 @@ class SRIJWTAuthMiddleware(object):
                 except ObjectDoesNotExist:
                     ## fallback solution
                     response = redirect(request.get_full_path())
-                    response.set_cookie(
-                        jwt_settings.JWT_COOKIE_NAME,
-                        '',
-                        domain=settings.COOKIE_DOMAIN,
-                        expires=anti_expires_time,
-                        httponly=False,
-                        secure=jwt_settings.JWT_COOKIE_SECURE,
-                    )
-                    response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
+                    delete_jwt_cookie(request, response)
                     patch_vary_headers(response, ('Cookie',))
 
                     return response
@@ -157,8 +163,8 @@ class SRIJWTAuthMiddleware(object):
                 domain=settings.COOKIE_DOMAIN,
                 max_age=max_age,
                 expires=cookie_expires,
-                httponly=False,
-                secure=jwt_settings.JWT_COOKIE_SECURE,
+                secure=settings.JWT_COOKIE_SECURE or None,
+                httponly=settings.JWT_COOKIE_HTTPONLY or None,
             )
             patch_vary_headers(response, ('Cookie',))
 

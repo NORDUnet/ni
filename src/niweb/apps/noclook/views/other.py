@@ -8,17 +8,20 @@ from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
 from django.middleware.csrf import get_token
+from django.urls import reverse_lazy
 from graphql_jwt.settings import jwt_settings
 from re import escape as re_escape
 import json
 
 from apps.noclook.models import NodeHandle, NodeType
+from apps.noclook.middleware import delete_jwt_cookie
 from apps.noclook import arborgraph
 from apps.noclook import helpers
 import apps.noclook.vakt.utils as sriutils
 import norduniclient as nc
 
 
+@login_required
 def csrf(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
@@ -32,11 +35,14 @@ def logout_page(request):
     """
     Log users out and redirects them to the index.
     """
-    response = render(request, 'noclook/logout.html', {'cookie_domain': settings.COOKIE_DOMAIN })
-    response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
+    # logout
     request.session.flush()
-
     logout(request)
+
+    # redirect to NOCLook's home and delete JWT cookie
+    response = redirect(reverse_lazy("home"))
+    delete_jwt_cookie(request, response)
+    response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
 
     return response
 

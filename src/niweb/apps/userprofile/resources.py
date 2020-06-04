@@ -19,7 +19,7 @@ class UserProfileResource(ModelResource):
 
     user_id = fields.IntegerField('user_id')
     email = fields.CharField('email')
-    display_name = fields.CharField('display_name')
+    display_name = fields.CharField('display_name', blank=True, null=True)
     #  avatar = fields.FileField('avatar')
     landing_page = fields.CharField('landing_page')
     view_network = fields.BooleanField('view_network')
