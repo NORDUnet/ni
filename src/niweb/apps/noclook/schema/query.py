@@ -180,7 +180,7 @@ class NOCRootQuery(NOCAutoQuery):
     # activity connection
     getAvailableContexts = graphene.List(graphene.String, resolver=resolve_available_contexts)
     getContextActivity = relay.ConnectionField(
-        ActionConnection, filter=graphene.Argument(ActionFilter),
+        ActionConnection, filter=graphene.Argument(ActionFilter,required=True),
         orderBy=graphene.Argument(ActionOrderBy), resolver=resolve_context_activity)
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):

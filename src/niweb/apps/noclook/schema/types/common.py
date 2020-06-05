@@ -6,6 +6,7 @@ import graphene
 from apps.noclook.models import Dropdown, Choice as ChoiceModel, \
                                 Context as ContextModel
 from apps.noclook.feeds import context_feed
+import apps.noclook.vakt.utils as sriutils
 from graphene_django import DjangoObjectType
 from apps.noclook.schema.fields import *
 from actstream.models import Action as ActionModel
@@ -78,18 +79,33 @@ def resolve_context_activity(self, info, **kwargs):
     qs = ActionModel.objects.none()
 
     if info.context and info.context.user.is_authenticated:
-        # TODO: no permission check
+        user = info.context.user
+
         filter = kwargs.get('filter')
         order_by = kwargs.get('orderBy')
 
-        qs = context_feed(filter.context)
+        if ContextModel.objects.filter(name=filter.context).exists():
+            # check list permission for this module/context
+            context = ContextModel.objects.get(name=filter.context)
+            authorized = sriutils.authorize_list_module(user, context)
 
-        if order_by:
-            if order_by == ActionOrderBy.timestamp_ASC:
-                qs = qs.order_by('timestamp')
-            elif order_by == ActionOrderBy.timestamp_DESC:
-                qs = qs.order_by('-timestamp')
-        else:
-            qs = qs.order_by('-timestamp')
+            if authorized:
+                # get readable handle_ids
+                readable_ids = sriutils.get_ids_user_canread(user)
+
+                qs = context_feed(filter.context)
+
+                if order_by:
+                    if order_by == ActionOrderBy.timestamp_ASC:
+                        qs = qs.order_by('timestamp')
+                    elif order_by == ActionOrderBy.timestamp_DESC:
+                        qs = qs.order_by('-timestamp')
+                else:
+                    qs = qs.order_by('-timestamp')
+
+                # limit qs to show only readable handle_ids
+                qs = qs.filter(actor_object_id__in=readable_ids)
+    else:
+        raise GraphQLAuthException()
 
     return qs
