@@ -410,9 +410,16 @@ def dicts_to_json_response(dict_list, header=None):
 
     handle_id_list = []
     for x in dict_list:
+        end_str = ' [..] '
+        match_txt = x[1]
+
+        if match_txt[-len(end_str):] == end_str:
+            # remove last ' [..] '
+            match_txt = match_txt[:-len(end_str)]
+
         elem = {
             'handle_id': x[0].get('handle_id'),
-            'match_txt': x[1],
+            'match_txt': match_txt,
         }
         handle_id_list.append(elem)
 
