@@ -59,7 +59,7 @@ class Action(DjangoObjectType):
         ret = None
         contenttype = self.action_object_content_type
 
-        if contenttype.app_label == 'noclook' and \
+        if contenttype and contenttype.app_label == 'noclook' and \
             contenttype.model == 'nodehandle':
             ret = NodeHandle.objects.get(
                 handle_id=self.action_object_object_id
@@ -71,7 +71,7 @@ class Action(DjangoObjectType):
         ret = None
         contenttype = self.target_content_type
 
-        if contenttype.app_label == 'noclook' and \
+        if contenttype and contenttype.app_label == 'noclook' and \
             contenttype.model == 'nodehandle':
             ret = NodeHandle.objects.get(
                 handle_id=self.target_object_id
