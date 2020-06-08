@@ -7,9 +7,13 @@ from apps.noclook.models import Dropdown, Choice as ChoiceModel, \
                                 Context as ContextModel
 from apps.noclook.feeds import context_feed
 import apps.noclook.vakt.utils as sriutils
+from django.contrib.auth.models import User as UserModel
 from graphene_django import DjangoObjectType
 from apps.noclook.schema.fields import *
 from actstream.models import Action as ActionModel
+
+from ..metatypes import NINode
+from ..core import User
 
 
 class Dropdown(DjangoObjectType):
@@ -38,6 +42,10 @@ class Action(DjangoObjectType):
     This class represents an Action from the activity log
     '''
     text = graphene.String(required=True)
+    action_object = graphene.Field(NINode)
+    target_object = graphene.Field(NINode)
+    actor = graphene.Field(User)
+    actorname = graphene.String()
 
     def resolve_text(self, info, **kwargs):
         ret = ''
@@ -47,14 +55,68 @@ class Action(DjangoObjectType):
 
         return ret
 
+    def resolve_action_object(self, info, **kwargs):
+        ret = None
+        contenttype = self.action_object_content_type
+
+        if contenttype.app_label == 'noclook' and \
+            contenttype.model == 'nodehandle':
+            ret = NodeHandle.objects.get(
+                handle_id=self.action_object_object_id
+            )
+
+        return ret
+
+    def resolve_target_object(self, info, **kwargs):
+        ret = None
+        contenttype = self.target_content_type
+
+        if contenttype.app_label == 'noclook' and \
+            contenttype.model == 'nodehandle':
+            ret = NodeHandle.objects.get(
+                handle_id=self.target_object_id
+            )
+
+        return ret
+
+    def resolve_actorname(self, info, **kwargs):
+        user = UserModel.objects.get(pk=self.actor_object_id)
+
+        return user.username
+
+    def resolve_actor(self, info, **kwargs):
+        '''
+        Actor resolver, the user needs admin rights over the node's modules
+        '''
+        ret = None
+
+        # get action object
+        action_object = self.action_object
+
+        # get user
+        user = UserModel.objects.get(pk=self.actor_object_id)
+
+        authorized = True
+
+        if not action_object.contexts.all():
+            authorized = False
+
+        for context in action_object.contexts.all():
+            is_contextadmin = sriutils.authorize_admin_module(user, context)
+
+            if not is_contextadmin:
+                authorized = False
+
+        if authorized:
+            ret = user
+
+        return ret
+
     class Meta:
         model = ActionModel
         interfaces = (graphene.relay.Node, )
         use_connection = False
-        fields = ("actor_content_type", "actor_object_id", "verb",
-                    "description", "target_content_type", "target_object_id",
-                    "action_object_content_type", "action_object_object_id",
-                    "timestamp", "public")
+        fields = ("verb", "description", "timestamp", "public")
 
 
 class ActionOrderBy(graphene.Enum):
@@ -76,6 +138,10 @@ def resolve_available_contexts(self, info, **kwargs):
 
 
 def resolve_context_activity(self, info, **kwargs):
+    '''
+    Connection resolver for the activity log, filtered by module name.
+    Actions are filtered to only show what the user has rights to list/read
+    '''
     qs = ActionModel.objects.none()
 
     if info.context and info.context.user.is_authenticated:
