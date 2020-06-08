@@ -119,7 +119,7 @@ def search(request, value='', form=None, permission_filter=False):
             WHERE any(prop in keys(n) WHERE n[prop] =~ {{search}})
             {}
             WITH n, [prop IN keys(n) WHERE n[prop] =~ {{search}}] AS match_props
-            RETURN n, reduce(s = "", prop IN match_props | s + prop + ':' + n[prop] + ';') AS match_txt
+            RETURN n, reduce(s = "", prop IN match_props | s + n[prop] + ' [..] ') AS match_txt
             """.format(permission_clause)
 
         nodes = nc.query_to_list(nc.graphdb.manager, q, search=query)
