@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle, Dropdown, Choice, Group, \
     GroupContextAuthzAction, NodeHandleContext
+from apps.noclook.tests.stressload.data_generator import NetworkFakeDataGenerator
 from collections import OrderedDict
 from . import Neo4jGraphQLNetworkTest
 from niweb.schema import schema
@@ -377,6 +378,12 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             "nunc sed volutpat. Curabitur sit amet lorem elementum sapien "\
             "ornare placerat."
 
+        # set a provider
+        generator = NetworkFakeDataGenerator()
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
         # Create query
         query = '''
         mutation{{
@@ -385,6 +392,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
               name: "{cable_name}"
               cable_type: "{cable_type}"
               description: "{cable_description}"
+              relationship_provider: "{provider_id}"
             }}
             create_subinputs:[
               {{
@@ -423,6 +431,10 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                     name
                   }}
                 }}
+                provider{{
+                  id
+                  name
+                }}
               }}
             }}
             subcreated{{
@@ -449,7 +461,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                     cable_description=cable_description, aport_name=aport_name,
                     aport_type=aport_type, aport_description=aport_description,
                     bport_name=bport_name, bport_type=bport_type,
-                    bport_description=bport_description)
+                    bport_description=bport_description, provider_id=provider_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -503,6 +515,11 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(check_bport['port_type']['value'], bport_type)
             self.assertEqual(check_bport['description'], bport_description)
 
+        # check provider
+        check_provider = result_data['created']['cable']['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+        self.assertEqual(check_provider['name'], provider.node_name)
+
         ## Update query
         buffer_description = cable_description
         buffer_description2 = aport_description
@@ -519,6 +536,10 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         bport_type = "RJ45"
         bport_description = buffer_description
 
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
         query = '''
         mutation{{
           composite_cable(input:{{
@@ -527,6 +548,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
               name: "{cable_name}"
               cable_type: "{cable_type}"
               description: "{cable_description}"
+              relationship_provider: "{provider_id}"
             }}
             update_subinputs:[
               {{
@@ -567,6 +589,10 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                     name
                   }}
                 }}
+                provider{{
+                  id
+                  name
+                }}
               }}
             }}
             subupdated{{
@@ -594,7 +620,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                     aport_type=aport_type, aport_description=aport_description,
                     bport_name=bport_name, bport_type=bport_type,
                     bport_description=bport_description, cable_id=cable_id,
-                    aport_id=aport_id, bport_id=bport_id)
+                    aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -642,3 +668,15 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(check_bport['name'], bport_name)
             self.assertEqual(check_bport['port_type']['value'], bport_type)
             self.assertEqual(check_bport['description'], bport_description)
+
+        # check provider
+        check_provider = result_data['updated']['cable']['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+        self.assertEqual(check_provider['name'], provider.node_name)
+
+        # check that we only have one provider
+        _type, cable_handle_id = relay.Node.from_global_id(cable_id)
+        cable_nh = NodeHandle.objects.get(handle_id=cable_handle_id)
+        cable_node = cable_nh.get_node()
+        previous_rels = cable_node.incoming.get('Provides', [])
+        self.assertTrue(len(previous_rels) == 1)

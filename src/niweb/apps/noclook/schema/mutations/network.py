@@ -74,14 +74,29 @@ class NIPortMutationFactory(NIMutationFactory):
         abstract = False
 
 
+def process_provider(request, form, nodehandler, relation_name):
+    if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+        # check if there's a previous relation to ensure it's unique
+        previous_rels = nodehandler.incoming.get('Provides', [])
+
+        if previous_rels:
+            relationship_id = previous_rels[0]['relationship_id']
+            relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+            relationship.delete()
+
+        owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
+        helpers.set_provider(request.user, nodehandler, owner_nh.handle_id)
+
+
 class NICableMutationFactory(NIMutationFactory):
     class NIMetaClass:
         create_form    = NewCableForm
         update_form    = EditCableForm
         request_path   = '/'
         graphql_type   = Cable
-        create_exclude = ('relationship_provider', )
-        update_exclude = ('relationship_provider', )
+        relations_processors = {
+            'relationship_provider': process_provider,
+        }
 
     class Meta:
         abstract = False
