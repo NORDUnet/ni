@@ -7,10 +7,10 @@ from apps.noclook.models import Dropdown, Choice as ChoiceModel, \
                                 Context as ContextModel
 from apps.noclook.feeds import context_feed
 import apps.noclook.vakt.utils as sriutils
-from django.contrib.auth.models import User as UserModel
-from graphene_django import DjangoObjectType
 from apps.noclook.schema.fields import *
 from actstream.models import Action as ActionModel
+from django.contrib.auth.models import User as UserModel
+from graphene_django import DjangoObjectType
 
 from ..metatypes import NINode
 from ..core import User
@@ -92,16 +92,18 @@ class Action(DjangoObjectType):
 
         # get action object
         action_object = self.action_object
-
         # get user
-        user = UserModel.objects.get(pk=self.actor_object_id)
 
+        user = UserModel.objects.get(pk=self.actor_object_id)
         authorized = True
 
-        if not action_object.contexts.all():
+        contexts_names = self.data['noclook']['contexts']
+        contexts = [ ContextModel.objects.get(name=x['context_name']) for x in contexts_names]
+
+        if not contexts:
             authorized = False
 
-        for context in action_object.contexts.all():
+        for context in contexts:
             is_contextadmin = sriutils.authorize_admin_module(user, context)
 
             if not is_contextadmin:
@@ -158,8 +160,7 @@ def resolve_context_activity(self, info, **kwargs):
             if authorized:
                 # get readable handle_ids
                 readable_ids = sriutils.get_ids_user_canread(user)
-
-                qs = context_feed(filter.context)
+                qs = context_feed(filter.context, user)
 
                 if order_by:
                     if order_by == ActionOrderBy.timestamp_ASC:
@@ -169,8 +170,6 @@ def resolve_context_activity(self, info, **kwargs):
                 else:
                     qs = qs.order_by('-timestamp')
 
-                # limit qs to show only readable handle_ids
-                qs = qs.filter(actor_object_id__in=readable_ids)
     else:
         raise GraphQLAuthException()
 
