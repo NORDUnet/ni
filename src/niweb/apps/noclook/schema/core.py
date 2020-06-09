@@ -1851,6 +1851,7 @@ class DeleteNIMutation(AbstractNIMutation):
             for relation_name, relation_f in delete_nodes.items():
                 relation_f(nodehandler, relation_name, user)
 
+
 class MultipleMutation(relay.ClientIDMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
