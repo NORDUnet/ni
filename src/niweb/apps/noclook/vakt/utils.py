@@ -106,6 +106,7 @@ def get_contracts_context(cmodel=Context):
 def get_default_context(cmodel=Context):
     return get_community_context(cmodel)
 
+
 def authorize_aa_resource(user, handle_id, get_aa_func):
     '''
     This function checks if an user is authorized to do a specific action over
@@ -122,7 +123,7 @@ def authorize_aa_resource(user, handle_id, get_aa_func):
 
     # get contexts for this resource
     nodehandle = NodeHandle.objects.prefetch_related('contexts').get(handle_id=handle_id)
-    contexts = [ c.name for c in nodehandle.contexts.all() ]
+    contexts = get_nh_contexts(nodehandle)
 
     # forge read resource inquiry
     inquiry = Inquiry(
@@ -242,3 +243,11 @@ def get_ids_user_canread(user):
                 ret.append(id)
 
     return ret
+
+
+def get_nh_contexts(nh):
+    return [ c.name for c in nh.contexts.all() ]
+
+
+def get_nh_named_contexts(nh):
+    return [ { 'context_name': c } for c in get_nh_contexts(nh) ]
