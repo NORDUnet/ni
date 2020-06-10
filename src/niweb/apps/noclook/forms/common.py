@@ -456,6 +456,10 @@ class EditHostForm(NewHostForm):
     services_checked = forms.BooleanField(required=False)
 
 
+class NewSwitchHostForm(NewSwitchForm, EditHostForm):
+    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
+
+
 class EditSwitchForm(EditHostForm):
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
