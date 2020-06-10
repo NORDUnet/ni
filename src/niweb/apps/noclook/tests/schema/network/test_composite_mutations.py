@@ -521,25 +521,178 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(check_provider['name'], provider.node_name)
 
         ## Update query
-        buffer_description = cable_description
-        buffer_description2 = aport_description
-
-        cable_name = "New cable"
-        cable_type = "Patch"
-        cable_description = bport_description
-
-        aport_name = "port-01"
-        aport_type = "RJ45"
-        aport_description = buffer_description2
-
-        bport_name = "port-02"
-        bport_type = "RJ45"
-        bport_description = buffer_description
-
+        # (do it two times to check that the relationship id is not overwritten)
+        relation_id = None
         provider = generator.create_provider()
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
 
+        for i in range(2):
+            buffer_description = cable_description
+            buffer_description2 = aport_description
+
+            cable_name = "New cable"
+            cable_type = "Patch"
+            cable_description = bport_description
+
+            aport_name = "port-01"
+            aport_type = "RJ45"
+            aport_description = buffer_description2
+
+            bport_name = "port-02"
+            bport_type = "RJ45"
+            bport_description = buffer_description
+
+            query = '''
+            mutation{{
+              composite_cable(input:{{
+                update_input:{{
+                  id: "{cable_id}"
+                  name: "{cable_name}"
+                  cable_type: "{cable_type}"
+                  description: "{cable_description}"
+                  relationship_provider: "{provider_id}"
+                }}
+                update_subinputs:[
+                  {{
+                    id: "{aport_id}"
+                    name: "{aport_name}"
+                    port_type: "{aport_type}"
+                    description: "{aport_description}"
+                  }},
+                  {{
+                    id: "{bport_id}"
+                    name: "{bport_name}"
+                    port_type: "{bport_type}"
+                    description: "{bport_description}"
+                  }}
+                ]
+              }}){{
+                updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  cable{{
+                    id
+                    name
+                    cable_type{{
+                      value
+                    }}
+                    description
+                    ports{{
+                      id
+                      name
+                      port_type{{
+                        value
+                      }}
+                      description
+                      connected_to{{
+                        id
+                        name
+                      }}
+                    }}
+                    provider{{
+                      id
+                      name
+                      relation_id
+                    }}
+                  }}
+                }}
+                subupdated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  port{{
+                    id
+                    name
+                    port_type{{
+                      value
+                    }}
+                    description
+                    connected_to{{
+                      id
+                      name
+                    }}
+                  }}
+                }}
+              }}
+            }}
+            '''.format(cable_name=cable_name, cable_type=cable_type,
+                        cable_description=cable_description, aport_name=aport_name,
+                        aport_type=aport_type, aport_description=aport_description,
+                        bport_name=bport_name, bport_type=bport_type,
+                        bport_description=bport_description, cable_id=cable_id,
+                        aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_cable']['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            for subcreated in result.data['composite_cable']['subupdated']:
+                assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+            # check the integrity of the data
+            result_data = result.data['composite_cable']
+            updated_data = result_data['updated']['cable']
+
+            # check main cable
+            self.assertEqual(updated_data['name'], cable_name)
+            self.assertEqual(updated_data['cable_type']['value'], cable_type)
+            self.assertEqual(updated_data['description'], cable_description)
+
+            # check their relations id
+            test_aport_id = updated_data['ports'][0]['id']
+            test_bport_id = updated_data['ports'][1]['id']
+
+            self.assertEqual(aport_id, test_aport_id)
+            self.assertEqual(bport_id, test_bport_id)
+
+            # check ports in both payload and metatype attribute
+            check_aports = [
+                updated_data['ports'][0],
+                result_data['subupdated'][0]['port'],
+            ]
+
+            for check_aport in check_aports:
+                self.assertEqual(check_aport['name'], aport_name)
+                self.assertEqual(check_aport['port_type']['value'], aport_type)
+                self.assertEqual(check_aport['description'], aport_description)
+
+            check_bports = [
+                updated_data['ports'][1],
+                result_data['subupdated'][1]['port'],
+            ]
+
+            for check_bport in check_bports:
+                self.assertEqual(check_bport['name'], bport_name)
+                self.assertEqual(check_bport['port_type']['value'], bport_type)
+                self.assertEqual(check_bport['description'], bport_description)
+
+            # check provider
+            check_provider = result_data['updated']['cable']['provider']
+            self.assertEqual(check_provider['id'], provider_id)
+            self.assertEqual(check_provider['name'], provider.node_name)
+
+            # check that we only have one provider
+            _type, cable_handle_id = relay.Node.from_global_id(cable_id)
+            cable_nh = NodeHandle.objects.get(handle_id=cable_handle_id)
+            cable_node = cable_nh.get_node()
+            previous_rels = cable_node.incoming.get('Provides', [])
+            self.assertTrue(len(previous_rels) == 1)
+
+            # check relation_id
+            if not relation_id: # first run
+                relation_id = check_provider['relation_id']
+                self.assertIsNotNone(relation_id)
+            else:
+                self.assertEqual(relation_id, check_provider['relation_id'])
+
+        ## Update query 2 (remove provider)
         query = '''
         mutation{{
           composite_cable(input:{{
@@ -548,22 +701,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
               name: "{cable_name}"
               cable_type: "{cable_type}"
               description: "{cable_description}"
-              relationship_provider: "{provider_id}"
             }}
-            update_subinputs:[
-              {{
-                id: "{aport_id}"
-                name: "{aport_name}"
-                port_type: "{aport_type}"
-                description: "{aport_description}"
-              }},
-              {{
-                id: "{bport_id}"
-                name: "{bport_name}"
-                port_type: "{bport_type}"
-                description: "{bport_description}"
-              }}
-            ]
           }}){{
             updated{{
               errors{{
@@ -574,40 +712,11 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                 id
                 name
                 cable_type{{
+                  name
                   value
                 }}
                 description
-                ports{{
-                  id
-                  name
-                  port_type{{
-                    value
-                  }}
-                  description
-                  connected_to{{
-                    id
-                    name
-                  }}
-                }}
                 provider{{
-                  id
-                  name
-                }}
-              }}
-            }}
-            subupdated{{
-              errors{{
-                field
-                messages
-              }}
-              port{{
-                id
-                name
-                port_type{{
-                  value
-                }}
-                description
-                connected_to{{
                   id
                   name
                 }}
@@ -615,12 +724,8 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             }}
           }}
         }}
-        '''.format(cable_name=cable_name, cable_type=cable_type,
-                    cable_description=cable_description, aport_name=aport_name,
-                    aport_type=aport_type, aport_description=aport_description,
-                    bport_name=bport_name, bport_type=bport_type,
-                    bport_description=bport_description, cable_id=cable_id,
-                    aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
+        '''.format(cable_id=cable_id, cable_name=cable_name, cable_type=cable_type,
+                    cable_description=cable_description)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -629,54 +734,6 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         created_errors = result.data['composite_cable']['updated']['errors']
         assert not created_errors, pformat(created_errors, indent=1)
 
-        for subcreated in result.data['composite_cable']['subupdated']:
-            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
-
-        # check the integrity of the data
-        result_data = result.data['composite_cable']
-        updated_data = result_data['updated']['cable']
-
-        # check main cable
-        self.assertEqual(updated_data['name'], cable_name)
-        self.assertEqual(updated_data['cable_type']['value'], cable_type)
-        self.assertEqual(updated_data['description'], cable_description)
-
-        # check their relations id
-        test_aport_id = updated_data['ports'][0]['id']
-        test_bport_id = updated_data['ports'][1]['id']
-
-        self.assertEqual(aport_id, test_aport_id)
-        self.assertEqual(bport_id, test_bport_id)
-
-        # check ports in both payload and metatype attribute
-        check_aports = [
-            updated_data['ports'][0],
-            result_data['subupdated'][0]['port'],
-        ]
-
-        for check_aport in check_aports:
-            self.assertEqual(check_aport['name'], aport_name)
-            self.assertEqual(check_aport['port_type']['value'], aport_type)
-            self.assertEqual(check_aport['description'], aport_description)
-
-        check_bports = [
-            updated_data['ports'][1],
-            result_data['subupdated'][1]['port'],
-        ]
-
-        for check_bport in check_bports:
-            self.assertEqual(check_bport['name'], bport_name)
-            self.assertEqual(check_bport['port_type']['value'], bport_type)
-            self.assertEqual(check_bport['description'], bport_description)
-
-        # check provider
-        check_provider = result_data['updated']['cable']['provider']
-        self.assertEqual(check_provider['id'], provider_id)
-        self.assertEqual(check_provider['name'], provider.node_name)
-
-        # check that we only have one provider
-        _type, cable_handle_id = relay.Node.from_global_id(cable_id)
-        cable_nh = NodeHandle.objects.get(handle_id=cable_handle_id)
-        cable_node = cable_nh.get_node()
-        previous_rels = cable_node.incoming.get('Provides', [])
-        self.assertTrue(len(previous_rels) == 1)
+        # check empty provider
+        check_provider = result.data['composite_cable']['updated']['cable']['provider']
+        self.assertEqual(check_provider, None)

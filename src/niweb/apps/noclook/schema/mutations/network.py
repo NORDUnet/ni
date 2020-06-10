@@ -75,17 +75,40 @@ class NIPortMutationFactory(NIMutationFactory):
 
 
 def process_provider(request, form, nodehandler, relation_name):
+    # check if there's a previous relation to ensure it's unique
+    previous_rels = nodehandler.incoming.get('Provides', [])
+    add_relation = False
+
     if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
-        # check if there's a previous relation to ensure it's unique
-        previous_rels = nodehandler.incoming.get('Provides', [])
+        provider_id = form.cleaned_data[relation_name]
 
         if previous_rels:
-            relationship_id = previous_rels[0]['relationship_id']
-            relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
-            relationship.delete()
+            # check if it's the same provider
+            relation = previous_rels[0]['relationship']
 
-        owner_nh = NodeHandle.objects.get(pk=form.cleaned_data['relationship_provider'])
-        helpers.set_provider(request.user, nodehandler, owner_nh.handle_id)
+            # if it doesn't, delete the previous relation and create the new one
+            previous_provider_id = relation.start_node.get('handle_id')
+
+            if provider_id != str(previous_provider_id):
+                relationship_id = previous_rels[0]['relationship_id']
+                relationship = nc.get_relationship_model(
+                    nc.graphdb.manager, relationship_id)
+                relationship.delete()
+                add_relation = True
+        else:
+            add_relation = True
+
+        # finally add relation
+        if add_relation:
+            owner_nh = NodeHandle.objects.get(pk=provider_id)
+            helpers.set_provider(request.user, nodehandler, owner_nh.handle_id)
+
+    else: # delete previous relation as it comes empty
+        if previous_rels:
+            relationship_id = previous_rels[0]['relationship_id']
+            relationship = nc.get_relationship_model(
+                nc.graphdb.manager, relationship_id)
+            relationship.delete()
 
 
 class NICableMutationFactory(NIMutationFactory):
