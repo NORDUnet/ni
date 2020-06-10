@@ -7,6 +7,7 @@ from django.db import connection
 
 from apps.noclook.models import NodeHandle, Group, GroupContextAuthzAction
 from apps.noclook.tests.neo4j_base import NeoTestCase
+from apps.noclook.tests.testing import nc
 from pprint import pformat
 
 class TestContext():
@@ -113,6 +114,21 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
                 ).save()
 
     def tearDown(self):
+        # check that we have the same nodes on neo4j and postgresql
+        num_nodes_posgresql = NodeHandle.objects.all().count()
+        num_nodes_neo4j = 0
+
+        with nc.graphdb.manager.session as s:
+            d = {}
+            result = s.run("MATCH (n:Node) RETURN count(n) AS num")
+            for record in result:
+                for key, value in record.items():
+                    d[key] = value
+
+            num_nodes_neo4j = d['num']
+
+        self.assertEqual(num_nodes_posgresql, num_nodes_neo4j)
+
         super(Neo4jGraphQLGenericTest, self).tearDown()
 
         # reset sql database
