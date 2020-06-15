@@ -123,3 +123,29 @@ class NICableMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+def process_switch_type(request, form, nodehandler, relation_name):
+    if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+        switch_type = SwitchType.objects.get(pk=form.cleaned_data[relation_name])
+        helpers.dict_update_node(
+            request.user, nodehandler.handle_id, {"model":switch_type.name})
+
+        if switch_type.ports:
+            for port in switch_type.ports.split(","):
+                helpers.create_port(nodehandler.get_node(), port.strip(), request.user)
+
+
+class NISwitchMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewSwitchHostForm
+        update_form    = EditSwitchForm
+        graphql_type   = Switch
+        unique_node    = True
+        relations_processors = {
+            'relationship_provider': process_provider,
+            'switch_type': process_switch_type,
+        }
+
+    class Meta:
+        abstract = False
