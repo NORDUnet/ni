@@ -11,7 +11,7 @@ def forwards_func(apps, schema_editor):
     for action in Action.objects.all():
         contenttype = action.action_object_content_type
 
-        if contenttype.app_label == 'noclook' and \
+        if contenttype and contenttype.app_label == 'noclook' and \
             contenttype.model == 'nodehandle':
             # get contexts for action_object
             action_object = NodeHandle.objects.get(
@@ -33,7 +33,7 @@ def backwards_func(apps, schema_editor):
     for action in Action.objects.all():
         contenttype = action.action_object_content_type
 
-        if contenttype.app_label == 'noclook' and \
+        if contenttype and contenttype.app_label == 'noclook' and \
             contenttype.model == 'nodehandle':
             action_data = action.data
 
