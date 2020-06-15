@@ -4,6 +4,7 @@ __author__ = 'ffuentes'
 import graphene
 import norduniclient as nc
 from apps.noclook.forms import *
+from apps.noclook.models import SwitchType as SwitchTypeModel
 import apps.noclook.vakt.utils as sriutils
 from apps.noclook.schema.types import *
 
@@ -127,13 +128,13 @@ class NICableMutationFactory(NIMutationFactory):
 
 def process_switch_type(request, form, nodehandler, relation_name):
     if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
-        switch_type = SwitchType.objects.get(pk=form.cleaned_data[relation_name])
+        switch_type = SwitchTypeModel.objects.get(pk=form.cleaned_data[relation_name])
         helpers.dict_update_node(
             request.user, nodehandler.handle_id, {"model":switch_type.name})
 
         if switch_type.ports:
             for port in switch_type.ports.split(","):
-                helpers.create_port(nodehandler.get_node(), port.strip(), request.user)
+                helpers.create_port(nodehandler, port.strip(), request.user)
 
 
 class NISwitchMutationFactory(NIMutationFactory):
