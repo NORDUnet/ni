@@ -2,13 +2,15 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle, Dropdown, Choice, Group, \
-    GroupContextAuthzAction, NodeHandleContext
+    GroupContextAuthzAction, NodeHandleContext, SwitchType
 from apps.noclook.tests.stressload.data_generator import NetworkFakeDataGenerator
 from collections import OrderedDict
 from . import Neo4jGraphQLNetworkTest
 from niweb.schema import schema
 from pprint import pformat
 from graphene import relay
+
+import random
 
 class PortCompositeTest(Neo4jGraphQLNetworkTest):
     def test_composite_port(self):
@@ -737,3 +739,91 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         # check empty provider
         check_provider = result.data['composite_cable']['updated']['cable']['provider']
         self.assertEqual(check_provider, None)
+
+
+class SwitchTest(Neo4jGraphQLNetworkTest):
+    def test_switch(self):
+        # create test switchtype and test query
+        test_switchtype = SwitchType(
+            name="Testlink",
+            ports="80,8000"
+        )
+        test_switchtype.save()
+
+        query = '''
+        {
+          getSwitchTypes{
+            id
+            name
+            ports
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected_switchtypes = [
+            {
+                'id': None,
+                'name': test_switchtype.name,
+                'ports': test_switchtype.ports,
+            }
+        ]
+
+        switch_types = result.data['getSwitchTypes']
+        self.assertTrue(len(switch_types) == 1)
+
+        switchtype_id = switch_types[0]['id']
+        expected_switchtypes[0]['id'] = switchtype_id
+        self.assertEquals(switch_types, expected_switchtypes)
+
+        # get a provider
+        generator = NetworkFakeDataGenerator()
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+
+        # simple create switch
+        switch_name = "Test switch"
+        switch_description = "Created from graphql"
+        ip_address = "127.0.0.1\\n168.192.0.1"
+        operational_state = port_type = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+
+        query = '''
+        mutation{{
+          create_switch(input:{{
+            name: "{switch_name}"
+            description: "{switch_description}"
+            switch_type: "{switchtype_id}"
+            ip_addresses: "{ip_address}"
+            rack_units: 2
+            rack_position: 3
+            operational_state: "{operational_state}"
+            relationship_provider: "{provider_id}"
+          }}){{
+            errors{{
+              field
+              messages
+            }}
+            switch{{
+              id
+              name
+              description
+              ip_addresses
+            }}
+          }}
+        }}
+        '''.format(switch_name=switch_name, switch_description=switch_description,
+                    switchtype_id=switchtype_id, ip_address=ip_address,
+                    operational_state=operational_state, provider_id=provider_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['create_switch']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
