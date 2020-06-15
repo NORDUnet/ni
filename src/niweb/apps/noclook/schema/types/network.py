@@ -2,6 +2,8 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.schema.core import *
+from apps.noclook.models import SwitchType as SwitchTypeModel
+from .community import Group
 
 ## Organizations
 class Customer(NIObjectType, RelationMixin):
@@ -116,6 +118,23 @@ class Router(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+class SwitchType(DjangoObjectType):
+    '''
+    This class represents a SwitchType for switch's mutations
+    '''
+    class Meta:
+        #only_fields = ('id', 'name')
+        model = SwitchTypeModel
+        interfaces = (graphene.relay.Node, )
+
+
+def resolve_getSwitchTypes(self, info, **kwargs):
+    if info.context and info.context.user.is_authenticated:
+        return SwitchTypeModel.objects.all()
+    else:
+        raise GraphQLAuthException()
+
+
 class Switch(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
@@ -166,4 +185,5 @@ network_type_resolver = {
     'Port': Port,
     'Cable': Cable,
     'Host': Host,
+    'Switch': Switch,
 }
