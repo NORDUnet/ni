@@ -719,7 +719,7 @@ def edit_optical_path(request, handle_id):
     nh, path = helpers.get_nh_node(handle_id)
     relations = path.get_relations()
     depends_on = path.get_dependencies()
-    dependency_categories = 'odf,optical-link,optical-multiplex-section,optical-node,router,switch,optical-path'
+    dependency_categories = 'odf,optical-link,optical-multiplex-section,optical-node,router,switch,optical-path,service'
     if request.POST:
         form = forms.EditOpticalPathForm(request.POST)
         if form.is_valid():
