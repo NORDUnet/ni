@@ -3,7 +3,8 @@ __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle, Dropdown, Choice, Group, \
     GroupContextAuthzAction, NodeHandleContext, SwitchType
-from apps.noclook.tests.stressload.data_generator import NetworkFakeDataGenerator
+from apps.noclook.tests.stressload.data_generator \
+    import NetworkFakeDataGenerator, CommunityFakeDataGenerator
 from collections import OrderedDict
 from . import Neo4jGraphQLNetworkTest
 from niweb.schema import schema
@@ -784,6 +785,15 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
 
+        # get two groups
+        community_generator = CommunityFakeDataGenerator()
+        group1 = community_generator.create_group()
+        group2 = community_generator.create_group()
+
+        group1_id = relay.Node.to_global_id(str(group1.node_type),
+                                            str(group1.handle_id))
+        group2_id = relay.Node.to_global_id(str(group2.node_type),
+                                            str(group2.handle_id))
 
         # simple create switch
         switch_name = "Test switch"
@@ -792,6 +802,8 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         operational_state = port_type = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
+        rack_units = 2
+        rack_position = 3
 
         query = '''
         mutation{{
@@ -800,8 +812,8 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
             description: "{switch_description}"
             switch_type: "{switchtype_id}"
             ip_addresses: "{ip_address}"
-            rack_units: 2
-            rack_position: 3
+            rack_units: {rack_units}
+            rack_position: {rack_position}
             operational_state: "{operational_state}"
             relationship_provider: "{provider_id}"
           }}){{
@@ -819,6 +831,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         }}
         '''.format(switch_name=switch_name, switch_description=switch_description,
                     switchtype_id=switchtype_id, ip_address=ip_address,
+                    rack_units=rack_units, rack_position=rack_position,
                     operational_state=operational_state, provider_id=provider_id)
 
         result = schema.execute(query, context=self.context)
