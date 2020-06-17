@@ -117,6 +117,14 @@ class NISwitchMutationFactory(NIMutationFactory):
                 helpers.set_provider
             ),
             'switch_type': process_switch_type,
+            'responsible_group': get_unique_relation_processor(
+                'Takes_responsibility',
+                helpers.set_takes_responsibility
+            ),
+            'support_group': get_unique_relation_processor(
+                'Supports',
+                helpers.set_supports
+            ),
         }
 
     class Meta:

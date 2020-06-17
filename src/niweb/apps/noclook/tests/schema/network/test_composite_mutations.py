@@ -816,6 +816,8 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
             rack_position: {rack_position}
             operational_state: "{operational_state}"
             relationship_provider: "{provider_id}"
+            responsible_group: "{group1_id}"
+            support_group: "{group2_id}"
           }}){{
             errors{{
               field
@@ -826,13 +828,28 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
               name
               description
               ip_addresses
+              rack_units
+              rack_position
+              provider{{
+                id
+                name
+              }}
+              responsible_group{{
+                id
+                name
+              }}
+              support_group{{
+                id
+                name
+              }}
             }}
           }}
         }}
         '''.format(switch_name=switch_name, switch_description=switch_description,
                     switchtype_id=switchtype_id, ip_address=ip_address,
                     rack_units=rack_units, rack_position=rack_position,
-                    operational_state=operational_state, provider_id=provider_id)
+                    operational_state=operational_state, provider_id=provider_id,
+                    group1_id=group1_id, group2_id=group2_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -840,3 +857,24 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check for errors
         created_errors = result.data['create_switch']['errors']
         assert not created_errors, pformat(created_errors, indent=1)
+
+        # check data
+        created_switch = result.data['create_switch']['switch']
+
+        self.assertEqual(created_switch['name'], switch_name)
+        self.assertEqual(created_switch['description'], switch_description)
+        self.assertEqual(created_switch['rack_units'], rack_units)
+        self.assertEqual(created_switch['rack_position'], rack_position)
+        # TODO ip_address
+
+        # check provider
+        check_provider = created_switch['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+
+        # check responsible group
+        check_responsible = created_switch['responsible_group']
+        self.assertEqual(check_responsible['id'], group1_id)
+
+        # check support group
+        check_support = created_switch['support_group']
+        self.assertEqual(check_support['id'], group2_id)

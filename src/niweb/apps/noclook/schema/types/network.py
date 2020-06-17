@@ -140,8 +140,8 @@ class Switch(NIObjectType, PhysicalMixin):
     description = NIStringField()
     operational_state = NIStringField(type_kwargs={ 'required': True })
     ip_addresses = IPAddr()
-    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Responsible", rel_method="_incoming")
-    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Support", rel_method="_incoming")
+    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
+    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
     managed_by = NIStringField()
     backup = NIStringField()
     os = NIStringField()
@@ -149,6 +149,7 @@ class Switch(NIObjectType, PhysicalMixin):
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
+    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
 
     class NIMetaType:
         ni_type = 'Switch'

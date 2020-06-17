@@ -402,10 +402,10 @@ class NewHostForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewHostForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
-        self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
-        self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
         self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
         self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
+        self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
+        self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
 
     name = forms.CharField(help_text="The hostname")
     description = description_field('host')
@@ -456,11 +456,21 @@ class EditHostForm(NewHostForm):
     services_checked = forms.BooleanField(required=False)
 
 
-class NewSwitchHostForm(NewSwitchForm, EditHostForm):
+class NewSwitchHostForm(NewSwitchForm, NewHostForm):
+    def __init__(self, *args, **kwargs):
+        super(NewSwitchHostForm, self).__init__(*args, **kwargs)
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
-class EditSwitchForm(EditHostForm):
+class EditSwitchForm(NewHostForm):
+    def __init__(self, *args, **kwargs):
+        super(EditSwitchForm, self).__init__(*args, **kwargs)
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
