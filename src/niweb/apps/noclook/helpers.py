@@ -1162,3 +1162,37 @@ def relationship_to_str(relationship):
         b_name=rel.end['name'],
         b_handle_id=rel.end['handle_id'],
     )
+
+def set_supports(user, node, group_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param group_id: unique id
+    :return: norduniclient model, boolean
+    """
+    group = NodeHandle.objects.get(handle_id=group_id)
+    group_node = group.get_node()
+    result = group_node.set_supports(node.handle_id)
+    relationship_id = result.get('Supports')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Supports')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+def set_takes_responsibility(user, node, group_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param group_id: unique id
+    :return: norduniclient model, boolean
+    """
+    group = NodeHandle.objects.get(handle_id=group_id)
+    group_node = group.get_node()
+    result = group_node.set_takes_responsibility(node.handle_id)
+    relationship_id = result.get('Takes_responsibility')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Takes_responsibility')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
