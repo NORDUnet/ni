@@ -276,18 +276,44 @@ class EditCableForm(NewCableForm):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
     relationship_end_b = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
-class NewSwitchForm(forms.Form):
+
+class SwitchTypeForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        super(NewSwitchForm, self).__init__(*args, **kwargs)
+        super(SwitchTypeForm, self).__init__(*args, **kwargs)
         self.fields['switch_type'].choices = SwitchType.as_choices()
+
+    switch_type = forms.ChoiceField(widget=forms.widgets.Select)
+
+
+class BasicSwitchForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(BasicSwitchForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
     name = forms.CharField()
     operational_state = forms.ChoiceField(initial='Reserved')
-    switch_type = forms.ChoiceField(widget=forms.widgets.Select)
     description = description_field('switch')
     relationship_provider = relationship_field('provider', True)
+
+
+class NewSwitchForm(SwitchTypeForm, BasicSwitchForm):
+    pass
+
+
+class PhysicalSupportForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(PhysicalSupportForm, self).__init__(*args, **kwargs)
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+    responsible_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
+                                          help_text='Name of the group responsible for the host.')
+    support_group = forms.ChoiceField(required=False, widget=forms.widgets.Select,
+                                      help_text='Name of the support group.')
+
+
+class WithMaxPortsForm(forms.Form):
+    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
 class ConnectPortForm(forms.Form):
@@ -456,22 +482,12 @@ class EditHostForm(NewHostForm):
     services_checked = forms.BooleanField(required=False)
 
 
-class NewSwitchHostForm(NewSwitchForm, NewHostForm):
-    def __init__(self, *args, **kwargs):
-        super(NewSwitchHostForm, self).__init__(*args, **kwargs)
-        self.fields['support_group'].choices = get_node_type_tuples('Group')
-        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
-
-    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
+class NewSwitchHostForm(PhysicalSupportForm, NewHostForm, NewSwitchForm, WithMaxPortsForm):
+    pass
 
 
-class EditSwitchForm(NewHostForm):
-    def __init__(self, *args, **kwargs):
-        super(EditSwitchForm, self).__init__(*args, **kwargs)
-        self.fields['support_group'].choices = get_node_type_tuples('Group')
-        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
-
-    max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
+class EditSwitchForm(PhysicalSupportForm, NewHostForm, BasicSwitchForm, WithMaxPortsForm):
+    pass
 
 
 class EditFirewallForm(EditHostForm):
