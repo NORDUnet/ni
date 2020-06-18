@@ -142,7 +142,7 @@ class Switch(NIObjectType, PhysicalMixin):
     ip_addresses = NIIPAddrField()
     responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
     support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
-    managed_by = NIStringField()
+    managed_by = NIChoiceField(dropdown_name="host_management_sw")
     backup = NIStringField()
     os = NIStringField()
     os_version = NIStringField()

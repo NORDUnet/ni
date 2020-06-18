@@ -799,11 +799,14 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         switch_name = "Test switch"
         switch_description = "Created from graphql"
         ip_addresses = ["127.0.0.1", "168.192.0.1"]
-        operational_state = port_type = random.choice(
+        operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
         rack_units = 2
         rack_position = 3
+        managed_by = random.choice(
+            Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
+        )
 
         query = '''
         mutation{{
@@ -818,6 +821,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
             relationship_provider: "{provider_id}"
             responsible_group: "{group1_id}"
             support_group: "{group2_id}"
+            managed_by: "{managed_by}"
           }}){{
             errors{{
               field
@@ -842,6 +846,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 id
                 name
               }}
+              managed_by{{
+                value
+              }}
             }}
           }}
         }}
@@ -849,7 +856,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     switchtype_id=switchtype_id, ip_address="\\n".join(ip_addresses),
                     rack_units=rack_units, rack_position=rack_position,
                     operational_state=operational_state, provider_id=provider_id,
-                    group1_id=group1_id, group2_id=group2_id)
+                    group1_id=group1_id, group2_id=group2_id, managed_by=managed_by)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -866,6 +873,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['rack_units'], rack_units)
         self.assertEqual(created_switch['rack_position'], rack_position)
         self.assertEqual(created_switch['ip_addresses'], ip_addresses)
+        self.assertEqual(created_switch['managed_by']['value'], managed_by)
 
         # check provider
         check_provider = created_switch['provider']
