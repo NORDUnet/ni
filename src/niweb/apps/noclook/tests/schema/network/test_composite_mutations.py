@@ -944,55 +944,61 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
 
         query = '''
         mutation{{
-          update_switch(input:{{
-            id: "{switch_id}"
-            name: "{switch_name}"
-            description: "{switch_description}"
-            ip_addresses: "{ip_address}"
-            rack_units: {rack_units}
-            rack_position: {rack_position}
-            operational_state: "{operational_state}"
-            relationship_provider: "{provider_id}"
-            responsible_group: "{group2_id}"
-            support_group: "{group1_id}"
-            managed_by: "{managed_by}"
-            backup: "{backup}"
-            os: "{os}"
-            os_version: "{os_version}"
-            contract_number: "{contract_number}"
-            max_number_of_ports: {max_number_of_ports}
-          }}){{
-            errors{{
-              field
-              messages
+          composite_switch(
+            input:{{
+              update_input: {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                description: "{switch_description}"
+                ip_addresses: "{ip_address}"
+                rack_units: {rack_units}
+                rack_position: {rack_position}
+                operational_state: "{operational_state}"
+                relationship_provider: "{provider_id}"
+                responsible_group: "{group2_id}"
+                support_group: "{group1_id}"
+                managed_by: "{managed_by}"
+                backup: "{backup}"
+                os: "{os}"
+                os_version: "{os_version}"
+                contract_number: "{contract_number}"
+                max_number_of_ports: {max_number_of_ports}
+              }}
             }}
-            switch{{
-              id
-              name
-              description
-              ip_addresses
-              rack_units
-              rack_position
-              provider{{
+          ){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
                 id
                 name
+                description
+                ip_addresses
+                rack_units
+                rack_position
+                provider{{
+                  id
+                  name
+                }}
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+                managed_by{{
+                  value
+                }}
+                backup
+                os
+                os_version
+                contract_number
+                max_number_of_ports
               }}
-              responsible_group{{
-                id
-                name
-              }}
-              support_group{{
-                id
-                name
-              }}
-              managed_by{{
-                value
-              }}
-              backup
-              os
-              os_version
-              contract_number
-              max_number_of_ports
             }}
           }}
         }}
@@ -1010,11 +1016,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check for errors
-        updated_errors = result.data['update_switch']['errors']
+        updated_errors = result.data['composite_switch']['updated']['errors']
         assert not updated_errors, pformat(updated_errors, indent=1)
 
         # check data
-        updated_switch = result.data['update_switch']['switch']
+        updated_switch = result.data['composite_switch']['updated']['switch']
 
         self.assertEqual(updated_switch['name'], switch_name)
         self.assertEqual(updated_switch['description'], switch_description)
