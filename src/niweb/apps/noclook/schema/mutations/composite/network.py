@@ -34,3 +34,14 @@ class CompositeCableMutation(CompositeMutation):
         main_mutation_f = NICableMutationFactory
         secondary_mutation_f = NIPortMutationFactory
         context = sriutils.get_network_context()
+
+
+class CompositeSwitchMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Switch
+        main_mutation_f = NISwitchMutationFactory
+        context = sriutils.get_network_context()
+        include_metafields = ('dependents')

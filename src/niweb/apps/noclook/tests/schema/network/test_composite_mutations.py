@@ -795,7 +795,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         group2_id = relay.Node.to_global_id(str(group2.node_type),
                                             str(group2.handle_id))
 
-        # simple create switch
+        # create switch
         switch_name = "Test switch"
         switch_description = "Created from graphql"
         ip_addresses = ["127.0.0.1", "168.192.0.1"]
@@ -815,55 +815,61 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
 
         query = '''
         mutation{{
-          create_switch(input:{{
-            name: "{switch_name}"
-            description: "{switch_description}"
-            switch_type: "{switchtype_id}"
-            ip_addresses: "{ip_address}"
-            rack_units: {rack_units}
-            rack_position: {rack_position}
-            operational_state: "{operational_state}"
-            relationship_provider: "{provider_id}"
-            responsible_group: "{group1_id}"
-            support_group: "{group2_id}"
-            managed_by: "{managed_by}"
-            backup: "{backup}"
-            os: "{os}"
-            os_version: "{os_version}"
-            contract_number: "{contract_number}"
-            max_number_of_ports: {max_number_of_ports}
-          }}){{
-            errors{{
-              field
-              messages
+          composite_switch(
+            input:{{
+              create_input: {{
+                name: "{switch_name}"
+                description: "{switch_description}"
+                switch_type: "{switchtype_id}"
+                ip_addresses: "{ip_address}"
+                rack_units: {rack_units}
+                rack_position: {rack_position}
+                operational_state: "{operational_state}"
+                relationship_provider: "{provider_id}"
+                responsible_group: "{group1_id}"
+                support_group: "{group2_id}"
+                managed_by: "{managed_by}"
+                backup: "{backup}"
+                os: "{os}"
+                os_version: "{os_version}"
+                contract_number: "{contract_number}"
+                max_number_of_ports: {max_number_of_ports}
+              }}
             }}
-            switch{{
-              id
-              name
-              description
-              ip_addresses
-              rack_units
-              rack_position
-              provider{{
+          ){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
                 id
                 name
+                description
+                ip_addresses
+                rack_units
+                rack_position
+                provider{{
+                  id
+                  name
+                }}
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+                managed_by{{
+                  value
+                }}
+                backup
+                os
+                os_version
+                contract_number
+                max_number_of_ports
               }}
-              responsible_group{{
-                id
-                name
-              }}
-              support_group{{
-                id
-                name
-              }}
-              managed_by{{
-                value
-              }}
-              backup
-              os
-              os_version
-              contract_number
-              max_number_of_ports
             }}
           }}
         }}
@@ -880,11 +886,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check for errors
-        created_errors = result.data['create_switch']['errors']
+        created_errors = result.data['composite_switch']['created']['errors']
         assert not created_errors, pformat(created_errors, indent=1)
 
         # store the created switch id
-        created_switch = result.data['create_switch']['switch']
+        created_switch = result.data['composite_switch']['created']['switch']
         switch_id = created_switch['id']
 
         # check data

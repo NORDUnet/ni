@@ -77,6 +77,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_switch = NISwitchMutationFactory.get_create_mutation().Field()
     update_switch = NISwitchMutationFactory.get_update_mutation().Field()
     delete_switch = NISwitchMutationFactory.get_delete_mutation().Field()
+    composite_switch = CompositeSwitchMutation.Field()
 
     ## Common mutations
     create_comment = CreateComment.Field()

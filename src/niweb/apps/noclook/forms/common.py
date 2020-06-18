@@ -482,12 +482,27 @@ class EditHostForm(NewHostForm):
     services_checked = forms.BooleanField(required=False)
 
 
-class NewSwitchHostForm(PhysicalSupportForm, NewHostForm, NewSwitchForm, WithMaxPortsForm):
-    pass
+class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, NewHostForm):
+    def __init__(self, *args, **kwargs):
+        super(NewSwitchHostForm, self).__init__(*args, **kwargs)
+        self.fields['switch_type'].choices = SwitchType.as_choices()
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
+        self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
 
-class EditSwitchForm(PhysicalSupportForm, NewHostForm, BasicSwitchForm, WithMaxPortsForm):
-    pass
+class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, NewHostForm):
+    def __init__(self, *args, **kwargs):
+        super(EditSwitchForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
+        self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+        self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
 
 class EditFirewallForm(EditHostForm):
