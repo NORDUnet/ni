@@ -807,6 +807,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         managed_by = random.choice(
             Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
         )
+        backup = "Manual script"
+        os = "GNU/Linux"
+        os_version = "5.8"
+        contract_number = "001"
+        max_number_of_ports = 20
 
         query = '''
         mutation{{
@@ -822,6 +827,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
             responsible_group: "{group1_id}"
             support_group: "{group2_id}"
             managed_by: "{managed_by}"
+            backup: "{backup}"
+            os: "{os}"
+            os_version: "{os_version}"
+            contract_number: "{contract_number}"
+            max_number_of_ports: {max_number_of_ports}
           }}){{
             errors{{
               field
@@ -849,6 +859,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
               managed_by{{
                 value
               }}
+              backup
+              os
+              os_version
+              contract_number
+              max_number_of_ports
             }}
           }}
         }}
@@ -856,7 +871,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     switchtype_id=switchtype_id, ip_address="\\n".join(ip_addresses),
                     rack_units=rack_units, rack_position=rack_position,
                     operational_state=operational_state, provider_id=provider_id,
-                    group1_id=group1_id, group2_id=group2_id, managed_by=managed_by)
+                    group1_id=group1_id, group2_id=group2_id,
+                    managed_by=managed_by, backup=backup, os=os,
+                    os_version=os_version, contract_number=contract_number,
+                    max_number_of_ports=max_number_of_ports)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -874,6 +892,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['rack_position'], rack_position)
         self.assertEqual(created_switch['ip_addresses'], ip_addresses)
         self.assertEqual(created_switch['managed_by']['value'], managed_by)
+        self.assertEqual(created_switch['backup'], backup)
+        self.assertEqual(created_switch['os'], os)
+        self.assertEqual(created_switch['os_version'], os_version)
+        self.assertEqual(created_switch['contract_number'], contract_number)
+        self.assertEqual(created_switch['max_number_of_ports'], max_number_of_ports)
 
         # check provider
         check_provider = created_switch['provider']

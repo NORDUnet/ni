@@ -150,6 +150,7 @@ class Switch(NIObjectType, PhysicalMixin):
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
     provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
+    max_number_of_ports = NIIntField()
 
     class NIMetaType:
         ni_type = 'Switch'
