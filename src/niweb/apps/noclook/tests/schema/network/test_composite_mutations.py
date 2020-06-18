@@ -798,7 +798,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # simple create switch
         switch_name = "Test switch"
         switch_description = "Created from graphql"
-        ip_address = "127.0.0.1\\n168.192.0.1"
+        ip_addresses = ["127.0.0.1", "168.192.0.1"]
         operational_state = port_type = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
@@ -846,7 +846,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
           }}
         }}
         '''.format(switch_name=switch_name, switch_description=switch_description,
-                    switchtype_id=switchtype_id, ip_address=ip_address,
+                    switchtype_id=switchtype_id, ip_address="\\n".join(ip_addresses),
                     rack_units=rack_units, rack_position=rack_position,
                     operational_state=operational_state, provider_id=provider_id,
                     group1_id=group1_id, group2_id=group2_id)
@@ -865,7 +865,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['description'], switch_description)
         self.assertEqual(created_switch['rack_units'], rack_units)
         self.assertEqual(created_switch['rack_position'], rack_position)
-        # TODO ip_address
+        self.assertEqual(created_switch['ip_addresses'], ip_addresses)
 
         # check provider
         check_provider = created_switch['provider']
