@@ -11,6 +11,46 @@ from graphene import Field
 
 import graphene
 
+def get_unique_relation_processor(relationship_attr, helper_method):
+    def process_subentity(request, form, nodehandler, relation_name):
+        # check if there's a previous relation to ensure it's unique
+        previous_rels = nodehandler.incoming.get(relationship_attr, [])
+        add_relation = False
+
+        if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+            subentity_id = form.cleaned_data[relation_name]
+
+            if previous_rels:
+                # check if it's the same entity
+                relation = previous_rels[0]['relationship']
+
+                # if it doesn't, delete the previous relation and create the new one
+                previous_subentity_id = relation.start_node.get('handle_id')
+
+                if subentity_id != str(previous_subentity_id):
+                    relationship_id = previous_rels[0]['relationship_id']
+                    relationship = nc.get_relationship_model(
+                        nc.graphdb.manager, relationship_id)
+                    relationship.delete()
+                    add_relation = True
+            else:
+                add_relation = True
+
+            # finally add relation
+            if add_relation:
+                sub_nh = NodeHandle.objects.get(pk=subentity_id)
+                helper_method(request.user, nodehandler, sub_nh.handle_id)
+
+        else: # delete previous relation as it comes empty
+            if previous_rels:
+                relationship_id = previous_rels[0]['relationship_id']
+                relationship = nc.get_relationship_model(
+                    nc.graphdb.manager, relationship_id)
+                relationship.delete()
+
+    return process_subentity
+
+
 class CreateComment(relay.ClientIDMutation):
     class Input:
         object_id = graphene.ID(required=True)

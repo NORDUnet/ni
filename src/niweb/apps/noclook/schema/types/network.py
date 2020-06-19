@@ -2,6 +2,8 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.schema.core import *
+from apps.noclook.models import SwitchType as SwitchTypeModel
+from .community import Group
 
 ## Organizations
 class Customer(NIObjectType, RelationMixin):
@@ -116,20 +118,39 @@ class Router(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+class SwitchType(DjangoObjectType):
+    '''
+    This class represents a SwitchType for switch's mutations
+    '''
+    class Meta:
+        #only_fields = ('id', 'name')
+        model = SwitchTypeModel
+        interfaces = (graphene.relay.Node, )
+
+
+def resolve_getSwitchTypes(self, info, **kwargs):
+    if info.context and info.context.user.is_authenticated:
+        return SwitchTypeModel.objects.all()
+    else:
+        raise GraphQLAuthException()
+
+
 class Switch(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
     operational_state = NIStringField(type_kwargs={ 'required': True })
-    ip_addresses = IPAddr()
-    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Responsible", rel_method="_incoming")
-    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Support", rel_method="_incoming")
-    managed_by = NIStringField()
+    ip_addresses = NIIPAddrField()
+    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
+    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
+    managed_by = NIChoiceField(dropdown_name="host_management_sw")
     backup = NIStringField()
     os = NIStringField()
     os_version = NIStringField()
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
+    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
+    max_number_of_ports = NIIntField()
 
     class NIMetaType:
         ni_type = 'Switch'
@@ -166,4 +187,5 @@ network_type_resolver = {
     'Port': Port,
     'Cable': Cable,
     'Host': Host,
+    'Switch': Switch,
 }

@@ -26,6 +26,12 @@ class Neo4jHelpersTest(NeoTestCase):
 
         self.role = Role.objects.get_or_create(name="IT-manager")[0]
 
+        group = self.create_node('group1', 'group', meta='Logical')
+        self.group_node = group.get_node()
+
+        switch = self.create_node('switch1', 'switch', meta='Physical')
+        self.switch_node = switch.get_node()
+
     def test_delete_node_utf8(self):
         nh = self.create_node(u'æøå-ftw', 'site')
         node = nh.get_node()
@@ -157,3 +163,31 @@ class Neo4jHelpersTest(NeoTestCase):
         out = helpers.relationship_to_str(rel)
         expected = '(Router1 ({a_id}))-[{r_id}:Has]->(Port1 ({b_id}))'.format(a_id=nh1.handle_id, r_id=relationship_id, b_id=nh2.handle_id)
         self.assertEqual(expected, out)
+
+    def test_set_supports(self):
+        self.assertEqual(self.group_node.get_relations(), {})
+        self.assertEqual(self.switch_node.get_relations(), {})
+
+        relationship, created = helpers.set_supports(
+            self.user, self.switch_node, self.group_node.handle_id)
+
+        self.assertEqual(
+            relationship.start['handle_id'], self.group_node.handle_id)
+        self.assertEqual(
+            relationship.end['handle_id'], self.switch_node.handle_id)
+        self.assertEqual(
+            created._properties['handle_id'], self.switch_node.handle_id)
+
+    def test_set_takes_responsibility(self):
+        self.assertEqual(self.group_node.get_relations(), {})
+        self.assertEqual(self.switch_node.get_relations(), {})
+
+        relationship, created = helpers.set_takes_responsibility(
+            self.user, self.switch_node, self.group_node.handle_id)
+
+        self.assertEqual(
+            relationship.start['handle_id'], self.group_node.handle_id)
+        self.assertEqual(
+            relationship.end['handle_id'], self.switch_node.handle_id)
+        self.assertEqual(
+            created._properties['handle_id'], self.switch_node.handle_id)

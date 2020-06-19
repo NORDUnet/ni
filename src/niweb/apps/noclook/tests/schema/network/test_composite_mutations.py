@@ -2,13 +2,16 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle, Dropdown, Choice, Group, \
-    GroupContextAuthzAction, NodeHandleContext
-from apps.noclook.tests.stressload.data_generator import NetworkFakeDataGenerator
+    GroupContextAuthzAction, NodeHandleContext, SwitchType
+from apps.noclook.tests.stressload.data_generator \
+    import NetworkFakeDataGenerator, CommunityFakeDataGenerator
 from collections import OrderedDict
 from . import Neo4jGraphQLNetworkTest
 from niweb.schema import schema
 from pprint import pformat
 from graphene import relay
+
+import random
 
 class PortCompositeTest(Neo4jGraphQLNetworkTest):
     def test_composite_port(self):
@@ -737,3 +740,308 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         # check empty provider
         check_provider = result.data['composite_cable']['updated']['cable']['provider']
         self.assertEqual(check_provider, None)
+
+
+class SwitchTest(Neo4jGraphQLNetworkTest):
+    def test_switch(self):
+        # create test switchtype and test query
+        test_switchtype = SwitchType(
+            name="Testlink",
+            ports="80,8000"
+        )
+        test_switchtype.save()
+
+        query = '''
+        {
+          getSwitchTypes{
+            id
+            name
+            ports
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected_switchtypes = [
+            {
+                'id': None,
+                'name': test_switchtype.name,
+                'ports': test_switchtype.ports,
+            }
+        ]
+
+        switch_types = result.data['getSwitchTypes']
+        self.assertTrue(len(switch_types) == 1)
+
+        switchtype_id = switch_types[0]['id']
+        expected_switchtypes[0]['id'] = switchtype_id
+        self.assertEquals(switch_types, expected_switchtypes)
+
+        # get a provider
+        generator = NetworkFakeDataGenerator()
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # get two groups
+        community_generator = CommunityFakeDataGenerator()
+        group1 = community_generator.create_group()
+        group2 = community_generator.create_group()
+
+        group1_id = relay.Node.to_global_id(str(group1.node_type),
+                                            str(group1.handle_id))
+        group2_id = relay.Node.to_global_id(str(group2.node_type),
+                                            str(group2.handle_id))
+
+        # create switch
+        switch_name = "Test switch"
+        switch_description = "Created from graphql"
+        ip_addresses = ["127.0.0.1", "168.192.0.1"]
+        operational_state = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+        rack_units = 2
+        rack_position = 3
+        managed_by = random.choice(
+            Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
+        )
+        backup = "Manual script"
+        os = "GNU/Linux"
+        os_version = "5.8"
+        contract_number = "001"
+        max_number_of_ports = 20
+
+        query = '''
+        mutation{{
+          composite_switch(
+            input:{{
+              create_input: {{
+                name: "{switch_name}"
+                description: "{switch_description}"
+                switch_type: "{switchtype_id}"
+                ip_addresses: "{ip_address}"
+                rack_units: {rack_units}
+                rack_position: {rack_position}
+                operational_state: "{operational_state}"
+                relationship_provider: "{provider_id}"
+                responsible_group: "{group1_id}"
+                support_group: "{group2_id}"
+                managed_by: "{managed_by}"
+                backup: "{backup}"
+                os: "{os}"
+                os_version: "{os_version}"
+                contract_number: "{contract_number}"
+                max_number_of_ports: {max_number_of_ports}
+              }}
+            }}
+          ){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                description
+                ip_addresses
+                rack_units
+                rack_position
+                provider{{
+                  id
+                  name
+                }}
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+                managed_by{{
+                  value
+                }}
+                backup
+                os
+                os_version
+                contract_number
+                max_number_of_ports
+              }}
+            }}
+          }}
+        }}
+        '''.format(switch_name=switch_name, switch_description=switch_description,
+                    switchtype_id=switchtype_id, ip_address="\\n".join(ip_addresses),
+                    rack_units=rack_units, rack_position=rack_position,
+                    operational_state=operational_state, provider_id=provider_id,
+                    group1_id=group1_id, group2_id=group2_id,
+                    managed_by=managed_by, backup=backup, os=os,
+                    os_version=os_version, contract_number=contract_number,
+                    max_number_of_ports=max_number_of_ports)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_switch']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        # store the created switch id
+        created_switch = result.data['composite_switch']['created']['switch']
+        switch_id = created_switch['id']
+
+        # check data
+        self.assertEqual(created_switch['name'], switch_name)
+        self.assertEqual(created_switch['description'], switch_description)
+        self.assertEqual(created_switch['rack_units'], rack_units)
+        self.assertEqual(created_switch['rack_position'], rack_position)
+        self.assertEqual(created_switch['ip_addresses'], ip_addresses)
+        self.assertEqual(created_switch['managed_by']['value'], managed_by)
+        self.assertEqual(created_switch['backup'], backup)
+        self.assertEqual(created_switch['os'], os)
+        self.assertEqual(created_switch['os_version'], os_version)
+        self.assertEqual(created_switch['contract_number'], contract_number)
+        self.assertEqual(created_switch['max_number_of_ports'], max_number_of_ports)
+
+        # check provider
+        check_provider = created_switch['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+
+        # check responsible group
+        check_responsible = created_switch['responsible_group']
+        self.assertEqual(check_responsible['id'], group1_id)
+
+        # check support group
+        check_support = created_switch['support_group']
+        self.assertEqual(check_support['id'], group2_id)
+
+        ## simple update
+        # get another provider
+        generator = NetworkFakeDataGenerator()
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        switch_name = "New Switch"
+        switch_description = "Updated from graphql"
+        ip_addresses = ["127.0.0.1", "168.192.0.1", "0.0.0.0"]
+        operational_state = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+        rack_units = 3
+        rack_position = 2
+        managed_by = random.choice(
+            Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
+        )
+        backup = "Jenkins script"
+        os = "Linux"
+        os_version = "5.7"
+        contract_number = "002"
+        max_number_of_ports = 15
+
+        query = '''
+        mutation{{
+          composite_switch(
+            input:{{
+              update_input: {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                description: "{switch_description}"
+                ip_addresses: "{ip_address}"
+                rack_units: {rack_units}
+                rack_position: {rack_position}
+                operational_state: "{operational_state}"
+                relationship_provider: "{provider_id}"
+                responsible_group: "{group2_id}"
+                support_group: "{group1_id}"
+                managed_by: "{managed_by}"
+                backup: "{backup}"
+                os: "{os}"
+                os_version: "{os_version}"
+                contract_number: "{contract_number}"
+                max_number_of_ports: {max_number_of_ports}
+              }}
+            }}
+          ){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                description
+                ip_addresses
+                rack_units
+                rack_position
+                provider{{
+                  id
+                  name
+                }}
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+                managed_by{{
+                  value
+                }}
+                backup
+                os
+                os_version
+                contract_number
+                max_number_of_ports
+              }}
+            }}
+          }}
+        }}
+        '''.format(switch_name=switch_name, switch_id=switch_id,
+                    switch_description=switch_description,
+                    ip_address="\\n".join(ip_addresses),
+                    rack_units=rack_units, rack_position=rack_position,
+                    operational_state=operational_state, provider_id=provider_id,
+                    group1_id=group1_id, group2_id=group2_id,
+                    managed_by=managed_by, backup=backup, os=os,
+                    os_version=os_version, contract_number=contract_number,
+                    max_number_of_ports=max_number_of_ports)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = result.data['composite_switch']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        # check data
+        updated_switch = result.data['composite_switch']['updated']['switch']
+
+        self.assertEqual(updated_switch['name'], switch_name)
+        self.assertEqual(updated_switch['description'], switch_description)
+        self.assertEqual(updated_switch['rack_units'], rack_units)
+        self.assertEqual(updated_switch['rack_position'], rack_position)
+        self.assertEqual(updated_switch['ip_addresses'], ip_addresses)
+        self.assertEqual(updated_switch['managed_by']['value'], managed_by)
+        self.assertEqual(updated_switch['backup'], backup)
+        self.assertEqual(updated_switch['os'], os)
+        self.assertEqual(updated_switch['os_version'], os_version)
+        self.assertEqual(updated_switch['contract_number'], contract_number)
+        self.assertEqual(updated_switch['max_number_of_ports'], max_number_of_ports)
+
+        # check provider
+        check_provider = updated_switch['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+
+        # check responsible group
+        check_responsible = updated_switch['responsible_group']
+        self.assertEqual(check_responsible['id'], group2_id)
+
+        # check support group
+        check_support = updated_switch['support_group']
+        self.assertEqual(check_support['id'], group1_id)
