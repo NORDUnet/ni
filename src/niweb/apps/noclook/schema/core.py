@@ -1920,6 +1920,7 @@ class CompositeMutation(relay.ClientIDMutation):
         secondary_mutation_f = getattr(ni_metaclass, 'secondary_mutation_f', None)
         include_metafields = getattr(ni_metaclass, 'include_metafields', None)
         exclude_metafields = getattr(ni_metaclass, 'exclude_metafields', None)
+        has_creation = getattr(ni_metaclass, 'has_creation', True)
 
         # get mandatory input
         cls_input = getattr(cls, 'Input')
@@ -1934,16 +1935,22 @@ class CompositeMutation(relay.ClientIDMutation):
 
         # add main mutation fields if present
         if main_mutation_f:
+            # add only creation parameters if necesary
+            if has_creation:
+                # add metaclass attributes
+                ni_metaclass.create_mutation = main_mutation_f.get_create_mutation()
+                # add payload attributes
+                cls.created = graphene.Field(main_mutation_f.get_create_mutation())
+                # add regular inputs
+                cls_input.create_input = graphene.Field(main_mutation_f.get_create_mutation().Input)
+
             # add metaclass attributes
-            ni_metaclass.create_mutation = main_mutation_f.get_create_mutation()
             ni_metaclass.update_mutation = main_mutation_f.get_update_mutation()
 
             # add payload attributes
-            cls.created = graphene.Field(main_mutation_f.get_create_mutation())
             cls.updated = graphene.Field(main_mutation_f.get_update_mutation())
 
             # add regular inputs
-            cls_input.create_input = graphene.Field(main_mutation_f.get_create_mutation().Input)
             cls_input.update_input = graphene.Field(main_mutation_f.get_update_mutation().Input)
 
         if secondary_mutation_f:

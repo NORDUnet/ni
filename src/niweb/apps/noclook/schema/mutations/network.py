@@ -129,3 +129,19 @@ class NISwitchMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+class NIRouterMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form    = EditRouterForm
+        request_path   = '/'
+        graphql_type   = Router
+        relations_processors = {
+            'relationship_provider': get_unique_relation_processor(
+                'Provides',
+                helpers.set_provider
+            ),
+        }
+
+    class Meta:
+        abstract = False
