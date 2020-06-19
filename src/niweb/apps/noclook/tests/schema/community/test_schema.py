@@ -869,20 +869,7 @@ class RelationResolversTest(Neo4jGraphQLCommunityTest):
             contacts{{
               id
               name
-            }}
-            incoming{{
-              name
-              relation{{
-                relation_id
-                start{{
-                  id
-                  node_name
-                }}
-                end{{
-                  id
-                  node_name
-                }}
-              }}
+              relation_id
             }}
           }}
         }}
@@ -891,22 +878,7 @@ class RelationResolversTest(Neo4jGraphQLCommunityTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        start_id = result.data['getGroupById']['incoming'][0]['relation']['start']['id']
-        end_id = result.data['getGroupById']['incoming'][0]['relation']['end']['id']
-        relation_id = result.data['getGroupById']['incoming'][0]['relation']['relation_id']
-
-        start_handle_id = relay.Node.from_global_id(start_id)[1]
-        end_handle_id = relay.Node.from_global_id(end_id)[1]
-
-        c1_handle_id = relay.Node.from_global_id(contact_1_id)[1]
-        g_handle_id = relay.Node.from_global_id(group_handle_id)[1]
-
-        assert start_handle_id == c1_handle_id, \
-            "Contact id don't match: {} != {}".format(start_handle_id, c1_handle_id)
-
-        assert end_handle_id == g_handle_id, \
-            "Group id don't match: {} != {}".format(end_handle_id, g_handle_id)
-
+        relation_id = result.data['getGroupById']['contacts'][0]['relation_id']
         assert relation_id, "Relation id is null"
 
         # delete relationship
@@ -945,19 +917,8 @@ class RelationResolversTest(Neo4jGraphQLCommunityTest):
         {{
           getContactById(id: "{contact_1_id}"){{
             id
-            outgoing{{
-              name
-              relation{{
-                relation_id
-                start{{
-                  id
-                  node_name
-                }}
-                end{{
-                  id
-                  node_name
-                }}
-              }}
+            emails{{
+              relation_id
             }}
           }}
         }}
@@ -966,27 +927,8 @@ class RelationResolversTest(Neo4jGraphQLCommunityTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        idx = 0
-        for relation in result.data['getContactById']['outgoing']:
-            if relation['name'] == 'Has_email':
-                break
-            idx = idx + 1
-
-        start_id = result.data['getContactById']['outgoing'][idx]['relation']['start']['id']
-        end_id = result.data['getContactById']['outgoing'][idx]['relation']['end']['id']
-        relation_id = result.data['getContactById']['outgoing'][idx]['relation']['relation_id']
-
-        start_handle_id = relay.Node.from_global_id(start_id)[1]
-        end_handle_id = relay.Node.from_global_id(end_id)[1]
-
-        c1_handle_id = relay.Node.from_global_id(contact_1_id)[1]
-        email_handle_id = relay.Node.from_global_id(email_id)[1]
-
-        assert start_handle_id == c1_handle_id, \
-            "Contact id don't match: {} != {}".format(start_handle_id, c1_handle_id)
-
-        assert end_handle_id == email_handle_id, \
-            "Email id don't match: {} != {}".format(end_handle_id, email_handle_id)
+        relation_id = result.data['getContactById']['emails'][0]['relation_id']
+        assert relation_id, "Relation id is null"
 
         # delete relationship
         query = """
@@ -1024,19 +966,8 @@ class RelationResolversTest(Neo4jGraphQLCommunityTest):
         {{
           getContactById(id: "{contact_1_id}"){{
             id
-            outgoing{{
-              name
-              relation{{
-                relation_id
-                start{{
-                  id
-                  node_name
-                }}
-                end{{
-                  id
-                  node_name
-                }}
-              }}
+            phones{{
+              relation_id
             }}
           }}
         }}
@@ -1045,27 +976,8 @@ class RelationResolversTest(Neo4jGraphQLCommunityTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        idx = 0
-        for relation in result.data['getContactById']['outgoing']:
-            if relation['name'] == 'Has_phone':
-                break
-            idx = idx + 1
-
-        start_id = result.data['getContactById']['outgoing'][idx]['relation']['start']['id']
-        end_id = result.data['getContactById']['outgoing'][idx]['relation']['end']['id']
-        relation_id = result.data['getContactById']['outgoing'][idx]['relation']['relation_id']
-
-        start_handle_id = relay.Node.from_global_id(start_id)[1]
-        end_handle_id = relay.Node.from_global_id(end_id)[1]
-
-        c1_handle_id = relay.Node.from_global_id(contact_1_id)[1]
-        p_handle_id = relay.Node.from_global_id(phone_id)[1]
-
-        assert start_handle_id == c1_handle_id, \
-            "Contact id don't match: {} != {}".format(start_handle_id, c1_handle_id)
-
-        assert end_handle_id == p_handle_id, \
-            "Phone id don't match: {} != {}".format(end_handle_id, p_handle_id)
+        relation_id = result.data['getContactById']['phones'][0]['relation_id']
+        assert relation_id, "Relation id is null"
 
         # delete relationship
         query = """
@@ -1103,19 +1015,8 @@ class RelationResolversTest(Neo4jGraphQLCommunityTest):
         {{
           getOrganizationById(id: "{organization_id}"){{
             id
-            outgoing{{
-              name
-              relation{{
-                relation_id
-                start{{
-                  id
-                  node_name
-                }}
-                end{{
-                  id
-                  node_name
-                }}
-              }}
+            addresses{{
+              relation_id
             }}
           }}
         }}
@@ -1124,27 +1025,8 @@ class RelationResolversTest(Neo4jGraphQLCommunityTest):
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
-        idx = 0
-        for relation in result.data['getOrganizationById']['outgoing']:
-            if relation['name'] == 'Has_address':
-                break
-            idx = idx + 1
-
-        start_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['start']['id']
-        end_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['end']['id']
-        relation_id = result.data['getOrganizationById']['outgoing'][idx]['relation']['relation_id']
-
-        start_handle_id = relay.Node.from_global_id(start_id)[1]
-        end_handle_id = relay.Node.from_global_id(end_id)[1]
-
-        org1_handle_id = relay.Node.from_global_id(organization_id)[1]
-        addr_handle_id = relay.Node.from_global_id(address_id)[1]
-
-        assert start_handle_id == org1_handle_id, \
-            "Contact id don't match: {} != {}".format(start_handle_id, org1_handle_id)
-
-        assert end_handle_id == addr_handle_id, \
-            "Phone id don't match: {} != {}".format(end_handle_id, addr_handle_id)
+        relation_id = result.data['getOrganizationById']['addresses'][0]['relation_id']
+        assert relation_id, "Relation id is null"
 
         # delete relationship
         query = """
