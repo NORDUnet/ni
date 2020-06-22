@@ -45,3 +45,20 @@ class CompositeSwitchMutation(CompositeMutation):
         main_mutation_f = NISwitchMutationFactory
         context = sriutils.get_network_context()
         include_metafields = ('dependents')
+
+
+class CompositeRouterMutation(CompositeMutation):
+    class Input:
+        pass
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh):
+        helpers.set_has(user, master_nh.get_node(), slave_nh.handle_id)
+
+    class NIMetaClass:
+        graphql_type = Router
+        graphql_subtype = Port
+        main_mutation_f = NIRouterMutationFactory
+        secondary_mutation_f = NIPortMutationFactory
+        context = sriutils.get_network_context()
+        has_creation = False
