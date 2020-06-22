@@ -2284,7 +2284,8 @@ class CompositeMutation(relay.ClientIDMutation):
         graphql_subtype = getattr(nimetaclass, 'graphql_subtype', None)
         create_mutation = getattr(nimetaclass, 'create_mutation', None)
         update_mutation = getattr(nimetaclass, 'update_mutation', None)
-        context         = getattr(nimetaclass, 'context', None)
+        context = getattr(nimetaclass, 'context', None)
+        has_creation = getattr(nimetaclass, 'has_creation', True)
 
         # this handle_id will be set to the created or updated main entity
         main_handle_id = None
@@ -2404,8 +2405,11 @@ class CompositeMutation(relay.ClientIDMutation):
                 cls.process_metatype_subentities(user, main_nh, root, info, input, context)
 
         payload_kwargs = dict(
-            created=ret_created, updated=ret_updated, unlinked=ret_unlinked
+            updated=ret_updated, unlinked=ret_unlinked
         )
+
+        if has_creation:
+            payload_kwargs = {**payload_kwargs, **dict(created=ret_created)}
 
         if has_subcreated:
             payload_kwargs = {**payload_kwargs, **dict(subcreated=ret_subcreated)}

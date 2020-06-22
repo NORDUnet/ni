@@ -137,11 +137,12 @@ class NIRouterMutationFactory(NIMutationFactory):
         request_path   = '/'
         graphql_type   = Router
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
             ),
         }
+        update_exclude = ('relationship_ports', )
 
     class Meta:
         abstract = False

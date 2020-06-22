@@ -1045,3 +1045,68 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check support group
         check_support = updated_switch['support_group']
         self.assertEqual(check_support['id'], group1_id)
+
+
+class RouterTest(Neo4jGraphQLNetworkTest):
+    def test_router(self):
+        # as we can't create routers from the graphql API
+        # we create a new dummy router
+        generator = NetworkFakeDataGenerator()
+        router = generator.create_router()
+        router_id = relay.Node.to_global_id(str(router.node_type),
+                                            str(router.handle_id))
+
+        # get new data to feed the update mutation
+        rack_units = random.randint(1,10)
+        rack_units = random.randint(1,10)
+        operational_state = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+        description = generator.escape_quotes(generator.fake.paragraph())
+
+        query = '''
+        mutation{{
+          composite_router(input:{{
+            update_input:{{
+              id: "{router_id}"
+              description: "{description}"
+              operational_state: "{operational_state}"
+              rack_units: {rack_units}
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              router{{
+                id
+                name
+                description
+                operational_state{{
+                  name
+                  value
+                }}
+                model
+                version
+                location{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(router_id=router_id, description=description,
+                    operational_state=operational_state, rack_units=rack_units)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = result.data['composite_router']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
