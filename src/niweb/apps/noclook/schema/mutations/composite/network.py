@@ -53,7 +53,7 @@ class CompositeRouterMutation(CompositeMutation):
 
     @classmethod
     def link_slave_to_master(cls, user, master_nh, slave_nh):
-        helpers.set_connected_to(user, master_nh.get_node(), slave_nh.handle_id)
+        helpers.set_has(user, master_nh.get_node(), slave_nh.handle_id)
 
     class NIMetaClass:
         graphql_type = Router

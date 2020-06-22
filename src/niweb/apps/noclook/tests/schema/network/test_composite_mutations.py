@@ -1064,6 +1064,22 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         )
         description = generator.escape_quotes(generator.fake.paragraph())
 
+        # ports vars
+        port_1_name = str(random.randint(0, 50000))
+        port_1_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_1_description = generator.escape_quotes(generator.fake.paragraph())
+
+        port_2 = generator.create_port()
+        port_2_id = relay.Node.to_global_id(str(port_2.node_type),
+                                            str(port_2.handle_id))
+        port_2_name = str(random.randint(0, 50000))
+        port_2_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_2_description = generator.escape_quotes(generator.fake.paragraph())
+
         query = '''
         mutation{{
           composite_router(input:{{
@@ -1073,6 +1089,21 @@ class RouterTest(Neo4jGraphQLNetworkTest):
               operational_state: "{operational_state}"
               rack_units: {rack_units}
             }}
+            create_subinputs:[
+              {{
+                name: "{port_1_name}"
+                port_type: "{port_1_type}"
+                description: "{port_1_description}"
+              }}
+            ]
+            update_subinputs:[
+              {{
+                id: "{port_2_id}"
+                name: "{port_2_name}"
+                port_type: "{port_2_type}"
+                description: "{port_2_description}"
+              }}
+            ]
           }}){{
             updated{{
               errors{{
@@ -1089,6 +1120,7 @@ class RouterTest(Neo4jGraphQLNetworkTest):
                 }}
                 model
                 version
+                rack_units
                 location{{
                   id
                   name
@@ -1099,10 +1131,45 @@ class RouterTest(Neo4jGraphQLNetworkTest):
                 }}
               }}
             }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
+              }}
+            }}
+            subupdated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
+              }}
+            }}
           }}
         }}
         '''.format(router_id=router_id, description=description,
-                    operational_state=operational_state, rack_units=rack_units)
+                    operational_state=operational_state, rack_units=rack_units,
+                    port_1_name=port_1_name, port_1_type=port_1_type,
+                    port_1_description=port_1_description,
+                    port_2_id=port_2_id, port_2_name=port_2_name,
+                    port_2_type=port_2_type,
+                    port_2_description=port_2_description)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1110,3 +1177,39 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         # check for errors
         updated_errors = result.data['composite_router']['updated']['errors']
         assert not updated_errors, pformat(updated_errors, indent=1)
+
+        # check router data
+        updated_router = result.data['composite_router']['updated']['router']
+
+        self.assertEqual(updated_router['description'], description)
+        self.assertEqual(updated_router['operational_state']['value'],\
+            operational_state)
+        self.assertEqual(updated_router ['rack_units'], rack_units)
+
+        # check ports data
+
+        # check port_1 data
+        created_checkport = result.data['composite_router']['subcreated'][0]
+        created_errors = created_checkport['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        created_checkport = created_checkport['port']
+        port_1_id = created_checkport['id']
+
+        self.assertEqual(created_checkport['name'], port_1_name)
+        self.assertEqual(created_checkport['port_type']['value'], port_1_type)
+        self.assertEqual(created_checkport['description'], port_1_description)
+
+        # check port_2
+        update_checkport = result.data['composite_router']['subupdated'][0]
+        updated_errors = update_checkport['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        update_checkport = update_checkport['port']
+        self.assertEqual(update_checkport['name'], port_2_name)
+        self.assertEqual(update_checkport['port_type']['value'], port_2_type)
+        self.assertEqual(update_checkport['description'], port_2_description)
+
+        # check ports in router
+        self.assertEqual(updated_router['ports'][1]['id'], port_1_id)
+        self.assertEqual(updated_router['ports'][0]['id'], port_2_id)

@@ -112,6 +112,7 @@ class Router(NIObjectType, PhysicalMixin):
         type_kwargs={ 'required': True })
     model = NIStringField()
     version = NIStringField()
+    rack_units = NIIntField()
     ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
 
     class NIMetaType:
