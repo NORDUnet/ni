@@ -432,6 +432,10 @@ class NewHostForm(forms.Form):
         self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
         self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
         self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Customer')
 
     name = forms.CharField(help_text="The hostname")
     description = description_field('host')
@@ -470,7 +474,7 @@ class NewHostForm(forms.Form):
     contract_number = forms.CharField(required=False, help_text='Which contract regulates the billing of this host?')
     # External relations
     relationship_location = relationship_field('location')
-    relationship_owner = relationship_field('owner')
+    relationship_owner = relationship_field('owner', True)
 
 
 class EditHostForm(NewHostForm):

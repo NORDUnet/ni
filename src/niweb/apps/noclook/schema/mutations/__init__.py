@@ -83,6 +83,10 @@ class NOCRootMutation(graphene.ObjectType):
     delete_router = NIRouterMutationFactory.get_delete_mutation().Field()
     composite_router = CompositeRouterMutation.Field()
 
+    update_firewall = NIFirewallMutationFactory.get_update_mutation().Field()
+    delete_firewall = NIFirewallMutationFactory.get_delete_mutation().Field()
+    composite_firewall = CompositeFirewallMutation.Field()
+
     ## Common mutations
     create_comment = CreateComment.Field()
     update_comment = UpdateComment.Field()

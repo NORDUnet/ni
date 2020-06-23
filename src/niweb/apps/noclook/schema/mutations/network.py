@@ -146,3 +146,32 @@ class NIRouterMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+class NIFirewallMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form    = EditFirewallForm
+        graphql_type   = Firewall
+        unique_node    = True
+        relations_processors = {
+            'relationship_provider': get_unique_relation_processor(
+                'Provides',
+                helpers.set_provider
+            ),
+            'switch_type': process_switch_type,
+            'responsible_group': get_unique_relation_processor(
+                'Takes_responsibility',
+                helpers.set_takes_responsibility
+            ),
+            'support_group': get_unique_relation_processor(
+                'Supports',
+                helpers.set_supports
+            ),
+            'relationship_owner': get_unique_relation_processor(
+                'Owns',
+                helpers.set_owner
+            ),
+        }
+
+    class Meta:
+        abstract = False
