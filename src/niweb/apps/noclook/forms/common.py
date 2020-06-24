@@ -376,6 +376,7 @@ class NewHostForm(forms.Form):
                                     label='Equipment height',
                                     help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+    rack_back = forms.BooleanField(required=False, help_text='Is it facing the back of the rack?')
     description = description_field('machine and what it is used for')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,

@@ -340,17 +340,31 @@ def typeahead(form_field, url, placeholder=None, has_parent=False, min_length=3,
     }
 
 
+# Rack tag
+RACK_SIZE_PX = 20
+
+
+def _rack_unit_to_height(units):
+    # for every unit over 1 add a 2 px margin
+    margin = (units - 1) * 2
+    return units * RACK_SIZE_PX + margin
+
+
 def _equipment_spacer(units):
-    return {'units': units, 'spacer': True, 'height': "{}px".format(units * 18)}
+    return {
+        'units': units,
+        'spacer': True,
+        'height': "{}px".format(_rack_unit_to_height(units)),
+    }
 
 
 def _rack_sort(item):
+    # Sort by rack position, sencoded by unit size
     pos = int(item.get('node').data.get('rack_position', -1))
     size = int(item.get('node').data.get('rack_units', 0)) * -1
 
     return (pos, size)
 
-RACK_SIZE_PX=20
 
 def _equipment(item):
     data = item.get('node').data
@@ -359,8 +373,9 @@ def _equipment(item):
         'units': units,
         'position': data.get('rack_position'),
         'position_end': units + int(data.get('rack_position', 1)) - 1,
-        'height': "{}px".format(units * RACK_SIZE_PX),
+        'height': "{}px".format(_rack_unit_to_height(units)),
         'sub_equipment': [],
+        'is_back': data.get('rack_back'),
         'data': data,
     }
 
@@ -368,32 +383,52 @@ def _equipment(item):
 @register.inclusion_tag('noclook/tags/rack.html')
 def noclook_rack(rack, equipment):
     racked_equipment = []
+    racked_equipment_back = []
     unracked_equipment = []
 
     if equipment:
         equipment.sort(key=_rack_sort)
-    idx = 1
-    last_eq = None
+    # mem
+    front_idx = 1
+    front_last_eq = None
+    back_idx = 1
+    back_last_eq = None
+
     for item in equipment:
         view_data = _equipment(item)
-        ridx = int(view_data.get('position', 0) or 0)
-        if ridx and ridx > 0:
-            spacing = ridx - idx
-            if spacing < 0:
-                # Equipment overlaps with previous
-                last_eq['sub_equipment'].append(view_data)
-            else:
-                if spacing > 0:
-                    racked_equipment.append(_equipment_spacer(spacing))
-                racked_equipment.append(view_data)
+        is_rack_front = not view_data.get('is_back')
+        rack_idx = int(view_data.get('position', 0) or 0)
+        if rack_idx and rack_idx > 0:
+            if is_rack_front:
+                spacing = rack_idx - front_idx
+                if spacing < 0:
+                    # Equipment overlaps with previous
+                    front_last_eq['sub_equipment'].append(view_data)
+                else:
+                    if spacing > 0:
+                        racked_equipment.append(_equipment_spacer(spacing))
+                    racked_equipment.append(view_data)
 
-                idx = ridx + view_data['units']
-                last_eq = view_data
+                    front_idx = rack_idx + view_data['units']
+                    front_last_eq = view_data
+            else:
+                spacing = rack_idx - back_idx
+                if spacing < 0:
+                    # Equipment overlaps with previous
+                    back_last_eq['sub_equipment'].append(view_data)
+                else:
+                    if spacing > 0:
+                        racked_equipment_back.append(_equipment_spacer(spacing))
+                    racked_equipment_back.append(view_data)
+
+                    back_idx = rack_idx + view_data['units']
+                    back_last_eq = view_data
         else:
             unracked_equipment.append(item)
     return {
-        'rack_size': rack.data.get('rack_units', 42) * RACK_SIZE_PX,
+        'rack_size': _rack_unit_to_height(rack.data.get('rack_units', 42)),
         'racked_equipment': racked_equipment,
+        'racked_equipment_back': racked_equipment_back,
         'unracked_equipment': unracked_equipment,
     }
 
