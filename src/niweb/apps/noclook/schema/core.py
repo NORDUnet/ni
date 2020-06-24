@@ -11,6 +11,7 @@ import apps.noclook.vakt.utils as sriutils
 
 from apps.noclook import activitylog, helpers
 from apps.noclook.models import NodeType, NodeHandle, NodeHandleContext
+from apps.noclook.forms.common import IPAddrField, JSONField, DatePickerField
 from collections import OrderedDict, Iterable
 from django import forms
 from django.contrib.auth.models import User as DjangoUser
@@ -1426,6 +1427,12 @@ class AbstractNIMutation(relay.ClientIDMutation):
                 graphene_field = graphene.String(**graph_kwargs)
             elif isinstance(form_field, forms.URLField):
                 graphene_field = graphene.String(**graph_kwargs)
+            elif isinstance(form_field, IPAddrField):
+                graphene_field = graphene.String(**graph_kwargs)
+            elif isinstance(form_field, JSONField):
+                graphene_field = graphene.String(**graph_kwargs)
+            elif isinstance(form_field, DatePickerField):
+                graphene_field = graphene.types.datetime.Date(**graph_kwargs)
             else:
                 graphene_field = graphene.String(**graph_kwargs)
 
