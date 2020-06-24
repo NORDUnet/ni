@@ -150,7 +150,7 @@ class NIRouterMutationFactory(NIMutationFactory):
 
 class NIFirewallMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        form    = EditFirewallForm
+        form    = EditFirewallNewForm
         graphql_type   = Firewall
         unique_node    = True
         relations_processors = {
