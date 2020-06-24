@@ -1300,7 +1300,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 operational_state
                 managed_by{{
                   id
-                  name
+                  value
                 }}
                 responsible_group{{
                   id
@@ -1311,12 +1311,20 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 backup
+                security_class{{
+                  name
+                  value
+                }}
+                security_comment
                 os
                 os_version
                 model
                 vendor
                 service_tag
                 end_support
+                max_number_of_ports
+                rack_units
+                rack_position
                 contract_number
                 location{{
                   id
@@ -1347,3 +1355,29 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         # check for errors
         updated_errors = result.data['composite_firewall']['updated']['errors']
         assert not updated_errors, pformat(updated_errors, indent=1)
+
+        updated_firewall = result.data['composite_firewall']['updated']['firewall']
+        self.assertEqual(updated_firewall['name'], firewall_name)
+        self.assertEqual(updated_firewall['description'], firewall_description)
+        self.assertEqual(updated_firewall['operational_state'], operational_state)
+        self.assertEqual(updated_firewall['managed_by']['value'], managed_by)
+        self.assertEqual(updated_firewall['security_class']['value'], security_class)
+        self.assertEqual(updated_firewall['security_comment'], security_comment)
+        self.assertEqual(updated_firewall['os'], os)
+        self.assertEqual(updated_firewall['os_version'], os_version)
+        self.assertEqual(updated_firewall['model'], model)
+        self.assertEqual(updated_firewall['vendor'], vendor)
+        self.assertEqual(updated_firewall['end_support'], end_support)
+        self.assertEqual(updated_firewall['max_number_of_ports'], max_number_of_ports)
+        self.assertEqual(updated_firewall['rack_units'], rack_units)
+        self.assertEqual(updated_firewall['rack_position'], rack_position)
+        self.assertEqual(updated_firewall['contract_number'], contract_number)
+
+        # check responsible group
+        check_responsible = updated_firewall['responsible_group']
+        self.assertEqual(check_responsible['id'], group1_id)
+
+        # check support group
+        check_support = updated_firewall['support_group']
+        self.assertEqual(check_support['id'], group2_id)
+        

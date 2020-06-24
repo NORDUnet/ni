@@ -170,6 +170,8 @@ class Firewall(NIObjectType, PhysicalMixin):
     support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
     managed_by = NIChoiceField(dropdown_name="host_management_sw")
     backup = NIStringField()
+    security_class = NIChoiceField(dropdown_name="security_classes")
+    security_comment = NIStringField()
     os = NIStringField()
     os_version = NIStringField()
     model = NIStringField()
@@ -179,7 +181,6 @@ class Firewall(NIObjectType, PhysicalMixin):
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
-    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
     max_number_of_ports = NIIntField()
 
     class NIMetaType:
