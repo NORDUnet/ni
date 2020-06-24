@@ -1280,6 +1280,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
               model: "{model}"
               vendor: "{vendor}"
               service_tag: "{service_tag}"
+              end_support: "{end_support}"
               contract_number: "{contract_number}"
               relationship_owner: "{owner_id}"
               max_number_of_ports: {max_number_of_ports}
@@ -1335,7 +1336,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             group1_id=group1_id, group2_id=group2_id, backup=backup,
             security_class=security_class, security_comment=security_comment,
             os=os, os_version=os_version, model=model, vendor=vendor,
-            service_tag=service_tag,
+            service_tag=service_tag, end_support=end_support,
             contract_number=contract_number, owner_id=owner_id,
             max_number_of_ports=max_number_of_ports, rack_units=rack_units,
             rack_position=rack_position)
