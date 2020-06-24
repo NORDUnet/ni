@@ -173,6 +173,9 @@ class Firewall(NIObjectType, PhysicalMixin):
     os = NIStringField()
     os_version = NIStringField()
     model = NIStringField()
+    vendor = NIStringField()
+    service_tag = NIStringField()
+    end_support = NIStringField()
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
