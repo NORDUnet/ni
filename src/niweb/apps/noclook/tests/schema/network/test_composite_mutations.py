@@ -1213,3 +1213,136 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         # check ports in router
         self.assertEqual(updated_router['ports'][1]['id'], port_1_id)
         self.assertEqual(updated_router['ports'][0]['id'], port_2_id)
+
+
+class FirewallTest(Neo4jGraphQLNetworkTest):
+    def test_firewall(self):
+        net_generator = NetworkFakeDataGenerator()
+        firewall = net_generator.create_firewall()
+
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_description = "Created from graphql"
+        operational_state = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+        managed_by = random.choice(
+            Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
+        )
+
+        # get two groups
+        com_generator = CommunityFakeDataGenerator()
+        group1 = com_generator.create_group()
+        group2 = com_generator.create_group()
+
+        group1_id = relay.Node.to_global_id(str(group1.node_type),
+                                            str(group1.handle_id))
+        group2_id = relay.Node.to_global_id(str(group2.node_type),
+                                            str(group2.handle_id))
+
+        backup = "Manual script"
+        security_class = random.choice(
+            Dropdown.objects.get(name="security_classes").as_choices()[1:][1]
+        )
+        security_comment = "It's updated manually"
+        os = "GNU/Linux"
+        os_version = "5.8"
+        model = com_generator.escape_quotes(com_generator.fake.license_plate())
+        vendor = com_generator.company_name()
+        service_tag = com_generator.escape_quotes(com_generator.fake.license_plate())
+        end_support = "2020-06-23"
+        contract_number = "001"
+        max_number_of_ports = 20
+        rack_position = 3
+        rack_units = 2
+
+        owner = net_generator.create_site_owner()
+        owner_id = relay.Node.to_global_id(str(owner.node_type),
+                                            str(owner.handle_id))
+
+        query = '''
+        mutation{{
+          composite_firewall(input:{{
+            update_input:{{
+              id: "{firewall_id}"
+              name: "{firewall_name}"
+              description: "{firewall_description}"
+              operational_state: "{operational_state}"
+              managed_by: "{managed_by}"
+              responsible_group: "{group1_id}"
+              support_group: "{group2_id}"
+              backup: "{backup}"
+              security_class: "{security_class}"
+              security_comment: "{security_comment}"
+              os: "{os}"
+              os_version: "{os_version}"
+              model: "{model}"
+              vendor: "{vendor}"
+              service_tag: "{service_tag}"
+              contract_number: "{contract_number}"
+              relationship_owner: "{owner_id}"
+              max_number_of_ports: {max_number_of_ports}
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                description
+                operational_state
+                managed_by{{
+                  id
+                  name
+                }}
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+                backup
+                os
+                os_version
+                model
+                vendor
+                service_tag
+                end_support
+                contract_number
+                location{{
+                  id
+                  name
+                }}
+                owner{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_description=firewall_description,
+            operational_state=operational_state, managed_by=managed_by,
+            group1_id=group1_id, group2_id=group2_id, backup=backup,
+            security_class=security_class, security_comment=security_comment,
+            os=os, os_version=os_version, model=model, vendor=vendor,
+            service_tag=service_tag,
+            contract_number=contract_number, owner_id=owner_id,
+            max_number_of_ports=max_number_of_ports, rack_units=rack_units,
+            rack_position=rack_position)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = result.data['composite_firewall']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
