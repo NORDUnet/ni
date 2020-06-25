@@ -159,6 +159,12 @@ class SearchIdForm(forms.Form):
         self.fields['id_type'].choices = categories
 
 
+class RackableForm(forms.Form):
+    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
+    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+    rack_back = forms.BooleanField(required=False, help_text='Is it facing the back of the rack?', label='Is back of rack')
+
+
 class NewSiteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
@@ -171,13 +177,13 @@ class NewSiteForm(forms.Form):
     address = forms.CharField(required=False)
     postarea = forms.CharField(required=False)
     postcode = forms.CharField(required=False)
-    
+
     def clean(self):
         cleaned_data = super(NewSiteForm, self).clean()
         cleaned_data['country'] = country_map(cleaned_data['country_code'])
         return cleaned_data
-    
-    
+
+
 class EditSiteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
@@ -297,8 +303,7 @@ class ConnectPortForm(forms.Form):
     relationship_end_a = forms.IntegerField(required=False, widget=forms.widgets.HiddenInput)
 
 
-
-class OpticalNodeForm(forms.Form):
+class OpticalNodeForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(OpticalNodeForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -307,8 +312,6 @@ class OpticalNodeForm(forms.Form):
     type = forms.ChoiceField()
     operational_state = forms.ChoiceField(initial='In service')
     description = description_field('optical node')
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     relationship_location = relationship_field('location')
 
 
@@ -361,7 +364,7 @@ class EditRoomForm(forms.Form):
     #relationship_located_in = relationship_field('located in')
 
 
-class NewHostForm(forms.Form):
+class NewHostForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(NewHostForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -372,11 +375,6 @@ class NewHostForm(forms.Form):
 
     name = forms.CharField(help_text="The hostname")
     ip_addresses = IPAddrField(help_text="One ip per line", required=False)
-    rack_units = forms.IntegerField(required=False,
-                                    label='Equipment height',
-                                    help_text='Height in rack units (u).')
-    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
-    rack_back = forms.BooleanField(required=False, help_text='Is it facing the back of the rack?')
     description = description_field('machine and what it is used for')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
     managed_by = forms.ChoiceField(required=False, widget=forms.widgets.Select,
@@ -435,20 +433,18 @@ class EditPDUForm(EditHostForm):
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
-class EditRouterForm(forms.Form):
+class EditRouterForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(EditRouterForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
 
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
     relationship_location = relationship_field('location')
     relationship_ports = JSONField(required=False, widget=JSONInput)
     description = description_field('router')
 
 
-class NewOdfForm(forms.Form):
+class NewOdfForm(RackableForm):
 
     def __init__(self, *args, **kwargs):
         super(NewOdfForm, self).__init__(*args, **kwargs)
@@ -463,10 +459,9 @@ class NewOdfForm(forms.Form):
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_location = relationship_field('location')
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
 
-class NewPatchPannelForm(forms.Form):
+
+class NewPatchPannelForm(RackableForm):
 
     def __init__(self, *args, **kwargs):
         super(NewPatchPannelForm, self).__init__(*args, **kwargs)
@@ -481,8 +476,7 @@ class NewPatchPannelForm(forms.Form):
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select, initial="In service")
     relationship_location = relationship_field('location')
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
+
 
 class NewOutletForm(forms.Form):
 
@@ -495,6 +489,7 @@ class NewOutletForm(forms.Form):
     description = description_field('Patch Panel')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select, initial="In service")
     relationship_location = relationship_field('location')
+
 
 class BulkPortsForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -509,7 +504,7 @@ class BulkPortsForm(forms.Form):
     num_ports = forms.IntegerField(required=False, min_value=0, initial=0)
 
 
-class EditOdfForm(forms.Form):
+class EditOdfForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(EditOdfForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -517,13 +512,12 @@ class EditOdfForm(forms.Form):
     name = forms.CharField()
     description = description_field('ODF')
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
 
-class EditPatchPanelForm(forms.Form):
+
+class EditPatchPanelForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(EditPatchPanelForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -531,11 +525,10 @@ class EditPatchPanelForm(forms.Form):
     name = forms.CharField()
     description = description_field('Patch Panel')
     max_number_of_ports = forms.IntegerField(required=False, help_text='Max number of ports.')
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     relationship_location = relationship_field('location')
+
 
 class EditOutletForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -557,12 +550,10 @@ class EditOpticalFilterForm(EditOdfForm):
     pass
 
 
-class NewExternalEquipmentForm(forms.Form):
+class NewExternalEquipmentForm(RackableForm):
     name = forms.CharField()
 
     description = description_field('external equipment')
-    rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
-    rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
     relationship_owner = relationship_field('owner')
     relationship_location = relationship_field('location')
 
