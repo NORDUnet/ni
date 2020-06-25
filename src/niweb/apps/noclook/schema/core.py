@@ -1481,6 +1481,21 @@ class AbstractNIMutation(relay.ClientIDMutation):
                     if attr_name in noninput_fields:
                         noninput_fields.remove(attr_name)
 
+        # morph ids for relation processors
+        # and remove them from the noninput_fields
+        relations_processors = getattr(ni_metaclass, 'relations_processors', None)
+
+        if relations_processors:
+            for relation_name in relations_processors.keys():
+                relay_id = input.get(relation_name, None)
+
+                if relay_id:
+                    handle_id = relay.Node.from_global_id(relay_id)[1]
+                    input_params[relation_name] = handle_id
+
+                if relation_name in noninput_fields:
+                    noninput_fields.remove(relation_name)
+
         # if it's an edit mutation add handle_id
         # and also add the existent values in the request
         if not is_create:
@@ -1494,17 +1509,6 @@ class AbstractNIMutation(relay.ClientIDMutation):
             for noninput_field in noninput_fields:
                 if noninput_field in node.data:
                     input_params[noninput_field] = node.data.get(noninput_field)
-
-        # morph ids for relation processors
-        relations_processors = getattr(ni_metaclass, 'relations_processors', None)
-
-        if relations_processors:
-            for relation_name in relations_processors.keys():
-                relay_id = input.get(relation_name, None)
-
-                if relay_id:
-                    handle_id = relay.Node.from_global_id(relay_id)[1]
-                    input_params[relation_name] = handle_id
 
         # forge request
         request_factory = RequestFactory()
