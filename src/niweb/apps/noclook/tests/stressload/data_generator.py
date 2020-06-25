@@ -510,6 +510,23 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return switch
 
+    def create_firewall(self, name=None):
+        # create object
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.safe_color_name(), self.fake.ean8())
+
+        firewall = self.create_host(name, "Firewall")
+
+        data = {
+            'max_number_of_ports': random.randint(5,25),
+        }
+
+        for key, value in data.items():
+            firewall.get_node().add_property(key, value)
+
+        return firewall
+
 
 class DataRelationMaker:
     def __init__(self):

@@ -509,6 +509,22 @@ class EditFirewallForm(EditHostForm):
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
+class EditFirewallNewForm(PhysicalSupportForm, WithMaxPortsForm, EditHostForm):
+    def __init__(self, *args, **kwargs):
+        super(EditFirewallNewForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
+        self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Site Owner')
+
+    relationship_owner = relationship_field('owner', True)
+
+
 class EditPDUForm(EditHostForm):
     def __init__(self, *args, **kwargs):
         super(EditPDUForm, self).__init__(*args, **kwargs)

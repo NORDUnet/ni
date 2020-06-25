@@ -62,3 +62,15 @@ class CompositeRouterMutation(CompositeMutation):
         secondary_mutation_f = NIPortMutationFactory
         context = sriutils.get_network_context()
         has_creation = False
+
+
+class CompositeFirewallMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Firewall
+        main_mutation_f = NIFirewallMutationFactory
+        context = sriutils.get_network_context()
+        include_metafields = ('dependents')
+        has_creation = False

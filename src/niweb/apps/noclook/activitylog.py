@@ -8,7 +8,18 @@ Created on 2012-11-23 10:18 AM
 from actstream import action
 from .models import NodeHandle
 import apps.noclook.vakt.utils as sriutils
+import json
 
+
+def escape_json_value(value):
+    jvalue = value
+
+    try:
+        json.dumps(value)
+    except TypeError:
+        jvalue = str(value)
+
+    return jvalue
 
 def update_node_property(user, action_object, property_key, value_before, value_after):
     """
@@ -23,6 +34,9 @@ def update_node_property(user, action_object, property_key, value_before, value_
     contexts = sriutils.get_nh_named_contexts(action_object)
     action_object.modifier = user
     action_object.save()
+
+    value_before = escape_json_value(value_before)
+    value_after = escape_json_value(value_after)
 
     action.send(
         user,
@@ -103,6 +117,9 @@ def update_relationship_property(user, relationship, property_key, value_before,
     for c in contexts_end:
         if c not in contexts:
             contexts.append(c)
+
+    value_before = escape_json_value(value_before)
+    value_after = escape_json_value(value_after)
 
     action.send(
         user,

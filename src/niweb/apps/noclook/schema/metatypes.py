@@ -49,7 +49,7 @@ class Relation(NINode):
     with_same_name = graphene.List(lambda:Relation)
     uses = graphene.Field(Logical)
     provides = graphene.Field(NINode) # Physical or Logical
-    owns = graphene.Field(lambda:Physical)
+    owns = graphene.List(lambda:Physical)
     responsible_for = graphene.Field(lambda:Location)
 
 
@@ -59,6 +59,7 @@ class Physical(NINode):
     part_of = graphene.Field(lambda:Logical)
     parent = graphene.List(lambda:Physical)
     dependents = graphene.List(lambda:Logical)
+    owner = graphene.Field(lambda:Relation)
 
 
 class Location(NINode):
@@ -164,7 +165,7 @@ class RelationMixin:
             info, self.get_node(), 'get_provides', 'Provides')
 
     def resolve_owns(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
+        return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_owns', 'Owns')
 
     def resolve_responsible_for(self, info, **kwargs):
@@ -210,6 +211,10 @@ class PhysicalMixin:
     def resolve_dependents(self, info, **kwargs):
         return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_dependents', 'Depends_on')
+
+    def resolve_owner(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'get_relations', 'Owns')
 
     @classmethod
     def link_parent(cls, user, physical_nh, physical_parent_nh):

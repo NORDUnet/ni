@@ -160,6 +160,35 @@ class Switch(NIObjectType, PhysicalMixin):
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
 
+
+class Firewall(NIObjectType, PhysicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    operational_state = NIStringField(type_kwargs={ 'required': True })
+    ip_addresses = NIIPAddrField()
+    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
+    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
+    managed_by = NIChoiceField(dropdown_name="host_management_sw")
+    backup = NIStringField()
+    security_class = NIChoiceField(dropdown_name="security_classes")
+    security_comment = NIStringField()
+    os = NIStringField()
+    os_version = NIStringField()
+    model = NIStringField()
+    vendor = NIStringField()
+    service_tag = NIStringField()
+    end_support = NIStringField()
+    contract_number = NIStringField()
+    rack_units = NIIntField() # Equipment height
+    rack_position = NIIntField()
+    max_number_of_ports = NIIntField()
+
+    class NIMetaType:
+        ni_type = 'Firewall'
+        ni_metatype = NIMETA_PHYSICAL
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
