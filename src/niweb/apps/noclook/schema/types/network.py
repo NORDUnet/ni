@@ -82,7 +82,8 @@ class Host(NIObjectType, PhysicalMixin):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    operational_state = NIStringField(type_kwargs={ 'required': True })
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': True })
     os = NIStringField()
     os_version = NIStringField()
     vendor = NIStringField()
@@ -107,9 +108,11 @@ class Host(NIObjectType, PhysicalMixin):
 class Router(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    operational_state = NIChoiceField(dropdown_name="another")
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': True })
     model = NIStringField()
     version = NIStringField()
+    rack_units = NIIntField()
     ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
 
     class NIMetaType:
