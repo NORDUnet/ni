@@ -1,7 +1,7 @@
 FROM alpine:latest
 LABEL authors="Markus Krogh <markus@nordu.net>"
 
-RUN apk add --no-cache ca-certificates python3 libpq
+RUN apk add --no-cache ca-certificates python3 py3-pip libpq
 RUN pip3 install --upgrade pip
 RUN mkdir /app
 WORKDIR /app
