@@ -1258,7 +1258,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         rack_units = 2
 
         owner = net_generator.create_site_owner()
-        owner_id = relay.Node.to_global_id(str(owner.node_type),
+        owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
 
         query = '''
@@ -1380,4 +1380,10 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         # check support group
         check_support = updated_firewall['support_group']
         self.assertEqual(check_support['id'], group2_id)
-        
+
+        # check support group
+        check_owner = updated_firewall['owner']
+        self.assertEqual(check_owner['id'], owner_id, "{} / {} != {} / {}".format(
+            *relay.Node.from_global_id(check_owner['id']),
+            *relay.Node.from_global_id(owner_id),
+        ))
