@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2020-06-25
+### Added
+- Back side to racks. Allowing you to specify if equipment orientation.
+- Cable alternative name for tele2 ids, this needs to be change to be more dynamic at some point.
+- Owners column to equipment list
+
+### Changed
+- Docker image needed pip3, since alpine has split that out to a seperate package.
+
 ## 2020-03-17
 ### Added
 - The ability to change which saml backend class to use for authentication - set using `SAML_BACKEND`
