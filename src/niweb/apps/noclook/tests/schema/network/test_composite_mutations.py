@@ -1046,6 +1046,75 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         check_support = updated_switch['support_group']
         self.assertEqual(check_support['id'], group1_id)
 
+        # set empty group relations
+        query = '''
+        mutation{{
+          composite_switch(
+            input:{{
+              update_input: {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                description: "{switch_description}"
+                ip_addresses: "{ip_address}"
+                rack_units: {rack_units}
+                rack_position: {rack_position}
+                operational_state: "{operational_state}"
+                managed_by: "{managed_by}"
+                backup: "{backup}"
+                os: "{os}"
+                os_version: "{os_version}"
+                contract_number: "{contract_number}"
+                max_number_of_ports: {max_number_of_ports}
+              }}
+            }}
+          ){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                provider{{
+                  id
+                  name
+                }}
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(switch_name=switch_name, switch_id=switch_id,
+                    switch_description=switch_description,
+                    ip_address="\\n".join(ip_addresses),
+                    rack_units=rack_units, rack_position=rack_position,
+                    operational_state=operational_state,
+                    managed_by=managed_by, backup=backup, os=os,
+                    os_version=os_version, contract_number=contract_number,
+                    max_number_of_ports=max_number_of_ports)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = result.data['composite_switch']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        updated_switch = result.data['composite_switch']['updated']['switch']
+
+        # check that these values had been set to none/null
+        self.assertEqual(updated_switch['provider'], None)
+        self.assertEqual(updated_switch['responsible_group'], None)
+        self.assertEqual(updated_switch['support_group'], None)
+
 
 class RouterTest(Neo4jGraphQLNetworkTest):
     def test_router(self):

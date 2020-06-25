@@ -11,10 +11,14 @@ from graphene import Field
 
 import graphene
 
-def get_unique_relation_processor(relationship_attr, helper_method):
+def get_unique_relation_processor(relationship_attr, helper_method,
+    incoming_relation=True):
     def process_subentity(request, form, nodehandler, relation_name):
         # check if there's a previous relation to ensure it's unique
         previous_rels = nodehandler.incoming.get(relationship_attr, [])
+        if not incoming_relation:
+            previous_rels = nodehandler.outgoing.get(relationship_attr, [])
+
         add_relation = False
 
         if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
