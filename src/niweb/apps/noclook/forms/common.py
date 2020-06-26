@@ -162,7 +162,7 @@ class SearchIdForm(forms.Form):
 class RackableForm(forms.Form):
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
-    rack_rear = forms.BooleanField(required=False, help_text='Is it facing the rear of the rack?', label='Is at rear of rack')
+    rack_back = forms.BooleanField(required=False, help_text='Is it facing the back of the rack?', label='Is back of rack')
 
 
 class NewSiteForm(forms.Form):
