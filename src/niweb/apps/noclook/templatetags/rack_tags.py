@@ -36,7 +36,7 @@ def _equipment(item):
         'position_end': units + int(data.get('rack_position', 1)) - 1,
         'height': "{}px".format(_rack_unit_to_height(units)),
         'sub_equipment': [],
-        'is_back': data.get('rack_back'),
+        'is_rear': data.get('rack_rear') or data.get('rack_back'),
         'data': data,
     }
 
@@ -71,7 +71,7 @@ def noclook_rack(rack, equipment):
 
     for item in equipment:
         view_data = _equipment(item)
-        is_rack_front = not view_data.get('is_back')
+        is_rack_front = not view_data.get('is_rear')
         if view_data['position'] > 0:
             if is_rack_front:
                 front_idx, front_last_eq = place_equipment(view_data, front_idx, front_last_eq, racked_equipment)
