@@ -5,12 +5,12 @@ import ipaddress
 import norduniclient as nc
 
 
-def get_user(username='noclook'):
+def get_user(username='noclook', usermodel=User):
     try:
-        user = User.objects.get(username=username)
+        user = usermodel.objects.get(username=username)
     except User.DoesNotExist:
-        passwd = User.objects.make_random_password(length=30)
-        user = User.objects.create_user(username, '', passwd)
+        passwd = usermodel.objects.make_random_password(length=30)
+        user = usermodel.objects.create_user(username, '', passwd)
     return user
 
 
