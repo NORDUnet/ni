@@ -1,0 +1,188 @@
+from apps.nerds.lib.consumer_util import get_user
+from django.db import migrations
+from django.utils.text import slugify
+import norduniclient as nc
+
+try:
+    from neo4j.exceptions import CypherError
+except ImportError:
+    try:
+        # pre neo4j 1.4
+        from neo4j.v1.exceptions import CypherError
+    except ImportError:
+        # neo4j 1.1
+        from neo4j.v1.api import CypherError
+
+import apps.noclook.vakt.utils as sriutils
+
+
+host_types = [
+    'Host', 'Switch', 'Firewall',
+]
+
+def forwards_func(apps, schema_editor):
+    NodeType = apps.get_model('noclook', 'NodeType')
+    NodeHandle = apps.get_model('noclook', 'NodeHandle')
+    Context = apps.get_model('noclook', 'Context')
+    NodeHandleContext = apps.get_model('noclook', 'NodeHandleContext')
+    Dropdown = apps.get_model('noclook', 'Dropdown')
+    Choice = apps.get_model('noclook', 'Choice')
+    User = apps.get_model('auth', 'User')
+
+    username = 'noclook'
+    passwd = User.objects.make_random_password(length=30)
+    user = None
+
+    try:
+        user = User.objects.get(username=username)
+    except:
+        user = User(username=username, password=passwd).save()
+
+    # get the values from the old group dropdown
+    groups_dropname = 'responsible_groups'
+
+    groupdropdown, created = \
+        Dropdown.objects.get_or_create(name=groups_dropname)
+    choices = Choice.objects.filter(dropdown=groupdropdown)
+
+    host_type_objs = []
+    for host_type_str in host_types:
+        host_type, created = NodeType.objects.get_or_create(
+            type=host_type_str,
+            slug=slugify(host_type_str)
+        )
+        host_type_objs.append(host_type)
+
+    if NodeHandle.objects.filter(node_type__in=host_type_objs).exists():
+        # if there's nodes on the db, create groups with these values
+        group_type, created = NodeType.objects.get_or_create(type='Group', slug='group')
+        groups_dict = {}
+
+        community_context = sriutils.get_community_context(Context)
+
+        for choice in choices:
+            node_name = choice.name
+
+            group_nh, created = NodeHandle.objects.get_or_create(
+                node_name=node_name, node_type=group_type,
+                node_meta_type=nc.META_TYPES[1], # Logical
+                creator=user,
+                modifier=user,
+            )
+            try:
+                nc.create_node(
+                    nc.graphdb.manager,
+                    node_name,
+                    group_nh.node_meta_type,
+                    group_type.type,
+                    group_nh.handle_id
+                )
+            except CypherError:
+                pass
+
+            NodeHandleContext(
+                nodehandle=group_nh,
+                context=community_context
+            ).save()
+
+            groups_dict[node_name] = group_nh
+
+        prop_methods = {
+            'responsible_group': 'set_takes_responsibility',
+            'support_group': 'set_supports',
+        }
+
+        # loop over entity types
+        for host_type_str in host_types:
+            host_type, created = NodeType.objects.get_or_create(
+                type=host_type_str,
+                slug=slugify(host_type_str)
+            )
+
+            nhs = NodeHandle.objects.filter(node_type=host_type)
+
+            # loop over entities of this type
+            for nh in nhs:
+                host_node = nc.get_node_model(nc.graphdb.manager, nh.handle_id)
+
+                for prop, method_name in prop_methods.items():
+                    # get old data
+                    prop_value = host_node.data.get(prop, None)
+
+                    # link matched group
+                    if prop_value and prop_value in groups_dict:
+                        group_nh = groups_dict[prop_value]
+                        group_node = nc.get_node_model(nc.graphdb.manager,\
+                            group_nh.handle_id)
+
+                        method = getattr(group_node, method_name, None)
+
+                        if method:
+                            method(nh.handle_id)
+
+                        # remove old property
+                        host_node.remove_property(prop)
+
+
+def backwards_func(apps, schema_editor):
+    NodeType = apps.get_model('noclook', 'NodeType')
+    NodeHandle = apps.get_model('noclook', 'NodeHandle')
+    Dropdown = apps.get_model('noclook', 'Dropdown')
+    Choice = apps.get_model('noclook', 'Choice')
+    User = apps.get_model('auth', 'User')
+    user = get_user(usermodel=User)
+
+    # get the values from the old group dropdown
+    groups_dropname = 'responsible_groups'
+
+    groupdropdown, created = \
+        Dropdown.objects.get_or_create(name=groups_dropname)
+    choices = Choice.objects.filter(dropdown=groupdropdown)
+
+    # create groups with these values
+    group_type, created = NodeType.objects.get_or_create(type='Group', slug='group')
+    groups_dict = {}
+
+    host_type_objs = []
+    for host_type_str in host_types:
+        host_type, created = NodeType.objects.get_or_create(
+            type=host_type_str,
+            slug=slugify(host_type_str)
+        )
+        host_type_objs.append(host_type)
+
+    if NodeHandle.objects.filter(node_type__in=host_type_objs).exists():
+        # create or get groups if exists
+        for choice in choices:
+            node_name = choice.name
+
+            group_node, created = NodeHandle.objects.get_or_create(
+                node_name=node_name, node_type=group_type
+            )
+
+            groups_dict[node_name] = group_node
+
+    # loop over entity types
+    # loop over entities of this type
+    # unlink group and get its name
+    # match
+
+    # delete created groups (both postgresql and neo4j)
+    for group_name, group_node in groups_dict.items():
+        q = """
+            MATCH (n:Group {handle_id:{handle_id}}) DETACH DELETE n
+            """
+        nc.query_to_dict(nc.graphdb.manager, q, handle_id=group_node.handle_id)
+
+        group_node.delete()
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('noclook', '0023_activitylog_context_20200604_1226'),
+    ]
+
+    operations = [
+        migrations.RunPython(forwards_func, backwards_func),
+    ]
