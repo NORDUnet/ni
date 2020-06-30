@@ -50,35 +50,6 @@ def forwards_func(apps, schema_editor):
 
     community_context = sriutils.get_community_context(Context)
 
-    for choice in choices:
-        node_name = choice.name
-
-        group_nh, created = NodeHandle.objects.get_or_create(
-            node_name=node_name, node_type=group_type,
-            node_meta_type=nc.META_TYPES[1], # Logical
-            creator=user,
-            modifier=user,
-        )
-
-        if created:
-            try:
-                nc.create_node(
-                    nc.graphdb.manager,
-                    node_name,
-                    group_nh.node_meta_type,
-                    group_type.type,
-                    group_nh.handle_id
-                )
-            except CypherError:
-                pass
-
-            NodeHandleContext(
-                nodehandle=group_nh,
-                context=community_context
-            ).save()
-
-        groups_dict[node_name] = group_nh
-
     host_type_objs = []
     for host_type_str in host_types:
         host_type, created = NodeType.objects.get_or_create(
@@ -88,6 +59,35 @@ def forwards_func(apps, schema_editor):
         host_type_objs.append(host_type)
 
     if NodeHandle.objects.filter(node_type__in=host_type_objs).exists():
+        for choice in choices:
+            node_name = choice.name
+
+            group_nh, created = NodeHandle.objects.get_or_create(
+                node_name=node_name, node_type=group_type,
+                node_meta_type=nc.META_TYPES[1], # Logical
+                creator=user,
+                modifier=user,
+            )
+
+            if created:
+                try:
+                    nc.create_node(
+                        nc.graphdb.manager,
+                        node_name,
+                        group_nh.node_meta_type,
+                        group_type.type,
+                        group_nh.handle_id
+                    )
+                except CypherError:
+                    pass
+
+                NodeHandleContext(
+                    nodehandle=group_nh,
+                    context=community_context
+                ).save()
+
+            groups_dict[node_name] = group_nh
+        
         # if there's nodes on the db, create groups with these values
         prop_methods = {
             'responsible_group': 'set_takes_responsibility',
