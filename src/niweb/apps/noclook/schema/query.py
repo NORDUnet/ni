@@ -10,6 +10,7 @@ from graphql import GraphQLError
 from ..models import Dropdown as DropdownModel, Role as RoleModel, DummyDropdown,\
                 RoleGroup as RoleGroupModel, DEFAULT_ROLEGROUP_NAME
 from .types import *
+from .search import *
 
 def can_load_models():
     can_load = True
@@ -29,9 +30,16 @@ class NOCAutoQuery(graphene.ObjectType):
     '''
 
     connection_classes = {}
+
+    # the key for these dicts is noclook's NodeType model
     by_id_type_resolvers = {}
     all_type_resolvers = {}
     connection_type_resolvers = {}
+
+    # the key for these is graphene types instead for fast search
+    graph_by_id_type_resolvers = {}
+    graph_all_type_resolvers = {}
+    graph_connection_type_resolvers = {}
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -66,7 +74,13 @@ class NOCAutoQuery(graphene.ObjectType):
                 field_name    = 'all_{}s'.format(fmt_type_slug)
                 resolver_name = 'resolve_{}'.format(field_name)
 
+                # add resolvers
                 cls.all_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
+
+                cls.graph_all_type_resolvers[graphql_type] = {
                     'field_name': field_name,
                     'fmt_type_name': fmt_type_name,
                 }
@@ -85,7 +99,13 @@ class NOCAutoQuery(graphene.ObjectType):
                 field_name    = '{}s'.format(type_name_cc)
                 resolver_name = 'resolve_{}'.format(field_name)
 
+                # add resolvers
                 cls.connection_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
+
+                cls.graph_connection_type_resolvers[graphql_type] = {
                     'field_name': field_name,
                     'fmt_type_name': fmt_type_name,
                 }
@@ -117,13 +137,30 @@ class NOCAutoQuery(graphene.ObjectType):
                 field_name    = 'get{}ById'.format(fmt_type_name)
                 resolver_name = 'resolve_{}'.format(field_name)
 
+                # add resolvers
                 cls.by_id_type_resolvers[node_type] = {
+                    'field_name': field_name,
+                    'fmt_type_name': fmt_type_name,
+                }
+
+                cls.graph_by_id_type_resolvers[graphql_type] = {
                     'field_name': field_name,
                     'fmt_type_name': fmt_type_name,
                 }
 
                 setattr(cls, field_name, graphene.Field(graphql_type, id=graphene.ID()))
                 setattr(cls, resolver_name, graphql_type.get_byid_resolver())
+
+        ## add search queries
+        search_queries = getattr(_nimeta, 'search_queries')
+
+        for search_query in search_queries:
+            field_resolver = search_query.get_query_field_resolver()
+            # set field
+            setattr(cls, field_resolver['field'][0], field_resolver['field'][1])
+
+            # set resolver
+            setattr(cls, field_resolver['resolver'][0], field_resolver['resolver'][1])
 
 
 class NOCRootQuery(NOCAutoQuery):
@@ -135,6 +172,22 @@ class NOCRootQuery(NOCAutoQuery):
     # get roles lookup
     getAvailableRoleGroups = graphene.List(RoleGroup)
     getRolesFromRoleGroup = graphene.List(Role, name=graphene.String())
+
+    # get metatypes lookup
+    getMetatypes = graphene.List(MetaType)
+    getTypesForMetatype = graphene.List(TypeInfo, metatype=graphene.Argument(MetaType))
+
+    # activity connection
+    getAvailableContexts = graphene.List(graphene.String, resolver=resolve_available_contexts)
+    getContextActivity = relay.ConnectionField(
+        ActionConnection, filter=graphene.Argument(ActionFilter,required=True),
+        orderBy=graphene.Argument(ActionOrderBy), resolver=resolve_context_activity)
+
+    # switch types
+    getSwitchTypes = graphene.List(SwitchType, resolver=resolve_getSwitchTypes)
+
+    # network organizations
+    getNetworkOrgTypes = graphene.List(TypeInfo)
 
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
@@ -265,10 +318,99 @@ class NOCRootQuery(NOCAutoQuery):
 
         return ret
 
+    def resolve_getMetatypes(self, info, **kwargs):
+        if info.context and info.context.user.is_authenticated:
+            metatypes = [
+                MetaType.Logical,
+                MetaType.Relation,
+                MetaType.Physical,
+                MetaType.Location,
+            ]
+
+            return metatypes
+        else:
+            raise GraphQLAuthException()
+
+    def resolve_getTypesForMetatype(self, info, **kwargs):
+        if info.context and info.context.user.is_authenticated:
+            classes = []
+            filter_metatype = kwargs.get('metatype')
+
+            for interface, class_list in subclasses_interfaces.items():
+                if interface.__name__ == filter_metatype:
+                    for clazz in class_list:
+                        class_has_resolvers = \
+                            clazz in NOCRootQuery.graph_by_id_type_resolvers and \
+                            clazz in NOCRootQuery.graph_all_type_resolvers and \
+                            clazz in NOCRootQuery.graph_connection_type_resolvers
+
+                        if class_has_resolvers:
+                            byid_name = NOCRootQuery.\
+                                graph_by_id_type_resolvers[clazz]['field_name']
+
+                            connection_name = NOCRootQuery.\
+                                graph_connection_type_resolvers[clazz]['field_name']
+
+                            all_name = NOCRootQuery.\
+                                graph_all_type_resolvers[clazz]['field_name']
+
+                            elem = TypeInfo(
+                                type_name=clazz,
+                                connection_name=connection_name,
+                                byid_name=byid_name,
+                                all_name=all_name,
+                            )
+
+                            classes.append(elem)
+
+            return classes
+        else:
+            raise GraphQLAuthException()
+
+    def resolve_getNetworkOrgTypes(self, info, **kwargs):
+        if info.context and info.context.user.is_authenticated:
+            class_list = [Customer, EndUser, Provider, SiteOwner]
+            classes = []
+
+            for clazz in class_list:
+                class_has_resolvers = \
+                    clazz in NOCRootQuery.graph_by_id_type_resolvers and \
+                    clazz in NOCRootQuery.graph_all_type_resolvers and \
+                    clazz in NOCRootQuery.graph_connection_type_resolvers
+
+                if class_has_resolvers:
+                    byid_name = NOCRootQuery.\
+                        graph_by_id_type_resolvers[clazz]['field_name']
+
+                    connection_name = NOCRootQuery.\
+                        graph_connection_type_resolvers[clazz]['field_name']
+
+                    all_name = NOCRootQuery.\
+                        graph_all_type_resolvers[clazz]['field_name']
+
+                    elem = TypeInfo(
+                        type_name=clazz,
+                        connection_name=connection_name,
+                        byid_name=byid_name,
+                        all_name=all_name,
+                    )
+
+                    classes.append(elem)
+            
+            return classes
+        else:
+            raise GraphQLAuthException()
+
+
     class NIMeta:
         graphql_types = [
             Group, Address, Phone, Email, Contact, Organization, Procedure,
             Customer, EndUser, Provider, SiteOwner,
-            Port, Host, Cable, Router,
+            Port, Host, Cable, Router, Switch, Firewall,
             PeeringPartner, PeeringGroup,
+        ]
+
+        search_queries = [
+            GeneralSearchConnection,
+            PortSearchConnection,
         ]

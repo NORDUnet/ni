@@ -4,8 +4,11 @@ __author__ = 'ffuentes'
 import graphene
 import norduniclient as nc
 from apps.noclook.forms import *
+from apps.noclook.models import SwitchType as SwitchTypeModel
 import apps.noclook.vakt.utils as sriutils
 from apps.noclook.schema.types import *
+
+from .common import get_unique_relation_processor
 
 from graphene import Field
 
@@ -80,8 +83,95 @@ class NICableMutationFactory(NIMutationFactory):
         update_form    = EditCableForm
         request_path   = '/'
         graphql_type   = Cable
-        create_exclude = ('relationship_provider', )
-        update_exclude = ('relationship_provider', )
+        relations_processors = {
+            'relationship_provider': get_unique_relation_processor(
+                'Provides',
+                helpers.set_provider
+            ),
+        }
+
+    class Meta:
+        abstract = False
+
+
+def process_switch_type(request, form, nodehandler, relation_name):
+    if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+        switch_type = SwitchTypeModel.objects.get(pk=form.cleaned_data[relation_name])
+        helpers.dict_update_node(
+            request.user, nodehandler.handle_id, {"model":switch_type.name})
+
+        if switch_type.ports:
+            for port in switch_type.ports.split(","):
+                helpers.create_port(nodehandler, port.strip(), request.user)
+
+
+class NISwitchMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewSwitchHostForm
+        update_form    = EditSwitchForm
+        graphql_type   = Switch
+        unique_node    = True
+        relations_processors = {
+            'relationship_provider': get_unique_relation_processor(
+                'Provides',
+                helpers.set_provider
+            ),
+            'switch_type': process_switch_type,
+            'responsible_group': get_unique_relation_processor(
+                'Takes_responsibility',
+                helpers.set_takes_responsibility
+            ),
+            'support_group': get_unique_relation_processor(
+                'Supports',
+                helpers.set_supports
+            ),
+        }
+
+    class Meta:
+        abstract = False
+
+
+class NIRouterMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form    = EditRouterForm
+        request_path   = '/'
+        graphql_type   = Router
+        relations_processors = {
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
+        }
+        update_exclude = ('relationship_ports', )
+
+    class Meta:
+        abstract = False
+
+
+class NIFirewallMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form    = EditFirewallNewForm
+        graphql_type   = Firewall
+        unique_node    = True
+        relations_processors = {
+            'relationship_provider': get_unique_relation_processor(
+                'Provides',
+                helpers.set_provider
+            ),
+            'switch_type': process_switch_type,
+            'responsible_group': get_unique_relation_processor(
+                'Takes_responsibility',
+                helpers.set_takes_responsibility
+            ),
+            'support_group': get_unique_relation_processor(
+                'Supports',
+                helpers.set_supports
+            ),
+            'relationship_owner': get_unique_relation_processor(
+                'Owns',
+                helpers.set_owner
+            ),
+        }
 
     class Meta:
         abstract = False

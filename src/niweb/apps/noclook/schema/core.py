@@ -11,6 +11,7 @@ import apps.noclook.vakt.utils as sriutils
 
 from apps.noclook import activitylog, helpers
 from apps.noclook.models import NodeType, NodeHandle, NodeHandleContext
+from apps.noclook.forms.common import IPAddrField, JSONField, DatePickerField
 from collections import OrderedDict, Iterable
 from django import forms
 from django.contrib.auth.models import User as DjangoUser
@@ -47,6 +48,14 @@ metatype_interfaces = OrderedDict([
     (NIMETA_LOCATION, { 'interface': Location, 'mixin':  LocationMixin, }),
 ])
 
+# association dict between interface and mixin
+subclasses_interfaces = OrderedDict([
+    (Logical, []),
+    (Relation, []),
+    (Physical, []),
+    (Location, []),
+])
+
 class User(DjangoObjectType):
     '''
     The django user type
@@ -55,11 +64,13 @@ class User(DjangoObjectType):
         model = DjangoUser
         only_fields = ['id', 'username', 'first_name', 'last_name', 'email']
 
+
 class UserInputType(graphene.InputObjectType):
     '''
     This object represents an input for an user used in connections
     '''
     username = graphene.String(required=True)
+
 
 class NINodeHandlerType(DjangoObjectType):
     '''
@@ -168,6 +179,7 @@ class NIRelationType(graphene.ObjectType):
     class Meta:
         interfaces = (relay.Node, )
 
+
 class DictRelationType(graphene.ObjectType):
     '''
     This type represents an key value pair for a relationship dictionary,
@@ -175,6 +187,7 @@ class DictRelationType(graphene.ObjectType):
     '''
     name = graphene.String(required=True)
     relation = graphene.Field(NIRelationType, required=True)
+
 
 class CommentType(DjangoObjectType):
     '''
@@ -290,14 +303,21 @@ class NIObjectType(DjangoObjectType):
 
         # add meta types interfaces if present
         interfaces = [NINode, ]
-        if hasattr(cls, 'NIMetaType'):
-            ni_metatype = cls.get_from_nimetatype("ni_metatype")
-            if ni_metatype in metatype_interfaces:
-                metatype_interface = metatype_interfaces[ni_metatype]['interface']
-                interfaces.append(metatype_interface)
+        metatype_interface = cls.get_metatype_interface()
+
+        if metatype_interface:
+            interfaces.append(metatype_interface)
+
+            # add also this class to the subclasses list
+            subclasses_interfaces[metatype_interface].append(cls)
 
         options['model'] = NIObjectType._meta.model
         options['interfaces'] = interfaces
+
+        # init mutations inner attributes (to be filled by the mutation factory)
+        setattr(cls, 'create_mutation', None)
+        setattr(cls, 'update_mutation', None)
+        setattr(cls, 'delete_mutation', None)
 
         super(NIObjectType, cls).__init_subclass_with_meta__(
             **options
@@ -308,6 +328,17 @@ class NIObjectType(DjangoObjectType):
     incoming = graphene.List(DictRelationType)
     outgoing = graphene.List(DictRelationType)
     comments = graphene.List(CommentType)
+
+    @classmethod
+    def get_metatype_interface(cls):
+        metatype_interface = None
+
+        if hasattr(cls, 'NIMetaType'):
+            ni_metatype = cls.get_from_nimetatype("ni_metatype")
+            if ni_metatype in metatype_interfaces:
+                metatype_interface = metatype_interfaces[ni_metatype]['interface']
+
+        return metatype_interface
 
     def resolve_incoming(self, info, **kwargs):
         '''
@@ -360,6 +391,30 @@ class NIObjectType(DjangoObjectType):
             context_resolver = sriutils.get_default_context
 
         return context_resolver()
+
+    @classmethod
+    def get_create_mutation(cls):
+        return cls.create_mutation
+
+    @classmethod
+    def set_create_mutation(cls, create_mutation):
+        cls.create_mutation = create_mutation
+
+    @classmethod
+    def get_update_mutation(cls):
+        return cls.update_mutation
+
+    @classmethod
+    def set_update_mutation(cls, update_mutation):
+        cls.update_mutation = update_mutation
+
+    @classmethod
+    def get_delete_mutation(cls):
+        return cls.delete_mutation
+
+    @classmethod
+    def set_delete_mutation(cls, delete_mutation):
+        cls.delete_mutation = delete_mutation
 
     @classmethod
     def get_filter_input_fields(cls):
@@ -760,10 +815,15 @@ class NIObjectType(DjangoObjectType):
                             if qs_order_prop and qs_order_order:
                                 orderBy = None
 
+                            # get filter clause
+                            readable_ids = sriutils.get_ids_user_canread(info.context.user)
+
                             # create query
                             fmt_type_name = type_name.replace(' ', '_')
+
                             q = cls.build_filter_query(filter, orderBy, fmt_type_name,
-                                            apply_handle_id_order, revert_default_order)
+                                            apply_handle_id_order, revert_default_order,
+                                            readable_ids)
                             nodes = nc.query_to_list(nc.graphdb.manager, q)
                             nodes = [ node['n'] for node in nodes]
 
@@ -829,7 +889,8 @@ class NIObjectType(DjangoObjectType):
         return generic_list_resolver
 
     @classmethod
-    def build_filter_query(cls, filter, orderBy, nodetype, handle_id_order=False, revert_order=False):
+    def build_filter_query(cls, filter, orderBy, nodetype,\
+        handle_id_order=False, revert_order=False, readable_ids=None):
         build_query = ''
         order_query = ''
         optional_matches = ''
@@ -1114,15 +1175,24 @@ class NIObjectType(DjangoObjectType):
             order_nibble = 'ASC' if revert_order else 'DESC'
             order_query = "ORDER BY n.handle_id {}".format(order_nibble)
 
+        # create filter query; this will filter out nodes that the user is
+        # not allowed to see
+        readable_ids = [ str(x) for x in readable_ids ] # string conversion
+        ids = ', '.join(readable_ids)
+        filter_prefix = 'AND' if build_query else 'WHERE'
+        filter_query = '{prefix} n.handle_id in [{ids}]'.format(prefix=filter_prefix, ids=ids)
+
         q = """
             MATCH {node_match_clause}
             {optional_matches}
             {build_query}
+            {filter_query}
             RETURN n
             {order_query}
             """.format(node_match_clause=node_match_clause,
                         optional_matches=optional_matches,
-                        build_query=build_query, order_query=order_query)
+                        build_query=build_query, filter_query=filter_query,
+                        order_query=order_query)
 
         logger.debug('Neo4j connection filter query:\n{}\n'.format(q))
 
@@ -1311,7 +1381,8 @@ class AbstractNIMutation(relay.ClientIDMutation):
         )
 
     @classmethod
-    def get_returntype_name(cls, graphql_typename):
+    def get_returntype_name(cls, graphql_type):
+        graphql_typename = graphql_type.__name__
         fmt_name = graphql_typename[0].lower() + graphql_typename[1:]
 
         return fmt_name
@@ -1319,7 +1390,7 @@ class AbstractNIMutation(relay.ClientIDMutation):
     @classmethod
     def add_return_type(cls, graphql_type):
         if graphql_type:
-            payload_name = cls.get_returntype_name(graphql_type.__name__)
+            payload_name = cls.get_returntype_name(graphql_type)
 
             setattr(cls, payload_name, graphene.Field(graphql_type))
 
@@ -1356,6 +1427,12 @@ class AbstractNIMutation(relay.ClientIDMutation):
                 graphene_field = graphene.String(**graph_kwargs)
             elif isinstance(form_field, forms.URLField):
                 graphene_field = graphene.String(**graph_kwargs)
+            elif isinstance(form_field, IPAddrField):
+                graphene_field = graphene.String(**graph_kwargs)
+            elif isinstance(form_field, JSONField):
+                graphene_field = graphene.String(**graph_kwargs)
+            elif isinstance(form_field, DatePickerField):
+                graphene_field = graphene.types.datetime.Date(**graph_kwargs)
             else:
                 graphene_field = graphene.String(**graph_kwargs)
 
@@ -1411,6 +1488,21 @@ class AbstractNIMutation(relay.ClientIDMutation):
                     if attr_name in noninput_fields:
                         noninput_fields.remove(attr_name)
 
+        # morph ids for relation processors
+        # and remove them from the noninput_fields
+        relations_processors = getattr(ni_metaclass, 'relations_processors', None)
+
+        if relations_processors:
+            for relation_name in relations_processors.keys():
+                relay_id = input.get(relation_name, None)
+
+                if relay_id:
+                    handle_id = relay.Node.from_global_id(relay_id)[1]
+                    input_params[relation_name] = handle_id
+
+                if relation_name in noninput_fields:
+                    noninput_fields.remove(relation_name)
+
         # if it's an edit mutation add handle_id
         # and also add the existent values in the request
         if not is_create:
@@ -1424,17 +1516,6 @@ class AbstractNIMutation(relay.ClientIDMutation):
             for noninput_field in noninput_fields:
                 if noninput_field in node.data:
                     input_params[noninput_field] = node.data.get(noninput_field)
-
-        # morph ids for relation processors
-        relations_processors = getattr(ni_metaclass, 'relations_processors', None)
-
-        if relations_processors:
-            for relation_name in relations_processors.keys():
-                relay_id = input.get(relation_name, None)
-
-                if relay_id:
-                    handle_id = relay.Node.from_global_id(relay_id)[1]
-                    input_params[relation_name] = handle_id
 
         # forge request
         request_factory = RequestFactory()
@@ -1618,7 +1699,7 @@ class CreateNIMutation(AbstractNIMutation):
             try:
                 form_to_nodehandle = cls.get_form_to_nodehandle_func()
                 nh = form_to_nodehandle(request, form,
-                        node_type, node_meta_type)
+                        node_type, node_meta_type, context)
             except UniqueNodeError:
                 has_error = True
                 return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]
@@ -1638,7 +1719,7 @@ class CreateNIMutation(AbstractNIMutation):
                 nh_reload, nodehandler = helpers.get_nh_node(nh.handle_id)
                 cls.process_subentities(request, form, nodehandler, context)
 
-            return has_error, { cls.get_returntype_name(graphql_type.__name__): nh }
+            return has_error, { cls.get_returntype_name(graphql_type): nh }
         else:
             # get the errors and return them
             has_error = True
@@ -1715,7 +1796,7 @@ class UpdateNIMutation(AbstractNIMutation):
                 # process subentities if implemented
                 cls.process_subentities(request, form, nodehandler, context)
 
-                return has_error, { cls.get_returntype_name(graphql_type.__name__): nh }
+                return has_error, { cls.get_returntype_name(graphql_type): nh }
             else:
                 has_error = True
                 errordict = cls.format_error_array(form.errors)
@@ -1781,6 +1862,7 @@ class DeleteNIMutation(AbstractNIMutation):
             for relation_name, relation_f in delete_nodes.items():
                 relation_f(nodehandler, relation_name, user)
 
+
 class MultipleMutation(relay.ClientIDMutation):
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
@@ -1831,6 +1913,226 @@ class MultipleMutation(relay.ClientIDMutation):
 
 
 class CompositeMutation(relay.ClientIDMutation):
+    class Input:
+        pass
+
+    @classmethod
+    def __init_subclass_with_meta__(
+        cls, **options
+    ):
+        '''
+        In this method we'll build the default inputs for a composite mutation
+        '''
+        # get types and mutation factories
+        ni_metaclass = getattr(cls, 'NIMetaClass')
+        graphql_type = getattr(ni_metaclass, 'graphql_type', None)
+        graphql_subtype = getattr(ni_metaclass, 'graphql_subtype', None)
+        main_mutation_f = getattr(ni_metaclass, 'main_mutation_f', None)
+        secondary_mutation_f = getattr(ni_metaclass, 'secondary_mutation_f', None)
+        include_metafields = getattr(ni_metaclass, 'include_metafields', None)
+        exclude_metafields = getattr(ni_metaclass, 'exclude_metafields', None)
+        has_creation = getattr(ni_metaclass, 'has_creation', True)
+
+        # get mandatory input
+        cls_input = getattr(cls, 'Input')
+
+        if not cls_input:
+            raise Exception('{} should define an Input class (it can be empty)')
+
+        # if both are set
+        if exclude_metafields and include_metafields:
+            raise Exception("Only exclude_metafields or include_metafields can"\
+                            " be defined on {} NIMetaClass".format(cls))
+
+        # add main mutation fields if present
+        if main_mutation_f:
+            # add only creation parameters if necesary
+            if has_creation:
+                # add metaclass attributes
+                ni_metaclass.create_mutation = main_mutation_f.get_create_mutation()
+                # add payload attributes
+                cls.created = graphene.Field(main_mutation_f.get_create_mutation())
+                # add regular inputs
+                cls_input.create_input = graphene.Field(main_mutation_f.get_create_mutation().Input)
+
+            # add metaclass attributes
+            ni_metaclass.update_mutation = main_mutation_f.get_update_mutation()
+
+            # add payload attributes
+            cls.updated = graphene.Field(main_mutation_f.get_update_mutation())
+
+            # add regular inputs
+            cls_input.update_input = graphene.Field(main_mutation_f.get_update_mutation().Input)
+
+        if secondary_mutation_f:
+            # add metaclass attributes
+            ni_metaclass.create_submutation = secondary_mutation_f.get_create_mutation()
+            ni_metaclass.update_submutation = secondary_mutation_f.get_update_mutation()
+            ni_metaclass.delete_submutation = secondary_mutation_f.get_delete_mutation()
+
+            # add payload attributes
+            cls.subcreated = graphene.List(secondary_mutation_f.get_create_mutation())
+            cls.subupdated = graphene.List(secondary_mutation_f.get_update_mutation())
+            cls.subdeleted = graphene.List(secondary_mutation_f.get_delete_mutation())
+
+            # add regular inputs
+            cls_input.create_subinputs = graphene.List(secondary_mutation_f.get_create_mutation().Input)
+            cls_input.update_subinputs = graphene.List(secondary_mutation_f.get_update_mutation().Input)
+            cls_input.delete_subinputs = graphene.List(secondary_mutation_f.get_delete_mutation().Input)
+
+        # add unlink_submutation to metaclass, payload and input
+        # as these are present on every composite mutation
+        ni_metaclass.unlink_submutation = DeleteRelationship
+        cls.unlinked = graphene.List(DeleteRelationship)
+        cls_input.unlink_subinputs = graphene.List(DeleteRelationship.Input)
+
+        # add metatype input fields
+        metatype_interface = graphql_type.get_metatype_interface()
+        avoid_fields = ('__module__', '__doc__', '_meta', 'name', 'with_same_name')
+
+        cls.metafields_payload = {}
+        cls.metafields_input = {}
+        cls.metafields_classes = {}
+
+        if metatype_interface:
+            # go over attributes that aren't in the avoid list
+            # or in the include and exclude params
+            for metafield_name, metafield in metatype_interface.__dict__.items():
+                if metafield_name in avoid_fields:
+                    continue
+
+                if include_metafields and metafield_name not in include_metafields:
+                    continue
+
+                if exclude_metafields and metafield_name in exclude_metafields:
+                    continue
+
+                # add field class array
+                cls.metafields_classes[metafield_name] = []
+
+                metafield_interface = None
+                is_list = False
+
+                if isinstance(metafield, graphene.types.field.Field):
+                    metafield_interface = metafield._type
+                elif isinstance(metafield, graphene.types.structures.List):
+                    metafield_interface = metafield._of_type
+                    is_list = True
+
+                # we'll try to resolve the lambda if that's the case
+                try:
+                    metafield_interface = metafield_interface()
+                except:
+                    pass
+
+                # process skip NINode
+                if metafield_interface == NINode:
+                    continue
+
+                # get all types that implement metafield_interface
+                # we need to add a mutation for each one
+                subclass_list = subclasses_interfaces[metafield_interface]
+
+                for a_subclass in subclass_list:
+                    # add class to dict with
+                    cls.metafields_classes[metafield_name].append(a_subclass)
+
+                    # init internal attribute storage
+                    cls.metafields_payload[a_subclass] = {
+                        'created': { 'name': None },
+                        'updated': { 'name': None },
+                        'deleted': { 'name': None },
+                        'is_list': is_list,
+                    }
+
+                    cls.metafields_input[a_subclass] = {
+                        'create': { 'name': None },
+                        'update': { 'name': None },
+                        'delete': { 'name': None },
+                        'is_list': is_list,
+                    }
+
+                    # get mutations for each attribute
+                    create_mutation = a_subclass.get_create_mutation()
+                    update_mutation = a_subclass.get_update_mutation()
+                    delete_mutation = a_subclass.get_delete_mutation()
+
+                    # payload names
+                    name_prefix = '{}_{}'.format(
+                        metafield_name, a_subclass.__name__.lower())
+                    created_name = '{}_created'.format(name_prefix)
+                    updated_name = '{}_updated'.format(name_prefix)
+                    deleted_name = '{}_deleted'.format(name_prefix)
+
+                    # get inputs for each input attribute
+                    # input names
+                    create_name = 'create_{}'.format(name_prefix)
+                    update_name = 'update_{}'.format(name_prefix)
+                    delete_name = 'deleted_{}'.format(name_prefix)
+
+                    if create_mutation:
+                        # add to payload
+                        payload_field = graphene.Field(create_mutation)
+                        if is_list:
+                            payload_field = graphene.List(create_mutation)
+
+                        setattr(cls, created_name, payload_field)
+                        cls.metafields_payload[a_subclass]['created']['name']\
+                            = created_name
+
+                        # add to input
+                        input_field = graphene.Field(create_mutation.Input)
+                        if is_list:
+                            input_field = graphene.List(create_mutation.Input)
+
+                        setattr(cls_input, create_name, input_field)
+                        cls.metafields_input[a_subclass]['create']['name']\
+                            = create_name
+
+                    if update_mutation:
+                        # add to payload
+                        payload_field = graphene.Field(update_mutation)
+                        if is_list:
+                            payload_field = graphene.List(update_mutation)
+
+                        setattr(cls, updated_name, payload_field)
+                        cls.metafields_payload[a_subclass]['updated']['name']\
+                            = updated_name
+
+                        # add to input
+                        input_field = graphene.Field(update_mutation.Input)
+                        if is_list:
+                            input_field = graphene.List(update_mutation.Input)
+
+                        setattr(cls_input, update_name, input_field)
+                        cls.metafields_input[a_subclass]['update']['name']\
+                            = update_name
+
+                    if delete_mutation:
+                        # add to payload
+                        payload_field = graphene.Field(delete_mutation)
+                        if is_list:
+                            payload_field = graphene.List(delete_mutation)
+
+                        setattr(cls, deleted_name, payload_field)
+                        cls.metafields_payload[a_subclass]['deleted']['name']\
+                            = deleted_name
+
+                        # add to input
+                        input_field = graphene.Field(delete_mutation.Input)
+                        if is_list:
+                            input_field = graphene.List(delete_mutation.Input)
+
+                        setattr(cls_input, delete_name, input_field)
+                        cls.metafields_input[a_subclass]['delete']['name']\
+                            = delete_name
+
+            setattr(cls, 'Input', cls_input)
+
+        super(CompositeMutation, cls).__init_subclass_with_meta__(
+            **options
+        )
+
     @classmethod
     def get_link_kwargs(cls, master_input, slave_input):
         return {}
@@ -1848,6 +2150,136 @@ class CompositeMutation(relay.ClientIDMutation):
         pass
 
     @classmethod
+    def process_metatype_subentities(cls, user, master_nh, root, info, input, context):
+        master_ret = dict()
+
+        for metafield_name, subclass_list in cls.metafields_classes.items():
+            for a_subclass in subclass_list:
+                created_ifield = cls.metafields_input[a_subclass]['create']['name']
+                updated_ifield = cls.metafields_input[a_subclass]['update']['name']
+                deleted_ifield = cls.metafields_input[a_subclass]['delete']['name']
+
+                is_list = cls.metafields_payload[a_subclass]['is_list']
+
+                create_subinputs = None
+                update_subinputs = None
+                delete_subinputs = None
+
+                if created_ifield:
+                    create_subinputs = input.get(created_ifield)
+
+                if updated_ifield:
+                    update_subinputs = input.get(updated_ifield)
+
+                if deleted_ifield:
+                    delete_subinputs = input.get(deleted_ifield)
+
+                create_submutation = a_subclass.get_create_mutation()
+                update_submutation = a_subclass.get_update_mutation()
+                delete_submutation = a_subclass.get_delete_mutation()
+                extract_param = AbstractNIMutation.get_returntype_name(a_subclass)
+
+                ret_subcreated = None
+                ret_subupdated = None
+                ret_subdeleted = None
+
+                link_method_name = 'link_{}'.format(metafield_name)
+                link_method = getattr(a_subclass, link_method_name, None)
+
+                # process create
+                if create_subinputs:
+                    ret_subcreated = []
+
+                    if is_list:
+                        for subinput in create_subinputs:
+                            subinput['context'] = context
+                            ret = create_submutation\
+                                .mutate_and_get_payload(root, info, **subinput)
+                            ret_subcreated.append(ret)
+
+                            # link if it's possible
+                            sub_errors = getattr(ret, 'errors', None)
+                            sub_created = getattr(ret, extract_param, None)
+
+                            if not sub_errors and sub_created and link_method:
+                                link_method(user, master_nh, sub_created)
+                    else:
+                        subinput = create_subinputs
+                        subinput['context'] = context
+                        ret = create_submutation\
+                            .mutate_and_get_payload(root, info, **subinput)
+
+                        # link if it's possible
+                        sub_errors = getattr(ret, 'errors', None)
+                        sub_created = getattr(ret, extract_param, None)
+
+                        if not sub_errors and sub_created and link_method:
+                            link_method(user, master_nh, sub_created)
+
+                        ret_subcreated = ret
+
+                # process update
+                if update_subinputs:
+                    ret_subupdated = []
+
+                    if is_list:
+                        for subinput in update_subinputs:
+                            subinput['context'] = context
+                            ret = update_submutation\
+                                .mutate_and_get_payload(root, info, **subinput)
+                            ret_subupdated.append(ret)
+
+                            # link if it's possible
+                            sub_errors = getattr(ret, 'errors', None)
+                            sub_edited = getattr(ret, extract_param, None)
+
+                            if not sub_errors and sub_edited and link_method:
+                                link_method(user, master_nh, sub_edited)
+                    else:
+                        subinput = update_subinputs
+                        subinput['context'] = context
+                        ret = update_submutation\
+                            .mutate_and_get_payload(root, info, **subinput)
+
+                        # link if it's possible
+                        sub_errors = getattr(ret, 'errors', None)
+                        sub_edited = getattr(ret, extract_param, None)
+
+                        if not sub_errors and sub_edited and link_method:
+                            link_method(user, master_nh, sub_edited)
+
+                        ret_subcreated = ret
+
+                # process delete
+                if delete_subinputs:
+                    ret_subdeleted = []
+
+                    if is_list:
+                        for subinput in delete_subinputs:
+                            ret = delete_submutation\
+                                .mutate_and_get_payload(root, info, **subinput)
+                            ret_subdeleted.append(ret)
+                    else:
+                        ret_subdeleted = delete_submutation\
+                            .mutate_and_get_payload(root, info, **delete_subinputs)
+
+                # add the payload results
+                create_payload = cls.metafields_payload[a_subclass]['created']['name']
+                update_payload = cls.metafields_payload[a_subclass]['updated']['name']
+                delete_payload = cls.metafields_payload[a_subclass]['deleted']['name']
+
+                if create_payload:
+                    master_ret[create_payload] = ret_subcreated
+
+                if update_payload:
+                    master_ret[update_payload] = ret_subupdated
+
+                if delete_payload:
+                    master_ret[delete_payload] = ret_subdeleted
+
+        return master_ret
+
+    @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
         # check if the user is authenticated
         if not info.context or not info.context.user.is_authenticated:
@@ -1863,7 +2295,8 @@ class CompositeMutation(relay.ClientIDMutation):
         graphql_subtype = getattr(nimetaclass, 'graphql_subtype', None)
         create_mutation = getattr(nimetaclass, 'create_mutation', None)
         update_mutation = getattr(nimetaclass, 'update_mutation', None)
-        context         = getattr(nimetaclass, 'context', None)
+        context = getattr(nimetaclass, 'context', None)
+        has_creation = getattr(nimetaclass, 'has_creation', True)
 
         # this handle_id will be set to the created or updated main entity
         main_handle_id = None
@@ -1894,7 +2327,7 @@ class CompositeMutation(relay.ClientIDMutation):
         main_input = create_input if create else update_input
 
         # extract handle_id from the returned payload
-        extract_param = graphql_type.get_from_nimetatype('ni_type').lower()
+        extract_param = AbstractNIMutation.get_returntype_name(graphql_type)
         main_nh = getattr(main_ret, extract_param, None)
         main_handle_id = None
 
@@ -1906,11 +2339,14 @@ class CompositeMutation(relay.ClientIDMutation):
 
         # extra params for return
         ret_extra_subentities = {}
+        ret_metatype_subentities = {}
+
+        has_subcreated = False
+        has_subupdated = False
+        has_subdeleted = False
 
         # if everything went fine, proceed with the subentity list
         if main_handle_id and not errors:
-            extract_param = graphql_subtype.get_from_nimetatype('ni_type').lower()
-
             create_subinputs = input.get("create_subinputs")
             update_subinputs = input.get("update_subinputs")
             delete_subinputs = input.get("delete_subinputs")
@@ -1921,44 +2357,50 @@ class CompositeMutation(relay.ClientIDMutation):
             delete_submutation = getattr(nimetaclass, 'delete_submutation', None)
             unlink_submutation = getattr(nimetaclass, 'unlink_submutation', None)
 
-            if create_subinputs:
-                ret_subcreated = []
+            if graphql_subtype:
+                extract_param = AbstractNIMutation.get_returntype_name(graphql_subtype)
 
-                for subinput in create_subinputs:
-                    subinput['context'] = context
-                    ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
-                    ret_subcreated.append(ret)
+                if create_subinputs:
+                    has_subcreated = True
+                    ret_subcreated = []
 
-                    # link if it's possible
-                    sub_errors = getattr(ret, 'errors', None)
-                    sub_created = getattr(ret, extract_param, None)
+                    for subinput in create_subinputs:
+                        subinput['context'] = context
+                        ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
+                        ret_subcreated.append(ret)
 
-                    if not sub_errors and sub_created:
-                        link_kwargs = cls.get_link_kwargs(main_input, subinput)
-                        cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
+                        # link if it's possible
+                        sub_errors = getattr(ret, 'errors', None)
+                        sub_created = getattr(ret, extract_param, None)
 
-            if update_subinputs:
-                ret_subupdated = []
+                        if not sub_errors and sub_created:
+                            link_kwargs = cls.get_link_kwargs(main_input, subinput)
+                            cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
 
-                for subinput in update_subinputs:
-                    subinput['context'] = context
-                    ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
-                    ret_subupdated.append(ret)
+                if update_subinputs:
+                    has_subupdated = True
+                    ret_subupdated = []
 
-                    # link if it's possible
-                    sub_errors = getattr(ret, 'errors', None)
-                    sub_edited = getattr(ret, extract_param, None)
+                    for subinput in update_subinputs:
+                        subinput['context'] = context
+                        ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
+                        ret_subupdated.append(ret)
 
-                    if not sub_errors and sub_edited:
-                        link_kwargs = cls.get_link_kwargs(main_input, subinput)
-                        cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
+                        # link if it's possible
+                        sub_errors = getattr(ret, 'errors', None)
+                        sub_edited = getattr(ret, extract_param, None)
 
-            if delete_subinputs:
-                ret_subdeleted = []
+                        if not sub_errors and sub_edited:
+                            link_kwargs = cls.get_link_kwargs(main_input, subinput)
+                            cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
 
-                for subinput in delete_subinputs:
-                    ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
-                    ret_subdeleted.append(ret)
+                if delete_subinputs:
+                    has_subdeleted = True
+                    ret_subdeleted = []
+
+                    for subinput in delete_subinputs:
+                        ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
+                        ret_subdeleted.append(ret)
 
             if unlink_subinputs:
                 ret_unlinked = []
@@ -1970,14 +2412,30 @@ class CompositeMutation(relay.ClientIDMutation):
             ret_extra_subentities = \
                 cls.process_extra_subentities(user, main_nh, root, info, input, context)
 
+            ret_metatype_subentities = \
+                cls.process_metatype_subentities(user, main_nh, root, info, input, context)
+
         payload_kwargs = dict(
-            created=ret_created, updated=ret_updated,
-            subcreated=ret_subcreated, subupdated=ret_subupdated,
-            subdeleted=ret_subdeleted, unlinked=ret_unlinked
+            updated=ret_updated, unlinked=ret_unlinked
         )
+
+        if has_creation:
+            payload_kwargs = {**payload_kwargs, **dict(created=ret_created)}
+
+        if has_subcreated:
+            payload_kwargs = {**payload_kwargs, **dict(subcreated=ret_subcreated)}
+
+        if has_subupdated:
+            payload_kwargs = {**payload_kwargs, **dict(subupdated=ret_subupdated)}
+
+        if has_subdeleted:
+            payload_kwargs = {**payload_kwargs, **dict(subdeleted=ret_subdeleted)}
 
         if ret_extra_subentities:
             payload_kwargs = {**payload_kwargs, **ret_extra_subentities}
+
+        if ret_metatype_subentities:
+            payload_kwargs = {**payload_kwargs, **ret_metatype_subentities}
 
         return cls.forge_payload(
             **payload_kwargs
@@ -2082,6 +2540,8 @@ class NIMutationFactory():
         else:
             cls._create_mutation = manual_create
 
+        graphql_type.set_create_mutation(cls._create_mutation)
+
         class_name = 'Update{}'.format(mutation_name_cc)
         attr_dict['django_form']   = update_form
         attr_dict['is_create']     = False
@@ -2103,6 +2563,8 @@ class NIMutationFactory():
             )
         else:
             cls._update_mutation = manual_update
+
+        graphql_type.set_update_mutation(cls._update_mutation)
 
         class_name = 'Delete{}'.format(mutation_name_cc)
         del attr_dict['django_form']
@@ -2130,6 +2592,8 @@ class NIMutationFactory():
                 metaclass_name: delete_metaclass,
             },
         )
+
+        graphql_type.set_delete_mutation(cls._delete_mutation)
 
         # make multiple mutation
         class_name = 'Multiple{}'.format(mutation_name_cc)

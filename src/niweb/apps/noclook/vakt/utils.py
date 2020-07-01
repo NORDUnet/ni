@@ -106,6 +106,7 @@ def get_contracts_context(cmodel=Context):
 def get_default_context(cmodel=Context):
     return get_community_context(cmodel)
 
+
 def authorize_aa_resource(user, handle_id, get_aa_func):
     '''
     This function checks if an user is authorized to do a specific action over
@@ -122,7 +123,7 @@ def authorize_aa_resource(user, handle_id, get_aa_func):
 
     # get contexts for this resource
     nodehandle = NodeHandle.objects.prefetch_related('contexts').get(handle_id=handle_id)
-    contexts = [ c.name for c in nodehandle.contexts.all() ]
+    contexts = get_nh_contexts(nodehandle)
 
     # forge read resource inquiry
     inquiry = Inquiry(
@@ -215,3 +216,38 @@ def authorize_superadmin(user, cmodel=Context):
             break
 
     return is_superadmin
+
+
+def get_ids_user_canread(user):
+    user_groups = user.groups.all()
+    read_aa = get_read_authaction()
+
+    gcaas = GroupContextAuthzAction.objects.filter(
+        group__in=user_groups,
+        authzprofile=read_aa
+    )
+
+    readable_contexts = []
+    for gcaa in gcaas:
+        readable_contexts.append(gcaa.context)
+
+    ret = []
+
+    if readable_contexts:
+        readable_ids = NodeHandleContext.objects.filter(
+            context__in=readable_contexts
+        ).values_list('nodehandle_id', flat=True)
+
+        for id in readable_ids:
+            if id not in ret:
+                ret.append(id)
+
+    return ret
+
+
+def get_nh_contexts(nh):
+    return [ c.name for c in nh.contexts.all() ]
+
+
+def get_nh_named_contexts(nh):
+    return [ { 'context_name': c } for c in get_nh_contexts(nh) ]

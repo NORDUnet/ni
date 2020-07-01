@@ -2,6 +2,8 @@
 __author__ = 'ffuentes'
 
 from apps.noclook.schema.core import *
+from apps.noclook.models import SwitchType as SwitchTypeModel
+from .community import Group
 
 ## Organizations
 class Customer(NIObjectType, RelationMixin):
@@ -65,8 +67,7 @@ class Cable(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     cable_type = NIChoiceField(dropdown_name="cable_types")
     description = NIStringField()
-    providers = NIListField(type_args=(lambda: Provider,), rel_name='Provides', rel_method='_incoming')
-    providers_relations = NIRelationListField(rel_name='Provides', rel_method='_incoming', graphene_type=lambda: Provider)
+    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
     ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', rel_method='_outgoing')
 
     class NIMetaType:
@@ -81,7 +82,8 @@ class Host(NIObjectType, PhysicalMixin):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    operational_state = NIStringField(type_kwargs={ 'required': True })
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': True })
     os = NIStringField()
     os_version = NIStringField()
     vendor = NIStringField()
@@ -106,9 +108,11 @@ class Host(NIObjectType, PhysicalMixin):
 class Router(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    operational_state = NIChoiceField(dropdown_name="another")
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': True })
     model = NIStringField()
     version = NIStringField()
+    rack_units = NIIntField()
     ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
 
     class NIMetaType:
@@ -117,25 +121,73 @@ class Router(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+class SwitchType(DjangoObjectType):
+    '''
+    This class represents a SwitchType for switch's mutations
+    '''
+    class Meta:
+        #only_fields = ('id', 'name')
+        model = SwitchTypeModel
+        interfaces = (graphene.relay.Node, )
+
+
+def resolve_getSwitchTypes(self, info, **kwargs):
+    if info.context and info.context.user.is_authenticated:
+        return SwitchTypeModel.objects.all()
+    else:
+        raise GraphQLAuthException()
+
+
 class Switch(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
     operational_state = NIStringField(type_kwargs={ 'required': True })
-    ip_addresses = IPAddr()
-    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Responsible", rel_method="_incoming")
-    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Support", rel_method="_incoming")
-    managed_by = NIStringField()
+    ip_addresses = NIIPAddrField()
+    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
+    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
+    managed_by = NIChoiceField(dropdown_name="host_management_sw")
     backup = NIStringField()
     os = NIStringField()
     os_version = NIStringField()
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
+    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
+    max_number_of_ports = NIIntField()
 
     class NIMetaType:
         ni_type = 'Switch'
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
+
+
+class Firewall(NIObjectType, PhysicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    operational_state = NIStringField(type_kwargs={ 'required': True })
+    ip_addresses = NIIPAddrField()
+    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
+    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
+    managed_by = NIChoiceField(dropdown_name="host_management_sw")
+    backup = NIStringField()
+    security_class = NIChoiceField(dropdown_name="security_classes")
+    security_comment = NIStringField()
+    os = NIStringField()
+    os_version = NIStringField()
+    model = NIStringField()
+    vendor = NIStringField()
+    service_tag = NIStringField()
+    end_support = NIStringField()
+    contract_number = NIStringField()
+    rack_units = NIIntField() # Equipment height
+    rack_position = NIIntField()
+    max_number_of_ports = NIIntField()
+
+    class NIMetaType:
+        ni_type = 'Firewall'
+        ni_metatype = NIMETA_PHYSICAL
+        context_method = sriutils.get_network_context
+
 
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
@@ -167,4 +219,5 @@ network_type_resolver = {
     'Port': Port,
     'Cable': Cable,
     'Host': Host,
+    'Switch': Switch,
 }

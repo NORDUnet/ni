@@ -66,10 +66,12 @@ class FakeDataGenerator:
         return nh
 
     def create_entity(self, data_f=None, type_name=None, metatype=None, \
-                        name_alias=None):
+                        name_alias=None, name=None):
         data = data_f()
         name_key = 'name' if not name_alias else name_alias
-        name = data.get(name_key, None)
+
+        if not name:
+            name = data.get(name_key, None)
 
         nh = self.get_or_create_node(
             name, type_name, metatype) # Logical
@@ -78,6 +80,7 @@ class FakeDataGenerator:
         self.add_community_context(nh)
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             nh.get_node().add_property(key, value)
 
         return nh
@@ -154,11 +157,12 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
 
         return procedure_dict
 
-    def create_group(self):
+    def create_group(self, name=None):
         return self.create_entity(
             data_f=self.create_fake_group,
             type_name='Group',
             metatype=META_TYPES[1], # Logical
+            name=name,
         )
 
     def create_procedure(self):
@@ -168,12 +172,13 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
             metatype=META_TYPES[1], # Logical
         )
 
-    def create_organization(self):
+    def create_organization(self, name=None):
         return self.create_entity(
             data_f=self.create_fake_organization,
             type_name='Organization',
             metatype=META_TYPES[2], # Relation
             name_alias='account_name',
+            name=name,
         )
 
 
@@ -200,9 +205,11 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         return [ x[0] for x in Dropdown.get(dropdown_name).as_choices()[1:] ]
 
     ## Organizations
-    def create_customer(self):
+    def create_customer(self, name=None):
         # create object
-        name = self.rand_person_or_company_name()
+        if not name:
+            name = self.rand_person_or_company_name()
+
         customer = self.get_or_create_node(
             name, 'Customer', META_TYPES[2]) # Relation
 
@@ -219,8 +226,11 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return customer
 
-    def create_end_user(self):
+    def create_end_user(self, name=None):
         # create object
+        if not name:
+            name = self.rand_person_or_company_name()
+
         name = self.rand_person_or_company_name()
         enduser = self.get_or_create_node(
             name, 'End User', META_TYPES[2]) # Relation
@@ -238,9 +248,11 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return enduser
 
-    def create_peering_partner(self):
+    def create_peering_partner(self, name=None):
         # create object
-        name = self.company_name()
+        if not name:
+            name = self.company_name()
+
         peering_partner = self.get_or_create_node(
             name, 'Peering Partner', META_TYPES[2]) # Relation
 
@@ -256,8 +268,11 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return peering_partner
 
-    def create_peering_group(self):
+    def create_peering_group(self, name=None):
         # create object
+        if not name:
+            name = self.company_name()
+
         name = self.company_name()
         peering_group = self.get_or_create_node(
             name, 'Peering Group', META_TYPES[1]) # Logical
@@ -267,9 +282,12 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return peering_group
 
-    def create_provider(self):
+    def create_provider(self, name=None):
+        if not name:
+            name = self.company_name()
+
         provider = self.get_or_create_node(
-            self.company_name(), 'Provider', META_TYPES[2]) # Relation
+            name, 'Provider', META_TYPES[2]) # Relation
 
         # add context
         self.add_network_context(provider)
@@ -284,9 +302,11 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return provider
 
-    def create_site_owner(self):
+    def create_site_owner(self, name=None):
         # create object
-        name = self.rand_person_or_company_name()
+        if not name:
+            name = self.rand_person_or_company_name()
+
         siteowner = self.get_or_create_node(
             name, 'Site Owner', META_TYPES[2]) # Relation
 
@@ -305,10 +325,13 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
     ## Equipment and cables
 
-    def create_port(self):
+    def create_port(self, name=None):
+        if not name:
+            name = self.get_port_name()
+
         # create object
         port = self.get_or_create_node(
-            self.get_port_name(), 'Port', META_TYPES[0]) # Physical
+            name, 'Port', META_TYPES[0]) # Physical
 
         # add context
         self.add_network_context(port)
@@ -327,8 +350,11 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return port
 
-    def create_cable(self):
+    def create_cable(self, name=None):
         # create object
+        if not name:
+            name = self.fake.hostname()
+
         cable = self.get_or_create_node(
             self.fake.hostname(), 'Cable', META_TYPES[0]) # Physical
 
@@ -438,12 +464,14 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return host
 
-    def create_router(self):
+    def create_router(self, name=None):
         # create object
-        router_name = '{}-{}'.format(
-            self.fake.safe_color_name(), self.fake.ean8())
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.safe_color_name(), self.fake.ean8())
+
         router = self.get_or_create_node(
-            router_name, 'Router', META_TYPES[0])
+            name, 'Router', META_TYPES[0])
 
         # add context
         self.add_network_context(router)
@@ -465,11 +493,13 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return router
 
-    def create_switch(self):
+    def create_switch(self, name=None):
         # create object
-        switch_name = '{}-{}'.format(
-            self.fake.safe_color_name(), self.fake.ean8())
-        switch = self.create_host(switch_name, "Switch")
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.safe_color_name(), self.fake.ean8())
+
+        switch = self.create_host(name, "Switch")
 
         data = {
             'max_number_of_ports': random.randint(5,25),
@@ -479,6 +509,23 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             switch.get_node().add_property(key, value)
 
         return switch
+
+    def create_firewall(self, name=None):
+        # create object
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.safe_color_name(), self.fake.ean8())
+
+        firewall = self.create_host(name, "Firewall")
+
+        data = {
+            'max_number_of_ports': random.randint(5,25),
+        }
+
+        for key, value in data.items():
+            firewall.get_node().add_property(key, value)
+
+        return firewall
 
 
 class DataRelationMaker:

@@ -4,7 +4,7 @@ __author__ = 'ffuentes'
 from apps.noclook.models import NodeHandle, Choice as ChoiceModel, Dropdown as DropdownModel
 from apps.noclook.vakt import utils as sriutils
 from graphene_django import DjangoObjectType
-from .scalars import ChoiceScalar
+from .scalars import ChoiceScalar, IPAddr
 
 import graphene
 import types as pytypes
@@ -143,6 +143,16 @@ class NIBooleanField(NIBasicField):
             return possible_value
 
         return resolve_node_value
+
+
+class NIIPAddrField(NIBasicField):
+    '''
+    IPAddr type
+    '''
+    def __init__(self, field_type=IPAddr, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIIPAddrField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
 
 
 class NISingleRelationField(NIBasicField):

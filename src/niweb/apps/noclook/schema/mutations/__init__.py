@@ -5,6 +5,8 @@ from .common import *
 from .community import *
 from .network import *
 
+from .composite.community import *
+from .composite.network import *
 
 class NOCRootMutation(graphene.ObjectType):
     ## Community mutations
@@ -65,10 +67,25 @@ class NOCRootMutation(graphene.ObjectType):
     create_port = NIPortMutationFactory.get_create_mutation().Field()
     update_port = NIPortMutationFactory.get_update_mutation().Field()
     delete_port = NIPortMutationFactory.get_delete_mutation().Field()
+    composite_port = CompositePortMutation.Field()
 
     create_cable = NICableMutationFactory.get_create_mutation().Field()
     update_cable = NICableMutationFactory.get_update_mutation().Field()
     delete_cable = NICableMutationFactory.get_delete_mutation().Field()
+    composite_cable = CompositeCableMutation.Field()
+
+    create_switch = NISwitchMutationFactory.get_create_mutation().Field()
+    update_switch = NISwitchMutationFactory.get_update_mutation().Field()
+    delete_switch = NISwitchMutationFactory.get_delete_mutation().Field()
+    composite_switch = CompositeSwitchMutation.Field()
+
+    update_router = NIRouterMutationFactory.get_update_mutation().Field()
+    delete_router = NIRouterMutationFactory.get_delete_mutation().Field()
+    composite_router = CompositeRouterMutation.Field()
+
+    update_firewall = NIFirewallMutationFactory.get_update_mutation().Field()
+    delete_firewall = NIFirewallMutationFactory.get_delete_mutation().Field()
+    composite_firewall = CompositeFirewallMutation.Field()
 
     ## Common mutations
     create_comment = CreateComment.Field()

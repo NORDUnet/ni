@@ -8,16 +8,20 @@ from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
 from django.middleware.csrf import get_token
+from django.urls import reverse_lazy
 from graphql_jwt.settings import jwt_settings
 from re import escape as re_escape
 import json
 
 from apps.noclook.models import NodeHandle, NodeType
+from apps.noclook.middleware import delete_jwt_cookie
 from apps.noclook import arborgraph
 from apps.noclook import helpers
+import apps.noclook.vakt.utils as sriutils
 import norduniclient as nc
 
 
+@login_required
 def csrf(request):
     return JsonResponse({'csrfToken': get_token(request)})
 
@@ -31,11 +35,14 @@ def logout_page(request):
     """
     Log users out and redirects them to the index.
     """
-    response = render(request, 'noclook/logout.html', {'cookie_domain': settings.COOKIE_DOMAIN })
-    response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
+    # logout
     request.session.flush()
-
     logout(request)
+
+    # redirect to NOCLook's home and delete JWT cookie
+    response = redirect(reverse_lazy("home"))
+    delete_jwt_cookie(request, response)
+    response.delete_cookie(jwt_settings.JWT_COOKIE_NAME)
 
     return response
 
@@ -83,28 +90,45 @@ def visualize_maximize(request, slug, handle_id):
 
 # Search views
 @login_required
-def search(request, value='', form=None):
+def search(request, value='', form=None, permission_filter=False):
     """
     Search through nodes either from a POSTed search query or through an
     URL like /slug/key/value/ or /slug/value/.
     """
     result = []
     posted = False
+
     if request.POST:
         value = request.POST.get('q', '')
         posted = True
+
     if value:
         query = u'(?i).*{}.*'.format(re_escape(value))
+
+        permission_clause = ''
+        if permission_filter:
+            readable_ids = sriutils.get_ids_user_canread(request.user)
+            readable_ids = [ str(x) for x in readable_ids ] # string conversion
+            ids = ', '.join(readable_ids)
+            permission_clause = 'AND n.handle_id in [{ids}]'.format(ids=ids)
+
         # nodes = nc.search_nodes_by_value(nc.graphdb.manager, query)
         # TODO: when search uses the above go back to that
         q = """
-            match (n:Node) where any(prop in keys(n) where n[prop] =~ {search}) return n
-            """
+            MATCH (n:Node)
+            WHERE any(prop in keys(n) WHERE n[prop] =~ {{search}})
+            {}
+            WITH n, [prop IN keys(n) WHERE n[prop] =~ {{search}}] AS match_props
+            RETURN n, reduce(s = "", prop IN match_props | s + n[prop] + ' [..] ') AS match_txt
+            """.format(permission_clause)
+
         nodes = nc.query_to_list(nc.graphdb.manager, q, search=query)
         if form == 'csv':
             return helpers.dicts_to_csv_response([n['n'] for n in nodes])
         elif form == 'xls':
             return helpers.dicts_to_xls_response([n['n'] for n in nodes])
+        elif form == 'json':
+            return helpers.dicts_to_json_response([(n['n'], n['match_txt']) for n in nodes])
         for node in nodes:
             nh = get_object_or_404(NodeHandle, pk=node['n']['handle_id'])
             item = {'node': node['n'], 'nh': nh}
@@ -171,6 +195,30 @@ def search_port_typeahead(request):
                 """
             name_re = '(?i).*{}.*'.format('.*'.join(match_q))
             result = nc.query_to_list(nc.graphdb.manager, q, name_re=name_re)
+        except Exception as e:
+            raise e
+    json.dump(result, response)
+    return response
+
+
+@login_required
+def search_simple_port_typeahead(request):
+    '''
+    This view is a simplification of the above search_port_typeahead
+    to be used by PortSearchConnection as a typeahead simple port name search
+    '''
+    response = HttpResponse(content_type='application/json')
+    to_find = request.GET.get('query', None)
+    result = []
+    if to_find:
+        # split for search
+        try:
+            q = """
+                MATCH (port:Port)
+                WHERE port.name CONTAINS $name
+                RETURN port.name AS name, port.handle_id AS handle_id, null as parent_id
+                """
+            result = nc.query_to_list(nc.graphdb.manager, q, name=to_find)
         except Exception as e:
             raise e
     json.dump(result, response)

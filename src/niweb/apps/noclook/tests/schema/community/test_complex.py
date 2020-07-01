@@ -7,7 +7,6 @@ from collections import OrderedDict
 from . import Neo4jGraphQLCommunityTest
 from niweb.schema import schema
 from pprint import pformat
-from . import Neo4jGraphQLCommunityTest
 from graphene import relay
 
 class GroupComplexTest(Neo4jGraphQLCommunityTest):

@@ -16,6 +16,7 @@ from actstream.models import action_object_stream, target_stream
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils import six
 import csv
+import json
 import xlwt
 import re
 import os
@@ -188,26 +189,26 @@ def dict_update_relationship(user, relationship_id, properties, keys=None):
     return True
 
 
-def form_to_generic_node_handle(request, form, slug, node_meta_type):
+def form_to_generic_node_handle(request, form, slug, node_meta_type, context=None):
     node_name = form.cleaned_data['name']
-    return get_generic_node_handle(request.user, node_name, slug, node_meta_type)
+    return get_generic_node_handle(request.user, node_name, slug, node_meta_type, context)
 
-def get_generic_node_handle(user, node_name, slug, node_meta_type):
+def get_generic_node_handle(user, node_name, slug, node_meta_type, context=None):
     node_type = slug_to_node_type(slug, create=True)
     node_handle = NodeHandle(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
                              modifier=user, creator=user)
     node_handle.save()
-    activitylog.create_node(user, node_handle)
+    activitylog.create_node(user, node_handle, context)
     set_noclook_auto_manage(node_handle.get_node(), False)
     return node_handle
 
 
 
-def form_to_unique_node_handle(request, form, slug, node_meta_type):
+def form_to_unique_node_handle(request, form, slug, node_meta_type, context=None):
     node_name = form.cleaned_data['name']
-    return create_unique_node_handle(request.user, node_name, slug, node_meta_type)
+    return create_unique_node_handle(request.user, node_name, slug, node_meta_type, context)
 
-def create_unique_node_handle(user, node_name, slug, node_meta_type):
+def create_unique_node_handle(user, node_name, slug, node_meta_type, context=None):
     node_type = slug_to_node_type(slug, create=True)
     try:
         node_handle = NodeHandle.objects.get(node_name__iexact=node_name, node_type=node_type)
@@ -215,7 +216,7 @@ def create_unique_node_handle(user, node_name, slug, node_meta_type):
     except NodeHandle.DoesNotExist:
         node_handle = NodeHandle.objects.create(node_name=node_name, node_type=node_type, node_meta_type=node_meta_type,
                                                 modifier=user, creator=user)
-        activitylog.create_node(user, node_handle)
+        activitylog.create_node(user, node_handle, context)
         set_noclook_auto_manage(node_handle.get_node(), False)
     return node_handle
 
@@ -397,6 +398,32 @@ def dicts_to_xls_response(dict_list, header=None):
         key_set = header
     wb = dicts_to_xls(dict_list, key_set, 'NOCLook result')
     wb.save(response)
+    return response
+
+
+def dicts_to_json_response(dict_list, header=None):
+    """
+    Takes a list of dicts and returns a response object with and JSON file.
+    """
+    # Create the HttpResponse object with the appropriate Excel header.
+    response = HttpResponse(content_type='application/json')
+
+    handle_id_list = []
+    for x in dict_list:
+        end_str = ' [..] '
+        match_txt = x[1]
+
+        if match_txt[-len(end_str):] == end_str:
+            # remove last ' [..] '
+            match_txt = match_txt[:-len(end_str)]
+
+        elem = {
+            'handle_id': x[0].get('handle_id'),
+            'match_txt': match_txt,
+        }
+        handle_id_list.append(elem)
+
+    json.dump(handle_id_list, response)
     return response
 
 
@@ -1135,3 +1162,37 @@ def relationship_to_str(relationship):
         b_name=rel.end['name'],
         b_handle_id=rel.end['handle_id'],
     )
+
+def set_supports(user, node, group_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param group_id: unique id
+    :return: norduniclient model, boolean
+    """
+    group = NodeHandle.objects.get(handle_id=group_id)
+    group_node = group.get_node()
+    result = group_node.set_supports(node.handle_id)
+    relationship_id = result.get('Supports')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Supports')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+def set_takes_responsibility(user, node, group_id):
+    """
+    :param user: Django user
+    :param node: norduniclient model
+    :param group_id: unique id
+    :return: norduniclient model, boolean
+    """
+    group = NodeHandle.objects.get(handle_id=group_id)
+    group_node = group.get_node()
+    result = group_node.set_takes_responsibility(node.handle_id)
+    relationship_id = result.get('Takes_responsibility')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Takes_responsibility')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created

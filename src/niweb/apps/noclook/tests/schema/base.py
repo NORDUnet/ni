@@ -7,6 +7,7 @@ from django.db import connection
 
 from apps.noclook.models import NodeHandle, Group, GroupContextAuthzAction
 from apps.noclook.tests.neo4j_base import NeoTestCase
+from apps.noclook.tests.testing import nc
 from pprint import pformat
 
 class TestContext():
@@ -29,6 +30,7 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
         self.get_read_authaction  = sriutils.get_read_authaction()
         self.get_write_authaction = sriutils.get_write_authaction()
         self.get_list_authaction  = sriutils.get_list_authaction()
+        self.get_admin_authaction  = sriutils.get_admin_authaction()
 
         # get contexts
         self.network_ctxt = sriutils.get_network_context()
@@ -53,9 +55,13 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
             # create group for list in community context
             group_list  = Group( name="{} list".format(context_name) )
 
+            # create group for admin in community context
+            group_admin = Group( name="{} admin".format(context_name) )
+
             add_read  = False
             add_write = False
             add_list  = False
+            add_admin = False
 
             if group_dict and context_name in group_dict:
                 if group_dict[context_name].get('read', False):
@@ -67,10 +73,14 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
                 if group_dict[context_name].get('list', False):
                     add_list  = True
 
+                if group_dict[context_name].get('admin', False):
+                    add_admin  = True
+
             if not group_dict:
                 add_read  = True
                 add_write = True
                 add_list  = True
+                add_admin  = True
 
             # save and add user to the group
             group_aaction = []
@@ -90,6 +100,11 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
                 group_list.user_set.add(self.user)
                 group_aaction.append((group_list, self.get_list_authaction))
 
+            if add_admin:
+                group_admin.save()
+                group_admin.user_set.add(self.user)
+                group_aaction.append((group_admin, self.get_admin_authaction))
+
             # add the correct actions fot each group
             for group, aaction in group_aaction:
                 GroupContextAuthzAction(
@@ -99,6 +114,21 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
                 ).save()
 
     def tearDown(self):
+        # check that we have the same nodes on neo4j and postgresql
+        num_nodes_posgresql = NodeHandle.objects.all().count()
+        num_nodes_neo4j = 0
+
+        with nc.graphdb.manager.session as s:
+            d = {}
+            result = s.run("MATCH (n:Node) RETURN count(n) AS num")
+            for record in result:
+                for key, value in record.items():
+                    d[key] = value
+
+            num_nodes_neo4j = d['num']
+
+        self.assertEqual(num_nodes_posgresql, num_nodes_neo4j)
+
         super(Neo4jGraphQLGenericTest, self).tearDown()
 
         # reset sql database

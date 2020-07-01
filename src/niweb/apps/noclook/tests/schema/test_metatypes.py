@@ -187,3 +187,100 @@ class Neo4jGraphQLPhysicalTest(Neo4jGraphQLMetatypeTest):
 
 class Neo4jGraphQLLocationTest(Neo4jGraphQLMetatypeTest):
     pass
+
+
+class MetaTypesQueriesTest(Neo4jGraphQLGenericTest):
+    def test_metatype_list(self):
+        ## simple metatype query
+        query = '''
+        {
+          getMetatypes
+        }
+        '''
+
+        expected = {
+            "getMetatypes": [
+                "Logical",
+                "Relation",
+                "Physical",
+                "Location"
+            ]
+        }
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+
+        self.assertEqual(result.data, expected)
+
+
+    def test_metatype_classes(self):
+        ## get types for metatype
+
+        query_t = '''
+        {{
+          getTypesForMetatype(metatype: {metatype_name}){{
+            type_name
+            connection_name
+            byid_name
+            all_name
+          }}
+        }}
+        '''
+
+        qlogical = query_t.format(metatype_name='Logical')
+        qrelation = query_t.format(metatype_name='Relation')
+        qphysical = query_t.format(metatype_name='Physical')
+        qlocation = query_t.format(metatype_name='Location')
+
+        queries = [qlogical, qrelation, qphysical, qlocation]
+
+        for query in queries:
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, result.errors
+
+    def test_network_organizations(self):
+        ## simple metatype query
+        query = '''
+        {
+          getNetworkOrgTypes{
+            type_name
+            connection_name
+            byid_name
+            all_name
+          }
+        }
+        '''
+
+        expected = {
+            "getNetworkOrgTypes": [
+                {
+                    "type_name": "Customer",
+                    "connection_name": "customers",
+                    "byid_name": "getCustomerById",
+                    "all_name": "all_customers"
+                },
+                {
+                    "type_name": "EndUser",
+                    "connection_name": "endUsers",
+                    "byid_name": "getEndUserById",
+                    "all_name": "all_endusers"
+                },
+                {
+                    "type_name": "Provider",
+                    "connection_name": "providers",
+                    "byid_name": "getProviderById",
+                    "all_name": "all_providers"
+                },
+                {
+                    "type_name": "SiteOwner",
+                    "connection_name": "siteOwners",
+                    "byid_name": "getSiteOwnerById",
+                    "all_name": "all_siteowners"
+                }
+            ]
+        }
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+
+        self.assertEqual(result.data, expected)
