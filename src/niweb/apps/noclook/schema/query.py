@@ -186,6 +186,9 @@ class NOCRootQuery(NOCAutoQuery):
     # switch types
     getSwitchTypes = graphene.List(SwitchType, resolver=resolve_getSwitchTypes)
 
+    # network organizations
+    getNetworkOrgTypes = graphene.List(TypeInfo)
+
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -360,6 +363,40 @@ class NOCRootQuery(NOCAutoQuery):
 
                             classes.append(elem)
 
+            return classes
+        else:
+            raise GraphQLAuthException()
+
+    def resolve_getNetworkOrgTypes(self, info, **kwargs):
+        if info.context and info.context.user.is_authenticated:
+            class_list = [Customer, EndUser, Provider, SiteOwner]
+            classes = []
+
+            for clazz in class_list:
+                class_has_resolvers = \
+                    clazz in NOCRootQuery.graph_by_id_type_resolvers and \
+                    clazz in NOCRootQuery.graph_all_type_resolvers and \
+                    clazz in NOCRootQuery.graph_connection_type_resolvers
+
+                if class_has_resolvers:
+                    byid_name = NOCRootQuery.\
+                        graph_by_id_type_resolvers[clazz]['field_name']
+
+                    connection_name = NOCRootQuery.\
+                        graph_connection_type_resolvers[clazz]['field_name']
+
+                    all_name = NOCRootQuery.\
+                        graph_all_type_resolvers[clazz]['field_name']
+
+                    elem = TypeInfo(
+                        type_name=clazz,
+                        connection_name=connection_name,
+                        byid_name=byid_name,
+                        all_name=all_name,
+                    )
+
+                    classes.append(elem)
+            
             return classes
         else:
             raise GraphQLAuthException()
