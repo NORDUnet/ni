@@ -159,7 +159,7 @@ class Contact(NIObjectType, RelationMixin):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     first_name = NIStringField(type_kwargs={ 'required': True })
-    last_name = NIStringField(type_kwargs={ 'required': True })
+    last_name = NIStringField()
     title = NIStringField()
     salutation = NIStringField()
     contact_type = NIChoiceField(dropdown_name="contact_type")
