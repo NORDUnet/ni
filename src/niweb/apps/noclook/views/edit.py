@@ -374,6 +374,7 @@ def edit_host(request, handle_id):
     host_services = host.get_host_services()
     ports = host.get_ports()
     dependency_categories = 'service,host'
+    user_categories = ['host-user']
     if request.POST:
         form = forms.EditHostForm(request.POST)
         if form.is_valid():
@@ -411,7 +412,8 @@ def edit_host(request, handle_id):
     context = {
         'node_handle': nh, 'node': host, 'form': form, 'location': location,
         'relations': relations, 'depends_on': depends_on, 'ports': ports,
-        'host_services': host_services, 'dependency_categories': dependency_categories
+        'host_services': host_services, 'dependency_categories': dependency_categories,
+        'user_categories': user_categories,
     }
     return render(request, 'noclook/edit/edit_host.html', context)
 
@@ -719,7 +721,7 @@ def edit_optical_path(request, handle_id):
     nh, path = helpers.get_nh_node(handle_id)
     relations = path.get_relations()
     depends_on = path.get_dependencies()
-    dependency_categories = 'odf,optical-link,optical-multiplex-section,optical-node,router,switch,optical-path'
+    dependency_categories = 'odf,optical-link,optical-multiplex-section,optical-node,router,switch,optical-path,service'
     if request.POST:
         form = forms.EditOpticalPathForm(request.POST)
         if form.is_valid():

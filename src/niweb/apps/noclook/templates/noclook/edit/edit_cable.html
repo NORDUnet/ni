@@ -32,6 +32,7 @@
         {% if form.tele2_cable_contract %}
           {% accordion 'Tele2 Information (optional)' 'tele2-edit' '#edit-accordion' %}
              {{ form.tele2_cable_contract | as_crispy_field }}
+             {{ form.tele2_alternative_circuit_id | as_crispy_field }}
           {% endaccordion %}
         {% endif %}
     </div>

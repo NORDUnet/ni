@@ -432,7 +432,7 @@ class CableResource(NodeHandleResource):
         queryset = NodeHandle.objects.filter(node_type__slug__exact='cable')
         resource_name = 'cable'
         pk_field = 'node_name'
-        pk_field_regex = '[-\w]+'
+        pk_field_regex = r'[-\w]+'
         authentication = ApiKeyAuthentication()
         authorization = Authorization()
         include_absolute_url = True
@@ -499,7 +499,7 @@ class CableResource(NodeHandleResource):
 
     def get_end_point_nodes(self, bundle):
         end_point_nodes = []
-        for end_point in bundle.data.get('end_points', []):
+        for end_point in (bundle.data.get('end_points') or []):
             try:
                 port_node = self.get_port(bundle, end_point['device'], end_point['device_type'], end_point['port'])
                 end_point_nodes.append(port_node)
