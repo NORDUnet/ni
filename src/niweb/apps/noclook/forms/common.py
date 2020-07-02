@@ -1171,7 +1171,11 @@ class NewContactForm(forms.Form):
             first_name = first_name.encode('utf-8')
             last_name  = last_name.encode('utf-8')
 
-        full_name = '{} {}'.format(first_name, last_name)
+        full_name = first_name
+
+        if last_name:
+            full_name = '{} {}'.format(first_name, last_name)
+        
         cleaned_data['name'] = full_name
 
         return cleaned_data
