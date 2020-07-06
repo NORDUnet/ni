@@ -12,7 +12,7 @@ class Command(BaseCommand):
     help = 'Create fake data for the Network module'
     generated_types = [
         'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group', 'Peering Partner',
-        'Cable', 'Port', 'Host', 'Router', 'Switch', 'Firewall']
+        'Cable', 'Port', 'Host', 'Router', 'Switch', 'Firewall', 'Host User']
 
     option_organizations = 'organizations'
     option_equipment = 'equipmentcables'
@@ -92,6 +92,7 @@ class Command(BaseCommand):
             generator.create_peering_partner,
             generator.create_peering_group,
             generator.create_site_owner,
+            generator.create_host_user,
         ]
 
         self.create_entities(numnodes, create_funcs)

@@ -527,6 +527,28 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return firewall
 
+    def create_host_user(self, name=None):
+        # create object
+        if not name:
+            name = self.rand_person_or_company_name()
+
+        name = self.rand_person_or_company_name()
+        hostuser = self.get_or_create_node(
+            name, 'Host User', META_TYPES[2]) # Relation
+
+        # add context
+        self.add_network_context(hostuser)
+
+        data = {
+            'url': self.fake.url(),
+            'description': self.fake.paragraph(),
+        }
+
+        for key, value in data.items():
+            hostuser.get_node().add_property(key, value)
+
+        return hostuser
+
 
 class DataRelationMaker:
     def __init__(self):

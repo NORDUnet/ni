@@ -396,7 +396,7 @@ class NOCRootQuery(NOCAutoQuery):
                     )
 
                     classes.append(elem)
-            
+
             return classes
         else:
             raise GraphQLAuthException()
@@ -408,6 +408,7 @@ class NOCRootQuery(NOCAutoQuery):
             Customer, EndUser, Provider, SiteOwner,
             Port, Host, Cable, Router, Switch, Firewall,
             PeeringPartner, PeeringGroup,
+            HostUser,
         ]
 
         search_queries = [
