@@ -1815,7 +1815,7 @@ class DeleteNIMutation(AbstractNIMutation):
     class NIMetaClass:
         request_path   = None
         graphql_type   = None
-        is_delete      = False
+        is_delete      = True
 
     @classmethod
     def add_return_type(cls, graphql_type):
