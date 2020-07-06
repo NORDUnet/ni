@@ -1456,3 +1456,40 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             *relay.Node.from_global_id(check_owner['id']),
             *relay.Node.from_global_id(owner_id),
         ))
+
+        # delete owner submutation test
+        query = '''
+        mutation{{
+          composite_firewall(input:{{
+            update_input:{{
+              id: "{firewall_id}"
+              name: "{firewall_name}"
+              operational_state: "{operational_state}"
+            }}
+            delete_owner:{{
+              id: "{owner_id}"
+            }}
+          }}){{
+            deleted_owner{{
+              errors{{
+                field
+                messages
+              }}
+              success
+            }}
+          }}
+        }}
+        '''.format(firewall_id=firewall_id, firewall_name=firewall_name,
+                    operational_state=operational_state, owner_id=owner_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        deleted_errors = \
+            result.data['composite_firewall']['deleted_owner']['errors']
+        assert not deleted_errors, pformat(deleted_errors, indent=1)
+
+        # check is successful
+        success = result.data['composite_firewall']['deleted_owner']['success']
+        self.assertTrue(success)
