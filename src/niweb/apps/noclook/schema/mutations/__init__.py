@@ -90,6 +90,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_host = NIHostMutationFactory.get_create_mutation().Field()
     update_host = NIHostMutationFactory.get_update_mutation().Field()
     delete_host = NIHostMutationFactory.get_delete_mutation().Field()
+    composite_host = CompositeHostMutation.Field()
 
     ## Common mutations
     create_comment = CreateComment.Field()

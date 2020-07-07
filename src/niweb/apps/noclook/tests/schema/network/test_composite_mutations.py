@@ -1493,3 +1493,133 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         # check is successful
         success = result.data['composite_firewall']['deleted_owner']['success']
         self.assertTrue(success)
+
+
+class HostTest(Neo4jGraphQLNetworkTest):
+    def test_host(self):
+        # create logical host (without owner or location)
+        # get two groups
+        community_generator = CommunityFakeDataGenerator()
+        group1 = community_generator.create_group()
+        group2 = community_generator.create_group()
+
+        group1_id = relay.Node.to_global_id(str(group1.node_type),
+                                            str(group1.handle_id))
+        group2_id = relay.Node.to_global_id(str(group2.node_type),
+                                            str(group2.handle_id))
+
+        # create host
+        host_name = "Test host"
+        host_description = "Created from graphql"
+        ip_addresses = ["127.0.0.1", "168.192.0.1"]
+        operational_state = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+        rack_units = 2
+        rack_position = 3
+        managed_by = random.choice(
+            Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
+        )
+        backup = "Manual script"
+        os = "GNU/Linux"
+        os_version = "5.8"
+        contract_number = "001"
+
+        query = '''
+        mutation{{
+          composite_host(
+            input:{{
+              create_input: {{
+                name: "{host_name}"
+                description: "{host_description}"
+                ip_addresses: "{ip_address}"
+                rack_units: {rack_units}
+                rack_position: {rack_position}
+                operational_state: "{operational_state}"
+                responsible_group: "{group1_id}"
+                support_group: "{group2_id}"
+                managed_by: "{managed_by}"
+                backup: "{backup}"
+                os: "{os}"
+                os_version: "{os_version}"
+                contract_number: "{contract_number}"
+              }}
+            }}
+          ){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              host{{
+                id
+                name
+                description
+                host_type
+                ip_addresses
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+                managed_by{{
+                  value
+                }}
+                backup
+                os
+                os_version
+                contract_number
+                rack_units
+                rack_position
+              }}
+            }}
+          }}
+        }}
+        '''.format(host_name=host_name, host_description=host_description,
+                    ip_address="\\n".join(ip_addresses), rack_units=rack_units,
+                    rack_position=rack_position,
+                    operational_state=operational_state,
+                    group1_id=group1_id, group2_id=group2_id,
+                    managed_by=managed_by, backup=backup, os=os,
+                    os_version=os_version, contract_number=contract_number)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_host']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        # store the created host id
+        created_host = result.data['composite_host']['created']['host']
+        host_id = created_host['id']
+
+        # check data
+        self.assertEqual(created_host['name'], host_name)
+        self.assertEqual(created_host['description'], host_description)
+        self.assertEqual(created_host['host_type'], "Logical")
+        self.assertEqual(created_host['rack_units'], rack_units)
+        self.assertEqual(created_host['rack_position'], rack_position)
+        self.assertEqual(created_host['ip_addresses'], ip_addresses)
+        self.assertEqual(created_host['managed_by']['value'], managed_by)
+        self.assertEqual(created_host['backup'], backup)
+        self.assertEqual(created_host['os'], os)
+        self.assertEqual(created_host['os_version'], os_version)
+        self.assertEqual(created_host['contract_number'], contract_number)
+
+        # check responsible group
+        check_responsible = created_host['responsible_group']
+        self.assertEqual(check_responsible['id'], group1_id)
+
+        # check support group
+        check_support = created_host['support_group']
+        self.assertEqual(check_support['id'], group2_id)
+
+        # check we've created a logical node
+        _type, host_handle_id = relay.Node.from_global_id(host_id)
+        host_nh = NodeHandle.objects.get(handle_id=host_handle_id)
+        host_node = host_nh.get_node()
+        self.assertEqual(host_node.meta_type, "Logical")

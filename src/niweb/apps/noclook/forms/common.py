@@ -483,8 +483,7 @@ class EditHostForm(NewHostForm):
 
 class NewSRIHostForm(NewHostForm):
     def __init__(self, *args, **kwargs):
-        super(NewSwitchHostForm, self).__init__(*args, **kwargs)
-        self.fields['switch_type'].choices = SwitchType.as_choices()
+        super(NewSRIHostForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
         self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
         self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()

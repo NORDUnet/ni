@@ -88,27 +88,30 @@ class Cable(NIObjectType, PhysicalMixin):
 
 
 class Host(NIObjectType, PhysicalMixin):
-    '''
-    A host in the SRI system
-    '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    operational_state = NIChoiceField(dropdown_name="operational_states", \
-        type_kwargs={ 'required': True })
+    host_type = graphene.String()
+    operational_state = NIStringField(type_kwargs={ 'required': True })
+    ip_addresses = NIIPAddrField()
+    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
+    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
+    managed_by = NIChoiceField(dropdown_name="host_management_sw")
+    backup = NIStringField()
     os = NIStringField()
     os_version = NIStringField()
-    vendor = NIStringField()
-    backup = NIStringField()
-    managed_by = NIStringField()
-    ip_addresses = IPAddr()
-    responsible_group = NIStringField()
-    support_group = NIStringField()
-    security_class = NIStringField()
-    security_comment = NIStringField()
+    contract_number = NIStringField()
+    rack_units = NIIntField() # Equipment height
+    rack_position = NIIntField()
+    host_owner = NISingleRelationField(field_type=(lambda: Relation), rel_name="Owns", rel_method="_incoming")
+    host_services = NIStringField()
 
     def resolve_ip_addresses(self, info, **kwargs):
         '''Manual resolver for the ip field'''
         return self.get_node().data.get('ip_addresses', None)
+
+    def resolve_host_type(self, info, **kwargs):
+        '''Manual resolver for host type string'''
+        return self.get_node().meta_type
 
     class NIMetaType:
         ni_type = 'Host'

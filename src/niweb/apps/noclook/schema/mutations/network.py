@@ -188,6 +188,14 @@ class NIHostMutationFactory(NIMutationFactory):
                 'Owns',
                 helpers.set_owner
             ),
+            'responsible_group': get_unique_relation_processor(
+                'Takes_responsibility',
+                helpers.set_takes_responsibility
+            ),
+            'support_group': get_unique_relation_processor(
+                'Supports',
+                helpers.set_supports
+            ),
         }
 
     class Meta:
