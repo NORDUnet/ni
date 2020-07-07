@@ -1493,3 +1493,133 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         # check is successful
         success = result.data['composite_firewall']['deleted_owner']['success']
         self.assertTrue(success)
+
+
+class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
+    def test_external_equipment(self):
+        # external equipment data
+        exteq_name = "External Equipment test"
+        exteq_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 2
+        rack_position = 3
+
+        #
+        port1_name = "test-01"
+        port1_type = "Schuko"
+        port1_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        # generate second port
+        net_generator = NetworkFakeDataGenerator()
+        port2 = net_generator.create_port()
+        port2_name = port2.node_name
+        port2_description = port2.get_node().data.get('description')
+        port2_type = port2.get_node().data.get('port_type')
+        port2_id = relay.Node.to_global_id(str(port2.node_type),
+                                            str(port2.handle_id))
+
+        # generate owner
+        owner = net_generator.create_site_owner()
+        owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
+                                            str(owner.handle_id))
+
+        query = '''
+        mutation{{
+          composite_externalEquipment(input:{{
+            create_input:{{
+              name: "{exteq_name}"
+              description: "{exteq_description}"
+              relationship_owner: "{owner_id}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+            }}
+            create_subinputs:[
+              {{
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+          	update_subinputs:[
+              {{
+                id: "{port2_id}"
+                name: "{port2_name}"
+                description: "{port2_description}"
+                port_type: "{port2_type}"
+              }},
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              externalEquipment{{
+                id
+                name
+                description
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            subupdated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(exteq_name=exteq_name, exteq_description=exteq_description,
+                    owner_id=owner_id, rack_units=rack_units,
+                    rack_position=rack_position, port1_name=port1_name,
+                    port1_type=port1_type, port1_description=port1_description,
+                    port2_id=port2_id, port2_name=port2_name,
+                    port2_type=port2_type, port2_description=port2_description)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_externalEquipment']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        subcreated_errors = \
+            result.data['composite_externalEquipment']['subcreated'][0]['errors']
+        assert not subcreated_errors, pformat(subcreated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_externalEquipment']['subupdated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
