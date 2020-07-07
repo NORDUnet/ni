@@ -175,3 +175,20 @@ class NIFirewallMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+class NIHostMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewSRIHostForm
+        update_form    = EditSRIHostForm
+        graphql_type   = Host
+        unique_node    = True
+        relations_processors = {
+            'relationship_owner': get_unique_relation_processor(
+                'Owns',
+                helpers.set_owner
+            ),
+        }
+
+    class Meta:
+        abstract = False

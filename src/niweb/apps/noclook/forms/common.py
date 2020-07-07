@@ -476,10 +476,24 @@ class NewHostForm(forms.Form):
 class EditHostForm(NewHostForm):
     relationship_user = relationship_field('user')
     relationship_depends_on = relationship_field('depends on')
-    relationship_ports = JSONField(required=False, widget=JSONInput)
 
     services_locked = forms.BooleanField(required=False)
     services_checked = forms.BooleanField(required=False)
+
+
+class NewSRIHostForm(NewHostForm):
+    def __init__(self, *args, **kwargs):
+        super(NewSwitchHostForm, self).__init__(*args, **kwargs)
+        self.fields['switch_type'].choices = SwitchType.as_choices()
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
+        self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+
+
+class EditSRIHostForm(NewSRIHostForm, EditHostForm):
+    pass
 
 
 class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, NewHostForm):
@@ -1175,7 +1189,7 @@ class NewContactForm(forms.Form):
 
         if last_name:
             full_name = '{} {}'.format(first_name, last_name)
-        
+
         cleaned_data['name'] = full_name
 
         return cleaned_data
