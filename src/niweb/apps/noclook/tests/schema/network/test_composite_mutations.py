@@ -1542,14 +1542,14 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
             }}
-            create_subinputs:[
+            create_has_port:[
               {{
                 name: "{port1_name}"
                 description: "{port1_description}"
                 port_type: "{port1_type}"
               }},
             ]
-          	update_subinputs:[
+          	update_has_port:[
               {{
                 id: "{port2_id}"
                 name: "{port2_name}"
@@ -1569,7 +1569,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                 description
               }}
             }}
-            subcreated{{
+            has_port_created{{
               errors{{
                 field
                 messages
@@ -1584,7 +1584,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                 }}
               }}
             }}
-            subupdated{{
+            has_port_updated{{
               errors{{
                 field
                 messages
@@ -1617,9 +1617,9 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         assert not created_errors, pformat(created_errors, indent=1)
 
         subcreated_errors = \
-            result.data['composite_externalEquipment']['subcreated'][0]['errors']
+            result.data['composite_externalEquipment']['has_port_created'][0]['errors']
         assert not subcreated_errors, pformat(subcreated_errors, indent=1)
 
         subupdated_errors = \
-            result.data['composite_externalEquipment']['subupdated'][0]['errors']
+            result.data['composite_externalEquipment']['has_port_updated'][0]['errors']
         assert not subupdated_errors, pformat(subupdated_errors, indent=1)
