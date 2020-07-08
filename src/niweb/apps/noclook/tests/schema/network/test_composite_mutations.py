@@ -1567,6 +1567,16 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                 id
                 name
                 description
+                rack_units
+                rack_position
+                owner{{
+                  id
+                  name
+                }}
+                has{{
+                  id
+                  name
+                }}
               }}
             }}
             has_port_created{{
@@ -1580,7 +1590,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                 description
                 port_type{{
                   id
-                  name
+                  value
                 }}
               }}
             }}
@@ -1595,7 +1605,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                 description
                 port_type{{
                   id
-                  name
+                  value
                 }}
               }}
             }}
@@ -1623,3 +1633,34 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         subupdated_errors = \
             result.data['composite_externalEquipment']['has_port_updated'][0]['errors']
         assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        created_extequip = result.data['composite_externalEquipment']['created']['externalEquipment']
+        self.assertEqual(created_extequip['name'], exteq_name)
+        self.assertEqual(created_extequip['description'], exteq_description)
+        self.assertEqual(created_extequip['rack_units'], rack_units)
+        self.assertEqual(created_extequip['rack_position'], rack_position)
+
+        # check subentities
+        port1_id = result.data \
+            ['composite_externalEquipment']['has_port_created'][0]['port']['id']
+        check_port1 = result.data \
+            ['composite_externalEquipment']['has_port_created'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_port2 = result.data \
+            ['composite_externalEquipment']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port2['id'], port2_id)
+        self.assertEqual(check_port2['name'], port2_name)
+        self.assertEqual(check_port2['description'], port2_description)
+        self.assertEqual(check_port2['port_type']['value'], port2_type)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in created_extequip['has']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertTrue(port2_id in has_ids)
