@@ -1,7 +1,9 @@
 from apps.nerds.lib.consumer_util import get_user
 from django.db import migrations
 from django.utils.text import slugify
+
 import norduniclient as nc
+import time
 
 try:
     from neo4j.exceptions import CypherError
@@ -28,6 +30,14 @@ def forwards_func(apps, schema_editor):
     Dropdown = apps.get_model('noclook', 'Dropdown')
     Choice = apps.get_model('noclook', 'Choice')
     User = apps.get_model('auth', 'User')
+
+    # wait for neo4j to be available
+    neo4j_inited = False
+    while not neo4j_inited:
+        if nc.graphdb.manager:
+            neo4j_inited = True
+        else:
+            time.sleep(2)
 
     username = 'noclook'
     passwd = User.objects.make_random_password(length=30)
@@ -72,7 +82,7 @@ def forwards_func(apps, schema_editor):
             if created:
                 try:
                     nc.create_node(
-                        nc.graphdb.manager,
+                            nc.graphdb.manager,
                         node_name,
                         group_nh.node_meta_type,
                         group_type.type,
@@ -87,7 +97,7 @@ def forwards_func(apps, schema_editor):
                 ).save()
 
             groups_dict[node_name] = group_nh
-        
+
         # if there's nodes on the db, create groups with these values
         prop_methods = {
             'responsible_group': 'set_takes_responsibility',
