@@ -53,7 +53,7 @@ class Command(BaseCommand):
             if numnodes > 0:
                 if self.show_progress:
                     self.stdout\
-                        .write('Forging fake equipement & cables: {} for each subtype:'\
+                        .write('Forging fake equipment & cables: {} for each subtype:'\
                         .format(numnodes))
                 self.create_equipment_cables(numnodes)
 

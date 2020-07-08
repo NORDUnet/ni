@@ -105,6 +105,16 @@ class CompositeFirewallMutation(CompositeMutation):
         has_creation = False
 
 
+class CompositeExternalEquipmentMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = ExternalEquipment
+        main_mutation_f = NIExternalEquipmentMutationFactory
+        context = sriutils.get_network_context()
+
+
 class CompositeHostMutation(CompositeMutation):
     class Input:
         pass

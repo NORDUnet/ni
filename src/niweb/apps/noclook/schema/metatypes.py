@@ -55,7 +55,7 @@ class Relation(NINode):
 
 class Physical(NINode):
     location = graphene.Field(lambda:Location)
-    has = graphene.Field(lambda:Physical)
+    has = graphene.List(lambda:Physical)
     part_of = graphene.Field(lambda:Logical)
     parent = graphene.List(lambda:Physical)
     dependents = graphene.List(lambda:Logical)
@@ -197,7 +197,7 @@ class PhysicalMixin:
             info, self.get_node(), 'get_location', 'Located_in')
 
     def resolve_has(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
+        return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_has', 'Has')
 
     def resolve_part_of(self, info, **kwargs):
@@ -231,6 +231,12 @@ class PhysicalMixin:
 
         result = nc.query_to_dict(nc.graphdb.manager, q,
                         handle_id=handle_id, parent_handle_id=parent_handle_id)
+
+    @classmethod
+    def link_has(cls, user, physical_nh, physical2_nh):
+        physical_node = physical_nh.get_node()
+        physical2_handle_id = physical2_nh.handle_id
+        helpers.set_has(user, physical_node, physical2_handle_id)
 
     @classmethod
     def link_dependents(cls, user, physical_nh, logical_nh):

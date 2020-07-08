@@ -203,6 +203,19 @@ class Firewall(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+class ExternalEquipment(NIObjectType, PhysicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
+    rack_units = NIIntField() # Equipment height
+    rack_position = NIIntField()
+
+    class NIMetaType:
+        ni_type = 'External Equipment'
+        ni_metatype = NIMETA_PHYSICAL
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -234,4 +247,5 @@ network_type_resolver = {
     'Cable': Cable,
     'Host': Host,
     'Switch': Switch,
+    'External Equipment': ExternalEquipment,
 }

@@ -669,12 +669,19 @@ class EditOpticalFilterForm(EditOdfForm):
 
 
 class NewExternalEquipmentForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(NewExternalEquipmentForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Site Owner')
+    
     name = forms.CharField()
 
     description = description_field('external equipment')
     rack_units = forms.IntegerField(required=False, help_text='Height in rack units (u).')
     rack_position = forms.IntegerField(required=False, help_text='Where in the rack is this located.')
-    relationship_owner = relationship_field('owner')
+    relationship_owner = relationship_field('owner', True)
     relationship_location = relationship_field('location')
 
 
