@@ -109,13 +109,7 @@ class CompositeExternalEquipmentMutation(CompositeMutation):
     class Input:
         pass
 
-    @classmethod
-    def link_slave_to_master(cls, user, master_nh, slave_nh):
-        helpers.set_has(user, master_nh.get_node(), slave_nh.handle_id)
-
     class NIMetaClass:
         graphql_type = ExternalEquipment
-        graphql_subtype = Port
         main_mutation_f = NIExternalEquipmentMutationFactory
-        secondary_mutation_f = NIPortMutationFactory
         context = sriutils.get_network_context()
