@@ -1493,3 +1493,311 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         # check is successful
         success = result.data['composite_firewall']['deleted_owner']['success']
         self.assertTrue(success)
+
+
+class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
+    def test_external_equipment(self):
+        # external equipment data
+        exteq_name = "External Equipment test"
+        exteq_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 2
+        rack_position = 3
+
+        # port data
+        port1_name = "test-01"
+        port1_type = "Schuko"
+        port1_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        # generate second port
+        net_generator = NetworkFakeDataGenerator()
+        port2 = net_generator.create_port()
+        port2_name = port2.node_name
+        port2_description = port2.get_node().data.get('description')
+        port2_type = port2.get_node().data.get('port_type')
+        port2_id = relay.Node.to_global_id(str(port2.node_type),
+                                            str(port2.handle_id))
+
+        # generate owner
+        owner = net_generator.create_site_owner()
+        owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
+                                            str(owner.handle_id))
+
+        query = '''
+        mutation{{
+          composite_externalEquipment(input:{{
+            create_input:{{
+              name: "{exteq_name}"
+              description: "{exteq_description}"
+              relationship_owner: "{owner_id}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+            }}
+            create_has_port:[
+              {{
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+          	update_has_port:[
+              {{
+                id: "{port2_id}"
+                name: "{port2_name}"
+                description: "{port2_description}"
+                port_type: "{port2_type}"
+              }},
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              externalEquipment{{
+                id
+                name
+                description
+                rack_units
+                rack_position
+                owner{{
+                  id
+                  name
+                }}
+                has{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(exteq_name=exteq_name, exteq_description=exteq_description,
+                    owner_id=owner_id, rack_units=rack_units,
+                    rack_position=rack_position, port1_name=port1_name,
+                    port1_type=port1_type, port1_description=port1_description,
+                    port2_id=port2_id, port2_name=port2_name,
+                    port2_type=port2_type, port2_description=port2_description)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_externalEquipment']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        subcreated_errors = \
+            result.data['composite_externalEquipment']['has_port_created'][0]['errors']
+        assert not subcreated_errors, pformat(subcreated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_externalEquipment']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        created_extequip = result.data['composite_externalEquipment']['created']['externalEquipment']
+        exteq_id = created_extequip['id']
+
+        self.assertEqual(created_extequip['name'], exteq_name)
+        self.assertEqual(created_extequip['description'], exteq_description)
+        self.assertEqual(created_extequip['rack_units'], rack_units)
+        self.assertEqual(created_extequip['rack_position'], rack_position)
+
+        # check subentities
+        port1_id = result.data \
+            ['composite_externalEquipment']['has_port_created'][0]['port']['id']
+        check_port1 = result.data \
+            ['composite_externalEquipment']['has_port_created'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_port2 = result.data \
+            ['composite_externalEquipment']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port2['id'], port2_id)
+        self.assertEqual(check_port2['name'], port2_name)
+        self.assertEqual(check_port2['description'], port2_description)
+        self.assertEqual(check_port2['port_type']['value'], port2_type)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in created_extequip['has']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertTrue(port2_id in has_ids)
+
+        # update query
+        exteq_name = "External Equipment check"
+        exteq_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 3
+        rack_position = 2
+
+        port1_name = "check-01"
+        port1_type = port2_type
+        port1_description = port2_description
+
+        query = '''
+        mutation{{
+          composite_externalEquipment(input:{{
+            update_input:{{
+              id: "{exteq_id}"
+              name: "{exteq_name}"
+              description: "{exteq_description}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+            }}
+          	update_has_port:[
+              {{
+                id: "{port1_id}"
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+            deleted_has_port:[
+              {{
+                id: "{port2_id}"
+              }}
+          	]
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              externalEquipment{{
+                id
+                name
+                description
+                rack_units
+                rack_position
+                owner{{
+                  id
+                  name
+                }}
+                has{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_deleted{{
+              errors{{
+                field
+                messages
+              }}
+              success
+            }}
+          }}
+        }}
+        '''.format(exteq_id=exteq_id,exteq_name=exteq_name,
+                    exteq_description=exteq_description, rack_units=rack_units,
+                    rack_position=rack_position, port1_id=port1_id,
+                    port1_name=port1_name, port1_type=port1_type,
+                    port1_description=port1_description, port2_id=port2_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = \
+            result.data['composite_externalEquipment']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_externalEquipment']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        subdeleted_errors = \
+            result.data['composite_externalEquipment']['has_port_deleted'][0]['errors']
+        assert not subdeleted_errors, pformat(subdeleted_errors, indent=1)
+
+        # check data
+        updated_extequip = result.data['composite_externalEquipment']['updated']['externalEquipment']
+        self.assertEqual(updated_extequip['name'], exteq_name)
+        self.assertEqual(updated_extequip['description'], exteq_description)
+        self.assertEqual(updated_extequip['rack_units'], rack_units)
+        self.assertEqual(updated_extequip['rack_position'], rack_position)
+
+        # check subentities
+        check_port1 = result.data \
+            ['composite_externalEquipment']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_deleted_port2 = result.data \
+            ['composite_externalEquipment']['has_port_deleted'][0]['success']
+
+        self.assertTrue(check_deleted_port2)
+
+        # check owner is not present
+        self.assertIsNone(updated_extequip['owner'])
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in updated_extequip['has']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertFalse(port2_id in has_ids)

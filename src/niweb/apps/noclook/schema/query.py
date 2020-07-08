@@ -396,7 +396,7 @@ class NOCRootQuery(NOCAutoQuery):
                     )
 
                     classes.append(elem)
-            
+
             return classes
         else:
             raise GraphQLAuthException()
@@ -406,7 +406,7 @@ class NOCRootQuery(NOCAutoQuery):
         graphql_types = [
             Group, Address, Phone, Email, Contact, Organization, Procedure,
             Customer, EndUser, Provider, SiteOwner,
-            Port, Host, Cable, Router, Switch, Firewall,
+            Port, Host, Cable, Router, Switch, Firewall, ExternalEquipment,
             PeeringPartner, PeeringGroup,
         ]
 

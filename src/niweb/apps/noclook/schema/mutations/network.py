@@ -175,3 +175,24 @@ class NIFirewallMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+class NIExternalEquipmentMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewExternalEquipmentForm
+        update_form    = EditExternalEquipmentForm
+        graphql_type   = ExternalEquipment
+        unique_node    = True
+        relations_processors = {
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
+            'relationship_owner': get_unique_relation_processor(
+                'Owns',
+                helpers.set_owner
+            ),
+        }
+
+    class Meta:
+        abstract = False

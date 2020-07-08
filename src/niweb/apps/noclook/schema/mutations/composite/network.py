@@ -103,3 +103,13 @@ class CompositeFirewallMutation(CompositeMutation):
         context = sriutils.get_network_context()
         include_metafields = ('dependents')
         has_creation = False
+
+
+class CompositeExternalEquipmentMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = ExternalEquipment
+        main_mutation_f = NIExternalEquipmentMutationFactory
+        context = sriutils.get_network_context()
