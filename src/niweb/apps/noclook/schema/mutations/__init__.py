@@ -91,6 +91,8 @@ class NOCRootMutation(graphene.ObjectType):
     update_host = NIHostMutationFactory.get_update_mutation().Field()
     delete_host = NIHostMutationFactory.get_delete_mutation().Field()
     composite_host = CompositeHostMutation.Field()
+    convert_host = ConvertHost.Field()
+
     create_externalEquipment = NIExternalEquipmentMutationFactory.get_create_mutation().Field()
     update_externalEquipment = NIExternalEquipmentMutationFactory.get_update_mutation().Field()
     delete_externalEquipment = NIExternalEquipmentMutationFactory.get_delete_mutation().Field()

@@ -221,3 +221,45 @@ class NIHostMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+class ConvertHost(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+        slug = graphene.String(required=True)
+
+    success = graphene.Boolean(required=True)
+
+    @classmethod
+    def mutate_and_get_payload(cls, root, info, **input):
+        id = input.get("id")
+        slug = input.get("slug")
+        success = False
+
+        handle_id = relay.Node.from_global_id(id)[1]
+        allowed_types = ['firewall', 'switch', 'pdu', 'router']  # Types that can be added as Hosts by nmap
+        user = info.context.user
+
+        # check write permissions over host node
+        authorized = sriutils.authorice_write_resource(user, handle_id)
+
+        if not authorized:
+            return ConvertHost(success=False)
+
+        if NodeHandle.objects.filter(handle_id=handle_id).exists():
+            nh = NodeHandle.objects.get(handle_id=handle_id)
+
+            if slug in allowed_types and nh.node_type.type == 'Host':
+                node_type = helpers.slug_to_node_type(slug, create=True)
+                nh, node = helpers.logical_to_physical(user, handle_id)
+                node.switch_type(nh.node_type.get_label(), node_type.get_label())
+                nh.node_type = node_type
+                nh.save()
+                node_properties = {
+                    'backup': ''
+                }
+                helpers.dict_update_node(
+                    user, node.handle_id, node_properties, node_properties.keys())
+                success = True
+
+        return ConvertHost(success=success)
