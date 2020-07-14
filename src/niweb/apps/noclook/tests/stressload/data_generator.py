@@ -410,7 +410,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return cable
 
-    def create_host(self, name=None, type_name="Host", metatype=META_TYPES[0]):
+    def create_host(self, name=None, type_name="Host", metatype=META_TYPES[1]):
         # create object
         if not name:
             name = self.fake.hostname()
