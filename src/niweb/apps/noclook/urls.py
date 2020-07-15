@@ -77,6 +77,7 @@ urlpatterns = [
     url(r'^reports/hosts/host-services/(?P<status>[-\w]+)/$', report.host_services),
     url(r'^reports/unique-ids\.(?P<file_format>xls|csv)$', report.download_unique_ids),
     url(r'^reports/unique-ids/$', report.unique_ids),
+    url(r'^reports/rack-cables/(?P<handle_id>\d+)\.(?P<file_format>xls|csv)$', report.download_rack_cables),
 
     # -- list views
     url(r'^peering-partner/$', _list.list_peering_partners),

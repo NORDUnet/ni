@@ -36,5 +36,9 @@
 
 {% load rack_tags %}
 {% noclook_rack node physical_relationships.Located_in %}
+
+<h3>Cable report</h3>
+<a href="/reports/rack-cables/{{ node.handle_id }}.csv"><i class="icon-download"></i> CSV</a>
+<a href="/reports/rack-cables/{{ node.handle_id }}.xls"><i class="icon-download"></i> Excel</a>
 {% endblock %}
 

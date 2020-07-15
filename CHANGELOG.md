@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 20202-07-15
+### Added
+- Cable reports for racks. Now you can download a csv or excel file with all equipment in the rack cables.
+
 ## 2020-06-25
 ### Added
 - Back side to racks. Allowing you to specify if equipment orientation.
