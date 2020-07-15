@@ -11,6 +11,7 @@ from apps.noclook.schema.types import *
 from .common import get_unique_relation_processor
 
 from graphene import Field
+from binascii import Error as BinasciiError
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +199,105 @@ class NIExternalEquipmentMutationFactory(NIMutationFactory):
         abstract = False
 
 
+class CreateHost(CreateNIMutation):
+    @classmethod
+    def do_request(cls, request, **kwargs):
+        form_class = kwargs.get('form_class')
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        graphql_type = getattr(nimetaclass, 'graphql_type')
+        relations_processors = getattr(nimetaclass, 'relations_processors')
+        nimetatype = getattr(graphql_type, 'NIMetaType')
+        node_type = getattr(nimetatype, 'ni_type').lower()
+        has_error = False
+
+        context = sriutils.get_network_context()
+
+        # check it can write on this context
+        authorized = sriutils.authorize_create_resource(request.user, context)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
+        # Get needed data from node
+        if request.POST:
+            # replace relay ids for handle_id in contacts if present
+            post_data = request.POST.copy()
+
+            relay_extra_ids = relations_processors.keys()
+            for field in relay_extra_ids:
+                handle_id = post_data.get(field)
+                if handle_id:
+                    try:
+                        handle_id = relay.Node.from_global_id(handle_id)[1]
+                        post_data.pop(field)
+                        post_data.update({field: handle_id})
+                    except BinasciiError:
+                        pass # the id is already in handle_id format
+
+            form = form_class(post_data)
+            form.strict_validation = True
+
+            if form.is_valid():
+                data = form.cleaned_data
+                if data['relationship_owner'] or data['relationship_location']:
+                    meta_type = 'Physical'
+                else:
+                    meta_type = 'Logical'
+
+                try:
+                    nh = helpers.form_to_generic_node_handle(request, form,
+                            node_type, meta_type, context)
+                except UniqueNodeError:
+                    has_error = True
+                    return has_error, [ErrorType(field="_", messages=["A {} with that name already exists.".format(node_type)])]
+
+                # Generic node update
+                helpers.form_update_node(request.user, nh.handle_id, form)
+                nh_reload, host_nh = helpers.get_nh_node(nh.handle_id)
+
+                # add default context
+                NodeHandleContext(nodehandle=nh, context=context).save()
+
+                node = nh.get_node()
+
+                # Set relations
+                for relation_name, relation_f in relations_processors.items():
+                    relation_f(request, form, node, relation_name)
+
+                return has_error, { graphql_type.__name__.lower(): nh }
+            else:
+                # get the errors and return them
+                has_error = True
+                errordict = cls.format_error_array(form.errors)
+                return has_error, errordict
+        else:
+            # get the errors and return them
+            has_error = True
+            errordict = cls.format_error_array(form.errors)
+            return has_error, errordict
+
+    class NIMetaClass:
+        django_form = NewSRIHostForm
+        request_path   = '/'
+        graphql_type   = Host
+        is_create = True
+
+        relations_processors = {
+            'relationship_owner': get_unique_relation_processor(
+                'Owns',
+                helpers.set_owner
+            ),
+            'responsible_group': get_unique_relation_processor(
+                'Takes_responsibility',
+                helpers.set_takes_responsibility
+            ),
+            'support_group': get_unique_relation_processor(
+                'Supports',
+                helpers.set_supports
+            ),
+        }
+
+
 class NIHostMutationFactory(NIMutationFactory):
     class NIMetaClass:
         create_form    = NewSRIHostForm
@@ -218,6 +318,8 @@ class NIHostMutationFactory(NIMutationFactory):
                 helpers.set_supports
             ),
         }
+
+        manual_create = CreateHost
 
     class Meta:
         abstract = False
