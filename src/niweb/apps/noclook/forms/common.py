@@ -482,6 +482,8 @@ class EditHostForm(NewHostForm):
 
 
 class NewSRIHostForm(NewHostForm):
+    relationship_owner = relationship_field('owner', True)
+
     def __init__(self, *args, **kwargs):
         super(NewSRIHostForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -489,6 +491,10 @@ class NewSRIHostForm(NewHostForm):
         self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
         self.fields['support_group'].choices = get_node_type_tuples('Group')
         self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Site Owner')
 
 
 class EditSRIHostForm(NewSRIHostForm, EditHostForm):
@@ -675,7 +681,7 @@ class NewExternalEquipmentForm(forms.Form):
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
             + get_node_type_tuples('Site Owner')
-    
+
     name = forms.CharField()
 
     description = description_field('external equipment')
