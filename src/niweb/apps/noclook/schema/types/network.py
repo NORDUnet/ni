@@ -247,5 +247,6 @@ network_type_resolver = {
     'Cable': Cable,
     'Host': Host,
     'Switch': Switch,
+    'Firewall': Firewall,
     'External Equipment': ExternalEquipment,
 }
