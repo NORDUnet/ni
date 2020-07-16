@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 from apps.noclook.models import NodeHandle, Choice as ChoiceModel, Dropdown as DropdownModel
 from apps.noclook.vakt import utils as sriutils
+from collections import OrderedDict
 from graphene_django import DjangoObjectType
 from .scalars import ChoiceScalar, IPAddr
 
@@ -197,7 +198,7 @@ class NIListField(NIBasicField):
     '''
     def __init__(self, field_type=graphene.List, manual_resolver=False,
                     type_args=None, rel_name=None, rel_method=None,
-                    not_null_list=False, **kwargs):
+                    not_null_list=False, unique=False, **kwargs):
 
         self.field_type      = field_type
         self.manual_resolver = manual_resolver
@@ -205,6 +206,7 @@ class NIListField(NIBasicField):
         self.rel_name        = rel_name
         self.rel_method      = rel_method
         self.not_null_list   = not_null_list
+        self.unique          = unique
 
     def get_default_value(self):
         return []
@@ -235,6 +237,10 @@ class NIListField(NIBasicField):
 
                 if sriutils.authorice_read_resource(info.context.user, nh.handle_id):
                     ret.append(nh)
+
+            # don't repeat objects on list
+            if self.unique:
+                ret = list(OrderedDict.fromkeys(ret))
 
             return ret
 
