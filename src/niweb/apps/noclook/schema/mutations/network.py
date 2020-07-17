@@ -451,7 +451,7 @@ class ConvertHost(relay.ClientIDMutation):
         success = False
 
         handle_id = relay.Node.from_global_id(id)[1]
-        allowed_types = ['firewall', 'switch', 'pdu', 'router']  # Types that can be added as Hosts by nmap
+        allowed_types = allowed_types_converthost # Types that can be added as Hosts by nmap
         user = info.context.user
 
         # check write permissions over host node

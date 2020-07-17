@@ -189,6 +189,9 @@ class NOCRootQuery(NOCAutoQuery):
     # network organizations
     getNetworkOrgTypes = graphene.List(TypeInfo)
 
+    # convert host allowed slugs
+    getAllowedTypesConvertHost = graphene.List(graphene.String)
+
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -398,6 +401,13 @@ class NOCRootQuery(NOCAutoQuery):
                     classes.append(elem)
 
             return classes
+        else:
+            raise GraphQLAuthException()
+
+
+    def resolve_getAllowedTypesConvertHost(self, info, **kwargs):
+        if info.context and info.context.user.is_authenticated:
+            return allowed_types_converthost
         else:
             raise GraphQLAuthException()
 

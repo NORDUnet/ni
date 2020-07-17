@@ -4,6 +4,7 @@ __author__ = 'ffuentes'
 from apps.noclook.tests.stressload.data_generator import FakeDataGenerator,\
                                                         NetworkFakeDataGenerator
 from apps.noclook.models import NodeHandle, NodeType, NodeHandleContext, Dropdown
+from apps.noclook.schema.types.network import allowed_types_converthost
 from collections import OrderedDict
 from graphene import relay
 from niweb.schema import schema
@@ -467,6 +468,23 @@ class PortTest(GenericNetworkMutationTest):
 
 
 class ConvertHostTest(Neo4jGraphQLNetworkTest):
+    def test_allowed_types_converthost(self):
+        ## simple metatype query
+        query = '''
+        {
+          getAllowedTypesConvertHost
+        }
+        '''
+
+        expected = {
+            "getAllowedTypesConvertHost": allowed_types_converthost
+        }
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+
+        self.assertEqual(result.data, expected)
+
     def test_convert_host(self):
         # create test logical host
         data_generator = NetworkFakeDataGenerator()

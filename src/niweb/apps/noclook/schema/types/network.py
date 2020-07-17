@@ -87,6 +87,9 @@ class Cable(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+allowed_types_converthost = ['firewall', 'switch', 'pdu', 'router']
+
+
 class Host(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
