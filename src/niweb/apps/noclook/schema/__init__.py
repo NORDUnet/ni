@@ -36,7 +36,7 @@ NOCSCHEMA_TYPES = [
     Provider,
     SiteOwner,
 
-    ## cables equipement
+    ## cables equipment
     Port,
     Host,
     Cable,

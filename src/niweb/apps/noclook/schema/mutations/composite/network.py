@@ -64,9 +64,38 @@ class CompositeRouterMutation(CompositeMutation):
         has_creation = False
 
 
+class Owner(NIObjectType, RelationMixin):
+    '''
+    This type is a wrapper over all the owner entities present in network
+    for DeleteOwnerMutation to be wrapped inside CompositeFirewallMutation.
+    '''
+    class NIMetaType:
+        ni_type = 'Owner'
+        ni_metatype = NIMETA_RELATION
+        context_method = sriutils.get_network_context
+
+
+class DeleteOwnerMutation(DeleteNIMutation):
+    class NIMetaClass:
+        graphql_type = Owner
+
+
 class CompositeFirewallMutation(CompositeMutation):
     class Input:
-        pass
+        delete_owner = graphene.Field(DeleteOwnerMutation.Input)
+
+    deleted_owner = graphene.Field(DeleteOwnerMutation)
+
+    @classmethod
+    def process_extra_subentities(cls, user, main_nh, root, info, input, context):
+        ret_deleted_owner = None
+        delete_owner_input = input.get("delete_owner")
+
+        if delete_owner_input:
+            ret_deleted_owner = DeleteOwnerMutation.mutate_and_get_payload(\
+                root, info, **delete_owner_input)
+
+        return dict(deleted_owner=ret_deleted_owner)
 
     class NIMetaClass:
         graphql_type = Firewall
@@ -74,3 +103,13 @@ class CompositeFirewallMutation(CompositeMutation):
         context = sriutils.get_network_context()
         include_metafields = ('dependents')
         has_creation = False
+
+
+class CompositeExternalEquipmentMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = ExternalEquipment
+        main_mutation_f = NIExternalEquipmentMutationFactory
+        context = sriutils.get_network_context()

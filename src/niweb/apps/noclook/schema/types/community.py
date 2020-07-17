@@ -93,7 +93,7 @@ class Organization(NIObjectType, RelationMixin):
     affiliation_host_user = NIBooleanField()
     affiliation_site_owner = NIBooleanField()
     parent_organization = NISingleRelationField(field_type=(lambda: Organization), rel_name="Parent_of", rel_method="get_relations")
-    contacts = NIListField(type_args=(lambda: Contact,), rel_name='Works_for', rel_method='get_relations')
+    contacts = NIListField(type_args=(lambda: Contact,), rel_name='Works_for', rel_method='get_relations', unique=True)
     contacts_relations = NIRelationListField(rel_name='Works_for', rel_method='get_relations', graphene_type=lambda: Contact)
 
     class NIMetaType:
@@ -159,7 +159,7 @@ class Contact(NIObjectType, RelationMixin):
     '''
     name = NIStringField(type_kwargs={ 'required': True })
     first_name = NIStringField(type_kwargs={ 'required': True })
-    last_name = NIStringField(type_kwargs={ 'required': True })
+    last_name = NIStringField()
     title = NIStringField()
     salutation = NIStringField()
     contact_type = NIChoiceField(dropdown_name="contact_type")

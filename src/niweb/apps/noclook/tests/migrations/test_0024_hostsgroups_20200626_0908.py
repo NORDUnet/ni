@@ -109,8 +109,8 @@ class TestForwardMigration(MigratorTestCase, NeoTestCase):
 
     def test_migration(self):
         """Run the test itself."""
-        NodeType = self.old_state.apps.get_model('noclook', 'NodeType')
-        NodeHandle = self.old_state.apps.get_model('noclook', 'NodeHandle')
+        NodeType = self.new_state.apps.get_model('noclook', 'NodeType')
+        NodeHandle = self.new_state.apps.get_model('noclook', 'NodeHandle')
 
         # for all types tested
         for host_type_str in host_types:
@@ -184,6 +184,35 @@ class TestBackwardMigration(MigratorTestCase, NeoTestCase):
             type='Group', slug='group')
         groups_nhs = NodeHandle.objects.filter(node_type=group_type)
 
+        # create groups if they don't exist
+        if not groups_nhs:
+            groupdropdown = Dropdown.objects.get(name='responsible_groups')
+            choices = Choice.objects.filter(dropdown=groupdropdown)
+
+            for choice in choices:
+                node_name = choice.name
+
+                group_nh, created = NodeHandle.objects.get_or_create(
+                    node_name=node_name, node_type=group_type,
+                    node_meta_type=nc.META_TYPES[1], # Logical
+                    creator=user,
+                    modifier=user,
+                )
+
+                if created:
+                    try:
+                        nc.create_node(
+                            nc.graphdb.manager,
+                            node_name,
+                            group_nh.node_meta_type,
+                            group_type.type,
+                            group_nh.handle_id
+                        )
+                    except CypherError:
+                        pass
+
+            groups_nhs = NodeHandle.objects.filter(node_type=group_type)
+
         for host_type_str in host_types:
             # get or create type
             host_type, created = NodeType.objects.get_or_create(
@@ -225,8 +254,8 @@ class TestBackwardMigration(MigratorTestCase, NeoTestCase):
 
     def test_migration(self):
         """Run the test itself."""
-        NodeType = self.old_state.apps.get_model('noclook', 'NodeType')
-        NodeHandle = self.old_state.apps.get_model('noclook', 'NodeHandle')
+        NodeType = self.new_state.apps.get_model('noclook', 'NodeType')
+        NodeHandle = self.new_state.apps.get_model('noclook', 'NodeHandle')
 
         # for all types tested
         for host_type_str in host_types:

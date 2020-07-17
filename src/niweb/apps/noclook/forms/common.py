@@ -650,10 +650,17 @@ class EditOpticalFilterForm(EditOdfForm):
 
 
 class NewExternalEquipmentForm(RackableForm):
+    def __init__(self, *args, **kwargs):
+        super(NewExternalEquipmentForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Site Owner')
+
     name = forms.CharField()
 
     description = description_field('external equipment')
-    relationship_owner = relationship_field('owner')
+    relationship_owner = relationship_field('owner', True)
     relationship_location = relationship_field('location')
 
 
@@ -1163,7 +1170,11 @@ class NewContactForm(forms.Form):
             first_name = first_name.encode('utf-8')
             last_name  = last_name.encode('utf-8')
 
-        full_name = '{} {}'.format(first_name, last_name)
+        full_name = first_name
+
+        if last_name:
+            full_name = '{} {}'.format(first_name, last_name)
+
         cleaned_data['name'] = full_name
 
         return cleaned_data
