@@ -31,13 +31,14 @@
     <h3>Sites</h3>
 
     {% blockvar th %}
-                <th>Country</th><th>Name</th>
+      <th>Country</th><th>Name</th><th>Owner ID</th>
     {% endblockvar %}
     {% blockvar tbody %}
         {% for item in responsible_relations.Responsible_for %}
             <tr>
                 <td><a href="/findin/site/country_code/{{ item.node.data.country_code }}/">{{ item.node.data.country }}</a></td>
                 <td><a href="{% noclook_node_to_url item.node.handle_id %}">{{ item.node.data.name }}</a></td>
+                <td>{{ item.node.data.owner_id }}</td>
             </tr>
         {% endfor %}
     {% endblockvar %}

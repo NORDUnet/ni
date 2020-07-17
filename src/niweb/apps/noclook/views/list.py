@@ -657,13 +657,13 @@ def list_services(request, service_class=None):
                   {'table': table, 'name': name, 'urls': urls})
 
 
-def _site_table(site):
+def _site_table(site, owner):
     country_link = {
         'url': u'/findin/site/country_code/{}/'.format(site.get('country_code')),
         'name': u'{}'.format(site.get('country', '')),
     }
     area = site.get('area') or site.get('postarea')
-    row = TableRow(country_link, site, area)
+    row = TableRow(country_link, site, area, owner)
     return row
 
 
@@ -671,15 +671,16 @@ def _site_table(site):
 def list_sites(request):
     q = """
         MATCH (site:Site)
-        RETURN site
+        OPTIONAL MATCH (site)<-[:Responsible_for]-(owner:Site_Owner)
+        RETURN site, owner
         ORDER BY site.country_code, site.name
         """
 
     site_list = nc.query_to_list(nc.graphdb.manager, q)
     urls = get_node_urls(site_list)
 
-    table = Table('Country', 'Site name', 'Area')
-    table.rows = [_site_table(item['site']) for item in site_list]
+    table = Table('Country', 'Site name', 'Area', 'Responsible')
+    table.rows = [_site_table(item['site'], item['owner']) for item in site_list]
     table.no_badges = True
 
     return render(request, 'noclook/list/list_generic.html',
@@ -834,3 +835,28 @@ def list_pdu(request):
 
     return render(request, 'noclook/list/list_generic.html',
                   {'table': table, 'name': 'PDUs', 'urls': urls})
+
+
+def _external_equipment_table(equipment, owner):
+    row = TableRow(equipment, equipment.get('description'), owner)
+    _set_expired(row, equipment)
+    return row
+
+
+@login_required
+def list_external_equipment(request):
+    q = """
+        MATCH (equipment:External_Equipment)
+        OPTIONAL MATCH (equipment)<-[:Owns]-(owner:Node)
+        RETURN equipment, owner
+        ORDER BY equipment.name
+        """
+    equipment_list = nc.query_to_list(nc.graphdb.manager, q)
+
+    urls = get_node_urls(equipment_list)
+
+    table = Table('Name', 'Description', 'Owner')
+    table.rows = [_external_equipment_table(item['equipment'], item['owner']) for item in equipment_list]
+
+    return render(request, 'noclook/list/list_generic.html',
+                  {'table': table, 'name': 'External Equipment', 'urls': urls})

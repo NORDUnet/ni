@@ -41,6 +41,9 @@
     {% endfor %}
     {% if node.data.rack_position %}
       U{{node.data.rack_position}}
+      {% if node.data.rack_back %}
+        Back
+      {% endif %}
     {% endif %}
     </h5>
 {% elif node.get_placement_path.placement_path %}

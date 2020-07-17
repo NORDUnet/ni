@@ -24,3 +24,5 @@ class EditCableForm(common.EditCableForm):
         self.fields['tele2_cable_contract'].choices = Dropdown.get('tele2_cable_contracts').as_choices()
 
     tele2_cable_contract = forms.ChoiceField(required=False, label='Cable Contract')
+    tele2_alternative_circuit_id = forms.CharField(required=False, help_text='Tele2 alternativ circuit ID',
+                                                label='Circuit ID')
