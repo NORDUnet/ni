@@ -1982,3 +1982,122 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(created_host['host_type'], "Physical")
                 self.assertEqual(host_node.meta_type, "Physical")
                 host_ids['physical'] = host_id
+
+        edit_query = '''
+        mutation{{
+          composite_host(input:{{
+            update_input:{{
+              id: "{host_id}"
+              name: "{host_name}"
+              description: "{host_description}"
+              ip_addresses: "{ip_address}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              operational_state: "{operational_state}"
+              responsible_group: "{group1_id}"
+              support_group: "{group2_id}"
+              managed_by: "{managed_by}"
+              backup: "{backup}"
+              os: "{os}"
+              os_version: "{os_version}"
+              contract_number: "{contract_number}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              host{{
+                id
+                name
+                description
+                host_type
+                ip_addresses
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+                managed_by{{
+                  value
+                }}
+                backup
+                os
+                os_version
+                contract_number
+                rack_units
+                rack_position
+              }}
+            }}
+          }}
+        }}
+        '''
+
+        for k, host_id in host_ids.items():
+            host_name = community_generator.fake.hostname()
+            host_description = community_generator.fake.paragraph()
+
+            ip_adresses = [
+                community_generator.fake.ipv4(),
+                community_generator.fake.ipv4(),
+            ]
+
+            rack_units = random.randint(1,10)
+            rack_position = random.randint(1,10)
+
+            operational_state = random.choice(
+                Dropdown.objects.get(name="operational_states")\
+                    .as_choices()[1:][1]
+            )
+
+            managed_by = random.choice(
+                Dropdown.objects.get(name="host_management_sw")\
+                    .as_choices()[1:][1]
+            )
+            backup = "Atuomatic script"
+            os = "GNU/Linux"
+            os_version = "Debian"
+            contract_number = "002"
+
+            query = edit_query.format(
+                        host_id=host_id,
+                        host_name=host_name, host_description=host_description,
+                        ip_address="\\n".join(ip_addresses),
+                        rack_units=rack_units, rack_position=rack_position,
+                        operational_state=operational_state,
+                        group1_id=group1_id, group2_id=group2_id,
+                        managed_by=managed_by, backup=backup, os=os,
+                        os_version=os_version, contract_number=contract_number)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_host']['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            # check data
+            updated_host = result.data['composite_host']['updated']['host']
+
+            self.assertEqual(updated_host['name'], host_name)
+            self.assertEqual(updated_host['description'], host_description)
+            self.assertEqual(updated_host['rack_units'], rack_units)
+            self.assertEqual(updated_host['rack_position'], rack_position)
+            self.assertEqual(updated_host['ip_addresses'], ip_addresses)
+            self.assertEqual(updated_host['managed_by']['value'], managed_by)
+            self.assertEqual(updated_host['backup'], backup)
+            self.assertEqual(updated_host['os'], os)
+            self.assertEqual(updated_host['os_version'], os_version)
+            self.assertEqual(updated_host['contract_number'], contract_number)
+
+            # check responsible group
+            check_responsible = updated_host['responsible_group']
+            self.assertEqual(check_responsible['id'], group1_id)
+
+            # check support group
+            check_support = updated_host['support_group']
+            self.assertEqual(check_support['id'], group2_id)

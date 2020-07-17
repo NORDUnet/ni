@@ -7,6 +7,7 @@ from apps.noclook.forms import *
 from apps.noclook.models import SwitchType as SwitchTypeModel
 import apps.noclook.vakt.utils as sriutils
 from apps.noclook.schema.types import *
+from apps.noclook.views.edit import _nh_safe_get
 
 from .common import get_unique_relation_processor
 
@@ -281,6 +282,117 @@ class CreateHost(CreateNIMutation):
         request_path   = '/'
         graphql_type   = Host
         is_create = True
+
+        relations_processors = {
+            'relationship_owner': get_unique_relation_processor(
+                'Owns',
+                helpers.set_owner
+            ),
+            'responsible_group': get_unique_relation_processor(
+                'Takes_responsibility',
+                helpers.set_takes_responsibility
+            ),
+            'support_group': get_unique_relation_processor(
+                'Supports',
+                helpers.set_supports
+            ),
+        }
+
+
+class EditHost(CreateNIMutation):
+    @classmethod
+    def do_request(cls, request, **kwargs):
+        form_class = kwargs.get('form_class')
+        nimetaclass = getattr(cls, 'NIMetaClass')
+        graphql_type = getattr(nimetaclass, 'graphql_type')
+        nimetatype = getattr(graphql_type, 'NIMetaType')
+        node_type = getattr(nimetatype, 'ni_type').lower()
+        id = request.POST.get('id')
+        has_error = False
+
+        # check authorization
+        handle_id = relay.Node.from_global_id(id)[1]
+        authorized = sriutils.authorice_write_resource(request.user, handle_id)
+
+        if not authorized:
+            raise GraphQLAuthException()
+
+        # Get needed data from node
+        nh, host = helpers.get_nh_node(handle_id)
+        relations = host_node.get_relations()
+        out_relations = host.get_outgoing_relations()
+
+        if request.POST:
+            # set handle_id into POST data and remove relay id
+            post_data = request.POST.copy()
+            post_data.pop('id')
+            post_data.update({'handle_id': handle_id})
+
+            relay_extra_ids = relations_processors.keys()
+            relay_extra_ids = (
+                'relationship_user', 'relationship_owner',
+                'relationship_depends_on', 'relationship_location',
+                'relationship_location'
+            )
+            for field in relay_extra_ids:
+                handle_id = post_data.get(field)
+                if handle_id:
+                    try:
+                        handle_id = relay.Node.from_global_id(handle_id)[1]
+                        post_data.pop(field)
+                        post_data.update({field: handle_id})
+                    except BinasciiError:
+                        pass # the id is already in handle_id format
+
+            form = form_class(post_data)
+
+            if form.is_valid():
+                # Generic node update
+                helpers.form_update_node(request.user, host.handle_id, form, property_keys)
+
+                # Set relations
+                for relation_name, relation_f in relations_processors.items():
+                    relation_f(request, form, node, relation_name)
+
+                # Host specific updates
+                if form.cleaned_data['relationship_user']:
+                    user_nh = _nh_safe_get(form.cleaned_data['relationship_user'])
+                    if user_nh:
+                        helpers.set_user(request.user, host, user_nh.handle_id)
+                if form.cleaned_data['relationship_owner']:
+                    owner_nh = _nh_safe_get(form.cleaned_data['relationship_owner'])
+                    if owner_nh:
+                        helpers.set_owner(request.user, host, owner_nh.handle_id)
+
+                # You can not set location and depends on at the same time
+                if form.cleaned_data['relationship_depends_on']:
+                    depends_on_nh = _nh_safe_get(form.cleaned_data['relationship_depends_on'])
+                    if depends_on_nh:
+                        helpers.set_depends_on(request.user, host, depends_on_nh.handle_id)
+                elif form.cleaned_data['relationship_location']:
+                    _handle_location(request.user,
+                                     host,
+                                     form.cleaned_data['relationship_location'])
+                if form.cleaned_data['services_locked'] and form.cleaned_data['services_checked']:
+                    helpers.remove_rogue_service_marker(request.user, host.handle_id)
+
+                return has_error, { graphql_type.__name__.lower(): nh }
+            else:
+                # get the errors and return them
+                has_error = True
+                errordict = cls.format_error_array(form.errors)
+                return has_error, errordict
+        else:
+            # get the errors and return them
+            has_error = True
+            errordict = cls.format_error_array(form.errors)
+            return has_error, errordict
+
+    class NIMetaClass:
+        django_form = EditSRIHostForm
+        request_path   = '/'
+        graphql_type   = Host
+        is_create = False
 
         relations_processors = {
             'relationship_owner': get_unique_relation_processor(
