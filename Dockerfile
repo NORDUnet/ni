@@ -1,7 +1,7 @@
 FROM python:3.7-alpine
 LABEL authors="Markus Krogh <markus@nordu.net>"
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates python3 py3-pip libpq
 RUN apk --update add python3-dev libpq libxml2-dev libxslt-dev libffi-dev gcc musl-dev libgcc openssl-dev curl
 RUN apk add jpeg-dev zlib-dev freetype-dev lcms2-dev openjpeg-dev tiff-dev tk-dev tcl-dev py-pillow
 RUN pip3 install --upgrade pip

@@ -1,4 +1,4 @@
-from apps.noclook.models import NodeType, NodeHandle
+from apps.noclook.models import NodeType
 from apps.noclook.helpers import neo4j_data_age, neo4j_report_age, get_node_type
 import norduniclient as nc
 from datetime import datetime, timedelta
@@ -361,68 +361,3 @@ def typeahead(form_field, url, placeholder=None, has_parent=False, min_length=3,
         'min_length': min_length,
         'node_types': node_types,
     }
-
-
-def _equipment_spacer(units):
-    return {'units': units, 'spacer': True, 'height': "{}px".format(units * 18)}
-
-
-def _rack_sort(item):
-    pos = int(item.get('node').data.get('rack_position', -1))
-    size = int(item.get('node').data.get('rack_units', 0)) * -1
-
-    return (pos, size)
-
-RACK_SIZE_PX=20
-
-def _equipment(item):
-    data = item.get('node').data
-    units = int(data.get('rack_units', 1))
-    return {
-        'units': units,
-        'position': data.get('rack_position'),
-        'position_end': units + int(data.get('rack_position', 1)) - 1,
-        'height': "{}px".format(units * RACK_SIZE_PX),
-        'sub_equipment': [],
-        'data': data,
-    }
-
-
-@register.inclusion_tag('noclook/tags/rack.html')
-def noclook_rack(rack, equipment):
-    racked_equipment = []
-    unracked_equipment = []
-
-    if equipment:
-        equipment.sort(key=_rack_sort)
-    idx = 1
-    last_eq = None
-    for item in equipment:
-        view_data = _equipment(item)
-        ridx = int(view_data.get('position', 0) or 0)
-        if ridx and ridx > 0:
-            spacing = ridx - idx
-            if spacing < 0:
-                # Equipment overlaps with previous
-                last_eq['sub_equipment'].append(view_data)
-            else:
-                if spacing > 0:
-                    racked_equipment.append(_equipment_spacer(spacing))
-                racked_equipment.append(view_data)
-
-                idx = ridx + view_data['units']
-                last_eq = view_data
-        else:
-            unracked_equipment.append(item)
-    return {
-        'rack_size': rack.data.get('rack_units', 42) * RACK_SIZE_PX,
-        'racked_equipment': racked_equipment,
-        'unracked_equipment': unracked_equipment,
-    }
-
-
-@register.filter
-def rack_sort(equipment):
-    if equipment:
-        equipment.sort(key=_rack_sort, reverse=True)
-    return equipment

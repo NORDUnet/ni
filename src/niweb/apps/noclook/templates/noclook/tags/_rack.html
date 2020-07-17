@@ -1,0 +1,29 @@
+{% load noclook_tags %}
+{% if racked_equipment %}
+<div>
+  <h4>{{title}}</h4>
+  <div class="rack" style="min-height: {{rack_size}}px">
+    {% for item in racked_equipment %}
+      {% if item.spacer %}
+        <div class="equipment spacer" style="height: {{item.height}}"></div>
+      {% else %}
+      <div class="equipment{% if item.sub_equipment %} has-subequipment{% endif %}" style="height: {{item.height}}">
+          <span class="position note">{{item.position}}</span>
+          {% if item.units > 1 %}
+          <span class="position-end note">{{item.position_end}}</span>
+          {% endif %}
+          <span class="size note">{{item.units}}u</span>
+          {% noclook_node_to_link item.data %}
+          {% if item.sub_equipment %}
+            <ul class="sub-equipment unstyled">
+              {% for sub in item.sub_equipment %}
+              <li>{% noclook_node_to_link sub.data %}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
