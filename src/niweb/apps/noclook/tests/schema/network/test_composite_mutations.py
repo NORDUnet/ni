@@ -1904,6 +1904,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
                   host{{
                     id
                     name
+                    operational_state{{
+                      value
+                    }}
                     description
                     host_type
                     ip_addresses
@@ -1952,6 +1955,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
             # check data
             self.assertEqual(created_host['name'], host_name)
             self.assertEqual(created_host['description'], host_description)
+            self.assertEqual(created_host['operational_state']['value'], operational_state)
             self.assertEqual(created_host['rack_units'], rack_units)
             self.assertEqual(created_host['rack_position'], rack_position)
             self.assertEqual(created_host['ip_addresses'], ip_addresses)
@@ -2012,6 +2016,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 id
                 name
                 description
+                operational_state{{
+                  value
+                }}
                 host_type
                 ip_addresses
                 responsible_group{{
@@ -2085,6 +2092,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
             self.assertEqual(updated_host['name'], host_name)
             self.assertEqual(updated_host['description'], host_description)
+            self.assertEqual(updated_host['operational_state']['value'], operational_state)
             self.assertEqual(updated_host['rack_units'], rack_units)
             self.assertEqual(updated_host['rack_position'], rack_position)
             self.assertEqual(updated_host['ip_addresses'], ip_addresses)
