@@ -227,6 +227,14 @@ class CreateHost(CreateNIMutation):
             relay_extra_ids = relations_processors.keys()
             for field in relay_extra_ids:
                 handle_id = post_data.get(field)
+
+                # check if it's already converted to int version
+                try:
+                    handle_id = int(handle_id)
+                    continue
+                except:
+                    pass
+
                 if handle_id:
                     try:
                         handle_id = relay.Node.from_global_id(handle_id)[1]
@@ -337,6 +345,13 @@ class EditHost(CreateNIMutation):
             for field in relay_extra_ids:
                 handle_id = post_data.get(field)
                 if handle_id:
+                    # check if it's already converted to int version
+                    try:
+                        handle_id = int(handle_id)
+                        continue
+                    except:
+                        pass
+
                     try:
                         handle_id = relay.Node.from_global_id(handle_id)[1]
                         post_data.pop(field)
