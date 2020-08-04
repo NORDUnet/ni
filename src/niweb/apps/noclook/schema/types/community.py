@@ -197,6 +197,14 @@ class RoleOrderBy(graphene.Enum):
     handle_id_DESC='handle_id_DESC'
 
 
+class PlainGroup(graphene.ObjectType):
+    id = graphene.ID(required=True)
+    name = graphene.String()
+
+    class Meta:
+        interfaces = (relay.Node, )
+
+
 community_type_resolver = {
     'Group' : Group,
     'Procedure' : Procedure,
