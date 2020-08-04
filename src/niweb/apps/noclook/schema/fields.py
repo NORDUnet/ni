@@ -161,13 +161,14 @@ class NISingleRelationField(NIBasicField):
     Object list type
     '''
     def __init__(self, field_type=None, manual_resolver=False, type_kwargs=None,
-                    rel_method=None, rel_name=None, **kwargs):
+                    rel_method=None, rel_name=None, check_permissions=True, **kwargs):
 
-        self.type_kwargs     = type_kwargs
-        self.field_type      = lambda: graphene.Field(field_type)
-        self.manual_resolver = manual_resolver
-        self.rel_method      = rel_method
-        self.rel_name        = rel_name
+        self.type_kwargs       = type_kwargs
+        self.field_type        = lambda: graphene.Field(field_type)
+        self.manual_resolver   = manual_resolver
+        self.rel_method        = rel_method
+        self.rel_name          = rel_name
+        self.check_permissions = check_permissions
 
     def get_resolver(self, **kwargs):
         rel_method = kwargs.get('rel_method')
@@ -183,9 +184,18 @@ class NISingleRelationField(NIBasicField):
                 node = relationship[rel_name][0]
                 relation_id = node['relationship_id']
                 handle_id = node['node'].data['handle_id']
-                ret = NodeHandle.objects.get(handle_id=handle_id)
-                # add relationship_id
-                ret.relation_id = relation_id
+
+                authorized = False
+
+                if sriutils.authorice_read_resource(info.context.user, handle_id):
+                    authorized = True
+                else:
+                    authorized = not self.check_permissions
+
+                if authorized:
+                    ret = NodeHandle.objects.get(handle_id=handle_id)
+                    # add relationship_id
+                    ret.relation_id = relation_id
 
             return ret
 
