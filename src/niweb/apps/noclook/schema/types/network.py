@@ -97,8 +97,11 @@ class Host(NIObjectType, PhysicalMixin):
     operational_state = NIChoiceField(dropdown_name="operational_states", \
         type_kwargs={ 'required': True })
     ip_addresses = NIIPAddrField()
-    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
-    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
+    responsible_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Takes_responsibility", rel_method="_incoming",
+        check_permissions=False)
+    support_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Supports", rel_method="_incoming", check_permissions=False)
     managed_by = NIChoiceField(dropdown_name="host_management_sw")
     backup = NIStringField()
     os = NIStringField()
