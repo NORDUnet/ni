@@ -20,6 +20,6 @@
   {% endif %}
   <h4>Add owner</h4>
   <div class="span4">
-    {% json_combo form.relationship_owner '/formdata/{id}/' 'customer,end-user,host-user,provider' %}
+    {% json_combo form.relationship_owner '/api/formdata/{id}/' 'customer,end-user,host-user,provider' %}
    </div>
 {% endaccordion %}

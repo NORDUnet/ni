@@ -20,6 +20,6 @@
   {% endif %}
   <h4>Add parent relationship</h4>
   <div class="span4">
-    {% json_combo form.relationship_parent '/formdata/{id}/,/formdata/{id}/children/' parent_categories %}
+    {% json_combo form.relationship_parent '/api/formdata/{id}/,/api/formdata/{id}/children/' parent_categories %}
   </div>
 {% endaccordion %}

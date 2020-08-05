@@ -35,11 +35,11 @@
   <h4>Add depends on relationships</h4>
   <div class="row">
       <div class="span4">
-          {% json_combo form.relationship_end_a '/formdata/site/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/' %}
+          {% json_combo form.relationship_end_a '/api/formdata/site/,/api/formdata/{id}/children/,/api/formdata/{id}/children/,/api/formdata/{id}/children/,/api/formdata/{id}/children/' %}
           <a class="btn btn-mini" href="javascript:add_port_a()">Add port</a>
       </div>
       <div class="span4">
-          {% json_combo form.relationship_end_b '/formdata/site/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/,/formdata/{id}/children/' %}
+          {% json_combo form.relationship_end_b '/api/formdata/site/,/api/formdata/{id}/children/,/api/formdata/{id}/children/,/api/formdata/{id}/children/,/api/formdata/{id}/children/' %}
           <a class="btn btn-mini" href="javascript:add_port_b()">Add port</a>
       </div>
     </div>

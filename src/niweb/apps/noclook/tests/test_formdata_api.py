@@ -7,7 +7,7 @@ from apps.noclook import helpers
 class FormadataApiTest(NeoTestCase):
     def setUp(self):
         super(FormadataApiTest, self).setUp()
-        self.base_url = '/formdata/{slug}/'
+        self.base_url = '/api/formdata/{slug}/'
         site1 = self.create_site('UK-HEX')
         site2 = self.create_site('DK-ORE')
         rack1 = self.create_rack('A.01')
