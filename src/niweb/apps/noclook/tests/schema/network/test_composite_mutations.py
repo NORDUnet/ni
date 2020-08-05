@@ -2005,6 +2005,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               os: "{os}"
               os_version: "{os_version}"
               contract_number: "{contract_number}"
+              {extra_input}
             }}
           }}){{
             updated{{
@@ -2038,11 +2039,52 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 contract_number
                 rack_units
                 rack_position
+                {extra_query}
               }}
             }}
           }}
         }}
         '''
+
+        # create a host user and a different owner
+        huser = net_generator.create_host_user()
+        huser_id = relay.Node.to_global_id(
+            str(huser.node_type).replace(' ', ''),
+            str(huser.handle_id)
+        )
+
+        owner = net_generator.create_customer()
+        owner_id = relay.Node.to_global_id(
+            str(owner.node_type).replace(' ', ''),
+            str(owner.handle_id)
+        )
+
+        host_user_query = {
+            'logical':{
+                'extra_input': 'relationship_user: "{huser_id}"'
+                                    .format(huser_id=huser_id),
+                'extra_query': '''
+                    host_user {
+                      id
+                      name
+                    }
+                ''',
+                'check_path': lambda x: x['host_user']['id'],
+                'id': huser_id,
+            },
+            'physical':{
+                'extra_input': 'relationship_owner: "{owner_id}"'
+                                    .format(owner_id=owner_id),
+                'extra_query': '''
+                    host_owner {
+                      id
+                      name
+                    }
+                ''',
+                'check_path': lambda x: x['host_owner']['id'],
+                'id': owner_id,
+            }
+        }
 
         for k, host_id in host_ids.items():
             host_name = community_generator.fake.hostname()
@@ -2070,6 +2112,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
             os_version = "Debian"
             contract_number = "002"
 
+            extra_input = host_user_query[k]['extra_input']
+            extra_query = host_user_query[k]['extra_query']
+
             query = edit_query.format(
                         host_id=host_id,
                         host_name=host_name, host_description=host_description,
@@ -2078,7 +2123,8 @@ class HostTest(Neo4jGraphQLNetworkTest):
                         operational_state=operational_state,
                         group1_id=group1_id, group2_id=group2_id,
                         managed_by=managed_by, backup=backup, os=os,
-                        os_version=os_version, contract_number=contract_number)
+                        os_version=os_version, contract_number=contract_number,
+                        extra_input=extra_input, extra_query=extra_query)
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -2101,6 +2147,11 @@ class HostTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(updated_host['os'], os)
             self.assertEqual(updated_host['os_version'], os_version)
             self.assertEqual(updated_host['contract_number'], contract_number)
+
+            check_id_value = host_user_query[k]['id']
+            check_id = host_user_query[k]['check_path'](updated_host)
+
+            self.assertEqual(check_id_value, check_id)
 
             # check responsible group
             check_responsible = updated_host['responsible_group']

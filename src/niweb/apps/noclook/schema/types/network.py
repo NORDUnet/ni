@@ -110,6 +110,7 @@ class Host(NIObjectType, PhysicalMixin):
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
     host_owner = NISingleRelationField(field_type=(lambda: Relation), rel_name="Owns", rel_method="_incoming")
+    host_user = NISingleRelationField(field_type=(lambda: HostUser), rel_name="Uses", rel_method="_incoming")
     host_services = NIStringField()
 
     def resolve_ip_addresses(self, info, **kwargs):

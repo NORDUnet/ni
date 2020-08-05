@@ -315,6 +315,7 @@ class EditHost(CreateNIMutation):
         graphql_type = getattr(nimetaclass, 'graphql_type')
         nimetatype = getattr(graphql_type, 'NIMetaType')
         node_type = getattr(nimetatype, 'ni_type').lower()
+        relations_processors = getattr(nimetaclass, 'relations_processors')
         id = request.POST.get('id')
         has_error = False
 
@@ -327,8 +328,8 @@ class EditHost(CreateNIMutation):
 
         # Get needed data from node
         nh, host = helpers.get_nh_node(handle_id)
-        relations = host_node.get_relations()
-        out_relations = host.get_outgoing_relations()
+        relations = host.get_relations()
+        out_relations = host.outgoing
 
         if request.POST:
             # set handle_id into POST data and remove relay id
@@ -342,6 +343,7 @@ class EditHost(CreateNIMutation):
                 'relationship_depends_on', 'relationship_location',
                 'relationship_location'
             )
+
             for field in relay_extra_ids:
                 handle_id = post_data.get(field)
                 if handle_id:
@@ -363,11 +365,11 @@ class EditHost(CreateNIMutation):
 
             if form.is_valid():
                 # Generic node update
-                helpers.form_update_node(request.user, host.handle_id, form, property_keys)
+                helpers.form_update_node(request.user, host.handle_id, form)
 
                 # Set relations
                 for relation_name, relation_f in relations_processors.items():
-                    relation_f(request, form, node, relation_name)
+                    relation_f(request, form, host, relation_name)
 
                 # Host specific updates
                 if form.cleaned_data['relationship_user']:
@@ -447,7 +449,7 @@ class NIHostMutationFactory(NIMutationFactory):
         }
 
         manual_create = CreateHost
-        manual_edit = EditHost
+        manual_update = EditHost
 
     class Meta:
         abstract = False
