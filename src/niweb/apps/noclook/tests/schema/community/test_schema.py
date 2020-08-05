@@ -1494,3 +1494,44 @@ class EmptyCommunityDataTest(Neo4jGraphQLCommunityTest):
                                             pformat(result.data, indent=1),
                                             pformat(expected, indent=1)
                                         )
+
+
+class PlainGroupTest(Neo4jGraphQLCommunityTest):
+    def test_query(self):
+        from apps.nerds.lib.consumer_util import get_user
+        from apps.noclook.tests.schema.base import TestContext
+
+        # this query should be possible to execute without any privileges
+        noc_user = get_user()
+        nonprivileged_context = TestContext(noc_user)
+
+        # as the result is a special type we can't query any relationship
+        query = '''
+        {
+          getPlainGroups{
+            id
+            name
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=nonprivileged_context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        plaingroups_data = result.data['getPlainGroups']
+
+        # now query as a privileged user that can query community's groups
+        query = '''
+        {
+          all_groups{
+            id
+            name
+          }
+        }
+        '''
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        regulargroups_data = result.data['all_groups']
+        self.assertEqual(plaingroups_data, regulargroups_data)

@@ -161,8 +161,11 @@ class Switch(NIObjectType, PhysicalMixin):
     description = NIStringField()
     operational_state = NIStringField(type_kwargs={ 'required': True })
     ip_addresses = NIIPAddrField()
-    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
-    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
+    responsible_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Takes_responsibility", rel_method="_incoming",
+        check_permissions=False)
+    support_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Supports", rel_method="_incoming", check_permissions=False)
     managed_by = NIChoiceField(dropdown_name="host_management_sw")
     backup = NIStringField()
     os = NIStringField()
@@ -170,7 +173,8 @@ class Switch(NIObjectType, PhysicalMixin):
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
-    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
+    provider = NISingleRelationField(field_type=(lambda: Provider),
+        rel_name="Provides", rel_method="_incoming")
     max_number_of_ports = NIIntField()
 
     class NIMetaType:
@@ -184,8 +188,12 @@ class Firewall(NIObjectType, PhysicalMixin):
     description = NIStringField()
     operational_state = NIStringField(type_kwargs={ 'required': True })
     ip_addresses = NIIPAddrField()
-    responsible_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Takes_responsibility", rel_method="_incoming")
-    support_group = NISingleRelationField(field_type=(lambda: Group), rel_name="Supports", rel_method="_incoming")
+    responsible_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Takes_responsibility", rel_method="_incoming",
+        check_permissions=False)
+    support_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Supports", rel_method="_incoming", check_permissions=False)
+    managed_by = NIChoiceField(dropdown_name="host_management_sw")
     managed_by = NIChoiceField(dropdown_name="host_management_sw")
     backup = NIStringField()
     security_class = NIChoiceField(dropdown_name="security_classes")
