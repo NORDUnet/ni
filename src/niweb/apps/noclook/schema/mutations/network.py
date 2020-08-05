@@ -447,6 +447,7 @@ class NIHostMutationFactory(NIMutationFactory):
         }
 
         manual_create = CreateHost
+        manual_edit = EditHost
 
     class Meta:
         abstract = False

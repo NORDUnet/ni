@@ -2065,7 +2065,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 Dropdown.objects.get(name="host_management_sw")\
                     .as_choices()[1:][1]
             )
-            backup = "Atuomatic script"
+            backup = "Automatic script"
             os = "GNU/Linux"
             os_version = "Debian"
             contract_number = "002"

@@ -493,11 +493,15 @@ class NewSRIHostForm(NewHostForm):
         self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
-            + get_node_type_tuples('Site Owner')
+            + get_node_type_tuples('Host User')
 
 
 class EditSRIHostForm(NewSRIHostForm, EditHostForm):
-    pass
+    relationship_user = relationship_field('user', True)
+
+    def __init__(self, *args, **kwargs):
+        super(EditSRIHostForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
 
 
 class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, NewHostForm):
