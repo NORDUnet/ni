@@ -296,11 +296,16 @@ class BasicSwitchForm(forms.Form):
         super(BasicSwitchForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Host User')
 
     name = forms.CharField()
     operational_state = forms.ChoiceField(initial='Reserved')
     description = description_field('switch')
     relationship_provider = relationship_field('provider', True)
+    relationship_owner = relationship_field('owner', True)
 
 
 class NewSwitchForm(SwitchTypeForm, BasicSwitchForm):
@@ -542,7 +547,7 @@ class EditFirewallNewForm(PhysicalSupportForm, WithMaxPortsForm, EditHostForm):
         self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
-            + get_node_type_tuples('Site Owner')
+            + get_node_type_tuples('Host User')
 
     relationship_owner = relationship_field('owner', True)
 
