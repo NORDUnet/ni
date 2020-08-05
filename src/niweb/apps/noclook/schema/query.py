@@ -192,6 +192,9 @@ class NOCRootQuery(NOCAutoQuery):
     # convert host allowed slugs
     getAllowedTypesConvertHost = graphene.List(graphene.String)
 
+    # physical host owner
+    getHostOwnerTypes = graphene.List(TypeInfo)
+
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             django_dropdowns = [d.name for d in DropdownModel.objects.all()]
@@ -408,6 +411,41 @@ class NOCRootQuery(NOCAutoQuery):
     def resolve_getAllowedTypesConvertHost(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             return allowed_types_converthost
+        else:
+            raise GraphQLAuthException()
+
+
+    def resolve_getHostOwnerTypes(self, info, **kwargs):
+        if info.context and info.context.user.is_authenticated:
+            class_list = [Customer, EndUser, Provider, HostUser]
+            classes = []
+
+            for clazz in class_list:
+                class_has_resolvers = \
+                    clazz in NOCRootQuery.graph_by_id_type_resolvers and \
+                    clazz in NOCRootQuery.graph_all_type_resolvers and \
+                    clazz in NOCRootQuery.graph_connection_type_resolvers
+
+                if class_has_resolvers:
+                    byid_name = NOCRootQuery.\
+                        graph_by_id_type_resolvers[clazz]['field_name']
+
+                    connection_name = NOCRootQuery.\
+                        graph_connection_type_resolvers[clazz]['field_name']
+
+                    all_name = NOCRootQuery.\
+                        graph_all_type_resolvers[clazz]['field_name']
+
+                    elem = TypeInfo(
+                        type_name=clazz,
+                        connection_name=connection_name,
+                        byid_name=byid_name,
+                        all_name=all_name,
+                    )
+
+                    classes.append(elem)
+
+            return classes
         else:
             raise GraphQLAuthException()
 
