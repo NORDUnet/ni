@@ -261,6 +261,7 @@ network_type_resolver = {
     'Port': Port,
     'Cable': Cable,
     'Host': Host,
+    'Host User': HostUser,
     'Switch': Switch,
     'Firewall': Firewall,
     'External Equipment': ExternalEquipment,
