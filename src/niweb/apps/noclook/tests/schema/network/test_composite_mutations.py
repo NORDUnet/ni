@@ -1326,7 +1326,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         rack_position = 3
         rack_units = 2
 
-        owner = net_generator.create_site_owner()
+        owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
 
@@ -1867,7 +1867,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
             owner_id = None
 
             if input_owner:
-                owner = net_generator.create_site_owner()
+                owner = net_generator.create_customer()
                 owner_id = relay.Node.to_global_id(
                     str(owner.node_type).replace(' ', ''),
                     str(owner.handle_id)
