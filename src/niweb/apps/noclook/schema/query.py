@@ -189,6 +189,30 @@ class NOCRootQuery(NOCAutoQuery):
     # network organizations
     getNetworkOrgTypes = graphene.List(TypeInfo)
 
+    # safe get groups for select combos
+    getPlainGroups = graphene.List(PlainGroup)
+
+    def resolve_getPlainGroups(self, info, **kwargs):
+        if info.context and info.context.user.is_authenticated:
+            ret = []
+            #import pdb; pdb.set_trace()
+
+            group_type_str = 'Group'
+            group_type, created = NodeType.objects.get_or_create(
+                type=group_type_str, slug=group_type_str.lower())
+
+            groups = NodeHandle.objects.filter(node_type=group_type)
+
+            for group in groups:
+                id = relay.Node.to_global_id(group_type_str, str(group.handle_id))
+                name = group.node_name
+
+                ret.append(PlainGroup(id=id, name=name))
+
+            return ret
+        else:
+            raise GraphQLAuthException()
+
     def resolve_getAvailableDropdowns(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             django_dropdowns = [d.name for d in DropdownModel.objects.all()]
