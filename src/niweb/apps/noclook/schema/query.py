@@ -208,7 +208,7 @@ class NOCRootQuery(NOCAutoQuery):
             group_type, created = NodeType.objects.get_or_create(
                 type=group_type_str, slug=group_type_str.lower())
 
-            groups = NodeHandle.objects.filter(node_type=group_type)
+            groups = NodeHandle.objects.filter(node_type=group_type).order_by('handle_id')
 
             for group in groups:
                 id = relay.Node.to_global_id(group_type_str, str(group.handle_id))
