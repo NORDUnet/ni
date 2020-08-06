@@ -683,7 +683,7 @@ class NewExternalEquipmentForm(RackableForm):
         self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
-            + get_node_type_tuples('Site Owner')
+            + get_node_type_tuples('Host User')
 
     name = forms.CharField()
 

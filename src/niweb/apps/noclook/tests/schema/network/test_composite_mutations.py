@@ -1528,7 +1528,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                                             str(port2.handle_id))
 
         # generate owner
-        owner = net_generator.create_site_owner()
+        owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
 
