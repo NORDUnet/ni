@@ -236,7 +236,9 @@ class NIListField(NIBasicField):
                     relation_id = node['relationship_id']
                     node = node['node']
                     node_id = node.data.get('handle_id')
-                    id_list.append((node_id, relation_id))
+
+                    if node_id and relation_id:
+                        id_list.append((node_id, relation_id))
 
             id_list = sorted(id_list, key=lambda x: x[0])
 
