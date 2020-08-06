@@ -50,6 +50,17 @@ class SiteOwner(NIObjectType, RelationMixin):
         context_method = sriutils.get_network_context
 
 
+class HostUser(NIObjectType, RelationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    url = NIStringField()
+    description = NIStringField()
+
+    class NIMetaType:
+        ni_type = 'Host User'
+        ni_metatype = NIMETA_RELATION
+        context_method = sriutils.get_network_context
+
+
 ## Cables and Equipment
 class Port(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -76,28 +87,39 @@ class Cable(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+allowed_types_converthost = ['firewall', 'switch', 'pdu', 'router']
+
+
 class Host(NIObjectType, PhysicalMixin):
-    '''
-    A host in the SRI system
-    '''
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
+    host_type = graphene.String()
     operational_state = NIChoiceField(dropdown_name="operational_states", \
         type_kwargs={ 'required': True })
+    ip_addresses = NIIPAddrField()
+    responsible_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Takes_responsibility", rel_method="_incoming",
+        check_permissions=False)
+    support_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Supports", rel_method="_incoming", check_permissions=False)
+    managed_by = NIChoiceField(dropdown_name="host_management_sw")
+    backup = NIStringField()
     os = NIStringField()
     os_version = NIStringField()
-    vendor = NIStringField()
-    backup = NIStringField()
-    managed_by = NIStringField()
-    ip_addresses = IPAddr()
-    responsible_group = NIStringField()
-    support_group = NIStringField()
-    security_class = NIStringField()
-    security_comment = NIStringField()
+    contract_number = NIStringField()
+    rack_units = NIIntField() # Equipment height
+    rack_position = NIIntField()
+    host_owner = NISingleRelationField(field_type=(lambda: Relation), rel_name="Owns", rel_method="_incoming")
+    host_user = NISingleRelationField(field_type=(lambda: HostUser), rel_name="Uses", rel_method="_incoming")
+    host_services = NIStringField()
 
     def resolve_ip_addresses(self, info, **kwargs):
         '''Manual resolver for the ip field'''
         return self.get_node().data.get('ip_addresses', None)
+
+    def resolve_host_type(self, info, **kwargs):
+        '''Manual resolver for host type string'''
+        return self.get_node().meta_type
 
     class NIMetaType:
         ni_type = 'Host'
@@ -240,6 +262,7 @@ network_type_resolver = {
     'Port': Port,
     'Cable': Cable,
     'Host': Host,
+    'Host User': HostUser,
     'Switch': Switch,
     'Firewall': Firewall,
     'External Equipment': ExternalEquipment,

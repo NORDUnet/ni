@@ -20,6 +20,6 @@
   {% endif %}
   <h4>Add connected to relationship</h4>
   <div class="span4">
-      {% json_combo form.relationship_connected_to '/formdata/cable/cable_type/{id}/,/formdata/{id}/children/' connections_categories %}
+      {% json_combo form.relationship_connected_to '/api/formdata/cable/cable_type/{id}/,/api/formdata/{id}/children/' connections_categories %}
   </div>
 {% endaccordion %}

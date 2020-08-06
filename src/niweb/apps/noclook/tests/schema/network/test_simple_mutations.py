@@ -3,7 +3,8 @@ __author__ = 'ffuentes'
 
 from apps.noclook.tests.stressload.data_generator import FakeDataGenerator,\
                                                         NetworkFakeDataGenerator
-from apps.noclook.models import NodeHandle, Dropdown
+from apps.noclook.models import NodeHandle, NodeType, NodeHandleContext, Dropdown
+from apps.noclook.schema.types.network import allowed_types_converthost
 from collections import OrderedDict
 from graphene import relay
 from niweb.schema import schema
@@ -464,3 +465,74 @@ class PortTest(GenericNetworkMutationTest):
             delete_mutation='delete_port',
             entityname='port'
         )
+
+
+class ConvertHostTest(Neo4jGraphQLNetworkTest):
+    def test_allowed_types_converthost(self):
+        ## simple metatype query
+        query = '''
+        {
+          getAllowedTypesConvertHost
+        }
+        '''
+
+        expected = {
+            "getAllowedTypesConvertHost": allowed_types_converthost
+        }
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+
+        self.assertEqual(result.data, expected)
+
+    def test_convert_host(self):
+        # create test logical host
+        data_generator = NetworkFakeDataGenerator()
+        test_host = data_generator.create_host()
+        host_handle_id = test_host.handle_id
+        host_id = relay.Node.to_global_id(str(test_host.node_type),
+                                            str(test_host.handle_id))
+
+        query = '''
+        mutation{{
+          convert_host(input:{{ id: "{host_id}", slug: "{slug}" }}){{
+            success
+          }}
+        }}
+        '''
+
+        # test not allowed slug
+        test_slug = 'cable'
+        q = query.format(host_id=host_id, slug=test_slug)
+
+        result = schema.execute(q, context=self.context)
+        self.assertIsNone(result.errors)
+        self.assertFalse(result.data['convert_host']['success'])
+
+        # test not authorized host
+        NodeHandleContext.objects.filter(nodehandle=test_host).delete()
+        test_slug = random.choice(['firewall', 'switch', 'pdu', 'router'])
+        q = query.format(host_id=host_id, slug=test_slug)
+
+        result = schema.execute(q, context=self.context)
+        self.assertIsNone(result.errors)
+        self.assertFalse(result.data['convert_host']['success'])
+
+        # test successful case
+        data_generator.add_network_context(test_host)
+
+        result = schema.execute(q, context=self.context)
+        self.assertIsNone(result.errors)
+        self.assertTrue(result.data['convert_host']['success'])
+
+        converted_nh = NodeHandle.objects.get(handle_id=host_handle_id)
+        test_node_type = NodeType.objects.get(slug=test_slug)
+        self.assertEquals(test_node_type, converted_nh.node_type)
+
+        # test non host node
+        host_id = relay.Node.to_global_id(str(converted_nh.node_type),
+                                            str(converted_nh.handle_id))
+        q = query.format(host_id=host_id, slug=test_slug)
+        result = schema.execute(q, context=self.context)
+        self.assertIsNone(result.errors)
+        self.assertFalse(result.data['convert_host']['success'])

@@ -410,7 +410,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return cable
 
-    def create_host(self, name=None, type_name="Host", metatype=META_TYPES[0]):
+    def create_host(self, name=None, type_name="Host", metatype=META_TYPES[1]):
         # create object
         if not name:
             name = self.fake.hostname()
@@ -526,6 +526,28 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             firewall.get_node().add_property(key, value)
 
         return firewall
+
+    def create_host_user(self, name=None):
+        # create object
+        if not name:
+            name = self.rand_person_or_company_name()
+
+        name = self.rand_person_or_company_name()
+        hostuser = self.get_or_create_node(
+            name, 'Host User', META_TYPES[2]) # Relation
+
+        # add context
+        self.add_network_context(hostuser)
+
+        data = {
+            'url': self.fake.url(),
+            'description': self.fake.paragraph(),
+        }
+
+        for key, value in data.items():
+            hostuser.get_node().add_property(key, value)
+
+        return hostuser
 
 
 class DataRelationMaker:

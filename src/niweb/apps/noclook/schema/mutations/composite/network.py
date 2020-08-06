@@ -113,3 +113,14 @@ class CompositeExternalEquipmentMutation(CompositeMutation):
         graphql_type = ExternalEquipment
         main_mutation_f = NIExternalEquipmentMutationFactory
         context = sriutils.get_network_context()
+
+
+class CompositeHostMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Host
+        main_mutation_f = NIHostMutationFactory
+        context = sriutils.get_network_context()
+        include_metafields = ('dependents')

@@ -9,6 +9,7 @@ from .scalars import ChoiceScalar, IPAddr
 
 import graphene
 import types as pytypes
+import warnings
 
 ########## KEYVALUE TYPES
 class KeyValue(graphene.Interface):
@@ -234,8 +235,17 @@ class NIListField(NIBasicField):
             if nodes:
                 for node in nodes:
                     relation_id = node['relationship_id']
-                    node = node['node']
-                    node_id = node.data.get('handle_id')
+                    node_elem = node['node']
+                    node_id = node_elem.data.get('handle_id')
+
+                    if not relation_id:
+                        relation_id = -1
+                        warnings.warn(
+                            "relationship_id is None".format(node),
+                            RuntimeWarning
+                        )
+
+
                     id_list.append((node_id, relation_id))
 
             id_list = sorted(id_list, key=lambda x: x[0])

@@ -296,11 +296,16 @@ class BasicSwitchForm(forms.Form):
         super(BasicSwitchForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Host User')
 
     name = forms.CharField()
     operational_state = forms.ChoiceField(initial='Reserved')
     description = description_field('switch')
     relationship_provider = relationship_field('provider', True)
+    relationship_owner = relationship_field('owner', True)
 
 
 class NewSwitchForm(SwitchTypeForm, BasicSwitchForm):
@@ -475,10 +480,33 @@ class NewHostForm(RackableForm):
 class EditHostForm(NewHostForm):
     relationship_user = relationship_field('user')
     relationship_depends_on = relationship_field('depends on')
-    relationship_ports = JSONField(required=False, widget=JSONInput)
 
     services_locked = forms.BooleanField(required=False)
     services_checked = forms.BooleanField(required=False)
+
+
+class NewSRIHostForm(NewHostForm):
+    relationship_owner = relationship_field('owner', True)
+
+    def __init__(self, *args, **kwargs):
+        super(NewSRIHostForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
+        self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Host User')
+
+
+class EditSRIHostForm(NewSRIHostForm, EditHostForm):
+    relationship_user = relationship_field('user', True)
+
+    def __init__(self, *args, **kwargs):
+        super(EditSRIHostForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
 
 
 class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, NewHostForm):
@@ -519,7 +547,7 @@ class EditFirewallNewForm(PhysicalSupportForm, WithMaxPortsForm, EditHostForm):
         self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
-            + get_node_type_tuples('Site Owner')
+            + get_node_type_tuples('Host User')
 
     relationship_owner = relationship_field('owner', True)
 

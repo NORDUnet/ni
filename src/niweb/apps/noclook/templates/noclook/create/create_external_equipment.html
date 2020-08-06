@@ -17,10 +17,10 @@
       </div>
       <div class="accordion" id="create-accordion">
         {% accordion 'Owner (optional)' 'owner' '#create-accordion' %}
-              {% json_combo form.relationship_owner '/formdata/{id}/' 'customer,end-user,host,provider' %}
+              {% json_combo form.relationship_owner '/api/formdata/{id}/' 'customer,end-user,host,provider' %}
         {% endaccordion %}
         {% accordion 'Location (optional)' 'location' '#create-accordion' %}
-              {% json_combo form.relationship_location '/formdata/site/,/formdata/{id}/children/rack/' %}
+              {% json_combo form.relationship_location '/api/formdata/site/,/api/formdata/{id}/children/rack/' %}
               {{ form.rack_units | as_crispy_field }}
               {{ form.rack_position | as_crispy_field }}
         {% endaccordion %}
