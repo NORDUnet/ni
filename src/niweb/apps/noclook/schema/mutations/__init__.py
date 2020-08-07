@@ -98,6 +98,13 @@ class NOCRootMutation(graphene.ObjectType):
     delete_externalEquipment = NIExternalEquipmentMutationFactory.get_delete_mutation().Field()
     composite_externalEquipment = CompositeExternalEquipmentMutation.Field()
 
+    ## Peering
+    update_peeringPartner = NIPeeringPartnerMutationFactory.get_update_mutation().Field()
+    delete_peeringPartner = NIPeeringPartnerMutationFactory.get_delete_mutation().Field()
+
+    update_peeringGroup = NIPeeringGroupMutationFactory.get_update_mutation().Field()
+    delete_peeringGroup = NIPeeringGroupMutationFactory.get_delete_mutation().Field()
+
     ## Common mutations
     create_comment = CreateComment.Field()
     update_comment = UpdateComment.Field()
