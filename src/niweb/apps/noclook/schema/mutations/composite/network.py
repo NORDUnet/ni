@@ -76,6 +76,40 @@ class Owner(NIObjectType, RelationMixin):
 
 
 class DeleteOwnerMutation(DeleteNIMutation):
+    @classmethod
+    def do_request(cls, request, **kwargs):
+        post_copy = request.POST.copy()
+
+        id              = request.POST.get('id')
+        handle_id = relay.Node.from_global_id(id)[1]
+
+        if not handle_id or \
+            not NodeHandle.objects.filter(handle_id=handle_id).exists():
+
+            has_error = True
+            return has_error, [
+                ErrorType(
+                    field="_",
+                    messages=["The node doesn't exist".format(node_type)]
+                )
+            ]
+
+        nh, node = helpers.get_nh_node(handle_id)
+
+        host_user_type = NodeType.objects.get_or_create(
+                        type='Host User', slug='host-user')
+
+        if nh.node_type == host_user_type:
+            has_error = True
+            return has_error, [
+                ErrorType(
+                    field="_",
+                    messages=["Host Users can't be deleted".format(node_type)]
+                )
+            ]
+
+        return super().do_request(request, **kwargs)
+
     class NIMetaClass:
         graphql_type = Owner
 
@@ -107,7 +141,20 @@ class CompositeFirewallMutation(CompositeMutation):
 
 class CompositeExternalEquipmentMutation(CompositeMutation):
     class Input:
-        pass
+        delete_owner = graphene.Field(DeleteOwnerMutation.Input)
+
+    deleted_owner = graphene.Field(DeleteOwnerMutation)
+
+    @classmethod
+    def process_extra_subentities(cls, user, main_nh, root, info, input, context):
+        ret_deleted_owner = None
+        delete_owner_input = input.get("delete_owner")
+
+        if delete_owner_input:
+            ret_deleted_owner = DeleteOwnerMutation.mutate_and_get_payload(\
+                root, info, **delete_owner_input)
+
+        return dict(deleted_owner=ret_deleted_owner)
 
     class NIMetaClass:
         graphql_type = ExternalEquipment
@@ -117,7 +164,20 @@ class CompositeExternalEquipmentMutation(CompositeMutation):
 
 class CompositeHostMutation(CompositeMutation):
     class Input:
-        pass
+        delete_owner = graphene.Field(DeleteOwnerMutation.Input)
+
+    deleted_owner = graphene.Field(DeleteOwnerMutation)
+
+    @classmethod
+    def process_extra_subentities(cls, user, main_nh, root, info, input, context):
+        ret_deleted_owner = None
+        delete_owner_input = input.get("delete_owner")
+
+        if delete_owner_input:
+            ret_deleted_owner = DeleteOwnerMutation.mutate_and_get_payload(\
+                root, info, **delete_owner_input)
+
+        return dict(deleted_owner=ret_deleted_owner)
 
     class NIMetaClass:
         graphql_type = Host

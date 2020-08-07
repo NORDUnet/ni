@@ -1366,7 +1366,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 id
                 name
                 description
-                operational_state
+                operational_state{{
+                  value
+                }}
                 managed_by{{
                   id
                   value
@@ -1428,7 +1430,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         updated_firewall = result.data['composite_firewall']['updated']['firewall']
         self.assertEqual(updated_firewall['name'], firewall_name)
         self.assertEqual(updated_firewall['description'], firewall_description)
-        self.assertEqual(updated_firewall['operational_state'], operational_state)
+        self.assertEqual(updated_firewall['operational_state']['value'], operational_state)
         self.assertEqual(updated_firewall['managed_by']['value'], managed_by)
         self.assertEqual(updated_firewall['security_class']['value'], security_class)
         self.assertEqual(updated_firewall['security_comment'], security_comment)
@@ -2086,77 +2088,92 @@ class HostTest(Neo4jGraphQLNetworkTest):
             }
         }
 
-        for k, host_id in host_ids.items():
-            host_name = community_generator.fake.hostname()
-            host_description = community_generator.fake.paragraph()
+        use_ownerhuser = True
 
-            ip_adresses = [
-                community_generator.fake.ipv4(),
-                community_generator.fake.ipv4(),
-            ]
+        for iteration in range(0,2): 
+            for k, host_id in host_ids.items():
+                host_name = community_generator.fake.hostname()
+                host_description = community_generator.fake.paragraph()
 
-            rack_units = random.randint(1,10)
-            rack_position = random.randint(1,10)
+                ip_adresses = [
+                    community_generator.fake.ipv4(),
+                    community_generator.fake.ipv4(),
+                ]
 
-            operational_state = random.choice(
-                Dropdown.objects.get(name="operational_states")\
-                    .as_choices()[1:][1]
-            )
+                rack_units = random.randint(1,10)
+                rack_position = random.randint(1,10)
 
-            managed_by = random.choice(
-                Dropdown.objects.get(name="host_management_sw")\
-                    .as_choices()[1:][1]
-            )
-            backup = "Automatic script"
-            os = "GNU/Linux"
-            os_version = "Debian"
-            contract_number = "002"
+                operational_state = random.choice(
+                    Dropdown.objects.get(name="operational_states")\
+                        .as_choices()[1:][1]
+                )
 
-            extra_input = host_user_query[k]['extra_input']
-            extra_query = host_user_query[k]['extra_query']
+                managed_by = random.choice(
+                    Dropdown.objects.get(name="host_management_sw")\
+                        .as_choices()[1:][1]
+                )
+                backup = "Automatic script"
+                os = "GNU/Linux"
+                os_version = "Debian"
+                contract_number = "002"
 
-            query = edit_query.format(
-                        host_id=host_id,
-                        host_name=host_name, host_description=host_description,
-                        ip_address="\\n".join(ip_addresses),
-                        rack_units=rack_units, rack_position=rack_position,
-                        operational_state=operational_state,
-                        group1_id=group1_id, group2_id=group2_id,
-                        managed_by=managed_by, backup=backup, os=os,
-                        os_version=os_version, contract_number=contract_number,
-                        extra_input=extra_input, extra_query=extra_query)
+                check_id_value = host_user_query[k]['id']
+                extra_input = host_user_query[k]['extra_input']
+                extra_query = host_user_query[k]['extra_query']
 
-            result = schema.execute(query, context=self.context)
-            assert not result.errors, pformat(result.errors, indent=1)
+                # in the first iteration we'll set a different host user / owner
+                # in the second iteration these will be set to none
+                if not use_ownerhuser:
+                    check_id_value = None
+                    extra_input = ''
+                    extra_query = host_user_query[k]['extra_query']
 
-            # check for errors
-            created_errors = result.data['composite_host']['updated']['errors']
-            assert not created_errors, pformat(created_errors, indent=1)
+                query = edit_query.format(
+                            host_id=host_id,
+                            host_name=host_name, host_description=host_description,
+                            ip_address="\\n".join(ip_addresses),
+                            rack_units=rack_units, rack_position=rack_position,
+                            operational_state=operational_state,
+                            group1_id=group1_id, group2_id=group2_id,
+                            managed_by=managed_by, backup=backup, os=os,
+                            os_version=os_version, contract_number=contract_number,
+                            extra_input=extra_input, extra_query=extra_query)
 
-            # check data
-            updated_host = result.data['composite_host']['updated']['host']
+                result = schema.execute(query, context=self.context)
+                assert not result.errors, pformat(result.errors, indent=1)
 
-            self.assertEqual(updated_host['name'], host_name)
-            self.assertEqual(updated_host['description'], host_description)
-            self.assertEqual(updated_host['operational_state']['value'], operational_state)
-            self.assertEqual(updated_host['rack_units'], rack_units)
-            self.assertEqual(updated_host['rack_position'], rack_position)
-            self.assertEqual(updated_host['ip_addresses'], ip_addresses)
-            self.assertEqual(updated_host['managed_by']['value'], managed_by)
-            self.assertEqual(updated_host['backup'], backup)
-            self.assertEqual(updated_host['os'], os)
-            self.assertEqual(updated_host['os_version'], os_version)
-            self.assertEqual(updated_host['contract_number'], contract_number)
+                # check for errors
+                created_errors = result.data['composite_host']['updated']['errors']
+                assert not created_errors, pformat(created_errors, indent=1)
 
-            check_id_value = host_user_query[k]['id']
-            check_id = host_user_query[k]['check_path'](updated_host)
+                # check data
+                updated_host = result.data['composite_host']['updated']['host']
 
-            self.assertEqual(check_id_value, check_id)
+                self.assertEqual(updated_host['name'], host_name)
+                self.assertEqual(updated_host['description'], host_description)
+                self.assertEqual(updated_host['operational_state']['value'], operational_state)
+                self.assertEqual(updated_host['rack_units'], rack_units)
+                self.assertEqual(updated_host['rack_position'], rack_position)
+                self.assertEqual(updated_host['ip_addresses'], ip_addresses)
+                self.assertEqual(updated_host['managed_by']['value'], managed_by)
+                self.assertEqual(updated_host['backup'], backup)
+                self.assertEqual(updated_host['os'], os)
+                self.assertEqual(updated_host['os_version'], os_version)
+                self.assertEqual(updated_host['contract_number'], contract_number)
 
-            # check responsible group
-            check_responsible = updated_host['responsible_group']
-            self.assertEqual(check_responsible['id'], group1_id)
+                check_id = None
 
-            # check support group
-            check_support = updated_host['support_group']
-            self.assertEqual(check_support['id'], group2_id)
+                if use_ownerhuser:
+                    check_id = host_user_query[k]['check_path'](updated_host)
+
+                self.assertEqual(check_id_value, check_id)
+
+                # check responsible group
+                check_responsible = updated_host['responsible_group']
+                self.assertEqual(check_responsible['id'], group1_id)
+
+                # check support group
+                check_support = updated_host['support_group']
+                self.assertEqual(check_support['id'], group2_id)
+
+                use_ownerhuser = False

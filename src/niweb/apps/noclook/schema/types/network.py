@@ -163,7 +163,8 @@ def resolve_getSwitchTypes(self, info, **kwargs):
 class Switch(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    operational_state = NIStringField(type_kwargs={ 'required': True })
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': True })
     ip_addresses = NIIPAddrField()
     responsible_group = NISingleRelationField(field_type=(lambda: Group),
         rel_name="Takes_responsibility", rel_method="_incoming",
@@ -190,7 +191,8 @@ class Switch(NIObjectType, PhysicalMixin):
 class Firewall(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    operational_state = NIStringField(type_kwargs={ 'required': True })
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': True })
     ip_addresses = NIIPAddrField()
     responsible_group = NISingleRelationField(field_type=(lambda: Group),
         rel_name="Takes_responsibility", rel_method="_incoming",
