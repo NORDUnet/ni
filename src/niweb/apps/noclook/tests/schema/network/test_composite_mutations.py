@@ -1366,7 +1366,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 id
                 name
                 description
-                operational_state
+                operational_state{{
+                  value
+                }}
                 managed_by{{
                   id
                   value
@@ -1428,7 +1430,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         updated_firewall = result.data['composite_firewall']['updated']['firewall']
         self.assertEqual(updated_firewall['name'], firewall_name)
         self.assertEqual(updated_firewall['description'], firewall_description)
-        self.assertEqual(updated_firewall['operational_state'], operational_state)
+        self.assertEqual(updated_firewall['operational_state']['value'], operational_state)
         self.assertEqual(updated_firewall['managed_by']['value'], managed_by)
         self.assertEqual(updated_firewall['security_class']['value'], security_class)
         self.assertEqual(updated_firewall['security_comment'], security_comment)
