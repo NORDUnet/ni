@@ -76,6 +76,40 @@ class Owner(NIObjectType, RelationMixin):
 
 
 class DeleteOwnerMutation(DeleteNIMutation):
+    @classmethod
+    def do_request(cls, request, **kwargs):
+        post_copy = request.POST.copy()
+
+        id              = request.POST.get('id')
+        handle_id = relay.Node.from_global_id(id)[1]
+
+        if not handle_id or \
+            not NodeHandle.objects.filter(handle_id=handle_id).exists():
+
+            has_error = True
+            return has_error, [
+                ErrorType(
+                    field="_",
+                    messages=["The node doesn't exist".format(node_type)]
+                )
+            ]
+
+        nh, node = helpers.get_nh_node(handle_id)
+
+        host_user_type = NodeType.objects.get_or_create(
+                        type='Host User', slug='host-user')
+
+        if nh.node_type == host_user_type:
+            has_error = True
+            return has_error, [
+                ErrorType(
+                    field="_",
+                    messages=["Host Users can't be deleted".format(node_type)]
+                )
+            ]
+
+        return super().do_request(request, **kwargs)
+
     class NIMetaClass:
         graphql_type = Owner
 
