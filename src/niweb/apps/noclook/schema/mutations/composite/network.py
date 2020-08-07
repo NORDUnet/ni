@@ -107,7 +107,20 @@ class CompositeFirewallMutation(CompositeMutation):
 
 class CompositeExternalEquipmentMutation(CompositeMutation):
     class Input:
-        pass
+        delete_owner = graphene.Field(DeleteOwnerMutation.Input)
+
+    deleted_owner = graphene.Field(DeleteOwnerMutation)
+
+    @classmethod
+    def process_extra_subentities(cls, user, main_nh, root, info, input, context):
+        ret_deleted_owner = None
+        delete_owner_input = input.get("delete_owner")
+
+        if delete_owner_input:
+            ret_deleted_owner = DeleteOwnerMutation.mutate_and_get_payload(\
+                root, info, **delete_owner_input)
+
+        return dict(deleted_owner=ret_deleted_owner)
 
     class NIMetaClass:
         graphql_type = ExternalEquipment
@@ -117,7 +130,20 @@ class CompositeExternalEquipmentMutation(CompositeMutation):
 
 class CompositeHostMutation(CompositeMutation):
     class Input:
-        pass
+        delete_owner = graphene.Field(DeleteOwnerMutation.Input)
+
+    deleted_owner = graphene.Field(DeleteOwnerMutation)
+
+    @classmethod
+    def process_extra_subentities(cls, user, main_nh, root, info, input, context):
+        ret_deleted_owner = None
+        delete_owner_input = input.get("delete_owner")
+
+        if delete_owner_input:
+            ret_deleted_owner = DeleteOwnerMutation.mutate_and_get_payload(\
+                root, info, **delete_owner_input)
+
+        return dict(deleted_owner=ret_deleted_owner)
 
     class NIMetaClass:
         graphql_type = Host
