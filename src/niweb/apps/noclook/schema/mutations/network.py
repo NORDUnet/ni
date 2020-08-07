@@ -371,16 +371,6 @@ class EditHost(CreateNIMutation):
                 for relation_name, relation_f in relations_processors.items():
                     relation_f(request, form, host, relation_name)
 
-                # Host specific updates
-                if form.cleaned_data['relationship_user']:
-                    user_nh = _nh_safe_get(form.cleaned_data['relationship_user'])
-                    if user_nh:
-                        helpers.set_user(request.user, host, user_nh.handle_id)
-                if form.cleaned_data['relationship_owner']:
-                    owner_nh = _nh_safe_get(form.cleaned_data['relationship_owner'])
-                    if owner_nh:
-                        helpers.set_owner(request.user, host, owner_nh.handle_id)
-
                 # You can not set location and depends on at the same time
                 if form.cleaned_data['relationship_depends_on']:
                     depends_on_nh = _nh_safe_get(form.cleaned_data['relationship_depends_on'])
@@ -415,6 +405,10 @@ class EditHost(CreateNIMutation):
             'relationship_owner': get_unique_relation_processor(
                 'Owns',
                 helpers.set_owner
+            ),
+            'relationship_user': get_unique_relation_processor(
+                'Uses',
+                helpers.set_user
             ),
             'responsible_group': get_unique_relation_processor(
                 'Takes_responsibility',
