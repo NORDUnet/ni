@@ -16,6 +16,7 @@ class Command(BaseCommand):
 
     option_organizations = 'organizations'
     option_equipment = 'equipmentcables'
+    option_peering = 'peering'
     option_deleteall = 'deleteall'
     option_progress = 'progress'
     cmd_name = 'datafaker'
@@ -25,6 +26,8 @@ class Command(BaseCommand):
                     help="Create organization nodes", type=int, default=0)
         parser.add_argument("--{}".format(self.option_equipment),
                     help="Create equipment and cables nodes", type=int, default=0)
+        parser.add_argument("--{}".format(self.option_peering),
+                    help="Create peering groups and peering partners", type=int, default=0)
         parser.add_argument("-d", "--{}".format(self.option_deleteall), action='store_true',
                     help="BEWARE: This command deletes information in the database")
         parser.add_argument("-p", "--{}".format(self.option_progress), action='store_true',
@@ -56,6 +59,15 @@ class Command(BaseCommand):
                         .write('Forging fake equipment & cables: {} for each subtype:'\
                         .format(numnodes))
                 self.create_equipment_cables(numnodes)
+
+        if options[self.option_peering]:
+            numnodes = options[self.option_peering]
+            if numnodes > 0:
+                if self.show_progress:
+                    self.stdout\
+                        .write('Forging fake peering groups & partners: {} for each subtype:'\
+                        .format(numnodes))
+                self.create_peering(numnodes)
 
         return
 
@@ -89,8 +101,6 @@ class Command(BaseCommand):
         create_funcs = [
             generator.create_customer,
             generator.create_end_user,
-            generator.create_peering_partner,
-            generator.create_peering_group,
             generator.create_site_owner,
             generator.create_host_user,
         ]
@@ -106,6 +116,16 @@ class Command(BaseCommand):
             generator.create_router,
             generator.create_switch,
             generator.create_firewall,
+        ]
+
+        self.create_entities(numnodes, create_funcs)
+
+    def create_peering(self, numnodes):
+        generator = NetworkFakeDataGenerator()
+
+        create_funcs = [
+            generator.create_peering_partner,
+            generator.create_peering_group,
         ]
 
         self.create_entities(numnodes, create_funcs)
