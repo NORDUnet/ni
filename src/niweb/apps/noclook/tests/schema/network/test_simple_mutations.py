@@ -274,14 +274,19 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
 
     def crud(self, create_mutation=None, update_mutation=None,
                 delete_mutation=None, entityname=None):
-        if not create_mutation or not update_mutation or not delete_mutation\
+        if not update_mutation or not delete_mutation\
             or not entityname:
             raise Exception('Missconfigured test {}'.format(type(self)))
 
-        id_str = self.create_mutation(
-            create_mutation=create_mutation,
-            entityname=entityname
-        )
+        id_str = None
+
+        if create_mutation:
+            id_str = self.create_mutation(
+                create_mutation=create_mutation,
+                entityname=entityname
+            )
+        else:
+            id_str = self.get_testentity_id()
 
         id_str = self.edit_mutation(
             id_str=id_str,
@@ -536,3 +541,74 @@ class ConvertHostTest(Neo4jGraphQLNetworkTest):
         result = schema.execute(q, context=self.context)
         self.assertIsNone(result.errors)
         self.assertFalse(result.data['convert_host']['success'])
+
+
+## Peering
+class GenericPeeringTest(GenericNetworkMutationTest):
+    def get_testentity_id(self):
+        pass
+
+    def get_data(self):
+        data_generator = FakeDataGenerator()
+        data = {
+            'name': data_generator.rand_person_or_company_name,
+        }
+
+        return data
+
+    def edit_mutation(self, update_mutation=None, entityname=None, id_str=None):
+        data = self.get_data()
+
+        return super().edit_mutation(
+            update_mutation=update_mutation,
+            entityname=entityname,
+            id_str=id_str,
+            data=data
+        )
+
+    def crud(self, create_mutation=None, update_mutation=None,
+                delete_mutation=None, entityname=None):
+        # test simple crud
+        super().crud(
+            update_mutation=update_mutation,
+            delete_mutation=delete_mutation,
+            entityname=entityname
+        )
+
+
+class PeeringGroupTest(GenericPeeringTest):
+    def get_testentity_id(self):
+        data_generator = NetworkFakeDataGenerator()
+        peering_group = data_generator.create_peering_group()
+
+        id_str = relay.Node.to_global_id(
+                            str(peering_group.node_type.type.replace(' ', '')),
+                            str(peering_group.handle_id))
+
+        return id_str
+
+    def test_crud(self):
+        self.crud(
+            update_mutation='update_peeringGroup',
+            delete_mutation='delete_peeringGroup',
+            entityname='peeringGroup'
+        )
+
+
+class PeeringPartnerTest(GenericPeeringTest):
+    def get_testentity_id(self):
+        data_generator = NetworkFakeDataGenerator()
+        peering_partner = data_generator.create_peering_partner()
+
+        id_str = relay.Node.to_global_id(
+                            str(peering_partner.node_type.type.replace(' ', '')),
+                            str(peering_partner.handle_id))
+
+        return id_str
+
+    def test_crud(self):
+        self.crud(
+            update_mutation='update_peeringPartner',
+            delete_mutation='delete_peeringPartner',
+            entityname='peeringPartner'
+        )

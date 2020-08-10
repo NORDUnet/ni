@@ -489,3 +489,25 @@ class ConvertHost(relay.ClientIDMutation):
                 success = True
 
         return ConvertHost(success=success)
+
+
+class NIPeeringPartnerMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = EditPeeringPartnerForm
+        request_path = '/'
+        graphql_type = PeeringPartner
+        unique_node  = True
+
+    class Meta:
+        abstract = False
+
+
+class NIPeeringGroupMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = EditPeeringGroupForm
+        request_path = '/'
+        graphql_type = PeeringGroup
+        unique_node  = True
+
+    class Meta:
+        abstract = False

@@ -238,6 +238,13 @@ class ExternalEquipment(NIObjectType, PhysicalMixin):
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     as_number = NIStringField()
+    peering_link = graphene.String()
+
+    def resolve_peering_link(self, info, **kwargs):
+        '''Manual resolver for the peering_link field'''
+        as_number = self.get_node().data.get('as_number', None)
+
+        return 'https://www.peeringdb.com/asn/{}'.format(as_number)
 
     class NIMetaType:
         ni_type = 'Peering Partner'

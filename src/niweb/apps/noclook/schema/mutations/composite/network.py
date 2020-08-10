@@ -184,3 +184,15 @@ class CompositeHostMutation(CompositeMutation):
         main_mutation_f = NIHostMutationFactory
         context = sriutils.get_network_context()
         include_metafields = ('dependents')
+
+
+class CompositePortGroupMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = PeeringGroup
+        main_mutation_f = NIPeeringGroupMutationFactory
+        context = sriutils.get_network_context()
+        include_metafields = ('dependents')
+        has_creation = False
