@@ -164,20 +164,7 @@ class CompositeExternalEquipmentMutation(CompositeMutation):
 
 class CompositeHostMutation(CompositeMutation):
     class Input:
-        delete_owner = graphene.Field(DeleteOwnerMutation.Input)
-
-    deleted_owner = graphene.Field(DeleteOwnerMutation)
-
-    @classmethod
-    def process_extra_subentities(cls, user, main_nh, root, info, input, context):
-        ret_deleted_owner = None
-        delete_owner_input = input.get("delete_owner")
-
-        if delete_owner_input:
-            ret_deleted_owner = DeleteOwnerMutation.mutate_and_get_payload(\
-                root, info, **delete_owner_input)
-
-        return dict(deleted_owner=ret_deleted_owner)
+        pass
 
     class NIMetaClass:
         graphql_type = Host
@@ -203,16 +190,11 @@ class CompositeOpticalNodeMutation(CompositeMutation):
 
         return dict(deleted_owner=ret_deleted_owner)
 
-    @classmethod
-    def link_slave_to_master(cls, user, master_nh, slave_nh):
-        helpers.set_connected_to(user, master_nh.get_node(), slave_nh.handle_id)
-
     class NIMetaClass:
         graphql_type = OpticalNode
-        graphql_subtype = Port
         main_mutation_f = NIOpticalNodeMutationFactory
-        secondary_mutation_f = NIPortMutationFactory
         context = sriutils.get_network_context()
+        include_metafields = ('has')
 
 
 class CompositePeeringGroupMutation(CompositeMutation):
@@ -223,5 +205,4 @@ class CompositePeeringGroupMutation(CompositeMutation):
         graphql_type = PeeringGroup
         main_mutation_f = NIPeeringGroupMutationFactory
         context = sriutils.get_network_context()
-        include_metafields = ('dependents')
         has_creation = False
