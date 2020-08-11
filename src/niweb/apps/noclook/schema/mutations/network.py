@@ -491,6 +491,18 @@ class ConvertHost(relay.ClientIDMutation):
         return ConvertHost(success=success)
 
 
+class NIOpticalNodeMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = OpticalNodeForm
+        request_path = '/'
+        graphql_type = OpticalNode
+        unique_node  = True
+
+    class Meta:
+        abstract = False
+
+
+## Peering
 class NIPeeringPartnerMutationFactory(NIMutationFactory):
     class NIMetaClass:
         form         = EditPeeringPartnerForm
