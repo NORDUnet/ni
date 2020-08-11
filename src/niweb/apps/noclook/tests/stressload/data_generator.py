@@ -280,6 +280,14 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         # add context
         self.add_network_context(peering_group)
 
+        # add random dependents
+        num_dependents = random.randint(0, 3)
+
+        for i in range(0, num_dependents):
+            dependent = self.create_host()
+            rel_maker = PhysicalDataRelationMaker()
+            rel_maker.add_dependent(peering_group, dependent)
+
         return peering_group
 
     def create_provider(self, name=None):
@@ -561,6 +569,11 @@ class LogicalDataRelationMaker(DataRelationMaker):
         logical_handle_id = logical_nh.handle_id
         helpers.set_part_of(self.user, physical_node, logical_handle_id)
 
+    def add_dependent(cls, main_logical_nh, dep_logical_nh):
+        main_logical_nh = main_logical_nh.get_node()
+        dep_logical_handle_id = dep_logical_nh.handle_id
+        helpers.set_depends_on(self.user, main_logical_nh, dep_logical_handle_id)
+
 
 class RelationDataRelationMaker(DataRelationMaker):
     def add_provides(self, relation_nh, phylogical_nh):
@@ -593,3 +606,8 @@ class PhysicalDataRelationMaker(DataRelationMaker):
 
         result = nc.query_to_dict(nc.graphdb.manager, q,
                         handle_id=handle_id, parent_handle_id=parent_handle_id)
+
+    def add_dependent(self, main_logical_nh, dep_logical_nh):
+        main_logical_nh = main_logical_nh.get_node()
+        dep_logical_handle_id = dep_logical_nh.handle_id
+        helpers.set_depends_on(self.user, main_logical_nh, dep_logical_handle_id)
