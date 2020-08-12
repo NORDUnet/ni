@@ -40,9 +40,12 @@ class NINode(graphene.Node):
             super().resolve_type(instance, info)
 
 
-class Logical(NINode):
+class PhysicalLogical(NINode):
+    dependencies = graphene.List(lambda:PhysicalLogical)
+
+
+class Logical(PhysicalLogical):
     part_of = graphene.Field(lambda:Physical)
-    dependents = graphene.List(lambda:Logical)
 
 
 class Relation(NINode):
@@ -54,7 +57,7 @@ class Relation(NINode):
     responsible_for = graphene.Field(lambda:Location)
 
 
-class Physical(NINode):
+class Physical(PhysicalLogical):
     location = graphene.Field(lambda:Location)
     has = graphene.List(lambda:Physical)
     part_of = graphene.Field(lambda:Logical)
