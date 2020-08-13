@@ -186,7 +186,7 @@ class CompositeHostMutation(CompositeMutation):
         include_metafields = ('dependents')
 
 
-class CompositePortGroupMutation(CompositeMutation):
+class CompositePeeringGroupMutation(CompositeMutation):
     class Input:
         pass
 
@@ -194,5 +194,5 @@ class CompositePortGroupMutation(CompositeMutation):
         graphql_type = PeeringGroup
         main_mutation_f = NIPeeringGroupMutationFactory
         context = sriutils.get_network_context()
-        include_metafields = ('dependents')
+        include_metafields = ('dependencies')
         has_creation = False
