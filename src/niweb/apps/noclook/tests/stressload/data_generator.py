@@ -281,12 +281,15 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         self.add_network_context(peering_group)
 
         # add random dependents
-        num_dependents = random.randint(0, 3)
+        num_dependents = random.randint(1, 3)
 
         for i in range(0, num_dependents):
-            dependent = self.create_host()
-            rel_maker = PhysicalDataRelationMaker()
-            rel_maker.add_dependent(peering_group, dependent)
+            dependent = random.choice([
+                self.create_host,
+            ])
+            dependent = dependent()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(peering_group, dependent)
 
         return peering_group
 
@@ -507,7 +510,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             name = '{}-{}'.format(
                 self.fake.safe_color_name(), self.fake.ean8())
 
-        switch = self.create_host(name, "Switch")
+        switch = self.create_host(name, "Switch", metatype=META_TYPES[0])
 
         data = {
             'max_number_of_ports': random.randint(5,25),
@@ -524,7 +527,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             name = '{}-{}'.format(
                 self.fake.safe_color_name(), self.fake.ean8())
 
-        firewall = self.create_host(name, "Firewall")
+        firewall = self.create_host(name, "Firewall", metatype=META_TYPES[0])
 
         data = {
             'max_number_of_ports': random.randint(5,25),
@@ -561,6 +564,13 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 class DataRelationMaker:
     def __init__(self):
         self.user = get_user()
+
+
+class PhysicalLogicalDataRelationMaker(DataRelationMaker):
+    def add_dependency(self, main_logical_nh, dep_logical_nh):
+        main_logical_handle_id = main_logical_nh.handle_id
+        dep_logical_nh = dep_logical_nh.get_node()
+        helpers.set_depends_on(self.user, dep_logical_nh, main_logical_handle_id)
 
 
 class LogicalDataRelationMaker(DataRelationMaker):
