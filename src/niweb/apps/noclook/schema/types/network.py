@@ -234,6 +234,24 @@ class ExternalEquipment(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+class OpticalNode(NIObjectType, PhysicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    type = NIChoiceField(dropdown_name="optical_node_types", \
+        type_kwargs={ 'required': True })
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
+    rack_units = NIIntField()
+    rack_position = NIIntField()
+    rack_back = NIBooleanField()
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': True })
+
+    class NIMetaType:
+        ni_type = 'Optical Node'
+        ni_metatype = NIMETA_PHYSICAL
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -275,4 +293,5 @@ network_type_resolver = {
     'Switch': Switch,
     'Firewall': Firewall,
     'External Equipment': ExternalEquipment,
+    'Optical Node': OpticalNode,
 }

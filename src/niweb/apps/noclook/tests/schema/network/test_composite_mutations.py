@@ -2090,7 +2090,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
         use_ownerhuser = True
 
-        for iteration in range(0,2): 
+        for iteration in range(0,2):
             for k, host_id in host_ids.items():
                 host_name = community_generator.fake.hostname()
                 host_description = community_generator.fake.paragraph()
@@ -2177,3 +2177,354 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(check_support['id'], group2_id)
 
                 use_ownerhuser = False
+
+
+class OpticalNodeTest(Neo4jGraphQLNetworkTest):
+    def test_optical_node(self):
+        # optical node data
+        optno_name = "Optical Node test"
+        optno_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 2
+        rack_position = 3
+        rack_back = bool(random.getrandbits(1))
+
+        optno_type = random.choice(
+            Dropdown.objects.get(name="optical_node_types").as_choices()[1:])[1]
+
+        optno_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        # port data
+        port1_name = "test-01"
+        port1_type = "Schuko"
+        port1_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        # generate second port
+        net_generator = NetworkFakeDataGenerator()
+        port2 = net_generator.create_port()
+        port2_name = port2.node_name
+        port2_description = port2.get_node().data.get('description')
+        port2_type = port2.get_node().data.get('port_type')
+        port2_id = relay.Node.to_global_id(str(port2.node_type),
+                                            str(port2.handle_id))
+
+        query = '''
+        mutation{{
+          composite_opticalNode(input:{{
+            create_input:{{
+              name: "{optno_name}"
+              description: "{optno_description}"
+              type: "{optno_type}"
+              operational_state: "{optno_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+            create_has_port:[
+              {{
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+          	update_has_port:[
+              {{
+                id: "{port2_id}"
+                name: "{port2_name}"
+                description: "{port2_description}"
+                port_type: "{port2_type}"
+              }},
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalNode{{
+                id
+                name
+                description
+                type{{
+                  id
+                  value
+                }}
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(optno_name=optno_name, optno_description=optno_description,
+                    optno_type=optno_type, optno_opstate=optno_opstate,
+                    rack_units=rack_units, rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_name=port1_name, port1_type=port1_type,
+                    port1_description=port1_description, port2_id=port2_id,
+                    port2_name=port2_name, port2_type=port2_type,
+                    port2_description=port2_description)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_opticalNode']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        subcreated_errors = \
+            result.data['composite_opticalNode']['has_port_created'][0]['errors']
+        assert not subcreated_errors, pformat(subcreated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_opticalNode']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        created_optnode = result.data['composite_opticalNode']['created']\
+            ['opticalNode']
+        optno_id = created_optnode['id']
+
+        self.assertEqual(created_optnode['name'], optno_name)
+        self.assertEqual(created_optnode['description'], optno_description)
+        self.assertEqual(created_optnode['type']['value'], optno_type)
+        self.assertEqual(created_optnode['operational_state']['value'],
+                            optno_opstate)
+        self.assertEqual(created_optnode['rack_units'], rack_units)
+        self.assertEqual(created_optnode['rack_position'], rack_position)
+        self.assertEqual(created_optnode['rack_back'], rack_back)
+
+        # check subentities
+        port1_id = result.data \
+            ['composite_opticalNode']['has_port_created'][0]['port']['id']
+        check_port1 = result.data \
+            ['composite_opticalNode']['has_port_created'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_port2 = result.data \
+            ['composite_opticalNode']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port2['id'], port2_id)
+        self.assertEqual(check_port2['name'], port2_name)
+        self.assertEqual(check_port2['description'], port2_description)
+        self.assertEqual(check_port2['port_type']['value'], port2_type)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in created_optnode['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertTrue(port2_id in has_ids)
+
+        # update query
+        optno_name = "Optical Node check"
+        optno_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 3
+        rack_position = 2
+        rack_back = bool(random.getrandbits(1))
+
+        optno_type = random.choice(
+            Dropdown.objects.get(name="optical_node_types").as_choices()[1:])[1]
+
+        optno_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        port1_name = "check-01"
+        port1_type = port2_type
+        port1_description = port2_description
+
+        query = '''
+        mutation{{
+          composite_opticalNode(input:{{
+            update_input:{{
+              id: "{optno_id}"
+              name: "{optno_name}"
+              description: "{optno_description}"
+              type: "{optno_type}"
+              operational_state: "{optno_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+          	update_has_port:[
+              {{
+                id: "{port1_id}"
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+            deleted_has_port:[
+              {{
+                id: "{port2_id}"
+              }}
+          	]
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalNode{{
+                id
+                name
+                description
+                type{{
+                  id
+                  value
+                }}
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_deleted{{
+              errors{{
+                field
+                messages
+              }}
+              success
+            }}
+          }}
+        }}
+        '''.format(optno_id=optno_id, optno_name=optno_name,
+                    optno_description=optno_description, optno_type=optno_type,
+                    optno_opstate=optno_opstate, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_id=port1_id, port1_name=port1_name,
+                    port1_type=port1_type, port1_description=port1_description,
+                    port2_id=port2_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = \
+            result.data['composite_opticalNode']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_opticalNode']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        subdeleted_errors = \
+            result.data['composite_opticalNode']['has_port_deleted'][0]['errors']
+        assert not subdeleted_errors, pformat(subdeleted_errors, indent=1)
+
+        # check data
+        updated_optnode = result.data['composite_opticalNode']['updated']['opticalNode']
+        self.assertEqual(updated_optnode['name'], optno_name)
+        self.assertEqual(updated_optnode['description'], optno_description)
+        self.assertEqual(updated_optnode['type']['value'], optno_type)
+        self.assertEqual(updated_optnode['operational_state']['value'],
+                            optno_opstate)
+        self.assertEqual(updated_optnode['rack_units'], rack_units)
+        self.assertEqual(updated_optnode['rack_position'], rack_position)
+        self.assertEqual(updated_optnode['rack_back'], rack_back)
+
+        # check subentities
+        check_port1 = result.data \
+            ['composite_opticalNode']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_deleted_port2 = result.data \
+            ['composite_opticalNode']['has_port_deleted'][0]['success']
+
+        self.assertTrue(check_deleted_port2)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in updated_optnode['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertFalse(port2_id in has_ids)

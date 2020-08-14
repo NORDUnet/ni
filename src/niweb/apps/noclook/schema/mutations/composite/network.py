@@ -164,6 +164,17 @@ class CompositeExternalEquipmentMutation(CompositeMutation):
 
 class CompositeHostMutation(CompositeMutation):
     class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Host
+        main_mutation_f = NIHostMutationFactory
+        context = sriutils.get_network_context()
+        include_metafields = ('dependents')
+
+
+class CompositeOpticalNodeMutation(CompositeMutation):
+    class Input:
         delete_owner = graphene.Field(DeleteOwnerMutation.Input)
 
     deleted_owner = graphene.Field(DeleteOwnerMutation)
@@ -180,10 +191,10 @@ class CompositeHostMutation(CompositeMutation):
         return dict(deleted_owner=ret_deleted_owner)
 
     class NIMetaClass:
-        graphql_type = Host
-        main_mutation_f = NIHostMutationFactory
+        graphql_type = OpticalNode
+        main_mutation_f = NIOpticalNodeMutationFactory
         context = sriutils.get_network_context()
-        include_metafields = ('dependents')
+        include_metafields = ('has')
 
 
 class CompositePeeringGroupMutation(CompositeMutation):
