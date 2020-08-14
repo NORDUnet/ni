@@ -90,7 +90,7 @@ class Cable(NIObjectType, PhysicalMixin):
 allowed_types_converthost = ['firewall', 'switch', 'pdu', 'router']
 
 
-class Host(NIObjectType, PhysicalMixin):
+class Host(NIObjectType, PhysicalLogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
     host_type = graphene.String()
@@ -252,7 +252,7 @@ class PeeringPartner(NIObjectType, RelationMixin):
         context_method = sriutils.get_network_context
 
 
-class PeeringGroup(NIObjectType, RelationMixin):
+class PeeringGroup(NIObjectType, LogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
 
     class NIMetaType:
