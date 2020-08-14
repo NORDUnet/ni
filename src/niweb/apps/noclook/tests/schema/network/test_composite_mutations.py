@@ -2270,6 +2270,10 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                ports{{
+                  id
+                  name
+                }}
               }}
             }}
             has_port_created{{
@@ -2362,7 +2366,7 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(check_port2['port_type']['value'], port2_type)
 
         # check that the ports are related to the equipment
-        has_ids = [x['id'] for x in created_optnode['has']]
+        has_ids = [x['id'] for x in created_optnode['ports']]
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
@@ -2400,6 +2404,7 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
               operational_state: "{optno_opstate}"
               rack_units: {rack_units}
               rack_position: {rack_position}
+              rack_back: {rack_back}
             }}
           	update_has_port:[
               {{
@@ -2436,6 +2441,10 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
                 rack_position
                 rack_back
                 has{{
+                  id
+                  name
+                }}
+                ports{{
                   id
                   name
                 }}
@@ -2515,7 +2524,7 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
         self.assertTrue(check_deleted_port2)
 
         # check that the ports are related to the equipment
-        has_ids = [x['id'] for x in updated_optnode['has']]
+        has_ids = [x['id'] for x in updated_optnode['ports']]
 
         self.assertTrue(port1_id in has_ids)
         self.assertFalse(port2_id in has_ids)

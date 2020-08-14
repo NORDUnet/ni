@@ -239,7 +239,7 @@ class OpticalNode(NIObjectType, PhysicalMixin):
     description = NIStringField()
     type = NIChoiceField(dropdown_name="optical_node_types", \
         type_kwargs={ 'required': True })
-    ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', rel_method='_outgoing')
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
     rack_units = NIIntField()
     rack_position = NIIntField()
     rack_back = NIBooleanField()
