@@ -557,6 +557,35 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return hostuser
 
+    def create_optical_node(self, name=None):
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.safe_color_name(), self.fake.ean8())
+
+        onode = self.get_or_create_node(
+            name, 'Optical Node', META_TYPES[0])
+
+        # add context
+        self.add_network_context(onode)
+
+        # add data
+        operational_states = self.get_dropdown_keys('operational_states')
+        types = self.get_dropdown_keys('optical_node_types')
+
+        data = {
+            'operational_state': random.choice(operational_states),
+            'type': random.choice(types),
+            'description': self.fake.paragraph(),
+            'rack_units': random.randint(1,10),
+            'rack_position': random.randint(1,10),
+            'rack_back': bool(random.getrandbits(1)),
+        }
+
+        for key, value in data.items():
+            router.get_node().add_property(key, value)
+
+        return router
+
 
 class DataRelationMaker:
     def __init__(self):
