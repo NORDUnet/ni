@@ -167,16 +167,6 @@ class LogicalMixin(PhysicalLogicalMixin):
         logical1_handle_id = logical1_node.handle_id
         helpers.set_depends_on(user, logical2_node, logical1_handle_id)
 
-    def resolve_dependents(self, info, **kwargs):
-        return ResolverUtils.multiple_relation_resolver(
-            info, self.get_node(), 'get_dependents', 'Depends_on')
-
-    @classmethod
-    def link_dependents(cls, user, physical_nh, logical_nh):
-        physical_node = physical_nh.get_node()
-        logical_handle_id = logical_nh.handle_id
-        helpers.set_depends_on(user, physical_node, logical_handle_id)
-
 
 class RelationMixin:
     def resolve_with_same_name(self, info, **kwargs):
@@ -245,10 +235,6 @@ class PhysicalMixin(PhysicalLogicalMixin):
         return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_parent', 'Has')
 
-    def resolve_dependents(self, info, **kwargs):
-        return ResolverUtils.multiple_relation_resolver(
-            info, self.get_node(), 'get_dependents', 'Depends_on')
-
     def resolve_owner(self, info, **kwargs):
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_relations', 'Owns')
@@ -274,12 +260,6 @@ class PhysicalMixin(PhysicalLogicalMixin):
         physical_node = physical_nh.get_node()
         physical2_handle_id = physical2_nh.handle_id
         helpers.set_has(user, physical_node, physical2_handle_id)
-
-    @classmethod
-    def link_dependents(cls, user, physical_nh, logical_nh):
-        physical_node = physical_nh.get_node()
-        logical_handle_id = logical_nh.handle_id
-        helpers.set_depends_on(user, physical_node, logical_handle_id)
 
 
 class LocationMixin:

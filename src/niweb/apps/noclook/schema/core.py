@@ -36,13 +36,15 @@ from ..models import NodeType, NodeHandle
 logger = logging.getLogger(__name__)
 
 ########## RELATION AND NODE TYPES
-NIMETA_LOGICAL  = META_TYPES[1]
+NIMETA_PHYSICALLOGICAL = "PhysicalLogical"
+NIMETA_LOGICAL = META_TYPES[1]
 NIMETA_RELATION = META_TYPES[2]
 NIMETA_PHYSICAL = META_TYPES[0]
 NIMETA_LOCATION = META_TYPES[3]
 
 metatype_interfaces = OrderedDict([
-    (NIMETA_LOGICAL,  { 'interface': Logical,  'mixin':  LogicalMixin, } ),
+    (NIMETA_PHYSICALLOGICAL, { 'interface': PhysicalLogical,  'mixin':  PhysicalLogicalMixin, } ),
+    (NIMETA_LOGICAL, { 'interface': Logical, 'mixin':  LogicalMixin, } ),
     (NIMETA_RELATION, { 'interface': Relation, 'mixin':  RelationMixin, }),
     (NIMETA_PHYSICAL, { 'interface': Physical, 'mixin':  PhysicalMixin, }),
     (NIMETA_LOCATION, { 'interface': Location, 'mixin':  LocationMixin, }),

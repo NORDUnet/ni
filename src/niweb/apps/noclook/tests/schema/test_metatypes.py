@@ -49,7 +49,7 @@ class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
         self.assertFalse(has_relation)
 
         # add relation
-        getattr(relation_maker, bind_method_name)(node_1, node_2)
+        getattr(relation_maker, bind_method_name)(self.user, node_1, node_2)
 
         # check that the relation exists now
         # on the backend
