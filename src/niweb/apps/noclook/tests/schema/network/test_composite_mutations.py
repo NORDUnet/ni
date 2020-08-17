@@ -2528,3 +2528,100 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertFalse(port2_id in has_ids)
+
+
+class PeeringGroupTest(Neo4jGraphQLNetworkTest):
+    def test_peering_group(self):
+        data_generator = NetworkFakeDataGenerator()
+        pgroup = data_generator.create_peering_group()
+
+        pg_type_str = pgroup.node_type.type.replace(' ', '')
+        peergroup_id = relay.Node.to_global_id(pg_type_str,
+                                        str(pgroup.handle_id))
+        peergroup_name = "Peer Group new name"
+
+        dependencies = pgroup.get_node().get_dependencies()
+        host_handle_id = dependencies['Depends_on'][0]['relationship'].end_node.\
+                            _properties['handle_id']
+        host_nh = NodeHandle.objects.get(handle_id=host_handle_id)
+        host_type_str = host_nh.node_type.type.replace(' ', '')
+        host_id = relay.Node.to_global_id(str(host_nh.node_type),
+                                        str(host_nh.handle_id))
+        host_name = "Test dependency host"
+        host_description = host_nh.get_node().data['description']
+        host_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        query = """
+        mutation{{
+          composite_peeringGroup(input:{{
+            update_input:{{
+              id: "{peergroup_id}"
+              name: "{peergroup_name}"
+            }}
+            update_dependencies_host:{{
+              id: "{host_id}"
+              name: "{host_name}"
+              description: "{host_description}"
+              operational_state: "{host_opstate}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              peeringGroup{{
+                id
+                name
+              }}
+            }}
+            dependencies_host_updated{{
+              errors{{
+                field
+                messages
+              }}
+              host{{
+                id
+                name
+                description
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+        """.format(peergroup_id=peergroup_id, peergroup_name=peergroup_name,
+                    host_id=host_id, host_name=host_name,
+                    host_description=host_description,
+                    host_opstate=host_opstate)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = \
+            result.data['composite_peeringGroup']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_peeringGroup']['dependencies_host_updated']\
+                        [0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        updated_pgroup = result.data['composite_peeringGroup']['updated']\
+                            ['peeringGroup']
+        self.assertEqual(updated_pgroup['id'], peergroup_id,
+            "{} != {}".format(relay.Node.from_global_id(updated_pgroup['id']),
+                relay.Node.from_global_id(peergroup_id)))
+        self.assertEqual(updated_pgroup['name'], peergroup_name)
+
+        # check subentity
+        check_host1 = result.data \
+            ['composite_peeringGroup']['dependencies_host_updated'][0]['host']
+
+        self.assertEqual(check_host1['name'], host_name)
+        self.assertEqual(check_host1['description'], host_description)
+        self.assertEqual(check_host1['operational_state']['value'], host_opstate)
