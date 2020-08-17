@@ -502,6 +502,10 @@ class ConvertHostTest(Neo4jGraphQLNetworkTest):
         mutation{{
           convert_host(input:{{ id: "{host_id}", slug: "{slug}" }}){{
             success
+            new_id
+            new_type{{
+              slug
+            }}
           }}
         }}
         '''
@@ -516,7 +520,12 @@ class ConvertHostTest(Neo4jGraphQLNetworkTest):
 
         # test not authorized host
         NodeHandleContext.objects.filter(nodehandle=test_host).delete()
+
         test_slug = random.choice(['firewall', 'switch', 'pdu', 'router'])
+        test_host_ntype = NodeType.objects.get_or_create(slug=test_slug)[0]
+        expected_id = relay.Node.to_global_id(str(test_host_ntype),
+                                            str(test_host.handle_id))
+
         q = query.format(host_id=host_id, slug=test_slug)
 
         result = schema.execute(q, context=self.context)
@@ -529,6 +538,12 @@ class ConvertHostTest(Neo4jGraphQLNetworkTest):
         result = schema.execute(q, context=self.context)
         self.assertIsNone(result.errors)
         self.assertTrue(result.data['convert_host']['success'])
+        test_result_id = result.data['convert_host']['new_id']
+        self.assertEquals(test_result_id, expected_id,
+            "{} != {}".format(relay.Node.from_global_id(test_result_id),
+            relay.Node.from_global_id(expected_id)))
+
+        self.assertEquals(result.data['convert_host']['new_type']['slug'], test_slug)
 
         converted_nh = NodeHandle.objects.get(handle_id=host_handle_id)
         test_node_type = NodeType.objects.get(slug=test_slug)
