@@ -29,7 +29,7 @@ class FakeDataGenerator:
         self.user = get_user()
 
     def escape_quotes(self, str_in):
-        return str_in.replace("'", "\'")
+        return str_in.replace("'", "`")
 
     def company_name(self):
         return self.escape_quotes( self.fake.company() )
@@ -585,9 +585,9 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
-            router.get_node().add_property(key, value)
+            onode.get_node().add_property(key, value)
 
-        return router
+        return onode
 
 
 class DataRelationMaker:
