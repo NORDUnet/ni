@@ -6,6 +6,8 @@ from apps.noclook.tests.stressload.data_generator import NetworkFakeDataGenerato
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
+import traceback
+
 logger = logging.getLogger('noclook.management.datafaker')
 
 class Command(BaseCommand):
@@ -88,6 +90,7 @@ class Command(BaseCommand):
                         node = create_func()
                         loop_lock = False
                     except:
+                        traceback.print_exc()
                         safe_tries = safe_tries - 1
 
                 created_nodes = created_nodes + 1

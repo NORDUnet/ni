@@ -29,7 +29,7 @@ class FakeDataGenerator:
         self.user = get_user()
 
     def escape_quotes(self, str_in):
-        return str_in.replace("'", "\'")
+        return str_in.replace("'", "`")
 
     def company_name(self):
         return self.escape_quotes( self.fake.company() )
@@ -281,12 +281,15 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         self.add_network_context(peering_group)
 
         # add random dependents
-        num_dependents = random.randint(0, 3)
+        num_dependencies = random.randint(1, 3)
 
-        for i in range(0, num_dependents):
-            dependent = self.create_host()
-            rel_maker = PhysicalDataRelationMaker()
-            rel_maker.add_dependent(peering_group, dependent)
+        for i in range(0, num_dependencies):
+            dependency = random.choice([
+                self.create_host,
+            ])
+            dependency = dependency()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, peering_group, dependency)
 
         return peering_group
 
@@ -421,7 +424,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
     def create_host(self, name=None, type_name="Host", metatype=META_TYPES[1]):
         # create object
         if not name:
-            name = self.fake.hostname()
+            name = self.escape_quotes(self.fake.hostname())
 
         host = self.get_or_create_node(
             name, type_name, metatype)
@@ -452,19 +455,19 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             'ip_addresses' : ip_adresses,
             'rack_units': random.randint(1,10),
             'rack_position': random.randint(1,10),
-            'description': self.fake.paragraph(),
+            'description': self.escape_quotes(self.fake.paragraph()),
             'operational_state': random.choice(operational_states),
             'managed_by': random.choice(managed_by),
             'responsible_group': random.choice(responsible_group),
             'support_group': random.choice(support_group),
             'backup': random.choice(backup_systems),
             'security_class': random.choice(security_class),
-            'security_comment': self.fake.paragraph(),
+            'security_comment':self.escape_quotes(self.fake.paragraph()),
             'os': os_choice[0],
             'os_version': random.choice(os_choice[1]),
-            'model': self.fake.license_plate(),
+            'model': self.escape_quotes(self.fake.license_plate()),
             'vendor': self.company_name(),
-            'service_tag': self.fake.license_plate(),
+            'service_tag': self.escape_quotes(self.fake.license_plate()),
         }
 
         for key, value in data.items():
@@ -507,7 +510,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             name = '{}-{}'.format(
                 self.fake.safe_color_name(), self.fake.ean8())
 
-        switch = self.create_host(name, "Switch")
+        switch = self.create_host(name, "Switch", metatype=META_TYPES[0])
 
         data = {
             'max_number_of_ports': random.randint(5,25),
@@ -524,7 +527,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             name = '{}-{}'.format(
                 self.fake.safe_color_name(), self.fake.ean8())
 
-        firewall = self.create_host(name, "Firewall")
+        firewall = self.create_host(name, "Firewall", metatype=META_TYPES[0])
 
         data = {
             'max_number_of_ports': random.randint(5,25),
@@ -582,9 +585,9 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
-            router.get_node().add_property(key, value)
+            onode.get_node().add_property(key, value)
 
-        return router
+        return onode
 
 
 class DataRelationMaker:
@@ -592,37 +595,44 @@ class DataRelationMaker:
         self.user = get_user()
 
 
-class LogicalDataRelationMaker(DataRelationMaker):
-    def add_part_of(self, logical_nh, physical_nh):
-        physical_node = physical_nh.get_node()
-        logical_handle_id = logical_nh.handle_id
-        helpers.set_part_of(self.user, physical_node, logical_handle_id)
-
-    def add_dependent(cls, main_logical_nh, dep_logical_nh):
+class PhysicalLogicalDataRelationMaker(DataRelationMaker):
+    def add_dependency(cls, user, main_logical_nh, dep_logical_nh):
         main_logical_nh = main_logical_nh.get_node()
         dep_logical_handle_id = dep_logical_nh.handle_id
-        helpers.set_depends_on(self.user, main_logical_nh, dep_logical_handle_id)
+        helpers.set_depends_on(user, main_logical_nh, dep_logical_handle_id)
+
+
+class LogicalDataRelationMaker(DataRelationMaker):
+    def add_part_of(self, user, logical_nh, physical_nh):
+        physical_node = physical_nh.get_node()
+        logical_handle_id = logical_nh.handle_id
+        helpers.set_part_of(user, physical_node, logical_handle_id)
+
+    def add_dependent(self, user, main_logical_nh, dep_logical_nh):
+        main_logical_handle_id = main_logical_nh.handle_id
+        dep_logical_nh = dep_logical_nh.get_node()
+        helpers.set_depends_on(user, dep_logical_nh, main_logical_handle_id)
 
 
 class RelationDataRelationMaker(DataRelationMaker):
-    def add_provides(self, relation_nh, phylogical_nh):
+    def add_provides(self, user, relation_nh, phylogical_nh):
         the_node = phylogical_nh.get_node()
         relation_handle_id = relation_nh.handle_id
-        helpers.set_provider(self.user, the_node, relation_handle_id)
+        helpers.set_provider(user, the_node, relation_handle_id)
 
-    def add_owns(self, relation_nh, physical_nh):
+    def add_owns(self, user, relation_nh, physical_nh):
         physical_node = physical_nh.get_node()
         relation_handle_id = relation_nh.handle_id
-        helpers.set_owner(self.user, physical_node, relation_handle_id)
+        helpers.set_owner(user, physical_node, relation_handle_id)
 
-    def add_responsible_for(self, relation_nh, location_nh):
+    def add_responsible_for(self, user, relation_nh, location_nh):
         location_node = location_nh.get_node()
         relation_handle_id = relation_nh.handle_id
-        helpers.set_responsible_for(self.user, location_node, relation_handle_id)
+        helpers.set_responsible_for(user, location_node, relation_handle_id)
 
 
 class PhysicalDataRelationMaker(DataRelationMaker):
-    def add_parent(self, physical_nh, physical_parent_nh):
+    def add_parent(self, user, physical_nh, physical_parent_nh):
         handle_id = physical_nh.handle_id
         parent_handle_id = physical_parent_nh.handle_id
 
@@ -635,8 +645,3 @@ class PhysicalDataRelationMaker(DataRelationMaker):
 
         result = nc.query_to_dict(nc.graphdb.manager, q,
                         handle_id=handle_id, parent_handle_id=parent_handle_id)
-
-    def add_dependent(self, main_logical_nh, dep_logical_nh):
-        main_logical_nh = main_logical_nh.get_node()
-        dep_logical_handle_id = dep_logical_nh.handle_id
-        helpers.set_depends_on(self.user, main_logical_nh, dep_logical_handle_id)

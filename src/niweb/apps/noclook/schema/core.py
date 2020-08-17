@@ -36,13 +36,15 @@ from ..models import NodeType, NodeHandle
 logger = logging.getLogger(__name__)
 
 ########## RELATION AND NODE TYPES
-NIMETA_LOGICAL  = META_TYPES[1]
+NIMETA_PHYSICALLOGICAL = "PhysicalLogical"
+NIMETA_LOGICAL = META_TYPES[1]
 NIMETA_RELATION = META_TYPES[2]
 NIMETA_PHYSICAL = META_TYPES[0]
 NIMETA_LOCATION = META_TYPES[3]
 
 metatype_interfaces = OrderedDict([
-    (NIMETA_LOGICAL,  { 'interface': Logical,  'mixin':  LogicalMixin, } ),
+    (NIMETA_PHYSICALLOGICAL, { 'interface': PhysicalLogical,  'mixin':  PhysicalLogicalMixin, } ),
+    (NIMETA_LOGICAL, { 'interface': Logical, 'mixin':  LogicalMixin, } ),
     (NIMETA_RELATION, { 'interface': Relation, 'mixin':  RelationMixin, }),
     (NIMETA_PHYSICAL, { 'interface': Physical, 'mixin':  PhysicalMixin, }),
     (NIMETA_LOCATION, { 'interface': Location, 'mixin':  LocationMixin, }),
@@ -50,6 +52,7 @@ metatype_interfaces = OrderedDict([
 
 # association dict between interface and mixin
 subclasses_interfaces = OrderedDict([
+    (PhysicalLogical, []),
     (Logical, []),
     (Relation, []),
     (Physical, []),
@@ -306,10 +309,11 @@ class NIObjectType(DjangoObjectType):
         metatype_interface = cls.get_metatype_interface()
 
         if metatype_interface:
-            interfaces.append(metatype_interface)
+            interfaces = interfaces + metatype_interface
 
             # add also this class to the subclasses list
-            subclasses_interfaces[metatype_interface].append(cls)
+            for iface in metatype_interface:
+                subclasses_interfaces[iface].append(cls)
 
         options['model'] = NIObjectType._meta.model
         options['interfaces'] = interfaces
@@ -331,14 +335,19 @@ class NIObjectType(DjangoObjectType):
 
     @classmethod
     def get_metatype_interface(cls):
-        metatype_interface = None
+        interfaces = []
 
         if hasattr(cls, 'NIMetaType'):
             ni_metatype = cls.get_from_nimetatype("ni_metatype")
             if ni_metatype in metatype_interfaces:
-                metatype_interface = metatype_interfaces[ni_metatype]['interface']
+                iface = metatype_interfaces[ni_metatype]['interface']
+                interfaces.append(iface)
 
-        return metatype_interface
+                if iface == Physical or\
+                    iface == Logical:
+                    interfaces.append(PhysicalLogical)
+
+        return interfaces
 
     def resolve_incoming(self, info, **kwargs):
         '''
@@ -1987,157 +1996,158 @@ class CompositeMutation(relay.ClientIDMutation):
         cls_input.unlink_subinputs = graphene.List(DeleteRelationship.Input)
 
         # add metatype input fields
-        metatype_interface = graphql_type.get_metatype_interface()
+        metatype_ifaces = graphql_type.get_metatype_interface()
         avoid_fields = ('__module__', '__doc__', '_meta', 'name', 'with_same_name')
 
         cls.metafields_payload = {}
         cls.metafields_input = {}
         cls.metafields_classes = {}
 
-        if metatype_interface:
+        if metatype_ifaces:
             # go over attributes that aren't in the avoid list
             # or in the include and exclude params
-            for metafield_name, metafield in metatype_interface.__dict__.items():
-                if metafield_name in avoid_fields:
-                    continue
+            for metatype_interface in metatype_ifaces:
+                for metafield_name, metafield in metatype_interface.__dict__.items():
+                    if metafield_name in avoid_fields:
+                        continue
 
-                if include_metafields and metafield_name not in include_metafields:
-                    continue
+                    if include_metafields and metafield_name not in include_metafields:
+                        continue
 
-                if exclude_metafields and metafield_name in exclude_metafields:
-                    continue
+                    if exclude_metafields and metafield_name in exclude_metafields:
+                        continue
 
-                # add field class array
-                cls.metafields_classes[metafield_name] = []
+                    # add field class array
+                    cls.metafields_classes[metafield_name] = []
 
-                metafield_interface = None
-                is_list = False
+                    metafield_interface = None
+                    is_list = False
 
-                if isinstance(metafield, graphene.types.field.Field):
-                    metafield_interface = metafield._type
-                elif isinstance(metafield, graphene.types.structures.List):
-                    metafield_interface = metafield._of_type
-                    is_list = True
+                    if isinstance(metafield, graphene.types.field.Field):
+                        metafield_interface = metafield._type
+                    elif isinstance(metafield, graphene.types.structures.List):
+                        metafield_interface = metafield._of_type
+                        is_list = True
 
-                # we'll try to resolve the lambda if that's the case
-                try:
-                    metafield_interface = metafield_interface()
-                except:
-                    pass
+                    # we'll try to resolve the lambda if that's the case
+                    try:
+                        metafield_interface = metafield_interface()
+                    except:
+                        pass
 
-                # process skip NINode
-                if metafield_interface == NINode:
-                    continue
+                    # process skip NINode
+                    if metafield_interface == NINode:
+                        continue
 
-                # get all types that implement metafield_interface
-                # we need to add a mutation for each one
-                subclass_list = subclasses_interfaces[metafield_interface]
+                    # get all types that implement metafield_interface
+                    # we need to add a mutation for each one
+                    subclass_list = subclasses_interfaces[metafield_interface]
 
-                for a_subclass in subclass_list:
-                    # add class to dict with
-                    cls.metafields_classes[metafield_name].append(a_subclass)
+                    for a_subclass in subclass_list:
+                        # add class to dict with
+                        cls.metafields_classes[metafield_name].append(a_subclass)
 
-                    # init internal attribute storage
-                    if metafield_name not in cls.metafields_payload:
-                        cls.metafields_payload[metafield_name] = {}
+                        # init internal attribute storage
+                        if metafield_name not in cls.metafields_payload:
+                            cls.metafields_payload[metafield_name] = {}
 
-                    cls.metafields_payload[metafield_name][a_subclass] = {
-                        'created': { 'name': None },
-                        'updated': { 'name': None },
-                        'deleted': { 'name': None },
-                        'is_list': is_list,
-                    }
+                        cls.metafields_payload[metafield_name][a_subclass] = {
+                            'created': { 'name': None },
+                            'updated': { 'name': None },
+                            'deleted': { 'name': None },
+                            'is_list': is_list,
+                        }
 
-                    if metafield_name not in cls.metafields_input:
-                        cls.metafields_input[metafield_name] = {}
+                        if metafield_name not in cls.metafields_input:
+                            cls.metafields_input[metafield_name] = {}
 
-                    cls.metafields_input[metafield_name][a_subclass] = {
-                        'create': { 'name': None },
-                        'update': { 'name': None },
-                        'delete': { 'name': None },
-                        'is_list': is_list,
-                    }
+                        cls.metafields_input[metafield_name][a_subclass] = {
+                            'create': { 'name': None },
+                            'update': { 'name': None },
+                            'delete': { 'name': None },
+                            'is_list': is_list,
+                        }
 
-                    # get mutations for each attribute
-                    create_mutation = a_subclass.get_create_mutation()
-                    update_mutation = a_subclass.get_update_mutation()
-                    delete_mutation = a_subclass.get_delete_mutation()
+                        # get mutations for each attribute
+                        create_mutation = a_subclass.get_create_mutation()
+                        update_mutation = a_subclass.get_update_mutation()
+                        delete_mutation = a_subclass.get_delete_mutation()
 
-                    # payload names
-                    name_prefix = '{}_{}'.format(
-                        metafield_name, a_subclass.__name__.lower())
-                    created_name = '{}_created'.format(name_prefix)
-                    updated_name = '{}_updated'.format(name_prefix)
-                    deleted_name = '{}_deleted'.format(name_prefix)
+                        # payload names
+                        name_prefix = '{}_{}'.format(
+                            metafield_name, a_subclass.__name__.lower())
+                        created_name = '{}_created'.format(name_prefix)
+                        updated_name = '{}_updated'.format(name_prefix)
+                        deleted_name = '{}_deleted'.format(name_prefix)
 
-                    # get inputs for each input attribute
-                    # input names
-                    create_name = 'create_{}'.format(name_prefix)
-                    update_name = 'update_{}'.format(name_prefix)
-                    delete_name = 'deleted_{}'.format(name_prefix)
+                        # get inputs for each input attribute
+                        # input names
+                        create_name = 'create_{}'.format(name_prefix)
+                        update_name = 'update_{}'.format(name_prefix)
+                        delete_name = 'deleted_{}'.format(name_prefix)
 
-                    if create_mutation:
-                        # add to payload
-                        payload_field = graphene.Field(create_mutation)
-                        if is_list:
-                            payload_field = graphene.List(create_mutation)
+                        if create_mutation:
+                            # add to payload
+                            payload_field = graphene.Field(create_mutation)
+                            if is_list:
+                                payload_field = graphene.List(create_mutation)
 
-                        setattr(cls, created_name, payload_field)
-                        cls.metafields_payload \
-                            [metafield_name][a_subclass]['created']['name']\
-                                = created_name
+                            setattr(cls, created_name, payload_field)
+                            cls.metafields_payload \
+                                [metafield_name][a_subclass]['created']['name']\
+                                    = created_name
 
-                        # add to input
-                        input_field = graphene.Field(create_mutation.Input)
-                        if is_list:
-                            input_field = graphene.List(create_mutation.Input)
+                            # add to input
+                            input_field = graphene.Field(create_mutation.Input)
+                            if is_list:
+                                input_field = graphene.List(create_mutation.Input)
 
-                        setattr(cls_input, create_name, input_field)
-                        cls.metafields_input \
-                            [metafield_name][a_subclass]['create']['name']\
-                                = create_name
+                            setattr(cls_input, create_name, input_field)
+                            cls.metafields_input \
+                                [metafield_name][a_subclass]['create']['name']\
+                                    = create_name
 
-                    if update_mutation:
-                        # add to payload
-                        payload_field = graphene.Field(update_mutation)
-                        if is_list:
-                            payload_field = graphene.List(update_mutation)
+                        if update_mutation:
+                            # add to payload
+                            payload_field = graphene.Field(update_mutation)
+                            if is_list:
+                                payload_field = graphene.List(update_mutation)
 
-                        setattr(cls, updated_name, payload_field)
-                        cls.metafields_payload \
-                            [metafield_name][a_subclass]['updated']['name']\
-                                = updated_name
+                            setattr(cls, updated_name, payload_field)
+                            cls.metafields_payload \
+                                [metafield_name][a_subclass]['updated']['name']\
+                                    = updated_name
 
-                        # add to input
-                        input_field = graphene.Field(update_mutation.Input)
-                        if is_list:
-                            input_field = graphene.List(update_mutation.Input)
+                            # add to input
+                            input_field = graphene.Field(update_mutation.Input)
+                            if is_list:
+                                input_field = graphene.List(update_mutation.Input)
 
-                        setattr(cls_input, update_name, input_field)
-                        cls.metafields_input \
-                            [metafield_name][a_subclass]['update']['name']\
-                                = update_name
+                            setattr(cls_input, update_name, input_field)
+                            cls.metafields_input \
+                                [metafield_name][a_subclass]['update']['name']\
+                                    = update_name
 
-                    if delete_mutation:
-                        # add to payload
-                        payload_field = graphene.Field(delete_mutation)
-                        if is_list:
-                            payload_field = graphene.List(delete_mutation)
+                        if delete_mutation:
+                            # add to payload
+                            payload_field = graphene.Field(delete_mutation)
+                            if is_list:
+                                payload_field = graphene.List(delete_mutation)
 
-                        setattr(cls, deleted_name, payload_field)
-                        cls.metafields_payload \
-                            [metafield_name][a_subclass]['deleted']['name']\
-                                = deleted_name
+                            setattr(cls, deleted_name, payload_field)
+                            cls.metafields_payload \
+                                [metafield_name][a_subclass]['deleted']['name']\
+                                    = deleted_name
 
-                        # add to input
-                        input_field = graphene.Field(delete_mutation.Input)
-                        if is_list:
-                            input_field = graphene.List(delete_mutation.Input)
+                            # add to input
+                            input_field = graphene.Field(delete_mutation.Input)
+                            if is_list:
+                                input_field = graphene.List(delete_mutation.Input)
 
-                        setattr(cls_input, delete_name, input_field)
-                        cls.metafields_input \
-                            [metafield_name][a_subclass]['delete']['name']\
-                                = delete_name
+                            setattr(cls_input, delete_name, input_field)
+                            cls.metafields_input \
+                                [metafield_name][a_subclass]['delete']['name']\
+                                    = delete_name
 
             setattr(cls, 'Input', cls_input)
 

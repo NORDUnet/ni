@@ -205,4 +205,5 @@ class CompositePeeringGroupMutation(CompositeMutation):
         graphql_type = PeeringGroup
         main_mutation_f = NIPeeringGroupMutationFactory
         context = sriutils.get_network_context()
+        include_metafields = ('dependencies')
         has_creation = False
