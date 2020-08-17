@@ -455,12 +455,15 @@ class ConvertHost(relay.ClientIDMutation):
         slug = graphene.String(required=True)
 
     success = graphene.Boolean(required=True)
+    new_id = graphene.ID()
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
         id = input.get("id")
         slug = input.get("slug")
+
         success = False
+        new_id = None
 
         handle_id = relay.Node.from_global_id(id)[1]
         allowed_types = allowed_types_converthost # Types that can be added as Hosts by nmap
@@ -486,9 +489,12 @@ class ConvertHost(relay.ClientIDMutation):
                 }
                 helpers.dict_update_node(
                     user, node.handle_id, node_properties, node_properties.keys())
+
+                new_id = relay.Node.to_global_id(str(nh.node_type),
+                                                str(nh.handle_id))
                 success = True
 
-        return ConvertHost(success=success)
+        return ConvertHost(success=success, new_id=new_id)
 
 
 class NIOpticalNodeMutationFactory(NIMutationFactory):
