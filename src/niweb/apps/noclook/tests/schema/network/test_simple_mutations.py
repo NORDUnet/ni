@@ -521,7 +521,20 @@ class ConvertHostTest(Neo4jGraphQLNetworkTest):
         # test not authorized host
         NodeHandleContext.objects.filter(nodehandle=test_host).delete()
 
+        slug_choices = ['firewall', 'switch', 'pdu', 'router']
+
+        # ensure we have the types
+        node_type_str = ''
+        for slug in slug_choices:
+            if slug == 'pdu':
+                node_type_str = 'PDU'
+            else:
+                node_type_str = slug.title()
+
+            NodeType.objects.get_or_create(type=node_type_str, slug=slug)
+
         test_slug = random.choice(['firewall', 'switch', 'pdu', 'router'])
+        test_slug = 'router'
         test_host_ntype = NodeType.objects.get_or_create(slug=test_slug)[0]
         expected_id = relay.Node.to_global_id(str(test_host_ntype),
                                             str(test_host.handle_id))
