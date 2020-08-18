@@ -197,6 +197,17 @@ class CompositeOpticalNodeMutation(CompositeMutation):
         include_metafields = ('has')
 
 
+class CompositeODFMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = ODF
+        main_mutation_f = NIODFMutationFactory
+        context = sriutils.get_network_context()
+        include_metafields = ('has')
+
+
 class CompositePeeringGroupMutation(CompositeMutation):
     class Input:
         pass

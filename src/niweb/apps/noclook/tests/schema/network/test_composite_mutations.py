@@ -2530,6 +2530,339 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
         self.assertFalse(port2_id in has_ids)
 
 
+class ODFTest(Neo4jGraphQLNetworkTest):
+    def test_odf(self):
+        # odf data
+        odf_name = "ODF test"
+        odf_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = random.randint(1, 3)
+        rack_position = random.randint(1, 5)
+        rack_back = bool(random.getrandbits(1))
+
+        odf_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        # port data
+        port1_name = "test-01"
+        port1_type = "Schuko"
+        port1_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        # generate second port
+        net_generator = NetworkFakeDataGenerator()
+        port2 = net_generator.create_port()
+        port2_name = port2.node_name
+        port2_description = port2.get_node().data.get('description')
+        port2_type = port2.get_node().data.get('port_type')
+        port2_id = relay.Node.to_global_id(str(port2.node_type),
+                                            str(port2.handle_id))
+
+        query = '''
+        mutation{{
+          composite_oDF(input:{{
+            create_input:{{
+              name: "{odf_name}"
+              description: "{odf_description}"
+              operational_state: "{odf_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+            create_has_port:[
+              {{
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+          	update_has_port:[
+              {{
+                id: "{port2_id}"
+                name: "{port2_name}"
+                description: "{port2_description}"
+                port_type: "{port2_type}"
+              }},
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              oDF{{
+                id
+                name
+                description
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(odf_name=odf_name, odf_description=odf_description,
+                    odf_opstate=odf_opstate, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_name=port1_name, port1_type=port1_type,
+                    port1_description=port1_description, port2_id=port2_id,
+                    port2_name=port2_name, port2_type=port2_type,
+                    port2_description=port2_description)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_oDF']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        subcreated_errors = \
+            result.data['composite_oDF']['has_port_created'][0]['errors']
+        assert not subcreated_errors, pformat(subcreated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_oDF']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        created_odf = result.data['composite_oDF']['created']\
+            ['oDF']
+        odf_id = created_odf['id']
+
+        self.assertEqual(created_odf['name'], odf_name)
+        self.assertEqual(created_odf['description'], odf_description)
+        self.assertEqual(created_odf['operational_state']['value'],
+                            odf_opstate)
+        self.assertEqual(created_odf['rack_units'], rack_units)
+        self.assertEqual(created_odf['rack_position'], rack_position)
+        self.assertEqual(created_odf['rack_back'], rack_back)
+
+        # check subentities
+        port1_id = result.data \
+            ['composite_oDF']['has_port_created'][0]['port']['id']
+        check_port1 = result.data \
+            ['composite_oDF']['has_port_created'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_port2 = result.data \
+            ['composite_oDF']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port2['id'], port2_id)
+        self.assertEqual(check_port2['name'], port2_name)
+        self.assertEqual(check_port2['description'], port2_description)
+        self.assertEqual(check_port2['port_type']['value'], port2_type)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in created_odf['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertTrue(port2_id in has_ids)
+
+        # update query
+        odf_name = "Optical Node check"
+        odf_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 3
+        rack_position = 2
+        rack_back = bool(random.getrandbits(1))
+
+        odf_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        port1_name = "check-01"
+        port1_type = port2_type
+        port1_description = port2_description
+
+        query = '''
+        mutation{{
+          composite_oDF(input:{{
+            update_input:{{
+              id: "{odf_id}"
+              name: "{odf_name}"
+              description: "{odf_description}"
+              operational_state: "{odf_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+          	update_has_port:[
+              {{
+                id: "{port1_id}"
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+            deleted_has_port:[
+              {{
+                id: "{port2_id}"
+              }}
+          	]
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              oDF{{
+                id
+                name
+                description
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_deleted{{
+              errors{{
+                field
+                messages
+              }}
+              success
+            }}
+          }}
+        }}
+        '''.format(odf_id=odf_id, odf_name=odf_name,
+                    odf_description=odf_description,
+                    odf_opstate=odf_opstate, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_id=port1_id, port1_name=port1_name,
+                    port1_type=port1_type, port1_description=port1_description,
+                    port2_id=port2_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = \
+            result.data['composite_oDF']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_oDF']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        subdeleted_errors = \
+            result.data['composite_oDF']['has_port_deleted'][0]['errors']
+        assert not subdeleted_errors, pformat(subdeleted_errors, indent=1)
+
+        # check data
+        updated_odf = result.data['composite_oDF']['updated']['oDF']
+        self.assertEqual(updated_odf['name'], odf_name)
+        self.assertEqual(updated_odf['description'], odf_description)
+        self.assertEqual(updated_odf['operational_state']['value'],
+                            odf_opstate)
+        self.assertEqual(updated_odf['rack_units'], rack_units)
+        self.assertEqual(updated_odf['rack_position'], rack_position)
+        self.assertEqual(updated_odf['rack_back'], rack_back)
+
+        # check subentities
+        check_port1 = result.data \
+            ['composite_oDF']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_deleted_port2 = result.data \
+            ['composite_oDF']['has_port_deleted'][0]['success']
+
+        self.assertTrue(check_deleted_port2)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in updated_odf['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertFalse(port2_id in has_ids)
+
+
 class PeeringGroupTest(Neo4jGraphQLNetworkTest):
     def test_peering_group(self):
         data_generator = NetworkFakeDataGenerator()
