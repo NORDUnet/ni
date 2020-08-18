@@ -133,6 +133,7 @@ class Command(BaseCommand):
             generator.create_switch,
             generator.create_firewall,
             generator.create_optical_node,
+            generator.create_odf,
         ]
 
         self.create_entities(numnodes, create_funcs)
@@ -151,10 +152,10 @@ class Command(BaseCommand):
         generator = NetworkFakeDataGenerator()
 
         create_funcs = [
-            generator.create_odf,
+
         ]
 
-        self.create_entities(numnodes, create_funcs)
+        #self.create_entities(numnodes, create_funcs)
 
     def delete_network_nodes(self):
         if settings.DEBUG: # guard against accidental deletion on the wrong environment
