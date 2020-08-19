@@ -269,6 +269,24 @@ class ODF(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+## Optical Nodes
+class OpticalLink(NIObjectType, PhysicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': False })
+    rack_units = NIIntField() # Equipment height
+    rack_position = NIIntField()
+    rack_back = NIBooleanField()
+    max_number_of_ports = NIIntField()
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
+
+    class NIMetaType:
+        ni_type = 'Optical Link'
+        ni_metatype = NIMETA_PHYSICAL
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -297,12 +315,13 @@ class PeeringGroup(NIObjectType, LogicalMixin):
 
 
 network_type_resolver = {
+    # Organizations
     'Customer': Customer,
     'End User': EndUser,
-    'Peering Partner': PeeringPartner,
-    'Peering Group': PeeringGroup,
     'Provider': Provider,
     'Site Owner': SiteOwner,
+
+    # Equipment and cables
     'Port': Port,
     'Cable': Cable,
     'Host': Host,
@@ -312,4 +331,11 @@ network_type_resolver = {
     'External Equipment': ExternalEquipment,
     'Optical Node': OpticalNode,
     'ODF': ODF,
+
+    # Optical Nodes
+    'Optical Link': OpticalLink,
+
+    # Peering
+    'Peering Partner': PeeringPartner,
+    'Peering Group': PeeringGroup,
 }
