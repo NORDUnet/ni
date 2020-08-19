@@ -3,6 +3,8 @@ __author__ = 'ffuentes'
 
 from ..network import *
 
+
+## Equipment and cables
 class CompositePortMutation(CompositeMutation):
     class Input:
         pass
@@ -208,6 +210,19 @@ class CompositeODFMutation(CompositeMutation):
         include_metafields = ('has')
 
 
+## Optical Nodes
+class CompositeOpticalFilterMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = OpticalFilter
+        main_mutation_f = NIOpticalFilterMutationFactory
+        context = sriutils.get_network_context()
+        include_metafields = ('has')
+
+
+## Peering
 class CompositePeeringGroupMutation(CompositeMutation):
     class Input:
         pass

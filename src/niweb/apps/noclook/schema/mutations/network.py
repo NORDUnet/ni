@@ -527,6 +527,23 @@ class NIODFMutationFactory(NIMutationFactory):
         abstract = False
 
 
+## Optical Nodes
+class NIOpticalFilterMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewOpticalFilter
+        update_form    = EditOpticalFilterForm
+        graphql_type   = OpticalFilter
+        relations_processors = {
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
+        }
+
+    class Meta:
+        abstract = False
+
+
 ## Peering
 class NIPeeringPartnerMutationFactory(NIMutationFactory):
     class NIMetaClass:
