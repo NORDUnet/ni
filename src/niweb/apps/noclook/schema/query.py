@@ -482,9 +482,11 @@ class NOCRootQuery(NOCAutoQuery):
             # Network
             ## Organizations
             Customer, EndUser, Provider, SiteOwner,
-            ## Equipement
+            ## Equipment and cables
             Port, Host, Cable, Router, Switch, Firewall, ExternalEquipment,
-                OpticalNode, ODF, 
+                OpticalNode, ODF,
+            ## Optical Nodes
+            OpticalFilter,
             ## Peering
             PeeringPartner, PeeringGroup,
             ## Other
