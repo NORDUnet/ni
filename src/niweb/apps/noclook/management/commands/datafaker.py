@@ -15,11 +15,12 @@ class Command(BaseCommand):
     generated_types = [
         'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group',
         'Peering Partner', 'Cable', 'Port', 'Host', 'Router', 'Switch',
-        'Firewall', 'Host User', 'Optical Node']
+        'Firewall', 'Host User', 'Optical Node', 'ODF']
 
     option_organizations = 'organizations'
     option_equipment = 'equipmentcables'
     option_peering = 'peering'
+    option_optical = 'optical'
     option_deleteall = 'deleteall'
     option_progress = 'progress'
     cmd_name = 'datafaker'
@@ -31,6 +32,8 @@ class Command(BaseCommand):
                     help="Create equipment and cables nodes", type=int, default=0)
         parser.add_argument("--{}".format(self.option_peering),
                     help="Create peering groups and peering partners", type=int, default=0)
+        parser.add_argument("--{}".format(self.option_optical),
+                    help="Create optical entities", type=int, default=0)
         parser.add_argument("-d", "--{}".format(self.option_deleteall), action='store_true',
                     help="BEWARE: This command deletes information in the database")
         parser.add_argument("-p", "--{}".format(self.option_progress), action='store_true',
@@ -71,6 +74,15 @@ class Command(BaseCommand):
                         .write('Forging fake peering groups & partners: {} for each subtype:'\
                         .format(numnodes))
                 self.create_peering(numnodes)
+
+        if options[self.option_optical]:
+            numnodes = options[self.option_optical]
+            if numnodes > 0:
+                if self.show_progress:
+                    self.stdout\
+                        .write('Forging fake peering groups & partners: {} for each subtype:'\
+                        .format(numnodes))
+                self.create_optical(numnodes)
 
         return
 
@@ -121,6 +133,7 @@ class Command(BaseCommand):
             generator.create_switch,
             generator.create_firewall,
             generator.create_optical_node,
+            generator.create_odf,
         ]
 
         self.create_entities(numnodes, create_funcs)
@@ -134,6 +147,15 @@ class Command(BaseCommand):
         ]
 
         self.create_entities(numnodes, create_funcs)
+
+    def create_optical(self, numnodes):
+        generator = NetworkFakeDataGenerator()
+
+        create_funcs = [
+
+        ]
+
+        #self.create_entities(numnodes, create_funcs)
 
     def delete_network_nodes(self):
         if settings.DEBUG: # guard against accidental deletion on the wrong environment

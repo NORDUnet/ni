@@ -511,6 +511,22 @@ class NIOpticalNodeMutationFactory(NIMutationFactory):
         abstract = False
 
 
+class NIODFMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form    = NewOdfForm
+        update_form    = EditOdfForm
+        graphql_type   = ODF
+        relations_processors = {
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
+        }
+
+    class Meta:
+        abstract = False
+
+
 ## Peering
 class NIPeeringPartnerMutationFactory(NIMutationFactory):
     class NIMetaClass:

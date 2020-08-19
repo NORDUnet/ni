@@ -589,6 +589,35 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return onode
 
+    def create_odf(self, name=None):
+        # create object
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.safe_color_name(), self.fake.ean8())
+
+        odf = self.get_or_create_node(
+            name, 'ODF', META_TYPES[0])
+
+        # add context
+        self.add_network_context(odf)
+
+        # add data
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        data = {
+            'rack_units': random.randint(1,10),
+            'rack_position': random.randint(1,10),
+            'rack_back': bool(random.getrandbits(1)),
+            'operational_state': random.choice(operational_states),
+            'description': self.fake.paragraph(),
+            'max_number_of_ports': random.randint(5,25),
+        }
+
+        for key, value in data.items():
+            odf.get_node().add_property(key, value)
+
+        return odf
+
 
 class DataRelationMaker:
     def __init__(self):
