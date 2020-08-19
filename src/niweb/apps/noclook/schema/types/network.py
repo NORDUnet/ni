@@ -270,7 +270,7 @@ class ODF(NIObjectType, PhysicalMixin):
 
 
 ## Optical Nodes
-class OpticalLink(NIObjectType, PhysicalMixin):
+class OpticalFilter(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
     operational_state = NIChoiceField(dropdown_name="operational_states", \
@@ -282,7 +282,7 @@ class OpticalLink(NIObjectType, PhysicalMixin):
     ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
 
     class NIMetaType:
-        ni_type = 'Optical Link'
+        ni_type = 'Optical Filter'
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
 
@@ -333,7 +333,7 @@ network_type_resolver = {
     'ODF': ODF,
 
     # Optical Nodes
-    'Optical Link': OpticalLink,
+    'Optical Filter': OpticalFilter,
 
     # Peering
     'Peering Partner': PeeringPartner,

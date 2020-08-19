@@ -486,7 +486,7 @@ class NOCRootQuery(NOCAutoQuery):
             Port, Host, Cable, Router, Switch, Firewall, ExternalEquipment,
                 OpticalNode, ODF,
             ## Optical Nodes
-            OpticalLink,
+            OpticalFilter,
             ## Peering
             PeeringPartner, PeeringGroup,
             ## Other
