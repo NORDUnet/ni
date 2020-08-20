@@ -544,6 +544,23 @@ class NIOpticalFilterMutationFactory(NIMutationFactory):
         abstract = False
 
 
+class NIOpticalLinkMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        create_form  = NewOpticalLinkForm
+        update_form  = EditOpticalLinkForm
+        graphql_type = OpticalLink
+        unique_node  = True
+        relations_processors = {
+            'relationship_provider': get_unique_relation_processor(
+                'Provides',
+                helpers.set_provider
+            ),
+        }
+
+    class Meta:
+        abstract = False
+
+
 ## Peering
 class NIPeeringPartnerMutationFactory(NIMutationFactory):
     class NIMetaClass:

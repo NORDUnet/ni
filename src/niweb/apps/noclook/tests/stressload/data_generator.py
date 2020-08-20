@@ -618,6 +618,59 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return odf
 
+    def create_optical_link(self, name=None):
+        # create object
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.ean8(), self.escape_quotes(self.fake.license_plate()))
+
+        optical_link = self.get_or_create_node(
+            name, 'Optical Link', META_TYPES[1])
+
+        # add context
+        self.add_network_context(optical_link)
+
+        # check if there's any provider or if we should create one
+        provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
+        providers = NodeHandle.objects.filter(node_type=provider_type)
+
+        max_providers = self.max_cable_providers
+        provider = None
+
+        if not providers or len(providers) < max_providers:
+            provider = self.create_provider()
+        else:
+            provider = random.choice(list(providers))
+
+        # add data
+        link_types = self.get_dropdown_keys('optical_link_types')
+        interface_types = self.get_dropdown_keys('optical_link_interface_type')
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        data = {
+            'description': self.fake.paragraph(),
+            'link_type': random.choice(link_types),
+            'interface_type': random.choice(interface_types),
+            'operational_state': random.choice(operational_states),
+            'relationship_provider' : provider.handle_id,
+        }
+
+        for key, value in data.items():
+            optical_link.get_node().add_property(key, value)
+
+        helpers.set_provider(self.user,
+            optical_link.get_node(), provider.handle_id)
+
+        # add random ports
+        num_ports = random.randint(1, 3)
+
+        for i in range(0, num_ports):
+            port = self.create_port()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, optical_link, port)
+
+        return optical_link
+
 
 class DataRelationMaker:
     def __init__(self):

@@ -2174,6 +2174,8 @@ class CompositeMutation(relay.ClientIDMutation):
     @classmethod
     def process_metatype_subentities(cls, user, master_nh, root, info, input, context):
         master_ret = dict()
+        ni_metaclass = getattr(cls, 'NIMetaClass')
+        graphql_type = getattr(ni_metaclass, 'graphql_type', None)
 
         for metafield_name, subclass_list in cls.metafields_classes.items():
             for a_subclass in subclass_list:
@@ -2210,7 +2212,7 @@ class CompositeMutation(relay.ClientIDMutation):
                 ret_subdeleted = None
 
                 link_method_name = 'link_{}'.format(metafield_name)
-                link_method = getattr(a_subclass, link_method_name, None)
+                link_method = getattr(graphql_type, link_method_name, None)
 
                 # process create
                 if create_subinputs:
