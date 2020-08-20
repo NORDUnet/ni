@@ -625,7 +625,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
                 self.fake.ean8(), self.escape_quotes(self.fake.license_plate()))
 
         optical_link = self.get_or_create_node(
-            name, 'Optical Link', META_TYPES[0])
+            name, 'Optical Link', META_TYPES[1])
 
         # add context
         self.add_network_context(optical_link)

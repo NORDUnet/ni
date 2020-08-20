@@ -297,11 +297,11 @@ class OpticalLink(NIObjectType, PhysicalMixin):
     operational_state = NIChoiceField(dropdown_name="operational_states", \
         type_kwargs={ 'required': False })
     provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
-    ports = NIListField(type_args=(lambda: Port,), rel_name='Depends_on', rel_method='_outgoing')
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Depends_on', rel_method='get_dependencies')
 
     class NIMetaType:
         ni_type = 'Optical Link'
-        ni_metatype = NIMETA_PHYSICAL
+        ni_metatype = NIMETA_LOGICAL
         context_method = sriutils.get_network_context
 
 
