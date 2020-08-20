@@ -287,6 +287,24 @@ class OpticalFilter(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
+class OpticalLink(NIObjectType, PhysicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    link_type = NIChoiceField(dropdown_name="optical_link_types", \
+        type_kwargs={ 'required': False })
+    interface_type = NIChoiceField(dropdown_name="optical_link_interface_type", \
+        type_kwargs={ 'required': False })
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': False })
+    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Depends_on', rel_method='_outgoing')
+
+    class NIMetaType:
+        ni_type = 'Optical Link'
+        ni_metatype = NIMETA_PHYSICAL
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -334,6 +352,7 @@ network_type_resolver = {
 
     # Optical Nodes
     'Optical Filter': OpticalFilter,
+    'Optical Link': OpticalLink,
 
     # Peering
     'Peering Partner': PeeringPartner,
