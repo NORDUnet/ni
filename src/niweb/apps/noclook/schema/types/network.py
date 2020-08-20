@@ -287,7 +287,7 @@ class OpticalFilter(NIObjectType, PhysicalMixin):
         context_method = sriutils.get_network_context
 
 
-class OpticalLink(NIObjectType, PhysicalMixin):
+class OpticalLink(NIObjectType, LogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
     link_type = NIChoiceField(dropdown_name="optical_link_types", \

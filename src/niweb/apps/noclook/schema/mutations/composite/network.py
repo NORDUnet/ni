@@ -222,6 +222,17 @@ class CompositeOpticalFilterMutation(CompositeMutation):
         include_metafields = ('has')
 
 
+class CompositeOpticalLinkMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = OpticalLink
+        main_mutation_f = NIOpticalLinkMutationFactory
+        context = sriutils.get_network_context()
+        include_metafields = ('dependencies')
+
+
 ## Peering
 class CompositePeeringGroupMutation(CompositeMutation):
     class Input:
