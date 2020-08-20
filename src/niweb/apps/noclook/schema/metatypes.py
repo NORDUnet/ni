@@ -141,9 +141,9 @@ class PhysicalLogicalMixin:
 
     @classmethod
     def link_dependents(cls, user, physical_nh, logical_nh):
-        physical_node = physical_nh.get_node()
-        logical_handle_id = logical_nh.handle_id
-        helpers.set_depends_on(user, physical_node, logical_handle_id)
+        logical_node = logical_nh.get_node()
+        physical_handle_id = physical_nh.handle_id
+        helpers.set_depends_on(user, logical_node, physical_handle_id)
 
 
 class LogicalMixin(PhysicalLogicalMixin):
@@ -163,9 +163,9 @@ class LogicalMixin(PhysicalLogicalMixin):
 
     @classmethod
     def link_dependencies(cls, user, logical1_nh, logical2_nh):
-        logical2_node = logical2_nh.get_node()
-        logical1_handle_id = logical1_node.handle_id
-        helpers.set_depends_on(user, logical2_node, logical1_handle_id)
+        logical1_node = logical1_nh.get_node()
+        logical2_handle_id = logical2_nh.handle_id
+        helpers.set_depends_on(user, logical1_node, logical2_handle_id)
 
 
 class RelationMixin:
