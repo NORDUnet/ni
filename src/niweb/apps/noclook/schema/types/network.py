@@ -305,6 +305,19 @@ class OpticalLink(NIObjectType, LogicalMixin):
         context_method = sriutils.get_network_context
 
 
+class OpticalMultiplexSection(NIObjectType, LogicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': False })
+    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
+
+    class NIMetaType:
+        ni_type = 'Optical Multiplex Section'
+        ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -353,6 +366,7 @@ network_type_resolver = {
     # Optical Nodes
     'Optical Filter': OpticalFilter,
     'Optical Link': OpticalLink,
+    'Optical Multiplex Section': OpticalMultiplexSection,
 
     # Peering
     'Peering Partner': PeeringPartner,
