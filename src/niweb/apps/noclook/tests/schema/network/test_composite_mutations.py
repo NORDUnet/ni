@@ -492,15 +492,15 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_data['description'], cable_description)
 
         # check their relations id
-        test_aport_id = created_data['dependencies'][0]['id']
-        test_bport_id = created_data['dependencies'][1]['id']
+        test_aport_id = created_data['ports'][0]['id']
+        test_bport_id = created_data['ports'][1]['id']
 
         self.assertEqual(aport_id, test_aport_id)
         self.assertEqual(bport_id, test_bport_id)
 
         # check ports in both payload and metatype attribute
         check_aports = [
-            created_data['dependencies'][0],
+            created_data['ports'][0],
             result_data['subcreated'][0]['port'],
         ]
 
@@ -510,7 +510,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(check_aport['description'], aport_description)
 
         check_bports = [
-            created_data['dependencies'][1],
+            created_data['ports'][1],
             result_data['subcreated'][1]['port'],
         ]
 
@@ -650,15 +650,15 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(updated_data['description'], cable_description)
 
             # check their relations id
-            test_aport_id = updated_data['dependencies'][0]['id']
-            test_bport_id = updated_data['dependencies'][1]['id']
+            test_aport_id = updated_data['ports'][0]['id']
+            test_bport_id = updated_data['ports'][1]['id']
 
             self.assertEqual(aport_id, test_aport_id)
             self.assertEqual(bport_id, test_bport_id)
 
             # check ports in both payload and metatype attribute
             check_aports = [
-                updated_data['dependencies'][0],
+                updated_data['ports'][0],
                 result_data['subupdated'][0]['port'],
             ]
 
@@ -668,7 +668,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(check_aport['description'], aport_description)
 
             check_bports = [
-                updated_data['dependencies'][1],
+                updated_data['ports'][1],
                 result_data['subupdated'][1]['port'],
             ]
 
@@ -3738,6 +3738,7 @@ class OpticalMultiplexSectionTest(Neo4jGraphQLNetworkTest):
                     aport_type=aport_type, aport_description=aport_description,
                     bport_name=bport_name, bport_type=bport_type,
                     bport_description=bport_description, provider_id=provider_id)
+        print(query)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
