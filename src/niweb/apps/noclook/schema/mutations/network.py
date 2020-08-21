@@ -561,6 +561,22 @@ class NIOpticalLinkMutationFactory(NIMutationFactory):
         abstract = False
 
 
+class NIOpticalMultiplexSectionMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = NewOpticalMultiplexSectionForm
+        graphql_type = OpticalMultiplexSection
+        unique_node  = True
+        relations_processors = {
+            'relationship_provider': get_unique_relation_processor(
+                'Provides',
+                helpers.set_provider
+            ),
+        }
+
+    class Meta:
+        abstract = False
+
+
 ## Peering
 class NIPeeringPartnerMutationFactory(NIMutationFactory):
     class NIMetaClass:
