@@ -3738,7 +3738,6 @@ class OpticalMultiplexSectionTest(Neo4jGraphQLNetworkTest):
                     aport_type=aport_type, aport_description=aport_description,
                     bport_name=bport_name, bport_type=bport_type,
                     bport_description=bport_description, provider_id=provider_id)
-        print(query)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
