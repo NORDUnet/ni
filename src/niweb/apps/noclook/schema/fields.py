@@ -5,7 +5,7 @@ from apps.noclook.models import NodeHandle, Choice as ChoiceModel, Dropdown as D
 from apps.noclook.vakt import utils as sriutils
 from collections import OrderedDict
 from graphene_django import DjangoObjectType
-from .scalars import ChoiceScalar, IPAddr
+from .scalars import ChoiceScalar, IPAddr, JSON
 
 import graphene
 import types as pytypes
@@ -154,6 +154,16 @@ class NIIPAddrField(NIBasicField):
     def __init__(self, field_type=IPAddr, manual_resolver=False,
                     type_kwargs=None, **kwargs):
         super(NIIPAddrField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+
+class NIJSONField(NIBasicField):
+    '''
+    JSO type
+    '''
+    def __init__(self, field_type=JSON, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIJSONField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
 
 
