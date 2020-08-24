@@ -124,6 +124,11 @@ class NOCRootMutation(graphene.ObjectType):
     delete_opticalMultipleSection = NIOpticalMultiplexSectionMutationFactory.get_delete_mutation().Field()
     composite_opticalMultiplexSection = CompositeOpticalMultiplexSectionMutation.Field()
 
+    create_opticalPath = NIOpticalPathMutationFactory.get_create_mutation().Field()
+    update_opticalPath = NIOpticalPathMutationFactory.get_update_mutation().Field()
+    delete_opticalPath = NIOpticalPathMutationFactory.get_delete_mutation().Field()
+    composite_opticalPath = CompositeOpticalPathMutation.Field()
+
     ## Peering
     update_peeringPartner = NIPeeringPartnerMutationFactory.get_update_mutation().Field()
     delete_peeringPartner = NIPeeringPartnerMutationFactory.get_delete_mutation().Field()
