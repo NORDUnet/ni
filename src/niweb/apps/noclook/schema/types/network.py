@@ -325,6 +325,7 @@ class OpticalPath(NIObjectType, LogicalMixin):
         type_kwargs={ 'required': False })
     capacity = NIChoiceField(dropdown_name="optical_path_capacity", \
         type_kwargs={ 'required': False })
+    wavelength = NIIntField() # Equipment height
     operational_state = NIChoiceField(dropdown_name="operational_states", \
         type_kwargs={ 'required': False })
     enrs = NIJSONField()

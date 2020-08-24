@@ -4017,6 +4017,455 @@ class OpticalMultiplexSectionTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(check_provider, None)
 
 
+class OpticalPathTest(Neo4jGraphQLNetworkTest):
+    def test_optical_path(self):
+        opath_name = "Optical Path Test"
+        opath_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        opath_wavelength = random.randint(10, 30)
+
+        opath_framing = random.choice(
+            Dropdown.objects.get(name="optical_path_framing").as_choices()[1:])[1]
+
+        opath_capacity = random.choice(
+            Dropdown.objects.get(name="optical_path_capacity").as_choices()[1:])[1]
+
+        opath_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        aport_name = "test-01"
+        aport_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+        aport_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        bport_name = "test-02"
+        bport_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+        bport_description = "Nunc varius suscipit lorem, non posuere nisl "\
+            "consequat in. Nulla gravida sapien a velit aliquet, aliquam "\
+            "tincidunt urna ultrices. Vivamus venenatis ligula a erat "\
+            "fringilla faucibus. Suspendisse potenti. Donec rutrum eget "\
+            "nunc sed volutpat. Curabitur sit amet lorem elementum sapien "\
+            "ornare placerat."
+
+        # set a provider
+        generator = NetworkFakeDataGenerator()
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # Create query
+        query = '''
+        mutation{{
+          composite_opticalPath(input:{{
+            create_input:{{
+              name: "{opath_name}"
+              description: "{opath_description}"
+              framing: "{opath_framing}"
+              capacity: "{opath_capacity}"
+              wavelength: {opath_wavelength}
+              operational_state: "{opath_opstate}"
+              relationship_provider: "{provider_id}"
+            }}
+            create_dependencies_port:[
+              {{
+                name: "{aport_name}"
+                port_type: "{aport_type}"
+                description: "{aport_description}"
+              }},
+              {{
+                name: "{bport_name}"
+                port_type: "{bport_type}"
+                description: "{bport_description}"
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalPath{{
+                id
+                name
+                description
+                framing{{
+                  value
+                }}
+                capacity{{
+                  value
+                }}
+                wavelength
+                operational_state{{
+                  value
+                }}
+                dependencies{{
+                  id
+                  name
+                  ...on Port{{
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            dependencies_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  value
+                }}
+                description
+              }}
+            }}
+          }}
+        }}
+        '''.format(opath_name=opath_name, opath_description=opath_description,
+                    opath_framing=opath_framing,
+                    opath_capacity=opath_capacity,
+                    opath_opstate=opath_opstate, aport_name=aport_name,
+                    aport_type=aport_type, aport_description=aport_description,
+                    bport_name=bport_name, bport_type=bport_type,
+                    bport_description=bport_description,
+                    provider_id=provider_id, opath_wavelength=opath_wavelength)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalPath']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_opticalPath']\
+                                    ['dependencies_port_created']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        # get the ids
+        result_data = result.data['composite_opticalPath']
+        opath_id = result_data['created']['opticalPath']['id']
+        aport_id = result_data['dependencies_port_created'][0]['port']['id']
+        bport_id = result_data['dependencies_port_created'][1]['port']['id']
+
+        # check the integrity of the data
+        created_data = result_data['created']['opticalPath']
+
+        # check main optical path
+        self.assertEqual(created_data['name'], opath_name)
+        self.assertEqual(created_data['description'], opath_description)
+        self.assertEqual(created_data['framing']['value'], opath_framing)
+        self.assertEqual(created_data['capacity']['value'], opath_capacity)
+        self.assertEqual(created_data['operational_state']['value'], opath_opstate)
+        self.assertEqual(created_data['wavelength'], opath_wavelength)
+
+        # check their relations id
+        test_aport_id = created_data['dependencies'][0]['id']
+        test_bport_id = created_data['dependencies'][1]['id']
+
+        self.assertEqual(aport_id, test_aport_id)
+        self.assertEqual(bport_id, test_bport_id)
+
+        # check ports in both payload and metatype attribute
+        check_aports = [
+            created_data['dependencies'][0],
+            result_data['dependencies_port_created'][0]['port'],
+        ]
+
+        for check_aport in check_aports:
+            self.assertEqual(check_aport['name'], aport_name)
+            self.assertEqual(check_aport['port_type']['value'], aport_type)
+            self.assertEqual(check_aport['description'], aport_description)
+
+        check_bports = [
+            created_data['dependencies'][1],
+            result_data['dependencies_port_created'][1]['port'],
+        ]
+
+        for check_bport in check_bports:
+            self.assertEqual(check_bport['name'], bport_name)
+            self.assertEqual(check_bport['port_type']['value'], bport_type)
+            self.assertEqual(check_bport['description'], bport_description)
+
+        # check provider
+        check_provider = result_data['created']['opticalPath']['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+        self.assertEqual(check_provider['name'], provider.node_name)
+
+        ## Update query
+        # (do it two times to check that the relationship id is not overwritten)
+        relation_id = None
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        for i in range(2):
+            buffer_description = opath_description
+            buffer_description2 = aport_description
+
+            opath_name = "New Optical Path"
+            opath_description = bport_description
+            opath_wavelength = random.randint(10, 30)
+
+            opath_framing = random.choice(
+                Dropdown.objects.get(name="optical_path_framing").as_choices()[1:])[1]
+
+            opath_capacity = random.choice(
+                Dropdown.objects.get(name="optical_path_capacity").as_choices()[1:])[1]
+
+            opath_opstate = random.choice(
+                Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+            aport_name = "port-01"
+            aport_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+            aport_description = buffer_description2
+
+            bport_name = "port-02"
+            bport_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+            bport_description = buffer_description
+
+            query = '''
+            mutation{{
+              composite_opticalPath(input:{{
+                update_input:{{
+                  id: "{opath_id}"
+                  name: "{opath_name}"
+                  description: "{opath_description}"
+                  framing: "{opath_framing}"
+                  capacity: "{opath_capacity}"
+                  wavelength: {opath_wavelength}
+                  operational_state: "{opath_opstate}"
+                  relationship_provider: "{provider_id}"
+                }}
+                update_dependencies_port:[
+                  {{
+                    id: "{aport_id}"
+                    name: "{aport_name}"
+                    port_type: "{aport_type}"
+                    description: "{aport_description}"
+                  }},
+                  {{
+                    id: "{bport_id}"
+                    name: "{bport_name}"
+                    port_type: "{bport_type}"
+                    description: "{bport_description}"
+                  }}
+                ]
+              }}){{
+                updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  opticalPath{{
+                    id
+                    name
+                    description
+                    framing{{
+                      value
+                    }}
+                    capacity{{
+                      value
+                    }}
+                    wavelength
+                    operational_state{{
+                      value
+                    }}
+                    dependencies{{
+                      id
+                      name
+                      ...on Port{{
+                        port_type{{
+                          value
+                        }}
+                        description
+                      }}
+                    }}
+                    provider{{
+                      id
+                      name
+                      relation_id
+                    }}
+                  }}
+                }}
+                dependencies_port_updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  port{{
+                    id
+                    name
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+              }}
+            }}
+            '''.format(opath_name=opath_name,
+                        opath_description=opath_description,
+                        opath_framing=opath_framing,
+                        opath_capacity=opath_capacity,
+                        opath_opstate=opath_opstate, aport_name=aport_name,
+                        aport_type=aport_type,
+                        aport_description=aport_description,
+                        bport_name=bport_name, bport_type=bport_type,
+                        bport_description=bport_description, opath_id=opath_id,
+                        aport_id=aport_id, bport_id=bport_id,
+                        provider_id=provider_id,
+                        opath_wavelength=opath_wavelength)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_opticalPath']['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            for subcreated in result.data['composite_opticalPath']['dependencies_port_updated']:
+                assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+            # check the integrity of the data
+            result_data = result.data['composite_opticalPath']
+            updated_data = result_data['updated']['opticalPath']
+
+            # check main optical path
+            self.assertEqual(updated_data['name'], opath_name)
+            self.assertEqual(updated_data['description'], opath_description)
+            self.assertEqual(updated_data['framing']['value'], opath_framing)
+            self.assertEqual(updated_data['capacity']['value'], opath_capacity)
+            self.assertEqual(updated_data['operational_state']['value'], opath_opstate)
+            self.assertEqual(updated_data['wavelength'], opath_wavelength)
+
+            # check their relations id
+            test_aport_id = updated_data['dependencies'][0]['id']
+            test_bport_id = updated_data['dependencies'][1]['id']
+
+            self.assertEqual(aport_id, test_aport_id)
+            self.assertEqual(bport_id, test_bport_id)
+
+            # check ports in both payload and metatype attribute
+            check_aports = [
+                updated_data['dependencies'][0],
+                result_data['dependencies_port_updated'][0]['port'],
+            ]
+
+            for check_aport in check_aports:
+                self.assertEqual(check_aport['name'], aport_name)
+                self.assertEqual(check_aport['port_type']['value'], aport_type)
+                self.assertEqual(check_aport['description'], aport_description)
+
+            check_bports = [
+                updated_data['dependencies'][1],
+                result_data['dependencies_port_updated'][1]['port'],
+            ]
+
+            for check_bport in check_bports:
+                self.assertEqual(check_bport['name'], bport_name)
+                self.assertEqual(check_bport['port_type']['value'], bport_type)
+                self.assertEqual(check_bport['description'], bport_description)
+
+            # check provider
+            check_provider = result_data['updated']['opticalPath']['provider']
+            self.assertEqual(check_provider['id'], provider_id)
+            self.assertEqual(check_provider['name'], provider.node_name)
+
+            # check that we only have one provider
+            _type, opath_handle_id = relay.Node.from_global_id(opath_id)
+            opath_nh = NodeHandle.objects.get(handle_id=opath_handle_id)
+            opath_node = opath_nh.get_node()
+            previous_rels = opath_node.incoming.get('Provides', [])
+            self.assertTrue(len(previous_rels) == 1)
+
+            # check relation_id
+            if not relation_id: # first run
+                relation_id = check_provider['relation_id']
+                self.assertIsNotNone(relation_id)
+            else:
+                self.assertEqual(relation_id, check_provider['relation_id'])
+
+        ## Update query 2 (remove provider)
+        query = '''
+        mutation{{
+          composite_opticalPath(input:{{
+            update_input:{{
+              id: "{opath_id}"
+              name: "{opath_name}"
+              description: "{opath_description}"
+              framing: "{opath_framing}"
+              capacity: "{opath_capacity}"
+              wavelength: {opath_wavelength}
+              operational_state: "{opath_opstate}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalPath{{
+                id
+                name
+                description
+                framing{{
+                  value
+                }}
+                capacity{{
+                  value
+                }}
+                wavelength
+                operational_state{{
+                  value
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(opath_id=opath_id, opath_name=opath_name,
+                    opath_description=opath_description,
+                    opath_framing=opath_framing,
+                    opath_capacity=opath_capacity,
+                    opath_opstate=opath_opstate,
+                    opath_wavelength=opath_wavelength)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalPath']['updated']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        # check empty provider
+        check_provider = result.data['composite_opticalPath']['updated']['opticalPath']['provider']
+        self.assertEqual(check_provider, None)
+
+
 ## Peering
 class PeeringGroupTest(Neo4jGraphQLNetworkTest):
     def test_peering_group(self):
