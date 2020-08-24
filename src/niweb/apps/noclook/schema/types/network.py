@@ -318,6 +318,24 @@ class OpticalMultiplexSection(NIObjectType, LogicalMixin):
         context_method = sriutils.get_network_context
 
 
+class OpticalPath(NIObjectType, LogicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    framing = NIChoiceField(dropdown_name="optical_path_framing", \
+        type_kwargs={ 'required': False })
+    capacity = NIChoiceField(dropdown_name="optical_path_capacity", \
+        type_kwargs={ 'required': False })
+    operational_state = NIChoiceField(dropdown_name="operational_states", \
+        type_kwargs={ 'required': False })
+    enrs = NIJSONField()
+    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
+
+    class NIMetaType:
+        ni_type = 'Optical Path'
+        ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -367,6 +385,7 @@ network_type_resolver = {
     'Optical Filter': OpticalFilter,
     'Optical Link': OpticalLink,
     'Optical Multiplex Section': OpticalMultiplexSection,
+    'Optical Path': OpticalPath,
 
     # Peering
     'Peering Partner': PeeringPartner,
