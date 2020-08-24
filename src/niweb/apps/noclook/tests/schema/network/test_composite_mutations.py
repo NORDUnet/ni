@@ -3293,10 +3293,6 @@ class OpticalLinkTest(Neo4jGraphQLNetworkTest):
                     value
                   }}
                   description
-                  connected_to{{
-                    id
-                    name
-                  }}
                 }}
                 provider{{
                   id
@@ -3316,10 +3312,6 @@ class OpticalLinkTest(Neo4jGraphQLNetworkTest):
                   value
                 }}
                 description
-                connected_to{{
-                  id
-                  name
-                }}
               }}
             }}
           }}
@@ -3477,10 +3469,6 @@ class OpticalLinkTest(Neo4jGraphQLNetworkTest):
                         value
                       }}
                       description
-                      connected_to{{
-                        id
-                        name
-                      }}
                     }}
                     provider{{
                       id
@@ -3501,10 +3489,6 @@ class OpticalLinkTest(Neo4jGraphQLNetworkTest):
                       value
                     }}
                     description
-                    connected_to{{
-                      id
-                      name
-                    }}
                   }}
                 }}
               }}
@@ -3640,6 +3624,396 @@ class OpticalLinkTest(Neo4jGraphQLNetworkTest):
 
         # check empty provider
         check_provider = result.data['composite_opticalLink']['updated']['opticalLink']['provider']
+        self.assertEqual(check_provider, None)
+
+
+class OpticalMultiplexSectionTest(Neo4jGraphQLNetworkTest):
+    def test_optical_multiplex(self):
+        oms23_name = "Optical Multiplex Section Test"
+        oms23_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+
+        oms23_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        aport_name = "test-01"
+        aport_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+        aport_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        bport_name = "test-02"
+        bport_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+        bport_description = "Nunc varius suscipit lorem, non posuere nisl "\
+            "consequat in. Nulla gravida sapien a velit aliquet, aliquam "\
+            "tincidunt urna ultrices. Vivamus venenatis ligula a erat "\
+            "fringilla faucibus. Suspendisse potenti. Donec rutrum eget "\
+            "nunc sed volutpat. Curabitur sit amet lorem elementum sapien "\
+            "ornare placerat."
+
+        # set a provider
+        generator = NetworkFakeDataGenerator()
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # Create query
+        query = '''
+        mutation{{
+          composite_opticalMultiplexSection(input:{{
+            create_input:{{
+              name: "{oms23_name}"
+              description: "{oms23_description}"
+              operational_state: "{oms23_opstate}"
+              relationship_provider: "{provider_id}"
+            }}
+            create_dependencies_port:[
+              {{
+                name: "{aport_name}"
+                port_type: "{aport_type}"
+                description: "{aport_description}"
+              }},
+              {{
+                name: "{bport_name}"
+                port_type: "{bport_type}"
+                description: "{bport_description}"
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalMultiplexSection{{
+                id
+                name
+                description
+                operational_state{{
+                  value
+                }}
+                dependencies{{
+                  id
+                  name
+                  ...on Port{{
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            dependencies_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  value
+                }}
+                description
+              }}
+            }}
+          }}
+        }}
+        '''.format(oms23_name=oms23_name, oms23_description=oms23_description,
+                    oms23_opstate=oms23_opstate, aport_name=aport_name,
+                    aport_type=aport_type, aport_description=aport_description,
+                    bport_name=bport_name, bport_type=bport_type,
+                    bport_description=bport_description, provider_id=provider_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalMultiplexSection']\
+                                        ['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_opticalMultiplexSection']\
+                                    ['dependencies_port_created']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        # get the ids
+        result_data = result.data['composite_opticalMultiplexSection']
+        oms23_id = result_data['created']['opticalMultiplexSection']['id']
+        aport_id = result_data['dependencies_port_created'][0]['port']['id']
+        bport_id = result_data['dependencies_port_created'][1]['port']['id']
+
+        # check the integrity of the data
+        created_data = result_data['created']['opticalMultiplexSection']
+
+        # check main optical multiplex section
+        self.assertEqual(created_data['name'], oms23_name)
+        self.assertEqual(created_data['description'], oms23_description)
+        self.assertEqual(created_data['operational_state']['value'], oms23_opstate)
+
+        # check their relations id
+        test_aport_id = created_data['dependencies'][0]['id']
+        test_bport_id = created_data['dependencies'][1]['id']
+
+        self.assertEqual(aport_id, test_aport_id)
+        self.assertEqual(bport_id, test_bport_id)
+
+        # check ports in both payload and metatype attribute
+        check_aports = [
+            created_data['dependencies'][0],
+            result_data['dependencies_port_created'][0]['port'],
+        ]
+
+        for check_aport in check_aports:
+            self.assertEqual(check_aport['name'], aport_name)
+            self.assertEqual(check_aport['port_type']['value'], aport_type)
+            self.assertEqual(check_aport['description'], aport_description)
+
+        check_bports = [
+            created_data['dependencies'][1],
+            result_data['dependencies_port_created'][1]['port'],
+        ]
+
+        for check_bport in check_bports:
+            self.assertEqual(check_bport['name'], bport_name)
+            self.assertEqual(check_bport['port_type']['value'], bport_type)
+            self.assertEqual(check_bport['description'], bport_description)
+
+        # check provider
+        check_provider = result_data['created']['opticalMultiplexSection']['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+        self.assertEqual(check_provider['name'], provider.node_name)
+
+        ## Update query
+        # (do it two times to check that the relationship id is not overwritten)
+        relation_id = None
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        for i in range(2):
+            buffer_description = oms23_description
+            buffer_description2 = aport_description
+
+            oms23_name = "New Optical Multiplex Section"
+            oms23_description = bport_descriptionoms233_opstate = random.choice(
+                Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+            aport_name = "port-01"
+            aport_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+            aport_description = buffer_description2
+
+            bport_name = "port-02"
+            bport_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+            bport_description = buffer_description
+
+            query = '''
+            mutation{{
+              composite_opticalMultiplexSection(input:{{
+                update_input:{{
+                  id: "{oms23_id}"
+                  name: "{oms23_name}"
+                  description: "{oms23_description}"
+                  operational_state: "{oms23_opstate}"
+                  relationship_provider: "{provider_id}"
+                }}
+                update_dependencies_port:[
+                  {{
+                    id: "{aport_id}"
+                    name: "{aport_name}"
+                    port_type: "{aport_type}"
+                    description: "{aport_description}"
+                  }},
+                  {{
+                    id: "{bport_id}"
+                    name: "{bport_name}"
+                    port_type: "{bport_type}"
+                    description: "{bport_description}"
+                  }}
+                ]
+              }}){{
+                updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  opticalMultiplexSection{{
+                    id
+                    name
+                    description
+                    operational_state{{
+                      value
+                    }}
+                    dependencies{{
+                      id
+                      name
+                      ...on Port{{
+                        port_type{{
+                          value
+                        }}
+                        description
+                      }}
+                    }}
+                    provider{{
+                      id
+                      name
+                      relation_id
+                    }}
+                  }}
+                }}
+                dependencies_port_updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  port{{
+                    id
+                    name
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+              }}
+            }}
+            '''.format(oms23_name=oms23_name, oms23_description=oms23_description,
+                        oms23_opstate=oms23_opstate, aport_name=aport_name,
+                        aport_type=aport_type, aport_description=aport_description,
+                        bport_name=bport_name, bport_type=bport_type,
+                        bport_description=bport_description, oms23_id=oms23_id,
+                        aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_opticalMultiplexSection']\
+                                            ['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            for subcreated in result.data['composite_opticalMultiplexSection']\
+                                            ['dependencies_port_updated']:
+                assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+            # check the integrity of the data
+            result_data = result.data['composite_opticalMultiplexSection']
+            updated_data = result_data['updated']['opticalMultiplexSection']
+
+            # check main optical multiplex section
+            self.assertEqual(updated_data['name'], oms23_name)
+            self.assertEqual(updated_data['description'], oms23_description)
+            self.assertEqual(updated_data['operational_state']['value'], oms23_opstate)
+
+            # check their relations id
+            test_aport_id = updated_data['dependencies'][0]['id']
+            test_bport_id = updated_data['dependencies'][1]['id']
+
+            self.assertEqual(aport_id, test_aport_id)
+            self.assertEqual(bport_id, test_bport_id)
+
+            # check ports in both payload and metatype attribute
+            check_aports = [
+                updated_data['dependencies'][0],
+                result_data['dependencies_port_updated'][0]['port'],
+            ]
+
+            for check_aport in check_aports:
+                self.assertEqual(check_aport['name'], aport_name)
+                self.assertEqual(check_aport['port_type']['value'], aport_type)
+                self.assertEqual(check_aport['description'], aport_description)
+
+            check_bports = [
+                updated_data['dependencies'][1],
+                result_data['dependencies_port_updated'][1]['port'],
+            ]
+
+            for check_bport in check_bports:
+                self.assertEqual(check_bport['name'], bport_name)
+                self.assertEqual(check_bport['port_type']['value'], bport_type)
+                self.assertEqual(check_bport['description'], bport_description)
+
+            # check provider
+            check_provider = result_data['updated']['opticalMultiplexSection']['provider']
+            self.assertEqual(check_provider['id'], provider_id)
+            self.assertEqual(check_provider['name'], provider.node_name)
+
+            # check that we only have one provider
+            _type, oms23_handle_id = relay.Node.from_global_id(oms23_id)
+            oms23_nh = NodeHandle.objects.get(handle_id=oms23_handle_id)
+            oms23_node = oms23_nh.get_node()
+            previous_rels = oms23_node.incoming.get('Provides', [])
+            self.assertTrue(len(previous_rels) == 1)
+
+            # check relation_id
+            if not relation_id: # first run
+                relation_id = check_provider['relation_id']
+                self.assertIsNotNone(relation_id)
+            else:
+                self.assertEqual(relation_id, check_provider['relation_id'])
+
+        ## Update query 2 (remove provider)
+        query = '''
+        mutation{{
+          composite_opticalMultiplexSection(input:{{
+            update_input:{{
+              id: "{oms23_id}"
+              name: "{oms23_name}"
+              description: "{oms23_description}"
+              operational_state: "{oms23_opstate}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalMultiplexSection{{
+                id
+                name
+                description
+                operational_state{{
+                  value
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(oms23_id=oms23_id, oms23_name=oms23_name,
+                    oms23_description=oms23_description,
+                    oms23_opstate=oms23_opstate)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalMultiplexSection']\
+            ['updated']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        # check empty provider
+        check_provider = result.data['composite_opticalMultiplexSection']\
+            ['updated']['opticalMultiplexSection']['provider']
         self.assertEqual(check_provider, None)
 
 
