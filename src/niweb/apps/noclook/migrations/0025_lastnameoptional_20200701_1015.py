@@ -31,33 +31,36 @@ def forwards_func(apps, schema_editor):
 
     # wait for neo4j to be available
     neo4j_inited = False
-    while not neo4j_inited:
+    failure_count = 3
+    while not neo4j_inited and failure_count != 0:
         if nc.graphdb.manager:
             neo4j_inited = True
         else:
+            failure_count = failure_count - 1
             time.sleep(2)
 
-    for nh in NodeHandle.objects.filter(node_type=contact_type):
-        # get their node
-        contact_node = nc.get_node_model(nc.graphdb.manager, nh.handle_id)
+    if neo4j_inited:
+        for nh in NodeHandle.objects.filter(node_type=contact_type):
+            # get their node
+            contact_node = nc.get_node_model(nc.graphdb.manager, nh.handle_id)
 
-        # get first and last name
-        first_name = contact_node.data.get(node_prop1, None)
-        last_name = contact_node.data.get(node_prop2, None)
+            # get first and last name
+            first_name = contact_node.data.get(node_prop1, None)
+            last_name = contact_node.data.get(node_prop2, None)
 
-        # check if first_name value is set
-        first_name_value = first_name
+            # check if first_name value is set
+            first_name_value = first_name
 
-        if not first_name:
-            # if not get node name and set it for the first name
-            first_name_value = nh.node_name
+            if not first_name:
+                # if not get node name and set it for the first name
+                first_name_value = nh.node_name
 
-            if last_name:
-                # if last name is filled, set first_name to this value
-                first_name_value = last_name
-                contact_node.remove_property(node_prop2)
+                if last_name:
+                    # if last name is filled, set first_name to this value
+                    first_name_value = last_name
+                    contact_node.remove_property(node_prop2)
 
-        contact_node.add_property(node_prop1, first_name_value)
+            contact_node.add_property(node_prop1, first_name_value)
 
 
 def backwards_func(apps, schema_editor):

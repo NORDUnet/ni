@@ -33,102 +33,107 @@ def forwards_func(apps, schema_editor):
 
     # wait for neo4j to be available
     neo4j_inited = False
-    while not neo4j_inited:
+    failure_count = 3
+    while not neo4j_inited and failure_count != 0:
         if nc.graphdb.manager:
             neo4j_inited = True
         else:
+            failure_count = failure_count - 1
             time.sleep(2)
 
-    username = 'noclook'
-    passwd = User.objects.make_random_password(length=30)
-    user = None
+    if neo4j_inited:
+        username = 'noclook'
+        passwd = User.objects.make_random_password(length=30)
+        user = None
 
-    try:
-        user = User.objects.get(username=username)
-    except:
-        user = User(username=username, password=passwd).save()
+        try:
+            user = User.objects.get(username=username)
+        except:
+            user = User(username=username, password=passwd).save()
 
-    # get the values from the old group dropdown
-    groups_dropname = 'responsible_groups'
+        # get the values from the old group dropdown
+        groups_dropname = 'responsible_groups'
 
-    groupdropdown, created = \
-        Dropdown.objects.get_or_create(name=groups_dropname)
-    choices = Choice.objects.filter(dropdown=groupdropdown)
+        groupdropdown, created = \
+            Dropdown.objects.get_or_create(name=groups_dropname)
+        choices = Choice.objects.filter(dropdown=groupdropdown)
 
-    group_type, created = NodeType.objects.get_or_create(type='Group', slug='group')
-    groups_dict = {}
+        group_type, created = NodeType.objects.get_or_create(type='Group',
+                                                                slug='group')
+        groups_dict = {}
 
-    community_context = sriutils.get_community_context(Context)
+        community_context = sriutils.get_community_context(Context)
 
-    host_type_objs = []
-    for host_type_str in host_types:
-        host_type, created = NodeType.objects.get_or_create(
-            type=host_type_str,
-            slug=slugify(host_type_str)
-        )
-        host_type_objs.append(host_type)
-
-    if NodeHandle.objects.filter(node_type__in=host_type_objs).exists():
-        for choice in choices:
-            node_name = choice.name
-
-            group_nh, created = NodeHandle.objects.get_or_create(
-                node_name=node_name, node_type=group_type,
-                node_meta_type=nc.META_TYPES[1], # Logical
-                creator=user,
-                modifier=user,
+        host_type_objs = []
+        for host_type_str in host_types:
+            host_type, created = NodeType.objects.get_or_create(
+                type=host_type_str,
+                slug=slugify(host_type_str)
             )
+            host_type_objs.append(host_type)
 
-            if created:
-                try:
-                    nc.create_node(
-                            nc.graphdb.manager,
-                        node_name,
-                        group_nh.node_meta_type,
-                        group_type.type,
-                        group_nh.handle_id
-                    )
-                except CypherError:
-                    pass
+        if NodeHandle.objects.filter(node_type__in=host_type_objs).exists():
+            for choice in choices:
+                node_name = choice.name
 
-                NodeHandleContext(
-                    nodehandle=group_nh,
-                    context=community_context
-                ).save()
+                group_nh, created = NodeHandle.objects.get_or_create(
+                    node_name=node_name, node_type=group_type,
+                    node_meta_type=nc.META_TYPES[1], # Logical
+                    creator=user,
+                    modifier=user,
+                )
 
-            groups_dict[node_name] = group_nh
+                if created:
+                    try:
+                        nc.create_node(
+                                nc.graphdb.manager,
+                            node_name,
+                            group_nh.node_meta_type,
+                            group_type.type,
+                            group_nh.handle_id
+                        )
+                    except CypherError:
+                        pass
 
-        # if there's nodes on the db, create groups with these values
-        prop_methods = {
-            'responsible_group': 'set_takes_responsibility',
-            'support_group': 'set_supports',
-        }
+                    NodeHandleContext(
+                        nodehandle=group_nh,
+                        context=community_context
+                    ).save()
 
-        # loop over entity types
-        for host_type in host_type_objs:
-            nhs = NodeHandle.objects.filter(node_type=host_type)
+                groups_dict[node_name] = group_nh
 
-            # loop over entities of this type
-            for nh in nhs:
-                host_node = nc.get_node_model(nc.graphdb.manager, nh.handle_id)
+            # if there's nodes on the db, create groups with these values
+            prop_methods = {
+                'responsible_group': 'set_takes_responsibility',
+                'support_group': 'set_supports',
+            }
 
-                for prop, method_name in prop_methods.items():
-                    # get old data
-                    prop_value = host_node.data.get(prop, None)
+            # loop over entity types
+            for host_type in host_type_objs:
+                nhs = NodeHandle.objects.filter(node_type=host_type)
 
-                    # link matched group
-                    if prop_value and prop_value in groups_dict:
-                        group_nh = groups_dict[prop_value]
-                        group_node = nc.get_node_model(nc.graphdb.manager,\
-                            group_nh.handle_id)
+                # loop over entities of this type
+                for nh in nhs:
+                    host_node = nc.get_node_model(nc.graphdb.manager,
+                                                    nh.handle_id)
 
-                        method = getattr(group_node, method_name, None)
+                    for prop, method_name in prop_methods.items():
+                        # get old data
+                        prop_value = host_node.data.get(prop, None)
 
-                        if method:
-                            method(nh.handle_id)
+                        # link matched group
+                        if prop_value and prop_value in groups_dict:
+                            group_nh = groups_dict[prop_value]
+                            group_node = nc.get_node_model(nc.graphdb.manager,\
+                                group_nh.handle_id)
 
-                        # remove old property
-                        host_node.remove_property(prop)
+                            method = getattr(group_node, method_name, None)
+
+                            if method:
+                                method(nh.handle_id)
+
+                            # remove old property
+                            host_node.remove_property(prop)
 
 
 def backwards_func(apps, schema_editor):
