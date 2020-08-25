@@ -442,7 +442,6 @@ class NewHostForm(RackableForm):
         self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
 
     name = forms.CharField(help_text="The hostname")
-    description = description_field('host')
     ip_addresses = IPAddrField(help_text="One ip per line", required=False)
     description = description_field('machine and what it is used for')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
