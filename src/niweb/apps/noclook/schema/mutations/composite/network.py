@@ -48,6 +48,7 @@ class CompositeSwitchMutation(CompositeMutation):
 
     class NIMetaClass:
         graphql_type = Switch
+        graphql_subtype = Port
         main_mutation_f = NISwitchMutationFactory
         secondary_mutation_f = NIPortMutationFactory
         context = sriutils.get_network_context()

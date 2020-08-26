@@ -814,6 +814,23 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         contract_number = "001"
         max_number_of_ports = 20
 
+        # create new port
+        port_1_name = str(random.randint(0, 50000))
+        port_1_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_1_description = generator.escape_quotes(generator.fake.paragraph())
+
+        # add existent port
+        port = generator.create_port()
+        port_2_id = relay.Node.to_global_id(str(port.node_type),
+                                            str(port.handle_id))
+        port_2_name = str(random.randint(0, 50000))
+        port_2_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_2_description = generator.escape_quotes(generator.fake.paragraph())
+
         query = '''
         mutation{{
           composite_switch(
@@ -836,6 +853,21 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
               }}
+              create_subinputs:[
+                {{
+                  name: "{port_1_name}"
+                  port_type: "{port_1_type}"
+                  description: "{port_1_description}"
+                }}
+              ]
+              update_subinputs:[
+                {{
+                  id: "{port_2_id}"
+                  name: "{port_2_name}"
+                  port_type: "{port_2_type}"
+                  description: "{port_2_description}"
+                }}
+              ]
             }}
           ){{
             created{{
@@ -870,6 +902,40 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version
                 contract_number
                 max_number_of_ports
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
+              }}
+            }}
+            subupdated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
               }}
             }}
           }}
@@ -881,7 +947,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     group1_id=group1_id, group2_id=group2_id,
                     managed_by=managed_by, backup=backup, os=os,
                     os_version=os_version, contract_number=contract_number,
-                    max_number_of_ports=max_number_of_ports)
+                    max_number_of_ports=max_number_of_ports,
+                    port_1_name=port_1_name, port_1_type=port_1_type,
+                    port_1_description=port_1_description,
+                    port_2_name=port_2_name, port_2_type=port_2_type,
+                    port_2_description=port_2_description, port_2_id=port_2_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -918,6 +988,34 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check support group
         check_support = created_switch['support_group']
         self.assertEqual(check_support['id'], group2_id)
+
+        # check ports data
+
+        # check port_1 data
+        created_checkport = result.data['composite_switch']['subcreated'][0]
+        created_errors = created_checkport['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        created_checkport = created_checkport['port']
+        port_1_id = created_checkport['id']
+
+        self.assertEqual(created_checkport['name'], port_1_name)
+        self.assertEqual(created_checkport['port_type']['value'], port_1_type)
+        self.assertEqual(created_checkport['description'], port_1_description)
+
+        # check port_2
+        update_checkport = result.data['composite_switch']['subupdated'][0]
+        updated_errors = update_checkport['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        update_checkport = update_checkport['port']
+        self.assertEqual(update_checkport['name'], port_2_name)
+        self.assertEqual(update_checkport['port_type']['value'], port_2_type)
+        self.assertEqual(update_checkport['description'], port_2_description)
+
+        # check ports in router
+        self.assertEqual(created_switch['ports'][1]['id'], port_1_id)
+        self.assertEqual(created_switch['ports'][0]['id'], port_2_id)
 
         ## simple update
         # get another provider

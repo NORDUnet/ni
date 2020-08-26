@@ -181,6 +181,8 @@ class Switch(NIObjectType, PhysicalMixin):
     provider = NISingleRelationField(field_type=(lambda: Provider),
         rel_name="Provides", rel_method="_incoming")
     max_number_of_ports = NIIntField()
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has',
+                            rel_method='_outgoing')
 
     class NIMetaType:
         ni_type = 'Switch'
