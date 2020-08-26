@@ -1463,10 +1463,12 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         max_number_of_ports = 20
         rack_position = 3
         rack_units = 2
+        rack_back = bool(random.getrandbits(1))
 
         owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
+        services_locked = bool(random.getrandbits(1))
 
         query = '''
         mutation{{
@@ -1493,6 +1495,8 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
               max_number_of_ports: {max_number_of_ports}
               rack_units: {rack_units}
               rack_position: {rack_position}
+              services_locked: {services_locked}
+              rack_back: {rack_back}
             }}
           }}){{
             updated{{
@@ -1534,6 +1538,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 max_number_of_ports
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 contract_number
                 location{{
                   id
@@ -1556,7 +1563,8 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             service_tag=service_tag, end_support=end_support,
             contract_number=contract_number, owner_id=owner_id,
             max_number_of_ports=max_number_of_ports, rack_units=rack_units,
-            rack_position=rack_position)
+            rack_position=rack_position, rack_back=str(rack_back).lower(),
+            services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1580,7 +1588,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_firewall['max_number_of_ports'], max_number_of_ports)
         self.assertEqual(updated_firewall['rack_units'], rack_units)
         self.assertEqual(updated_firewall['rack_position'], rack_position)
+        self.assertEqual(updated_firewall['rack_back'], rack_back)
         self.assertEqual(updated_firewall['contract_number'], contract_number)
+        self.assertEqual(updated_firewall['services_locked'], services_locked)
 
         # check responsible group
         check_responsible = updated_firewall['responsible_group']
