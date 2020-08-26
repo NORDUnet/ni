@@ -1693,6 +1693,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
             "eget sollicitudin dui."
         rack_units = 2
         rack_position = 3
+        rack_back = bool(random.getrandbits(1))
 
         # port data
         port1_name = "test-01"
@@ -1727,6 +1728,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
               relationship_owner: "{owner_id}"
               rack_units: {rack_units}
               rack_position: {rack_position}
+              rack_back: {rack_back}
             }}
             create_has_port:[
               {{
@@ -1755,6 +1757,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                 description
                 rack_units
                 rack_position
+                rack_back
                 owner{{
                   id
                   name
@@ -1799,7 +1802,9 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         }}
         '''.format(exteq_name=exteq_name, exteq_description=exteq_description,
                     owner_id=owner_id, rack_units=rack_units,
-                    rack_position=rack_position, port1_name=port1_name,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_name=port1_name,
                     port1_type=port1_type, port1_description=port1_description,
                     port2_id=port2_id, port2_name=port2_name,
                     port2_type=port2_type, port2_description=port2_description)
@@ -1828,6 +1833,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_extequip['description'], exteq_description)
         self.assertEqual(created_extequip['rack_units'], rack_units)
         self.assertEqual(created_extequip['rack_position'], rack_position)
+        self.assertEqual(created_extequip['rack_back'], rack_back)
 
         # check subentities
         port1_id = result.data \
