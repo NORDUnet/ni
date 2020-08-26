@@ -131,6 +131,7 @@ class NISwitchMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+        update_exclude = ('relationship_ports', 'relationship_depends_on')
 
 
 class NIRouterMutationFactory(NIMutationFactory):
@@ -400,6 +401,7 @@ class EditHost(CreateNIMutation):
         request_path   = '/'
         graphql_type   = Host
         is_create = False
+        exclude = ('relationship_ports', 'relationship_depends_on', )
 
         relations_processors = {
             'relationship_owner': get_unique_relation_processor(
