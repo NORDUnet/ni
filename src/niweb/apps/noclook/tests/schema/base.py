@@ -6,6 +6,7 @@ import apps.noclook.vakt.utils as sriutils
 from django.db import connection
 
 from apps.noclook.models import NodeHandle, Group, GroupContextAuthzAction
+from apps.noclook.schema.utils import add_sunet_dropdowns
 from apps.noclook.tests.neo4j_base import NeoTestCase
 from apps.noclook.tests.testing import nc
 from pprint import pformat
@@ -24,6 +25,9 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
 
     def setUp(self, group_dict=None):
         super(Neo4jGraphQLGenericTest, self).setUp()
+        # add Sunet dropdowns
+        self.has_sunet_dropdowns = add_sunet_dropdowns()
+
         self.context = TestContext(self.user)
 
         # get read aa

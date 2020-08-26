@@ -355,6 +355,8 @@ class PortCompositeTest(Neo4jGraphQLNetworkTest):
 
 class PortCableTest(Neo4jGraphQLNetworkTest):
     def test_cable_port(self):
+        generator = NetworkFakeDataGenerator()
+
         cable_name = "Test cable"
         cable_type = "Patch"
         cable_description = "Integer posuere est at sapien elementum, "\
@@ -363,6 +365,11 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
             "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
             "eget sollicitudin dui."
+
+        cable_contract = random.choice(
+            Dropdown.objects.get(name="tele2_cable_contracts").as_choices()[1:][1]
+        )
+        cable_circuitid = generator.escape_quotes(generator.fake.ean8())
 
         aport_name = "test-01"
         aport_type = "Schuko"
@@ -383,7 +390,6 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             "ornare placerat."
 
         # set a provider
-        generator = NetworkFakeDataGenerator()
         provider = generator.create_provider()
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
@@ -397,6 +403,8 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
               cable_type: "{cable_type}"
               description: "{cable_description}"
               relationship_provider: "{provider_id}"
+              tele2_cable_contract: "{cable_contract}"
+              tele2_alternative_circuit_id: "{cable_circuitid}"
             }}
             create_subinputs:[
               {{
@@ -439,6 +447,10 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                tele2_cable_contract{{
+                  value
+                }}
+                tele2_alternative_circuit_id
               }}
             }}
             subcreated{{
@@ -465,7 +477,9 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                     cable_description=cable_description, aport_name=aport_name,
                     aport_type=aport_type, aport_description=aport_description,
                     bport_name=bport_name, bport_type=bport_type,
-                    bport_description=bport_description, provider_id=provider_id)
+                    bport_description=bport_description,
+                    provider_id=provider_id, cable_contract=cable_contract,
+                    cable_circuitid=cable_circuitid)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -490,6 +504,10 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_data['name'], cable_name)
         self.assertEqual(created_data['cable_type']['value'], cable_type)
         self.assertEqual(created_data['description'], cable_description)
+        self.assertEqual(created_data['tele2_cable_contract']['value'],
+                            cable_contract)
+        self.assertEqual(created_data['tele2_alternative_circuit_id'],
+                            cable_circuitid)
 
         # check their relations id
         test_aport_id = created_data['ports'][0]['id']
@@ -547,6 +565,11 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             bport_type = "RJ45"
             bport_description = buffer_description
 
+            cable_contract = random.choice(
+                Dropdown.objects.get(name="tele2_cable_contracts").as_choices()[1:][1]
+            )
+            cable_circuitid = generator.escape_quotes(generator.fake.ean8())
+
             query = '''
             mutation{{
               composite_cable(input:{{
@@ -556,6 +579,8 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                   cable_type: "{cable_type}"
                   description: "{cable_description}"
                   relationship_provider: "{provider_id}"
+                  tele2_cable_contract: "{cable_contract}"
+                  tele2_alternative_circuit_id: "{cable_circuitid}"
                 }}
                 update_subinputs:[
                   {{
@@ -601,6 +626,10 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                       name
                       relation_id
                     }}
+                    tele2_cable_contract{{
+                      value
+                    }}
+                    tele2_alternative_circuit_id
                   }}
                 }}
                 subupdated{{
@@ -628,7 +657,9 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                         aport_type=aport_type, aport_description=aport_description,
                         bport_name=bport_name, bport_type=bport_type,
                         bport_description=bport_description, cable_id=cable_id,
-                        aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
+                        aport_id=aport_id, bport_id=bport_id,
+                        provider_id=provider_id, cable_contract=cable_contract,
+                        cable_circuitid=cable_circuitid)
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -648,6 +679,10 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(updated_data['name'], cable_name)
             self.assertEqual(updated_data['cable_type']['value'], cable_type)
             self.assertEqual(updated_data['description'], cable_description)
+            self.assertEqual(updated_data['tele2_cable_contract']['value'],
+                                cable_contract)
+            self.assertEqual(updated_data['tele2_alternative_circuit_id'],
+                                cable_circuitid)
 
             # check their relations id
             test_aport_id = updated_data['ports'][0]['id']
@@ -705,6 +740,8 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
               name: "{cable_name}"
               cable_type: "{cable_type}"
               description: "{cable_description}"
+              tele2_cable_contract: "{cable_contract}"
+              tele2_alternative_circuit_id: "{cable_circuitid}"
             }}
           }}){{
             updated{{
@@ -729,7 +766,9 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
           }}
         }}
         '''.format(cable_id=cable_id, cable_name=cable_name, cable_type=cable_type,
-                    cable_description=cable_description)
+                    cable_description=cable_description,
+                    cable_contract=cable_contract,
+                    cable_circuitid=cable_circuitid)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)

@@ -80,6 +80,8 @@ class Cable(NIObjectType, PhysicalMixin):
     description = NIStringField()
     provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
     ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', rel_method='_outgoing')
+    tele2_cable_contract = NIChoiceField(dropdown_name="tele2_cable_contracts")
+    tele2_alternative_circuit_id = NIStringField()
 
     class NIMetaType:
         ni_type = 'Cable'
