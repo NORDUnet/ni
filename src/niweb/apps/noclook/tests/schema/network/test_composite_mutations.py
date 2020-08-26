@@ -842,8 +842,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
+
         rack_units = 2
         rack_position = 3
+        rack_back = bool(random.getrandbits(1))
+
         managed_by = random.choice(
             Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
         )
@@ -852,6 +855,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         os_version = "5.8"
         contract_number = "001"
         max_number_of_ports = 20
+        services_locked = bool(random.getrandbits(1))
 
         # create new port
         port_1_name = str(random.randint(0, 50000))
@@ -881,6 +885,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses: "{ip_address}"
                 rack_units: {rack_units}
                 rack_position: {rack_position}
+                rack_back: {rack_back}
                 operational_state: "{operational_state}"
                 relationship_provider: "{provider_id}"
                 responsible_group: "{group1_id}"
@@ -891,6 +896,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version: "{os_version}"
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
+                services_locked: {services_locked}
               }}
               create_subinputs:[
                 {{
@@ -921,6 +927,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 provider{{
                   id
                   name
@@ -990,7 +999,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     port_1_name=port_1_name, port_1_type=port_1_type,
                     port_1_description=port_1_description,
                     port_2_name=port_2_name, port_2_type=port_2_type,
-                    port_2_description=port_2_description, port_2_id=port_2_id)
+                    port_2_description=port_2_description, port_2_id=port_2_id,
+                    rack_back=str(rack_back).lower(),
+                    services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1008,6 +1019,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['description'], switch_description)
         self.assertEqual(created_switch['rack_units'], rack_units)
         self.assertEqual(created_switch['rack_position'], rack_position)
+        self.assertEqual(created_switch['rack_back'], rack_back)
         self.assertEqual(created_switch['ip_addresses'], ip_addresses)
         self.assertEqual(created_switch['managed_by']['value'], managed_by)
         self.assertEqual(created_switch['backup'], backup)
@@ -1015,6 +1027,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['os_version'], os_version)
         self.assertEqual(created_switch['contract_number'], contract_number)
         self.assertEqual(created_switch['max_number_of_ports'], max_number_of_ports)
+        self.assertEqual(created_switch['services_locked'], services_locked)
 
         # check provider
         check_provider = created_switch['provider']
@@ -1069,8 +1082,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
+
         rack_units = 3
         rack_position = 2
+        rack_back = bool(random.getrandbits(1))
+
         managed_by = random.choice(
             Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
         )
@@ -1079,6 +1095,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         os_version = "5.7"
         contract_number = "002"
         max_number_of_ports = 15
+        services_locked = bool(random.getrandbits(1))
 
         query = '''
         mutation{{
@@ -1091,6 +1108,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses: "{ip_address}"
                 rack_units: {rack_units}
                 rack_position: {rack_position}
+                rack_back: {rack_back}
                 operational_state: "{operational_state}"
                 relationship_provider: "{provider_id}"
                 responsible_group: "{group2_id}"
@@ -1101,6 +1119,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version: "{os_version}"
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
+                services_locked: {services_locked}
               }}
             }}
           ){{
@@ -1116,6 +1135,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 provider{{
                   id
                   name
@@ -1148,7 +1170,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     group1_id=group1_id, group2_id=group2_id,
                     managed_by=managed_by, backup=backup, os=os,
                     os_version=os_version, contract_number=contract_number,
-                    max_number_of_ports=max_number_of_ports)
+                    max_number_of_ports=max_number_of_ports,
+                    rack_back=str(rack_back).lower(),
+                    services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1164,6 +1188,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_switch['description'], switch_description)
         self.assertEqual(updated_switch['rack_units'], rack_units)
         self.assertEqual(updated_switch['rack_position'], rack_position)
+        self.assertEqual(updated_switch['rack_back'], rack_back)
         self.assertEqual(updated_switch['ip_addresses'], ip_addresses)
         self.assertEqual(updated_switch['managed_by']['value'], managed_by)
         self.assertEqual(updated_switch['backup'], backup)
@@ -1171,6 +1196,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_switch['os_version'], os_version)
         self.assertEqual(updated_switch['contract_number'], contract_number)
         self.assertEqual(updated_switch['max_number_of_ports'], max_number_of_ports)
+        self.assertEqual(updated_switch['services_locked'], services_locked)
 
         # check provider
         check_provider = updated_switch['provider']
@@ -2000,6 +2026,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 Dropdown.objects.get(name="operational_states")\
                     .as_choices()[1:][1]
             )
+
             rack_units = 2
             rack_position = 3
             rack_back = bool(random.getrandbits(1))

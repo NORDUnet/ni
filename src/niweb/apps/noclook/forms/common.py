@@ -509,7 +509,7 @@ class EditSRIHostForm(NewSRIHostForm, EditHostForm):
         self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
 
 
-class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, NewHostForm):
+class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, EditHostForm):
     def __init__(self, *args, **kwargs):
         super(NewSwitchHostForm, self).__init__(*args, **kwargs)
         self.fields['switch_type'].choices = SwitchType.as_choices()
