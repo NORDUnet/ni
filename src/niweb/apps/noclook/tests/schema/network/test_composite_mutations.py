@@ -1992,6 +1992,8 @@ class HostTest(Neo4jGraphQLNetworkTest):
             )
             rack_units = 2
             rack_position = 3
+            rack_back = bool(random.getrandbits(1))
+
             managed_by = random.choice(
                 Dropdown.objects.get(name="host_management_sw")\
                     .as_choices()[1:][1]
@@ -2005,6 +2007,8 @@ class HostTest(Neo4jGraphQLNetworkTest):
             query_owner = owner_query['query_owner']
 
             owner_id = None
+
+            services_locked = bool(random.getrandbits(1))
 
             if input_owner:
                 owner = net_generator.create_customer()
@@ -2024,6 +2028,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     ip_addresses: "{ip_address}"
                     rack_units: {rack_units}
                     rack_position: {rack_position}
+                    rack_back: {rack_back}
                     operational_state: "{operational_state}"
                     responsible_group: "{group1_id}"
                     support_group: "{group2_id}"
@@ -2032,6 +2037,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     os: "{os}"
                     os_version: "{os_version}"
                     contract_number: "{contract_number}"
+                    services_locked: {services_locked}
                     {input_owner}
                   }}
                 }}
@@ -2067,6 +2073,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     contract_number
                     rack_units
                     rack_position
+                    rack_back
+                    services_locked
+                    services_checked
                     {query_owner}
                   }}
                 }}
@@ -2079,7 +2088,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
                         group1_id=group1_id, group2_id=group2_id,
                         managed_by=managed_by, backup=backup, os=os,
                         os_version=os_version, contract_number=contract_number,
-                        input_owner=input_owner, query_owner=query_owner)
+                        input_owner=input_owner, query_owner=query_owner,
+                        rack_back=str(rack_back).lower(),
+                        services_locked=str(services_locked).lower())
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -2098,12 +2109,14 @@ class HostTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(created_host['operational_state']['value'], operational_state)
             self.assertEqual(created_host['rack_units'], rack_units)
             self.assertEqual(created_host['rack_position'], rack_position)
+            self.assertEqual(created_host['rack_back'], rack_back)
             self.assertEqual(created_host['ip_addresses'], ip_addresses)
             self.assertEqual(created_host['managed_by']['value'], managed_by)
             self.assertEqual(created_host['backup'], backup)
             self.assertEqual(created_host['os'], os)
             self.assertEqual(created_host['os_version'], os_version)
             self.assertEqual(created_host['contract_number'], contract_number)
+            self.assertEqual(created_host['services_locked'], services_locked)
 
             # check responsible group
             check_responsible = created_host['responsible_group']
@@ -2137,6 +2150,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               ip_addresses: "{ip_address}"
               rack_units: {rack_units}
               rack_position: {rack_position}
+              rack_back: {rack_back}
               operational_state: "{operational_state}"
               responsible_group: "{group1_id}"
               support_group: "{group2_id}"
@@ -2145,6 +2159,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               os: "{os}"
               os_version: "{os_version}"
               contract_number: "{contract_number}"
+              services_locked: {services_locked}
               {extra_input}
             }}
           }}){{
@@ -2179,6 +2194,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 contract_number
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 {extra_query}
               }}
             }}
@@ -2240,6 +2258,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
                 rack_units = random.randint(1,10)
                 rack_position = random.randint(1,10)
+                rack_back = bool(random.getrandbits(1))
 
                 operational_state = random.choice(
                     Dropdown.objects.get(name="operational_states")\
@@ -2266,15 +2285,19 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     extra_input = ''
                     extra_query = host_user_query[k]['extra_query']
 
+                services_locked = bool(random.getrandbits(1))
+
                 query = edit_query.format(
                             host_id=host_id,
                             host_name=host_name, host_description=host_description,
                             ip_address="\\n".join(ip_addresses),
                             rack_units=rack_units, rack_position=rack_position,
+                            rack_back=str(rack_back).lower(),
                             operational_state=operational_state,
                             group1_id=group1_id, group2_id=group2_id,
                             managed_by=managed_by, backup=backup, os=os,
                             os_version=os_version, contract_number=contract_number,
+                            services_locked=str(services_locked).lower(),
                             extra_input=extra_input, extra_query=extra_query)
 
                 result = schema.execute(query, context=self.context)
@@ -2292,12 +2315,14 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(updated_host['operational_state']['value'], operational_state)
                 self.assertEqual(updated_host['rack_units'], rack_units)
                 self.assertEqual(updated_host['rack_position'], rack_position)
+                self.assertEqual(updated_host['rack_back'], rack_back)
                 self.assertEqual(updated_host['ip_addresses'], ip_addresses)
                 self.assertEqual(updated_host['managed_by']['value'], managed_by)
                 self.assertEqual(updated_host['backup'], backup)
                 self.assertEqual(updated_host['os'], os)
                 self.assertEqual(updated_host['os_version'], os_version)
                 self.assertEqual(updated_host['contract_number'], contract_number)
+                self.assertEqual(updated_host['services_locked'], services_locked)
 
                 check_id = None
 

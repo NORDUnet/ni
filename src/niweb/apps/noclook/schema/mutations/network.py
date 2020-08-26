@@ -289,7 +289,7 @@ class CreateHost(CreateNIMutation):
             return has_error, errordict
 
     class NIMetaClass:
-        django_form = NewSRIHostForm
+        django_form = EditSRIHostForm
         request_path   = '/'
         graphql_type   = Host
         is_create = True
