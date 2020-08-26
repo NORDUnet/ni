@@ -1291,7 +1291,9 @@ class RouterTest(Neo4jGraphQLNetworkTest):
 
         # get new data to feed the update mutation
         rack_units = random.randint(1,10)
-        rack_units = random.randint(1,10)
+        rack_position = random.randint(1,10)
+        rack_back = bool(random.getrandbits(1))
+
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
@@ -1321,6 +1323,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
               description: "{description}"
               operational_state: "{operational_state}"
               rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
             }}
             create_subinputs:[
               {{
@@ -1354,6 +1358,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
                 model
                 version
                 rack_units
+                rack_position
+                rack_back
                 location{{
                   id
                   name
@@ -1398,6 +1404,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         }}
         '''.format(router_id=router_id, description=description,
                     operational_state=operational_state, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
                     port_1_name=port_1_name, port_1_type=port_1_type,
                     port_1_description=port_1_description,
                     port_2_id=port_2_id, port_2_name=port_2_name,
@@ -1418,6 +1426,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_router['operational_state']['value'],\
             operational_state)
         self.assertEqual(updated_router ['rack_units'], rack_units)
+        self.assertEqual(updated_router['rack_position'], rack_position)
+        self.assertEqual(updated_router['rack_back'], rack_back)
 
         # check ports data
 
