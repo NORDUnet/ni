@@ -479,6 +479,7 @@ class NewHostForm(RackableForm):
 class EditHostForm(NewHostForm):
     relationship_user = relationship_field('user')
     relationship_depends_on = relationship_field('depends on')
+    relationship_ports = JSONField(required=False, widget=JSONInput)
 
     services_locked = forms.BooleanField(required=False)
     services_checked = forms.BooleanField(required=False)
