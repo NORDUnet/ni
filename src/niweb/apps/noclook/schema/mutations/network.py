@@ -4,7 +4,6 @@ __author__ = 'ffuentes'
 import graphene
 import norduniclient as nc
 from apps.noclook.forms import *
-from apps.noclook.forms.sunet import EditCableForm as SRIEditCableForm
 from apps.noclook.models import SwitchType as SwitchTypeModel
 import apps.noclook.vakt.utils as sriutils
 from apps.noclook.schema.types import *
@@ -82,7 +81,7 @@ class NIPortMutationFactory(NIMutationFactory):
 
 class NICableMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        form         = SRIEditCableForm
+        form         = EditCableForm
         request_path = '/'
         graphql_type = Cable
         relations_processors = {
@@ -111,7 +110,7 @@ def process_switch_type(request, form, nodehandler, relation_name):
 
 class NISwitchMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        create_form    = NewSwitchHostForm
+        create_form    = EditSwitchForm
         update_form    = EditSwitchForm
         graphql_type   = Switch
         unique_node    = True

@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 from apps.noclook.schema.core import *
 from apps.noclook.models import SwitchType as SwitchTypeModel
+from apps.noclook.schema.utils import sunet_forms_enabled
 from .community import Group
 
 ## Organizations
@@ -78,15 +79,35 @@ class Cable(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     cable_type = NIChoiceField(dropdown_name="cable_types")
     description = NIStringField()
-    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
-    ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', rel_method='_outgoing')
-    tele2_cable_contract = NIChoiceField(dropdown_name="tele2_cable_contracts")
-    tele2_alternative_circuit_id = NIStringField()
+    provider = NISingleRelationField(field_type=(lambda: Provider), \
+        rel_name="Provides", rel_method="_incoming")
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', \
+        rel_method='_outgoing')
 
     class NIMetaType:
         ni_type = 'Cable'
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
+
+
+## If the list of differing forms/types/fiels grows we should use a cleaner way
+if sunet_forms_enabled():
+    class Cable(NIObjectType, PhysicalMixin):
+        name = NIStringField(type_kwargs={ 'required': True })
+        cable_type = NIChoiceField(dropdown_name="cable_types")
+        description = NIStringField()
+        provider = NISingleRelationField(field_type=(lambda: Provider), \
+            rel_name="Provides", rel_method="_incoming")
+        ports = NIListField(type_args=(lambda: Port,), \
+            rel_name='Connected_to', rel_method='_outgoing')
+        tele2_cable_contract = NIChoiceField(\
+                                dropdown_name="tele2_cable_contracts")
+        tele2_alternative_circuit_id = NIStringField()
+
+        class NIMetaType:
+            ni_type = 'Cable'
+            ni_metatype = NIMETA_PHYSICAL
+            context_method = sriutils.get_network_context
 
 
 allowed_types_converthost = ['firewall', 'switch', 'pdu', 'router']
