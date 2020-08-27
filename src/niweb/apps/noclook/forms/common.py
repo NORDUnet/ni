@@ -442,7 +442,6 @@ class NewHostForm(RackableForm):
         self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
 
     name = forms.CharField(help_text="The hostname")
-    description = description_field('host')
     ip_addresses = IPAddrField(help_text="One ip per line", required=False)
     description = description_field('machine and what it is used for')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
@@ -480,6 +479,7 @@ class NewHostForm(RackableForm):
 class EditHostForm(NewHostForm):
     relationship_user = relationship_field('user')
     relationship_depends_on = relationship_field('depends on')
+    relationship_ports = JSONField(required=False, widget=JSONInput)
 
     services_locked = forms.BooleanField(required=False)
     services_checked = forms.BooleanField(required=False)
@@ -509,7 +509,7 @@ class EditSRIHostForm(NewSRIHostForm, EditHostForm):
         self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
 
 
-class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, NewHostForm):
+class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, EditHostForm):
     def __init__(self, *args, **kwargs):
         super(NewSwitchHostForm, self).__init__(*args, **kwargs)
         self.fields['switch_type'].choices = SwitchType.as_choices()
@@ -521,7 +521,7 @@ class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, Ne
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
 
-class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, NewHostForm):
+class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, EditHostForm):
     def __init__(self, *args, **kwargs):
         super(EditSwitchForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()

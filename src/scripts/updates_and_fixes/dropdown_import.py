@@ -22,7 +22,7 @@ def main():
     parser.add_argument('csv_file', help='The csv file to import')
     args = parser.parse_args()
 
-    with open(args.csv_file, 'rb') as csv_file:
+    with open(args.csv_file, 'r') as csv_file:
         for row in csv.DictReader(csv_file):
             dropdown, created = Dropdown.objects.get_or_create(name=row['dropdown'])
             value = row['value']

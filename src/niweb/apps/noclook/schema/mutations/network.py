@@ -81,16 +81,17 @@ class NIPortMutationFactory(NIMutationFactory):
 
 class NICableMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        create_form    = NewCableForm
-        update_form    = EditCableForm
-        request_path   = '/'
-        graphql_type   = Cable
+        form         = EditCableForm
+        request_path = '/'
+        graphql_type = Cable
         relations_processors = {
             'relationship_provider': get_unique_relation_processor(
                 'Provides',
                 helpers.set_provider
             ),
         }
+        create_exclude = ('relationship_end_a', 'relationship_end_b')
+        update_exclude = ('relationship_end_a', 'relationship_end_b')
 
     class Meta:
         abstract = False
@@ -131,6 +132,7 @@ class NISwitchMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+        update_exclude = ('relationship_ports', 'relationship_depends_on')
 
 
 class NIRouterMutationFactory(NIMutationFactory):
@@ -286,7 +288,7 @@ class CreateHost(CreateNIMutation):
             return has_error, errordict
 
     class NIMetaClass:
-        django_form = NewSRIHostForm
+        django_form = EditSRIHostForm
         request_path   = '/'
         graphql_type   = Host
         is_create = True
@@ -400,6 +402,7 @@ class EditHost(CreateNIMutation):
         request_path   = '/'
         graphql_type   = Host
         is_create = False
+        exclude = ('relationship_ports', 'relationship_depends_on', )
 
         relations_processors = {
             'relationship_owner': get_unique_relation_processor(
