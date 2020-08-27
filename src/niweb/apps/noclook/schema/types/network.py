@@ -3,6 +3,7 @@ __author__ = 'ffuentes'
 
 from apps.noclook.schema.core import *
 from apps.noclook.models import SwitchType as SwitchTypeModel
+from apps.noclook.schema.utils import sunet_forms_enabled
 from .community import Group
 
 ## Organizations
@@ -78,13 +79,35 @@ class Cable(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     cable_type = NIChoiceField(dropdown_name="cable_types")
     description = NIStringField()
-    provider = NISingleRelationField(field_type=(lambda: Provider), rel_name="Provides", rel_method="_incoming")
-    ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', rel_method='_outgoing')
+    provider = NISingleRelationField(field_type=(lambda: Provider), \
+        rel_name="Provides", rel_method="_incoming")
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Connected_to', \
+        rel_method='_outgoing')
 
     class NIMetaType:
         ni_type = 'Cable'
         ni_metatype = NIMETA_PHYSICAL
         context_method = sriutils.get_network_context
+
+
+## If the list of differing forms/types/fiels grows we should use a cleaner way
+if sunet_forms_enabled():
+    class Cable(NIObjectType, PhysicalMixin):
+        name = NIStringField(type_kwargs={ 'required': True })
+        cable_type = NIChoiceField(dropdown_name="cable_types")
+        description = NIStringField()
+        provider = NISingleRelationField(field_type=(lambda: Provider), \
+            rel_name="Provides", rel_method="_incoming")
+        ports = NIListField(type_args=(lambda: Port,), \
+            rel_name='Connected_to', rel_method='_outgoing')
+        tele2_cable_contract = NIChoiceField(\
+                                dropdown_name="tele2_cable_contracts")
+        tele2_alternative_circuit_id = NIStringField()
+
+        class NIMetaType:
+            ni_type = 'Cable'
+            ni_metatype = NIMETA_PHYSICAL
+            context_method = sriutils.get_network_context
 
 
 allowed_types_converthost = ['firewall', 'switch', 'pdu', 'router']
@@ -109,9 +132,12 @@ class Host(NIObjectType, PhysicalLogicalMixin):
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
+    rack_back = NIBooleanField()
     host_owner = NISingleRelationField(field_type=(lambda: Relation), rel_name="Owns", rel_method="_incoming")
     host_user = NISingleRelationField(field_type=(lambda: HostUser), rel_name="Uses", rel_method="_incoming")
     host_services = NIStringField()
+    services_locked = NIBooleanField()
+    services_checked = NIBooleanField()
 
     def resolve_ip_addresses(self, info, **kwargs):
         '''Manual resolver for the ip field'''
@@ -134,7 +160,9 @@ class Router(NIObjectType, PhysicalMixin):
         type_kwargs={ 'required': True })
     model = NIStringField()
     version = NIStringField()
-    rack_units = NIIntField()
+    rack_units = NIIntField() # Equipment height
+    rack_position = NIIntField()
+    rack_back = NIBooleanField()
     ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
 
     class NIMetaType:
@@ -178,9 +206,14 @@ class Switch(NIObjectType, PhysicalMixin):
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
+    rack_back = NIBooleanField()
     provider = NISingleRelationField(field_type=(lambda: Provider),
         rel_name="Provides", rel_method="_incoming")
     max_number_of_ports = NIIntField()
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has',
+                            rel_method='_outgoing')
+    services_locked = NIBooleanField()
+    services_checked = NIBooleanField()
 
     class NIMetaType:
         ni_type = 'Switch'
@@ -213,7 +246,10 @@ class Firewall(NIObjectType, PhysicalMixin):
     contract_number = NIStringField()
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
+    rack_back = NIBooleanField()
     max_number_of_ports = NIIntField()
+    services_locked = NIBooleanField()
+    services_checked = NIBooleanField()
 
     class NIMetaType:
         ni_type = 'Firewall'
@@ -227,6 +263,7 @@ class ExternalEquipment(NIObjectType, PhysicalMixin):
     ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
+    rack_back = NIBooleanField()
 
     class NIMetaType:
         ni_type = 'External Equipment'

@@ -24,6 +24,7 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
 
     def setUp(self, group_dict=None):
         super(Neo4jGraphQLGenericTest, self).setUp()
+        
         self.context = TestContext(self.user)
 
         # get read aa

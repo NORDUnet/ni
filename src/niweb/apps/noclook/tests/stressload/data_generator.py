@@ -7,6 +7,7 @@ from faker import Faker
 from apps.nerds.lib.consumer_util import get_user
 from apps.noclook import helpers
 from apps.noclook.models import NodeHandle, NodeType, Dropdown, Choice, NodeHandleContext
+from apps.noclook.schema.utils import sunet_forms_enabled
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
 import norduniclient as nc
@@ -402,14 +403,21 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             port_a = random.choice(all_ports)
             port_b = random.choice(all_ports)
 
-
         data = {
             'cable_type' : random.choice(cable_types),
-            'description' : self.fake.paragraph(),
+            'description' : self.escape_quotes(self.fake.paragraph()),
             'relationship_provider' : provider.handle_id,
             'relationship_end_a' : port_a.handle_id,
             'relationship_end_b' : port_b.handle_id,
         }
+
+        if sunet_forms_enabled():
+            cable_contract = random.choice(
+                Dropdown.objects.get(name="tele2_cable_contracts").as_choices()[1:][1]
+            )
+            data['tele2_cable_contract'] = cable_contract
+            data['tele2_alternative_circuit_id'] = self.escape_quotes(self.fake.ean8()),
+
 
         for key, value in data.items():
             cable.get_node().add_property(key, value)
@@ -686,7 +694,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         # check if there's any provider or if we should create one
         provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
         providers = NodeHandle.objects.filter(node_type=provider_type)
-        
+
         max_providers = self.max_cable_providers
         provider = None
 

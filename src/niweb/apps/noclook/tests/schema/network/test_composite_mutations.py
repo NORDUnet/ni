@@ -5,6 +5,7 @@ from apps.noclook.models import NodeHandle, Dropdown, Choice, Group, \
     GroupContextAuthzAction, NodeHandleContext, SwitchType
 from apps.noclook.tests.stressload.data_generator \
     import NetworkFakeDataGenerator, CommunityFakeDataGenerator
+from apps.noclook.schema.utils import sunet_forms_enabled
 from collections import OrderedDict
 from . import Neo4jGraphQLNetworkTest
 from niweb.schema import schema
@@ -355,6 +356,8 @@ class PortCompositeTest(Neo4jGraphQLNetworkTest):
 
 class PortCableTest(Neo4jGraphQLNetworkTest):
     def test_cable_port(self):
+        generator = NetworkFakeDataGenerator()
+
         cable_name = "Test cable"
         cable_type = "Patch"
         cable_description = "Integer posuere est at sapien elementum, "\
@@ -383,10 +386,37 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             "ornare placerat."
 
         # set a provider
-        generator = NetworkFakeDataGenerator()
         provider = generator.create_provider()
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
+
+        # use sunet fields on cable only if they're enabled
+        cable_contract = None
+        cable_circuitid = None
+
+        sunet_input = ''
+        sunet_query = ''
+
+        if sunet_forms_enabled():
+            cable_contract = random.choice(
+                Dropdown.objects.get(name="tele2_cable_contracts").as_choices()[1:][1]
+            )
+            cable_circuitid = generator.escape_quotes(generator.fake.ean8())
+
+            sunet_input = '''
+                tele2_cable_contract: "{cable_contract}"
+                tele2_alternative_circuit_id: "{cable_circuitid}"
+            '''.format(
+                cable_contract=cable_contract,
+                cable_circuitid=cable_circuitid
+            )
+
+            sunet_query = '''
+                tele2_cable_contract{
+                  value
+                }
+                tele2_alternative_circuit_id
+            '''
 
         # Create query
         query = '''
@@ -397,6 +427,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
               cable_type: "{cable_type}"
               description: "{cable_description}"
               relationship_provider: "{provider_id}"
+              {sunet_input}
             }}
             create_subinputs:[
               {{
@@ -439,6 +470,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                {sunet_query}
               }}
             }}
             subcreated{{
@@ -465,7 +497,9 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                     cable_description=cable_description, aport_name=aport_name,
                     aport_type=aport_type, aport_description=aport_description,
                     bport_name=bport_name, bport_type=bport_type,
-                    bport_description=bport_description, provider_id=provider_id)
+                    bport_description=bport_description,
+                    provider_id=provider_id, sunet_input=sunet_input,
+                    sunet_query=sunet_query)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -490,6 +524,12 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_data['name'], cable_name)
         self.assertEqual(created_data['cable_type']['value'], cable_type)
         self.assertEqual(created_data['description'], cable_description)
+
+        if sunet_forms_enabled():
+            self.assertEqual(created_data['tele2_cable_contract']['value'],
+                                cable_contract)
+            self.assertEqual(created_data['tele2_alternative_circuit_id'],
+                                cable_circuitid)
 
         # check their relations id
         test_aport_id = created_data['ports'][0]['id']
@@ -547,6 +587,30 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             bport_type = "RJ45"
             bport_description = buffer_description
 
+            sunet_input = ''
+            sunet_query = ''
+
+            if sunet_forms_enabled():
+                cable_contract = random.choice(
+                    Dropdown.objects.get(name="tele2_cable_contracts").as_choices()[1:][1]
+                )
+                cable_circuitid = generator.escape_quotes(generator.fake.ean8())
+
+                sunet_input = '''
+                    tele2_cable_contract: "{cable_contract}"
+                    tele2_alternative_circuit_id: "{cable_circuitid}"
+                '''.format(
+                    cable_contract=cable_contract,
+                    cable_circuitid=cable_circuitid
+                )
+
+                sunet_query = '''
+                    tele2_cable_contract{
+                      value
+                    }
+                    tele2_alternative_circuit_id
+                '''
+
             query = '''
             mutation{{
               composite_cable(input:{{
@@ -556,6 +620,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                   cable_type: "{cable_type}"
                   description: "{cable_description}"
                   relationship_provider: "{provider_id}"
+                  {sunet_input}
                 }}
                 update_subinputs:[
                   {{
@@ -601,6 +666,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                       name
                       relation_id
                     }}
+                    {sunet_query}
                   }}
                 }}
                 subupdated{{
@@ -628,7 +694,9 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                         aport_type=aport_type, aport_description=aport_description,
                         bport_name=bport_name, bport_type=bport_type,
                         bport_description=bport_description, cable_id=cable_id,
-                        aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
+                        aport_id=aport_id, bport_id=bport_id,
+                        provider_id=provider_id, sunet_input=sunet_input,
+                        sunet_query=sunet_query)
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -648,6 +716,12 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(updated_data['name'], cable_name)
             self.assertEqual(updated_data['cable_type']['value'], cable_type)
             self.assertEqual(updated_data['description'], cable_description)
+
+            if sunet_forms_enabled():
+                self.assertEqual(updated_data['tele2_cable_contract']['value'],
+                                    cable_contract)
+                self.assertEqual(updated_data['tele2_alternative_circuit_id'],
+                                    cable_circuitid)
 
             # check their relations id
             test_aport_id = updated_data['ports'][0]['id']
@@ -803,8 +877,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
+
         rack_units = 2
         rack_position = 3
+        rack_back = bool(random.getrandbits(1))
+
         managed_by = random.choice(
             Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
         )
@@ -813,6 +890,24 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         os_version = "5.8"
         contract_number = "001"
         max_number_of_ports = 20
+        services_locked = bool(random.getrandbits(1))
+
+        # create new port
+        port_1_name = str(random.randint(0, 50000))
+        port_1_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_1_description = generator.escape_quotes(generator.fake.paragraph())
+
+        # add existent port
+        port = generator.create_port()
+        port_2_id = relay.Node.to_global_id(str(port.node_type),
+                                            str(port.handle_id))
+        port_2_name = str(random.randint(0, 50000))
+        port_2_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_2_description = generator.escape_quotes(generator.fake.paragraph())
 
         query = '''
         mutation{{
@@ -825,6 +920,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses: "{ip_address}"
                 rack_units: {rack_units}
                 rack_position: {rack_position}
+                rack_back: {rack_back}
                 operational_state: "{operational_state}"
                 relationship_provider: "{provider_id}"
                 responsible_group: "{group1_id}"
@@ -835,7 +931,23 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version: "{os_version}"
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
+                services_locked: {services_locked}
               }}
+              create_subinputs:[
+                {{
+                  name: "{port_1_name}"
+                  port_type: "{port_1_type}"
+                  description: "{port_1_description}"
+                }}
+              ]
+              update_subinputs:[
+                {{
+                  id: "{port_2_id}"
+                  name: "{port_2_name}"
+                  port_type: "{port_2_type}"
+                  description: "{port_2_description}"
+                }}
+              ]
             }}
           ){{
             created{{
@@ -850,6 +962,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 provider{{
                   id
                   name
@@ -870,6 +985,40 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version
                 contract_number
                 max_number_of_ports
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
+              }}
+            }}
+            subupdated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
               }}
             }}
           }}
@@ -881,7 +1030,13 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     group1_id=group1_id, group2_id=group2_id,
                     managed_by=managed_by, backup=backup, os=os,
                     os_version=os_version, contract_number=contract_number,
-                    max_number_of_ports=max_number_of_ports)
+                    max_number_of_ports=max_number_of_ports,
+                    port_1_name=port_1_name, port_1_type=port_1_type,
+                    port_1_description=port_1_description,
+                    port_2_name=port_2_name, port_2_type=port_2_type,
+                    port_2_description=port_2_description, port_2_id=port_2_id,
+                    rack_back=str(rack_back).lower(),
+                    services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -899,6 +1054,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['description'], switch_description)
         self.assertEqual(created_switch['rack_units'], rack_units)
         self.assertEqual(created_switch['rack_position'], rack_position)
+        self.assertEqual(created_switch['rack_back'], rack_back)
         self.assertEqual(created_switch['ip_addresses'], ip_addresses)
         self.assertEqual(created_switch['managed_by']['value'], managed_by)
         self.assertEqual(created_switch['backup'], backup)
@@ -906,6 +1062,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['os_version'], os_version)
         self.assertEqual(created_switch['contract_number'], contract_number)
         self.assertEqual(created_switch['max_number_of_ports'], max_number_of_ports)
+        self.assertEqual(created_switch['services_locked'], services_locked)
 
         # check provider
         check_provider = created_switch['provider']
@@ -918,6 +1075,34 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check support group
         check_support = created_switch['support_group']
         self.assertEqual(check_support['id'], group2_id)
+
+        # check ports data
+
+        # check port_1 data
+        created_checkport = result.data['composite_switch']['subcreated'][0]
+        created_errors = created_checkport['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        created_checkport = created_checkport['port']
+        port_1_id = created_checkport['id']
+
+        self.assertEqual(created_checkport['name'], port_1_name)
+        self.assertEqual(created_checkport['port_type']['value'], port_1_type)
+        self.assertEqual(created_checkport['description'], port_1_description)
+
+        # check port_2
+        update_checkport = result.data['composite_switch']['subupdated'][0]
+        updated_errors = update_checkport['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        update_checkport = update_checkport['port']
+        self.assertEqual(update_checkport['name'], port_2_name)
+        self.assertEqual(update_checkport['port_type']['value'], port_2_type)
+        self.assertEqual(update_checkport['description'], port_2_description)
+
+        # check ports in router
+        self.assertEqual(created_switch['ports'][1]['id'], port_1_id)
+        self.assertEqual(created_switch['ports'][0]['id'], port_2_id)
 
         ## simple update
         # get another provider
@@ -932,8 +1117,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
+
         rack_units = 3
         rack_position = 2
+        rack_back = bool(random.getrandbits(1))
+
         managed_by = random.choice(
             Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
         )
@@ -942,6 +1130,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         os_version = "5.7"
         contract_number = "002"
         max_number_of_ports = 15
+        services_locked = bool(random.getrandbits(1))
 
         query = '''
         mutation{{
@@ -954,6 +1143,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses: "{ip_address}"
                 rack_units: {rack_units}
                 rack_position: {rack_position}
+                rack_back: {rack_back}
                 operational_state: "{operational_state}"
                 relationship_provider: "{provider_id}"
                 responsible_group: "{group2_id}"
@@ -964,6 +1154,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version: "{os_version}"
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
+                services_locked: {services_locked}
               }}
             }}
           ){{
@@ -979,6 +1170,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 provider{{
                   id
                   name
@@ -1011,7 +1205,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     group1_id=group1_id, group2_id=group2_id,
                     managed_by=managed_by, backup=backup, os=os,
                     os_version=os_version, contract_number=contract_number,
-                    max_number_of_ports=max_number_of_ports)
+                    max_number_of_ports=max_number_of_ports,
+                    rack_back=str(rack_back).lower(),
+                    services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1027,6 +1223,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_switch['description'], switch_description)
         self.assertEqual(updated_switch['rack_units'], rack_units)
         self.assertEqual(updated_switch['rack_position'], rack_position)
+        self.assertEqual(updated_switch['rack_back'], rack_back)
         self.assertEqual(updated_switch['ip_addresses'], ip_addresses)
         self.assertEqual(updated_switch['managed_by']['value'], managed_by)
         self.assertEqual(updated_switch['backup'], backup)
@@ -1034,6 +1231,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_switch['os_version'], os_version)
         self.assertEqual(updated_switch['contract_number'], contract_number)
         self.assertEqual(updated_switch['max_number_of_ports'], max_number_of_ports)
+        self.assertEqual(updated_switch['services_locked'], services_locked)
 
         # check provider
         check_provider = updated_switch['provider']
@@ -1128,7 +1326,9 @@ class RouterTest(Neo4jGraphQLNetworkTest):
 
         # get new data to feed the update mutation
         rack_units = random.randint(1,10)
-        rack_units = random.randint(1,10)
+        rack_position = random.randint(1,10)
+        rack_back = bool(random.getrandbits(1))
+
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
@@ -1158,6 +1358,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
               description: "{description}"
               operational_state: "{operational_state}"
               rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
             }}
             create_subinputs:[
               {{
@@ -1191,6 +1393,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
                 model
                 version
                 rack_units
+                rack_position
+                rack_back
                 location{{
                   id
                   name
@@ -1235,6 +1439,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         }}
         '''.format(router_id=router_id, description=description,
                     operational_state=operational_state, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
                     port_1_name=port_1_name, port_1_type=port_1_type,
                     port_1_description=port_1_description,
                     port_2_id=port_2_id, port_2_name=port_2_name,
@@ -1255,6 +1461,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_router['operational_state']['value'],\
             operational_state)
         self.assertEqual(updated_router ['rack_units'], rack_units)
+        self.assertEqual(updated_router['rack_position'], rack_position)
+        self.assertEqual(updated_router['rack_back'], rack_back)
 
         # check ports data
 
@@ -1326,10 +1534,12 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         max_number_of_ports = 20
         rack_position = 3
         rack_units = 2
+        rack_back = bool(random.getrandbits(1))
 
         owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
+        services_locked = bool(random.getrandbits(1))
 
         query = '''
         mutation{{
@@ -1356,6 +1566,8 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
               max_number_of_ports: {max_number_of_ports}
               rack_units: {rack_units}
               rack_position: {rack_position}
+              services_locked: {services_locked}
+              rack_back: {rack_back}
             }}
           }}){{
             updated{{
@@ -1397,6 +1609,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 max_number_of_ports
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 contract_number
                 location{{
                   id
@@ -1419,7 +1634,8 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             service_tag=service_tag, end_support=end_support,
             contract_number=contract_number, owner_id=owner_id,
             max_number_of_ports=max_number_of_ports, rack_units=rack_units,
-            rack_position=rack_position)
+            rack_position=rack_position, rack_back=str(rack_back).lower(),
+            services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1443,7 +1659,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_firewall['max_number_of_ports'], max_number_of_ports)
         self.assertEqual(updated_firewall['rack_units'], rack_units)
         self.assertEqual(updated_firewall['rack_position'], rack_position)
+        self.assertEqual(updated_firewall['rack_back'], rack_back)
         self.assertEqual(updated_firewall['contract_number'], contract_number)
+        self.assertEqual(updated_firewall['services_locked'], services_locked)
 
         # check responsible group
         check_responsible = updated_firewall['responsible_group']
@@ -1510,6 +1728,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
             "eget sollicitudin dui."
         rack_units = 2
         rack_position = 3
+        rack_back = bool(random.getrandbits(1))
 
         # port data
         port1_name = "test-01"
@@ -1544,6 +1763,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
               relationship_owner: "{owner_id}"
               rack_units: {rack_units}
               rack_position: {rack_position}
+              rack_back: {rack_back}
             }}
             create_has_port:[
               {{
@@ -1572,6 +1792,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                 description
                 rack_units
                 rack_position
+                rack_back
                 owner{{
                   id
                   name
@@ -1616,7 +1837,9 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         }}
         '''.format(exteq_name=exteq_name, exteq_description=exteq_description,
                     owner_id=owner_id, rack_units=rack_units,
-                    rack_position=rack_position, port1_name=port1_name,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_name=port1_name,
                     port1_type=port1_type, port1_description=port1_description,
                     port2_id=port2_id, port2_name=port2_name,
                     port2_type=port2_type, port2_description=port2_description)
@@ -1645,6 +1868,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_extequip['description'], exteq_description)
         self.assertEqual(created_extequip['rack_units'], rack_units)
         self.assertEqual(created_extequip['rack_position'], rack_position)
+        self.assertEqual(created_extequip['rack_back'], rack_back)
 
         # check subentities
         port1_id = result.data \
@@ -1853,8 +2077,11 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 Dropdown.objects.get(name="operational_states")\
                     .as_choices()[1:][1]
             )
+
             rack_units = 2
             rack_position = 3
+            rack_back = bool(random.getrandbits(1))
+
             managed_by = random.choice(
                 Dropdown.objects.get(name="host_management_sw")\
                     .as_choices()[1:][1]
@@ -1868,6 +2095,8 @@ class HostTest(Neo4jGraphQLNetworkTest):
             query_owner = owner_query['query_owner']
 
             owner_id = None
+
+            services_locked = bool(random.getrandbits(1))
 
             if input_owner:
                 owner = net_generator.create_customer()
@@ -1887,6 +2116,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     ip_addresses: "{ip_address}"
                     rack_units: {rack_units}
                     rack_position: {rack_position}
+                    rack_back: {rack_back}
                     operational_state: "{operational_state}"
                     responsible_group: "{group1_id}"
                     support_group: "{group2_id}"
@@ -1895,6 +2125,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     os: "{os}"
                     os_version: "{os_version}"
                     contract_number: "{contract_number}"
+                    services_locked: {services_locked}
                     {input_owner}
                   }}
                 }}
@@ -1930,6 +2161,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     contract_number
                     rack_units
                     rack_position
+                    rack_back
+                    services_locked
+                    services_checked
                     {query_owner}
                   }}
                 }}
@@ -1942,7 +2176,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
                         group1_id=group1_id, group2_id=group2_id,
                         managed_by=managed_by, backup=backup, os=os,
                         os_version=os_version, contract_number=contract_number,
-                        input_owner=input_owner, query_owner=query_owner)
+                        input_owner=input_owner, query_owner=query_owner,
+                        rack_back=str(rack_back).lower(),
+                        services_locked=str(services_locked).lower())
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -1961,12 +2197,14 @@ class HostTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(created_host['operational_state']['value'], operational_state)
             self.assertEqual(created_host['rack_units'], rack_units)
             self.assertEqual(created_host['rack_position'], rack_position)
+            self.assertEqual(created_host['rack_back'], rack_back)
             self.assertEqual(created_host['ip_addresses'], ip_addresses)
             self.assertEqual(created_host['managed_by']['value'], managed_by)
             self.assertEqual(created_host['backup'], backup)
             self.assertEqual(created_host['os'], os)
             self.assertEqual(created_host['os_version'], os_version)
             self.assertEqual(created_host['contract_number'], contract_number)
+            self.assertEqual(created_host['services_locked'], services_locked)
 
             # check responsible group
             check_responsible = created_host['responsible_group']
@@ -2000,6 +2238,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               ip_addresses: "{ip_address}"
               rack_units: {rack_units}
               rack_position: {rack_position}
+              rack_back: {rack_back}
               operational_state: "{operational_state}"
               responsible_group: "{group1_id}"
               support_group: "{group2_id}"
@@ -2008,6 +2247,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               os: "{os}"
               os_version: "{os_version}"
               contract_number: "{contract_number}"
+              services_locked: {services_locked}
               {extra_input}
             }}
           }}){{
@@ -2042,6 +2282,9 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 contract_number
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 {extra_query}
               }}
             }}
@@ -2103,6 +2346,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
                 rack_units = random.randint(1,10)
                 rack_position = random.randint(1,10)
+                rack_back = bool(random.getrandbits(1))
 
                 operational_state = random.choice(
                     Dropdown.objects.get(name="operational_states")\
@@ -2129,15 +2373,19 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     extra_input = ''
                     extra_query = host_user_query[k]['extra_query']
 
+                services_locked = bool(random.getrandbits(1))
+
                 query = edit_query.format(
                             host_id=host_id,
                             host_name=host_name, host_description=host_description,
                             ip_address="\\n".join(ip_addresses),
                             rack_units=rack_units, rack_position=rack_position,
+                            rack_back=str(rack_back).lower(),
                             operational_state=operational_state,
                             group1_id=group1_id, group2_id=group2_id,
                             managed_by=managed_by, backup=backup, os=os,
                             os_version=os_version, contract_number=contract_number,
+                            services_locked=str(services_locked).lower(),
                             extra_input=extra_input, extra_query=extra_query)
 
                 result = schema.execute(query, context=self.context)
@@ -2155,12 +2403,14 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(updated_host['operational_state']['value'], operational_state)
                 self.assertEqual(updated_host['rack_units'], rack_units)
                 self.assertEqual(updated_host['rack_position'], rack_position)
+                self.assertEqual(updated_host['rack_back'], rack_back)
                 self.assertEqual(updated_host['ip_addresses'], ip_addresses)
                 self.assertEqual(updated_host['managed_by']['value'], managed_by)
                 self.assertEqual(updated_host['backup'], backup)
                 self.assertEqual(updated_host['os'], os)
                 self.assertEqual(updated_host['os_version'], os_version)
                 self.assertEqual(updated_host['contract_number'], contract_number)
+                self.assertEqual(updated_host['services_locked'], services_locked)
 
                 check_id = None
 
