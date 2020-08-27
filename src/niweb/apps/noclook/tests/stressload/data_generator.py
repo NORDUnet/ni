@@ -8,7 +8,6 @@ from apps.nerds.lib.consumer_util import get_user
 from apps.noclook import helpers
 from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, Choice, NodeHandleContext
 from apps.noclook.schema.utils import sunet_forms_enabled
-from apps.noclook.schema.types import *
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
 import norduniclient as nc
@@ -193,14 +192,14 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         self.max_ports_total = 40
 
         self.optical_path_dependency_types = {
-            ODF: self.create_odf,
-            OpticalLink: self.create_optical_link,
-            OpticalMultiplexSection: self.create_optical_multiplex_section,
-            OpticalNode: self.create_optical_node,
-            Router: self.create_router,
-            Switch: self.create_switch,
-            OpticalPath: self.create_optical_path,
-            # Service: self.create_service
+            'ODF': self.create_odf,
+            'OpticalLink': self.create_optical_link,
+            'OpticalMultiplexSection': self.create_optical_multiplex_section,
+            'OpticalNode': self.create_optical_node,
+            'Router': self.create_router,
+            'Switch': self.create_switch,
+            'OpticalPath': self.create_optical_path,
+            # 'Service': self.create_service
         }
 
     def add_network_context(self, nh):
