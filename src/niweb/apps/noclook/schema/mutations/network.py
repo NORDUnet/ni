@@ -110,7 +110,7 @@ def process_switch_type(request, form, nodehandler, relation_name):
 
 class NISwitchMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        create_form    = EditSwitchForm
+        create_form    = NewSwitchHostForm
         update_form    = EditSwitchForm
         graphql_type   = Switch
         unique_node    = True
