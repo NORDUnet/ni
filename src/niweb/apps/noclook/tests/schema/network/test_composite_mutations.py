@@ -4287,28 +4287,109 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
         opath_opstate = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
 
-        aport_name = "test-01"
-        aport_type = random.choice(
-            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
-        aport_description = "Etiam non libero pharetra, ultrices nunc ut, "\
-            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
-            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
-            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
-            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
-            "euismod."
+        odf_name = "ODF test"
+        odf_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        odf_rack_units = random.randint(1, 3)
+        odf_rack_position = random.randint(1, 5)
+        odf_rack_back = bool(random.getrandbits(1))
+        odf_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
 
-        bport_name = "test-02"
-        bport_type = random.choice(
-            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
-        bport_description = "Nunc varius suscipit lorem, non posuere nisl "\
-            "consequat in. Nulla gravida sapien a velit aliquet, aliquam "\
-            "tincidunt urna ultrices. Vivamus venenatis ligula a erat "\
-            "fringilla faucibus. Suspendisse potenti. Donec rutrum eget "\
-            "nunc sed volutpat. Curabitur sit amet lorem elementum sapien "\
-            "ornare placerat."
+        odf_input_str = '''
+        create_dependencies_odf:{{
+          name: "{odf_name}"
+          description: "{odf_description}"
+          operational_state: "{odf_opstate}"
+          rack_units: {odf_rack_units}
+          rack_position: {odf_rack_position}
+          rack_back: {odf_rack_back}
+        }}
+        '''.format(odf_name=odf_name, odf_description=odf_description,
+                    odf_opstate=odf_opstate, odf_rack_units=odf_rack_units,
+                    odf_rack_position=odf_rack_position,
+                    odf_rack_back=str(odf_rack_back).lower())
+
+        odf_query_str = '''
+        dependencies_odf_created{
+          errors{
+            field
+            messages
+          }
+          oDF{
+            id
+            name
+            description
+            operational_state{
+              id
+              value
+            }
+            rack_units
+            rack_position
+            rack_back
+          }
+        }
+        '''
+
+        # generate a router
+        generator = NetworkFakeDataGenerator()
+        router = generator.create_router()
+        router_id = relay.Node.to_global_id(str(router.node_type),
+                                            str(router.handle_id))
+
+        # get new data to feed the update mutation
+        router_rack_units = random.randint(1,10)
+        router_rack_position = random.randint(1,10)
+        router_rack_back = bool(random.getrandbits(1))
+
+        router_operational_state = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+        router_description = generator.escape_quotes(generator.fake.paragraph())
+
+        router_input_str = '''
+        update_dependencies_router:{{
+          id: "{router_id}"
+          description: "{router_description}"
+          operational_state: "{router_operational_state}"
+          rack_units: {router_rack_units}
+          rack_position: {router_rack_position}
+          rack_back: {router_rack_back}
+        }}
+        '''.format(router_id=router_id, router_description=router_description,
+                    router_operational_state=router_operational_state,
+                    router_rack_units=router_rack_units,
+                    router_rack_position=router_rack_position,
+                    router_rack_back=str(router_rack_back).lower())
+
+        router_query_str = '''
+        dependencies_router_updated{
+          errors{
+            field
+            messages
+          }
+          router{
+            id
+            name
+            description
+            operational_state{
+              name
+              value
+            }
+            model
+            version
+            rack_units
+            rack_position
+            rack_back
+          }
+        }
+        '''
 
         # set a provider
-        generator = NetworkFakeDataGenerator()
         provider = generator.create_provider()
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
@@ -4326,18 +4407,8 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
               operational_state: "{opath_opstate}"
               relationship_provider: "{provider_id}"
             }}
-            create_dependencies_port:[
-              {{
-                name: "{aport_name}"
-                port_type: "{aport_type}"
-                description: "{aport_description}"
-              }},
-              {{
-                name: "{bport_name}"
-                port_type: "{bport_type}"
-                description: "{bport_description}"
-              }}
-            ]
+            {odf_input_str}
+            {router_input_str}
           }}){{
             created{{
               errors{{
@@ -4374,30 +4445,17 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
                 }}
               }}
             }}
-            dependencies_port_created{{
-              errors{{
-                field
-                messages
-              }}
-              port{{
-                id
-                name
-                port_type{{
-                  value
-                }}
-                description
-              }}
-            }}
+            {odf_query_str}
+            {router_query_str}
           }}
         }}
         '''.format(opath_name=opath_name, opath_description=opath_description,
                     opath_framing=opath_framing,
                     opath_capacity=opath_capacity,
-                    opath_opstate=opath_opstate, aport_name=aport_name,
-                    aport_type=aport_type, aport_description=aport_description,
-                    bport_name=bport_name, bport_type=bport_type,
-                    bport_description=bport_description,
-                    provider_id=provider_id, opath_wavelength=opath_wavelength)
+                    opath_opstate=opath_opstate,
+                    provider_id=provider_id, opath_wavelength=opath_wavelength,
+                    odf_input_str=odf_input_str, router_input_str=router_input_str,
+                    odf_query_str=odf_query_str, router_query_str=router_query_str)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -4407,14 +4465,17 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
         assert not created_errors, pformat(created_errors, indent=1)
 
         for subcreated in result.data['composite_opticalPath']\
-                                    ['dependencies_port_created']:
+                                    ['dependencies_odf_created']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        for subcreated in result.data['composite_opticalPath']\
+                                    ['dependencies_router_updated']:
             assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
 
         # get the ids
         result_data = result.data['composite_opticalPath']
         opath_id = result_data['created']['opticalPath']['id']
-        aport_id = result_data['dependencies_port_created'][0]['port']['id']
-        bport_id = result_data['dependencies_port_created'][1]['port']['id']
+        odf_id = result_data['dependencies_odf_created'][0]['oDF']['id']
 
         # check the integrity of the data
         created_data = result_data['created']['opticalPath']
@@ -4428,32 +4489,31 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_data['wavelength'], opath_wavelength)
 
         # check their relations id
-        test_aport_id = created_data['dependencies'][0]['id']
-        test_bport_id = created_data['dependencies'][1]['id']
+        test_odf_id = created_data['dependencies'][1]['id']
+        test_router_id = created_data['dependencies'][0]['id']
 
-        self.assertEqual(aport_id, test_aport_id)
-        self.assertEqual(bport_id, test_bport_id)
+        self.assertEqual(odf_id, test_odf_id)
+        self.assertEqual(router_id, test_router_id)
 
         # check ports in both payload and metatype attribute
-        check_aports = [
-            created_data['dependencies'][0],
-            result_data['dependencies_port_created'][0]['port'],
-        ]
+        check_odf = result_data['dependencies_odf_created'][0]['oDF']
 
-        for check_aport in check_aports:
-            self.assertEqual(check_aport['name'], aport_name)
-            self.assertEqual(check_aport['port_type']['value'], aport_type)
-            self.assertEqual(check_aport['description'], aport_description)
+        self.assertEqual(check_odf['name'], odf_name)
+        self.assertEqual(check_odf['description'], odf_description)
+        self.assertEqual(check_odf['operational_state']['value'],
+                            odf_opstate)
+        self.assertEqual(check_odf['rack_units'], odf_rack_units)
+        self.assertEqual(check_odf['rack_position'], odf_rack_position)
+        self.assertEqual(check_odf['rack_back'], odf_rack_back)
 
-        check_bports = [
-            created_data['dependencies'][1],
-            result_data['dependencies_port_created'][1]['port'],
-        ]
+        check_router = result_data['dependencies_router_updated'][0]['router']
 
-        for check_bport in check_bports:
-            self.assertEqual(check_bport['name'], bport_name)
-            self.assertEqual(check_bport['port_type']['value'], bport_type)
-            self.assertEqual(check_bport['description'], bport_description)
+        self.assertEqual(check_router['description'], router_description)
+        self.assertEqual(check_router['operational_state']['value'],\
+            router_operational_state)
+        self.assertEqual(check_router ['rack_units'], router_rack_units)
+        self.assertEqual(check_router['rack_position'], router_rack_position)
+        self.assertEqual(check_router['rack_back'], router_rack_back)
 
         # check provider
         check_provider = result_data['created']['opticalPath']['provider']
@@ -4468,11 +4528,8 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
                                             str(provider.handle_id))
 
         for i in range(2):
-            buffer_description = opath_description
-            buffer_description2 = aport_description
-
             opath_name = "New Optical Path"
-            opath_description = bport_description
+            opath_description = router_description
             opath_wavelength = random.randint(10, 30)
 
             opath_framing = random.choice(
@@ -4483,16 +4540,6 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
 
             opath_opstate = random.choice(
                 Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
-
-            aport_name = "port-01"
-            aport_type = random.choice(
-                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
-            aport_description = buffer_description2
-
-            bport_name = "port-02"
-            bport_type = random.choice(
-                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
-            bport_description = buffer_description
 
             query = '''
             mutation{{
@@ -4507,20 +4554,6 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
                   operational_state: "{opath_opstate}"
                   relationship_provider: "{provider_id}"
                 }}
-                update_dependencies_port:[
-                  {{
-                    id: "{aport_id}"
-                    name: "{aport_name}"
-                    port_type: "{aport_type}"
-                    description: "{aport_description}"
-                  }},
-                  {{
-                    id: "{bport_id}"
-                    name: "{bport_name}"
-                    port_type: "{bport_type}"
-                    description: "{bport_description}"
-                  }}
-                ]
               }}){{
                 updated{{
                   errors{{
@@ -4558,34 +4591,16 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
                     }}
                   }}
                 }}
-                dependencies_port_updated{{
-                  errors{{
-                    field
-                    messages
-                  }}
-                  port{{
-                    id
-                    name
-                    port_type{{
-                      value
-                    }}
-                    description
-                  }}
-                }}
               }}
             }}
             '''.format(opath_name=opath_name,
                         opath_description=opath_description,
                         opath_framing=opath_framing,
                         opath_capacity=opath_capacity,
-                        opath_opstate=opath_opstate, aport_name=aport_name,
-                        aport_type=aport_type,
-                        aport_description=aport_description,
-                        bport_name=bport_name, bport_type=bport_type,
-                        bport_description=bport_description, opath_id=opath_id,
-                        aport_id=aport_id, bport_id=bport_id,
+                        opath_opstate=opath_opstate,
                         provider_id=provider_id,
-                        opath_wavelength=opath_wavelength)
+                        opath_wavelength=opath_wavelength,
+                        opath_id=opath_id)
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -4593,9 +4608,6 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
             # check for errors
             created_errors = result.data['composite_opticalPath']['updated']['errors']
             assert not created_errors, pformat(created_errors, indent=1)
-
-            for subcreated in result.data['composite_opticalPath']['dependencies_port_updated']:
-                assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
 
             # check the integrity of the data
             result_data = result.data['composite_opticalPath']
@@ -4608,34 +4620,6 @@ class OpticalPathTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(updated_data['capacity']['value'], opath_capacity)
             self.assertEqual(updated_data['operational_state']['value'], opath_opstate)
             self.assertEqual(updated_data['wavelength'], opath_wavelength)
-
-            # check their relations id
-            test_aport_id = updated_data['dependencies'][0]['id']
-            test_bport_id = updated_data['dependencies'][1]['id']
-
-            self.assertEqual(aport_id, test_aport_id)
-            self.assertEqual(bport_id, test_bport_id)
-
-            # check ports in both payload and metatype attribute
-            check_aports = [
-                updated_data['dependencies'][0],
-                result_data['dependencies_port_updated'][0]['port'],
-            ]
-
-            for check_aport in check_aports:
-                self.assertEqual(check_aport['name'], aport_name)
-                self.assertEqual(check_aport['port_type']['value'], aport_type)
-                self.assertEqual(check_aport['description'], aport_description)
-
-            check_bports = [
-                updated_data['dependencies'][1],
-                result_data['dependencies_port_updated'][1]['port'],
-            ]
-
-            for check_bport in check_bports:
-                self.assertEqual(check_bport['name'], bport_name)
-                self.assertEqual(check_bport['port_type']['value'], bport_type)
-                self.assertEqual(check_bport['description'], bport_description)
 
             # check provider
             check_provider = result_data['updated']['opticalPath']['provider']

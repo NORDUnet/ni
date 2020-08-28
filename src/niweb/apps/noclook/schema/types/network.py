@@ -414,6 +414,7 @@ network_type_resolver = {
     'Host': Host,
     'Host User': HostUser,
     'Switch': Switch,
+    'Router': Router,
     'Firewall': Firewall,
     'External Equipment': ExternalEquipment,
     'Optical Node': OpticalNode,
