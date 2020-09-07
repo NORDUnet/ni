@@ -4267,6 +4267,439 @@ class OpticalMultiplexSectionTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(check_provider, None)
 
 
+class OpticalPathTest(Neo4jGraphQLNetworkTest):
+    def test_optical_path(self):
+        opath_name = "Optical Path Test"
+        opath_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        opath_wavelength = random.randint(10, 30)
+
+        opath_framing = random.choice(
+            Dropdown.objects.get(name="optical_path_framing").as_choices()[1:])[1]
+
+        opath_capacity = random.choice(
+            Dropdown.objects.get(name="optical_path_capacity").as_choices()[1:])[1]
+
+        opath_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        odf_name = "ODF test"
+        odf_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        odf_rack_units = random.randint(1, 3)
+        odf_rack_position = random.randint(1, 5)
+        odf_rack_back = bool(random.getrandbits(1))
+        odf_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        odf_input_str = '''
+        create_dependencies_odf:{{
+          name: "{odf_name}"
+          description: "{odf_description}"
+          operational_state: "{odf_opstate}"
+          rack_units: {odf_rack_units}
+          rack_position: {odf_rack_position}
+          rack_back: {odf_rack_back}
+        }}
+        '''.format(odf_name=odf_name, odf_description=odf_description,
+                    odf_opstate=odf_opstate, odf_rack_units=odf_rack_units,
+                    odf_rack_position=odf_rack_position,
+                    odf_rack_back=str(odf_rack_back).lower())
+
+        odf_query_str = '''
+        dependencies_odf_created{
+          errors{
+            field
+            messages
+          }
+          oDF{
+            id
+            name
+            description
+            operational_state{
+              id
+              value
+            }
+            rack_units
+            rack_position
+            rack_back
+          }
+        }
+        '''
+
+        # generate a router
+        generator = NetworkFakeDataGenerator()
+        router = generator.create_router()
+        router_id = relay.Node.to_global_id(str(router.node_type),
+                                            str(router.handle_id))
+
+        # get new data to feed the update mutation
+        router_rack_units = random.randint(1,10)
+        router_rack_position = random.randint(1,10)
+        router_rack_back = bool(random.getrandbits(1))
+
+        router_operational_state = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+        router_description = generator.escape_quotes(generator.fake.paragraph())
+
+        router_input_str = '''
+        update_dependencies_router:{{
+          id: "{router_id}"
+          description: "{router_description}"
+          operational_state: "{router_operational_state}"
+          rack_units: {router_rack_units}
+          rack_position: {router_rack_position}
+          rack_back: {router_rack_back}
+        }}
+        '''.format(router_id=router_id, router_description=router_description,
+                    router_operational_state=router_operational_state,
+                    router_rack_units=router_rack_units,
+                    router_rack_position=router_rack_position,
+                    router_rack_back=str(router_rack_back).lower())
+
+        router_query_str = '''
+        dependencies_router_updated{
+          errors{
+            field
+            messages
+          }
+          router{
+            id
+            name
+            description
+            operational_state{
+              name
+              value
+            }
+            model
+            version
+            rack_units
+            rack_position
+            rack_back
+          }
+        }
+        '''
+
+        # set a provider
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # Create query
+        query = '''
+        mutation{{
+          composite_opticalPath(input:{{
+            create_input:{{
+              name: "{opath_name}"
+              description: "{opath_description}"
+              framing: "{opath_framing}"
+              capacity: "{opath_capacity}"
+              wavelength: {opath_wavelength}
+              operational_state: "{opath_opstate}"
+              relationship_provider: "{provider_id}"
+            }}
+            {odf_input_str}
+            {router_input_str}
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalPath{{
+                id
+                name
+                description
+                framing{{
+                  value
+                }}
+                capacity{{
+                  value
+                }}
+                wavelength
+                operational_state{{
+                  value
+                }}
+                dependencies{{
+                  id
+                  name
+                  ...on Port{{
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            {odf_query_str}
+            {router_query_str}
+          }}
+        }}
+        '''.format(opath_name=opath_name, opath_description=opath_description,
+                    opath_framing=opath_framing,
+                    opath_capacity=opath_capacity,
+                    opath_opstate=opath_opstate,
+                    provider_id=provider_id, opath_wavelength=opath_wavelength,
+                    odf_input_str=odf_input_str, router_input_str=router_input_str,
+                    odf_query_str=odf_query_str, router_query_str=router_query_str)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalPath']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_opticalPath']\
+                                    ['dependencies_odf_created']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        for subcreated in result.data['composite_opticalPath']\
+                                    ['dependencies_router_updated']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        # get the ids
+        result_data = result.data['composite_opticalPath']
+        opath_id = result_data['created']['opticalPath']['id']
+        odf_id = result_data['dependencies_odf_created'][0]['oDF']['id']
+
+        # check the integrity of the data
+        created_data = result_data['created']['opticalPath']
+
+        # check main optical path
+        self.assertEqual(created_data['name'], opath_name)
+        self.assertEqual(created_data['description'], opath_description)
+        self.assertEqual(created_data['framing']['value'], opath_framing)
+        self.assertEqual(created_data['capacity']['value'], opath_capacity)
+        self.assertEqual(created_data['operational_state']['value'], opath_opstate)
+        self.assertEqual(created_data['wavelength'], opath_wavelength)
+
+        # check their relations id
+        test_odf_id = created_data['dependencies'][1]['id']
+        test_router_id = created_data['dependencies'][0]['id']
+
+        self.assertEqual(odf_id, test_odf_id)
+        self.assertEqual(router_id, test_router_id)
+
+        # check ports in both payload and metatype attribute
+        check_odf = result_data['dependencies_odf_created'][0]['oDF']
+
+        self.assertEqual(check_odf['name'], odf_name)
+        self.assertEqual(check_odf['description'], odf_description)
+        self.assertEqual(check_odf['operational_state']['value'],
+                            odf_opstate)
+        self.assertEqual(check_odf['rack_units'], odf_rack_units)
+        self.assertEqual(check_odf['rack_position'], odf_rack_position)
+        self.assertEqual(check_odf['rack_back'], odf_rack_back)
+
+        check_router = result_data['dependencies_router_updated'][0]['router']
+
+        self.assertEqual(check_router['description'], router_description)
+        self.assertEqual(check_router['operational_state']['value'],\
+            router_operational_state)
+        self.assertEqual(check_router ['rack_units'], router_rack_units)
+        self.assertEqual(check_router['rack_position'], router_rack_position)
+        self.assertEqual(check_router['rack_back'], router_rack_back)
+
+        # check provider
+        check_provider = result_data['created']['opticalPath']['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+        self.assertEqual(check_provider['name'], provider.node_name)
+
+        ## Update query
+        # (do it two times to check that the relationship id is not overwritten)
+        relation_id = None
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        for i in range(2):
+            opath_name = "New Optical Path"
+            opath_description = router_description
+            opath_wavelength = random.randint(10, 30)
+
+            opath_framing = random.choice(
+                Dropdown.objects.get(name="optical_path_framing").as_choices()[1:])[1]
+
+            opath_capacity = random.choice(
+                Dropdown.objects.get(name="optical_path_capacity").as_choices()[1:])[1]
+
+            opath_opstate = random.choice(
+                Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+            query = '''
+            mutation{{
+              composite_opticalPath(input:{{
+                update_input:{{
+                  id: "{opath_id}"
+                  name: "{opath_name}"
+                  description: "{opath_description}"
+                  framing: "{opath_framing}"
+                  capacity: "{opath_capacity}"
+                  wavelength: {opath_wavelength}
+                  operational_state: "{opath_opstate}"
+                  relationship_provider: "{provider_id}"
+                }}
+              }}){{
+                updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  opticalPath{{
+                    id
+                    name
+                    description
+                    framing{{
+                      value
+                    }}
+                    capacity{{
+                      value
+                    }}
+                    wavelength
+                    operational_state{{
+                      value
+                    }}
+                    dependencies{{
+                      id
+                      name
+                      ...on Port{{
+                        port_type{{
+                          value
+                        }}
+                        description
+                      }}
+                    }}
+                    provider{{
+                      id
+                      name
+                      relation_id
+                    }}
+                  }}
+                }}
+              }}
+            }}
+            '''.format(opath_name=opath_name,
+                        opath_description=opath_description,
+                        opath_framing=opath_framing,
+                        opath_capacity=opath_capacity,
+                        opath_opstate=opath_opstate,
+                        provider_id=provider_id,
+                        opath_wavelength=opath_wavelength,
+                        opath_id=opath_id)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_opticalPath']['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            # check the integrity of the data
+            result_data = result.data['composite_opticalPath']
+            updated_data = result_data['updated']['opticalPath']
+
+            # check main optical path
+            self.assertEqual(updated_data['name'], opath_name)
+            self.assertEqual(updated_data['description'], opath_description)
+            self.assertEqual(updated_data['framing']['value'], opath_framing)
+            self.assertEqual(updated_data['capacity']['value'], opath_capacity)
+            self.assertEqual(updated_data['operational_state']['value'], opath_opstate)
+            self.assertEqual(updated_data['wavelength'], opath_wavelength)
+
+            # check provider
+            check_provider = result_data['updated']['opticalPath']['provider']
+            self.assertEqual(check_provider['id'], provider_id)
+            self.assertEqual(check_provider['name'], provider.node_name)
+
+            # check that we only have one provider
+            _type, opath_handle_id = relay.Node.from_global_id(opath_id)
+            opath_nh = NodeHandle.objects.get(handle_id=opath_handle_id)
+            opath_node = opath_nh.get_node()
+            previous_rels = opath_node.incoming.get('Provides', [])
+            self.assertTrue(len(previous_rels) == 1)
+
+            # check relation_id
+            if not relation_id: # first run
+                relation_id = check_provider['relation_id']
+                self.assertIsNotNone(relation_id)
+            else:
+                self.assertEqual(relation_id, check_provider['relation_id'])
+
+        ## Update query 2 (remove provider)
+        query = '''
+        mutation{{
+          composite_opticalPath(input:{{
+            update_input:{{
+              id: "{opath_id}"
+              name: "{opath_name}"
+              description: "{opath_description}"
+              framing: "{opath_framing}"
+              capacity: "{opath_capacity}"
+              wavelength: {opath_wavelength}
+              operational_state: "{opath_opstate}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalPath{{
+                id
+                name
+                description
+                framing{{
+                  value
+                }}
+                capacity{{
+                  value
+                }}
+                wavelength
+                operational_state{{
+                  value
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(opath_id=opath_id, opath_name=opath_name,
+                    opath_description=opath_description,
+                    opath_framing=opath_framing,
+                    opath_capacity=opath_capacity,
+                    opath_opstate=opath_opstate,
+                    opath_wavelength=opath_wavelength)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalPath']['updated']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        # check empty provider
+        check_provider = result.data['composite_opticalPath']['updated']['opticalPath']['provider']
+        self.assertEqual(check_provider, None)
+
+
 ## Peering
 class PeeringGroupTest(Neo4jGraphQLNetworkTest):
     def test_peering_group(self):

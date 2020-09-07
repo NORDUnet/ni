@@ -16,7 +16,7 @@ class Command(BaseCommand):
         'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group',
         'Peering Partner', 'Cable', 'Port', 'Host', 'Router', 'Switch',
         'Firewall', 'Host User', 'Optical Node', 'ODF', 'Optical Link',
-        'Optical Multiplex Section']
+        'Optical Multiplex Section', 'Optical Path']
 
     option_organizations = 'organizations'
     option_equipment = 'equipmentcables'
@@ -155,6 +155,7 @@ class Command(BaseCommand):
         create_funcs = [
             generator.create_optical_link,
             generator.create_optical_multiplex_section,
+            generator.create_optical_path,
         ]
 
         self.create_entities(numnodes, create_funcs)

@@ -162,6 +162,51 @@ class NOCAutoQuery(graphene.ObjectType):
             # set resolver
             setattr(cls, field_resolver['resolver'][0], field_resolver['resolver'][1])
 
+def get_typelist_resolver(class_list):
+    def resolve_class_list(self, info, **kwargs):
+        if info.context and info.context.user.is_authenticated:
+            classes = []
+
+            for clazz in class_list:
+                class_has_resolvers = \
+                    clazz in NOCRootQuery.graph_by_id_type_resolvers and \
+                    clazz in NOCRootQuery.graph_all_type_resolvers and \
+                    clazz in NOCRootQuery.graph_connection_type_resolvers
+
+                if class_has_resolvers:
+                    byid_name = NOCRootQuery.\
+                        graph_by_id_type_resolvers[clazz]['field_name']
+
+                    connection_name = NOCRootQuery.\
+                        graph_connection_type_resolvers[clazz]['field_name']
+
+                    all_name = NOCRootQuery.\
+                        graph_all_type_resolvers[clazz]['field_name']
+
+                    elem = TypeInfo(
+                        type_name=clazz,
+                        connection_name=connection_name,
+                        byid_name=byid_name,
+                        all_name=all_name,
+                    )
+
+                    classes.append(elem)
+
+            return classes
+        else:
+            raise GraphQLAuthException()
+
+    return resolve_class_list
+
+
+network_org_types = [Customer, EndUser, Provider, SiteOwner]
+host_owner_types = [Customer, EndUser, Provider, HostUser]
+optical_path_dependency_types = [
+                                    ODF, OpticalLink, OpticalMultiplexSection,
+                                    OpticalNode, Router, Switch, OpticalPath,
+                                    #Service,
+                                ]
+
 
 class NOCRootQuery(NOCAutoQuery):
     getAvailableDropdowns = graphene.List(graphene.String)
@@ -187,17 +232,22 @@ class NOCRootQuery(NOCAutoQuery):
     getSwitchTypes = graphene.List(SwitchType, resolver=resolve_getSwitchTypes)
 
     # network organizations
-    getNetworkOrgTypes = graphene.List(TypeInfo)
-
+    getNetworkOrgTypes = graphene.List(TypeInfo,
+        resolver=get_typelist_resolver(network_org_types))
 
     # convert host allowed slugs
     getAllowedTypesConvertHost = graphene.List(graphene.String)
 
     # physical host owner
-    getHostOwnerTypes = graphene.List(TypeInfo)
+    getHostOwnerTypes = graphene.List(TypeInfo,
+            resolver=get_typelist_resolver(host_owner_types))
 
     # safe get groups for select combos
     getPlainGroups = graphene.List(PlainGroup)
+
+    # optical_path_dependency_types
+    getOpticalPathDependencyTypes = graphene.List(TypeInfo,
+            resolver=get_typelist_resolver(optical_path_dependency_types))
 
     def resolve_getPlainGroups(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
@@ -398,79 +448,10 @@ class NOCRootQuery(NOCAutoQuery):
         else:
             raise GraphQLAuthException()
 
-    def resolve_getNetworkOrgTypes(self, info, **kwargs):
-        if info.context and info.context.user.is_authenticated:
-            class_list = [Customer, EndUser, Provider, SiteOwner]
-            classes = []
-
-            for clazz in class_list:
-                class_has_resolvers = \
-                    clazz in NOCRootQuery.graph_by_id_type_resolvers and \
-                    clazz in NOCRootQuery.graph_all_type_resolvers and \
-                    clazz in NOCRootQuery.graph_connection_type_resolvers
-
-                if class_has_resolvers:
-                    byid_name = NOCRootQuery.\
-                        graph_by_id_type_resolvers[clazz]['field_name']
-
-                    connection_name = NOCRootQuery.\
-                        graph_connection_type_resolvers[clazz]['field_name']
-
-                    all_name = NOCRootQuery.\
-                        graph_all_type_resolvers[clazz]['field_name']
-
-                    elem = TypeInfo(
-                        type_name=clazz,
-                        connection_name=connection_name,
-                        byid_name=byid_name,
-                        all_name=all_name,
-                    )
-
-                    classes.append(elem)
-
-            return classes
-        else:
-            raise GraphQLAuthException()
-
 
     def resolve_getAllowedTypesConvertHost(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             return allowed_types_converthost
-        else:
-            raise GraphQLAuthException()
-
-
-    def resolve_getHostOwnerTypes(self, info, **kwargs):
-        if info.context and info.context.user.is_authenticated:
-            class_list = [Customer, EndUser, Provider, HostUser]
-            classes = []
-
-            for clazz in class_list:
-                class_has_resolvers = \
-                    clazz in NOCRootQuery.graph_by_id_type_resolvers and \
-                    clazz in NOCRootQuery.graph_all_type_resolvers and \
-                    clazz in NOCRootQuery.graph_connection_type_resolvers
-
-                if class_has_resolvers:
-                    byid_name = NOCRootQuery.\
-                        graph_by_id_type_resolvers[clazz]['field_name']
-
-                    connection_name = NOCRootQuery.\
-                        graph_connection_type_resolvers[clazz]['field_name']
-
-                    all_name = NOCRootQuery.\
-                        graph_all_type_resolvers[clazz]['field_name']
-
-                    elem = TypeInfo(
-                        type_name=clazz,
-                        connection_name=connection_name,
-                        byid_name=byid_name,
-                        all_name=all_name,
-                    )
-
-                    classes.append(elem)
-
-            return classes
         else:
             raise GraphQLAuthException()
 
@@ -486,7 +467,7 @@ class NOCRootQuery(NOCAutoQuery):
             Port, Host, Cable, Router, Switch, Firewall, ExternalEquipment,
                 OpticalNode, ODF,
             ## Optical Nodes
-            OpticalFilter, OpticalLink, OpticalMultiplexSection, 
+            OpticalFilter, OpticalLink, OpticalMultiplexSection, OpticalPath,
             ## Peering
             PeeringPartner, PeeringGroup,
             ## Other

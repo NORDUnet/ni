@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
-from . import Neo4jGraphQLNetworkTest
+from apps.noclook.schema.query import NOCRootQuery, \
+                                        network_org_types, host_owner_types, \
+                                        optical_path_dependency_types
 from niweb.schema import schema
 from graphene import relay
+from . import Neo4jGraphQLNetworkTest
 
 import random
 
@@ -98,6 +101,47 @@ class HostOwnerTest(Neo4jGraphQLNetworkTest):
                 }
             ]
         }
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+
+        self.assertEqual(result.data, expected)
+
+
+class OpticalPathDependencyTypesTest(Neo4jGraphQLNetworkTest):
+    def test_optical_path_dependency_types(self):
+        query = '''
+        {
+          getOpticalPathDependencyTypes{
+            type_name
+            connection_name
+            byid_name
+            all_name
+          }
+        }
+        '''
+
+        expected = {
+            "getOpticalPathDependencyTypes": []
+        }
+
+        for clazz in optical_path_dependency_types:
+            byid_name = NOCRootQuery.\
+                graph_by_id_type_resolvers[clazz]['field_name']
+
+            connection_name = NOCRootQuery.\
+                graph_connection_type_resolvers[clazz]['field_name']
+
+            all_name = NOCRootQuery.\
+                graph_all_type_resolvers[clazz]['field_name']
+
+            dict_obj = {
+                "type_name": "{}".format(clazz),
+                "connection_name": connection_name,
+                "byid_name": byid_name,
+                "all_name": all_name
+            }
+            expected["getOpticalPathDependencyTypes"].append(dict_obj)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, result.errors
