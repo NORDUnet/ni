@@ -1178,7 +1178,7 @@ class NewContactForm(forms.Form):
         self.fields['contact_type'].choices = Dropdown.get('contact_type').as_choices()
 
     first_name = forms.CharField()
-    last_name = forms.CharField()
+    last_name = forms.CharField(required=False)
     contact_type = forms.ChoiceField(widget=forms.widgets.Select)
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     title = forms.CharField(required=False)
