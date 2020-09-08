@@ -238,8 +238,6 @@ DJANGO_APPS = (
     'django.contrib.flatpages',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Admin panel and documentation:
-    'django.contrib.admin',
 )
 
 THIRD_PARTY_APPS = (
@@ -255,6 +253,8 @@ THIRD_PARTY_APPS = (
 )
 
 LOCAL_APPS = (
+    # Admin panel and documentation (overrided site_url):
+    'niweb.apps.SRIAdminConfig',
     'apps.userprofile',
     'apps.noclook',
     'apps.scan',
