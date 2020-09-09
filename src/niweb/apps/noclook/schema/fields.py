@@ -5,10 +5,11 @@ from apps.noclook.models import NodeHandle, Choice as ChoiceModel, Dropdown as D
 from apps.noclook.vakt import utils as sriutils
 from collections import OrderedDict
 from graphene_django import DjangoObjectType
-from .scalars import ChoiceScalar, IPAddr
+from .scalars import ChoiceScalar, IPAddr, JSON
 
 import graphene
 import types as pytypes
+import warnings
 
 ########## KEYVALUE TYPES
 class KeyValue(graphene.Interface):
@@ -156,18 +157,29 @@ class NIIPAddrField(NIBasicField):
                         type_kwargs, **kwargs)
 
 
+class NIJSONField(NIBasicField):
+    '''
+    JSO type
+    '''
+    def __init__(self, field_type=JSON, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIJSONField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+
 class NISingleRelationField(NIBasicField):
     '''
     Object list type
     '''
     def __init__(self, field_type=None, manual_resolver=False, type_kwargs=None,
-                    rel_method=None, rel_name=None, **kwargs):
+                    rel_method=None, rel_name=None, check_permissions=True, **kwargs):
 
-        self.type_kwargs     = type_kwargs
-        self.field_type      = lambda: graphene.Field(field_type)
-        self.manual_resolver = manual_resolver
-        self.rel_method      = rel_method
-        self.rel_name        = rel_name
+        self.type_kwargs       = type_kwargs
+        self.field_type        = lambda: graphene.Field(field_type)
+        self.manual_resolver   = manual_resolver
+        self.rel_method        = rel_method
+        self.rel_name          = rel_name
+        self.check_permissions = check_permissions
 
     def get_resolver(self, **kwargs):
         rel_method = kwargs.get('rel_method')
@@ -183,9 +195,18 @@ class NISingleRelationField(NIBasicField):
                 node = relationship[rel_name][0]
                 relation_id = node['relationship_id']
                 handle_id = node['node'].data['handle_id']
-                ret = NodeHandle.objects.get(handle_id=handle_id)
-                # add relationship_id
-                ret.relation_id = relation_id
+
+                authorized = False
+
+                if sriutils.authorice_read_resource(info.context.user, handle_id):
+                    authorized = True
+                else:
+                    authorized = not self.check_permissions
+
+                if authorized:
+                    ret = NodeHandle.objects.get(handle_id=handle_id)
+                    # add relationship_id
+                    ret.relation_id = relation_id
 
             return ret
 
@@ -224,8 +245,17 @@ class NIListField(NIBasicField):
             if nodes:
                 for node in nodes:
                     relation_id = node['relationship_id']
-                    node = node['node']
-                    node_id = node.data.get('handle_id')
+                    node_elem = node['node']
+                    node_id = node_elem.data.get('handle_id')
+
+                    if not relation_id:
+                        relation_id = -1
+                        warnings.warn(
+                            "relationship_id is None".format(node),
+                            RuntimeWarning
+                        )
+
+
                     id_list.append((node_id, relation_id))
 
             id_list = sorted(id_list, key=lambda x: x[0])

@@ -6,7 +6,8 @@ from collections import OrderedDict
 from faker import Faker
 from apps.nerds.lib.consumer_util import get_user
 from apps.noclook import helpers
-from apps.noclook.models import NodeHandle, NodeType, Dropdown, Choice, NodeHandleContext
+from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, Choice, NodeHandleContext
+from apps.noclook.schema.utils import sunet_forms_enabled
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
 import norduniclient as nc
@@ -29,7 +30,7 @@ class FakeDataGenerator:
         self.user = get_user()
 
     def escape_quotes(self, str_in):
-        return str_in.replace("'", "\'")
+        return str_in.replace("'", "`")
 
     def company_name(self):
         return self.escape_quotes( self.fake.company() )
@@ -93,7 +94,7 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
 
     def create_fake_contact(self):
         salutations = ['Ms.', 'Mr.', 'Dr.', 'Mrs.', 'Mx.']
-        contact_types_drop = Dropdown.objects.get(name='contact_type')
+        contact_types_drop = DropModel.objects.get(name='contact_type')
         contact_types = Choice.objects.filter(dropdown=contact_types_drop)
         contact_types = [x.value for x in contact_types]
 
@@ -124,7 +125,7 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
         organization_name = self.company_name()
         organization_id = organization_name.upper()
 
-        org_types_drop = Dropdown.objects.get(name='organization_types')
+        org_types_drop = DropModel.objects.get(name='organization_types')
         org_types = Choice.objects.filter(dropdown=org_types_drop)
         org_types = [x.value for x in org_types]
 
@@ -190,6 +191,17 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         self.max_cable_providers = 5
         self.max_ports_total = 40
 
+        self.optical_path_dependency_types = {
+            'ODF': self.create_odf,
+            'OpticalLink': self.create_optical_link,
+            'OpticalMultiplexSection': self.create_optical_multiplex_section,
+            'OpticalNode': self.create_optical_node,
+            'Router': self.create_router,
+            'Switch': self.create_switch,
+            'OpticalPath': self.create_optical_path,
+            # 'Service': self.create_service
+        }
+
     def add_network_context(self, nh):
         net_ctx = sriutils.get_network_context()
         NodeHandleContext(nodehandle=nh, context=net_ctx).save()
@@ -202,7 +214,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         return NodeType.objects.get_or_create(type=type_name, slug=slugify(type_name))[0]
 
     def get_dropdown_keys(self, dropdown_name):
-        return [ x[0] for x in Dropdown.get(dropdown_name).as_choices()[1:] ]
+        return [ x[0] for x in DropModel.get(dropdown_name).as_choices()[1:] ]
 
     ## Organizations
     def create_customer(self, name=None):
@@ -279,6 +291,17 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         # add context
         self.add_network_context(peering_group)
+
+        # add random dependents
+        num_dependencies = random.randint(1, 3)
+
+        for i in range(0, num_dependencies):
+            dependency = random.choice([
+                self.create_host,
+            ])
+            dependency = dependency()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, peering_group, dependency)
 
         return peering_group
 
@@ -391,14 +414,21 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             port_a = random.choice(all_ports)
             port_b = random.choice(all_ports)
 
-
         data = {
             'cable_type' : random.choice(cable_types),
-            'description' : self.fake.paragraph(),
+            'description' : self.escape_quotes(self.fake.paragraph()),
             'relationship_provider' : provider.handle_id,
             'relationship_end_a' : port_a.handle_id,
             'relationship_end_b' : port_b.handle_id,
         }
+
+        if sunet_forms_enabled():
+            cable_contract = random.choice(
+                Dropdown.objects.get(name="tele2_cable_contracts").as_choices()[1:][1]
+            )
+            data['tele2_cable_contract'] = cable_contract
+            data['tele2_alternative_circuit_id'] = self.escape_quotes(self.fake.ean8()),
+
 
         for key, value in data.items():
             cable.get_node().add_property(key, value)
@@ -410,10 +440,10 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return cable
 
-    def create_host(self, name=None, type_name="Host", metatype=META_TYPES[0]):
+    def create_host(self, name=None, type_name="Host", metatype=META_TYPES[1]):
         # create object
         if not name:
-            name = self.fake.hostname()
+            name = self.escape_quotes(self.fake.hostname())
 
         host = self.get_or_create_node(
             name, type_name, metatype)
@@ -444,19 +474,19 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             'ip_addresses' : ip_adresses,
             'rack_units': random.randint(1,10),
             'rack_position': random.randint(1,10),
-            'description': self.fake.paragraph(),
+            'description': self.escape_quotes(self.fake.paragraph()),
             'operational_state': random.choice(operational_states),
             'managed_by': random.choice(managed_by),
             'responsible_group': random.choice(responsible_group),
             'support_group': random.choice(support_group),
             'backup': random.choice(backup_systems),
             'security_class': random.choice(security_class),
-            'security_comment': self.fake.paragraph(),
+            'security_comment':self.escape_quotes(self.fake.paragraph()),
             'os': os_choice[0],
             'os_version': random.choice(os_choice[1]),
-            'model': self.fake.license_plate(),
+            'model': self.escape_quotes(self.fake.license_plate()),
             'vendor': self.company_name(),
-            'service_tag': self.fake.license_plate(),
+            'service_tag': self.escape_quotes(self.fake.license_plate()),
         }
 
         for key, value in data.items():
@@ -499,7 +529,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             name = '{}-{}'.format(
                 self.fake.safe_color_name(), self.fake.ean8())
 
-        switch = self.create_host(name, "Switch")
+        switch = self.create_host(name, "Switch", metatype=META_TYPES[0])
 
         data = {
             'max_number_of_ports': random.randint(5,25),
@@ -516,7 +546,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             name = '{}-{}'.format(
                 self.fake.safe_color_name(), self.fake.ean8())
 
-        firewall = self.create_host(name, "Firewall")
+        firewall = self.create_host(name, "Firewall", metatype=META_TYPES[0])
 
         data = {
             'max_number_of_ports': random.randint(5,25),
@@ -527,38 +557,290 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return firewall
 
+    def create_host_user(self, name=None):
+        # create object
+        if not name:
+            name = self.rand_person_or_company_name()
+
+        name = self.rand_person_or_company_name()
+        hostuser = self.get_or_create_node(
+            name, 'Host User', META_TYPES[2]) # Relation
+
+        # add context
+        self.add_network_context(hostuser)
+
+        data = {
+            'url': self.fake.url(),
+            'description': self.fake.paragraph(),
+        }
+
+        for key, value in data.items():
+            hostuser.get_node().add_property(key, value)
+
+        return hostuser
+
+    def create_optical_node(self, name=None):
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.safe_color_name(), self.fake.ean8())
+
+        onode = self.get_or_create_node(
+            name, 'Optical Node', META_TYPES[0])
+
+        # add context
+        self.add_network_context(onode)
+
+        # add data
+        operational_states = self.get_dropdown_keys('operational_states')
+        types = self.get_dropdown_keys('optical_node_types')
+
+        data = {
+            'operational_state': random.choice(operational_states),
+            'type': random.choice(types),
+            'description': self.fake.paragraph(),
+            'rack_units': random.randint(1,10),
+            'rack_position': random.randint(1,10),
+            'rack_back': bool(random.getrandbits(1)),
+        }
+
+        for key, value in data.items():
+            onode.get_node().add_property(key, value)
+
+        return onode
+
+    def create_odf(self, name=None):
+        # create object
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.safe_color_name(), self.fake.ean8())
+
+        odf = self.get_or_create_node(
+            name, 'ODF', META_TYPES[0])
+
+        # add context
+        self.add_network_context(odf)
+
+        # add data
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        data = {
+            'rack_units': random.randint(1,10),
+            'rack_position': random.randint(1,10),
+            'rack_back': bool(random.getrandbits(1)),
+            'operational_state': random.choice(operational_states),
+            'description': self.fake.paragraph(),
+            'max_number_of_ports': random.randint(5,25),
+        }
+
+        for key, value in data.items():
+            odf.get_node().add_property(key, value)
+
+        return odf
+
+    def create_optical_link(self, name=None):
+        # create object
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.ean8(), self.escape_quotes(self.fake.license_plate()))
+
+        optical_link = self.get_or_create_node(
+            name, 'Optical Link', META_TYPES[1])
+
+        # add context
+        self.add_network_context(optical_link)
+
+        # check if there's any provider or if we should create one
+        provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
+        providers = NodeHandle.objects.filter(node_type=provider_type)
+
+        max_providers = self.max_cable_providers
+        provider = None
+
+        if not providers or len(providers) < max_providers:
+            provider = self.create_provider()
+        else:
+            provider = random.choice(list(providers))
+
+        # add data
+        link_types = self.get_dropdown_keys('optical_link_types')
+        interface_types = self.get_dropdown_keys('optical_link_interface_type')
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        data = {
+            'description': self.fake.paragraph(),
+            'link_type': random.choice(link_types),
+            'interface_type': random.choice(interface_types),
+            'operational_state': random.choice(operational_states),
+            'relationship_provider' : provider.handle_id,
+        }
+
+        for key, value in data.items():
+            optical_link.get_node().add_property(key, value)
+
+        helpers.set_provider(self.user,
+            optical_link.get_node(), provider.handle_id)
+
+        # add random ports
+        num_ports = random.randint(1, 3)
+
+        for i in range(0, num_ports):
+            port = self.create_port()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, optical_link, port)
+
+        return optical_link
+
+    def create_optical_multiplex_section(self, name=None):
+        # create object
+        if not name:
+            name = '{}-{}'.format(
+                self.escape_quotes(self.fake.license_plate()), self.fake.ean8())
+
+        optical_multisection = self.get_or_create_node(
+            name, 'Optical Multiplex Section', META_TYPES[1])
+
+        # add context
+        self.add_network_context(optical_multisection)
+
+        # check if there's any provider or if we should create one
+        provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
+        providers = NodeHandle.objects.filter(node_type=provider_type)
+
+        max_providers = self.max_cable_providers
+        provider = None
+
+        if not providers or len(providers) < max_providers:
+            provider = self.create_provider()
+        else:
+            provider = random.choice(list(providers))
+
+        # add data
+        link_types = self.get_dropdown_keys('optical_link_types')
+        interface_types = self.get_dropdown_keys('optical_link_interface_type')
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        data = {
+            'description': self.fake.paragraph(),
+            'operational_state': random.choice(operational_states),
+            'relationship_provider' : provider.handle_id,
+        }
+
+        for key, value in data.items():
+            optical_multisection.get_node().add_property(key, value)
+
+        helpers.set_provider(self.user,
+            optical_multisection.get_node(), provider.handle_id)
+
+        # add random ports
+        num_ports = random.randint(1, 3)
+
+        for i in range(0, num_ports):
+            port = self.create_port()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, optical_multisection, port)
+
+        return optical_multisection
+
+
+    def create_optical_path(self, name=None):
+        # create object
+        if not name:
+            name = '{}-{}'.format(
+                self.fake.ean8(), self.escape_quotes(self.fake.license_plate()))
+
+        optical_path = self.get_or_create_node(
+            name, 'Optical Path', META_TYPES[1])
+
+        # add context
+        self.add_network_context(optical_path)
+
+        # check if there's any provider or if we should create one
+        provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
+        providers = NodeHandle.objects.filter(node_type=provider_type)
+
+        max_providers = self.max_cable_providers
+        provider = None
+
+        if not providers or len(providers) < max_providers:
+            provider = self.create_provider()
+        else:
+            provider = random.choice(list(providers))
+
+        # add data
+        framing_types = self.get_dropdown_keys('optical_path_framing')
+        capaticy_types = self.get_dropdown_keys('optical_path_capacity')
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        data = {
+            'description': self.fake.paragraph(),
+            'framing': random.choice(framing_types),
+            'capacity': random.choice(capaticy_types),
+            'operational_state': random.choice(operational_states),
+            'relationship_provider' : provider.handle_id,
+        }
+
+        for key, value in data.items():
+            optical_path.get_node().add_property(key, value)
+
+        helpers.set_provider(self.user,
+            optical_path.get_node(), provider.handle_id)
+
+        # add random dependencies
+        num_ports = random.randint(0, 3)
+
+        for i in range(0, num_ports):
+            dep_type = random.choice(list(self.optical_path_dependency_types.keys()))
+            dep_f = self.optical_path_dependency_types[dep_type]
+            dependency = dep_f()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, optical_path, dependency)
+
+        return optical_path
+
 
 class DataRelationMaker:
     def __init__(self):
         self.user = get_user()
 
 
+class PhysicalLogicalDataRelationMaker(DataRelationMaker):
+    def add_dependency(cls, user, main_logical_nh, dep_logical_nh):
+        main_logical_nh = main_logical_nh.get_node()
+        dep_logical_handle_id = dep_logical_nh.handle_id
+        helpers.set_depends_on(user, main_logical_nh, dep_logical_handle_id)
+
+
 class LogicalDataRelationMaker(DataRelationMaker):
-    def add_part_of(self, logical_nh, physical_nh):
+    def add_part_of(self, user, logical_nh, physical_nh):
         physical_node = physical_nh.get_node()
         logical_handle_id = logical_nh.handle_id
-        helpers.set_part_of(self.user, physical_node, logical_handle_id)
+        helpers.set_part_of(user, physical_node, logical_handle_id)
+
+    def add_dependent(self, user, main_logical_nh, dep_logical_nh):
+        main_logical_handle_id = main_logical_nh.handle_id
+        dep_logical_nh = dep_logical_nh.get_node()
+        helpers.set_depends_on(user, dep_logical_nh, main_logical_handle_id)
 
 
 class RelationDataRelationMaker(DataRelationMaker):
-    def add_provides(self, relation_nh, phylogical_nh):
+    def add_provides(self, user, relation_nh, phylogical_nh):
         the_node = phylogical_nh.get_node()
         relation_handle_id = relation_nh.handle_id
-        helpers.set_provider(self.user, the_node, relation_handle_id)
+        helpers.set_provider(user, the_node, relation_handle_id)
 
-    def add_owns(self, relation_nh, physical_nh):
+    def add_owns(self, user, relation_nh, physical_nh):
         physical_node = physical_nh.get_node()
         relation_handle_id = relation_nh.handle_id
-        helpers.set_owner(self.user, physical_node, relation_handle_id)
+        helpers.set_owner(user, physical_node, relation_handle_id)
 
-    def add_responsible_for(self, relation_nh, location_nh):
+    def add_responsible_for(self, user, relation_nh, location_nh):
         location_node = location_nh.get_node()
         relation_handle_id = relation_nh.handle_id
-        helpers.set_responsible_for(self.user, location_node, relation_handle_id)
+        helpers.set_responsible_for(user, location_node, relation_handle_id)
 
 
 class PhysicalDataRelationMaker(DataRelationMaker):
-    def add_parent(self, physical_nh, physical_parent_nh):
+    def add_parent(self, user, physical_nh, physical_parent_nh):
         handle_id = physical_nh.handle_id
         parent_handle_id = physical_parent_nh.handle_id
 

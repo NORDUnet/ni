@@ -220,7 +220,6 @@ class SingleTest(Neo4jGraphQLCommunityTest):
           create_contact(
             input: {{
               first_name: "Jane"
-              last_name: "Smith"
               title: ""
               contact_type: "person"
               relationship_works_for: "{organization_id}"
@@ -270,9 +269,9 @@ class SingleTest(Neo4jGraphQLCommunityTest):
                       OrderedDict([('errors', None),
                       ('contact',
                         OrderedDict([('id', contact_id),
-                                     ('name', 'Jane Smith'),
+                                     ('name', 'Jane'),
                                      ('first_name', 'Jane'),
-                                     ('last_name', 'Smith'),
+                                     ('last_name', None),
                                      ('title', None),
                                      ('contact_type',
                                       OrderedDict([('name', 'Person'),

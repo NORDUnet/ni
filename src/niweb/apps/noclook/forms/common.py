@@ -296,11 +296,16 @@ class BasicSwitchForm(forms.Form):
         super(BasicSwitchForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Host User')
 
     name = forms.CharField()
     operational_state = forms.ChoiceField(initial='Reserved')
     description = description_field('switch')
     relationship_provider = relationship_field('provider', True)
+    relationship_owner = relationship_field('owner', True)
 
 
 class NewSwitchForm(SwitchTypeForm, BasicSwitchForm):
@@ -437,7 +442,6 @@ class NewHostForm(RackableForm):
         self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
 
     name = forms.CharField(help_text="The hostname")
-    description = description_field('host')
     ip_addresses = IPAddrField(help_text="One ip per line", required=False)
     description = description_field('machine and what it is used for')
     operational_state = forms.ChoiceField(widget=forms.widgets.Select, initial='In service')
@@ -481,7 +485,31 @@ class EditHostForm(NewHostForm):
     services_checked = forms.BooleanField(required=False)
 
 
-class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, NewHostForm):
+class NewSRIHostForm(NewHostForm):
+    relationship_owner = relationship_field('owner', True)
+
+    def __init__(self, *args, **kwargs):
+        super(NewSRIHostForm, self).__init__(*args, **kwargs)
+        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['security_class'].choices = Dropdown.get('security_classes').as_choices()
+        self.fields['managed_by'].choices = Dropdown.get('host_management_sw').as_choices()
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
+        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+            + get_node_type_tuples('End User') \
+            + get_node_type_tuples('Provider') \
+            + get_node_type_tuples('Host User')
+
+
+class EditSRIHostForm(NewSRIHostForm, EditHostForm):
+    relationship_user = relationship_field('user', True)
+
+    def __init__(self, *args, **kwargs):
+        super(EditSRIHostForm, self).__init__(*args, **kwargs)
+        self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
+
+
+class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, EditHostForm):
     def __init__(self, *args, **kwargs):
         super(NewSwitchHostForm, self).__init__(*args, **kwargs)
         self.fields['switch_type'].choices = SwitchType.as_choices()
@@ -493,7 +521,7 @@ class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, Ne
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
 
-class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, NewHostForm):
+class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, EditHostForm):
     def __init__(self, *args, **kwargs):
         super(EditSwitchForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -519,7 +547,7 @@ class EditFirewallNewForm(PhysicalSupportForm, WithMaxPortsForm, EditHostForm):
         self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
-            + get_node_type_tuples('Site Owner')
+            + get_node_type_tuples('Host User')
 
     relationship_owner = relationship_field('owner', True)
 
@@ -655,7 +683,7 @@ class NewExternalEquipmentForm(RackableForm):
         self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
-            + get_node_type_tuples('Site Owner')
+            + get_node_type_tuples('Host User')
 
     name = forms.CharField()
 
@@ -1150,7 +1178,7 @@ class NewContactForm(forms.Form):
         self.fields['contact_type'].choices = Dropdown.get('contact_type').as_choices()
 
     first_name = forms.CharField()
-    last_name = forms.CharField()
+    last_name = forms.CharField(required=False)
     contact_type = forms.ChoiceField(widget=forms.widgets.Select)
     name = forms.CharField(required=False, widget=forms.widgets.HiddenInput)
     title = forms.CharField(required=False)

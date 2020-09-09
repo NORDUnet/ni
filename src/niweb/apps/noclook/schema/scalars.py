@@ -54,6 +54,8 @@ class JSON(Scalar):
             raise ValidationError(self.error_messages['invalid'], code='invalid')
         return value
 
+    parse_literal = parse_value
+
 
 class RoleScalar(Scalar):
     '''This is a POC scalar that may be used in the contact mutation input'''

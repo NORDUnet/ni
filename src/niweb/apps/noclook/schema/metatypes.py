@@ -40,8 +40,13 @@ class NINode(graphene.Node):
             super().resolve_type(instance, info)
 
 
-class Logical(NINode):
+class PhysicalLogical(NINode):
+    dependents = graphene.List(lambda:Logical)
+
+
+class Logical(PhysicalLogical):
     part_of = graphene.Field(lambda:Physical)
+    dependencies = graphene.List(lambda:PhysicalLogical)
 
 
 class Relation(NINode):
@@ -53,12 +58,11 @@ class Relation(NINode):
     responsible_for = graphene.Field(lambda:Location)
 
 
-class Physical(NINode):
+class Physical(PhysicalLogical):
     location = graphene.Field(lambda:Location)
     has = graphene.List(lambda:Physical)
     part_of = graphene.Field(lambda:Logical)
     parent = graphene.List(lambda:Physical)
-    dependents = graphene.List(lambda:Logical)
     owner = graphene.Field(lambda:Relation)
 
 
@@ -129,7 +133,20 @@ class ResolverUtils:
 
         return ret
 
-class LogicalMixin:
+
+class PhysicalLogicalMixin:
+    def resolve_dependents(self, info, **kwargs):
+        return ResolverUtils.multiple_relation_resolver(
+            info, self.get_node(), 'get_dependents', 'Depends_on')
+
+    @classmethod
+    def link_dependents(cls, user, physical_nh, logical_nh):
+        logical_node = logical_nh.get_node()
+        physical_handle_id = physical_nh.handle_id
+        helpers.set_depends_on(user, logical_node, physical_handle_id)
+
+
+class LogicalMixin(PhysicalLogicalMixin):
     def resolve_part_of(self, info, **kwargs):
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_part_of', 'Part_of')
@@ -139,6 +156,16 @@ class LogicalMixin:
         physical_node = physical_nh.get_node()
         logical_handle_id = logical_nh.handle_id
         helpers.set_part_of(user, physical_node, logical_handle_id)
+
+    def resolve_dependencies(self, info, **kwargs):
+        return ResolverUtils.multiple_relation_resolver(
+            info, self.get_node(), 'get_dependencies', 'Depends_on')
+
+    @classmethod
+    def link_dependencies(cls, user, logical1_nh, logical2_nh):
+        logical1_node = logical1_nh.get_node()
+        logical2_handle_id = logical2_nh.handle_id
+        helpers.set_depends_on(user, logical1_node, logical2_handle_id)
 
 
 class RelationMixin:
@@ -191,7 +218,7 @@ class RelationMixin:
         helpers.set_responsible_for(user, location_node, relation_handle_id)
 
 
-class PhysicalMixin:
+class PhysicalMixin(PhysicalLogicalMixin):
     def resolve_location(self, info, **kwargs):
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_location', 'Located_in')
@@ -207,10 +234,6 @@ class PhysicalMixin:
     def resolve_parent(self, info, **kwargs):
         return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_parent', 'Has')
-
-    def resolve_dependents(self, info, **kwargs):
-        return ResolverUtils.multiple_relation_resolver(
-            info, self.get_node(), 'get_dependents', 'Depends_on')
 
     def resolve_owner(self, info, **kwargs):
         return ResolverUtils.single_relation_resolver(
@@ -237,12 +260,6 @@ class PhysicalMixin:
         physical_node = physical_nh.get_node()
         physical2_handle_id = physical2_nh.handle_id
         helpers.set_has(user, physical_node, physical2_handle_id)
-
-    @classmethod
-    def link_dependents(cls, user, physical_nh, logical_nh):
-        physical_node = physical_nh.get_node()
-        logical_handle_id = logical_nh.handle_id
-        helpers.set_depends_on(user, physical_node, logical_handle_id)
 
 
 class LocationMixin:

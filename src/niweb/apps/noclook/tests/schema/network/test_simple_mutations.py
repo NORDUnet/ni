@@ -3,7 +3,8 @@ __author__ = 'ffuentes'
 
 from apps.noclook.tests.stressload.data_generator import FakeDataGenerator,\
                                                         NetworkFakeDataGenerator
-from apps.noclook.models import NodeHandle, Dropdown
+from apps.noclook.models import NodeHandle, NodeType, NodeHandleContext, Dropdown
+from apps.noclook.schema.types.network import allowed_types_converthost
 from collections import OrderedDict
 from graphene import relay
 from niweb.schema import schema
@@ -273,14 +274,19 @@ class GenericNetworkMutationTest(Neo4jGraphQLNetworkTest):
 
     def crud(self, create_mutation=None, update_mutation=None,
                 delete_mutation=None, entityname=None):
-        if not create_mutation or not update_mutation or not delete_mutation\
+        if not update_mutation or not delete_mutation\
             or not entityname:
             raise Exception('Missconfigured test {}'.format(type(self)))
 
-        id_str = self.create_mutation(
-            create_mutation=create_mutation,
-            entityname=entityname
-        )
+        id_str = None
+
+        if create_mutation:
+            id_str = self.create_mutation(
+                create_mutation=create_mutation,
+                entityname=entityname
+            )
+        else:
+            id_str = self.get_testentity_id()
 
         id_str = self.edit_mutation(
             id_str=id_str,
@@ -463,4 +469,174 @@ class PortTest(GenericNetworkMutationTest):
             update_mutation='update_port',
             delete_mutation='delete_port',
             entityname='port'
+        )
+
+
+class ConvertHostTest(Neo4jGraphQLNetworkTest):
+    def test_allowed_types_converthost(self):
+        ## simple metatype query
+        query = '''
+        {
+          getAllowedTypesConvertHost
+        }
+        '''
+
+        expected = {
+            "getAllowedTypesConvertHost": allowed_types_converthost
+        }
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, result.errors
+
+        self.assertEqual(result.data, expected)
+
+    def test_convert_host(self):
+        # create test logical host
+        data_generator = NetworkFakeDataGenerator()
+        test_host = data_generator.create_host()
+        host_handle_id = test_host.handle_id
+        host_id = relay.Node.to_global_id(str(test_host.node_type),
+                                            str(test_host.handle_id))
+
+        query = '''
+        mutation{{
+          convert_host(input:{{ id: "{host_id}", slug: "{slug}" }}){{
+            success
+            new_id
+            new_type{{
+              slug
+            }}
+          }}
+        }}
+        '''
+
+        # test not allowed slug
+        test_slug = 'cable'
+        q = query.format(host_id=host_id, slug=test_slug)
+
+        result = schema.execute(q, context=self.context)
+        self.assertIsNone(result.errors)
+        self.assertFalse(result.data['convert_host']['success'])
+
+        # test not authorized host
+        NodeHandleContext.objects.filter(nodehandle=test_host).delete()
+
+        slug_choices = ['firewall', 'switch', 'pdu', 'router']
+
+        # ensure we have the types
+        node_type_str = ''
+        for slug in slug_choices:
+            if slug == 'pdu':
+                node_type_str = 'PDU'
+            else:
+                node_type_str = slug.title()
+
+            NodeType.objects.get_or_create(type=node_type_str, slug=slug)
+
+        test_slug = random.choice(['firewall', 'switch', 'pdu', 'router'])
+        test_slug = 'router'
+        test_host_ntype = NodeType.objects.get_or_create(slug=test_slug)[0]
+        expected_id = relay.Node.to_global_id(str(test_host_ntype),
+                                            str(test_host.handle_id))
+
+        q = query.format(host_id=host_id, slug=test_slug)
+
+        result = schema.execute(q, context=self.context)
+        self.assertIsNone(result.errors)
+        self.assertFalse(result.data['convert_host']['success'])
+
+        # test successful case
+        data_generator.add_network_context(test_host)
+
+        result = schema.execute(q, context=self.context)
+        self.assertIsNone(result.errors)
+        self.assertTrue(result.data['convert_host']['success'])
+        test_result_id = result.data['convert_host']['new_id']
+        self.assertEquals(test_result_id, expected_id,
+            "{} != {}".format(relay.Node.from_global_id(test_result_id),
+            relay.Node.from_global_id(expected_id)))
+
+        self.assertEquals(result.data['convert_host']['new_type']['slug'], test_slug)
+
+        converted_nh = NodeHandle.objects.get(handle_id=host_handle_id)
+        test_node_type = NodeType.objects.get(slug=test_slug)
+        self.assertEquals(test_node_type, converted_nh.node_type)
+
+        # test non host node
+        host_id = relay.Node.to_global_id(str(converted_nh.node_type),
+                                            str(converted_nh.handle_id))
+        q = query.format(host_id=host_id, slug=test_slug)
+        result = schema.execute(q, context=self.context)
+        self.assertIsNone(result.errors)
+        self.assertFalse(result.data['convert_host']['success'])
+
+
+## Peering
+class GenericPeeringTest(GenericNetworkMutationTest):
+    def get_testentity_id(self):
+        pass
+
+    def get_data(self):
+        data_generator = FakeDataGenerator()
+        data = {
+            'name': data_generator.rand_person_or_company_name,
+        }
+
+        return data
+
+    def edit_mutation(self, update_mutation=None, entityname=None, id_str=None):
+        data = self.get_data()
+
+        return super().edit_mutation(
+            update_mutation=update_mutation,
+            entityname=entityname,
+            id_str=id_str,
+            data=data
+        )
+
+    def crud(self, create_mutation=None, update_mutation=None,
+                delete_mutation=None, entityname=None):
+        # test simple crud
+        super().crud(
+            update_mutation=update_mutation,
+            delete_mutation=delete_mutation,
+            entityname=entityname
+        )
+
+
+class PeeringGroupTest(GenericPeeringTest):
+    def get_testentity_id(self):
+        data_generator = NetworkFakeDataGenerator()
+        peering_group = data_generator.create_peering_group()
+
+        id_str = relay.Node.to_global_id(
+                            str(peering_group.node_type.type.replace(' ', '')),
+                            str(peering_group.handle_id))
+
+        return id_str
+
+    def test_crud(self):
+        self.crud(
+            update_mutation='update_peeringGroup',
+            delete_mutation='delete_peeringGroup',
+            entityname='peeringGroup'
+        )
+
+
+class PeeringPartnerTest(GenericPeeringTest):
+    def get_testentity_id(self):
+        data_generator = NetworkFakeDataGenerator()
+        peering_partner = data_generator.create_peering_partner()
+
+        id_str = relay.Node.to_global_id(
+                            str(peering_partner.node_type.type.replace(' ', '')),
+                            str(peering_partner.handle_id))
+
+        return id_str
+
+    def test_crud(self):
+        self.crud(
+            update_mutation='update_peeringPartner',
+            delete_mutation='delete_peeringPartner',
+            entityname='peeringPartner'
         )

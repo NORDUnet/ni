@@ -49,7 +49,7 @@ class Neo4jGraphQLMetatypeTest(Neo4jGraphQLGenericTest):
         self.assertFalse(has_relation)
 
         # add relation
-        getattr(relation_maker, bind_method_name)(node_1, node_2)
+        getattr(relation_maker, bind_method_name)(self.user, node_1, node_2)
 
         # check that the relation exists now
         # on the backend
@@ -237,50 +237,3 @@ class MetaTypesQueriesTest(Neo4jGraphQLGenericTest):
         for query in queries:
             result = schema.execute(query, context=self.context)
             assert not result.errors, result.errors
-
-    def test_network_organizations(self):
-        ## simple metatype query
-        query = '''
-        {
-          getNetworkOrgTypes{
-            type_name
-            connection_name
-            byid_name
-            all_name
-          }
-        }
-        '''
-
-        expected = {
-            "getNetworkOrgTypes": [
-                {
-                    "type_name": "Customer",
-                    "connection_name": "customers",
-                    "byid_name": "getCustomerById",
-                    "all_name": "all_customers"
-                },
-                {
-                    "type_name": "EndUser",
-                    "connection_name": "endUsers",
-                    "byid_name": "getEndUserById",
-                    "all_name": "all_endusers"
-                },
-                {
-                    "type_name": "Provider",
-                    "connection_name": "providers",
-                    "byid_name": "getProviderById",
-                    "all_name": "all_providers"
-                },
-                {
-                    "type_name": "SiteOwner",
-                    "connection_name": "siteOwners",
-                    "byid_name": "getSiteOwnerById",
-                    "all_name": "all_siteowners"
-                }
-            ]
-        }
-
-        result = schema.execute(query, context=self.context)
-        assert not result.errors, result.errors
-
-        self.assertEqual(result.data, expected)

@@ -41,6 +41,22 @@ class DataFakerTest(NeoTestCase):
             }
         )
 
+        # call peering generator
+        call_command(self.cmd_name,
+            **{
+                DFCommand.option_peering: self.test_node_num,
+                'verbosity': 0,
+            }
+        )
+
+        # call optical generator
+        call_command(self.cmd_name,
+            **{
+                DFCommand.option_optical: self.test_node_num,
+                'verbosity': 0,
+            }
+        )
+
         # check that there's nodes from the generated types
         self.assertTrue(
             NodeHandle.objects.filter(node_type__in=all_node_types).exists()

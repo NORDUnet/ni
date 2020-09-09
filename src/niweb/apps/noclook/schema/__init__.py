@@ -10,6 +10,9 @@ from .types import *
 from .query import *
 from .mutations import *
 
+_nimeta = getattr(NOCRootQuery, 'NIMeta')
+graphql_types = getattr(_nimeta, 'graphql_types')
+
 NOCSCHEMA_TYPES = [
     # Interfaces
     NINode,
@@ -20,31 +23,7 @@ NOCSCHEMA_TYPES = [
     Choice,
     Neo4jChoice,
     NodeHandler,
-
-    # Community
-    Group,
-    Contact,
-    Procedure,
-    Address,
-    Phone,
-    Email,
-
-    # Network
-    ## organizations
-    Customer,
-    EndUser,
-    Provider,
-    SiteOwner,
-
-    ## cables equipment
-    Port,
-    Host,
-    Cable,
-
-    ## Peering
-    PeeringGroup,
-    PeeringPartner,
-]
+] + graphql_types
 
 NOCSCHEMA_QUERIES = [
     NOCRootQuery,

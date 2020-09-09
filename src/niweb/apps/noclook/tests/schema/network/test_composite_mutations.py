@@ -5,6 +5,7 @@ from apps.noclook.models import NodeHandle, Dropdown, Choice, Group, \
     GroupContextAuthzAction, NodeHandleContext, SwitchType
 from apps.noclook.tests.stressload.data_generator \
     import NetworkFakeDataGenerator, CommunityFakeDataGenerator
+from apps.noclook.schema.utils import sunet_forms_enabled
 from collections import OrderedDict
 from . import Neo4jGraphQLNetworkTest
 from niweb.schema import schema
@@ -13,6 +14,7 @@ from graphene import relay
 
 import random
 
+## Equipment and cables
 class PortCompositeTest(Neo4jGraphQLNetworkTest):
     def test_composite_port(self):
         # Create query
@@ -354,6 +356,8 @@ class PortCompositeTest(Neo4jGraphQLNetworkTest):
 
 class PortCableTest(Neo4jGraphQLNetworkTest):
     def test_cable_port(self):
+        generator = NetworkFakeDataGenerator()
+
         cable_name = "Test cable"
         cable_type = "Patch"
         cable_description = "Integer posuere est at sapien elementum, "\
@@ -382,10 +386,37 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             "ornare placerat."
 
         # set a provider
-        generator = NetworkFakeDataGenerator()
         provider = generator.create_provider()
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
+
+        # use sunet fields on cable only if they're enabled
+        cable_contract = None
+        cable_circuitid = None
+
+        sunet_input = ''
+        sunet_query = ''
+
+        if sunet_forms_enabled():
+            cable_contract = random.choice(
+                Dropdown.objects.get(name="tele2_cable_contracts").as_choices()[1:][1]
+            )
+            cable_circuitid = generator.escape_quotes(generator.fake.ean8())
+
+            sunet_input = '''
+                tele2_cable_contract: "{cable_contract}"
+                tele2_alternative_circuit_id: "{cable_circuitid}"
+            '''.format(
+                cable_contract=cable_contract,
+                cable_circuitid=cable_circuitid
+            )
+
+            sunet_query = '''
+                tele2_cable_contract{
+                  value
+                }
+                tele2_alternative_circuit_id
+            '''
 
         # Create query
         query = '''
@@ -396,6 +427,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
               cable_type: "{cable_type}"
               description: "{cable_description}"
               relationship_provider: "{provider_id}"
+              {sunet_input}
             }}
             create_subinputs:[
               {{
@@ -438,6 +470,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                {sunet_query}
               }}
             }}
             subcreated{{
@@ -464,7 +497,9 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                     cable_description=cable_description, aport_name=aport_name,
                     aport_type=aport_type, aport_description=aport_description,
                     bport_name=bport_name, bport_type=bport_type,
-                    bport_description=bport_description, provider_id=provider_id)
+                    bport_description=bport_description,
+                    provider_id=provider_id, sunet_input=sunet_input,
+                    sunet_query=sunet_query)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -489,6 +524,12 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_data['name'], cable_name)
         self.assertEqual(created_data['cable_type']['value'], cable_type)
         self.assertEqual(created_data['description'], cable_description)
+
+        if sunet_forms_enabled():
+            self.assertEqual(created_data['tele2_cable_contract']['value'],
+                                cable_contract)
+            self.assertEqual(created_data['tele2_alternative_circuit_id'],
+                                cable_circuitid)
 
         # check their relations id
         test_aport_id = created_data['ports'][0]['id']
@@ -546,6 +587,30 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             bport_type = "RJ45"
             bport_description = buffer_description
 
+            sunet_input = ''
+            sunet_query = ''
+
+            if sunet_forms_enabled():
+                cable_contract = random.choice(
+                    Dropdown.objects.get(name="tele2_cable_contracts").as_choices()[1:][1]
+                )
+                cable_circuitid = generator.escape_quotes(generator.fake.ean8())
+
+                sunet_input = '''
+                    tele2_cable_contract: "{cable_contract}"
+                    tele2_alternative_circuit_id: "{cable_circuitid}"
+                '''.format(
+                    cable_contract=cable_contract,
+                    cable_circuitid=cable_circuitid
+                )
+
+                sunet_query = '''
+                    tele2_cable_contract{
+                      value
+                    }
+                    tele2_alternative_circuit_id
+                '''
+
             query = '''
             mutation{{
               composite_cable(input:{{
@@ -555,6 +620,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                   cable_type: "{cable_type}"
                   description: "{cable_description}"
                   relationship_provider: "{provider_id}"
+                  {sunet_input}
                 }}
                 update_subinputs:[
                   {{
@@ -600,6 +666,7 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                       name
                       relation_id
                     }}
+                    {sunet_query}
                   }}
                 }}
                 subupdated{{
@@ -627,7 +694,9 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
                         aport_type=aport_type, aport_description=aport_description,
                         bport_name=bport_name, bport_type=bport_type,
                         bport_description=bport_description, cable_id=cable_id,
-                        aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
+                        aport_id=aport_id, bport_id=bport_id,
+                        provider_id=provider_id, sunet_input=sunet_input,
+                        sunet_query=sunet_query)
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -647,6 +716,12 @@ class PortCableTest(Neo4jGraphQLNetworkTest):
             self.assertEqual(updated_data['name'], cable_name)
             self.assertEqual(updated_data['cable_type']['value'], cable_type)
             self.assertEqual(updated_data['description'], cable_description)
+
+            if sunet_forms_enabled():
+                self.assertEqual(updated_data['tele2_cable_contract']['value'],
+                                    cable_contract)
+                self.assertEqual(updated_data['tele2_alternative_circuit_id'],
+                                    cable_circuitid)
 
             # check their relations id
             test_aport_id = updated_data['ports'][0]['id']
@@ -802,8 +877,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
+
         rack_units = 2
         rack_position = 3
+        rack_back = bool(random.getrandbits(1))
+
         managed_by = random.choice(
             Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
         )
@@ -812,6 +890,24 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         os_version = "5.8"
         contract_number = "001"
         max_number_of_ports = 20
+        services_locked = bool(random.getrandbits(1))
+
+        # create new port
+        port_1_name = str(random.randint(0, 50000))
+        port_1_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_1_description = generator.escape_quotes(generator.fake.paragraph())
+
+        # add existent port
+        port = generator.create_port()
+        port_2_id = relay.Node.to_global_id(str(port.node_type),
+                                            str(port.handle_id))
+        port_2_name = str(random.randint(0, 50000))
+        port_2_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_2_description = generator.escape_quotes(generator.fake.paragraph())
 
         query = '''
         mutation{{
@@ -824,6 +920,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses: "{ip_address}"
                 rack_units: {rack_units}
                 rack_position: {rack_position}
+                rack_back: {rack_back}
                 operational_state: "{operational_state}"
                 relationship_provider: "{provider_id}"
                 responsible_group: "{group1_id}"
@@ -834,7 +931,23 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version: "{os_version}"
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
+                services_locked: {services_locked}
               }}
+              create_subinputs:[
+                {{
+                  name: "{port_1_name}"
+                  port_type: "{port_1_type}"
+                  description: "{port_1_description}"
+                }}
+              ]
+              update_subinputs:[
+                {{
+                  id: "{port_2_id}"
+                  name: "{port_2_name}"
+                  port_type: "{port_2_type}"
+                  description: "{port_2_description}"
+                }}
+              ]
             }}
           ){{
             created{{
@@ -849,6 +962,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 provider{{
                   id
                   name
@@ -869,6 +985,40 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version
                 contract_number
                 max_number_of_ports
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
+              }}
+            }}
+            subupdated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
               }}
             }}
           }}
@@ -880,7 +1030,13 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     group1_id=group1_id, group2_id=group2_id,
                     managed_by=managed_by, backup=backup, os=os,
                     os_version=os_version, contract_number=contract_number,
-                    max_number_of_ports=max_number_of_ports)
+                    max_number_of_ports=max_number_of_ports,
+                    port_1_name=port_1_name, port_1_type=port_1_type,
+                    port_1_description=port_1_description,
+                    port_2_name=port_2_name, port_2_type=port_2_type,
+                    port_2_description=port_2_description, port_2_id=port_2_id,
+                    rack_back=str(rack_back).lower(),
+                    services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -898,6 +1054,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['description'], switch_description)
         self.assertEqual(created_switch['rack_units'], rack_units)
         self.assertEqual(created_switch['rack_position'], rack_position)
+        self.assertEqual(created_switch['rack_back'], rack_back)
         self.assertEqual(created_switch['ip_addresses'], ip_addresses)
         self.assertEqual(created_switch['managed_by']['value'], managed_by)
         self.assertEqual(created_switch['backup'], backup)
@@ -905,6 +1062,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_switch['os_version'], os_version)
         self.assertEqual(created_switch['contract_number'], contract_number)
         self.assertEqual(created_switch['max_number_of_ports'], max_number_of_ports)
+        self.assertEqual(created_switch['services_locked'], services_locked)
 
         # check provider
         check_provider = created_switch['provider']
@@ -917,6 +1075,34 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check support group
         check_support = created_switch['support_group']
         self.assertEqual(check_support['id'], group2_id)
+
+        # check ports data
+
+        # check port_1 data
+        created_checkport = result.data['composite_switch']['subcreated'][0]
+        created_errors = created_checkport['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        created_checkport = created_checkport['port']
+        port_1_id = created_checkport['id']
+
+        self.assertEqual(created_checkport['name'], port_1_name)
+        self.assertEqual(created_checkport['port_type']['value'], port_1_type)
+        self.assertEqual(created_checkport['description'], port_1_description)
+
+        # check port_2
+        update_checkport = result.data['composite_switch']['subupdated'][0]
+        updated_errors = update_checkport['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        update_checkport = update_checkport['port']
+        self.assertEqual(update_checkport['name'], port_2_name)
+        self.assertEqual(update_checkport['port_type']['value'], port_2_type)
+        self.assertEqual(update_checkport['description'], port_2_description)
+
+        # check ports in router
+        self.assertEqual(created_switch['ports'][1]['id'], port_1_id)
+        self.assertEqual(created_switch['ports'][0]['id'], port_2_id)
 
         ## simple update
         # get another provider
@@ -931,8 +1117,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
+
         rack_units = 3
         rack_position = 2
+        rack_back = bool(random.getrandbits(1))
+
         managed_by = random.choice(
             Dropdown.objects.get(name="host_management_sw").as_choices()[1:][1]
         )
@@ -941,6 +1130,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         os_version = "5.7"
         contract_number = "002"
         max_number_of_ports = 15
+        services_locked = bool(random.getrandbits(1))
 
         query = '''
         mutation{{
@@ -953,6 +1143,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses: "{ip_address}"
                 rack_units: {rack_units}
                 rack_position: {rack_position}
+                rack_back: {rack_back}
                 operational_state: "{operational_state}"
                 relationship_provider: "{provider_id}"
                 responsible_group: "{group2_id}"
@@ -963,6 +1154,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 os_version: "{os_version}"
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
+                services_locked: {services_locked}
               }}
             }}
           ){{
@@ -978,6 +1170,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 ip_addresses
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 provider{{
                   id
                   name
@@ -1010,7 +1205,9 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     group1_id=group1_id, group2_id=group2_id,
                     managed_by=managed_by, backup=backup, os=os,
                     os_version=os_version, contract_number=contract_number,
-                    max_number_of_ports=max_number_of_ports)
+                    max_number_of_ports=max_number_of_ports,
+                    rack_back=str(rack_back).lower(),
+                    services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1026,6 +1223,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_switch['description'], switch_description)
         self.assertEqual(updated_switch['rack_units'], rack_units)
         self.assertEqual(updated_switch['rack_position'], rack_position)
+        self.assertEqual(updated_switch['rack_back'], rack_back)
         self.assertEqual(updated_switch['ip_addresses'], ip_addresses)
         self.assertEqual(updated_switch['managed_by']['value'], managed_by)
         self.assertEqual(updated_switch['backup'], backup)
@@ -1033,6 +1231,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_switch['os_version'], os_version)
         self.assertEqual(updated_switch['contract_number'], contract_number)
         self.assertEqual(updated_switch['max_number_of_ports'], max_number_of_ports)
+        self.assertEqual(updated_switch['services_locked'], services_locked)
 
         # check provider
         check_provider = updated_switch['provider']
@@ -1127,7 +1326,9 @@ class RouterTest(Neo4jGraphQLNetworkTest):
 
         # get new data to feed the update mutation
         rack_units = random.randint(1,10)
-        rack_units = random.randint(1,10)
+        rack_position = random.randint(1,10)
+        rack_back = bool(random.getrandbits(1))
+
         operational_state = random.choice(
             Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
         )
@@ -1157,6 +1358,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
               description: "{description}"
               operational_state: "{operational_state}"
               rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
             }}
             create_subinputs:[
               {{
@@ -1190,6 +1393,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
                 model
                 version
                 rack_units
+                rack_position
+                rack_back
                 location{{
                   id
                   name
@@ -1234,6 +1439,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         }}
         '''.format(router_id=router_id, description=description,
                     operational_state=operational_state, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
                     port_1_name=port_1_name, port_1_type=port_1_type,
                     port_1_description=port_1_description,
                     port_2_id=port_2_id, port_2_name=port_2_name,
@@ -1254,6 +1461,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_router['operational_state']['value'],\
             operational_state)
         self.assertEqual(updated_router ['rack_units'], rack_units)
+        self.assertEqual(updated_router['rack_position'], rack_position)
+        self.assertEqual(updated_router['rack_back'], rack_back)
 
         # check ports data
 
@@ -1325,10 +1534,12 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         max_number_of_ports = 20
         rack_position = 3
         rack_units = 2
+        rack_back = bool(random.getrandbits(1))
 
-        owner = net_generator.create_site_owner()
+        owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
+        services_locked = bool(random.getrandbits(1))
 
         query = '''
         mutation{{
@@ -1355,6 +1566,8 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
               max_number_of_ports: {max_number_of_ports}
               rack_units: {rack_units}
               rack_position: {rack_position}
+              services_locked: {services_locked}
+              rack_back: {rack_back}
             }}
           }}){{
             updated{{
@@ -1366,7 +1579,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 id
                 name
                 description
-                operational_state
+                operational_state{{
+                  value
+                }}
                 managed_by{{
                   id
                   value
@@ -1394,6 +1609,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 max_number_of_ports
                 rack_units
                 rack_position
+                rack_back
+                services_locked
+                services_checked
                 contract_number
                 location{{
                   id
@@ -1416,7 +1634,8 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             service_tag=service_tag, end_support=end_support,
             contract_number=contract_number, owner_id=owner_id,
             max_number_of_ports=max_number_of_ports, rack_units=rack_units,
-            rack_position=rack_position)
+            rack_position=rack_position, rack_back=str(rack_back).lower(),
+            services_locked=str(services_locked).lower())
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1428,7 +1647,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         updated_firewall = result.data['composite_firewall']['updated']['firewall']
         self.assertEqual(updated_firewall['name'], firewall_name)
         self.assertEqual(updated_firewall['description'], firewall_description)
-        self.assertEqual(updated_firewall['operational_state'], operational_state)
+        self.assertEqual(updated_firewall['operational_state']['value'], operational_state)
         self.assertEqual(updated_firewall['managed_by']['value'], managed_by)
         self.assertEqual(updated_firewall['security_class']['value'], security_class)
         self.assertEqual(updated_firewall['security_comment'], security_comment)
@@ -1440,7 +1659,9 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_firewall['max_number_of_ports'], max_number_of_ports)
         self.assertEqual(updated_firewall['rack_units'], rack_units)
         self.assertEqual(updated_firewall['rack_position'], rack_position)
+        self.assertEqual(updated_firewall['rack_back'], rack_back)
         self.assertEqual(updated_firewall['contract_number'], contract_number)
+        self.assertEqual(updated_firewall['services_locked'], services_locked)
 
         # check responsible group
         check_responsible = updated_firewall['responsible_group']
@@ -1507,6 +1728,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
             "eget sollicitudin dui."
         rack_units = 2
         rack_position = 3
+        rack_back = bool(random.getrandbits(1))
 
         # port data
         port1_name = "test-01"
@@ -1528,7 +1750,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                                             str(port2.handle_id))
 
         # generate owner
-        owner = net_generator.create_site_owner()
+        owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
 
@@ -1541,6 +1763,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
               relationship_owner: "{owner_id}"
               rack_units: {rack_units}
               rack_position: {rack_position}
+              rack_back: {rack_back}
             }}
             create_has_port:[
               {{
@@ -1569,6 +1792,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                 description
                 rack_units
                 rack_position
+                rack_back
                 owner{{
                   id
                   name
@@ -1613,7 +1837,9 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         }}
         '''.format(exteq_name=exteq_name, exteq_description=exteq_description,
                     owner_id=owner_id, rack_units=rack_units,
-                    rack_position=rack_position, port1_name=port1_name,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_name=port1_name,
                     port1_type=port1_type, port1_description=port1_description,
                     port2_id=port2_id, port2_name=port2_name,
                     port2_type=port2_type, port2_description=port2_description)
@@ -1642,6 +1868,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(created_extequip['description'], exteq_description)
         self.assertEqual(created_extequip['rack_units'], rack_units)
         self.assertEqual(created_extequip['rack_position'], rack_position)
+        self.assertEqual(created_extequip['rack_back'], rack_back)
 
         # check subentities
         port1_id = result.data \
@@ -1801,3 +2028,2771 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertFalse(port2_id in has_ids)
+
+
+class HostTest(Neo4jGraphQLNetworkTest):
+    def test_host(self):
+        # create two different hosts: a logical host and a physical host
+        # we'll set no owner nor location in order to test a logical host
+        # and we'll set these entities to create a physical host
+        owner_queries = [
+            {
+                'input_owner': '',
+                'query_owner': '',
+            },
+            {
+                'input_owner': 'relationship_owner: "{owner_id}"',
+                'query_owner': '''
+                    host_owner {
+                      id
+                      name
+                    }
+                ''',
+            },
+        ]
+
+        host_ids = {
+            'logical': None,
+            'physical': None,
+        }
+
+        for owner_query in owner_queries:
+            # get two groups
+            community_generator = CommunityFakeDataGenerator()
+            net_generator = NetworkFakeDataGenerator()
+
+            group1 = community_generator.create_group()
+            group2 = community_generator.create_group()
+
+            group1_id = relay.Node.to_global_id(str(group1.node_type),
+                                                str(group1.handle_id))
+            group2_id = relay.Node.to_global_id(str(group2.node_type),
+                                                str(group2.handle_id))
+
+            # create host
+            host_name = community_generator.fake.hostname()
+            host_description = "Created from graphql"
+            ip_addresses = ["127.0.0.1", "168.192.0.1"]
+            operational_state = random.choice(
+                Dropdown.objects.get(name="operational_states")\
+                    .as_choices()[1:][1]
+            )
+
+            rack_units = 2
+            rack_position = 3
+            rack_back = bool(random.getrandbits(1))
+
+            managed_by = random.choice(
+                Dropdown.objects.get(name="host_management_sw")\
+                    .as_choices()[1:][1]
+            )
+            backup = "Manual script"
+            os = "GNU/Linux"
+            os_version = "5.8"
+            contract_number = "001"
+
+            input_owner = owner_query['input_owner']
+            query_owner = owner_query['query_owner']
+
+            owner_id = None
+
+            services_locked = bool(random.getrandbits(1))
+
+            if input_owner:
+                owner = net_generator.create_customer()
+                owner_id = relay.Node.to_global_id(
+                    str(owner.node_type).replace(' ', ''),
+                    str(owner.handle_id)
+                )
+                input_owner = input_owner.format(owner_id=owner_id)
+
+            query = '''
+            mutation{{
+              composite_host(
+                input:{{
+                  create_input: {{
+                    name: "{host_name}"
+                    description: "{host_description}"
+                    ip_addresses: "{ip_address}"
+                    rack_units: {rack_units}
+                    rack_position: {rack_position}
+                    rack_back: {rack_back}
+                    operational_state: "{operational_state}"
+                    responsible_group: "{group1_id}"
+                    support_group: "{group2_id}"
+                    managed_by: "{managed_by}"
+                    backup: "{backup}"
+                    os: "{os}"
+                    os_version: "{os_version}"
+                    contract_number: "{contract_number}"
+                    services_locked: {services_locked}
+                    {input_owner}
+                  }}
+                }}
+              ){{
+                created{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  host{{
+                    id
+                    name
+                    operational_state{{
+                      value
+                    }}
+                    description
+                    host_type
+                    ip_addresses
+                    responsible_group{{
+                      id
+                      name
+                    }}
+                    support_group{{
+                      id
+                      name
+                    }}
+                    managed_by{{
+                      value
+                    }}
+                    backup
+                    os
+                    os_version
+                    contract_number
+                    rack_units
+                    rack_position
+                    rack_back
+                    services_locked
+                    services_checked
+                    {query_owner}
+                  }}
+                }}
+              }}
+            }}
+            '''.format(host_name=host_name, host_description=host_description,
+                        ip_address="\\n".join(ip_addresses),
+                        rack_units=rack_units, rack_position=rack_position,
+                        operational_state=operational_state,
+                        group1_id=group1_id, group2_id=group2_id,
+                        managed_by=managed_by, backup=backup, os=os,
+                        os_version=os_version, contract_number=contract_number,
+                        input_owner=input_owner, query_owner=query_owner,
+                        rack_back=str(rack_back).lower(),
+                        services_locked=str(services_locked).lower())
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_host']['created']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            # store the created host id
+            created_host = result.data['composite_host']['created']['host']
+            host_id = created_host['id']
+
+            # check data
+            self.assertEqual(created_host['name'], host_name)
+            self.assertEqual(created_host['description'], host_description)
+            self.assertEqual(created_host['operational_state']['value'], operational_state)
+            self.assertEqual(created_host['rack_units'], rack_units)
+            self.assertEqual(created_host['rack_position'], rack_position)
+            self.assertEqual(created_host['rack_back'], rack_back)
+            self.assertEqual(created_host['ip_addresses'], ip_addresses)
+            self.assertEqual(created_host['managed_by']['value'], managed_by)
+            self.assertEqual(created_host['backup'], backup)
+            self.assertEqual(created_host['os'], os)
+            self.assertEqual(created_host['os_version'], os_version)
+            self.assertEqual(created_host['contract_number'], contract_number)
+            self.assertEqual(created_host['services_locked'], services_locked)
+
+            # check responsible group
+            check_responsible = created_host['responsible_group']
+            self.assertEqual(check_responsible['id'], group1_id)
+
+            # check support group
+            check_support = created_host['support_group']
+            self.assertEqual(check_support['id'], group2_id)
+
+            # check we've created a logical node
+            _type, host_handle_id = relay.Node.from_global_id(host_id)
+            host_nh = NodeHandle.objects.get(handle_id=host_handle_id)
+            host_node = host_nh.get_node()
+
+            if not input_owner:
+                self.assertEqual(created_host['host_type'], "Logical")
+                self.assertEqual(host_node.meta_type, "Logical")
+                host_ids['logical'] = host_id
+            else:
+                self.assertEqual(created_host['host_type'], "Physical")
+                self.assertEqual(host_node.meta_type, "Physical")
+                host_ids['physical'] = host_id
+
+        edit_query = '''
+        mutation{{
+          composite_host(input:{{
+            update_input:{{
+              id: "{host_id}"
+              name: "{host_name}"
+              description: "{host_description}"
+              ip_addresses: "{ip_address}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+              operational_state: "{operational_state}"
+              responsible_group: "{group1_id}"
+              support_group: "{group2_id}"
+              managed_by: "{managed_by}"
+              backup: "{backup}"
+              os: "{os}"
+              os_version: "{os_version}"
+              contract_number: "{contract_number}"
+              services_locked: {services_locked}
+              {extra_input}
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              host{{
+                id
+                name
+                description
+                operational_state{{
+                  value
+                }}
+                host_type
+                ip_addresses
+                responsible_group{{
+                  id
+                  name
+                }}
+                support_group{{
+                  id
+                  name
+                }}
+                managed_by{{
+                  value
+                }}
+                backup
+                os
+                os_version
+                contract_number
+                rack_units
+                rack_position
+                rack_back
+                services_locked
+                services_checked
+                {extra_query}
+              }}
+            }}
+          }}
+        }}
+        '''
+
+        # create a host user and a different owner
+        huser = net_generator.create_host_user()
+        huser_id = relay.Node.to_global_id(
+            str(huser.node_type).replace(' ', ''),
+            str(huser.handle_id)
+        )
+
+        owner = net_generator.create_customer()
+        owner_id = relay.Node.to_global_id(
+            str(owner.node_type).replace(' ', ''),
+            str(owner.handle_id)
+        )
+
+        host_user_query = {
+            'logical':{
+                'extra_input': 'relationship_user: "{huser_id}"'
+                                    .format(huser_id=huser_id),
+                'extra_query': '''
+                    host_user {
+                      id
+                      name
+                    }
+                ''',
+                'check_path': lambda x: x['host_user']['id'],
+                'id': huser_id,
+            },
+            'physical':{
+                'extra_input': 'relationship_owner: "{owner_id}"'
+                                    .format(owner_id=owner_id),
+                'extra_query': '''
+                    host_owner {
+                      id
+                      name
+                    }
+                ''',
+                'check_path': lambda x: x['host_owner']['id'],
+                'id': owner_id,
+            }
+        }
+
+        use_ownerhuser = True
+
+        for iteration in range(0,2):
+            for k, host_id in host_ids.items():
+                host_name = community_generator.fake.hostname()
+                host_description = community_generator.fake.paragraph()
+
+                ip_adresses = [
+                    community_generator.fake.ipv4(),
+                    community_generator.fake.ipv4(),
+                ]
+
+                rack_units = random.randint(1,10)
+                rack_position = random.randint(1,10)
+                rack_back = bool(random.getrandbits(1))
+
+                operational_state = random.choice(
+                    Dropdown.objects.get(name="operational_states")\
+                        .as_choices()[1:][1]
+                )
+
+                managed_by = random.choice(
+                    Dropdown.objects.get(name="host_management_sw")\
+                        .as_choices()[1:][1]
+                )
+                backup = "Automatic script"
+                os = "GNU/Linux"
+                os_version = "Debian"
+                contract_number = "002"
+
+                check_id_value = host_user_query[k]['id']
+                extra_input = host_user_query[k]['extra_input']
+                extra_query = host_user_query[k]['extra_query']
+
+                # in the first iteration we'll set a different host user / owner
+                # in the second iteration these will be set to none
+                if not use_ownerhuser:
+                    check_id_value = None
+                    extra_input = ''
+                    extra_query = host_user_query[k]['extra_query']
+
+                services_locked = bool(random.getrandbits(1))
+
+                query = edit_query.format(
+                            host_id=host_id,
+                            host_name=host_name, host_description=host_description,
+                            ip_address="\\n".join(ip_addresses),
+                            rack_units=rack_units, rack_position=rack_position,
+                            rack_back=str(rack_back).lower(),
+                            operational_state=operational_state,
+                            group1_id=group1_id, group2_id=group2_id,
+                            managed_by=managed_by, backup=backup, os=os,
+                            os_version=os_version, contract_number=contract_number,
+                            services_locked=str(services_locked).lower(),
+                            extra_input=extra_input, extra_query=extra_query)
+
+                result = schema.execute(query, context=self.context)
+                assert not result.errors, pformat(result.errors, indent=1)
+
+                # check for errors
+                created_errors = result.data['composite_host']['updated']['errors']
+                assert not created_errors, pformat(created_errors, indent=1)
+
+                # check data
+                updated_host = result.data['composite_host']['updated']['host']
+
+                self.assertEqual(updated_host['name'], host_name)
+                self.assertEqual(updated_host['description'], host_description)
+                self.assertEqual(updated_host['operational_state']['value'], operational_state)
+                self.assertEqual(updated_host['rack_units'], rack_units)
+                self.assertEqual(updated_host['rack_position'], rack_position)
+                self.assertEqual(updated_host['rack_back'], rack_back)
+                self.assertEqual(updated_host['ip_addresses'], ip_addresses)
+                self.assertEqual(updated_host['managed_by']['value'], managed_by)
+                self.assertEqual(updated_host['backup'], backup)
+                self.assertEqual(updated_host['os'], os)
+                self.assertEqual(updated_host['os_version'], os_version)
+                self.assertEqual(updated_host['contract_number'], contract_number)
+                self.assertEqual(updated_host['services_locked'], services_locked)
+
+                check_id = None
+
+                if use_ownerhuser:
+                    check_id = host_user_query[k]['check_path'](updated_host)
+
+                self.assertEqual(check_id_value, check_id)
+
+                # check responsible group
+                check_responsible = updated_host['responsible_group']
+                self.assertEqual(check_responsible['id'], group1_id)
+
+                # check support group
+                check_support = updated_host['support_group']
+                self.assertEqual(check_support['id'], group2_id)
+
+                use_ownerhuser = False
+
+
+class OpticalNodeTest(Neo4jGraphQLNetworkTest):
+    def test_optical_node(self):
+        # optical node data
+        optno_name = "Optical Node test"
+        optno_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 2
+        rack_position = 3
+        rack_back = bool(random.getrandbits(1))
+
+        optno_type = random.choice(
+            Dropdown.objects.get(name="optical_node_types").as_choices()[1:])[1]
+
+        optno_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        # port data
+        port1_name = "test-01"
+        port1_type = "Schuko"
+        port1_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        # generate second port
+        net_generator = NetworkFakeDataGenerator()
+        port2 = net_generator.create_port()
+        port2_name = port2.node_name
+        port2_description = port2.get_node().data.get('description')
+        port2_type = port2.get_node().data.get('port_type')
+        port2_id = relay.Node.to_global_id(str(port2.node_type),
+                                            str(port2.handle_id))
+
+        query = '''
+        mutation{{
+          composite_opticalNode(input:{{
+            create_input:{{
+              name: "{optno_name}"
+              description: "{optno_description}"
+              type: "{optno_type}"
+              operational_state: "{optno_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+            create_has_port:[
+              {{
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+          	update_has_port:[
+              {{
+                id: "{port2_id}"
+                name: "{port2_name}"
+                description: "{port2_description}"
+                port_type: "{port2_type}"
+              }},
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalNode{{
+                id
+                name
+                description
+                type{{
+                  id
+                  value
+                }}
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(optno_name=optno_name, optno_description=optno_description,
+                    optno_type=optno_type, optno_opstate=optno_opstate,
+                    rack_units=rack_units, rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_name=port1_name, port1_type=port1_type,
+                    port1_description=port1_description, port2_id=port2_id,
+                    port2_name=port2_name, port2_type=port2_type,
+                    port2_description=port2_description)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_opticalNode']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        subcreated_errors = \
+            result.data['composite_opticalNode']['has_port_created'][0]['errors']
+        assert not subcreated_errors, pformat(subcreated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_opticalNode']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        created_optnode = result.data['composite_opticalNode']['created']\
+            ['opticalNode']
+        optno_id = created_optnode['id']
+
+        self.assertEqual(created_optnode['name'], optno_name)
+        self.assertEqual(created_optnode['description'], optno_description)
+        self.assertEqual(created_optnode['type']['value'], optno_type)
+        self.assertEqual(created_optnode['operational_state']['value'],
+                            optno_opstate)
+        self.assertEqual(created_optnode['rack_units'], rack_units)
+        self.assertEqual(created_optnode['rack_position'], rack_position)
+        self.assertEqual(created_optnode['rack_back'], rack_back)
+
+        # check subentities
+        port1_id = result.data \
+            ['composite_opticalNode']['has_port_created'][0]['port']['id']
+        check_port1 = result.data \
+            ['composite_opticalNode']['has_port_created'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_port2 = result.data \
+            ['composite_opticalNode']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port2['id'], port2_id)
+        self.assertEqual(check_port2['name'], port2_name)
+        self.assertEqual(check_port2['description'], port2_description)
+        self.assertEqual(check_port2['port_type']['value'], port2_type)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in created_optnode['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertTrue(port2_id in has_ids)
+
+        # update query
+        optno_name = "Optical Node check"
+        optno_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 3
+        rack_position = 2
+        rack_back = bool(random.getrandbits(1))
+
+        optno_type = random.choice(
+            Dropdown.objects.get(name="optical_node_types").as_choices()[1:])[1]
+
+        optno_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        port1_name = "check-01"
+        port1_type = port2_type
+        port1_description = port2_description
+
+        query = '''
+        mutation{{
+          composite_opticalNode(input:{{
+            update_input:{{
+              id: "{optno_id}"
+              name: "{optno_name}"
+              description: "{optno_description}"
+              type: "{optno_type}"
+              operational_state: "{optno_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+          	update_has_port:[
+              {{
+                id: "{port1_id}"
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+            deleted_has_port:[
+              {{
+                id: "{port2_id}"
+              }}
+          	]
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalNode{{
+                id
+                name
+                description
+                type{{
+                  id
+                  value
+                }}
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_deleted{{
+              errors{{
+                field
+                messages
+              }}
+              success
+            }}
+          }}
+        }}
+        '''.format(optno_id=optno_id, optno_name=optno_name,
+                    optno_description=optno_description, optno_type=optno_type,
+                    optno_opstate=optno_opstate, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_id=port1_id, port1_name=port1_name,
+                    port1_type=port1_type, port1_description=port1_description,
+                    port2_id=port2_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = \
+            result.data['composite_opticalNode']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_opticalNode']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        subdeleted_errors = \
+            result.data['composite_opticalNode']['has_port_deleted'][0]['errors']
+        assert not subdeleted_errors, pformat(subdeleted_errors, indent=1)
+
+        # check data
+        updated_optnode = result.data['composite_opticalNode']['updated']['opticalNode']
+        self.assertEqual(updated_optnode['name'], optno_name)
+        self.assertEqual(updated_optnode['description'], optno_description)
+        self.assertEqual(updated_optnode['type']['value'], optno_type)
+        self.assertEqual(updated_optnode['operational_state']['value'],
+                            optno_opstate)
+        self.assertEqual(updated_optnode['rack_units'], rack_units)
+        self.assertEqual(updated_optnode['rack_position'], rack_position)
+        self.assertEqual(updated_optnode['rack_back'], rack_back)
+
+        # check subentities
+        check_port1 = result.data \
+            ['composite_opticalNode']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_deleted_port2 = result.data \
+            ['composite_opticalNode']['has_port_deleted'][0]['success']
+
+        self.assertTrue(check_deleted_port2)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in updated_optnode['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertFalse(port2_id in has_ids)
+
+
+class ODFTest(Neo4jGraphQLNetworkTest):
+    def test_odf(self):
+        # odf data
+        odf_name = "ODF test"
+        odf_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = random.randint(1, 3)
+        rack_position = random.randint(1, 5)
+        rack_back = bool(random.getrandbits(1))
+
+        odf_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        # port data
+        port1_name = "test-01"
+        port1_type = "Schuko"
+        port1_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        # generate second port
+        net_generator = NetworkFakeDataGenerator()
+        port2 = net_generator.create_port()
+        port2_name = port2.node_name
+        port2_description = port2.get_node().data.get('description')
+        port2_type = port2.get_node().data.get('port_type')
+        port2_id = relay.Node.to_global_id(str(port2.node_type),
+                                            str(port2.handle_id))
+
+        query = '''
+        mutation{{
+          composite_oDF(input:{{
+            create_input:{{
+              name: "{odf_name}"
+              description: "{odf_description}"
+              operational_state: "{odf_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+            create_has_port:[
+              {{
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+          	update_has_port:[
+              {{
+                id: "{port2_id}"
+                name: "{port2_name}"
+                description: "{port2_description}"
+                port_type: "{port2_type}"
+              }},
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              oDF{{
+                id
+                name
+                description
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(odf_name=odf_name, odf_description=odf_description,
+                    odf_opstate=odf_opstate, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_name=port1_name, port1_type=port1_type,
+                    port1_description=port1_description, port2_id=port2_id,
+                    port2_name=port2_name, port2_type=port2_type,
+                    port2_description=port2_description)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_oDF']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        subcreated_errors = \
+            result.data['composite_oDF']['has_port_created'][0]['errors']
+        assert not subcreated_errors, pformat(subcreated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_oDF']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        created_odf = result.data['composite_oDF']['created']\
+            ['oDF']
+        odf_id = created_odf['id']
+
+        self.assertEqual(created_odf['name'], odf_name)
+        self.assertEqual(created_odf['description'], odf_description)
+        self.assertEqual(created_odf['operational_state']['value'],
+                            odf_opstate)
+        self.assertEqual(created_odf['rack_units'], rack_units)
+        self.assertEqual(created_odf['rack_position'], rack_position)
+        self.assertEqual(created_odf['rack_back'], rack_back)
+
+        # check subentities
+        port1_id = result.data \
+            ['composite_oDF']['has_port_created'][0]['port']['id']
+        check_port1 = result.data \
+            ['composite_oDF']['has_port_created'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_port2 = result.data \
+            ['composite_oDF']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port2['id'], port2_id)
+        self.assertEqual(check_port2['name'], port2_name)
+        self.assertEqual(check_port2['description'], port2_description)
+        self.assertEqual(check_port2['port_type']['value'], port2_type)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in created_odf['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertTrue(port2_id in has_ids)
+
+        # update query
+        odf_name = "Optical Node check"
+        odf_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 3
+        rack_position = 2
+        rack_back = bool(random.getrandbits(1))
+
+        odf_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        port1_name = "check-01"
+        port1_type = port2_type
+        port1_description = port2_description
+
+        query = '''
+        mutation{{
+          composite_oDF(input:{{
+            update_input:{{
+              id: "{odf_id}"
+              name: "{odf_name}"
+              description: "{odf_description}"
+              operational_state: "{odf_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+          	update_has_port:[
+              {{
+                id: "{port1_id}"
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+            deleted_has_port:[
+              {{
+                id: "{port2_id}"
+              }}
+          	]
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              oDF{{
+                id
+                name
+                description
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_deleted{{
+              errors{{
+                field
+                messages
+              }}
+              success
+            }}
+          }}
+        }}
+        '''.format(odf_id=odf_id, odf_name=odf_name,
+                    odf_description=odf_description,
+                    odf_opstate=odf_opstate, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_id=port1_id, port1_name=port1_name,
+                    port1_type=port1_type, port1_description=port1_description,
+                    port2_id=port2_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = \
+            result.data['composite_oDF']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_oDF']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        subdeleted_errors = \
+            result.data['composite_oDF']['has_port_deleted'][0]['errors']
+        assert not subdeleted_errors, pformat(subdeleted_errors, indent=1)
+
+        # check data
+        updated_odf = result.data['composite_oDF']['updated']['oDF']
+        self.assertEqual(updated_odf['name'], odf_name)
+        self.assertEqual(updated_odf['description'], odf_description)
+        self.assertEqual(updated_odf['operational_state']['value'],
+                            odf_opstate)
+        self.assertEqual(updated_odf['rack_units'], rack_units)
+        self.assertEqual(updated_odf['rack_position'], rack_position)
+        self.assertEqual(updated_odf['rack_back'], rack_back)
+
+        # check subentities
+        check_port1 = result.data \
+            ['composite_oDF']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_deleted_port2 = result.data \
+            ['composite_oDF']['has_port_deleted'][0]['success']
+
+        self.assertTrue(check_deleted_port2)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in updated_odf['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertFalse(port2_id in has_ids)
+
+
+## Optical Nodes
+class OpticalFilterTest(Neo4jGraphQLNetworkTest):
+    def test_optical_filter(self):
+        # optical filter data
+        ofilter_name = "Optical filter test"
+        ofilter_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = random.randint(1, 3)
+        rack_position = random.randint(1, 5)
+        rack_back = bool(random.getrandbits(1))
+
+        ofilter_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        # port data
+        port1_name = "test-01"
+        port1_type = "Schuko"
+        port1_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        # generate second port
+        net_generator = NetworkFakeDataGenerator()
+        port2 = net_generator.create_port()
+        port2_name = port2.node_name
+        port2_description = port2.get_node().data.get('description')
+        port2_type = port2.get_node().data.get('port_type')
+        port2_id = relay.Node.to_global_id(str(port2.node_type),
+                                            str(port2.handle_id))
+
+        query = '''
+        mutation{{
+          composite_opticalFilter(input:{{
+            create_input:{{
+              name: "{ofilter_name}"
+              description: "{ofilter_description}"
+              operational_state: "{ofilter_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+            create_has_port:[
+              {{
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+          	update_has_port:[
+              {{
+                id: "{port2_id}"
+                name: "{port2_name}"
+                description: "{port2_description}"
+                port_type: "{port2_type}"
+              }},
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalFilter{{
+                id
+                name
+                description
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(ofilter_name=ofilter_name, ofilter_description=ofilter_description,
+                    ofilter_opstate=ofilter_opstate, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_name=port1_name, port1_type=port1_type,
+                    port1_description=port1_description, port2_id=port2_id,
+                    port2_name=port2_name, port2_type=port2_type,
+                    port2_description=port2_description)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_opticalFilter']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        subcreated_errors = \
+            result.data['composite_opticalFilter']['has_port_created'][0]['errors']
+        assert not subcreated_errors, pformat(subcreated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_opticalFilter']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        created_ofilter = result.data['composite_opticalFilter']['created']\
+            ['opticalFilter']
+        ofilter_id = created_ofilter['id']
+
+        self.assertEqual(created_ofilter['name'], ofilter_name)
+        self.assertEqual(created_ofilter['description'], ofilter_description)
+        self.assertEqual(created_ofilter['operational_state']['value'],
+                            ofilter_opstate)
+        self.assertEqual(created_ofilter['rack_units'], rack_units)
+        self.assertEqual(created_ofilter['rack_position'], rack_position)
+        self.assertEqual(created_ofilter['rack_back'], rack_back)
+
+        # check subentities
+        port1_id = result.data \
+            ['composite_opticalFilter']['has_port_created'][0]['port']['id']
+        check_port1 = result.data \
+            ['composite_opticalFilter']['has_port_created'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_port2 = result.data \
+            ['composite_opticalFilter']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port2['id'], port2_id)
+        self.assertEqual(check_port2['name'], port2_name)
+        self.assertEqual(check_port2['description'], port2_description)
+        self.assertEqual(check_port2['port_type']['value'], port2_type)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in created_ofilter['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertTrue(port2_id in has_ids)
+
+        # update query
+        ofilter_name = "Optical Node check"
+        ofilter_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        rack_units = 3
+        rack_position = 2
+        rack_back = bool(random.getrandbits(1))
+
+        ofilter_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        port1_name = "check-01"
+        port1_type = port2_type
+        port1_description = port2_description
+
+        query = '''
+        mutation{{
+          composite_opticalFilter(input:{{
+            update_input:{{
+              id: "{ofilter_id}"
+              name: "{ofilter_name}"
+              description: "{ofilter_description}"
+              operational_state: "{ofilter_opstate}"
+              rack_units: {rack_units}
+              rack_position: {rack_position}
+              rack_back: {rack_back}
+            }}
+          	update_has_port:[
+              {{
+                id: "{port1_id}"
+                name: "{port1_name}"
+                description: "{port1_description}"
+                port_type: "{port1_type}"
+              }},
+            ]
+            deleted_has_port:[
+              {{
+                id: "{port2_id}"
+              }}
+          	]
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalFilter{{
+                id
+                name
+                description
+                operational_state{{
+                  id
+                  value
+                }}
+                rack_units
+                rack_position
+                rack_back
+                has{{
+                  id
+                  name
+                }}
+                ports{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                description
+                port_type{{
+                  id
+                  value
+                }}
+              }}
+            }}
+            has_port_deleted{{
+              errors{{
+                field
+                messages
+              }}
+              success
+            }}
+          }}
+        }}
+        '''.format(ofilter_id=ofilter_id, ofilter_name=ofilter_name,
+                    ofilter_description=ofilter_description,
+                    ofilter_opstate=ofilter_opstate, rack_units=rack_units,
+                    rack_position=rack_position,
+                    rack_back=str(rack_back).lower(),
+                    port1_id=port1_id, port1_name=port1_name,
+                    port1_type=port1_type, port1_description=port1_description,
+                    port2_id=port2_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = \
+            result.data['composite_opticalFilter']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_opticalFilter']['has_port_updated'][0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        subdeleted_errors = \
+            result.data['composite_opticalFilter']['has_port_deleted'][0]['errors']
+        assert not subdeleted_errors, pformat(subdeleted_errors, indent=1)
+
+        # check data
+        updated_ofilter = result.data['composite_opticalFilter']['updated']['opticalFilter']
+        self.assertEqual(updated_ofilter['name'], ofilter_name)
+        self.assertEqual(updated_ofilter['description'], ofilter_description)
+        self.assertEqual(updated_ofilter['operational_state']['value'],
+                            ofilter_opstate)
+        self.assertEqual(updated_ofilter['rack_units'], rack_units)
+        self.assertEqual(updated_ofilter['rack_position'], rack_position)
+        self.assertEqual(updated_ofilter['rack_back'], rack_back)
+
+        # check subentities
+        check_port1 = result.data \
+            ['composite_opticalFilter']['has_port_updated'][0]['port']
+
+        self.assertEqual(check_port1['name'], port1_name)
+        self.assertEqual(check_port1['description'], port1_description)
+        self.assertEqual(check_port1['port_type']['value'], port1_type)
+
+        check_deleted_port2 = result.data \
+            ['composite_opticalFilter']['has_port_deleted'][0]['success']
+
+        self.assertTrue(check_deleted_port2)
+
+        # check that the ports are related to the equipment
+        has_ids = [x['id'] for x in updated_ofilter['ports']]
+
+        self.assertTrue(port1_id in has_ids)
+        self.assertFalse(port2_id in has_ids)
+
+
+class OpticalLinkTest(Neo4jGraphQLNetworkTest):
+    def test_optical_link(self):
+        olink_name = "Optical Link Test"
+        olink_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+
+        olink_linktype = random.choice(
+            Dropdown.objects.get(name="optical_link_types").as_choices()[1:])[1]
+
+        olink_ifacetype = random.choice(
+            Dropdown.objects.get(name="optical_link_interface_type").as_choices()[1:])[1]
+
+        olink_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        aport_name = "test-01"
+        aport_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+        aport_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        bport_name = "test-02"
+        bport_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+        bport_description = "Nunc varius suscipit lorem, non posuere nisl "\
+            "consequat in. Nulla gravida sapien a velit aliquet, aliquam "\
+            "tincidunt urna ultrices. Vivamus venenatis ligula a erat "\
+            "fringilla faucibus. Suspendisse potenti. Donec rutrum eget "\
+            "nunc sed volutpat. Curabitur sit amet lorem elementum sapien "\
+            "ornare placerat."
+
+        # set a provider
+        generator = NetworkFakeDataGenerator()
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # Create query
+        query = '''
+        mutation{{
+          composite_opticalLink(input:{{
+            create_input:{{
+              name: "{olink_name}"
+              description: "{olink_description}"
+              link_type: "{olink_linktype}"
+              interface_type: "{olink_ifacetype}"
+              operational_state: "{olink_opstate}"
+              relationship_provider: "{provider_id}"
+            }}
+            create_dependencies_port:[
+              {{
+                name: "{aport_name}"
+                port_type: "{aport_type}"
+                description: "{aport_description}"
+              }},
+              {{
+                name: "{bport_name}"
+                port_type: "{bport_type}"
+                description: "{bport_description}"
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalLink{{
+                id
+                name
+                description
+                link_type{{
+                  value
+                }}
+                interface_type{{
+                  value
+                }}
+                operational_state{{
+                  value
+                }}
+                ports{{
+                  id
+                  name
+                  port_type{{
+                    value
+                  }}
+                  description
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            dependencies_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  value
+                }}
+                description
+              }}
+            }}
+          }}
+        }}
+        '''.format(olink_name=olink_name, olink_description=olink_description,
+                    olink_linktype=olink_linktype,
+                    olink_ifacetype=olink_ifacetype,
+                    olink_opstate=olink_opstate, aport_name=aport_name,
+                    aport_type=aport_type, aport_description=aport_description,
+                    bport_name=bport_name, bport_type=bport_type,
+                    bport_description=bport_description, provider_id=provider_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalLink']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_opticalLink']\
+                                    ['dependencies_port_created']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        # get the ids
+        result_data = result.data['composite_opticalLink']
+        olink_id = result_data['created']['opticalLink']['id']
+        aport_id = result_data['dependencies_port_created'][0]['port']['id']
+        bport_id = result_data['dependencies_port_created'][1]['port']['id']
+
+        # check the integrity of the data
+        created_data = result_data['created']['opticalLink']
+
+        # check main optical link
+        self.assertEqual(created_data['name'], olink_name)
+        self.assertEqual(created_data['description'], olink_description)
+        self.assertEqual(created_data['link_type']['value'], olink_linktype)
+        self.assertEqual(created_data['interface_type']['value'], olink_ifacetype)
+        self.assertEqual(created_data['operational_state']['value'], olink_opstate)
+
+        # check their relations id
+        test_aport_id = created_data['ports'][0]['id']
+        test_bport_id = created_data['ports'][1]['id']
+
+        self.assertEqual(aport_id, test_aport_id)
+        self.assertEqual(bport_id, test_bport_id)
+
+        # check ports in both payload and metatype attribute
+        check_aports = [
+            created_data['ports'][0],
+            result_data['dependencies_port_created'][0]['port'],
+        ]
+
+        for check_aport in check_aports:
+            self.assertEqual(check_aport['name'], aport_name)
+            self.assertEqual(check_aport['port_type']['value'], aport_type)
+            self.assertEqual(check_aport['description'], aport_description)
+
+        check_bports = [
+            created_data['ports'][1],
+            result_data['dependencies_port_created'][1]['port'],
+        ]
+
+        for check_bport in check_bports:
+            self.assertEqual(check_bport['name'], bport_name)
+            self.assertEqual(check_bport['port_type']['value'], bport_type)
+            self.assertEqual(check_bport['description'], bport_description)
+
+        # check provider
+        check_provider = result_data['created']['opticalLink']['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+        self.assertEqual(check_provider['name'], provider.node_name)
+
+        ## Update query
+        # (do it two times to check that the relationship id is not overwritten)
+        relation_id = None
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        for i in range(2):
+            buffer_description = olink_description
+            buffer_description2 = aport_description
+
+            olink_name = "New Optical Link"
+            olink_description = bport_description
+
+            olink_linktype = random.choice(
+                Dropdown.objects.get(name="optical_link_types").as_choices()[1:])[1]
+
+            olink_ifacetype = random.choice(
+                Dropdown.objects.get(name="optical_link_interface_type").as_choices()[1:])[1]
+
+            olink_opstate = random.choice(
+                Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+            aport_name = "port-01"
+            aport_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+            aport_description = buffer_description2
+
+            bport_name = "port-02"
+            bport_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+            bport_description = buffer_description
+
+            query = '''
+            mutation{{
+              composite_opticalLink(input:{{
+                update_input:{{
+                  id: "{olink_id}"
+                  name: "{olink_name}"
+                  description: "{olink_description}"
+                  link_type: "{olink_linktype}"
+                  interface_type: "{olink_ifacetype}"
+                  operational_state: "{olink_opstate}"
+                  relationship_provider: "{provider_id}"
+                }}
+                update_dependencies_port:[
+                  {{
+                    id: "{aport_id}"
+                    name: "{aport_name}"
+                    port_type: "{aport_type}"
+                    description: "{aport_description}"
+                  }},
+                  {{
+                    id: "{bport_id}"
+                    name: "{bport_name}"
+                    port_type: "{bport_type}"
+                    description: "{bport_description}"
+                  }}
+                ]
+              }}){{
+                updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  opticalLink{{
+                    id
+                    name
+                    description
+                    link_type{{
+                      value
+                    }}
+                    interface_type{{
+                      value
+                    }}
+                    operational_state{{
+                      value
+                    }}
+                    ports{{
+                      id
+                      name
+                      port_type{{
+                        value
+                      }}
+                      description
+                    }}
+                    provider{{
+                      id
+                      name
+                      relation_id
+                    }}
+                  }}
+                }}
+                dependencies_port_updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  port{{
+                    id
+                    name
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+              }}
+            }}
+            '''.format(olink_name=olink_name, olink_description=olink_description,
+                        olink_linktype=olink_linktype,
+                        olink_ifacetype=olink_ifacetype,
+                        olink_opstate=olink_opstate, aport_name=aport_name,
+                        aport_type=aport_type, aport_description=aport_description,
+                        bport_name=bport_name, bport_type=bport_type,
+                        bport_description=bport_description, olink_id=olink_id,
+                        aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_opticalLink']['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            for subcreated in result.data['composite_opticalLink']['dependencies_port_updated']:
+                assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+            # check the integrity of the data
+            result_data = result.data['composite_opticalLink']
+            updated_data = result_data['updated']['opticalLink']
+
+            # check main optical link
+            self.assertEqual(updated_data['name'], olink_name)
+            self.assertEqual(updated_data['description'], olink_description)
+            self.assertEqual(updated_data['link_type']['value'], olink_linktype)
+            self.assertEqual(updated_data['interface_type']['value'], olink_ifacetype)
+            self.assertEqual(updated_data['operational_state']['value'], olink_opstate)
+
+            # check their relations id
+            test_aport_id = updated_data['ports'][0]['id']
+            test_bport_id = updated_data['ports'][1]['id']
+
+            self.assertEqual(aport_id, test_aport_id)
+            self.assertEqual(bport_id, test_bport_id)
+
+            # check ports in both payload and metatype attribute
+            check_aports = [
+                updated_data['ports'][0],
+                result_data['dependencies_port_updated'][0]['port'],
+            ]
+
+            for check_aport in check_aports:
+                self.assertEqual(check_aport['name'], aport_name)
+                self.assertEqual(check_aport['port_type']['value'], aport_type)
+                self.assertEqual(check_aport['description'], aport_description)
+
+            check_bports = [
+                updated_data['ports'][1],
+                result_data['dependencies_port_updated'][1]['port'],
+            ]
+
+            for check_bport in check_bports:
+                self.assertEqual(check_bport['name'], bport_name)
+                self.assertEqual(check_bport['port_type']['value'], bport_type)
+                self.assertEqual(check_bport['description'], bport_description)
+
+            # check provider
+            check_provider = result_data['updated']['opticalLink']['provider']
+            self.assertEqual(check_provider['id'], provider_id)
+            self.assertEqual(check_provider['name'], provider.node_name)
+
+            # check that we only have one provider
+            _type, olink_handle_id = relay.Node.from_global_id(olink_id)
+            olink_nh = NodeHandle.objects.get(handle_id=olink_handle_id)
+            olink_node = olink_nh.get_node()
+            previous_rels = olink_node.incoming.get('Provides', [])
+            self.assertTrue(len(previous_rels) == 1)
+
+            # check relation_id
+            if not relation_id: # first run
+                relation_id = check_provider['relation_id']
+                self.assertIsNotNone(relation_id)
+            else:
+                self.assertEqual(relation_id, check_provider['relation_id'])
+
+        ## Update query 2 (remove provider)
+        query = '''
+        mutation{{
+          composite_opticalLink(input:{{
+            update_input:{{
+              id: "{olink_id}"
+              name: "{olink_name}"
+              description: "{olink_description}"
+              link_type: "{olink_linktype}"
+              interface_type: "{olink_ifacetype}"
+              operational_state: "{olink_opstate}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalLink{{
+                id
+                name
+                description
+                link_type{{
+                  value
+                }}
+                interface_type{{
+                  value
+                }}
+                operational_state{{
+                  value
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(olink_id=olink_id, olink_name=olink_name,
+                    olink_description=olink_description,
+                    olink_linktype=olink_linktype,
+                    olink_ifacetype=olink_ifacetype,
+                    olink_opstate=olink_opstate)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalLink']['updated']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        # check empty provider
+        check_provider = result.data['composite_opticalLink']['updated']['opticalLink']['provider']
+        self.assertEqual(check_provider, None)
+
+
+class OpticalMultiplexSectionTest(Neo4jGraphQLNetworkTest):
+    def test_optical_multiplex(self):
+        oms23_name = "Optical Multiplex Section Test"
+        oms23_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+
+        oms23_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        aport_name = "test-01"
+        aport_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+        aport_description = "Etiam non libero pharetra, ultrices nunc ut, "\
+            "finibus ante. Suspendisse potenti. Nulla facilisi. Maecenas et "\
+            "pretium risus, non porta nunc. Sed id sem tempus, condimentum "\
+            "quam mattis, venenatis metus. Nullam lobortis leo mi, vel "\
+            "elementum neque maximus in. Cras non lectus at lorem consectetur "\
+            "euismod."
+
+        bport_name = "test-02"
+        bport_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+        bport_description = "Nunc varius suscipit lorem, non posuere nisl "\
+            "consequat in. Nulla gravida sapien a velit aliquet, aliquam "\
+            "tincidunt urna ultrices. Vivamus venenatis ligula a erat "\
+            "fringilla faucibus. Suspendisse potenti. Donec rutrum eget "\
+            "nunc sed volutpat. Curabitur sit amet lorem elementum sapien "\
+            "ornare placerat."
+
+        # set a provider
+        generator = NetworkFakeDataGenerator()
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # Create query
+        query = '''
+        mutation{{
+          composite_opticalMultiplexSection(input:{{
+            create_input:{{
+              name: "{oms23_name}"
+              description: "{oms23_description}"
+              operational_state: "{oms23_opstate}"
+              relationship_provider: "{provider_id}"
+            }}
+            create_dependencies_port:[
+              {{
+                name: "{aport_name}"
+                port_type: "{aport_type}"
+                description: "{aport_description}"
+              }},
+              {{
+                name: "{bport_name}"
+                port_type: "{bport_type}"
+                description: "{bport_description}"
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalMultiplexSection{{
+                id
+                name
+                description
+                operational_state{{
+                  value
+                }}
+                dependencies{{
+                  id
+                  name
+                  ...on Port{{
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            dependencies_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  value
+                }}
+                description
+              }}
+            }}
+          }}
+        }}
+        '''.format(oms23_name=oms23_name, oms23_description=oms23_description,
+                    oms23_opstate=oms23_opstate, aport_name=aport_name,
+                    aport_type=aport_type, aport_description=aport_description,
+                    bport_name=bport_name, bport_type=bport_type,
+                    bport_description=bport_description, provider_id=provider_id)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalMultiplexSection']\
+                                        ['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_opticalMultiplexSection']\
+                                    ['dependencies_port_created']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        # get the ids
+        result_data = result.data['composite_opticalMultiplexSection']
+        oms23_id = result_data['created']['opticalMultiplexSection']['id']
+        aport_id = result_data['dependencies_port_created'][0]['port']['id']
+        bport_id = result_data['dependencies_port_created'][1]['port']['id']
+
+        # check the integrity of the data
+        created_data = result_data['created']['opticalMultiplexSection']
+
+        # check main optical multiplex section
+        self.assertEqual(created_data['name'], oms23_name)
+        self.assertEqual(created_data['description'], oms23_description)
+        self.assertEqual(created_data['operational_state']['value'], oms23_opstate)
+
+        # check their relations id
+        test_aport_id = created_data['dependencies'][0]['id']
+        test_bport_id = created_data['dependencies'][1]['id']
+
+        self.assertEqual(aport_id, test_aport_id)
+        self.assertEqual(bport_id, test_bport_id)
+
+        # check ports in both payload and metatype attribute
+        check_aports = [
+            created_data['dependencies'][0],
+            result_data['dependencies_port_created'][0]['port'],
+        ]
+
+        for check_aport in check_aports:
+            self.assertEqual(check_aport['name'], aport_name)
+            self.assertEqual(check_aport['port_type']['value'], aport_type)
+            self.assertEqual(check_aport['description'], aport_description)
+
+        check_bports = [
+            created_data['dependencies'][1],
+            result_data['dependencies_port_created'][1]['port'],
+        ]
+
+        for check_bport in check_bports:
+            self.assertEqual(check_bport['name'], bport_name)
+            self.assertEqual(check_bport['port_type']['value'], bport_type)
+            self.assertEqual(check_bport['description'], bport_description)
+
+        # check provider
+        check_provider = result_data['created']['opticalMultiplexSection']['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+        self.assertEqual(check_provider['name'], provider.node_name)
+
+        ## Update query
+        # (do it two times to check that the relationship id is not overwritten)
+        relation_id = None
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        for i in range(2):
+            buffer_description = oms23_description
+            buffer_description2 = aport_description
+
+            oms23_name = "New Optical Multiplex Section"
+            oms23_description = bport_descriptionoms233_opstate = random.choice(
+                Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+            aport_name = "port-01"
+            aport_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+            aport_description = buffer_description2
+
+            bport_name = "port-02"
+            bport_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:])[1]
+            bport_description = buffer_description
+
+            query = '''
+            mutation{{
+              composite_opticalMultiplexSection(input:{{
+                update_input:{{
+                  id: "{oms23_id}"
+                  name: "{oms23_name}"
+                  description: "{oms23_description}"
+                  operational_state: "{oms23_opstate}"
+                  relationship_provider: "{provider_id}"
+                }}
+                update_dependencies_port:[
+                  {{
+                    id: "{aport_id}"
+                    name: "{aport_name}"
+                    port_type: "{aport_type}"
+                    description: "{aport_description}"
+                  }},
+                  {{
+                    id: "{bport_id}"
+                    name: "{bport_name}"
+                    port_type: "{bport_type}"
+                    description: "{bport_description}"
+                  }}
+                ]
+              }}){{
+                updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  opticalMultiplexSection{{
+                    id
+                    name
+                    description
+                    operational_state{{
+                      value
+                    }}
+                    dependencies{{
+                      id
+                      name
+                      ...on Port{{
+                        port_type{{
+                          value
+                        }}
+                        description
+                      }}
+                    }}
+                    provider{{
+                      id
+                      name
+                      relation_id
+                    }}
+                  }}
+                }}
+                dependencies_port_updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  port{{
+                    id
+                    name
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+              }}
+            }}
+            '''.format(oms23_name=oms23_name, oms23_description=oms23_description,
+                        oms23_opstate=oms23_opstate, aport_name=aport_name,
+                        aport_type=aport_type, aport_description=aport_description,
+                        bport_name=bport_name, bport_type=bport_type,
+                        bport_description=bport_description, oms23_id=oms23_id,
+                        aport_id=aport_id, bport_id=bport_id, provider_id=provider_id)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_opticalMultiplexSection']\
+                                            ['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            for subcreated in result.data['composite_opticalMultiplexSection']\
+                                            ['dependencies_port_updated']:
+                assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+            # check the integrity of the data
+            result_data = result.data['composite_opticalMultiplexSection']
+            updated_data = result_data['updated']['opticalMultiplexSection']
+
+            # check main optical multiplex section
+            self.assertEqual(updated_data['name'], oms23_name)
+            self.assertEqual(updated_data['description'], oms23_description)
+            self.assertEqual(updated_data['operational_state']['value'], oms23_opstate)
+
+            # check their relations id
+            test_aport_id = updated_data['dependencies'][0]['id']
+            test_bport_id = updated_data['dependencies'][1]['id']
+
+            self.assertEqual(aport_id, test_aport_id)
+            self.assertEqual(bport_id, test_bport_id)
+
+            # check ports in both payload and metatype attribute
+            check_aports = [
+                updated_data['dependencies'][0],
+                result_data['dependencies_port_updated'][0]['port'],
+            ]
+
+            for check_aport in check_aports:
+                self.assertEqual(check_aport['name'], aport_name)
+                self.assertEqual(check_aport['port_type']['value'], aport_type)
+                self.assertEqual(check_aport['description'], aport_description)
+
+            check_bports = [
+                updated_data['dependencies'][1],
+                result_data['dependencies_port_updated'][1]['port'],
+            ]
+
+            for check_bport in check_bports:
+                self.assertEqual(check_bport['name'], bport_name)
+                self.assertEqual(check_bport['port_type']['value'], bport_type)
+                self.assertEqual(check_bport['description'], bport_description)
+
+            # check provider
+            check_provider = result_data['updated']['opticalMultiplexSection']['provider']
+            self.assertEqual(check_provider['id'], provider_id)
+            self.assertEqual(check_provider['name'], provider.node_name)
+
+            # check that we only have one provider
+            _type, oms23_handle_id = relay.Node.from_global_id(oms23_id)
+            oms23_nh = NodeHandle.objects.get(handle_id=oms23_handle_id)
+            oms23_node = oms23_nh.get_node()
+            previous_rels = oms23_node.incoming.get('Provides', [])
+            self.assertTrue(len(previous_rels) == 1)
+
+            # check relation_id
+            if not relation_id: # first run
+                relation_id = check_provider['relation_id']
+                self.assertIsNotNone(relation_id)
+            else:
+                self.assertEqual(relation_id, check_provider['relation_id'])
+
+        ## Update query 2 (remove provider)
+        query = '''
+        mutation{{
+          composite_opticalMultiplexSection(input:{{
+            update_input:{{
+              id: "{oms23_id}"
+              name: "{oms23_name}"
+              description: "{oms23_description}"
+              operational_state: "{oms23_opstate}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalMultiplexSection{{
+                id
+                name
+                description
+                operational_state{{
+                  value
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(oms23_id=oms23_id, oms23_name=oms23_name,
+                    oms23_description=oms23_description,
+                    oms23_opstate=oms23_opstate)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalMultiplexSection']\
+            ['updated']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        # check empty provider
+        check_provider = result.data['composite_opticalMultiplexSection']\
+            ['updated']['opticalMultiplexSection']['provider']
+        self.assertEqual(check_provider, None)
+
+
+class OpticalPathTest(Neo4jGraphQLNetworkTest):
+    def test_optical_path(self):
+        opath_name = "Optical Path Test"
+        opath_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        opath_wavelength = random.randint(10, 30)
+
+        opath_framing = random.choice(
+            Dropdown.objects.get(name="optical_path_framing").as_choices()[1:])[1]
+
+        opath_capacity = random.choice(
+            Dropdown.objects.get(name="optical_path_capacity").as_choices()[1:])[1]
+
+        opath_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        odf_name = "ODF test"
+        odf_description = "Integer posuere est at sapien elementum, "\
+            "ut lacinia mi mattis. Etiam eget aliquet felis. Class aptent "\
+            "taciti sociosqu ad litora torquent per conubia nostra, per "\
+            "inceptos himenaeos. Sed volutpat feugiat vehicula. Morbi accumsan "\
+            "feugiat varius. Morbi id tempus mauris. Morbi ut dapibus odio, "\
+            "eget sollicitudin dui."
+        odf_rack_units = random.randint(1, 3)
+        odf_rack_position = random.randint(1, 5)
+        odf_rack_back = bool(random.getrandbits(1))
+        odf_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        odf_input_str = '''
+        create_dependencies_odf:{{
+          name: "{odf_name}"
+          description: "{odf_description}"
+          operational_state: "{odf_opstate}"
+          rack_units: {odf_rack_units}
+          rack_position: {odf_rack_position}
+          rack_back: {odf_rack_back}
+        }}
+        '''.format(odf_name=odf_name, odf_description=odf_description,
+                    odf_opstate=odf_opstate, odf_rack_units=odf_rack_units,
+                    odf_rack_position=odf_rack_position,
+                    odf_rack_back=str(odf_rack_back).lower())
+
+        odf_query_str = '''
+        dependencies_odf_created{
+          errors{
+            field
+            messages
+          }
+          oDF{
+            id
+            name
+            description
+            operational_state{
+              id
+              value
+            }
+            rack_units
+            rack_position
+            rack_back
+          }
+        }
+        '''
+
+        # generate a router
+        generator = NetworkFakeDataGenerator()
+        router = generator.create_router()
+        router_id = relay.Node.to_global_id(str(router.node_type),
+                                            str(router.handle_id))
+
+        # get new data to feed the update mutation
+        router_rack_units = random.randint(1,10)
+        router_rack_position = random.randint(1,10)
+        router_rack_back = bool(random.getrandbits(1))
+
+        router_operational_state = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:][1]
+        )
+        router_description = generator.escape_quotes(generator.fake.paragraph())
+
+        router_input_str = '''
+        update_dependencies_router:{{
+          id: "{router_id}"
+          description: "{router_description}"
+          operational_state: "{router_operational_state}"
+          rack_units: {router_rack_units}
+          rack_position: {router_rack_position}
+          rack_back: {router_rack_back}
+        }}
+        '''.format(router_id=router_id, router_description=router_description,
+                    router_operational_state=router_operational_state,
+                    router_rack_units=router_rack_units,
+                    router_rack_position=router_rack_position,
+                    router_rack_back=str(router_rack_back).lower())
+
+        router_query_str = '''
+        dependencies_router_updated{
+          errors{
+            field
+            messages
+          }
+          router{
+            id
+            name
+            description
+            operational_state{
+              name
+              value
+            }
+            model
+            version
+            rack_units
+            rack_position
+            rack_back
+          }
+        }
+        '''
+
+        # set a provider
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # Create query
+        query = '''
+        mutation{{
+          composite_opticalPath(input:{{
+            create_input:{{
+              name: "{opath_name}"
+              description: "{opath_description}"
+              framing: "{opath_framing}"
+              capacity: "{opath_capacity}"
+              wavelength: {opath_wavelength}
+              operational_state: "{opath_opstate}"
+              relationship_provider: "{provider_id}"
+            }}
+            {odf_input_str}
+            {router_input_str}
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              opticalPath{{
+                id
+                name
+                description
+                framing{{
+                  value
+                }}
+                capacity{{
+                  value
+                }}
+                wavelength
+                operational_state{{
+                  value
+                }}
+                dependencies{{
+                  id
+                  name
+                  ...on Port{{
+                    port_type{{
+                      value
+                    }}
+                    description
+                  }}
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            {odf_query_str}
+            {router_query_str}
+          }}
+        }}
+        '''.format(opath_name=opath_name, opath_description=opath_description,
+                    opath_framing=opath_framing,
+                    opath_capacity=opath_capacity,
+                    opath_opstate=opath_opstate,
+                    provider_id=provider_id, opath_wavelength=opath_wavelength,
+                    odf_input_str=odf_input_str, router_input_str=router_input_str,
+                    odf_query_str=odf_query_str, router_query_str=router_query_str)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalPath']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        for subcreated in result.data['composite_opticalPath']\
+                                    ['dependencies_odf_created']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        for subcreated in result.data['composite_opticalPath']\
+                                    ['dependencies_router_updated']:
+            assert not subcreated['errors'], pformat(subcreated['errors'], indent=1)
+
+        # get the ids
+        result_data = result.data['composite_opticalPath']
+        opath_id = result_data['created']['opticalPath']['id']
+        odf_id = result_data['dependencies_odf_created'][0]['oDF']['id']
+
+        # check the integrity of the data
+        created_data = result_data['created']['opticalPath']
+
+        # check main optical path
+        self.assertEqual(created_data['name'], opath_name)
+        self.assertEqual(created_data['description'], opath_description)
+        self.assertEqual(created_data['framing']['value'], opath_framing)
+        self.assertEqual(created_data['capacity']['value'], opath_capacity)
+        self.assertEqual(created_data['operational_state']['value'], opath_opstate)
+        self.assertEqual(created_data['wavelength'], opath_wavelength)
+
+        # check their relations id
+        test_odf_id = created_data['dependencies'][1]['id']
+        test_router_id = created_data['dependencies'][0]['id']
+
+        self.assertEqual(odf_id, test_odf_id)
+        self.assertEqual(router_id, test_router_id)
+
+        # check ports in both payload and metatype attribute
+        check_odf = result_data['dependencies_odf_created'][0]['oDF']
+
+        self.assertEqual(check_odf['name'], odf_name)
+        self.assertEqual(check_odf['description'], odf_description)
+        self.assertEqual(check_odf['operational_state']['value'],
+                            odf_opstate)
+        self.assertEqual(check_odf['rack_units'], odf_rack_units)
+        self.assertEqual(check_odf['rack_position'], odf_rack_position)
+        self.assertEqual(check_odf['rack_back'], odf_rack_back)
+
+        check_router = result_data['dependencies_router_updated'][0]['router']
+
+        self.assertEqual(check_router['description'], router_description)
+        self.assertEqual(check_router['operational_state']['value'],\
+            router_operational_state)
+        self.assertEqual(check_router ['rack_units'], router_rack_units)
+        self.assertEqual(check_router['rack_position'], router_rack_position)
+        self.assertEqual(check_router['rack_back'], router_rack_back)
+
+        # check provider
+        check_provider = result_data['created']['opticalPath']['provider']
+        self.assertEqual(check_provider['id'], provider_id)
+        self.assertEqual(check_provider['name'], provider.node_name)
+
+        ## Update query
+        # (do it two times to check that the relationship id is not overwritten)
+        relation_id = None
+        provider = generator.create_provider()
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        for i in range(2):
+            opath_name = "New Optical Path"
+            opath_description = router_description
+            opath_wavelength = random.randint(10, 30)
+
+            opath_framing = random.choice(
+                Dropdown.objects.get(name="optical_path_framing").as_choices()[1:])[1]
+
+            opath_capacity = random.choice(
+                Dropdown.objects.get(name="optical_path_capacity").as_choices()[1:])[1]
+
+            opath_opstate = random.choice(
+                Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+            query = '''
+            mutation{{
+              composite_opticalPath(input:{{
+                update_input:{{
+                  id: "{opath_id}"
+                  name: "{opath_name}"
+                  description: "{opath_description}"
+                  framing: "{opath_framing}"
+                  capacity: "{opath_capacity}"
+                  wavelength: {opath_wavelength}
+                  operational_state: "{opath_opstate}"
+                  relationship_provider: "{provider_id}"
+                }}
+              }}){{
+                updated{{
+                  errors{{
+                    field
+                    messages
+                  }}
+                  opticalPath{{
+                    id
+                    name
+                    description
+                    framing{{
+                      value
+                    }}
+                    capacity{{
+                      value
+                    }}
+                    wavelength
+                    operational_state{{
+                      value
+                    }}
+                    dependencies{{
+                      id
+                      name
+                      ...on Port{{
+                        port_type{{
+                          value
+                        }}
+                        description
+                      }}
+                    }}
+                    provider{{
+                      id
+                      name
+                      relation_id
+                    }}
+                  }}
+                }}
+              }}
+            }}
+            '''.format(opath_name=opath_name,
+                        opath_description=opath_description,
+                        opath_framing=opath_framing,
+                        opath_capacity=opath_capacity,
+                        opath_opstate=opath_opstate,
+                        provider_id=provider_id,
+                        opath_wavelength=opath_wavelength,
+                        opath_id=opath_id)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_opticalPath']['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            # check the integrity of the data
+            result_data = result.data['composite_opticalPath']
+            updated_data = result_data['updated']['opticalPath']
+
+            # check main optical path
+            self.assertEqual(updated_data['name'], opath_name)
+            self.assertEqual(updated_data['description'], opath_description)
+            self.assertEqual(updated_data['framing']['value'], opath_framing)
+            self.assertEqual(updated_data['capacity']['value'], opath_capacity)
+            self.assertEqual(updated_data['operational_state']['value'], opath_opstate)
+            self.assertEqual(updated_data['wavelength'], opath_wavelength)
+
+            # check provider
+            check_provider = result_data['updated']['opticalPath']['provider']
+            self.assertEqual(check_provider['id'], provider_id)
+            self.assertEqual(check_provider['name'], provider.node_name)
+
+            # check that we only have one provider
+            _type, opath_handle_id = relay.Node.from_global_id(opath_id)
+            opath_nh = NodeHandle.objects.get(handle_id=opath_handle_id)
+            opath_node = opath_nh.get_node()
+            previous_rels = opath_node.incoming.get('Provides', [])
+            self.assertTrue(len(previous_rels) == 1)
+
+            # check relation_id
+            if not relation_id: # first run
+                relation_id = check_provider['relation_id']
+                self.assertIsNotNone(relation_id)
+            else:
+                self.assertEqual(relation_id, check_provider['relation_id'])
+
+        ## Update query 2 (remove provider)
+        query = '''
+        mutation{{
+          composite_opticalPath(input:{{
+            update_input:{{
+              id: "{opath_id}"
+              name: "{opath_name}"
+              description: "{opath_description}"
+              framing: "{opath_framing}"
+              capacity: "{opath_capacity}"
+              wavelength: {opath_wavelength}
+              operational_state: "{opath_opstate}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              opticalPath{{
+                id
+                name
+                description
+                framing{{
+                  value
+                }}
+                capacity{{
+                  value
+                }}
+                wavelength
+                operational_state{{
+                  value
+                }}
+                provider{{
+                  id
+                  name
+                }}
+              }}
+            }}
+          }}
+        }}
+        '''.format(opath_id=opath_id, opath_name=opath_name,
+                    opath_description=opath_description,
+                    opath_framing=opath_framing,
+                    opath_capacity=opath_capacity,
+                    opath_opstate=opath_opstate,
+                    opath_wavelength=opath_wavelength)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = result.data['composite_opticalPath']['updated']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        # check empty provider
+        check_provider = result.data['composite_opticalPath']['updated']['opticalPath']['provider']
+        self.assertEqual(check_provider, None)
+
+
+## Peering
+class PeeringGroupTest(Neo4jGraphQLNetworkTest):
+    def test_peering_group(self):
+        data_generator = NetworkFakeDataGenerator()
+        pgroup = data_generator.create_peering_group()
+
+        pg_type_str = pgroup.node_type.type.replace(' ', '')
+        peergroup_id = relay.Node.to_global_id(pg_type_str,
+                                        str(pgroup.handle_id))
+        peergroup_name = "Peer Group new name"
+
+        dependencies = pgroup.get_node().get_dependencies()
+        host_handle_id = dependencies['Depends_on'][0]['relationship'].end_node.\
+                            _properties['handle_id']
+        host_nh = NodeHandle.objects.get(handle_id=host_handle_id)
+        host_type_str = host_nh.node_type.type.replace(' ', '')
+        host_id = relay.Node.to_global_id(str(host_nh.node_type),
+                                        str(host_nh.handle_id))
+        host_name = "Test dependency host"
+        host_description = host_nh.get_node().data['description']
+        host_opstate = random.choice(
+            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+
+        query = """
+        mutation{{
+          composite_peeringGroup(input:{{
+            update_input:{{
+              id: "{peergroup_id}"
+              name: "{peergroup_name}"
+            }}
+            update_dependencies_host:{{
+              id: "{host_id}"
+              name: "{host_name}"
+              description: "{host_description}"
+              operational_state: "{host_opstate}"
+            }}
+          }}){{
+            updated{{
+              errors{{
+                field
+                messages
+              }}
+              peeringGroup{{
+                id
+                name
+              }}
+            }}
+            dependencies_host_updated{{
+              errors{{
+                field
+                messages
+              }}
+              host{{
+                id
+                name
+                description
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+          }}
+        }}
+        """.format(peergroup_id=peergroup_id, peergroup_name=peergroup_name,
+                    host_id=host_id, host_name=host_name,
+                    host_description=host_description,
+                    host_opstate=host_opstate)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        updated_errors = \
+            result.data['composite_peeringGroup']['updated']['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_peeringGroup']['dependencies_host_updated']\
+                        [0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        # check data
+        updated_pgroup = result.data['composite_peeringGroup']['updated']\
+                            ['peeringGroup']
+        self.assertEqual(updated_pgroup['id'], peergroup_id,
+            "{} != {}".format(relay.Node.from_global_id(updated_pgroup['id']),
+                relay.Node.from_global_id(peergroup_id)))
+        self.assertEqual(updated_pgroup['name'], peergroup_name)
+
+        # check subentity
+        check_host1 = result.data \
+            ['composite_peeringGroup']['dependencies_host_updated'][0]['host']
+
+        self.assertEqual(check_host1['name'], host_name)
+        self.assertEqual(check_host1['description'], host_description)
+        self.assertEqual(check_host1['operational_state']['value'], host_opstate)

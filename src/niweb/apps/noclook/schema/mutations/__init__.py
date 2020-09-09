@@ -87,10 +87,55 @@ class NOCRootMutation(graphene.ObjectType):
     delete_firewall = NIFirewallMutationFactory.get_delete_mutation().Field()
     composite_firewall = CompositeFirewallMutation.Field()
 
+    create_host = NIHostMutationFactory.get_create_mutation().Field()
+    update_host = NIHostMutationFactory.get_update_mutation().Field()
+    delete_host = NIHostMutationFactory.get_delete_mutation().Field()
+    composite_host = CompositeHostMutation.Field()
+    convert_host = ConvertHost.Field()
+
     create_externalEquipment = NIExternalEquipmentMutationFactory.get_create_mutation().Field()
     update_externalEquipment = NIExternalEquipmentMutationFactory.get_update_mutation().Field()
     delete_externalEquipment = NIExternalEquipmentMutationFactory.get_delete_mutation().Field()
     composite_externalEquipment = CompositeExternalEquipmentMutation.Field()
+
+    create_opticalNode = NIOpticalNodeMutationFactory.get_create_mutation().Field()
+    update_opticalNode = NIOpticalNodeMutationFactory.get_update_mutation().Field()
+    delete_opticalNode = NIOpticalNodeMutationFactory.get_delete_mutation().Field()
+    composite_opticalNode = CompositeOpticalNodeMutation.Field()
+
+    create_oDF = NIODFMutationFactory.get_create_mutation().Field()
+    update_oDF = NIODFMutationFactory.get_update_mutation().Field()
+    delete_oDF = NIODFMutationFactory.get_delete_mutation().Field()
+    composite_oDF = CompositeODFMutation.Field()
+
+    ## Optical nodes
+    create_opticalFilter = NIOpticalFilterMutationFactory.get_create_mutation().Field()
+    update_opticalFilter = NIOpticalFilterMutationFactory.get_update_mutation().Field()
+    delete_opticalFilter = NIOpticalFilterMutationFactory.get_delete_mutation().Field()
+    composite_opticalFilter = CompositeOpticalFilterMutation.Field()
+
+    create_opticalLink = NIOpticalLinkMutationFactory.get_create_mutation().Field()
+    update_opticalLink = NIOpticalLinkMutationFactory.get_update_mutation().Field()
+    delete_opticalLink = NIOpticalLinkMutationFactory.get_delete_mutation().Field()
+    composite_opticalLink = CompositeOpticalLinkMutation.Field()
+
+    create_opticalMultiplexSection = NIOpticalMultiplexSectionMutationFactory.get_create_mutation().Field()
+    update_opticalMultiplexSection = NIOpticalMultiplexSectionMutationFactory.get_update_mutation().Field()
+    delete_opticalMultiplexSection = NIOpticalMultiplexSectionMutationFactory.get_delete_mutation().Field()
+    composite_opticalMultiplexSection = CompositeOpticalMultiplexSectionMutation.Field()
+
+    create_opticalPath = NIOpticalPathMutationFactory.get_create_mutation().Field()
+    update_opticalPath = NIOpticalPathMutationFactory.get_update_mutation().Field()
+    delete_opticalPath = NIOpticalPathMutationFactory.get_delete_mutation().Field()
+    composite_opticalPath = CompositeOpticalPathMutation.Field()
+
+    ## Peering
+    update_peeringPartner = NIPeeringPartnerMutationFactory.get_update_mutation().Field()
+    delete_peeringPartner = NIPeeringPartnerMutationFactory.get_delete_mutation().Field()
+
+    update_peeringGroup = NIPeeringGroupMutationFactory.get_update_mutation().Field()
+    delete_peeringGroup = NIPeeringGroupMutationFactory.get_delete_mutation().Field()
+    composite_peeringGroup = CompositePeeringGroupMutation.Field()
 
     ## Common mutations
     create_comment = CreateComment.Field()
