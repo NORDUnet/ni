@@ -88,13 +88,6 @@ class NOCAutoQuery(graphene.ObjectType):
                 setattr(cls, field_name, graphene.List(graphql_type))
                 setattr(cls, resolver_name, graphql_type.get_list_resolver())
 
-                # add simple counter
-                field_name    = 'count_{}s'.format(fmt_type_slug)
-                resolver_name = 'resolve_{}'.format(fmt_type_slug)
-
-                setattr(cls, field_name, graphene.Int())
-                setattr(cls, resolver_name, graphql_type.get_count_resolver())
-
                 # add connection attribute
                 field_name    = '{}s'.format(type_name_cc)
                 resolver_name = 'resolve_{}'.format(field_name)
