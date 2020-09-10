@@ -104,10 +104,10 @@
     <a href="export" class="btn"><i class="icon icon-download"></i> Export</a>
 {% endif %}
 <div class="section">
-    <div class="pull-right">
-        {% table_search "locations" %}
-    </div>
     {% if rooms_table.rows %}
+      <div class="pull-right">
+          {% table_search "rooms" %}
+      </div>
         <h3>Rooms</h3>
         {% blockvar th %}
             {% for header in rooms_table.headers %}
@@ -124,7 +124,7 @@
               </tr>
             {% endfor %}
         {% endblockvar %}
-        {% table th tbody id="locations" %}
+        {% table th tbody id="rooms" %}
     {% endif %}
 
     {% if racks_table.rows %}
