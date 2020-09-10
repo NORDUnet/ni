@@ -59,6 +59,7 @@ def delete_jwt_cookie(request, response):
         expires=anti_expires_time,
         secure=settings.JWT_COOKIE_SECURE or None,
         httponly=settings.JWT_COOKIE_HTTPONLY or None,
+        samesite='Lax',
     )
 
 
@@ -165,6 +166,7 @@ class SRIJWTAuthMiddleware(object):
                 expires=cookie_expires,
                 secure=settings.JWT_COOKIE_SECURE or None,
                 httponly=settings.JWT_COOKIE_HTTPONLY or None,
+                samesite='Lax',
             )
             patch_vary_headers(response, ('Cookie',))
 
@@ -214,6 +216,7 @@ class SRIJWTAuthMiddleware(object):
                         path=settings.SESSION_COOKIE_PATH,
                         secure=settings.SESSION_COOKIE_SECURE or None,
                         httponly=settings.SESSION_COOKIE_HTTPONLY or None,
+                        samesite='Strict',
                     )
 
         return response
