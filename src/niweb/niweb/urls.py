@@ -81,15 +81,31 @@ if settings.SAML_ENABLED:
         url(r'^saml2/', include('djangosaml2.urls')),
     ]
 
+
+# GraphQL endpoint
+graphql_endpoint = url(r'^graphql/', jwt_cookie(
+        AuthGraphQLView.as_view(graphiql=settings.USE_GRAPHIQL)
+    )
+)
+
+if settings.INSPECT_SCHEMA:
+    # this will only allow inspection of the schema
+    # operations will check the requesting user to be logged to be executed
+    from django.views.decorators.csrf import csrf_exempt
+    graphql_endpoint = url(r'^graphql/', csrf_exempt(
+            AuthGraphQLView.as_view(graphiql=settings.USE_GRAPHIQL)
+        )
+    )
+
+
 urlpatterns += [
     # Tastypie URLs
     url(r'^api/', include(v1_api.urls)),
 
-    # GraphQL endpoint
-    url(r'^graphql/', jwt_cookie(AuthGraphQLView.as_view(graphiql=settings.USE_GRAPHIQL))),
-
     # Django Generic Comments
     url(r'^comments/', include('django_comments.urls')),
+
+    graphql_endpoint,
 
     # Activity Streams
     url('^activity/', include('actstream.urls')),
