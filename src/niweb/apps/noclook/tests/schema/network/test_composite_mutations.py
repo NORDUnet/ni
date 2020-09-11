@@ -2250,6 +2250,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               services_locked: {services_locked}
               {extra_input}
             }}
+            {subinputs}
           }}){{
             updated{{
               errors{{
@@ -2288,6 +2289,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 {extra_query}
               }}
             }}
+            {subquery}
           }}
         }}
         '''
@@ -2333,6 +2335,11 @@ class HostTest(Neo4jGraphQLNetworkTest):
         }
 
         use_ownerhuser = True
+
+        updated_hosts = {
+            'logical': None,
+            'physical': None,
+        }
 
         for iteration in range(0,2):
             for k, host_id in host_ids.items():
@@ -2386,7 +2393,8 @@ class HostTest(Neo4jGraphQLNetworkTest):
                             managed_by=managed_by, backup=backup, os=os,
                             os_version=os_version, contract_number=contract_number,
                             services_locked=str(services_locked).lower(),
-                            extra_input=extra_input, extra_query=extra_query)
+                            extra_input=extra_input, extra_query=extra_query,
+                            subinputs='', subquery='')
 
                 result = schema.execute(query, context=self.context)
                 assert not result.errors, pformat(result.errors, indent=1)
@@ -2397,6 +2405,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
                 # check data
                 updated_host = result.data['composite_host']['updated']['host']
+                updated_hosts[k] = updated_host
 
                 self.assertEqual(updated_host['name'], host_name)
                 self.assertEqual(updated_host['description'], host_description)
@@ -2428,6 +2437,155 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(check_support['id'], group2_id)
 
                 use_ownerhuser = False
+
+        # add a port to a physical host
+        # and check that's not possible with a logical host
+        generator = NetworkFakeDataGenerator()
+
+        for k, host_id in host_ids.items():
+            # get old values
+            host_name = updated_hosts[k]['name']
+            host_description = updated_hosts[k]['name']
+            ip_addresses = updated_hosts[k]['ip_addresses']
+            rack_units = updated_hosts[k]['rack_units']
+            rack_position = updated_hosts[k]['rack_position']
+            rack_back = updated_hosts[k]['rack_back']
+            operational_state = updated_hosts[k]['operational_state']['value']
+            rack_back = updated_hosts[k]['rack_back']
+            managed_by = updated_hosts[k]['managed_by']['value']
+            backup = updated_hosts[k]['backup']
+            os = updated_hosts[k]['os']
+            os_version = updated_hosts[k]['os_version']
+            contract_number = updated_hosts[k]['contract_number']
+            services_locked = updated_hosts[k]['services_locked']
+
+            # create new port
+            port_1_name = str(random.randint(0, 50000))
+            port_1_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+            )
+            port_1_description = generator\
+                                    .escape_quotes(generator.fake.paragraph())
+
+            # add existent port
+            port = generator.create_port()
+            port_2_id = relay.Node.to_global_id(str(port.node_type),
+                                                str(port.handle_id))
+            port_2_name = str(random.randint(0, 50000))
+            port_2_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+            )
+            port_2_description = generator\
+                                    .escape_quotes(generator.fake.paragraph())
+
+            # count ports present on db to be checked after
+            num_ports = NodeHandle.objects\
+                            .filter(node_type=port.node_type).count()
+
+            subinput = '''
+            create_subinputs:[
+              {{
+                name: "{port_1_name}"
+                port_type: "{port_1_type}"
+                description: "{port_1_description}"
+              }}
+            ]
+            update_subinputs:[
+              {{
+                id: "{port_2_id}"
+                name: "{port_2_name}"
+                port_type: "{port_2_type}"
+                description: "{port_2_description}"
+              }}
+            ]
+            '''.format(
+                port_1_name=port_1_name, port_1_type=port_1_type,
+                port_1_description=port_1_description, port_2_id=port_2_id,
+                port_2_name=port_2_name, port_2_type=port_2_type,
+                port_2_description=port_2_description
+            )
+
+            subquery = '''
+            subcreated{
+              errors{
+                field
+                messages
+              }
+              port{
+                id
+                name
+                port_type{
+                  name
+                  value
+                }
+                description
+              }
+            }
+            subupdated{
+              errors{
+                field
+                messages
+              }
+              port{
+                id
+                name
+                port_type{
+                  name
+                  value
+                }
+                description
+              }
+            }
+            '''
+
+            query = edit_query.format(
+                        host_id=host_id,
+                        host_name=host_name, host_description=host_description,
+                        ip_address="\\n".join(ip_addresses),
+                        rack_units=rack_units, rack_position=rack_units,
+                        rack_back=str(rack_back).lower(),
+                        operational_state=operational_state,
+                        group1_id=group1_id, group2_id=group2_id,
+                        managed_by=managed_by, backup=backup, os=os,
+                        os_version=os_version, contract_number=contract_number,
+                        services_locked=str(services_locked).lower(),
+                        extra_input='', extra_query='',
+                        subinputs=subinput, subquery=subquery)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_host']['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            if k == 'logical':
+                # check that ports are not created
+                new_num_ports = NodeHandle.objects\
+                                .filter(node_type=port.node_type).count()
+                self.assertEquals(num_ports, new_num_ports)
+            else:
+                # check port_1 data
+                created_checkport = result.data['composite_host']['subcreated'][0]
+                created_errors = created_checkport['errors']
+                assert not created_errors, pformat(created_errors, indent=1)
+
+                created_checkport = created_checkport['port']
+                port_1_id = created_checkport['id']
+
+                self.assertEqual(created_checkport['name'], port_1_name)
+                self.assertEqual(created_checkport['port_type']['value'], port_1_type)
+                self.assertEqual(created_checkport['description'], port_1_description)
+
+                # check port_2
+                update_checkport = result.data['composite_host']['subupdated'][0]
+                updated_errors = update_checkport['errors']
+                assert not updated_errors, pformat(updated_errors, indent=1)
+
+                update_checkport = update_checkport['port']
+                self.assertEqual(update_checkport['name'], port_2_name)
+                self.assertEqual(update_checkport['port_type']['value'], port_2_type)
+                self.assertEqual(update_checkport['description'], port_2_description)
 
 
 class OpticalNodeTest(Neo4jGraphQLNetworkTest):
