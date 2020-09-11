@@ -138,6 +138,8 @@ class Host(NIObjectType, PhysicalLogicalMixin):
     host_services = NIStringField()
     services_locked = NIBooleanField()
     services_checked = NIBooleanField()
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has',
+        rel_method='_outgoing')
 
     def resolve_ip_addresses(self, info, **kwargs):
         '''Manual resolver for the ip field'''
@@ -163,7 +165,8 @@ class Router(NIObjectType, PhysicalMixin):
     rack_units = NIIntField() # Equipment height
     rack_position = NIIntField()
     rack_back = NIBooleanField()
-    ports = NIListField(type_args=(lambda: Port,), rel_name='Has', rel_method='_outgoing')
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has',
+        rel_method='_outgoing')
 
     class NIMetaType:
         ni_type = 'Router'
