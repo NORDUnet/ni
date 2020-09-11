@@ -1544,7 +1544,12 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
         # get input context, otherwise get the type context
         graphql_type = cls.get_graphql_type()
-        input_context = input.get('context', graphql_type.get_type_context())
+        default_context = graphql_type.get_type_context()
+        input_context = input.get('context')
+
+        if not input_context:
+            input_context = default_context
+
         # add it to the dict
         reqinput[1]['input_context'] = input_context
 
@@ -2311,6 +2316,14 @@ class CompositeMutation(relay.ClientIDMutation):
         return master_ret
 
     @classmethod
+    def can_process_subentities(cls, master_nh):
+        '''
+        This method can be overrided by subclasses to add conditions
+        on the creation/edition of subentities
+        '''
+        return True
+
+    @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
         # check if the user is authenticated
         if not info.context or not info.context.user.is_authenticated:
@@ -2391,47 +2404,48 @@ class CompositeMutation(relay.ClientIDMutation):
             if graphql_subtype:
                 extract_param = AbstractNIMutation.get_returntype_name(graphql_subtype)
 
-                if create_subinputs:
-                    has_subcreated = True
-                    ret_subcreated = []
+                if cls.can_process_subentities(main_nh):
+                    if create_subinputs:
+                        has_subcreated = True
+                        ret_subcreated = []
 
-                    for subinput in create_subinputs:
-                        subinput['context'] = context
-                        ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
-                        ret_subcreated.append(ret)
+                        for subinput in create_subinputs:
+                            subinput['context'] = context
+                            ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
+                            ret_subcreated.append(ret)
 
-                        # link if it's possible
-                        sub_errors = getattr(ret, 'errors', None)
-                        sub_created = getattr(ret, extract_param, None)
+                            # link if it's possible
+                            sub_errors = getattr(ret, 'errors', None)
+                            sub_created = getattr(ret, extract_param, None)
 
-                        if not sub_errors and sub_created:
-                            link_kwargs = cls.get_link_kwargs(main_input, subinput)
-                            cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
+                            if not sub_errors and sub_created:
+                                link_kwargs = cls.get_link_kwargs(main_input, subinput)
+                                cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
 
-                if update_subinputs:
-                    has_subupdated = True
-                    ret_subupdated = []
+                    if update_subinputs:
+                        has_subupdated = True
+                        ret_subupdated = []
 
-                    for subinput in update_subinputs:
-                        subinput['context'] = context
-                        ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
-                        ret_subupdated.append(ret)
+                        for subinput in update_subinputs:
+                            subinput['context'] = context
+                            ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
+                            ret_subupdated.append(ret)
 
-                        # link if it's possible
-                        sub_errors = getattr(ret, 'errors', None)
-                        sub_edited = getattr(ret, extract_param, None)
+                            # link if it's possible
+                            sub_errors = getattr(ret, 'errors', None)
+                            sub_edited = getattr(ret, extract_param, None)
 
-                        if not sub_errors and sub_edited:
-                            link_kwargs = cls.get_link_kwargs(main_input, subinput)
-                            cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
+                            if not sub_errors and sub_edited:
+                                link_kwargs = cls.get_link_kwargs(main_input, subinput)
+                                cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
 
-                if delete_subinputs:
-                    has_subdeleted = True
-                    ret_subdeleted = []
+                    if delete_subinputs:
+                        has_subdeleted = True
+                        ret_subdeleted = []
 
-                    for subinput in delete_subinputs:
-                        ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
-                        ret_subdeleted.append(ret)
+                        for subinput in delete_subinputs:
+                            ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
+                            ret_subdeleted.append(ret)
 
             if unlink_subinputs:
                 ret_unlinked = []
