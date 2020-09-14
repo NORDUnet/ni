@@ -3,6 +3,7 @@ from apps.noclook.helpers import neo4j_data_age, neo4j_report_age, get_node_type
 import norduniclient as nc
 from datetime import datetime, timedelta
 from django import template
+from django.conf import settings
 import json
 import re
 from django.utils.html import escape, format_html
@@ -45,7 +46,7 @@ def noclook_node_to_url(context, handle_id):
     if urls and handle_id in urls:
         return urls.get(handle_id)
     else:
-      return "/nodes/%s" % handle_id
+      return "%s/nodes/%d" % (settings.FORCE_SCRIPT_NAME, handle_id)
 
 
 @register.simple_tag(takes_context=True)
