@@ -1541,6 +1541,24 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                                             str(owner.handle_id))
         services_locked = bool(random.getrandbits(1))
 
+
+        # create new port
+        port_1_name = str(random.randint(0, 50000))
+        port_1_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_1_description = net_generator.escape_quotes(net_generator.fake.paragraph())
+
+        # add existent port
+        port = net_generator.create_port()
+        port_2_id = relay.Node.to_global_id(str(port.node_type),
+                                            str(port.handle_id))
+        port_2_name = str(random.randint(0, 50000))
+        port_2_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_2_description = net_generator.escape_quotes(net_generator.fake.paragraph())
+
         query = '''
         mutation{{
           composite_firewall(input:{{
@@ -1569,6 +1587,21 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
               services_locked: {services_locked}
               rack_back: {rack_back}
             }}
+            create_has_port:[
+              {{
+                name: "{port_1_name}"
+                port_type: "{port_1_type}"
+                description: "{port_1_description}"
+              }}
+            ]
+            update_has_port:[
+              {{
+                id: "{port_2_id}"
+                name: "{port_2_name}"
+                port_type: "{port_2_type}"
+                description: "{port_2_description}"
+              }}
+            ]
           }}){{
             updated{{
               errors{{
@@ -1613,6 +1646,10 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 services_locked
                 services_checked
                 contract_number
+                ports{{
+                  id
+                  name
+                }}
                 location{{
                   id
                   name
@@ -1621,6 +1658,36 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+              }}
+            }}
+            has_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
               }}
             }}
           }}
@@ -1635,7 +1702,11 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             contract_number=contract_number, owner_id=owner_id,
             max_number_of_ports=max_number_of_ports, rack_units=rack_units,
             rack_position=rack_position, rack_back=str(rack_back).lower(),
-            services_locked=str(services_locked).lower())
+            services_locked=str(services_locked).lower(),
+            port_1_name=port_1_name, port_1_type=port_1_type,
+            port_1_description=port_1_description,
+            port_2_name=port_2_name, port_2_type=port_2_type,
+            port_2_description=port_2_description, port_2_id=port_2_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1677,6 +1748,34 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             *relay.Node.from_global_id(check_owner['id']),
             *relay.Node.from_global_id(owner_id),
         ))
+
+        # check ports data
+
+        # check port_1 data
+        created_checkport = result.data['composite_firewall']['has_port_created'][0]
+        created_errors = created_checkport['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        created_checkport = created_checkport['port']
+        port_1_id = created_checkport['id']
+
+        self.assertEqual(created_checkport['name'], port_1_name)
+        self.assertEqual(created_checkport['port_type']['value'], port_1_type)
+        self.assertEqual(created_checkport['description'], port_1_description)
+
+        # check port_2
+        update_checkport = result.data['composite_firewall']['has_port_updated'][0]
+        updated_errors = update_checkport['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        update_checkport = update_checkport['port']
+        self.assertEqual(update_checkport['name'], port_2_name)
+        self.assertEqual(update_checkport['port_type']['value'], port_2_type)
+        self.assertEqual(update_checkport['description'], port_2_description)
+
+        # check ports in router
+        self.assertEqual(updated_firewall['ports'][1]['id'], port_1_id)
+        self.assertEqual(updated_firewall['ports'][0]['id'], port_2_id)
 
         # delete owner submutation test
         query = '''

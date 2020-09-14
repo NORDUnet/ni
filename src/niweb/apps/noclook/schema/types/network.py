@@ -253,6 +253,8 @@ class Firewall(NIObjectType, PhysicalMixin):
     max_number_of_ports = NIIntField()
     services_locked = NIBooleanField()
     services_checked = NIBooleanField()
+    ports = NIListField(type_args=(lambda: Port,), rel_name='Has',
+                            rel_method='_outgoing')
 
     class NIMetaType:
         ni_type = 'Firewall'
