@@ -143,7 +143,7 @@ class CompositeFirewallMutation(CompositeMutation):
         graphql_type = Firewall
         main_mutation_f = NIFirewallMutationFactory
         context = sriutils.get_network_context()
-        include_metafields = ('dependents')
+        include_metafields = ('dependents', 'has')
         has_creation = False
 
 
