@@ -62,7 +62,7 @@ class Physical(PhysicalLogical):
     location = graphene.Field(lambda:Location)
     has = graphene.List(lambda:Physical)
     part_of = graphene.Field(lambda:Logical)
-    parent = graphene.List(lambda:Physical)
+    parent = graphene.List(lambda:PhysicalLogical)
     owner = graphene.Field(lambda:Relation)
 
 

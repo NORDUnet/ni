@@ -2618,6 +2618,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                   value
                 }
                 description
+                parent{
+                  id
+                  name
+                }
               }
             }
             subupdated{
@@ -2633,6 +2637,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                   value
                 }
                 description
+                parent{
+                  id
+                  name
+                }
               }
             }
             '''
