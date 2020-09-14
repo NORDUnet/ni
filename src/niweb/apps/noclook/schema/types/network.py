@@ -377,6 +377,18 @@ class OpticalPath(NIObjectType, LogicalMixin):
         context_method = sriutils.get_network_context
 
 
+## Locations
+class Site(NIObjectType, LocationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    site_type = NIChoiceField(dropdown_name="site_types", \
+        type_kwargs={ 'required': False })
+    country = NIChoiceField(dropdown_name="countries", \
+        type_kwargs={ 'required': False })
+    area = NIStringField()
+    longitude = NIIntField()
+    latitude = NIIntField()
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
