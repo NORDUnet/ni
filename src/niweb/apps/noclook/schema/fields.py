@@ -117,6 +117,19 @@ class NIIntField(NIBasicField):
         return -1
 
 
+class NIFloatField(NIBasicField):
+    '''
+    Int type
+    '''
+    def __init__(self, field_type=graphene.Float, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIFloatField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_default_value(self):
+        return 0.0
+
+
 class NIBooleanField(NIBasicField):
     '''
     Boolean type
