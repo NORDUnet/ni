@@ -462,6 +462,8 @@ class NOCRootQuery(NOCAutoQuery):
             OpticalFilter, OpticalLink, OpticalMultiplexSection, OpticalPath,
             ## Peering
             PeeringPartner, PeeringGroup,
+            ## Locations
+            Site,
             ## Other
             HostUser,
         ]

@@ -398,6 +398,11 @@ class Site(NIObjectType, LocationMixin):
     #rooms = NIListField(type_args=(lambda: Room,), rel_name='Has', rel_method='_outgoing')
     #equipments = NIListField(type_args=(lambda: Physical,), rel_name='Has', rel_method='_outgoing')
 
+    class NIMetaType:
+        ni_type = 'Site'
+        ni_metatype = NIMETA_LOCATION
+        context_method = sriutils.get_network_context
+
 
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
