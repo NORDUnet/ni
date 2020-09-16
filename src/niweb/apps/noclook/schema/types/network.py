@@ -386,9 +386,17 @@ class Site(NIObjectType, LocationMixin):
         type_kwargs={ 'required': False })
     country = NIChoiceField(dropdown_name="countries", \
         type_kwargs={ 'required': False })
+    country_code = NIStringField()
     area = NIStringField()
-    longitude = NIIntField()
-    latitude = NIIntField()
+    longitude = NIFloatField()
+    latitude = NIFloatField()
+    site_responsible = NISingleRelationField(field_type=SiteOwner, rel_name="Responsible_for", rel_method="_incoming")
+    owner_id = NIStringField()
+    owner_site_name = NIStringField()
+    url = NIStringField()
+    telenor_subscription_id = NIStringField()
+    #rooms = NIListField(type_args=(lambda: Room,), rel_name='Has', rel_method='_outgoing')
+    #equipments = NIListField(type_args=(lambda: Physical,), rel_name='Has', rel_method='_outgoing')
 
 
 ## Peering
