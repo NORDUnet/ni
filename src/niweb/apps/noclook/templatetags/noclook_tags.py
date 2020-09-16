@@ -46,7 +46,7 @@ def noclook_node_to_url(context, handle_id):
     if urls and handle_id in urls:
         return urls.get(handle_id)
     else:
-      return "%s/nodes/%d" % (settings.FORCE_SCRIPT_NAME, handle_id)
+      return "%s/nodes/%s" % (settings.FORCE_SCRIPT_NAME, handle_id)
 
 
 @register.simple_tag(takes_context=True)
