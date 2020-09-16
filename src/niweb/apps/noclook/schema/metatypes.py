@@ -299,5 +299,7 @@ class LocationMixin:
         helpers.set_has(user, location_node, has_id)
 
     @classmethod
-    def link_responsible_for(cls, user, location_nh, parent_nh):
+    def link_responsible_for(cls, user, location_nh, responsible_for_nh):
         location_node = location_nh.get_node()
+        responsible_for_id = responsible_for_nh.handle_id
+        helpers.set_responsible_for(user, location_node)
