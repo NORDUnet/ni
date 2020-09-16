@@ -39,7 +39,7 @@ class Neo4jHelpersTest(NeoTestCase):
         self.address_node = address.get_node()
 
     def test_delete_node_utf8(self):
-        nh = self.create_node(u'æøå-ftw', 'site')
+        nh = self.create_node(u'æøå-ftw', 'site', meta='Location')
         node = nh.get_node()
 
         self.assertEqual(u'æøå-ftw', nh.node_name)
