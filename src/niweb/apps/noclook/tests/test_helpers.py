@@ -32,6 +32,12 @@ class Neo4jHelpersTest(NeoTestCase):
         switch = self.create_node('switch1', 'switch', meta='Physical')
         self.switch_node = switch.get_node()
 
+        site = self.create_node('site1', 'site', meta='Location')
+        self.site_node = site.get_node()
+
+        address = self.create_node('address1', 'address', meta='Logical')
+        self.address_node = address.get_node()
+
     def test_delete_node_utf8(self):
         nh = self.create_node(u'æøå-ftw', 'site')
         node = nh.get_node()
@@ -164,6 +170,7 @@ class Neo4jHelpersTest(NeoTestCase):
         expected = '(Router1 ({a_id}))-[{r_id}:Has]->(Port1 ({b_id}))'.format(a_id=nh1.handle_id, r_id=relationship_id, b_id=nh2.handle_id)
         self.assertEqual(expected, out)
 
+
     def test_set_supports(self):
         self.assertEqual(self.group_node.get_relations(), {})
         self.assertEqual(self.switch_node.get_relations(), {})
@@ -178,6 +185,7 @@ class Neo4jHelpersTest(NeoTestCase):
         self.assertEqual(
             created._properties['handle_id'], self.switch_node.handle_id)
 
+
     def test_set_takes_responsibility(self):
         self.assertEqual(self.group_node.get_relations(), {})
         self.assertEqual(self.switch_node.get_relations(), {})
@@ -191,3 +199,18 @@ class Neo4jHelpersTest(NeoTestCase):
             relationship.end['handle_id'], self.switch_node.handle_id)
         self.assertEqual(
             created._properties['handle_id'], self.switch_node.handle_id)
+
+
+    def test_set_address(self):
+        self.assertEqual(self.site_node.get_relations(), {})
+        self.assertEqual(self.address_node.get_relations(), {})
+
+        site_addresses = self.site_node.get_has_address()
+        self.assertEqual(site_addresses, {})
+
+        relationship, created = helpers.set_has_address(
+            self.user, self.site_node, self.address_node.handle_id)
+
+        site_addresses = self.site_node.get_has_address()
+        self.assertEquals(site_addresses['Has_address'][0]['node'],
+                            self.address_node)
