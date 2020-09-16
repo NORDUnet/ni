@@ -68,8 +68,9 @@ class Physical(PhysicalLogical):
 
 class Location(NINode):
     parent = graphene.Field(lambda:Location)
-    located_in = graphene.Field(lambda:Physical)
-    has = graphene.Field(lambda:Physical)
+    located_in = graphene.List(lambda:Physical)
+    has = graphene.List(lambda:Physical)
+    responsible_for = graphene.Field(lambda:Relation)
 
 
 class MetaType(graphene.Enum):
@@ -268,9 +269,35 @@ class LocationMixin:
             info, self.get_node(), 'get_parent', 'Has')
 
     def resolve_located_in(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
+        return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_located_in', 'Located_in')
 
     def resolve_has(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
+        return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_has', 'Has')
+
+    def resolve_responsible_for(self, info, **kwargs):
+        return ResolverUtils.single_relation_resolver(
+            info, self.get_node(), 'responsible_for', 'Responsible_for')
+
+    @classmethod
+    def link_parent(cls, user, location_nh, parent_nh):
+        location_node = location_nh.get_node()
+        parent_handle_id = parent_nh.handle_id
+        helpers.set_parent_of(user, location_node, parent_handle_id)
+
+    @classmethod
+    def link_located_in(cls, user, location_nh, physical_nh):
+        physical_node = physical_nh.get_node()
+        location_handle_id = location_nh.handle_id
+        helpers.set_location(user, physical_node, location_handle_id)
+
+    @classmethod
+    def link_has(cls, user, location_nh, has_nh):
+        location_node = location_nh.get_node()
+        has_id = has_nh.handle_id
+        helpers.set_has(user, location_node, has_id)
+
+    @classmethod
+    def link_responsible_for(cls, user, location_nh, parent_nh):
+        location_node = location_nh.get_node()
