@@ -29,6 +29,14 @@ class FakeDataGenerator:
 
         self.user = get_user()
 
+    def add_community_context(self, nh):
+        com_ctx = sriutils.get_community_context()
+        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
+
+    def add_network_context(self, nh):
+        net_ctx = sriutils.get_network_context()
+        NodeHandleContext(nodehandle=nh, context=net_ctx).save()
+
     def escape_quotes(self, str_in):
         return str_in.replace("'", "`")
 
@@ -45,6 +53,8 @@ class FakeDataGenerator:
         person_name = '{} {}'.format(self.first_name(), self.last_name())
         company_name = self.company_name()
         name = random.choice((person_name, company_name))
+
+        name = self.escape_quotes(name)
 
         return name
 
@@ -87,11 +97,35 @@ class FakeDataGenerator:
         return nh
 
 
-class CommunityFakeDataGenerator(FakeDataGenerator):
-    def add_community_context(self, nh):
-        com_ctx = sriutils.get_community_context()
-        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
+    def create_address(self, name=None, context_f=None):
+        # create object
+        if not name:
+            name = self.rand_person_or_company_name()
 
+        address = self.get_or_create_node(
+            name, 'Address', META_TYPES[1]) # Logical
+
+        if not context_f:
+            context_f = self.add_community_context
+
+        # add context
+        context_f(address)
+
+        data = {
+            'phone': self.fake.phone_number(),
+            'street': self.fake.street_address(),
+            'postal_code': self.fake.postcode(),
+            'postal_area': self.fake.country_code(),
+        }
+
+        for key, value in data.items():
+            value = self.escape_quotes(value)
+            address.get_node().add_property(key, value)
+
+        return address
+
+
+class CommunityFakeDataGenerator(FakeDataGenerator):
     def create_fake_contact(self):
         salutations = ['Ms.', 'Mr.', 'Dr.', 'Mrs.', 'Mx.']
         contact_types_drop = DropModel.objects.get(name='contact_type')
@@ -174,13 +208,21 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
         )
 
     def create_organization(self, name=None):
-        return self.create_entity(
+        organization = self.create_entity(
             data_f=self.create_fake_organization,
             type_name='Organization',
             metatype=META_TYPES[2], # Relation
             name_alias='account_name',
             name=name,
         )
+
+        num_address = random.randint(1, 3)
+
+        for i in range(num_address):
+            address = self.create_address()
+            helpers.add_address_organization(self.user, address, organization.handle_id)
+
+        return organization
 
 
 class NetworkFakeDataGenerator(FakeDataGenerator):
@@ -201,10 +243,6 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             'OpticalPath': self.create_optical_path,
             # 'Service': self.create_service
         }
-
-    def add_network_context(self, nh):
-        net_ctx = sriutils.get_network_context()
-        NodeHandleContext(nodehandle=nh, context=net_ctx).save()
 
     def get_port_name(self):
         return str(random.randint(0, 50000))
@@ -796,6 +834,26 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             rel_maker.add_dependency(self.user, optical_path, dependency)
 
         return optical_path
+
+
+    def create_site(self, name=None):
+        # create object
+        if not name:
+            name = self.company_name()
+
+        site = self.get_or_create_node(
+            name, 'Site', META_TYPES[3]) # Location
+
+        # add context
+        self.add_network_context(site)
+
+        num_address = random.randint(1, 3)
+
+        for i in range(num_address):
+            address = self.create_address(context_f=self.add_network_context)
+            helpers.set_has_address(self.user, site.get_node(), address.handle_id)
+
+        return site
 
 
 class DataRelationMaker:
