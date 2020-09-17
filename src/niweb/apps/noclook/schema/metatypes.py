@@ -69,7 +69,7 @@ class Physical(PhysicalLogical):
 class Location(NINode):
     parent = graphene.Field(lambda:Location)
     located_in = graphene.List(lambda:Physical)
-    has = graphene.List(lambda:Physical)
+    has = graphene.List(lambda:Location)
     responsible_for = graphene.Field(lambda:Relation)
 
 
