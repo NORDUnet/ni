@@ -302,10 +302,11 @@ class CompositeSiteMutation(CompositeMutation):
 
     @classmethod
     def link_slave_to_master(cls, user, master_nh, slave_nh):
-        helpers.set_has_address(user, slave_nh.get_node(), master_nh.handle_id)
+        helpers.set_has_address(user, master_nh.get_node(), slave_nh.handle_id)
 
     class NIMetaClass:
         graphql_type = Site
+        graphql_subtype = Address
         main_mutation_f = NISiteMutationFactory
         secondary_mutation_f = NIAddressMutationFactory
         context = sriutils.get_network_context()
