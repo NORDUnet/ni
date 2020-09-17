@@ -893,8 +893,8 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         data = {
             'country_code': random.choice(country_codes),
             'country': random.choice(countries),
-            'longitude': random.choice(countries),
-            'latitude': random.choice(countries),
+            'longitude': self.fake.longitude(),
+            'latitude': self.fake.latitude(),
             'area': self.random_county(),
             'owner_id': self.fake.license_plate(),
             'owner_site_name': self.fake.company(),
