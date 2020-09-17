@@ -278,13 +278,13 @@ class LocationMixin:
 
     def resolve_responsible_for(self, info, **kwargs):
         return ResolverUtils.single_relation_resolver(
-            info, self.get_node(), 'responsible_for', 'Responsible_for')
+            info, self.get_node(), '_incoming', 'Responsible_for')
 
     @classmethod
     def link_parent(cls, user, location_nh, parent_nh):
-        location_node = location_nh.get_node()
-        parent_handle_id = parent_nh.handle_id
-        helpers.set_parent_of(user, location_node, parent_handle_id)
+        parent_node = parent_nh.get_node()
+        location_handle_id = location_nh.handle_id
+        helpers.set_has(user, parent_node, location_handle_id)
 
     @classmethod
     def link_located_in(cls, user, location_nh, physical_nh):
@@ -302,4 +302,4 @@ class LocationMixin:
     def link_responsible_for(cls, user, location_nh, responsible_for_nh):
         location_node = location_nh.get_node()
         responsible_for_id = responsible_for_nh.handle_id
-        helpers.set_responsible_for(user, location_node)
+        helpers.set_responsible_for(user, location_node, responsible_for_id)

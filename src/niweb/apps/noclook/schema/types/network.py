@@ -4,7 +4,7 @@ __author__ = 'ffuentes'
 from apps.noclook.schema.core import *
 from apps.noclook.models import SwitchType as SwitchTypeModel
 from apps.noclook.schema.utils import sunet_forms_enabled
-from .community import Group
+from .community import Group, Address
 
 ## Organizations
 class Customer(NIObjectType, RelationMixin):
@@ -395,6 +395,7 @@ class Site(NIObjectType, LocationMixin):
     owner_site_name = NIStringField()
     url = NIStringField()
     telenor_subscription_id = NIStringField()
+    addresses = NIListField(type_args=(lambda: Address,), rel_name='Has_address', rel_method='_outgoing')
     #rooms = NIListField(type_args=(lambda: Room,), rel_name='Has', rel_method='_outgoing')
     #equipments = NIListField(type_args=(lambda: Physical,), rel_name='Has', rel_method='_outgoing')
 
@@ -459,4 +460,7 @@ network_type_resolver = {
     # Peering
     'Peering Partner': PeeringPartner,
     'Peering Group': PeeringGroup,
+
+    # Location
+    'Site': Site,
 }
