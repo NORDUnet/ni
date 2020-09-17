@@ -2518,6 +2518,8 @@ class NIMutationFactory():
         update_form     = getattr(ni_metaclass, 'update_form', None)
         request_path    = getattr(ni_metaclass, 'request_path', None)
         graphql_type    = getattr(ni_metaclass, 'graphql_type', NodeHandler)
+        form_include    = getattr(ni_metaclass, 'form_include', None)
+        form_exclude    = getattr(ni_metaclass, 'form_exclude', None)
         create_include  = getattr(ni_metaclass, 'create_include', None)
         create_exclude  = getattr(ni_metaclass, 'create_exclude', None)
         update_include  = getattr(ni_metaclass, 'update_include', None)
@@ -2547,6 +2549,19 @@ class NIMutationFactory():
         if form:
             create_form = form
             update_form = form
+
+        # include / exclude
+        if not create_include and form_include:
+            create_include = form_include
+
+        if not update_include and form_include:
+            update_include = form_include
+
+        if not create_exclude and form_exclude:
+            create_exclude = form_exclude
+
+        if not update_exclude and form_exclude:
+            update_exclude = form_exclude
 
         # create mutations
         mutation_name_cc = node_type.title().replace(' ', ''  )
