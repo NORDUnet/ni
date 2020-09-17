@@ -137,6 +137,12 @@ class NOCRootMutation(graphene.ObjectType):
     delete_peeringGroup = NIPeeringGroupMutationFactory.get_delete_mutation().Field()
     composite_peeringGroup = CompositePeeringGroupMutation.Field()
 
+    ## Location
+    create_site = NISiteMutationFactory.get_create_mutation().Field()
+    update_site = NISiteMutationFactory.get_update_mutation().Field()
+    delete_site = NISiteMutationFactory.get_delete_mutation().Field()
+    composite_site = CompositeSiteMutation.Field()
+
     ## Common mutations
     create_comment = CreateComment.Field()
     update_comment = UpdateComment.Field()

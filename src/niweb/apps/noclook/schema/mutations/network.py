@@ -619,3 +619,21 @@ class NIPeeringGroupMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+## Location
+class NISiteMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = EditSiteForm
+        request_path = '/'
+        graphql_type = Site
+        unique_node  = True
+        relations_processors = {
+            'relationship_responsible_for': get_unique_relation_processor(
+                'Provides',
+                helpers.set_responsible_for
+            ),
+        }
+
+    class Meta:
+        abstract = False

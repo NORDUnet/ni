@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from ..network import *
+from ..community import *
 
 
 ## Equipment and cables
@@ -292,3 +293,19 @@ class CompositePeeringGroupMutation(CompositeMutation):
         context = sriutils.get_network_context()
         include_metafields = ('dependencies')
         has_creation = False
+
+
+## Location
+class CompositeSiteMutation(CompositeMutation):
+    class Input:
+        pass
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh):
+        helpers.set_has_address(user, slave_nh.get_node(), master_nh.handle_id)
+
+    class NIMetaClass:
+        graphql_type = Site
+        main_mutation_f = NISiteMutationFactory
+        secondary_mutation_f = NIAddressMutationFactory
+        context = sriutils.get_network_context()
