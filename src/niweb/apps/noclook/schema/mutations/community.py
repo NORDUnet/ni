@@ -119,6 +119,7 @@ class NIAddressMutationFactory(NIMutationFactory):
             'organization': process_has_address,
         }
         property_update = ['name', 'phone', 'street', 'postal_code', 'postal_area']
+        form_exclude = ('organization')
 
     class Meta:
         abstract = False
