@@ -384,9 +384,9 @@ class Site(NIObjectType, LocationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     site_type = NIChoiceField(dropdown_name="site_types", \
         type_kwargs={ 'required': False })
-    country = NIChoiceField(dropdown_name="countries", \
+    country = NIStringField()
+    country_code = NIChoiceField(dropdown_name="countries", \
         type_kwargs={ 'required': False })
-    country_code = NIStringField()
     area = NIStringField()
     longitude = NIFloatField()
     latitude = NIFloatField()

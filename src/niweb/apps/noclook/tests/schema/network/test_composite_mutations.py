@@ -5053,3 +5053,494 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(check_host1['name'], host_name)
         self.assertEqual(check_host1['description'], host_description)
         self.assertEqual(check_host1['operational_state']['value'], host_opstate)
+
+
+class SiteTest(Neo4jGraphQLNetworkTest):
+    def test_site(self):
+        data_generator = NetworkFakeDataGenerator()
+
+        # create responsible for
+        site_owner = data_generator.create_site_owner()
+        responsible_for_id = relay.Node.to_global_id(str(site_owner.node_type),
+                                            str(site_owner.handle_id))
+
+        # create a parent site
+        parent_site = data_generator.create_site()
+        parent_site_id = relay.Node.to_global_id(str(parent_site.node_type),
+                                            str(parent_site.handle_id))
+        parent_site_name = "Parent Site"
+        parent_site_country = parent_site.get_node().data.get("country")
+        parent_site_type = parent_site.get_node().data.get("site_type")
+        parent_site_type = '' if not parent_site_type else parent_site_type
+        parent_site_area = parent_site.get_node().data.get("area")
+        parent_site_longitude = parent_site.get_node().data.get("longitude")
+        parent_site_latitude = parent_site.get_node().data.get("latitude")
+        parent_site_owner_id = parent_site.get_node().data.get("owner_id")
+        parent_site_owner_site_name = parent_site.get_node().data.get("owner_site_name")
+        parent_site_url = parent_site.get_node().data.get("url")
+        parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
+
+        # create has site
+        has_site = data_generator.create_site()
+        has_site_name = "Sub site"
+        has_site_country = has_site.get_node().data.get("country")
+        has_site_type = has_site.get_node().data.get("site_type")
+        has_site_type = '' if not parent_site_type else parent_site_type
+        has_site_area = has_site.get_node().data.get("area")
+        has_site_longitude = has_site.get_node().data.get("longitude")
+        has_site_latitude = has_site.get_node().data.get("latitude")
+        has_site_owner_id = has_site.get_node().data.get("owner_id")
+        has_site_owner_site_name = has_site.get_node().data.get("owner_site_name")
+        has_site_url = has_site.get_node().data.get("url")
+        has_site_telenor_subscription_id = has_site.get_node().data.get("telenor_subscription_id")
+
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_id = relay.Node.to_global_id(str(switch.node_type),
+                                            str(switch.handle_id))
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+
+        # generate test data, we'll remove these later
+        # create a site to use its data
+        a_site = data_generator.create_site()
+        site_name = "Test Site"
+        site_country = a_site.get_node().data.get("country")
+        site_type = a_site.get_node().data.get("site_type")
+        site_type = '' if not site_type else site_type
+        site_area = a_site.get_node().data.get("area")
+        site_longitude = a_site.get_node().data.get("longitude")
+        site_latitude = a_site.get_node().data.get("latitude")
+        site_owner_id = a_site.get_node().data.get("owner_id")
+        site_owner_site_name = a_site.get_node().data.get("owner_site_name")
+        site_url = a_site.get_node().data.get("url")
+        site_telenor_subscription_id = a_site.get_node().data.get("telenor_subscription_id")
+
+        # create two address
+        address1 = data_generator.create_address()
+        address2 = data_generator.create_address()
+
+        address1_name = address1.get_node().data.get("name")
+        address1_phone = address1.get_node().data.get("phone")
+        address1_street = address1.get_node().data.get("street")\
+                            .replace('\n', ' ')
+        address1_floor = address1.get_node().data.get("floor")\
+                            .replace('\n', ' ')
+        address1_room = address1.get_node().data.get("room")
+        address1_postal_code = address1.get_node().data.get("postal_code")
+        address1_postal_area = address1.get_node().data.get("postal_area")
+
+        address2_name = address2.get_node().data.get("name")
+        address2_phone = address2.get_node().data.get("phone")
+        address2_street = address2.get_node().data.get("street")\
+                            .replace('\n', ' ')
+        address2_floor = address2.get_node().data.get("floor")\
+                            .replace('\n', ' ')
+        address2_room = address2.get_node().data.get("room")
+        address2_postal_code = address2.get_node().data.get("postal_code")
+        address2_postal_area = address2.get_node().data.get("postal_area")
+
+        query = """
+        mutation{{
+          composite_site(input:{{
+            create_input:{{
+              name: "{site_name}"
+              country: "{site_country}"
+              site_type: "{site_type}"
+              area: "{site_area}"
+              longitude: {site_longitude}
+              latitude: {site_latitude}
+              owner_id: "{site_owner_id}"
+              owner_site_name: "{site_owner_site_name}"
+              url: "{site_url}"
+              telenor_subscription_id: "{site_telenor_subscription_id}"
+              relationship_responsible_for: "{responsible_for_id}"
+            }}
+            create_subinputs:[
+              {{
+                name: "{address1_name}"
+                phone: "{address1_phone}"
+                street: "{address1_street}"
+                floor: "{address1_floor}"
+                room: "{address1_room}"
+                postal_code: "{address1_postal_code}"
+                postal_area: "{address1_postal_area}"
+              }}
+              {{
+                name: "{address2_name}"
+                phone: "{address2_phone}"
+                street: "{address2_street}"
+                floor: "{address2_floor}"
+                room: "{address2_room}"
+                postal_code: "{address2_postal_code}"
+                postal_area: "{address2_postal_area}"
+              }}
+            ]
+            update_parent_site: {{
+              id: "{parent_site_id}"
+              name: "{parent_site_name}"
+              country: "{parent_site_country}"
+              site_type: "{parent_site_type}"
+              area: "{parent_site_area}"
+              longitude: {parent_site_longitude}
+              latitude: {parent_site_latitude}
+              owner_id: "{parent_site_owner_id}"
+              owner_site_name: "{parent_site_owner_site_name}"
+              url: "{parent_site_url}"
+              telenor_subscription_id: "{parent_site_telenor_subscription_id}"
+              relationship_responsible_for: "{responsible_for_id}"
+            }}
+            update_located_in_firewall:[
+              {{
+                id: "{firewall_id}"
+                name: "{firewall_name}"
+                operational_state: "{firewall_opstate}"
+              }}
+            ]
+            update_located_in_switch:[
+              {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                operational_state: "{switch_opstate}"
+              }}
+            ]
+            create_has_site:[ # TODO add has_room instead
+              {{
+                name: "{has_site_name}"
+                country: "{has_site_country}"
+                site_type: "{has_site_type}"
+                area: "{has_site_area}"
+                longitude: {has_site_longitude}
+                latitude: {has_site_latitude}
+                owner_id: "{has_site_owner_id}"
+                owner_site_name: "{has_site_owner_site_name}"
+                url: "{has_site_url}"
+                telenor_subscription_id: "{has_site_telenor_subscription_id}"
+                relationship_responsible_for: "{responsible_for_id}"
+              }}
+            ]
+          }}){{
+            created{{
+              errors{{
+                field
+                messages
+              }}
+              site{{
+                id
+                name
+                country_code{{
+                  name
+                  value
+                }}
+                country
+                site_type{{
+                  name
+                  value
+                }}
+                area
+                latitude
+                longitude
+                owner_id
+                owner_site_name
+                url
+                telenor_subscription_id
+                responsible_for{{
+                  __typename
+                  id
+                  name
+                }}
+                addresses{{
+                  id
+                  name
+                  phone
+                  street
+                  floor
+                  room
+                  postal_code
+                  postal_area
+                }}
+                parent{{
+                  __typename
+                  ...on Site{{
+                    id
+                    name
+                    country_code{{
+                      name
+                      value
+                    }}
+                    country
+                    site_type{{
+                      name
+                      value
+                    }}
+                    area
+                    latitude
+                    longitude
+                    owner_id
+                    owner_site_name
+                    url
+                    telenor_subscription_id
+                    responsible_for{{
+                      __typename
+                      id
+                      name
+                    }}
+                  }}
+                }}
+                located_in{{
+                  __typename
+                  id
+                  name
+                  ...on Firewall{{
+                    operational_state{{
+                      value
+                    }}
+                    ip_addresses
+                  }}
+                  ...on Switch{{
+                    operational_state{{
+                      value
+                    }}
+                    ip_addresses
+                  }}
+                }}
+                has{{
+                  __typename
+                  id
+                  name
+                  ...on Site{{
+                    country_code{{
+                      name
+                      value
+                    }}
+                    country
+                    latitude
+                    longitude
+                  }}
+                }}
+              }}
+            }}
+            subcreated{{
+              errors{{
+                field
+                messages
+              }}
+              address{{
+                id
+                name
+                phone
+                street
+                floor
+                room
+                postal_code
+                postal_area
+              }}
+            }}
+            parent_site_updated{{
+              errors{{
+                field
+                messages
+              }}
+              site{{
+                id
+                name
+                country_code{{
+                  name
+                  value
+                }}
+                country
+                latitude
+                longitude
+
+              }}
+            }}
+            located_in_firewall_updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+            located_in_switch_updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+            has_site_created{{
+              errors{{
+                field
+                messages
+              }}
+              site{{
+                id
+                name
+                country_code{{
+                  name
+                  value
+                }}
+                country
+                latitude
+                longitude
+              }}
+            }}
+          }}
+        }}
+        """.format(
+            site_name=site_name, site_country=site_country,
+            site_type=site_type, site_area=site_area,
+            site_longitude=site_longitude, site_latitude=site_latitude,
+            site_owner_id=site_owner_id,
+            site_owner_site_name=site_owner_site_name,
+            site_url=site_url,
+            site_telenor_subscription_id=site_telenor_subscription_id,
+            responsible_for_id=responsible_for_id,
+            address1_name=address1_name, address1_phone=address1_phone,
+            address1_street=address1_street, address1_floor=address1_floor,
+            address1_room=address1_room,
+            address1_postal_code=address1_postal_code,
+            address1_postal_area=address1_postal_area,
+            address2_name=address2_name, address2_phone=address2_phone,
+            address2_street=address2_street, address2_floor=address2_floor,
+            address2_room=address2_room,
+            address2_postal_code=address2_postal_code,
+            address2_postal_area=address2_postal_area,
+            parent_site_id=parent_site_id,
+            parent_site_name=parent_site_name, parent_site_country=parent_site_country,
+            parent_site_type=parent_site_type, parent_site_area=parent_site_area,
+            parent_site_longitude=parent_site_longitude, parent_site_latitude=parent_site_latitude,
+            parent_site_owner_id=parent_site_owner_id,
+            parent_site_owner_site_name=parent_site_owner_site_name,
+            parent_site_url=parent_site_url,
+            parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
+            has_site_name=has_site_name, has_site_country=has_site_country,
+            has_site_type=has_site_type, has_site_area=has_site_area,
+            has_site_longitude=has_site_longitude, has_site_latitude=has_site_latitude,
+            has_site_owner_id=has_site_owner_id,
+            has_site_owner_site_name=has_site_owner_site_name,
+            has_site_url=has_site_url,
+            has_site_telenor_subscription_id=has_site_telenor_subscription_id,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+        )
+
+        # delete generated nodes
+        a_site.delete()
+        address1.delete()
+        address2.delete()
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_site']['created']['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'subcreated': None,
+            'parent_site_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+            'has_site_created': None,
+        }
+
+        for k,v in submutations.items():
+            if result.data['composite_site'][k]:
+                item = None
+
+                try:
+                    result.data['composite_site'][k][0]
+                    for item in result.data['composite_site'][k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = result.data['composite_site'][k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+
+        # check site data
+        check_site = result.data['composite_site']['created']['site']
+        site_id = check_site['id']
+
+        self.assertEquals(check_site['name'], site_name)
+        self.assertEquals(check_site['country_code']['name'], site_country)
+        if site_type:
+            self.assertEquals(check_site['site_type']['value'], site_type)
+        self.assertEquals(check_site['area'], site_area)
+        self.assertEquals(check_site['latitude'], site_latitude)
+        self.assertEquals(check_site['longitude'], site_longitude)
+        self.assertEquals(check_site['owner_id'], site_owner_id)
+        self.assertEquals(check_site['owner_site_name'], site_owner_site_name)
+        self.assertEquals(check_site['url'], site_url)
+        self.assertEquals(check_site['telenor_subscription_id'], \
+            site_telenor_subscription_id)
+
+        # check address
+        check_address1 = result.data['composite_site']['subcreated'][0]['address']
+        address1_id = check_address1['id']
+
+        self.assertEquals(check_address1['name'], address1_name)
+        self.assertEquals(check_address1['phone'], address1_phone)
+        self.assertEquals(check_address1['street'], address1_street)
+        self.assertEquals(check_address1['floor'], address1_floor)
+        self.assertEquals(check_address1['room'], address1_room)
+        self.assertEquals(check_address1['postal_code'], address1_postal_code)
+        self.assertEquals(check_address1['postal_area'], address1_postal_area)
+
+        check_address2 = result.data['composite_site']['subcreated'][1]['address']
+        address2_id = check_address2['id']
+
+        self.assertEquals(check_address2['name'], address2_name)
+        self.assertEquals(check_address2['phone'], address2_phone)
+        self.assertEquals(check_address2['street'], address2_street)
+        self.assertEquals(check_address2['floor'], address2_floor)
+        self.assertEquals(check_address2['room'], address2_room)
+        self.assertEquals(check_address2['postal_code'], address2_postal_code)
+        self.assertEquals(check_address2['postal_area'], address2_postal_area)
+
+        # check parent site data
+        '''check_parent_site = result.data['composite_site']\
+                                ['parent_site_updated']['site']
+        import pdb; pdb.set_trace()
+
+        self.assertEquals(check_parent_site['id'], parent_site_id)
+        self.assertEquals(check_parent_site['name'], parent_site_name)
+        self.assertEquals(check_parent_site['country_code']['name'], parent_site_country)
+        if parent_site_type:
+            self.assertEquals(check_parent_site['site_type']['value'], parent_site_type)
+        self.assertEquals(check_parent_site['area'], parent_site_area)
+        self.assertEquals(check_parent_site['latitude'], parent_site_latitude)
+        self.assertEquals(check_parent_site['longitude'], parent_site_longitude)
+        self.assertEquals(check_parent_site['owner_id'], parent_site_owner_id)
+        self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
+        self.assertEquals(check_parent_site['url'], parent_site_url)
+        self.assertEquals(check_parent_site['telenor_subscription_id'], \
+            parent_site_telenor_subscription_id)'''
+
+        # check firewall
+        # check switch
+        # check has site
