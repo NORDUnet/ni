@@ -15,8 +15,16 @@ from norduniclient import META_TYPES
 
 import apps.noclook.vakt.utils as sriutils
 import random
+import string
 
 class FakeDataGenerator:
+    counties = [
+        'Blekinge', 'Dalarna', 'Gotland', 'Gävleborg', 'Halland', 'Jämtland',
+        'Jönköping', 'Kalmar', 'Kronoberg', 'Norrbotten', 'Skåne', 'Halland',
+        'Västra Götaland', 'Värmland', 'Örebro', 'Västmanland', 'Dalarna',
+        'Gävleborg', 'Västernorrland', 'Jämtland,'
+    ]
+
     def __init__(self, seed=None):
         locales = OrderedDict([
             ('en_GB', 1),
@@ -29,8 +37,23 @@ class FakeDataGenerator:
 
         self.user = get_user()
 
+    def add_community_context(self, nh):
+        com_ctx = sriutils.get_community_context()
+        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
+
+    def add_network_context(self, nh):
+        net_ctx = sriutils.get_network_context()
+        NodeHandleContext(nodehandle=nh, context=net_ctx).save()
+
     def escape_quotes(self, str_in):
-        return str_in.replace("'", "`")
+        out = str_in
+
+        try:
+            out = str_in.replace("'", "`")
+        except AttributeError:
+            pass
+
+        return out
 
     def company_name(self):
         return self.escape_quotes( self.fake.company() )
@@ -45,6 +68,8 @@ class FakeDataGenerator:
         person_name = '{} {}'.format(self.first_name(), self.last_name())
         company_name = self.company_name()
         name = random.choice((person_name, company_name))
+
+        name = self.escape_quotes(name)
 
         return name
 
@@ -87,11 +112,41 @@ class FakeDataGenerator:
         return nh
 
 
-class CommunityFakeDataGenerator(FakeDataGenerator):
-    def add_community_context(self, nh):
-        com_ctx = sriutils.get_community_context()
-        NodeHandleContext(nodehandle=nh, context=com_ctx).save()
+    def create_address(self, name=None, context_f=None):
+        # create object
+        if not name:
+            name = self.rand_person_or_company_name()
 
+        address = self.get_or_create_node(
+            name, 'Address', META_TYPES[1]) # Logical
+
+        if not context_f:
+            context_f = self.add_community_context
+
+        # add context
+        context_f(address)
+
+        data = {
+            'phone': self.fake.phone_number(),
+            'street': self.fake.street_address(),
+            'floor': str(random.randint(1,12)),
+            'room': '{}{}'.format(random.randint(1,20), \
+                                    random.choice(string.ascii_letters).upper()),
+            'postal_code': self.fake.postcode(),
+            'postal_area': self.fake.country_code(),
+        }
+
+        for key, value in data.items():
+            value = self.escape_quotes(value)
+            address.get_node().add_property(key, value)
+
+        return address
+
+    def random_county(self):
+        return random.choice(self.counties)
+
+
+class CommunityFakeDataGenerator(FakeDataGenerator):
     def create_fake_contact(self):
         salutations = ['Ms.', 'Mr.', 'Dr.', 'Mrs.', 'Mx.']
         contact_types_drop = DropModel.objects.get(name='contact_type')
@@ -174,13 +229,21 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
         )
 
     def create_organization(self, name=None):
-        return self.create_entity(
+        organization = self.create_entity(
             data_f=self.create_fake_organization,
             type_name='Organization',
             metatype=META_TYPES[2], # Relation
             name_alias='account_name',
             name=name,
         )
+
+        num_address = random.randint(1, 3)
+
+        for i in range(num_address):
+            address = self.create_address()
+            helpers.add_address_organization(self.user, address, organization.handle_id)
+
+        return organization
 
 
 class NetworkFakeDataGenerator(FakeDataGenerator):
@@ -201,10 +264,6 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             'OpticalPath': self.create_optical_path,
             # 'Service': self.create_service
         }
-
-    def add_network_context(self, nh):
-        net_ctx = sriutils.get_network_context()
-        NodeHandleContext(nodehandle=nh, context=net_ctx).save()
 
     def get_port_name(self):
         return str(random.randint(0, 50000))
@@ -234,6 +293,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             customer.get_node().add_property(key, value)
 
         return customer
@@ -256,6 +316,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             enduser.get_node().add_property(key, value)
 
         return enduser
@@ -273,6 +334,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             peering_partner.get_node().add_property(key, value)
 
         # add context
@@ -321,6 +383,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             provider.get_node().add_property(key, value)
 
         return provider
@@ -342,6 +405,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             siteowner.get_node().add_property(key, value)
 
         return siteowner
@@ -369,6 +433,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             port.get_node().add_property(key, value)
 
         return port
@@ -431,6 +496,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             cable.get_node().add_property(key, value)
 
         # add relationship to provider
@@ -490,6 +556,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             host.get_node().add_property(key, value)
 
         return host
@@ -519,6 +586,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             router.get_node().add_property(key, value)
 
         return router
@@ -536,6 +604,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             switch.get_node().add_property(key, value)
 
         return switch
@@ -553,6 +622,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             firewall.get_node().add_property(key, value)
 
         return firewall
@@ -575,6 +645,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             hostuser.get_node().add_property(key, value)
 
         return hostuser
@@ -604,6 +675,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             onode.get_node().add_property(key, value)
 
         return onode
@@ -633,6 +705,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             odf.get_node().add_property(key, value)
 
         return odf
@@ -675,6 +748,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             optical_link.get_node().add_property(key, value)
 
         helpers.set_provider(self.user,
@@ -726,6 +800,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             optical_multisection.get_node().add_property(key, value)
 
         helpers.set_provider(self.user,
@@ -780,6 +855,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         }
 
         for key, value in data.items():
+            value = self.escape_quotes(value)
             optical_path.get_node().add_property(key, value)
 
         helpers.set_provider(self.user,
@@ -796,6 +872,57 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             rel_maker.add_dependency(self.user, optical_path, dependency)
 
         return optical_path
+
+
+    def create_site(self, name=None):
+        # create object
+        if not name:
+            name = self.company_name()
+
+        site = self.get_or_create_node(
+            name, 'Site', META_TYPES[3]) # Location
+
+        # add context
+        self.add_network_context(site)
+
+        # choices
+        country_codes = self.get_dropdown_keys('countries')
+        countries = [ x[1] for x in DropModel.get('countries').as_choices()[1:] ]
+        site_types = self.get_dropdown_keys('site_types')
+
+        data = {
+            'country_code': random.choice(country_codes),
+            'country': random.choice(countries),
+            'longitude': self.fake.longitude(),
+            'latitude': self.fake.latitude(),
+            'area': self.random_county(),
+            'owner_id': self.fake.license_plate(),
+            'owner_site_name': self.fake.company(),
+            'url': self.fake.url(),
+            'telenor_subscription_id': self.fake.license_plate(),
+        }
+
+        # add site type
+        if site_types:
+            data['site_type'] = random.choice(site_types)
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                site.get_node().add_property(key, value)
+
+        # add address
+        num_address = random.randint(1, 3)
+
+        for i in range(num_address):
+            address = self.create_address(context_f=self.add_network_context)
+            helpers.set_has_address(self.user, site.get_node(), address.handle_id)
+
+        # add site owner
+        site_owner = self.create_site_owner()
+        helpers.set_responsible_for(self.user, site.get_node(), site_owner.handle_id)
+
+        return site
 
 
 class DataRelationMaker:

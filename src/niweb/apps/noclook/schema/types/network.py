@@ -4,7 +4,7 @@ __author__ = 'ffuentes'
 from apps.noclook.schema.core import *
 from apps.noclook.models import SwitchType as SwitchTypeModel
 from apps.noclook.schema.utils import sunet_forms_enabled
-from .community import Group
+from .community import Group, Address
 
 ## Organizations
 class Customer(NIObjectType, RelationMixin):
@@ -379,6 +379,32 @@ class OpticalPath(NIObjectType, LogicalMixin):
         context_method = sriutils.get_network_context
 
 
+## Locations
+class Site(NIObjectType, LocationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    site_type = NIChoiceField(dropdown_name="site_types", \
+        type_kwargs={ 'required': False })
+    country = NIStringField()
+    country_code = NIChoiceField(dropdown_name="countries", \
+        type_kwargs={ 'required': False })
+    area = NIStringField()
+    longitude = NIFloatField()
+    latitude = NIFloatField()
+    site_responsible = NISingleRelationField(field_type=SiteOwner, rel_name="Responsible_for", rel_method="_incoming")
+    owner_id = NIStringField()
+    owner_site_name = NIStringField()
+    url = NIStringField()
+    telenor_subscription_id = NIStringField()
+    addresses = NIListField(type_args=(lambda: Address,), rel_name='Has_address', rel_method='_outgoing')
+    #rooms = NIListField(type_args=(lambda: Room,), rel_name='Has', rel_method='_outgoing')
+    #equipments = NIListField(type_args=(lambda: Physical,), rel_name='Has', rel_method='_outgoing')
+
+    class NIMetaType:
+        ni_type = 'Site'
+        ni_metatype = NIMETA_LOCATION
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -434,4 +460,7 @@ network_type_resolver = {
     # Peering
     'Peering Partner': PeeringPartner,
     'Peering Group': PeeringGroup,
+
+    # Location
+    'Site': Site,
 }

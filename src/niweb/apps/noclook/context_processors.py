@@ -13,3 +13,9 @@ def brand(request):
             'logo_subtext': settings.LOGO_SUBTEXT,
         }
     }
+
+
+def url_script_name(request):
+    return {
+        'script_name': settings.FORCE_SCRIPT_NAME,
+    }

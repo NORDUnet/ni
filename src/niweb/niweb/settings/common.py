@@ -180,6 +180,7 @@ TEMPLATES = [
                 'dynamic_preferences.processors.global_preferences',
                 'apps.noclook.announcements.page_flash',
                 'apps.noclook.context_processors.brand',
+                'apps.noclook.context_processors.url_script_name',
             ]
         }
     }

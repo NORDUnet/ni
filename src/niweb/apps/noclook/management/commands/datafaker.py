@@ -13,18 +13,28 @@ logger = logging.getLogger('noclook.management.datafaker')
 class Command(BaseCommand):
     help = 'Create fake data for the Network module'
     generated_types = [
-        'Customer', 'End User', 'Site Owner', 'Provider', 'Peering Group',
-        'Peering Partner', 'Cable', 'Port', 'Host', 'Router', 'Switch',
-        'Firewall', 'Host User', 'Optical Node', 'ODF', 'Optical Link',
-        'Optical Multiplex Section', 'Optical Path']
+        # Organizations
+        'Customer', 'End User', 'Site Owner', 'Provider',
+        # Peering
+        'Peering Group', 'Peering Partner',
+        # Equipment and cables
+        'Cable', 'Port', 'Host', 'Router', 'Switch',
+        'Firewall', 'Host User', 'Optical Node', 'ODF',
+        # Optical Layers
+        'Optical Link', 'Optical Multiplex Section', 'Optical Path',
+        # Locations
+        'Site'
+    ]
 
     option_organizations = 'organizations'
     option_equipment = 'equipmentcables'
     option_peering = 'peering'
     option_optical = 'optical'
+    option_location = 'location'
     option_deleteall = 'deleteall'
     option_progress = 'progress'
     cmd_name = 'datafaker'
+
 
     def add_arguments(self, parser):
         parser.add_argument("--{}".format(self.option_organizations),
@@ -35,10 +45,13 @@ class Command(BaseCommand):
                     help="Create peering groups and peering partners", type=int, default=0)
         parser.add_argument("--{}".format(self.option_optical),
                     help="Create optical entities", type=int, default=0)
+        parser.add_argument("--{}".format(self.option_location),
+                    help="Create location entities", type=int, default=0)
         parser.add_argument("-d", "--{}".format(self.option_deleteall), action='store_true',
                     help="BEWARE: This command deletes information in the database")
         parser.add_argument("-p", "--{}".format(self.option_progress), action='store_true',
                     help="Show progress bar")
+
 
     def handle(self, *args, **options):
         self.show_progress = False
@@ -85,7 +98,17 @@ class Command(BaseCommand):
                         .format(numnodes))
                 self.create_optical(numnodes)
 
+        if options[self.option_location]:
+            numnodes = options[self.option_location]
+            if numnodes > 0:
+                if self.show_progress:
+                    self.stdout\
+                        .write('Forging fake location nodes: {} for each subtype:'\
+                        .format(numnodes))
+                self.create_location(numnodes)
+
         return
+
 
     def create_entities(self, numnodes, create_funcs):
         total_nodes = numnodes * len(create_funcs)
@@ -94,19 +117,9 @@ class Command(BaseCommand):
 
         for create_func in create_funcs:
             for i in range(numnodes):
-                # dirty hack to get rid of accidental unscaped strings
-                loop_lock = True
-                safe_tries = 5
-
-                while loop_lock and safe_tries > 0:
-                    try:
-                        node = create_func()
-                        loop_lock = False
-                    except:
-                        traceback.print_exc()
-                        safe_tries = safe_tries - 1
-
+                node = create_func()
                 created_nodes = created_nodes + 1
+                
                 self.printProgressBar(created_nodes, total_nodes)
 
         NetworkFakeDataGenerator.clean_rogue_nodetype()
@@ -124,6 +137,7 @@ class Command(BaseCommand):
 
         self.create_entities(numnodes, create_funcs)
 
+
     def create_equipment_cables(self, numnodes):
         generator = NetworkFakeDataGenerator()
 
@@ -139,6 +153,7 @@ class Command(BaseCommand):
 
         self.create_entities(numnodes, create_funcs)
 
+
     def create_peering(self, numnodes):
         generator = NetworkFakeDataGenerator()
 
@@ -148,6 +163,7 @@ class Command(BaseCommand):
         ]
 
         self.create_entities(numnodes, create_funcs)
+
 
     def create_optical(self, numnodes):
         generator = NetworkFakeDataGenerator()
@@ -159,6 +175,17 @@ class Command(BaseCommand):
         ]
 
         self.create_entities(numnodes, create_funcs)
+
+
+    def create_location(self, numnodes):
+        generator = NetworkFakeDataGenerator()
+
+        create_funcs = [
+            generator.create_site,
+        ]
+
+        self.create_entities(numnodes, create_funcs)
+
 
     def delete_network_nodes(self):
         if settings.DEBUG: # guard against accidental deletion on the wrong environment
@@ -183,14 +210,17 @@ class Command(BaseCommand):
             for delete_type in delete_types:
                 NodeType.objects.filter(type=delete_type).delete()
 
+
     def get_nodetype(self, type_name):
         return NetworkFakeDataGenerator.get_nodetype(type_name)
+
 
     def get_node_num(self, type_name):
         node_type = self.get_nodetype(type_name)
         node_num = NodeHandle.objects.filter(node_type=node_type).count()
 
         return node_num
+
 
     def delete_type(self, type_name, deleted_nodes, total_nodes):
         node_type = self.get_nodetype(type_name)
@@ -203,6 +233,7 @@ class Command(BaseCommand):
             self.printProgressBar(deleted_nodes, total_nodes)
 
         return deleted_nodes
+
 
     def printProgressBar (self, iteration, total, prefix = 'Progress', suffix = 'Complete', decimals = 1, length = 100, fill = '█'):
         """

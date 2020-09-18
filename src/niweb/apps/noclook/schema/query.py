@@ -245,7 +245,6 @@ class NOCRootQuery(NOCAutoQuery):
     def resolve_getPlainGroups(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             ret = []
-            #import pdb; pdb.set_trace()
 
             group_type_str = 'Group'
             group_type, created = NodeType.objects.get_or_create(
@@ -463,6 +462,8 @@ class NOCRootQuery(NOCAutoQuery):
             OpticalFilter, OpticalLink, OpticalMultiplexSection, OpticalPath,
             ## Peering
             PeeringPartner, PeeringGroup,
+            ## Locations
+            Site,
             ## Other
             HostUser,
         ]

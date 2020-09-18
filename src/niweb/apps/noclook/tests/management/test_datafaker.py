@@ -57,6 +57,14 @@ class DataFakerTest(NeoTestCase):
             }
         )
 
+        # call location generator
+        call_command(self.cmd_name,
+            **{
+                DFCommand.option_location: self.test_node_num,
+                'verbosity': 0,
+            }
+        )
+
         # check that there's nodes from the generated types
         self.assertTrue(
             NodeHandle.objects.filter(node_type__in=all_node_types).exists()

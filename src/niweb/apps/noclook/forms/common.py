@@ -1338,6 +1338,8 @@ class AddressForm(forms.Form):
     name = forms.CharField()
     phone = forms.CharField(required=False)
     street = forms.CharField(required=False)
+    floor = forms.CharField(required=False)
+    room = forms.CharField(required=False)
     postal_code = forms.CharField(required=False)
     postal_area = forms.CharField(required=False)
 
