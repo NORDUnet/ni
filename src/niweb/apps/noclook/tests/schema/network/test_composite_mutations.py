@@ -5059,6 +5059,8 @@ class SiteTest(Neo4jGraphQLNetworkTest):
     def test_site(self):
         data_generator = NetworkFakeDataGenerator()
 
+        ## creation
+
         # create responsible for
         site_owner = data_generator.create_site_owner()
         responsible_for_id = relay.Node.to_global_id(str(site_owner.node_type),
@@ -5147,10 +5149,22 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         address2_postal_code = address2.get_node().data.get("postal_code")
         address2_postal_area = address2.get_node().data.get("postal_area")
 
-        query = """
+        main_input = "create_input"
+        main_input_id = ""
+        subinputs_input = "create_subinputs"
+        subinput1_id = ""
+        subinput2_id = ""
+        has_input = "create_has_site"
+        has_input_id = ""
+        main_payload = "created"
+        subpayload = "subcreated"
+        has_payload = "has_site_created"
+
+        query_t = """
         mutation{{
           composite_site(input:{{
-            create_input:{{
+            {main_input}:{{
+              {main_input_id}
               name: "{site_name}"
               country: "{site_country}"
               site_type: "{site_type}"
@@ -5163,8 +5177,9 @@ class SiteTest(Neo4jGraphQLNetworkTest):
               telenor_subscription_id: "{site_telenor_subscription_id}"
               relationship_responsible_for: "{responsible_for_id}"
             }}
-            create_subinputs:[
+            {subinputs_input}:[
               {{
+                {subinput1_id}
                 name: "{address1_name}"
                 phone: "{address1_phone}"
                 street: "{address1_street}"
@@ -5174,6 +5189,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                 postal_area: "{address1_postal_area}"
               }}
               {{
+                {subinput2_id}
                 name: "{address2_name}"
                 phone: "{address2_phone}"
                 street: "{address2_street}"
@@ -5211,8 +5227,9 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                 operational_state: "{switch_opstate}"
               }}
             ]
-            create_has_site:[ # TODO add has_room instead
+            {has_input}:[ # TODO add has_room instead
               {{
+                {has_input_id}
                 name: "{has_site_name}"
                 country: "{has_site_country}"
                 site_type: "{has_site_type}"
@@ -5227,7 +5244,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
               }}
             ]
           }}){{
-            created{{
+            {main_payload}{{
               errors{{
                 field
                 messages
@@ -5336,7 +5353,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                 }}
               }}
             }}
-            subcreated{{
+            {subpayload}{{
               errors{{
                 field
                 messages
@@ -5404,7 +5421,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                 }}
               }}
             }}
-            has_site_created{{
+            {has_payload}{{
               errors{{
                 field
                 messages
@@ -5432,7 +5449,15 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             }}
           }}
         }}
-        """.format(
+        """
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            subinputs_input=subinputs_input, subinput1_id=subinput1_id,
+            subinput2_id=subinput2_id,
+            has_input=has_input, has_input_id=has_input_id,
+            main_payload=main_payload, subpayload=subpayload,
+            has_payload=has_payload,
             site_name=site_name, site_country=site_country,
             site_type=site_type, site_area=site_area,
             site_longitude=site_longitude, site_latitude=site_latitude,
@@ -5482,15 +5507,15 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
         # check for errors
         created_errors = \
-            result.data['composite_site']['created']['errors']
+            result.data['composite_site'][main_payload]['errors']
         assert not created_errors, pformat(created_errors, indent=1)
 
         submutations = {
-            'subcreated': None,
+            subpayload: None,
             'parent_site_updated': None,
             'located_in_firewall_updated': None,
             'located_in_switch_updated': None,
-            'has_site_created': None,
+            has_payload: None,
         }
 
         for k,v in submutations.items():
@@ -5509,7 +5534,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
 
         # check site data
-        check_site = result.data['composite_site']['created']['site']
+        check_site = result.data['composite_site'][main_payload]['site']
         site_id = check_site['id']
 
         self.assertEquals(check_site['name'], site_name)
@@ -5526,7 +5551,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             site_telenor_subscription_id)
 
         # check address
-        check_address1 = result.data['composite_site']['subcreated'][0]['address']
+        check_address1 = result.data['composite_site'][subpayload][0]['address']
         address1_id = check_address1['id']
 
         self.assertEquals(check_address1['name'], address1_name)
@@ -5539,7 +5564,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
         self.assertEquals(check_site['addresses'][0]['id'], address1_id)
 
-        check_address2 = result.data['composite_site']['subcreated'][1]['address']
+        check_address2 = result.data['composite_site'][subpayload][1]['address']
         address2_id = check_address2['id']
 
         self.assertEquals(check_address2['name'], address2_name)
@@ -5591,7 +5616,290 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
         # check has site
         check_has_site = result.data['composite_site']\
-                                ['has_site_created'][0]['site']
+                                [has_payload][0]['site']
+        has_site_id = check_has_site['id']
+
+        self.assertEquals(check_has_site['name'], has_site_name)
+        self.assertEquals(check_has_site['country_code']['name'], has_site_country)
+        if has_site_type:
+            self.assertEquals(check_has_site['site_type']['value'], has_site_type)
+        self.assertEquals(check_has_site['area'], has_site_area)
+        self.assertEquals(check_has_site['latitude'], has_site_latitude)
+        self.assertEquals(check_has_site['longitude'], has_site_longitude)
+        self.assertEquals(check_has_site['owner_id'], has_site_owner_id)
+        self.assertEquals(check_has_site['owner_site_name'], has_site_owner_site_name)
+        self.assertEquals(check_has_site['url'], has_site_url)
+        self.assertEquals(check_has_site['telenor_subscription_id'], \
+            has_site_telenor_subscription_id)
+
+        self.assertEquals(check_site['has'][0]['id'], has_site_id)
+
+        ## edition
+        # create another responsible for
+        site_owner = data_generator.create_site_owner()
+        responsible_for_id = relay.Node.to_global_id(str(site_owner.node_type),
+                                            str(site_owner.handle_id))
+
+        # create another parent site
+        parent_site = data_generator.create_site()
+        parent_site_id = relay.Node.to_global_id(str(parent_site.node_type),
+                                            str(parent_site.handle_id))
+        parent_site_name = "Parent Site"
+        parent_site_country = parent_site.get_node().data.get("country")
+        parent_site_type = parent_site.get_node().data.get("site_type")
+        parent_site_type = '' if not parent_site_type else parent_site_type
+        parent_site_area = parent_site.get_node().data.get("area")
+        parent_site_longitude = parent_site.get_node().data.get("longitude")
+        parent_site_latitude = parent_site.get_node().data.get("latitude")
+        parent_site_owner_id = parent_site.get_node().data.get("owner_id")
+        parent_site_owner_site_name = parent_site.get_node().data.get("owner_site_name")
+        parent_site_url = parent_site.get_node().data.get("url")
+        parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
+
+        # create site node and delete so we can update the has site data
+        has_site = data_generator.create_site()
+        has_site_name = "Test subsite"
+        has_site_country = has_site.get_node().data.get("country")
+        has_site_type = has_site.get_node().data.get("site_type")
+        has_site_type = '' if not parent_site_type else parent_site_type
+        has_site_area = has_site.get_node().data.get("area")
+        has_site_longitude = has_site.get_node().data.get("longitude")
+        has_site_latitude = has_site.get_node().data.get("latitude")
+        has_site_owner_id = has_site.get_node().data.get("owner_id")
+        has_site_owner_site_name = has_site.get_node().data.get("owner_site_name")
+        has_site_url = has_site.get_node().data.get("url")
+        has_site_telenor_subscription_id = has_site.get_node().data.get("telenor_subscription_id")
+
+        has_site.delete()
+
+        # create firewall and delete it to get it's generated data
+        firewall = data_generator.create_firewall()
+
+        firewall_name = firewall.get_node().data.get("name")
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+        firewall.delete()
+
+        # create another and delete it to get it's generated data
+        switch = data_generator.create_switch()
+
+        switch_name = switch.get_node().data.get("name")
+        switch_opstate = switch.get_node().data.get("operational_state")
+        switch.delete()
+
+        # generate test data, we'll remove these later
+        # create a site to use its data
+        a_site = data_generator.create_site()
+        site_name = "New test Site"
+        site_country = a_site.get_node().data.get("country")
+        site_type = a_site.get_node().data.get("site_type")
+        site_type = '' if not site_type else site_type
+        site_area = a_site.get_node().data.get("area")
+        site_longitude = a_site.get_node().data.get("longitude")
+        site_latitude = a_site.get_node().data.get("latitude")
+        site_owner_id = a_site.get_node().data.get("owner_id")
+        site_owner_site_name = a_site.get_node().data.get("owner_site_name")
+        site_url = a_site.get_node().data.get("url")
+        site_telenor_subscription_id = a_site.get_node().data.get("telenor_subscription_id")
+
+        # create two address and get its data
+        address1 = data_generator.create_address()
+        address2 = data_generator.create_address()
+
+        address1_name = address1.get_node().data.get("name")
+        address1_phone = address1.get_node().data.get("phone")
+        address1_street = address1.get_node().data.get("street")\
+                            .replace('\n', ' ')
+        address1_floor = address1.get_node().data.get("floor")\
+                            .replace('\n', ' ')
+        address1_room = address1.get_node().data.get("room")
+        address1_postal_code = address1.get_node().data.get("postal_code")
+        address1_postal_area = address1.get_node().data.get("postal_area")
+
+        address2_name = address2.get_node().data.get("name")
+        address2_phone = address2.get_node().data.get("phone")
+        address2_street = address2.get_node().data.get("street")\
+                            .replace('\n', ' ')
+        address2_floor = address2.get_node().data.get("floor")\
+                            .replace('\n', ' ')
+        address2_room = address2.get_node().data.get("room")
+        address2_postal_code = address2.get_node().data.get("postal_code")
+        address2_postal_area = address2.get_node().data.get("postal_area")
+
+        a_site.delete()
+        address1.delete()
+        address2.delete()
+
+        main_input = 'update_input'
+        main_input_id = 'id: "{}"'.format(site_id)
+        subinputs_input = "update_subinputs"
+        subinput1_id = 'id: "{}"'.format(address1_id)
+        subinput2_id = 'id: "{}"'.format(address2_id)
+        has_input = 'update_has_site'
+        has_input_id = 'id: "{}"'.format(has_site_id)
+        main_payload = "updated"
+        subpayload = "subupdated"
+        has_payload = "has_site_updated"
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            subinputs_input=subinputs_input, subinput1_id=subinput1_id,
+            subinput2_id=subinput2_id,
+            has_input=has_input, has_input_id=has_input_id,
+            main_payload=main_payload, subpayload=subpayload,
+            has_payload=has_payload,
+            site_name=site_name, site_country=site_country,
+            site_type=site_type, site_area=site_area,
+            site_longitude=site_longitude, site_latitude=site_latitude,
+            site_owner_id=site_owner_id,
+            site_owner_site_name=site_owner_site_name,
+            site_url=site_url,
+            site_telenor_subscription_id=site_telenor_subscription_id,
+            responsible_for_id=responsible_for_id,
+            address1_name=address1_name, address1_phone=address1_phone,
+            address1_street=address1_street, address1_floor=address1_floor,
+            address1_room=address1_room,
+            address1_postal_code=address1_postal_code,
+            address1_postal_area=address1_postal_area,
+            address2_name=address2_name, address2_phone=address2_phone,
+            address2_street=address2_street, address2_floor=address2_floor,
+            address2_room=address2_room,
+            address2_postal_code=address2_postal_code,
+            address2_postal_area=address2_postal_area,
+            parent_site_id=parent_site_id,
+            parent_site_name=parent_site_name, parent_site_country=parent_site_country,
+            parent_site_type=parent_site_type, parent_site_area=parent_site_area,
+            parent_site_longitude=parent_site_longitude, parent_site_latitude=parent_site_latitude,
+            parent_site_owner_id=parent_site_owner_id,
+            parent_site_owner_site_name=parent_site_owner_site_name,
+            parent_site_url=parent_site_url,
+            parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
+            has_site_name=has_site_name, has_site_country=has_site_country,
+            has_site_type=has_site_type, has_site_area=has_site_area,
+            has_site_longitude=has_site_longitude, has_site_latitude=has_site_latitude,
+            has_site_owner_id=has_site_owner_id,
+            has_site_owner_site_name=has_site_owner_site_name,
+            has_site_url=has_site_url,
+            has_site_telenor_subscription_id=has_site_telenor_subscription_id,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        created_errors = \
+            result.data['composite_site'][main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            subpayload: None,
+            'parent_site_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+            has_payload: None,
+        }
+
+        for k,v in submutations.items():
+            if result.data['composite_site'][k]:
+                item = None
+
+                try:
+                    result.data['composite_site'][k][0]
+                    for item in result.data['composite_site'][k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = result.data['composite_site'][k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check site data
+        check_site = result.data['composite_site'][main_payload]['site']
+        site_id = check_site['id']
+
+        self.assertEquals(check_site['name'], site_name)
+        self.assertEquals(check_site['country_code']['name'], site_country)
+        if site_type:
+            self.assertEquals(check_site['site_type']['value'], site_type)
+        self.assertEquals(check_site['area'], site_area)
+        self.assertEquals(check_site['latitude'], site_latitude)
+        self.assertEquals(check_site['longitude'], site_longitude)
+        self.assertEquals(check_site['owner_id'], site_owner_id)
+        self.assertEquals(check_site['owner_site_name'], site_owner_site_name)
+        self.assertEquals(check_site['url'], site_url)
+        self.assertEquals(check_site['telenor_subscription_id'], \
+            site_telenor_subscription_id)
+
+        # check address
+        check_address1 = result.data['composite_site'][subpayload][0]['address']
+        address1_id = check_address1['id']
+
+        self.assertEquals(check_address1['name'], address1_name)
+        self.assertEquals(check_address1['phone'], address1_phone)
+        self.assertEquals(check_address1['street'], address1_street)
+        self.assertEquals(check_address1['floor'], address1_floor)
+        self.assertEquals(check_address1['room'], address1_room)
+        self.assertEquals(check_address1['postal_code'], address1_postal_code)
+        self.assertEquals(check_address1['postal_area'], address1_postal_area)
+
+        self.assertEquals(check_site['addresses'][0]['id'], address1_id)
+
+        check_address2 = result.data['composite_site'][subpayload][1]['address']
+        address2_id = check_address2['id']
+
+        self.assertEquals(check_address2['name'], address2_name)
+        self.assertEquals(check_address2['phone'], address2_phone)
+        self.assertEquals(check_address2['street'], address2_street)
+        self.assertEquals(check_address2['floor'], address2_floor)
+        self.assertEquals(check_address2['room'], address2_room)
+        self.assertEquals(check_address2['postal_code'], address2_postal_code)
+        self.assertEquals(check_address2['postal_area'], address2_postal_area)
+
+        self.assertEquals(check_site['addresses'][1]['id'], address2_id)
+
+        # check parent site data
+        check_parent_site = result.data['composite_site']\
+                                ['parent_site_updated']['site']
+
+        self.assertEquals(check_parent_site['id'], parent_site_id)
+        self.assertEquals(check_parent_site['name'], parent_site_name)
+        self.assertEquals(check_parent_site['country_code']['name'], parent_site_country)
+        if parent_site_type:
+            self.assertEquals(check_parent_site['site_type']['value'], parent_site_type)
+        self.assertEquals(check_parent_site['area'], parent_site_area)
+        self.assertEquals(check_parent_site['latitude'], parent_site_latitude)
+        self.assertEquals(check_parent_site['longitude'], parent_site_longitude)
+        self.assertEquals(check_parent_site['owner_id'], parent_site_owner_id)
+        self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
+        self.assertEquals(check_parent_site['url'], parent_site_url)
+        self.assertEquals(check_parent_site['telenor_subscription_id'], \
+            parent_site_telenor_subscription_id)
+
+
+        # check firewall
+        check_firewall = result.data['composite_site']\
+                            ['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+
+        # check switch
+        check_switch = result.data['composite_site']\
+                            ['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+
+        # check has site
+        check_has_site = result.data['composite_site']\
+                                [has_payload][0]['site']
         has_site_id = check_has_site['id']
 
         self.assertEquals(check_has_site['name'], has_site_name)
