@@ -2281,7 +2281,7 @@ class CompositeMutation(relay.ClientIDMutation):
                         if not sub_errors and sub_edited and link_method:
                             link_method(user, master_nh, sub_edited)
 
-                        ret_subcreated = ret
+                        ret_subupdated = ret
 
                 # process delete
                 if delete_subinputs:
@@ -2312,7 +2312,7 @@ class CompositeMutation(relay.ClientIDMutation):
 
                 if delete_payload:
                     master_ret[delete_payload] = ret_subdeleted
-
+        
         return master_ret
 
     @classmethod

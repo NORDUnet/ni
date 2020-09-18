@@ -5321,8 +5321,17 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                       value
                     }}
                     country
+                    site_type{{
+                      name
+                      value
+                    }}
+                    area
                     latitude
                     longitude
+                    owner_id
+                    owner_site_name
+                    url
+                    telenor_subscription_id
                   }}
                 }}
               }}
@@ -5356,9 +5365,17 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                   value
                 }}
                 country
+                site_type{{
+                  name
+                  value
+                }}
+                area
                 latitude
                 longitude
-
+                owner_id
+                owner_site_name
+                url
+                telenor_subscription_id
               }}
             }}
             located_in_firewall_updated{{
@@ -5400,8 +5417,17 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                   value
                 }}
                 country
+                site_type{{
+                  name
+                  value
+                }}
+                area
                 latitude
                 longitude
+                owner_id
+                owner_site_name
+                url
+                telenor_subscription_id
               }}
             }}
           }}
@@ -5511,6 +5537,8 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_address1['postal_code'], address1_postal_code)
         self.assertEquals(check_address1['postal_area'], address1_postal_area)
 
+        self.assertEquals(check_site['addresses'][0]['id'], address1_id)
+
         check_address2 = result.data['composite_site']['subcreated'][1]['address']
         address2_id = check_address2['id']
 
@@ -5522,10 +5550,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_address2['postal_code'], address2_postal_code)
         self.assertEquals(check_address2['postal_area'], address2_postal_area)
 
+        self.assertEquals(check_site['addresses'][1]['id'], address2_id)
+
         # check parent site data
-        '''check_parent_site = result.data['composite_site']\
+        check_parent_site = result.data['composite_site']\
                                 ['parent_site_updated']['site']
-        import pdb; pdb.set_trace()
 
         self.assertEquals(check_parent_site['id'], parent_site_id)
         self.assertEquals(check_parent_site['name'], parent_site_name)
@@ -5539,8 +5568,43 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
         self.assertEquals(check_parent_site['url'], parent_site_url)
         self.assertEquals(check_parent_site['telenor_subscription_id'], \
-            parent_site_telenor_subscription_id)'''
+            parent_site_telenor_subscription_id)
+
 
         # check firewall
+        check_firewall = result.data['composite_site']\
+                            ['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+
         # check switch
+        check_switch = result.data['composite_site']\
+                            ['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+
         # check has site
+        check_has_site = result.data['composite_site']\
+                                ['has_site_created'][0]['site']
+        has_site_id = check_has_site['id']
+
+        self.assertEquals(check_has_site['name'], has_site_name)
+        self.assertEquals(check_has_site['country_code']['name'], has_site_country)
+        if has_site_type:
+            self.assertEquals(check_has_site['site_type']['value'], has_site_type)
+        self.assertEquals(check_has_site['area'], has_site_area)
+        self.assertEquals(check_has_site['latitude'], has_site_latitude)
+        self.assertEquals(check_has_site['longitude'], has_site_longitude)
+        self.assertEquals(check_has_site['owner_id'], has_site_owner_id)
+        self.assertEquals(check_has_site['owner_site_name'], has_site_owner_site_name)
+        self.assertEquals(check_has_site['url'], has_site_url)
+        self.assertEquals(check_has_site['telenor_subscription_id'], \
+            has_site_telenor_subscription_id)
+
+        self.assertEquals(check_site['has'][0]['id'], has_site_id)
