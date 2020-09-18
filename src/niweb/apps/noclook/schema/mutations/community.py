@@ -120,7 +120,6 @@ class NIAddressMutationFactory(NIMutationFactory):
         }
         property_update = ['name', 'phone', 'street', 'postal_code', \
                             'postal_area', 'floor', 'room']
-        form_exclude = ('organization')
 
     class Meta:
         abstract = False
