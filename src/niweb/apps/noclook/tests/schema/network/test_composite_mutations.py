@@ -5983,7 +5983,6 @@ class RoomTest(Neo4jGraphQLNetworkTest):
         has_input = "create_has_room"
         has_input_id = ""
         main_payload = "created"
-        subpayload = "subcreated"
         has_payload = "has_room_created"
 
         query_t = """
@@ -6161,8 +6160,7 @@ class RoomTest(Neo4jGraphQLNetworkTest):
         query = query_t.format(
             main_input=main_input, main_input_id=main_input_id,
             has_input=has_input, has_input_id=has_input_id,
-            main_payload=main_payload, subpayload=subpayload,
-            has_payload=has_payload,
+            main_payload=main_payload, has_payload=has_payload,
             room_name=room_name, room_floor=room_floor,
             has_room_name=has_room_name, has_room_floor=has_room_floor,
             parent_site_id=parent_site_id,
@@ -6232,3 +6230,177 @@ class RoomTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_parent_site['url'], parent_site_url)
         self.assertEquals(check_parent_site['telenor_subscription_id'], \
             parent_site_telenor_subscription_id)
+
+        self.assertEquals(check_room['parent']['id'], parent_site_id)
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_room['located_in'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_room['located_in'][1]['id'], switch_id)
+
+        # check has site
+        check_has_room = all_data[has_payload][0]['room']
+        has_room_id = check_has_room['id']
+
+        self.assertEquals(check_has_room['name'], has_room_name)
+        self.assertEquals(check_has_room['floor'], has_room_floor)
+        self.assertEquals(check_room['has'][0]['id'], has_room_id)
+
+        ## edition
+        # data room
+        a_room = data_generator.create_room(add_parent=False)
+        room_name = a_room.get_node().data.get("name")
+        room_floor = a_room.get_node().data.get("floor")
+        a_room.delete()
+
+        # has data room
+        has_room = data_generator.create_room(add_parent=False)
+        has_room_name = has_room.get_node().data.get("name")
+        has_room_floor = has_room.get_node().data.get("floor")
+        has_room.delete()
+
+        # create a parent site
+        parent_site = data_generator.create_site()
+        parent_site_name = "New Parent Site"
+        parent_site_country = parent_site.get_node().data.get("country")
+        parent_site_type = parent_site.get_node().data.get("site_type")
+        parent_site_type = '' if not parent_site_type else parent_site_type
+        parent_site_area = parent_site.get_node().data.get("area")
+        parent_site_longitude = parent_site.get_node().data.get("longitude")
+        parent_site_latitude = parent_site.get_node().data.get("latitude")
+        parent_site_owner_id = parent_site.get_node().data.get("owner_id")
+        parent_site_owner_site_name = parent_site.get_node().data.get("owner_site_name")
+        parent_site_url = parent_site.get_node().data.get("url")
+        parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
+        parent_site.delete()
+
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+        firewall.delete()
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+        switch.delete()
+
+        main_input = 'update_input'
+        main_input_id = 'id: "{}"'.format(room_id)
+        has_input = 'update_has_room'
+        has_input_id = 'id: "{}"'.format(has_room_id)
+        main_payload = 'updated'
+        has_payload = 'has_room_updated'
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            has_input=has_input, has_input_id=has_input_id,
+            main_payload=main_payload, has_payload=has_payload,
+            room_name=room_name, room_floor=room_floor,
+            has_room_name=has_room_name, has_room_floor=has_room_floor,
+            parent_site_id=parent_site_id,
+            parent_site_name=parent_site_name, parent_site_country=parent_site_country,
+            parent_site_type=parent_site_type, parent_site_area=parent_site_area,
+            parent_site_longitude=parent_site_longitude, parent_site_latitude=parent_site_latitude,
+            parent_site_owner_id=parent_site_owner_id,
+            parent_site_owner_site_name=parent_site_owner_site_name,
+            parent_site_url=parent_site_url,
+            parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
+            responsible_for_id=responsible_for_id,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_room']
+        updated_errors = all_data[main_payload]['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        submutations = {
+            'parent_site_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+            has_payload: None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check room data
+        check_room = all_data[main_payload]['room']
+        self.assertEquals(check_room['name'], room_name)
+        self.assertEquals(check_room['floor'], room_floor)
+
+        # check parent site data
+        check_parent_site = all_data['parent_site_updated']['site']
+
+        self.assertEquals(check_parent_site['id'], parent_site_id)
+        self.assertEquals(check_parent_site['name'], parent_site_name)
+        self.assertEquals(check_parent_site['country_code']['name'], parent_site_country)
+        if parent_site_type:
+            self.assertEquals(check_parent_site['site_type']['value'], parent_site_type)
+        self.assertEquals(check_parent_site['area'], parent_site_area)
+        self.assertEquals(check_parent_site['latitude'], parent_site_latitude)
+        self.assertEquals(check_parent_site['longitude'], parent_site_longitude)
+        self.assertEquals(check_parent_site['owner_id'], parent_site_owner_id)
+        self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
+        self.assertEquals(check_parent_site['url'], parent_site_url)
+        self.assertEquals(check_parent_site['telenor_subscription_id'], \
+            parent_site_telenor_subscription_id)
+
+        self.assertEquals(check_room['parent']['id'], parent_site_id)
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_room['located_in'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_room['located_in'][1]['id'], switch_id)
+
+        # check has site
+        check_has_room = all_data[has_payload][0]['room']
+
+        self.assertEquals(check_has_room['name'], has_room_name)
+        self.assertEquals(check_has_room['floor'], has_room_floor)
+        self.assertEquals(check_room['has'][0]['id'], has_room_id)
