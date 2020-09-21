@@ -639,3 +639,17 @@ class NISiteMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+class NIRoomMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = EditRoomForm
+        request_path = '/'
+        graphql_type = Site
+        unique_node  = True
+        # we'll exclude the parent relationship because we'll use the metatype
+        # mutation input on the composite mutation
+        form_exclude = ('relationship_parent')
+
+    class Meta:
+        abstract = False
