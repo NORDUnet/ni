@@ -925,6 +925,34 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         return site
 
 
+    def create_room(self, name=None, add_parent=True):
+        # create object
+        if not name:
+            name = self.company_name()
+
+        room = self.get_or_create_node(
+            name, 'Room', META_TYPES[3]) # Location
+
+        # add context
+        self.add_network_context(room)
+
+        data = {
+            'floor': str(random.randint(0, 20)),
+        }
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                room.get_node().add_property(key, value)
+
+        # add parent site
+        parent_site = self.create_site()
+        rel_maker = LocationDataRelationMaker()
+        rel_maker.add_parent(self.user, room, parent_site)
+
+        return room
+
+
 class DataRelationMaker:
     def __init__(self):
         self.user = get_user()
@@ -980,3 +1008,7 @@ class PhysicalDataRelationMaker(DataRelationMaker):
 
         result = nc.query_to_dict(nc.graphdb.manager, q,
                         handle_id=handle_id, parent_handle_id=parent_handle_id)
+
+class LocationDataRelationMaker(DataRelationMaker):
+    def add_parent(self, user, location_nh, parent_nh):
+        helpers.set_has(user, parent_nh.get_node(), location_nh.handle_id)

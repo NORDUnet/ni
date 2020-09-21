@@ -645,7 +645,7 @@ class NIRoomMutationFactory(NIMutationFactory):
     class NIMetaClass:
         form         = EditRoomForm
         request_path = '/'
-        graphql_type = Site
+        graphql_type = Room
         unique_node  = True
         # we'll exclude the parent relationship because we'll use the metatype
         # mutation input on the composite mutation
