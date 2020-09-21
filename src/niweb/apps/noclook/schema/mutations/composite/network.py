@@ -310,3 +310,13 @@ class CompositeSiteMutation(CompositeMutation):
         main_mutation_f = NISiteMutationFactory
         secondary_mutation_f = NIAddressMutationFactory
         context = sriutils.get_network_context()
+
+
+class CompositeRoomMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Room
+        main_mutation_f = NIRoomMutationFactory
+        context = sriutils.get_network_context()

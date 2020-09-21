@@ -5924,3 +5924,311 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             has_site_telenor_subscription_id)
 
         self.assertEquals(check_site['has'][0]['id'], has_site_id)
+
+
+class RoomTest(Neo4jGraphQLNetworkTest):
+    def test_room(self):
+        data_generator = NetworkFakeDataGenerator()
+
+        ## creation
+        # data room
+        a_room = data_generator.create_room(add_parent=False)
+        room_name = a_room.get_node().data.get("name")
+        room_floor = a_room.get_node().data.get("floor")
+        a_room.delete()
+
+        # has data room
+        has_room = data_generator.create_room(add_parent=False)
+        has_room_name = has_room.get_node().data.get("name")
+        has_room_floor = has_room.get_node().data.get("floor")
+        has_room.delete()
+
+        # create responsible for
+        site_owner = data_generator.create_site_owner()
+        responsible_for_id = relay.Node.to_global_id(str(site_owner.node_type),
+                                            str(site_owner.handle_id))
+
+        # create a parent site
+        parent_site = data_generator.create_site()
+        parent_site_id = relay.Node.to_global_id(str(parent_site.node_type),
+                                            str(parent_site.handle_id))
+        parent_site_name = "Parent Site"
+        parent_site_country = parent_site.get_node().data.get("country")
+        parent_site_type = parent_site.get_node().data.get("site_type")
+        parent_site_type = '' if not parent_site_type else parent_site_type
+        parent_site_area = parent_site.get_node().data.get("area")
+        parent_site_longitude = parent_site.get_node().data.get("longitude")
+        parent_site_latitude = parent_site.get_node().data.get("latitude")
+        parent_site_owner_id = parent_site.get_node().data.get("owner_id")
+        parent_site_owner_site_name = parent_site.get_node().data.get("owner_site_name")
+        parent_site_url = parent_site.get_node().data.get("url")
+        parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
+
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_id = relay.Node.to_global_id(str(switch.node_type),
+                                            str(switch.handle_id))
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+
+        main_input = "create_input"
+        main_input_id = ""
+        has_input = "create_has_room"
+        has_input_id = ""
+        main_payload = "created"
+        subpayload = "subcreated"
+        has_payload = "has_room_created"
+
+        query_t = """
+        mutation{{
+          composite_room(input:{{
+            {main_input}: {{
+              {main_input_id}
+              name: "{room_name}"
+              floor: "{room_floor}"
+            }}
+            update_parent_site: {{
+              id: "{parent_site_id}"
+              name: "{parent_site_name}"
+              country: "{parent_site_country}"
+              site_type: "{parent_site_type}"
+              area: "{parent_site_area}"
+              longitude: {parent_site_longitude}
+              latitude: {parent_site_latitude}
+              owner_id: "{parent_site_owner_id}"
+              owner_site_name: "{parent_site_owner_site_name}"
+              url: "{parent_site_url}"
+              telenor_subscription_id: "{parent_site_telenor_subscription_id}"
+              relationship_responsible_for: "{responsible_for_id}"
+            }}
+            update_located_in_firewall:[
+              {{
+                id: "{firewall_id}"
+                name: "{firewall_name}"
+                operational_state: "{firewall_opstate}"
+              }}
+            ]
+            update_located_in_switch:[
+              {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                operational_state: "{switch_opstate}"
+              }}
+            ]
+            {has_input}:{{
+              {has_input_id}
+              name: "{has_room_name}"
+              floor: "{has_room_floor}"
+            }}
+          }}){{
+            {main_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              room{{
+                id
+                name
+                floor
+                parent{{
+                  ...on Site{{
+                    id
+                    name
+                    country_code{{
+                      name
+                      value
+                    }}
+                    country
+                    site_type{{
+                      name
+                      value
+                    }}
+                    area
+                    latitude
+                    longitude
+                    owner_id
+                    owner_site_name
+                    url
+                    telenor_subscription_id
+                    responsible_for{{
+                      __typename
+                      id
+                      name
+                    }}
+                  }}
+                }}
+                located_in{{
+                  __typename
+                  id
+                  name
+                  ...on Firewall{{
+                    operational_state{{
+                      value
+                    }}
+                    ip_addresses
+                  }}
+                  ...on Switch{{
+                    operational_state{{
+                      value
+                    }}
+                    ip_addresses
+                  }}
+                }}
+                has{{
+                  __typename
+                  id
+                  name
+                  ...on Room{{
+                    floor
+                  }}
+                }}
+              }}
+            }}
+            parent_site_updated{{
+              errors{{
+                field
+                messages
+              }}
+              site{{
+                id
+                name
+                country_code{{
+                  name
+                  value
+                }}
+                country
+                site_type{{
+                  name
+                  value
+                }}
+                area
+                latitude
+                longitude
+                owner_id
+                owner_site_name
+                url
+                telenor_subscription_id
+              }}
+            }}
+            located_in_firewall_updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+            located_in_switch_updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+            {has_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              room{{
+                id
+                name
+                floor
+              }}
+            }}
+          }}
+        }}
+        """
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            has_input=has_input, has_input_id=has_input_id,
+            main_payload=main_payload, subpayload=subpayload,
+            has_payload=has_payload,
+            room_name=room_name, room_floor=room_floor,
+            has_room_name=has_room_name, has_room_floor=has_room_floor,
+            parent_site_id=parent_site_id,
+            parent_site_name=parent_site_name, parent_site_country=parent_site_country,
+            parent_site_type=parent_site_type, parent_site_area=parent_site_area,
+            parent_site_longitude=parent_site_longitude, parent_site_latitude=parent_site_latitude,
+            parent_site_owner_id=parent_site_owner_id,
+            parent_site_owner_site_name=parent_site_owner_site_name,
+            parent_site_url=parent_site_url,
+            parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
+            responsible_for_id=responsible_for_id,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_room']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'parent_site_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+            has_payload: None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check room data
+        check_room = all_data[main_payload]['room']
+        room_id = check_room['id']
+
+        self.assertEquals(check_room['name'], room_name)
+        self.assertEquals(check_room['floor'], room_floor)
+
+        # check parent site data
+        check_parent_site = all_data['parent_site_updated']['site']
+
+        self.assertEquals(check_parent_site['id'], parent_site_id)
+        self.assertEquals(check_parent_site['name'], parent_site_name)
+        self.assertEquals(check_parent_site['country_code']['name'], parent_site_country)
+        if parent_site_type:
+            self.assertEquals(check_parent_site['site_type']['value'], parent_site_type)
+        self.assertEquals(check_parent_site['area'], parent_site_area)
+        self.assertEquals(check_parent_site['latitude'], parent_site_latitude)
+        self.assertEquals(check_parent_site['longitude'], parent_site_longitude)
+        self.assertEquals(check_parent_site['owner_id'], parent_site_owner_id)
+        self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
+        self.assertEquals(check_parent_site['url'], parent_site_url)
+        self.assertEquals(check_parent_site['telenor_subscription_id'], \
+            parent_site_telenor_subscription_id)
