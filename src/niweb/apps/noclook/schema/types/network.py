@@ -405,6 +405,16 @@ class Site(NIObjectType, LocationMixin):
         context_method = sriutils.get_network_context
 
 
+class Room(NIObjectType, LocationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    floor = NIStringField()
+
+    class NIMetaType:
+        ni_type = 'Room'
+        ni_metatype = NIMETA_LOCATION
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -463,4 +473,5 @@ network_type_resolver = {
 
     # Location
     'Site': Site,
+    'Room': Room,
 }
