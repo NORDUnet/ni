@@ -23,7 +23,7 @@ class Command(BaseCommand):
         # Optical Layers
         'Optical Link', 'Optical Multiplex Section', 'Optical Path',
         # Locations
-        'Site'
+        'Site', 'Room',
     ]
 
     option_organizations = 'organizations'
@@ -119,7 +119,7 @@ class Command(BaseCommand):
             for i in range(numnodes):
                 node = create_func()
                 created_nodes = created_nodes + 1
-                
+
                 self.printProgressBar(created_nodes, total_nodes)
 
         NetworkFakeDataGenerator.clean_rogue_nodetype()
@@ -182,6 +182,7 @@ class Command(BaseCommand):
 
         create_funcs = [
             generator.create_site,
+            generator.create_room,
         ]
 
         self.create_entities(numnodes, create_funcs)

@@ -416,6 +416,7 @@ class EditRackForm(forms.Form):
     relationship_parent = relationship_field('parent')
     relationship_located_in = relationship_field('located in')
 
+
 class NewRoomForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(NewRoomForm, self).__init__(*args, **kwargs)
@@ -424,6 +425,7 @@ class NewRoomForm(forms.Form):
     name = forms.CharField(help_text='Room need to be uniq to the building')
     floor = forms.CharField(required=False, help_text='Floor of building if applicable.')
     relationship_location = relationship_field('location', True)
+
 
 class EditRoomForm(forms.Form):
     name = forms.CharField(help_text='Name need to be uniq to the building')
