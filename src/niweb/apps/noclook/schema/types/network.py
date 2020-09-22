@@ -415,6 +415,19 @@ class Room(NIObjectType, LocationMixin):
         context_method = sriutils.get_network_context
 
 
+class Rack(NIObjectType, LocationMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    height = NIIntField()
+    depth = NIIntField()
+    width = NIIntField()
+    rack_units = NIIntField()
+
+    class NIMetaType:
+        ni_type = 'Rack'
+        ni_metatype = NIMETA_LOCATION
+        context_method = sriutils.get_network_context
+
+
 ## Peering
 class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
@@ -474,4 +487,5 @@ network_type_resolver = {
     # Location
     'Site': Site,
     'Room': Room,
+    'Rack': Rack,
 }

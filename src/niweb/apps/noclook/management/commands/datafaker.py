@@ -183,6 +183,7 @@ class Command(BaseCommand):
         create_funcs = [
             generator.create_site,
             generator.create_room,
+            generator.create_rack,
         ]
 
         self.create_entities(numnodes, create_funcs)

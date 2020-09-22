@@ -463,7 +463,7 @@ class NOCRootQuery(NOCAutoQuery):
             ## Peering
             PeeringPartner, PeeringGroup,
             ## Locations
-            Site,
+            Site, Room, Rack
             ## Other
             HostUser,
         ]

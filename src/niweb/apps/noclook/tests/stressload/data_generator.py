@@ -946,11 +946,43 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
                 room.get_node().add_property(key, value)
 
         # add parent site
-        parent_site = self.create_site()
-        rel_maker = LocationDataRelationMaker()
-        rel_maker.add_parent(self.user, room, parent_site)
+        if add_parent:
+            parent_site = self.create_site()
+            rel_maker = LocationDataRelationMaker()
+            rel_maker.add_parent(self.user, room, parent_site)
 
         return room
+
+    def create_rack(self, name=None, add_parent=True):
+        # create object
+        if not name:
+            name = self.company_name()
+
+        rack = self.get_or_create_node(
+            name, 'Rack', META_TYPES[3]) # Location
+
+        # add context
+        self.add_network_context(rack)
+
+        data = {
+            'height': str(random.randint(0, 20)),
+            'depth': str(random.randint(0, 20)),
+            'width': str(random.randint(0, 20)),
+            'rack_units': str(random.randint(0, 20)),
+        }
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                rack.get_node().add_property(key, value)
+
+        # add parent room
+        if add_parent:
+            parent_room = self.create_room()
+            rel_maker = LocationDataRelationMaker()
+            rel_maker.add_parent(self.user, rack, parent_room)
+
+        return rack
 
 
 class DataRelationMaker:
