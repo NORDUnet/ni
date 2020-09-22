@@ -324,14 +324,14 @@ def neo4j_report_age(item, old, very_old):
     return 'current'
 
 
-def dicts_to_csv_response(dict_list, header=None):
+def dicts_to_csv_response(dict_list, header=None, file_name='result.csv'):
     """
     Takes a list of dicts and returns a comma separated file with all dict keys
     and their values.
     """
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=result.csv; charset=utf-8;'
+    response['Content-Disposition'] = 'attachment; filename={}; charset=utf-8;'.format(file_name)
     writer = csv.writer(response, dialect=csv.excel, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
     if not header:
         key_set = set()
@@ -381,13 +381,13 @@ def dicts_to_xls(dict_list, header, sheet_name):
     return wb
 
 
-def dicts_to_xls_response(dict_list, header=None):
+def dicts_to_xls_response(dict_list, header=None, file_name='result.xls', sheet_name='NOCLook result'):
     """
     Takes a list of dicts and returns a response object with and Excel file.
     """
     # Create the HttpResponse object with the appropriate Excel header.
     response = HttpResponse(content_type='application/excel')
-    response['Content-Disposition'] = 'attachment; filename=result.xls;'
+    response['Content-Disposition'] = 'attachment; filename={};'.format(file_name)
 
     if not header:
         key_set = set()
@@ -396,7 +396,7 @@ def dicts_to_xls_response(dict_list, header=None):
         key_set = sorted(key_set)
     else:
         key_set = header
-    wb = dicts_to_xls(dict_list, key_set, 'NOCLook result')
+    wb = dicts_to_xls(dict_list, key_set, sheet_name)
     wb.save(response)
     return response
 

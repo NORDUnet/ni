@@ -6,14 +6,12 @@ Created on 2012-06-11 5:48 PM
 """
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import Http404
-from django.conf import settings
-
 
 from apps.noclook.forms import get_node_type_tuples, SearchIdForm
 from apps.noclook.forms.reports import HostReportForm
-from apps.noclook.models import NordunetUniqueId
+from apps.noclook.models import NordunetUniqueId, NodeHandle
 from apps.noclook import helpers
 import norduniclient as nc
 
@@ -138,19 +136,23 @@ def download_unique_ids(request, file_format=None):
     header = ["ID", "Reserved", "Reserve message", "Site", "Reserver", "Created"]
     table = None
     id_list = get_id_list(request.GET or None)
-    get_site = lambda uid : uid.site.node_name if uid.site else ""
-    create_dict = lambda uid : {
-        'ID': uid.unique_id,
-        'Reserve message': uid.reserve_message,
-        'Reserved': uid.reserved,
-        'Site': get_site(uid),
-        'Reserver': str(uid.reserver),
-        'Created': uid.created
-    }
+
+    def get_site(uid):
+        return uid.site.node_name if uid.site else ""
+
+    def create_dict(uid):
+        return {
+            'ID': uid.unique_id,
+            'Reserve message': uid.reserve_message,
+            'Reserved': uid.reserved,
+            'Site': get_site(uid),
+            'Reserver': str(uid.reserver),
+            'Created': uid.created
+        }
     table = [create_dict(uid) for uid in id_list]
     # using values is faster, a lot, but no nice header :( and no username
     # table = id_list.values()
-    if table and file_format == 'xls':  
+    if table and file_format == 'xls':
         return helpers.dicts_to_xls_response(table, header)
     elif table and file_format == 'csv':
         return helpers.dicts_to_csv_response(table, header)
@@ -173,3 +175,34 @@ def get_id_list(data=None):
         if data['id_type']:
             id_list = id_list.filter(unique_id__startswith=data['id_type'])
     return id_list.order_by('created').reverse()
+
+
+@login_required
+def download_rack_cables(request, handle_id, file_format=None):
+    nh = get_object_or_404(NodeHandle, pk=handle_id)
+    node = nh.get_node()
+    location = '_'.join([loc['name'] for loc in node.get_location_path()['location_path']])
+    header = [
+        'EquipmentA',
+        'PortA',
+        'Cable',
+        'CableType',
+        'EquipmentB',
+        'PortB',
+    ]
+    q = """
+    MATCH (r:Rack {handle_id: $handle_id})<-[:Located_in]-(n:Node)-[:Has]->(p:Port)<-[:Connected_to]-(c:Cable)-[:Connected_to]->(p2:Port)<-[:Has]-(n2:Node)
+    WHERE n <> n2 and p <> p2
+    RETURN n.name AS EquipmentA, p.name AS PortA, c.name AS Cable, c.cable_type AS CableType, n2.name AS EquipmentB, p2.name AS PortB
+    """
+
+    cables = nc.query_to_list(nc.graphdb.manager, q, handle_id=nh.handle_id)
+
+    file_name = 'rack-cables_{}_{}_{}.{}'.format(location, nh.node_name, nh.handle_id, file_format)
+    if cables and file_format == 'xls':
+        sheet_name = '{} - {}'.format(location, nh.node_name)
+        return helpers.dicts_to_xls_response(cables, header, file_name, sheet_name=sheet_name)
+    elif cables and file_format == 'csv':
+        return helpers.dicts_to_csv_response(cables, header, file_name)
+    else:
+        raise Http404

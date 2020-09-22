@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## 2020-09-10
+### Changed
+- Site views had a bug with showing rooms, where if there were no rooms it would still show a filter field. Additionally the ID for the table was wrong.
+
+## 2020-07-15
+### Added
+- Cable reports for racks. Now you can download a csv or excel file with all equipment in the rack cables.
+
 ## 2020-06-25
 ### Added
 - Back side to racks. Allowing you to specify if equipment orientation.
