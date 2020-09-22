@@ -390,12 +390,14 @@ class Site(NIObjectType, LocationMixin):
     area = NIStringField()
     longitude = NIFloatField()
     latitude = NIFloatField()
-    site_responsible = NISingleRelationField(field_type=SiteOwner, rel_name="Responsible_for", rel_method="_incoming")
+    site_responsible = NISingleRelationField(field_type=SiteOwner,\
+        rel_name="Responsible_for", rel_method="_incoming")
     owner_id = NIStringField()
     owner_site_name = NIStringField()
     url = NIStringField()
     telenor_subscription_id = NIStringField()
-    addresses = NIListField(type_args=(lambda: Address,), rel_name='Has_address', rel_method='_outgoing')
+    addresses = NIListField(type_args=(lambda: Address,),\
+        rel_name='Has_address', rel_method='_outgoing')
     #rooms = NIListField(type_args=(lambda: Room,), rel_name='Has', rel_method='_outgoing')
     #equipments = NIListField(type_args=(lambda: Physical,), rel_name='Has', rel_method='_outgoing')
 
@@ -415,12 +417,28 @@ class Room(NIObjectType, LocationMixin):
         context_method = sriutils.get_network_context
 
 
+def front_back_filter(is_back=False):
+    def filter_node(node):
+        rack_back = node_elem.data.get('rack_back', None)
+
+        if rack_back != None:
+            if rack_back == is_back:
+                return node
+
+    return filter_node
+
 class Rack(NIObjectType, LocationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     height = NIIntField()
     depth = NIIntField()
     width = NIIntField()
     rack_units = NIIntField()
+    front = NIListField(type_args=(lambda: PhysicalLogical,),\
+        rel_name='Located_in', rel_method='get_located_in',\
+        filter=front_back_filter(False))
+    back  = NIListField(type_args=(lambda: PhysicalLogical,),\
+        rel_name='Located_in', rel_method='get_located_in',\
+        filter=front_back_filter(True))
 
     class NIMetaType:
         ni_type = 'Rack'
