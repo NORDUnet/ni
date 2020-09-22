@@ -419,7 +419,7 @@ class Room(NIObjectType, LocationMixin):
 
 def front_back_filter(is_back=False):
     def filter_node(node):
-        rack_back = node_elem.data.get('rack_back', None)
+        rack_back = node.data.get('rack_back', None)
 
         if rack_back != None:
             if rack_back == is_back:

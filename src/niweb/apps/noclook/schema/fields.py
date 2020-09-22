@@ -242,7 +242,7 @@ class NIListField(NIBasicField):
         self.rel_method      = rel_method
         self.not_null_list   = not_null_list
         self.unique          = unique
-        self.filters         = filter
+        self.filter          = filter
 
     def get_default_value(self):
         return []
