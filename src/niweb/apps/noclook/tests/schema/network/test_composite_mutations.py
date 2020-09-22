@@ -6501,12 +6501,18 @@ class RackTest(Neo4jGraphQLNetworkTest):
                   ...on Switch{{
                     id
                     name
+                    operational_state{{
+                      value
+                    }}
                   }}
                 }}
                 back{{
                   ...on Firewall{{
                     id
                     name
+                    operational_state{{
+                      value
+                    }}
                   }}
                 }}
               }}
@@ -6519,6 +6525,9 @@ class RackTest(Neo4jGraphQLNetworkTest):
               firewall{{
                 id
                 name
+                operational_state{{
+                  value
+                }}
                 rack_back
               }}
             }}
@@ -6530,6 +6539,9 @@ class RackTest(Neo4jGraphQLNetworkTest):
               switch{{
                 id
                 name
+                operational_state{{
+                  value
+                }}
                 rack_back
               }}
             }}
@@ -6598,3 +6610,30 @@ class RackTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_rack['depth'], int(rack_depth))
         self.assertEquals(check_rack['width'], int(rack_width))
         self.assertEquals(check_rack['rack_units'], int(rack_rack_units))
+
+        # check parent room data
+        check_parent_room = all_data['parent_room_updated']['room']
+
+        self.assertEquals(check_parent_room['id'], parent_room_id)
+        self.assertEquals(check_parent_room['name'], parent_room_name)
+        self.assertEquals(check_parent_room['floor'], parent_room_floor)
+
+        self.assertEquals(check_rack['parent']['id'], parent_room_id)
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_rack['back'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_rack['front'][0]['id'], switch_id)
