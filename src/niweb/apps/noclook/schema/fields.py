@@ -232,7 +232,8 @@ class NIListField(NIBasicField):
     '''
     def __init__(self, field_type=graphene.List, manual_resolver=False,
                     type_args=None, rel_name=None, rel_method=None,
-                    not_null_list=False, unique=False, **kwargs):
+                    not_null_list=False, unique=False,
+                    filter=None, **kwargs):
 
         self.field_type      = field_type
         self.manual_resolver = manual_resolver
@@ -241,6 +242,7 @@ class NIListField(NIBasicField):
         self.rel_method      = rel_method
         self.not_null_list   = not_null_list
         self.unique          = unique
+        self.filter          = filter
 
     def get_default_value(self):
         return []
@@ -259,17 +261,23 @@ class NIListField(NIBasicField):
                 for node in nodes:
                     relation_id = node['relationship_id']
                     node_elem = node['node']
-                    node_id = node_elem.data.get('handle_id')
 
-                    if not relation_id:
-                        relation_id = -1
-                        warnings.warn(
-                            "relationship_id is None".format(node),
-                            RuntimeWarning
-                        )
+                    # filter out nodes
+                    if self.filter:
+                        node_elem = self.filter(node_elem)
+
+                    if node_elem:
+                        node_id = node_elem.data.get('handle_id')
+
+                        if not relation_id:
+                            relation_id = -1
+                            warnings.warn(
+                                "relationship_id is None".format(node),
+                                RuntimeWarning
+                            )
 
 
-                    id_list.append((node_id, relation_id))
+                        id_list.append((node_id, relation_id))
 
             id_list = sorted(id_list, key=lambda x: x[0])
 

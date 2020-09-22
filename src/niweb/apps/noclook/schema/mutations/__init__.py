@@ -148,6 +148,11 @@ class NOCRootMutation(graphene.ObjectType):
     delete_room = NIRoomMutationFactory.get_delete_mutation().Field()
     composite_room = CompositeRoomMutation.Field()
 
+    create_rack = NIRackMutationFactory.get_create_mutation().Field()
+    update_rack = NIRackMutationFactory.get_update_mutation().Field()
+    delete_rack = NIRackMutationFactory.get_delete_mutation().Field()
+    composite_rack = CompositeRackMutation.Field()
+
     ## Common mutations
     create_comment = CreateComment.Field()
     update_comment = UpdateComment.Field()
