@@ -6445,6 +6445,9 @@ class RackTest(Neo4jGraphQLNetworkTest):
         main_input_id = ""
         main_payload = 'created'
 
+        firewall_rackback = 'true'
+        switch_rackback = 'false'
+
         query_t = """
         mutation{{
           composite_rack(input:{{
@@ -6466,7 +6469,7 @@ class RackTest(Neo4jGraphQLNetworkTest):
                 id: "{firewall_id}"
                 name: "{firewall_name}"
                 operational_state: "{firewall_opstate}"
-                rack_back: true
+                rack_back: {firewall_rackback}
               }}
             ]
             update_located_in_switch:[
@@ -6474,7 +6477,7 @@ class RackTest(Neo4jGraphQLNetworkTest):
                 id: "{switch_id}"
                 name: "{switch_name}"
                 operational_state: "{switch_opstate}"
-                rack_back: false
+                rack_back: {switch_rackback}
               }}
             ]
           }}){{
@@ -6505,8 +6508,22 @@ class RackTest(Neo4jGraphQLNetworkTest):
                       value
                     }}
                   }}
+                  ...on Firewall{{
+                    id
+                    name
+                    operational_state{{
+                      value
+                    }}
+                  }}
                 }}
                 back{{
+                  ...on Switch{{
+                    id
+                    name
+                    operational_state{{
+                      value
+                    }}
+                  }}
                   ...on Firewall{{
                     id
                     name
@@ -6569,8 +6586,10 @@ class RackTest(Neo4jGraphQLNetworkTest):
             parent_room_floor=parent_room_floor,
             firewall_id=firewall_id, firewall_name=firewall_name,
             firewall_opstate=firewall_opstate,
+            firewall_rackback=firewall_rackback,
             switch_id=switch_id, switch_name=switch_name,
             switch_opstate=switch_opstate,
+            switch_rackback=switch_rackback,
         )
 
         result = schema.execute(query, context=self.context)
@@ -6637,3 +6656,107 @@ class RackTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_switch['operational_state']['value'],
                             switch_opstate)
         self.assertEquals(check_rack['front'][0]['id'], switch_id)
+
+        ## update
+        # data rack
+        a_rack = data_generator.create_rack(add_parent=False)
+        rack_name = a_rack.get_node().data.get("name")
+        rack_height = a_rack.get_node().data.get("height")
+        rack_depth = a_rack.get_node().data.get("depth")
+        rack_width = a_rack.get_node().data.get("width")
+        rack_rack_units = a_rack.get_node().data.get("rack_units")
+        a_rack.delete()
+
+        # create a parent room
+        parent_room = data_generator.create_room(add_parent=False)
+        parent_room_id = relay.Node.to_global_id(str(parent_room.node_type),
+                                                str(parent_room.handle_id))
+        parent_room_name = parent_room.get_node().data.get("name")
+        parent_room_floor = parent_room.get_node().data.get("floor")
+
+        # firewall and switch back reversed
+        firewall_rackback = 'false'
+        switch_rackback = 'true'
+
+        main_input = "update_input"
+        main_input_id = 'id: "{}"'.format(rack_id)
+        main_payload = 'updated'
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            main_payload=main_payload,
+            rack_name=rack_name, rack_height=rack_height, rack_depth=rack_depth,
+            rack_width=rack_width, rack_rack_units=rack_rack_units,
+            parent_room_id=parent_room_id, parent_room_name=parent_room_name,
+            parent_room_floor=parent_room_floor,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            firewall_rackback=firewall_rackback,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+            switch_rackback=switch_rackback,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_rack']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'parent_room_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check rack data
+        check_rack = all_data[main_payload]['rack']
+
+        self.assertEquals(check_rack['name'], rack_name)
+        self.assertEquals(check_rack['height'], int(rack_height))
+        self.assertEquals(check_rack['depth'], int(rack_depth))
+        self.assertEquals(check_rack['width'], int(rack_width))
+        self.assertEquals(check_rack['rack_units'], int(rack_rack_units))
+
+        # check parent room data
+        check_parent_room = all_data['parent_room_updated']['room']
+
+        self.assertEquals(check_parent_room['id'], parent_room_id)
+        self.assertEquals(check_parent_room['name'], parent_room_name)
+        self.assertEquals(check_parent_room['floor'], parent_room_floor)
+
+        self.assertEquals(check_rack['parent']['id'], parent_room_id)
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_rack['front'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_rack['back'][0]['id'], switch_id)
