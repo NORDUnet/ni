@@ -320,3 +320,13 @@ class CompositeRoomMutation(CompositeMutation):
         graphql_type = Room
         main_mutation_f = NIRoomMutationFactory
         context = sriutils.get_network_context()
+
+
+class CompositeRackMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Rack
+        main_mutation_f = NIRackMutationFactory
+        context = sriutils.get_network_context()

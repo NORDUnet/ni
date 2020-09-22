@@ -653,3 +653,17 @@ class NIRoomMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+class NIRackMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = EditRackForm
+        request_path = '/'
+        graphql_type = Rack
+        unique_node  = False
+        # we'll exclude the parent relationship because we'll use the metatype
+        # mutation input on the composite mutation
+        form_exclude = ('relationship_parent', 'relationship_located_in')
+
+    class Meta:
+        abstract = False
