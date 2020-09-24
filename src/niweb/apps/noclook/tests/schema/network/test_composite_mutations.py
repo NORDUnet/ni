@@ -860,6 +860,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
 
+        # get a location
+        location = generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         # get two groups
         community_generator = CommunityFakeDataGenerator()
         group1 = community_generator.create_group()
@@ -932,6 +937,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
                 services_locked: {services_locked}
+                relationship_location: "{location_id}"
               }}
               create_subinputs:[
                 {{
@@ -989,6 +995,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                location{{
+                  id
+                  name
+                }}
               }}
             }}
             subcreated{{
@@ -1036,7 +1046,8 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     port_2_name=port_2_name, port_2_type=port_2_type,
                     port_2_description=port_2_description, port_2_id=port_2_id,
                     rack_back=str(rack_back).lower(),
-                    services_locked=str(services_locked).lower())
+                    services_locked=str(services_locked).lower(),
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1067,6 +1078,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check provider
         check_provider = created_switch['provider']
         self.assertEqual(check_provider['id'], provider_id)
+
+        # check location
+        check_location = created_switch['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # check responsible group
         check_responsible = created_switch['responsible_group']

@@ -513,7 +513,7 @@ class EditSRIHostForm(NewSRIHostForm, EditHostForm):
         self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
 
 
-class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, EditHostForm):
+class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, EditSRIHostForm):
     def __init__(self, *args, **kwargs):
         super(NewSwitchHostForm, self).__init__(*args, **kwargs)
         self.fields['switch_type'].choices = SwitchType.as_choices()
@@ -525,7 +525,7 @@ class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, Ed
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
 
-class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, EditHostForm):
+class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, EditSRIHostForm):
     def __init__(self, *args, **kwargs):
         super(EditSwitchForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()

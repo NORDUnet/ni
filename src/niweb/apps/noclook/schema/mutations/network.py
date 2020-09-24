@@ -128,6 +128,10 @@ class NISwitchMutationFactory(NIMutationFactory):
                 'Supports',
                 helpers.set_supports
             ),
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
         }
 
     class Meta:
