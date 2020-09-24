@@ -592,13 +592,16 @@ class NewOdfForm(RackableForm):
         max_num_of_ports = 48
         choices = [(x, x) for x in range(1, max_num_of_ports + 1) if x]
         self.fields['max_number_of_ports'].choices = choices
-        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['operational_state'].choices = \
+            Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_location'].choices = \
+            get_node_type_tuples('Rack')
 
     name = forms.CharField()
     description = description_field('ODF')
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_location = relationship_field('location')
+    relationship_location = relationship_field('location', True)
 
 
 class NewPatchPannelForm(RackableForm):
@@ -644,7 +647,7 @@ class BulkPortsForm(forms.Form):
     num_ports = forms.IntegerField(required=False, min_value=0, initial=0)
 
 
-class EditOdfForm(RackableForm):
+class EditOdfForm(NewOdfForm):
     def __init__(self, *args, **kwargs):
         super(EditOdfForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
