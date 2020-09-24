@@ -175,6 +175,10 @@ class NIFirewallMutationFactory(NIMutationFactory):
                 'Owns',
                 helpers.set_owner
             ),
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
         }
 
     class Meta:

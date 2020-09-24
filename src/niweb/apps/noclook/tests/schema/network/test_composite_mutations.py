@@ -1535,12 +1535,16 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         rack_position = 3
         rack_units = 2
         rack_back = bool(random.getrandbits(1))
+        services_locked = bool(random.getrandbits(1))
 
+        # owner and location
         owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
-        services_locked = bool(random.getrandbits(1))
 
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
 
         # create new port
         port_1_name = str(random.randint(0, 50000))
@@ -1580,12 +1584,13 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
               service_tag: "{service_tag}"
               end_support: "{end_support}"
               contract_number: "{contract_number}"
-              relationship_owner: "{owner_id}"
               max_number_of_ports: {max_number_of_ports}
               rack_units: {rack_units}
               rack_position: {rack_position}
               services_locked: {services_locked}
               rack_back: {rack_back}
+              relationship_owner: "{owner_id}"
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -1700,6 +1705,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             os=os, os_version=os_version, model=model, vendor=vendor,
             service_tag=service_tag, end_support=end_support,
             contract_number=contract_number, owner_id=owner_id,
+            location_id=location_id,
             max_number_of_ports=max_number_of_ports, rack_units=rack_units,
             rack_position=rack_position, rack_back=str(rack_back).lower(),
             services_locked=str(services_locked).lower(),
@@ -1742,11 +1748,17 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         check_support = updated_firewall['support_group']
         self.assertEqual(check_support['id'], group2_id)
 
-        # check support group
+        # check owner and location
         check_owner = updated_firewall['owner']
         self.assertEqual(check_owner['id'], owner_id, "{} / {} != {} / {}".format(
             *relay.Node.from_global_id(check_owner['id']),
             *relay.Node.from_global_id(owner_id),
+        ))
+
+        check_location = updated_firewall['location']
+        self.assertEqual(check_location['id'], location_id, "{} / {} != {} / {}".format(
+            *relay.Node.from_global_id(check_location['id']),
+            *relay.Node.from_global_id(location_id),
         ))
 
         # check ports data

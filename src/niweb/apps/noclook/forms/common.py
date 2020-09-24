@@ -540,7 +540,7 @@ class EditFirewallForm(EditHostForm):
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
-class EditFirewallNewForm(PhysicalSupportForm, WithMaxPortsForm, EditHostForm):
+class EditFirewallNewForm(PhysicalSupportForm, WithMaxPortsForm, EditSRIHostForm):
     def __init__(self, *args, **kwargs):
         super(EditFirewallNewForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
