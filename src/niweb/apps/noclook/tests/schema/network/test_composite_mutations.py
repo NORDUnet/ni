@@ -3539,6 +3539,11 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
         port2_id = relay.Node.to_global_id(str(port2.node_type),
                                             str(port2.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_opticalFilter(input:{{
@@ -3549,6 +3554,7 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -3587,6 +3593,10 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 ports{{
+                  id
+                  name
+                }}
+                location{{
                   id
                   name
                 }}
@@ -3631,7 +3641,8 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name, port1_type=port1_type,
                     port1_description=port1_description, port2_id=port2_id,
                     port2_name=port2_name, port2_type=port2_type,
-                    port2_description=port2_description)
+                    port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -3685,6 +3696,10 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_ofilter['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         ofilter_name = "Optical Node check"
