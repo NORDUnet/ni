@@ -1890,6 +1890,11 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_externalEquipment(input:{{
@@ -1900,6 +1905,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -1934,6 +1940,10 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 has{{
+                  id
+                  name
+                }}
+                location{{
                   id
                   name
                 }}
@@ -1978,7 +1988,8 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name,
                     port1_type=port1_type, port1_description=port1_description,
                     port2_id=port2_id, port2_name=port2_name,
-                    port2_type=port2_type, port2_description=port2_description)
+                    port2_type=port2_type, port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -2029,6 +2040,10 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_extequip['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         exteq_name = "External Equipment check"
