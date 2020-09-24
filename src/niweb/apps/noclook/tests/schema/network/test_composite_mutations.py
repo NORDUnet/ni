@@ -1350,6 +1350,11 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         )
         port_2_description = generator.escape_quotes(generator.fake.paragraph())
 
+        # location
+        location = generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_router(input:{{
@@ -1360,6 +1365,7 @@ class RouterTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_subinputs:[
               {{
@@ -1445,7 +1451,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
                     port_1_description=port_1_description,
                     port_2_id=port_2_id, port_2_name=port_2_name,
                     port_2_type=port_2_type,
-                    port_2_description=port_2_description)
+                    port_2_description=port_2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1491,6 +1498,9 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         # check ports in router
         self.assertEqual(updated_router['ports'][1]['id'], port_1_id)
         self.assertEqual(updated_router['ports'][0]['id'], port_2_id)
+
+        # check location
+        self.assertEqual(updated_router['location']['id'], location_id)
 
 
 class FirewallTest(Neo4jGraphQLNetworkTest):

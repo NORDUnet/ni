@@ -568,9 +568,13 @@ class EditRouterForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(EditRouterForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_location'].choices = \
+            get_node_type_tuples('Site') + get_node_type_tuples('Room') + \
+            get_node_type_tuples('Rack')
+
 
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    relationship_location = relationship_field('location')
+    relationship_location = relationship_field('location', True)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     description = description_field('router')
 
