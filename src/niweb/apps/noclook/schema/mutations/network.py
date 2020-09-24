@@ -306,6 +306,10 @@ class CreateHost(CreateNIMutation):
                 'Supports',
                 helpers.set_supports
             ),
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
         }
 
 
@@ -421,6 +425,10 @@ class EditHost(CreateNIMutation):
                 'Supports',
                 helpers.set_supports
             ),
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
         }
 
 
@@ -442,6 +450,10 @@ class NIHostMutationFactory(NIMutationFactory):
             'support_group': get_unique_relation_processor(
                 'Supports',
                 helpers.set_supports
+            ),
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
             ),
         }
 

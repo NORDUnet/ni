@@ -2150,12 +2150,31 @@ class HostTest(Neo4jGraphQLNetworkTest):
             },
         ]
 
+        location_queries = [
+            {
+                'input_location': '',
+                'query_location': '',
+            },
+            {
+                'input_location': 'relationship_location: "{location_id}"',
+                'query_location': '''
+                    location {
+                      id
+                      name
+                    }
+                ''',
+            },
+        ]
+
         host_ids = {
             'logical': None,
             'physical': None,
         }
 
-        for owner_query in owner_queries:
+        for i in range(2):
+            owner_query = owner_queries[i]
+            location_query = location_queries[i]
+
             # get two groups
             community_generator = CommunityFakeDataGenerator()
             net_generator = NetworkFakeDataGenerator()
@@ -2189,13 +2208,13 @@ class HostTest(Neo4jGraphQLNetworkTest):
             os = "GNU/Linux"
             os_version = "5.8"
             contract_number = "001"
+            services_locked = bool(random.getrandbits(1))
 
+            # owner
             input_owner = owner_query['input_owner']
             query_owner = owner_query['query_owner']
 
             owner_id = None
-
-            services_locked = bool(random.getrandbits(1))
 
             if input_owner:
                 owner = net_generator.create_customer()
@@ -2204,6 +2223,21 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     str(owner.handle_id)
                 )
                 input_owner = input_owner.format(owner_id=owner_id)
+
+            # location (rack)
+            input_location = location_query['input_location']
+            query_location = location_query['query_location']
+
+            location_id = None
+
+            if input_location:
+                location = net_generator.create_rack()
+                location_id = relay.Node.to_global_id(
+                    str(location.node_type).replace(' ', ''),
+                    str(location.handle_id)
+                )
+                input_location = input_location.format(
+                                        location_id=location_id)
 
             query = '''
             mutation{{
@@ -2226,6 +2260,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     contract_number: "{contract_number}"
                     services_locked: {services_locked}
                     {input_owner}
+                    {input_location}
                   }}
                 }}
               ){{
@@ -2264,6 +2299,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     services_locked
                     services_checked
                     {query_owner}
+                    {query_location}
                   }}
                 }}
               }}
@@ -2275,9 +2311,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                         group1_id=group1_id, group2_id=group2_id,
                         managed_by=managed_by, backup=backup, os=os,
                         os_version=os_version, contract_number=contract_number,
-                        input_owner=input_owner, query_owner=query_owner,
                         rack_back=str(rack_back).lower(),
-                        services_locked=str(services_locked).lower())
+                        services_locked=str(services_locked).lower(),
+                        input_owner=input_owner, query_owner=query_owner,
+                        input_location=input_location, query_location=query_location)
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -2326,6 +2363,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(created_host['host_type'], "Physical")
                 self.assertEqual(host_node.meta_type, "Physical")
                 host_ids['physical'] = host_id
+
+                # check owner and location
+                self.assertEqual(created_host['host_owner']['id'], owner_id)
+                self.assertEqual(created_host['location']['id'], location_id)
 
         edit_query = '''
         mutation{{

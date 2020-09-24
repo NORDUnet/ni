@@ -489,6 +489,7 @@ class EditHostForm(NewHostForm):
 
 class NewSRIHostForm(NewHostForm):
     relationship_owner = relationship_field('owner', True)
+    relationship_location = relationship_field('location', True)
 
     def __init__(self, *args, **kwargs):
         super(NewSRIHostForm, self).__init__(*args, **kwargs)
@@ -501,6 +502,7 @@ class NewSRIHostForm(NewHostForm):
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
             + get_node_type_tuples('Host User')
+        self.fields['relationship_location'].choices = get_node_type_tuples('Rack')
 
 
 class EditSRIHostForm(NewSRIHostForm, EditHostForm):
