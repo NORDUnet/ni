@@ -5213,19 +5213,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         parent_site_url = parent_site.get_node().data.get("url")
         parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
 
-        # create has site
-        has_site = data_generator.create_site()
-        has_site_name = "Sub site"
-        has_site_country = has_site.get_node().data.get("country")
-        has_site_type = has_site.get_node().data.get("site_type")
-        has_site_type = '' if not parent_site_type else parent_site_type
-        has_site_area = has_site.get_node().data.get("area")
-        has_site_longitude = has_site.get_node().data.get("longitude")
-        has_site_latitude = has_site.get_node().data.get("latitude")
-        has_site_owner_id = has_site.get_node().data.get("owner_id")
-        has_site_owner_site_name = has_site.get_node().data.get("owner_site_name")
-        has_site_url = has_site.get_node().data.get("url")
-        has_site_telenor_subscription_id = has_site.get_node().data.get("telenor_subscription_id")
+        # has data room
+        has_room = data_generator.create_room(add_parent=False)
+        has_room_name = has_room.get_node().data.get("name")
+        has_room_floor = has_room.get_node().data.get("floor")
+        has_room.delete()
 
         # create firewall
         firewall = data_generator.create_firewall()
@@ -5285,11 +5277,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         subinputs_input = "create_subinputs"
         subinput1_id = ""
         subinput2_id = ""
-        has_input = "create_has_site"
+        has_input = "create_has_room"
         has_input_id = ""
         main_payload = "created"
         subpayload = "subcreated"
-        has_payload = "has_site_created"
+        has_payload = "has_room_created"
 
         query_t = """
         mutation{{
@@ -5361,17 +5353,8 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             {has_input}:[ # TODO add has_room instead
               {{
                 {has_input_id}
-                name: "{has_site_name}"
-                country: "{has_site_country}"
-                site_type: "{has_site_type}"
-                area: "{has_site_area}"
-                longitude: {has_site_longitude}
-                latitude: {has_site_latitude}
-                owner_id: "{has_site_owner_id}"
-                owner_site_name: "{has_site_owner_site_name}"
-                url: "{has_site_url}"
-                telenor_subscription_id: "{has_site_telenor_subscription_id}"
-                relationship_responsible_for: "{responsible_for_id}"
+                name: "{has_room_name}"
+                floor: "{has_room_floor}"
               }}
             ]
           }}){{
@@ -5557,25 +5540,10 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                 field
                 messages
               }}
-              site{{
+              room{{
                 id
                 name
-                country_code{{
-                  name
-                  value
-                }}
-                country
-                site_type{{
-                  name
-                  value
-                }}
-                area
-                latitude
-                longitude
-                owner_id
-                owner_site_name
-                url
-                telenor_subscription_id
+                floor
               }}
             }}
           }}
@@ -5615,13 +5583,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             parent_site_owner_site_name=parent_site_owner_site_name,
             parent_site_url=parent_site_url,
             parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
-            has_site_name=has_site_name, has_site_country=has_site_country,
-            has_site_type=has_site_type, has_site_area=has_site_area,
-            has_site_longitude=has_site_longitude, has_site_latitude=has_site_latitude,
-            has_site_owner_id=has_site_owner_id,
-            has_site_owner_site_name=has_site_owner_site_name,
-            has_site_url=has_site_url,
-            has_site_telenor_subscription_id=has_site_telenor_subscription_id,
+            has_room_name=has_room_name, has_room_floor=has_room_floor,
             firewall_id=firewall_id, firewall_name=firewall_name,
             firewall_opstate=firewall_opstate,
             switch_id=switch_id, switch_name=switch_name,
@@ -5637,8 +5599,8 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check for errors
-        created_errors = \
-            result.data['composite_site'][main_payload]['errors']
+        all_data = result.data['composite_site']
+        created_errors = all_data[main_payload]['errors']
         assert not created_errors, pformat(created_errors, indent=1)
 
         submutations = {
@@ -5650,22 +5612,24 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         }
 
         for k,v in submutations.items():
-            if result.data['composite_site'][k]:
+            if all_data[k]:
                 item = None
 
                 try:
-                    result.data['composite_site'][k][0]
-                    for item in result.data['composite_site'][k]:
+                    all_data[k][0]
+                    for item in all_data[k]:
                         submutations[k] = item['errors']
-                        assert not submutations[k], pformat(submutations[k], indent=1)
+                        assert not submutations[k], \
+                            pformat(submutations[k], indent=1)
                 except KeyError:
-                    item = result.data['composite_site'][k]
+                    item = all_data[k]
                     submutations[k] = item['errors']
-                    assert not submutations[k], pformat(submutations[k], indent=1)
+                    assert not submutations[k], \
+                        pformat(submutations[k], indent=1)
 
 
         # check site data
-        check_site = result.data['composite_site'][main_payload]['site']
+        check_site = all_data[main_payload]['site']
         site_id = check_site['id']
 
         self.assertEquals(check_site['name'], site_name)
@@ -5682,7 +5646,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             site_telenor_subscription_id)
 
         # check address
-        check_address1 = result.data['composite_site'][subpayload][0]['address']
+        check_address1 = all_data[subpayload][0]['address']
         address1_id = check_address1['id']
 
         self.assertEquals(check_address1['name'], address1_name)
@@ -5695,7 +5659,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
         self.assertEquals(check_site['addresses'][0]['id'], address1_id)
 
-        check_address2 = result.data['composite_site'][subpayload][1]['address']
+        check_address2 = all_data[subpayload][1]['address']
         address2_id = check_address2['id']
 
         self.assertEquals(check_address2['name'], address2_name)
@@ -5709,7 +5673,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_site['addresses'][1]['id'], address2_id)
 
         # check parent site data
-        check_parent_site = result.data['composite_site']\
+        check_parent_site = all_data\
                                 ['parent_site_updated']['site']
 
         self.assertEquals(check_parent_site['id'], parent_site_id)
@@ -5728,42 +5692,32 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
 
         # check firewall
-        check_firewall = result.data['composite_site']\
+        check_firewall = all_data\
                             ['located_in_firewall_updated'][0]['firewall']
 
         self.assertEquals(check_firewall['id'], firewall_id)
         self.assertEquals(check_firewall['name'], firewall_name)
         self.assertEquals(check_firewall['operational_state']['value'],
                             firewall_opstate)
+        self.assertEquals(check_site['located_in'][0]['id'], firewall_id)
 
         # check switch
-        check_switch = result.data['composite_site']\
+        check_switch = all_data\
                             ['located_in_switch_updated'][0]['switch']
 
         self.assertEquals(check_switch['id'], switch_id)
         self.assertEquals(check_switch['name'], switch_name)
         self.assertEquals(check_switch['operational_state']['value'],
                             switch_opstate)
+        self.assertEquals(check_site['located_in'][1]['id'], switch_id)
 
-        # check has site
-        check_has_site = result.data['composite_site']\
-                                [has_payload][0]['site']
-        has_site_id = check_has_site['id']
+        # check has room
+        check_has_room = all_data[has_payload][0]['room']
+        has_room_id = check_has_room['id']
 
-        self.assertEquals(check_has_site['name'], has_site_name)
-        self.assertEquals(check_has_site['country_code']['name'], has_site_country)
-        if has_site_type:
-            self.assertEquals(check_has_site['site_type']['value'], has_site_type)
-        self.assertEquals(check_has_site['area'], has_site_area)
-        self.assertEquals(check_has_site['latitude'], has_site_latitude)
-        self.assertEquals(check_has_site['longitude'], has_site_longitude)
-        self.assertEquals(check_has_site['owner_id'], has_site_owner_id)
-        self.assertEquals(check_has_site['owner_site_name'], has_site_owner_site_name)
-        self.assertEquals(check_has_site['url'], has_site_url)
-        self.assertEquals(check_has_site['telenor_subscription_id'], \
-            has_site_telenor_subscription_id)
-
-        self.assertEquals(check_site['has'][0]['id'], has_site_id)
+        self.assertEquals(check_has_room['name'], has_room_name)
+        self.assertEquals(check_has_room['floor'], has_room_floor)
+        self.assertEquals(check_site['has'][0]['id'], has_room_id)
 
         ## edition
         # create another responsible for
@@ -5787,21 +5741,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         parent_site_url = parent_site.get_node().data.get("url")
         parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
 
-        # create site node and delete so we can update the has site data
-        has_site = data_generator.create_site()
-        has_site_name = "Test subsite"
-        has_site_country = has_site.get_node().data.get("country")
-        has_site_type = has_site.get_node().data.get("site_type")
-        has_site_type = '' if not parent_site_type else parent_site_type
-        has_site_area = has_site.get_node().data.get("area")
-        has_site_longitude = has_site.get_node().data.get("longitude")
-        has_site_latitude = has_site.get_node().data.get("latitude")
-        has_site_owner_id = has_site.get_node().data.get("owner_id")
-        has_site_owner_site_name = has_site.get_node().data.get("owner_site_name")
-        has_site_url = has_site.get_node().data.get("url")
-        has_site_telenor_subscription_id = has_site.get_node().data.get("telenor_subscription_id")
-
-        has_site.delete()
+        # create room node and delete so we can update the has room data
+        has_room = data_generator.create_room(add_parent=False)
+        has_room_name = has_room.get_node().data.get("name")
+        has_room_floor = has_room.get_node().data.get("floor")
+        has_room.delete()
 
         # create firewall and delete it to get it's generated data
         firewall = data_generator.create_firewall()
@@ -5865,11 +5809,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         subinputs_input = "update_subinputs"
         subinput1_id = 'id: "{}"'.format(address1_id)
         subinput2_id = 'id: "{}"'.format(address2_id)
-        has_input = 'update_has_site'
-        has_input_id = 'id: "{}"'.format(has_site_id)
+        has_input = 'update_has_room'
+        has_input_id = 'id: "{}"'.format(has_room_id)
         main_payload = "updated"
         subpayload = "subupdated"
-        has_payload = "has_site_updated"
+        has_payload = "has_room_updated"
 
         query = query_t.format(
             main_input=main_input, main_input_id=main_input_id,
@@ -5904,13 +5848,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             parent_site_owner_site_name=parent_site_owner_site_name,
             parent_site_url=parent_site_url,
             parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
-            has_site_name=has_site_name, has_site_country=has_site_country,
-            has_site_type=has_site_type, has_site_area=has_site_area,
-            has_site_longitude=has_site_longitude, has_site_latitude=has_site_latitude,
-            has_site_owner_id=has_site_owner_id,
-            has_site_owner_site_name=has_site_owner_site_name,
-            has_site_url=has_site_url,
-            has_site_telenor_subscription_id=has_site_telenor_subscription_id,
+            has_room_name=has_room_name, has_room_floor=has_room_floor,
             firewall_id=firewall_id, firewall_name=firewall_name,
             firewall_opstate=firewall_opstate,
             switch_id=switch_id, switch_name=switch_name,
@@ -5921,8 +5859,8 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check for errors
-        created_errors = \
-            result.data['composite_site'][main_payload]['errors']
+        all_data = result.data['composite_site']
+        created_errors = all_data[main_payload]['errors']
         assert not created_errors, pformat(created_errors, indent=1)
 
         submutations = {
@@ -5934,21 +5872,21 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         }
 
         for k,v in submutations.items():
-            if result.data['composite_site'][k]:
+            if all_data[k]:
                 item = None
 
                 try:
-                    result.data['composite_site'][k][0]
-                    for item in result.data['composite_site'][k]:
+                    all_data[k][0]
+                    for item in all_data[k]:
                         submutations[k] = item['errors']
                         assert not submutations[k], pformat(submutations[k], indent=1)
                 except KeyError:
-                    item = result.data['composite_site'][k]
+                    item = all_data[k]
                     submutations[k] = item['errors']
                     assert not submutations[k], pformat(submutations[k], indent=1)
 
         # check site data
-        check_site = result.data['composite_site'][main_payload]['site']
+        check_site = all_data[main_payload]['site']
         site_id = check_site['id']
 
         self.assertEquals(check_site['name'], site_name)
@@ -5965,7 +5903,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             site_telenor_subscription_id)
 
         # check address
-        check_address1 = result.data['composite_site'][subpayload][0]['address']
+        check_address1 = all_data[subpayload][0]['address']
         address1_id = check_address1['id']
 
         self.assertEquals(check_address1['name'], address1_name)
@@ -5978,7 +5916,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
         self.assertEquals(check_site['addresses'][0]['id'], address1_id)
 
-        check_address2 = result.data['composite_site'][subpayload][1]['address']
+        check_address2 = all_data[subpayload][1]['address']
         address2_id = check_address2['id']
 
         self.assertEquals(check_address2['name'], address2_name)
@@ -5992,8 +5930,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_site['addresses'][1]['id'], address2_id)
 
         # check parent site data
-        check_parent_site = result.data['composite_site']\
-                                ['parent_site_updated']['site']
+        check_parent_site = all_data['parent_site_updated']['site']
 
         self.assertEquals(check_parent_site['id'], parent_site_id)
         self.assertEquals(check_parent_site['name'], parent_site_name)
@@ -6011,42 +5948,29 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
 
         # check firewall
-        check_firewall = result.data['composite_site']\
-                            ['located_in_firewall_updated'][0]['firewall']
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
 
         self.assertEquals(check_firewall['id'], firewall_id)
         self.assertEquals(check_firewall['name'], firewall_name)
         self.assertEquals(check_firewall['operational_state']['value'],
                             firewall_opstate)
+        self.assertEquals(check_site['located_in'][0]['id'], firewall_id)
 
         # check switch
-        check_switch = result.data['composite_site']\
-                            ['located_in_switch_updated'][0]['switch']
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
 
         self.assertEquals(check_switch['id'], switch_id)
         self.assertEquals(check_switch['name'], switch_name)
         self.assertEquals(check_switch['operational_state']['value'],
                             switch_opstate)
+        self.assertEquals(check_site['located_in'][1]['id'], switch_id)
 
-        # check has site
-        check_has_site = result.data['composite_site']\
-                                [has_payload][0]['site']
-        has_site_id = check_has_site['id']
+        # check has room
+        check_has_room = all_data[has_payload][0]['room']
 
-        self.assertEquals(check_has_site['name'], has_site_name)
-        self.assertEquals(check_has_site['country_code']['name'], has_site_country)
-        if has_site_type:
-            self.assertEquals(check_has_site['site_type']['value'], has_site_type)
-        self.assertEquals(check_has_site['area'], has_site_area)
-        self.assertEquals(check_has_site['latitude'], has_site_latitude)
-        self.assertEquals(check_has_site['longitude'], has_site_longitude)
-        self.assertEquals(check_has_site['owner_id'], has_site_owner_id)
-        self.assertEquals(check_has_site['owner_site_name'], has_site_owner_site_name)
-        self.assertEquals(check_has_site['url'], has_site_url)
-        self.assertEquals(check_has_site['telenor_subscription_id'], \
-            has_site_telenor_subscription_id)
-
-        self.assertEquals(check_site['has'][0]['id'], has_site_id)
+        self.assertEquals(check_has_room['name'], has_room_name)
+        self.assertEquals(check_has_room['floor'], has_room_floor)
+        self.assertEquals(check_site['has'][0]['id'], has_room_id)
 
 
 class RoomTest(Neo4jGraphQLNetworkTest):
@@ -6374,7 +6298,7 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                             switch_opstate)
         self.assertEquals(check_room['located_in'][1]['id'], switch_id)
 
-        # check has site
+        # check has room
         check_has_room = all_data[has_payload][0]['room']
         has_room_id = check_has_room['id']
 
@@ -6521,7 +6445,7 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                             switch_opstate)
         self.assertEquals(check_room['located_in'][1]['id'], switch_id)
 
-        # check has site
+        # check has room
         check_has_room = all_data[has_payload][0]['room']
 
         self.assertEquals(check_has_room['name'], has_room_name)
