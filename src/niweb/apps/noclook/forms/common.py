@@ -374,13 +374,18 @@ class ConnectPortForm(forms.Form):
 class OpticalNodeForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(OpticalNodeForm, self).__init__(*args, **kwargs)
-        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
-        self.fields['type'].choices = Dropdown.get('optical_node_types').as_choices()
+        self.fields['operational_state'].choices = \
+            Dropdown.get('operational_states').as_choices()
+        self.fields['type'].choices = \
+            Dropdown.get('optical_node_types').as_choices()
+        self.fields['relationship_location'].choices = \
+            get_node_type_tuples('Rack')
+
     name = forms.CharField()
     type = forms.ChoiceField()
     operational_state = forms.ChoiceField(initial='In service')
     description = description_field('optical node')
-    relationship_location = relationship_field('location')
+    relationship_location = relationship_field('location', True)
 
 
 class EditOpticalNodeForm(OpticalNodeForm):

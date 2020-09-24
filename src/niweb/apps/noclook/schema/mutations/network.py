@@ -529,6 +529,12 @@ class NIOpticalNodeMutationFactory(NIMutationFactory):
         request_path = '/'
         graphql_type = OpticalNode
         unique_node  = True
+        relations_processors = {
+            'relationship_location': get_unique_relation_processor(
+                'Located_in',
+                helpers.set_location
+            ),
+        }
 
     class Meta:
         abstract = False
