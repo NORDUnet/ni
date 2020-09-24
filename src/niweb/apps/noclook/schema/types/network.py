@@ -140,6 +140,10 @@ class Host(NIObjectType, PhysicalLogicalMixin):
     services_checked = NIBooleanField()
     ports = NIListField(type_args=(lambda: Port,), rel_name='Has',
         rel_method='_outgoing')
+    location = graphene.Field(lambda:Location)
+
+    def resolve_location(self, info, **kwargs):
+        return PhysicalMixin.resolve_location(self, info, **kwargs)
 
     def resolve_ip_addresses(self, info, **kwargs):
         '''Manual resolver for the ip field'''

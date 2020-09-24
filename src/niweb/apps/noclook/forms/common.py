@@ -374,13 +374,18 @@ class ConnectPortForm(forms.Form):
 class OpticalNodeForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(OpticalNodeForm, self).__init__(*args, **kwargs)
-        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
-        self.fields['type'].choices = Dropdown.get('optical_node_types').as_choices()
+        self.fields['operational_state'].choices = \
+            Dropdown.get('operational_states').as_choices()
+        self.fields['type'].choices = \
+            Dropdown.get('optical_node_types').as_choices()
+        self.fields['relationship_location'].choices = \
+            get_node_type_tuples('Rack')
+
     name = forms.CharField()
     type = forms.ChoiceField()
     operational_state = forms.ChoiceField(initial='In service')
     description = description_field('optical node')
-    relationship_location = relationship_field('location')
+    relationship_location = relationship_field('location', True)
 
 
 class EditOpticalNodeForm(OpticalNodeForm):
@@ -489,6 +494,7 @@ class EditHostForm(NewHostForm):
 
 class NewSRIHostForm(NewHostForm):
     relationship_owner = relationship_field('owner', True)
+    relationship_location = relationship_field('location', True)
 
     def __init__(self, *args, **kwargs):
         super(NewSRIHostForm, self).__init__(*args, **kwargs)
@@ -501,6 +507,7 @@ class NewSRIHostForm(NewHostForm):
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
             + get_node_type_tuples('Host User')
+        self.fields['relationship_location'].choices = get_node_type_tuples('Rack')
 
 
 class EditSRIHostForm(NewSRIHostForm, EditHostForm):
@@ -511,7 +518,7 @@ class EditSRIHostForm(NewSRIHostForm, EditHostForm):
         self.fields['relationship_user'].choices = get_node_type_tuples('Host User')
 
 
-class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, EditHostForm):
+class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, EditSRIHostForm):
     def __init__(self, *args, **kwargs):
         super(NewSwitchHostForm, self).__init__(*args, **kwargs)
         self.fields['switch_type'].choices = SwitchType.as_choices()
@@ -523,7 +530,7 @@ class NewSwitchHostForm(PhysicalSupportForm, NewSwitchForm, WithMaxPortsForm, Ed
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
 
 
-class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, EditHostForm):
+class EditSwitchForm(PhysicalSupportForm, BasicSwitchForm, WithMaxPortsForm, EditSRIHostForm):
     def __init__(self, *args, **kwargs):
         super(EditSwitchForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -538,7 +545,7 @@ class EditFirewallForm(EditHostForm):
     max_number_of_ports = forms.IntegerField(help_text='Max number of ports.', required=False)
 
 
-class EditFirewallNewForm(PhysicalSupportForm, WithMaxPortsForm, EditHostForm):
+class EditFirewallNewForm(PhysicalSupportForm, WithMaxPortsForm, EditSRIHostForm):
     def __init__(self, *args, **kwargs):
         super(EditFirewallNewForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -566,9 +573,13 @@ class EditRouterForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(EditRouterForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_location'].choices = \
+            get_node_type_tuples('Site') + get_node_type_tuples('Room') + \
+            get_node_type_tuples('Rack')
+
 
     operational_state = forms.ChoiceField(widget=forms.widgets.Select)
-    relationship_location = relationship_field('location')
+    relationship_location = relationship_field('location', True)
     relationship_ports = JSONField(required=False, widget=JSONInput)
     description = description_field('router')
 
@@ -581,13 +592,16 @@ class NewOdfForm(RackableForm):
         max_num_of_ports = 48
         choices = [(x, x) for x in range(1, max_num_of_ports + 1) if x]
         self.fields['max_number_of_ports'].choices = choices
-        self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
+        self.fields['operational_state'].choices = \
+            Dropdown.get('operational_states').as_choices()
+        self.fields['relationship_location'].choices = \
+            get_node_type_tuples('Rack')
 
     name = forms.CharField()
     description = description_field('ODF')
     max_number_of_ports = forms.ChoiceField(required=False, widget=forms.widgets.Select)
     operational_state = forms.ChoiceField(required=False, widget=forms.widgets.Select)
-    relationship_location = relationship_field('location')
+    relationship_location = relationship_field('location', True)
 
 
 class NewPatchPannelForm(RackableForm):
@@ -633,7 +647,7 @@ class BulkPortsForm(forms.Form):
     num_ports = forms.IntegerField(required=False, min_value=0, initial=0)
 
 
-class EditOdfForm(RackableForm):
+class EditOdfForm(NewOdfForm):
     def __init__(self, *args, **kwargs):
         super(EditOdfForm, self).__init__(*args, **kwargs)
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
@@ -682,16 +696,19 @@ class EditOpticalFilterForm(EditOdfForm):
 class NewExternalEquipmentForm(RackableForm):
     def __init__(self, *args, **kwargs):
         super(NewExternalEquipmentForm, self).__init__(*args, **kwargs)
-        self.fields['relationship_owner'].choices = get_node_type_tuples('Customer') \
+        self.fields['relationship_owner'].choices = \
+            get_node_type_tuples('Customer') \
             + get_node_type_tuples('End User') \
             + get_node_type_tuples('Provider') \
             + get_node_type_tuples('Host User')
+        self.fields['relationship_location'].choices = \
+            get_node_type_tuples('Rack')
 
     name = forms.CharField()
 
     description = description_field('external equipment')
     relationship_owner = relationship_field('owner', True)
-    relationship_location = relationship_field('location')
+    relationship_location = relationship_field('location', True)
 
 
 class EditExternalEquipmentForm(NewExternalEquipmentForm):

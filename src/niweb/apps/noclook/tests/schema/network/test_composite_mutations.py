@@ -860,6 +860,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
 
+        # get a location
+        location = generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         # get two groups
         community_generator = CommunityFakeDataGenerator()
         group1 = community_generator.create_group()
@@ -932,6 +937,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
                 services_locked: {services_locked}
+                relationship_location: "{location_id}"
               }}
               create_subinputs:[
                 {{
@@ -989,6 +995,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                location{{
+                  id
+                  name
+                }}
               }}
             }}
             subcreated{{
@@ -1036,7 +1046,8 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     port_2_name=port_2_name, port_2_type=port_2_type,
                     port_2_description=port_2_description, port_2_id=port_2_id,
                     rack_back=str(rack_back).lower(),
-                    services_locked=str(services_locked).lower())
+                    services_locked=str(services_locked).lower(),
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1067,6 +1078,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check provider
         check_provider = created_switch['provider']
         self.assertEqual(check_provider['id'], provider_id)
+
+        # check location
+        check_location = created_switch['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # check responsible group
         check_responsible = created_switch['responsible_group']
@@ -1350,6 +1365,11 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         )
         port_2_description = generator.escape_quotes(generator.fake.paragraph())
 
+        # location
+        location = generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_router(input:{{
@@ -1360,6 +1380,7 @@ class RouterTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_subinputs:[
               {{
@@ -1445,7 +1466,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
                     port_1_description=port_1_description,
                     port_2_id=port_2_id, port_2_name=port_2_name,
                     port_2_type=port_2_type,
-                    port_2_description=port_2_description)
+                    port_2_description=port_2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1492,6 +1514,9 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(updated_router['ports'][1]['id'], port_1_id)
         self.assertEqual(updated_router['ports'][0]['id'], port_2_id)
 
+        # check location
+        self.assertEqual(updated_router['location']['id'], location_id)
+
 
 class FirewallTest(Neo4jGraphQLNetworkTest):
     def test_firewall(self):
@@ -1535,12 +1560,16 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         rack_position = 3
         rack_units = 2
         rack_back = bool(random.getrandbits(1))
+        services_locked = bool(random.getrandbits(1))
 
+        # owner and location
         owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
-        services_locked = bool(random.getrandbits(1))
 
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
 
         # create new port
         port_1_name = str(random.randint(0, 50000))
@@ -1580,12 +1609,13 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
               service_tag: "{service_tag}"
               end_support: "{end_support}"
               contract_number: "{contract_number}"
-              relationship_owner: "{owner_id}"
               max_number_of_ports: {max_number_of_ports}
               rack_units: {rack_units}
               rack_position: {rack_position}
               services_locked: {services_locked}
               rack_back: {rack_back}
+              relationship_owner: "{owner_id}"
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -1700,6 +1730,7 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             os=os, os_version=os_version, model=model, vendor=vendor,
             service_tag=service_tag, end_support=end_support,
             contract_number=contract_number, owner_id=owner_id,
+            location_id=location_id,
             max_number_of_ports=max_number_of_ports, rack_units=rack_units,
             rack_position=rack_position, rack_back=str(rack_back).lower(),
             services_locked=str(services_locked).lower(),
@@ -1742,11 +1773,17 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         check_support = updated_firewall['support_group']
         self.assertEqual(check_support['id'], group2_id)
 
-        # check support group
+        # check owner and location
         check_owner = updated_firewall['owner']
         self.assertEqual(check_owner['id'], owner_id, "{} / {} != {} / {}".format(
             *relay.Node.from_global_id(check_owner['id']),
             *relay.Node.from_global_id(owner_id),
+        ))
+
+        check_location = updated_firewall['location']
+        self.assertEqual(check_location['id'], location_id, "{} / {} != {} / {}".format(
+            *relay.Node.from_global_id(check_location['id']),
+            *relay.Node.from_global_id(location_id),
         ))
 
         # check ports data
@@ -1853,6 +1890,11 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_externalEquipment(input:{{
@@ -1863,6 +1905,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -1897,6 +1940,10 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 has{{
+                  id
+                  name
+                }}
+                location{{
                   id
                   name
                 }}
@@ -1941,7 +1988,8 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name,
                     port1_type=port1_type, port1_description=port1_description,
                     port2_id=port2_id, port2_name=port2_name,
-                    port2_type=port2_type, port2_description=port2_description)
+                    port2_type=port2_type, port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1992,6 +2040,10 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_extequip['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         exteq_name = "External Equipment check"
@@ -2150,12 +2202,31 @@ class HostTest(Neo4jGraphQLNetworkTest):
             },
         ]
 
+        location_queries = [
+            {
+                'input_location': '',
+                'query_location': '',
+            },
+            {
+                'input_location': 'relationship_location: "{location_id}"',
+                'query_location': '''
+                    location {
+                      id
+                      name
+                    }
+                ''',
+            },
+        ]
+
         host_ids = {
             'logical': None,
             'physical': None,
         }
 
-        for owner_query in owner_queries:
+        for i in range(2):
+            owner_query = owner_queries[i]
+            location_query = location_queries[i]
+
             # get two groups
             community_generator = CommunityFakeDataGenerator()
             net_generator = NetworkFakeDataGenerator()
@@ -2189,13 +2260,13 @@ class HostTest(Neo4jGraphQLNetworkTest):
             os = "GNU/Linux"
             os_version = "5.8"
             contract_number = "001"
+            services_locked = bool(random.getrandbits(1))
 
+            # owner
             input_owner = owner_query['input_owner']
             query_owner = owner_query['query_owner']
 
             owner_id = None
-
-            services_locked = bool(random.getrandbits(1))
 
             if input_owner:
                 owner = net_generator.create_customer()
@@ -2204,6 +2275,21 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     str(owner.handle_id)
                 )
                 input_owner = input_owner.format(owner_id=owner_id)
+
+            # location (rack)
+            input_location = location_query['input_location']
+            query_location = location_query['query_location']
+
+            location_id = None
+
+            if input_location:
+                location = net_generator.create_rack()
+                location_id = relay.Node.to_global_id(
+                    str(location.node_type).replace(' ', ''),
+                    str(location.handle_id)
+                )
+                input_location = input_location.format(
+                                        location_id=location_id)
 
             query = '''
             mutation{{
@@ -2226,6 +2312,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     contract_number: "{contract_number}"
                     services_locked: {services_locked}
                     {input_owner}
+                    {input_location}
                   }}
                 }}
               ){{
@@ -2264,6 +2351,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     services_locked
                     services_checked
                     {query_owner}
+                    {query_location}
                   }}
                 }}
               }}
@@ -2275,9 +2363,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                         group1_id=group1_id, group2_id=group2_id,
                         managed_by=managed_by, backup=backup, os=os,
                         os_version=os_version, contract_number=contract_number,
-                        input_owner=input_owner, query_owner=query_owner,
                         rack_back=str(rack_back).lower(),
-                        services_locked=str(services_locked).lower())
+                        services_locked=str(services_locked).lower(),
+                        input_owner=input_owner, query_owner=query_owner,
+                        input_location=input_location, query_location=query_location)
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -2326,6 +2415,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(created_host['host_type'], "Physical")
                 self.assertEqual(host_node.meta_type, "Physical")
                 host_ids['physical'] = host_id
+
+                # check owner and location
+                self.assertEqual(created_host['host_owner']['id'], owner_id)
+                self.assertEqual(created_host['location']['id'], location_id)
 
         edit_query = '''
         mutation{{
@@ -2734,6 +2827,11 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
         port2_id = relay.Node.to_global_id(str(port2.node_type),
                                             str(port2.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_opticalNode(input:{{
@@ -2745,6 +2843,7 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -2790,6 +2889,10 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                location{{
+                  id
+                  name
+                }}
               }}
             }}
             has_port_created{{
@@ -2831,7 +2934,8 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name, port1_type=port1_type,
                     port1_description=port1_description, port2_id=port2_id,
                     port2_name=port2_name, port2_type=port2_type,
-                    port2_description=port2_description)
+                    port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -2886,6 +2990,10 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_optnode['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         optno_name = "Optical Node check"
@@ -3082,6 +3190,11 @@ class ODFTest(Neo4jGraphQLNetworkTest):
         port2_id = relay.Node.to_global_id(str(port2.node_type),
                                             str(port2.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_oDF(input:{{
@@ -3092,6 +3205,7 @@ class ODFTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -3130,6 +3244,10 @@ class ODFTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 ports{{
+                  id
+                  name
+                }}
+                location{{
                   id
                   name
                 }}
@@ -3174,7 +3292,8 @@ class ODFTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name, port1_type=port1_type,
                     port1_description=port1_description, port2_id=port2_id,
                     port2_name=port2_name, port2_type=port2_type,
-                    port2_description=port2_description)
+                    port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -3228,6 +3347,10 @@ class ODFTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_odf['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         odf_name = "Optical Node check"
@@ -3416,6 +3539,11 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
         port2_id = relay.Node.to_global_id(str(port2.node_type),
                                             str(port2.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_opticalFilter(input:{{
@@ -3426,6 +3554,7 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -3464,6 +3593,10 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 ports{{
+                  id
+                  name
+                }}
+                location{{
                   id
                   name
                 }}
@@ -3508,7 +3641,8 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name, port1_type=port1_type,
                     port1_description=port1_description, port2_id=port2_id,
                     port2_name=port2_name, port2_type=port2_type,
-                    port2_description=port2_description)
+                    port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -3562,6 +3696,10 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_ofilter['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         ofilter_name = "Optical Node check"
@@ -5090,19 +5228,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         parent_site_url = parent_site.get_node().data.get("url")
         parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
 
-        # create has site
-        has_site = data_generator.create_site()
-        has_site_name = "Sub site"
-        has_site_country = has_site.get_node().data.get("country")
-        has_site_type = has_site.get_node().data.get("site_type")
-        has_site_type = '' if not parent_site_type else parent_site_type
-        has_site_area = has_site.get_node().data.get("area")
-        has_site_longitude = has_site.get_node().data.get("longitude")
-        has_site_latitude = has_site.get_node().data.get("latitude")
-        has_site_owner_id = has_site.get_node().data.get("owner_id")
-        has_site_owner_site_name = has_site.get_node().data.get("owner_site_name")
-        has_site_url = has_site.get_node().data.get("url")
-        has_site_telenor_subscription_id = has_site.get_node().data.get("telenor_subscription_id")
+        # has data room
+        has_room = data_generator.create_room(add_parent=False)
+        has_room_name = has_room.get_node().data.get("name")
+        has_room_floor = has_room.get_node().data.get("floor")
+        has_room.delete()
 
         # create firewall
         firewall = data_generator.create_firewall()
@@ -5162,11 +5292,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         subinputs_input = "create_subinputs"
         subinput1_id = ""
         subinput2_id = ""
-        has_input = "create_has_site"
+        has_input = "create_has_room"
         has_input_id = ""
         main_payload = "created"
         subpayload = "subcreated"
-        has_payload = "has_site_created"
+        has_payload = "has_room_created"
 
         query_t = """
         mutation{{
@@ -5238,17 +5368,8 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             {has_input}:[ # TODO add has_room instead
               {{
                 {has_input_id}
-                name: "{has_site_name}"
-                country: "{has_site_country}"
-                site_type: "{has_site_type}"
-                area: "{has_site_area}"
-                longitude: {has_site_longitude}
-                latitude: {has_site_latitude}
-                owner_id: "{has_site_owner_id}"
-                owner_site_name: "{has_site_owner_site_name}"
-                url: "{has_site_url}"
-                telenor_subscription_id: "{has_site_telenor_subscription_id}"
-                relationship_responsible_for: "{responsible_for_id}"
+                name: "{has_room_name}"
+                floor: "{has_room_floor}"
               }}
             ]
           }}){{
@@ -5434,25 +5555,10 @@ class SiteTest(Neo4jGraphQLNetworkTest):
                 field
                 messages
               }}
-              site{{
+              room{{
                 id
                 name
-                country_code{{
-                  name
-                  value
-                }}
-                country
-                site_type{{
-                  name
-                  value
-                }}
-                area
-                latitude
-                longitude
-                owner_id
-                owner_site_name
-                url
-                telenor_subscription_id
+                floor
               }}
             }}
           }}
@@ -5492,13 +5598,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             parent_site_owner_site_name=parent_site_owner_site_name,
             parent_site_url=parent_site_url,
             parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
-            has_site_name=has_site_name, has_site_country=has_site_country,
-            has_site_type=has_site_type, has_site_area=has_site_area,
-            has_site_longitude=has_site_longitude, has_site_latitude=has_site_latitude,
-            has_site_owner_id=has_site_owner_id,
-            has_site_owner_site_name=has_site_owner_site_name,
-            has_site_url=has_site_url,
-            has_site_telenor_subscription_id=has_site_telenor_subscription_id,
+            has_room_name=has_room_name, has_room_floor=has_room_floor,
             firewall_id=firewall_id, firewall_name=firewall_name,
             firewall_opstate=firewall_opstate,
             switch_id=switch_id, switch_name=switch_name,
@@ -5514,8 +5614,8 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check for errors
-        created_errors = \
-            result.data['composite_site'][main_payload]['errors']
+        all_data = result.data['composite_site']
+        created_errors = all_data[main_payload]['errors']
         assert not created_errors, pformat(created_errors, indent=1)
 
         submutations = {
@@ -5527,22 +5627,24 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         }
 
         for k,v in submutations.items():
-            if result.data['composite_site'][k]:
+            if all_data[k]:
                 item = None
 
                 try:
-                    result.data['composite_site'][k][0]
-                    for item in result.data['composite_site'][k]:
+                    all_data[k][0]
+                    for item in all_data[k]:
                         submutations[k] = item['errors']
-                        assert not submutations[k], pformat(submutations[k], indent=1)
+                        assert not submutations[k], \
+                            pformat(submutations[k], indent=1)
                 except KeyError:
-                    item = result.data['composite_site'][k]
+                    item = all_data[k]
                     submutations[k] = item['errors']
-                    assert not submutations[k], pformat(submutations[k], indent=1)
+                    assert not submutations[k], \
+                        pformat(submutations[k], indent=1)
 
 
         # check site data
-        check_site = result.data['composite_site'][main_payload]['site']
+        check_site = all_data[main_payload]['site']
         site_id = check_site['id']
 
         self.assertEquals(check_site['name'], site_name)
@@ -5559,7 +5661,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             site_telenor_subscription_id)
 
         # check address
-        check_address1 = result.data['composite_site'][subpayload][0]['address']
+        check_address1 = all_data[subpayload][0]['address']
         address1_id = check_address1['id']
 
         self.assertEquals(check_address1['name'], address1_name)
@@ -5572,7 +5674,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
         self.assertEquals(check_site['addresses'][0]['id'], address1_id)
 
-        check_address2 = result.data['composite_site'][subpayload][1]['address']
+        check_address2 = all_data[subpayload][1]['address']
         address2_id = check_address2['id']
 
         self.assertEquals(check_address2['name'], address2_name)
@@ -5586,7 +5688,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_site['addresses'][1]['id'], address2_id)
 
         # check parent site data
-        check_parent_site = result.data['composite_site']\
+        check_parent_site = all_data\
                                 ['parent_site_updated']['site']
 
         self.assertEquals(check_parent_site['id'], parent_site_id)
@@ -5605,42 +5707,32 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
 
         # check firewall
-        check_firewall = result.data['composite_site']\
+        check_firewall = all_data\
                             ['located_in_firewall_updated'][0]['firewall']
 
         self.assertEquals(check_firewall['id'], firewall_id)
         self.assertEquals(check_firewall['name'], firewall_name)
         self.assertEquals(check_firewall['operational_state']['value'],
                             firewall_opstate)
+        self.assertEquals(check_site['located_in'][0]['id'], firewall_id)
 
         # check switch
-        check_switch = result.data['composite_site']\
+        check_switch = all_data\
                             ['located_in_switch_updated'][0]['switch']
 
         self.assertEquals(check_switch['id'], switch_id)
         self.assertEquals(check_switch['name'], switch_name)
         self.assertEquals(check_switch['operational_state']['value'],
                             switch_opstate)
+        self.assertEquals(check_site['located_in'][1]['id'], switch_id)
 
-        # check has site
-        check_has_site = result.data['composite_site']\
-                                [has_payload][0]['site']
-        has_site_id = check_has_site['id']
+        # check has room
+        check_has_room = all_data[has_payload][0]['room']
+        has_room_id = check_has_room['id']
 
-        self.assertEquals(check_has_site['name'], has_site_name)
-        self.assertEquals(check_has_site['country_code']['name'], has_site_country)
-        if has_site_type:
-            self.assertEquals(check_has_site['site_type']['value'], has_site_type)
-        self.assertEquals(check_has_site['area'], has_site_area)
-        self.assertEquals(check_has_site['latitude'], has_site_latitude)
-        self.assertEquals(check_has_site['longitude'], has_site_longitude)
-        self.assertEquals(check_has_site['owner_id'], has_site_owner_id)
-        self.assertEquals(check_has_site['owner_site_name'], has_site_owner_site_name)
-        self.assertEquals(check_has_site['url'], has_site_url)
-        self.assertEquals(check_has_site['telenor_subscription_id'], \
-            has_site_telenor_subscription_id)
-
-        self.assertEquals(check_site['has'][0]['id'], has_site_id)
+        self.assertEquals(check_has_room['name'], has_room_name)
+        self.assertEquals(check_has_room['floor'], has_room_floor)
+        self.assertEquals(check_site['has'][0]['id'], has_room_id)
 
         ## edition
         # create another responsible for
@@ -5664,21 +5756,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         parent_site_url = parent_site.get_node().data.get("url")
         parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
 
-        # create site node and delete so we can update the has site data
-        has_site = data_generator.create_site()
-        has_site_name = "Test subsite"
-        has_site_country = has_site.get_node().data.get("country")
-        has_site_type = has_site.get_node().data.get("site_type")
-        has_site_type = '' if not parent_site_type else parent_site_type
-        has_site_area = has_site.get_node().data.get("area")
-        has_site_longitude = has_site.get_node().data.get("longitude")
-        has_site_latitude = has_site.get_node().data.get("latitude")
-        has_site_owner_id = has_site.get_node().data.get("owner_id")
-        has_site_owner_site_name = has_site.get_node().data.get("owner_site_name")
-        has_site_url = has_site.get_node().data.get("url")
-        has_site_telenor_subscription_id = has_site.get_node().data.get("telenor_subscription_id")
-
-        has_site.delete()
+        # create room node and delete so we can update the has room data
+        has_room = data_generator.create_room(add_parent=False)
+        has_room_name = has_room.get_node().data.get("name")
+        has_room_floor = has_room.get_node().data.get("floor")
+        has_room.delete()
 
         # create firewall and delete it to get it's generated data
         firewall = data_generator.create_firewall()
@@ -5742,11 +5824,11 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         subinputs_input = "update_subinputs"
         subinput1_id = 'id: "{}"'.format(address1_id)
         subinput2_id = 'id: "{}"'.format(address2_id)
-        has_input = 'update_has_site'
-        has_input_id = 'id: "{}"'.format(has_site_id)
+        has_input = 'update_has_room'
+        has_input_id = 'id: "{}"'.format(has_room_id)
         main_payload = "updated"
         subpayload = "subupdated"
-        has_payload = "has_site_updated"
+        has_payload = "has_room_updated"
 
         query = query_t.format(
             main_input=main_input, main_input_id=main_input_id,
@@ -5781,13 +5863,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             parent_site_owner_site_name=parent_site_owner_site_name,
             parent_site_url=parent_site_url,
             parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
-            has_site_name=has_site_name, has_site_country=has_site_country,
-            has_site_type=has_site_type, has_site_area=has_site_area,
-            has_site_longitude=has_site_longitude, has_site_latitude=has_site_latitude,
-            has_site_owner_id=has_site_owner_id,
-            has_site_owner_site_name=has_site_owner_site_name,
-            has_site_url=has_site_url,
-            has_site_telenor_subscription_id=has_site_telenor_subscription_id,
+            has_room_name=has_room_name, has_room_floor=has_room_floor,
             firewall_id=firewall_id, firewall_name=firewall_name,
             firewall_opstate=firewall_opstate,
             switch_id=switch_id, switch_name=switch_name,
@@ -5798,8 +5874,8 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         assert not result.errors, pformat(result.errors, indent=1)
 
         # check for errors
-        created_errors = \
-            result.data['composite_site'][main_payload]['errors']
+        all_data = result.data['composite_site']
+        created_errors = all_data[main_payload]['errors']
         assert not created_errors, pformat(created_errors, indent=1)
 
         submutations = {
@@ -5811,21 +5887,21 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         }
 
         for k,v in submutations.items():
-            if result.data['composite_site'][k]:
+            if all_data[k]:
                 item = None
 
                 try:
-                    result.data['composite_site'][k][0]
-                    for item in result.data['composite_site'][k]:
+                    all_data[k][0]
+                    for item in all_data[k]:
                         submutations[k] = item['errors']
                         assert not submutations[k], pformat(submutations[k], indent=1)
                 except KeyError:
-                    item = result.data['composite_site'][k]
+                    item = all_data[k]
                     submutations[k] = item['errors']
                     assert not submutations[k], pformat(submutations[k], indent=1)
 
         # check site data
-        check_site = result.data['composite_site'][main_payload]['site']
+        check_site = all_data[main_payload]['site']
         site_id = check_site['id']
 
         self.assertEquals(check_site['name'], site_name)
@@ -5842,7 +5918,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
             site_telenor_subscription_id)
 
         # check address
-        check_address1 = result.data['composite_site'][subpayload][0]['address']
+        check_address1 = all_data[subpayload][0]['address']
         address1_id = check_address1['id']
 
         self.assertEquals(check_address1['name'], address1_name)
@@ -5855,7 +5931,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
         self.assertEquals(check_site['addresses'][0]['id'], address1_id)
 
-        check_address2 = result.data['composite_site'][subpayload][1]['address']
+        check_address2 = all_data[subpayload][1]['address']
         address2_id = check_address2['id']
 
         self.assertEquals(check_address2['name'], address2_name)
@@ -5869,8 +5945,7 @@ class SiteTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_site['addresses'][1]['id'], address2_id)
 
         # check parent site data
-        check_parent_site = result.data['composite_site']\
-                                ['parent_site_updated']['site']
+        check_parent_site = all_data['parent_site_updated']['site']
 
         self.assertEquals(check_parent_site['id'], parent_site_id)
         self.assertEquals(check_parent_site['name'], parent_site_name)
@@ -5888,42 +5963,29 @@ class SiteTest(Neo4jGraphQLNetworkTest):
 
 
         # check firewall
-        check_firewall = result.data['composite_site']\
-                            ['located_in_firewall_updated'][0]['firewall']
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
 
         self.assertEquals(check_firewall['id'], firewall_id)
         self.assertEquals(check_firewall['name'], firewall_name)
         self.assertEquals(check_firewall['operational_state']['value'],
                             firewall_opstate)
+        self.assertEquals(check_site['located_in'][0]['id'], firewall_id)
 
         # check switch
-        check_switch = result.data['composite_site']\
-                            ['located_in_switch_updated'][0]['switch']
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
 
         self.assertEquals(check_switch['id'], switch_id)
         self.assertEquals(check_switch['name'], switch_name)
         self.assertEquals(check_switch['operational_state']['value'],
                             switch_opstate)
+        self.assertEquals(check_site['located_in'][1]['id'], switch_id)
 
-        # check has site
-        check_has_site = result.data['composite_site']\
-                                [has_payload][0]['site']
-        has_site_id = check_has_site['id']
+        # check has room
+        check_has_room = all_data[has_payload][0]['room']
 
-        self.assertEquals(check_has_site['name'], has_site_name)
-        self.assertEquals(check_has_site['country_code']['name'], has_site_country)
-        if has_site_type:
-            self.assertEquals(check_has_site['site_type']['value'], has_site_type)
-        self.assertEquals(check_has_site['area'], has_site_area)
-        self.assertEquals(check_has_site['latitude'], has_site_latitude)
-        self.assertEquals(check_has_site['longitude'], has_site_longitude)
-        self.assertEquals(check_has_site['owner_id'], has_site_owner_id)
-        self.assertEquals(check_has_site['owner_site_name'], has_site_owner_site_name)
-        self.assertEquals(check_has_site['url'], has_site_url)
-        self.assertEquals(check_has_site['telenor_subscription_id'], \
-            has_site_telenor_subscription_id)
-
-        self.assertEquals(check_site['has'][0]['id'], has_site_id)
+        self.assertEquals(check_has_room['name'], has_room_name)
+        self.assertEquals(check_has_room['floor'], has_room_floor)
+        self.assertEquals(check_site['has'][0]['id'], has_room_id)
 
 
 class RoomTest(Neo4jGraphQLNetworkTest):
@@ -5937,11 +5999,14 @@ class RoomTest(Neo4jGraphQLNetworkTest):
         room_floor = a_room.get_node().data.get("floor")
         a_room.delete()
 
-        # has data room
-        has_room = data_generator.create_room(add_parent=False)
-        has_room_name = has_room.get_node().data.get("name")
-        has_room_floor = has_room.get_node().data.get("floor")
-        has_room.delete()
+        # has data rack
+        has_rack = data_generator.create_rack(add_parent=False)
+        has_rack_name = has_rack.get_node().data.get("name")
+        has_rack_height = has_rack.get_node().data.get("height")
+        has_rack_depth = has_rack.get_node().data.get("depth")
+        has_rack_width = has_rack.get_node().data.get("width")
+        has_rack_rack_units = has_rack.get_node().data.get("rack_units")
+        has_rack.delete()
 
         # create responsible for
         site_owner = data_generator.create_site_owner()
@@ -5980,10 +6045,10 @@ class RoomTest(Neo4jGraphQLNetworkTest):
 
         main_input = "create_input"
         main_input_id = ""
-        has_input = "create_has_room"
+        has_input = "create_has_rack"
         has_input_id = ""
         main_payload = "created"
-        has_payload = "has_room_created"
+        has_payload = "has_rack_created"
 
         query_t = """
         mutation{{
@@ -6023,8 +6088,11 @@ class RoomTest(Neo4jGraphQLNetworkTest):
             ]
             {has_input}:{{
               {has_input_id}
-              name: "{has_room_name}"
-              floor: "{has_room_floor}"
+              name: "{has_rack_name}"
+              height: {has_rack_height}
+              depth: {has_rack_depth}
+              width: {has_rack_width}
+              rack_units: {has_rack_rack_units}
             }}
           }}){{
             {main_payload}{{
@@ -6084,8 +6152,11 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                   __typename
                   id
                   name
-                  ...on Room{{
-                    floor
+                  ...on Rack{{
+                    height
+                    depth
+                    width
+                    rack_units
                   }}
                 }}
               }}
@@ -6147,10 +6218,13 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                 field
                 messages
               }}
-              room{{
+              rack{{
                 id
                 name
-                floor
+                height
+                depth
+                width
+                rack_units
               }}
             }}
           }}
@@ -6162,7 +6236,9 @@ class RoomTest(Neo4jGraphQLNetworkTest):
             has_input=has_input, has_input_id=has_input_id,
             main_payload=main_payload, has_payload=has_payload,
             room_name=room_name, room_floor=room_floor,
-            has_room_name=has_room_name, has_room_floor=has_room_floor,
+            has_rack_name=has_rack_name, has_rack_height=has_rack_height,
+            has_rack_depth=has_rack_depth, has_rack_width=has_rack_width,
+            has_rack_rack_units=has_rack_rack_units,
             parent_site_id=parent_site_id,
             parent_site_name=parent_site_name, parent_site_country=parent_site_country,
             parent_site_type=parent_site_type, parent_site_area=parent_site_area,
@@ -6251,13 +6327,17 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                             switch_opstate)
         self.assertEquals(check_room['located_in'][1]['id'], switch_id)
 
-        # check has site
-        check_has_room = all_data[has_payload][0]['room']
-        has_room_id = check_has_room['id']
+        # check has rack
+        check_has_rack = all_data[has_payload][0]['rack']
+        has_rack_id = check_has_rack['id']
 
-        self.assertEquals(check_has_room['name'], has_room_name)
-        self.assertEquals(check_has_room['floor'], has_room_floor)
-        self.assertEquals(check_room['has'][0]['id'], has_room_id)
+        self.assertEquals(check_has_rack['name'], has_rack_name)
+        self.assertEquals(check_has_rack['height'], int(has_rack_height))
+        self.assertEquals(check_has_rack['depth'], int(has_rack_depth))
+        self.assertEquals(check_has_rack['width'], int(has_rack_width))
+        self.assertEquals(check_has_rack['rack_units'], int(has_rack_rack_units))
+
+        self.assertEquals(check_room['has'][0]['id'], has_rack_id)
 
         ## edition
         # data room
@@ -6266,11 +6346,14 @@ class RoomTest(Neo4jGraphQLNetworkTest):
         room_floor = a_room.get_node().data.get("floor")
         a_room.delete()
 
-        # has data room
-        has_room = data_generator.create_room(add_parent=False)
-        has_room_name = has_room.get_node().data.get("name")
-        has_room_floor = has_room.get_node().data.get("floor")
-        has_room.delete()
+        # has data rack
+        has_rack = data_generator.create_rack(add_parent=False)
+        has_rack_name = has_rack.get_node().data.get("name")
+        has_rack_height = has_rack.get_node().data.get("height")
+        has_rack_depth = has_rack.get_node().data.get("depth")
+        has_rack_width = has_rack.get_node().data.get("width")
+        has_rack_rack_units = has_rack.get_node().data.get("rack_units")
+        has_rack.delete()
 
         # create a parent site
         parent_site = data_generator.create_site()
@@ -6301,17 +6384,19 @@ class RoomTest(Neo4jGraphQLNetworkTest):
 
         main_input = 'update_input'
         main_input_id = 'id: "{}"'.format(room_id)
-        has_input = 'update_has_room'
-        has_input_id = 'id: "{}"'.format(has_room_id)
+        has_input = 'update_has_rack'
+        has_input_id = 'id: "{}"'.format(has_rack_id)
         main_payload = 'updated'
-        has_payload = 'has_room_updated'
+        has_payload = 'has_rack_updated'
 
         query = query_t.format(
             main_input=main_input, main_input_id=main_input_id,
             has_input=has_input, has_input_id=has_input_id,
             main_payload=main_payload, has_payload=has_payload,
             room_name=room_name, room_floor=room_floor,
-            has_room_name=has_room_name, has_room_floor=has_room_floor,
+            has_rack_name=has_rack_name, has_rack_height=has_rack_height,
+            has_rack_depth=has_rack_depth, has_rack_width=has_rack_width,
+            has_rack_rack_units=has_rack_rack_units,
             parent_site_id=parent_site_id,
             parent_site_name=parent_site_name, parent_site_country=parent_site_country,
             parent_site_type=parent_site_type, parent_site_area=parent_site_area,
@@ -6398,12 +6483,17 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                             switch_opstate)
         self.assertEquals(check_room['located_in'][1]['id'], switch_id)
 
-        # check has site
-        check_has_room = all_data[has_payload][0]['room']
+        # check has rack
+        check_has_rack = all_data[has_payload][0]['rack']
+        has_rack_id = check_has_rack['id']
 
-        self.assertEquals(check_has_room['name'], has_room_name)
-        self.assertEquals(check_has_room['floor'], has_room_floor)
-        self.assertEquals(check_room['has'][0]['id'], has_room_id)
+        self.assertEquals(check_has_rack['name'], has_rack_name)
+        self.assertEquals(check_has_rack['height'], int(has_rack_height))
+        self.assertEquals(check_has_rack['depth'], int(has_rack_depth))
+        self.assertEquals(check_has_rack['width'], int(has_rack_width))
+        self.assertEquals(check_has_rack['rack_units'], int(has_rack_rack_units))
+
+        self.assertEquals(check_room['has'][0]['id'], has_rack_id)
 
 
 class RackTest(Neo4jGraphQLNetworkTest):
