@@ -5984,11 +5984,14 @@ class RoomTest(Neo4jGraphQLNetworkTest):
         room_floor = a_room.get_node().data.get("floor")
         a_room.delete()
 
-        # has data room
-        has_room = data_generator.create_room(add_parent=False)
-        has_room_name = has_room.get_node().data.get("name")
-        has_room_floor = has_room.get_node().data.get("floor")
-        has_room.delete()
+        # has data rack
+        has_rack = data_generator.create_rack(add_parent=False)
+        has_rack_name = has_rack.get_node().data.get("name")
+        has_rack_height = has_rack.get_node().data.get("height")
+        has_rack_depth = has_rack.get_node().data.get("depth")
+        has_rack_width = has_rack.get_node().data.get("width")
+        has_rack_rack_units = has_rack.get_node().data.get("rack_units")
+        has_rack.delete()
 
         # create responsible for
         site_owner = data_generator.create_site_owner()
@@ -6027,10 +6030,10 @@ class RoomTest(Neo4jGraphQLNetworkTest):
 
         main_input = "create_input"
         main_input_id = ""
-        has_input = "create_has_room"
+        has_input = "create_has_rack"
         has_input_id = ""
         main_payload = "created"
-        has_payload = "has_room_created"
+        has_payload = "has_rack_created"
 
         query_t = """
         mutation{{
@@ -6070,8 +6073,11 @@ class RoomTest(Neo4jGraphQLNetworkTest):
             ]
             {has_input}:{{
               {has_input_id}
-              name: "{has_room_name}"
-              floor: "{has_room_floor}"
+              name: "{has_rack_name}"
+              height: {has_rack_height}
+              depth: {has_rack_depth}
+              width: {has_rack_width}
+              rack_units: {has_rack_rack_units}
             }}
           }}){{
             {main_payload}{{
@@ -6131,8 +6137,11 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                   __typename
                   id
                   name
-                  ...on Room{{
-                    floor
+                  ...on Rack{{
+                    height
+                    depth
+                    width
+                    rack_units
                   }}
                 }}
               }}
@@ -6194,10 +6203,13 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                 field
                 messages
               }}
-              room{{
+              rack{{
                 id
                 name
-                floor
+                height
+                depth
+                width
+                rack_units
               }}
             }}
           }}
@@ -6209,7 +6221,9 @@ class RoomTest(Neo4jGraphQLNetworkTest):
             has_input=has_input, has_input_id=has_input_id,
             main_payload=main_payload, has_payload=has_payload,
             room_name=room_name, room_floor=room_floor,
-            has_room_name=has_room_name, has_room_floor=has_room_floor,
+            has_rack_name=has_rack_name, has_rack_height=has_rack_height,
+            has_rack_depth=has_rack_depth, has_rack_width=has_rack_width,
+            has_rack_rack_units=has_rack_rack_units,
             parent_site_id=parent_site_id,
             parent_site_name=parent_site_name, parent_site_country=parent_site_country,
             parent_site_type=parent_site_type, parent_site_area=parent_site_area,
@@ -6298,13 +6312,17 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                             switch_opstate)
         self.assertEquals(check_room['located_in'][1]['id'], switch_id)
 
-        # check has room
-        check_has_room = all_data[has_payload][0]['room']
-        has_room_id = check_has_room['id']
+        # check has rack
+        check_has_rack = all_data[has_payload][0]['rack']
+        has_rack_id = check_has_rack['id']
 
-        self.assertEquals(check_has_room['name'], has_room_name)
-        self.assertEquals(check_has_room['floor'], has_room_floor)
-        self.assertEquals(check_room['has'][0]['id'], has_room_id)
+        self.assertEquals(check_has_rack['name'], has_rack_name)
+        self.assertEquals(check_has_rack['height'], int(has_rack_height))
+        self.assertEquals(check_has_rack['depth'], int(has_rack_depth))
+        self.assertEquals(check_has_rack['width'], int(has_rack_width))
+        self.assertEquals(check_has_rack['rack_units'], int(has_rack_rack_units))
+
+        self.assertEquals(check_room['has'][0]['id'], has_rack_id)
 
         ## edition
         # data room
@@ -6313,11 +6331,14 @@ class RoomTest(Neo4jGraphQLNetworkTest):
         room_floor = a_room.get_node().data.get("floor")
         a_room.delete()
 
-        # has data room
-        has_room = data_generator.create_room(add_parent=False)
-        has_room_name = has_room.get_node().data.get("name")
-        has_room_floor = has_room.get_node().data.get("floor")
-        has_room.delete()
+        # has data rack
+        has_rack = data_generator.create_rack(add_parent=False)
+        has_rack_name = has_rack.get_node().data.get("name")
+        has_rack_height = has_rack.get_node().data.get("height")
+        has_rack_depth = has_rack.get_node().data.get("depth")
+        has_rack_width = has_rack.get_node().data.get("width")
+        has_rack_rack_units = has_rack.get_node().data.get("rack_units")
+        has_rack.delete()
 
         # create a parent site
         parent_site = data_generator.create_site()
@@ -6348,17 +6369,19 @@ class RoomTest(Neo4jGraphQLNetworkTest):
 
         main_input = 'update_input'
         main_input_id = 'id: "{}"'.format(room_id)
-        has_input = 'update_has_room'
-        has_input_id = 'id: "{}"'.format(has_room_id)
+        has_input = 'update_has_rack'
+        has_input_id = 'id: "{}"'.format(has_rack_id)
         main_payload = 'updated'
-        has_payload = 'has_room_updated'
+        has_payload = 'has_rack_updated'
 
         query = query_t.format(
             main_input=main_input, main_input_id=main_input_id,
             has_input=has_input, has_input_id=has_input_id,
             main_payload=main_payload, has_payload=has_payload,
             room_name=room_name, room_floor=room_floor,
-            has_room_name=has_room_name, has_room_floor=has_room_floor,
+            has_rack_name=has_rack_name, has_rack_height=has_rack_height,
+            has_rack_depth=has_rack_depth, has_rack_width=has_rack_width,
+            has_rack_rack_units=has_rack_rack_units,
             parent_site_id=parent_site_id,
             parent_site_name=parent_site_name, parent_site_country=parent_site_country,
             parent_site_type=parent_site_type, parent_site_area=parent_site_area,
@@ -6445,12 +6468,17 @@ class RoomTest(Neo4jGraphQLNetworkTest):
                             switch_opstate)
         self.assertEquals(check_room['located_in'][1]['id'], switch_id)
 
-        # check has room
-        check_has_room = all_data[has_payload][0]['room']
+        # check has rack
+        check_has_rack = all_data[has_payload][0]['rack']
+        has_rack_id = check_has_rack['id']
 
-        self.assertEquals(check_has_room['name'], has_room_name)
-        self.assertEquals(check_has_room['floor'], has_room_floor)
-        self.assertEquals(check_room['has'][0]['id'], has_room_id)
+        self.assertEquals(check_has_rack['name'], has_rack_name)
+        self.assertEquals(check_has_rack['height'], int(has_rack_height))
+        self.assertEquals(check_has_rack['depth'], int(has_rack_depth))
+        self.assertEquals(check_has_rack['width'], int(has_rack_width))
+        self.assertEquals(check_has_rack['rack_units'], int(has_rack_rack_units))
+
+        self.assertEquals(check_room['has'][0]['id'], has_rack_id)
 
 
 class RackTest(Neo4jGraphQLNetworkTest):
