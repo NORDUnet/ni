@@ -63,6 +63,15 @@ class HostUser(NIObjectType, RelationMixin):
 
 
 ## Cables and Equipment
+class Unit(NIObjectType, LogicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+
+    class NIMetaType:
+        ni_type = 'Unit'
+        ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_network_context
+
+
 class Port(NIObjectType, PhysicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     port_type = NIChoiceField(dropdown_name="port_types")

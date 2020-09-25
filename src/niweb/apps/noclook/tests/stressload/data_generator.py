@@ -358,12 +358,13 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         num_dependencies = random.randint(1, 3)
 
         for i in range(0, num_dependencies):
-            dependency = random.choice([
-                self.create_host,
-            ])
-            dependency = dependency()
-            rel_maker = PhysicalLogicalDataRelationMaker()
-            rel_maker.add_dependency(self.user, peering_group, dependency)
+            unit_name = self.fake.isbn10()
+            unit = self.get_or_create_node(
+                unit_name, 'Unit', META_TYPES[1])
+            unit_ip = self.fake.ipv4()
+            peering_group.get_node().set_group_dependency(
+                unit.handle_id, unit_ip
+            )
 
         return peering_group
 
