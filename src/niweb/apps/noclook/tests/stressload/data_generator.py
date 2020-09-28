@@ -356,12 +356,32 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         # add random dependents
         num_dependencies = random.randint(1, 3)
+        rel_maker = LogicalDataRelationMaker()
 
         for i in range(0, num_dependencies):
+            service = self.create_service()
+
             unit_name = self.fake.isbn10()
             unit = self.get_or_create_node(
                 unit_name, 'Unit', META_TYPES[1])
             unit_ip = self.fake.ipv4()
+
+            rel_maker.add_dependent(self.user, service, unit)
+
+            # get an existent router or add one
+            router_type = NetworkFakeDataGenerator.get_nodetype('Router')
+            routers = NodeHandle.objects.filter(node_type=router_type)
+
+            router = None
+
+            if routers:
+                router = random.choice(routers)
+            else:
+                router = self.create_router()
+
+            rel_maker.add_part_of(self.user, unit, router)
+
+            # add dependency
             peering_group.get_node().set_group_dependency(
                 unit.handle_id, unit_ip
             )
@@ -929,7 +949,8 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
     def create_room(self, name=None, add_parent=True):
         # create object
         if not name:
-            name = self.company_name()
+            name = '{}{}'.format(random.randint(1,20), \
+                                    random.choice(string.ascii_letters).upper())
 
         room = self.get_or_create_node(
             name, 'Room', META_TYPES[3]) # Location
@@ -957,7 +978,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
     def create_rack(self, name=None, add_parent=True):
         # create object
         if not name:
-            name = self.company_name()
+            name = self.escape_quotes(self.fake.license_plate())
 
         rack = self.get_or_create_node(
             name, 'Rack', META_TYPES[3]) # Location
@@ -984,6 +1005,16 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             rel_maker.add_parent(self.user, rack, parent_room)
 
         return rack
+
+    def create_service(self, name=None):
+        # create object
+        if not name:
+            name = self.company_name()
+
+        service = self.get_or_create_node(
+            name, 'Service', META_TYPES[1]) # Logical
+
+        return service
 
 
 class DataRelationMaker:
