@@ -65,6 +65,13 @@ class HostUser(NIObjectType, RelationMixin):
 ## Cables and Equipment
 class Unit(NIObjectType, LogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    ip_addresses = NIIPAddrField()
+    wlan = NIStringField()
+
+    def resolve_ip_addresses(self, info, **kwargs):
+        '''Manual resolver for the ip field'''
+        return self.get_node().data.get('ip_addresses', None)
 
     class NIMetaType:
         ni_type = 'Unit'
@@ -499,6 +506,7 @@ network_type_resolver = {
     'Host': Host,
     'Host User': HostUser,
     'Switch': Switch,
+    'Unit': Unit,
     'Router': Router,
     'Firewall': Firewall,
     'External Equipment': ExternalEquipment,
