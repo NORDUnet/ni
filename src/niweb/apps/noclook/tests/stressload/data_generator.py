@@ -393,7 +393,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             unit = self.create_unit()
             unit_ip = self.fake.ipv4()
 
-            rel_maker.add_dependent(self.user, service, unit)
+            rel_maker.add_dependent(self.user, unit, service)
 
             # get an existent router or add one
             router_type = NetworkFakeDataGenerator.get_nodetype('Router')
