@@ -47,12 +47,13 @@ class PhysicalLogical(NINode):
 class Logical(PhysicalLogical):
     part_of = graphene.Field(lambda:Physical)
     dependencies = graphene.List(lambda:PhysicalLogical)
+    used_by = graphene.List(lambda:Relation)
 
 
 class Relation(NINode):
     name = graphene.String(required= True)
     with_same_name = graphene.List(lambda:Relation)
-    uses = graphene.Field(Logical)
+    uses = graphene.List(lambda:Logical)
     provides = graphene.Field(NINode) # Physical or Logical
     owns = graphene.List(lambda:Physical)
     responsible_for = graphene.Field(lambda:Location)
@@ -152,15 +153,24 @@ class LogicalMixin(PhysicalLogicalMixin):
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_part_of', 'Part_of')
 
+    def resolve_used_by(self, info, **kwargs):
+        return ResolverUtils.multiple_relation_resolver(
+            info, self.get_node(), '_incoming', 'Uses')
+
+    def resolve_dependencies(self, info, **kwargs):
+        return ResolverUtils.multiple_relation_resolver(
+            info, self.get_node(), 'get_dependencies', 'Depends_on')
+
     @classmethod
     def link_part_of(cls, user, logical_nh, physical_nh):
         physical_node = physical_nh.get_node()
         logical_handle_id = logical_nh.handle_id
         helpers.set_part_of(user, physical_node, logical_handle_id)
 
-    def resolve_dependencies(self, info, **kwargs):
-        return ResolverUtils.multiple_relation_resolver(
-            info, self.get_node(), 'get_dependencies', 'Depends_on')
+    @classmethod
+    def link_used_by(cls, user, logical_nh, relation_nh):
+        helpers.set_user(user,
+            logical_nh.get_node(), relation_nh.handle_id)
 
     @classmethod
     def link_dependencies(cls, user, logical1_nh, logical2_nh):
@@ -185,7 +195,7 @@ class RelationMixin:
         return ret
 
     def resolve_uses(self, info, **kwargs):
-        return ResolverUtils.single_relation_resolver(
+        return ResolverUtils.multiple_relation_resolver(
             info, self.get_node(), 'get_uses', 'Uses')
 
     def resolve_provides(self, info, **kwargs):
@@ -199,6 +209,11 @@ class RelationMixin:
     def resolve_responsible_for(self, info, **kwargs):
         return ResolverUtils.single_relation_resolver(
             info, self.get_node(), 'get_responsible_for', 'Responsible_for')
+
+    @classmethod
+    def link_uses(cls, user, relation_nh, logical_nh):
+        helpers.set_user(user,
+            logical_nh.get_node(), relation_nh.handle_id)
 
     @classmethod
     def link_provides(cls, user, relation_nh, phylogical_nh):
