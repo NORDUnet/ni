@@ -342,6 +342,36 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return peering_partner
 
+    def create_unit(self, name=None):
+        # create object
+        if not name:
+            name = self.fake.isbn10()
+
+        unit = self.get_or_create_node(
+            name, 'Unit', META_TYPES[1]) # Logical
+
+        # add data
+        num_ips = random.randint(0,4)
+        ip_addresses = [self.fake.ipv4()]
+
+        for i in range(num_ips):
+            ip_addresses.append(self.fake.ipv4())
+
+        data = {
+            'description' : self.fake.paragraph(),
+            'vlan' : self.fake.ipv4(),
+            'ip_addresses': ip_addresses,
+        }
+
+        for key, value in data.items():
+            value = self.escape_quotes(value)
+            unit.get_node().add_property(key, value)
+
+        # add context
+        self.add_network_context(unit)
+
+        return unit
+
     def create_peering_group(self, name=None):
         # create object
         if not name:
@@ -360,10 +390,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         for i in range(0, num_dependencies):
             service = self.create_service()
-
-            unit_name = self.fake.isbn10()
-            unit = self.get_or_create_node(
-                unit_name, 'Unit', META_TYPES[1])
+            unit = self.create_unit()
             unit_ip = self.fake.ipv4()
 
             rel_maker.add_dependent(self.user, service, unit)
