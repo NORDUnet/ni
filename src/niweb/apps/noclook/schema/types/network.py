@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 __author__ = 'ffuentes'
 
+import norduniclient as nc
+
 from apps.noclook.schema.core import *
 from apps.noclook.models import SwitchType as SwitchTypeModel
 from apps.noclook.schema.utils import sunet_forms_enabled
@@ -66,12 +68,18 @@ class HostUser(NIObjectType, RelationMixin):
 class Unit(NIObjectType, LogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    ip_addresses = NIIPAddrField()
     wlan = NIStringField()
+    ip_address = graphene.String() # only for PeeringGroup's "dependencies" list
 
-    def resolve_ip_addresses(self, info, **kwargs):
+    def resolve_ip_address(self, info, **kwargs):
         '''Manual resolver for the ip field'''
-        return self.get_node().data.get('ip_addresses', None)
+        ret = None
+
+        if hasattr(self, 'relation_id'):
+            rel = nc.get_relationship_bundle(nc.graphdb.manager, self.relation_id)
+            ret = rel['data']['ip_address']
+
+        return ret
 
     class NIMetaType:
         ni_type = 'Unit'
@@ -160,10 +168,6 @@ class Host(NIObjectType, PhysicalLogicalMixin):
 
     def resolve_location(self, info, **kwargs):
         return PhysicalMixin.resolve_location(self, info, **kwargs)
-
-    def resolve_ip_addresses(self, info, **kwargs):
-        '''Manual resolver for the ip field'''
-        return self.get_node().data.get('ip_addresses', None)
 
     def resolve_host_type(self, info, **kwargs):
         '''Manual resolver for host type string'''
@@ -471,12 +475,23 @@ class PeeringPartner(NIObjectType, RelationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     as_number = NIStringField()
     peering_link = graphene.String()
+    ip_address = graphene.String() # only for PeeringGroup's "used_by" list
 
     def resolve_peering_link(self, info, **kwargs):
         '''Manual resolver for the peering_link field'''
         as_number = self.get_node().data.get('as_number', None)
 
         return 'https://www.peeringdb.com/asn/{}'.format(as_number)
+
+    def resolve_ip_address(self, info, **kwargs):
+        '''Manual resolver for the ip field'''
+        ret = None
+
+        if hasattr(self, 'relation_id'):
+            rel = nc.get_relationship_bundle(nc.graphdb.manager, self.relation_id)
+            ret = rel['data']['ip_address']
+
+        return ret
 
     class NIMetaType:
         ni_type = 'Peering Partner'
