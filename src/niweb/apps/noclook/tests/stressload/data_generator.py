@@ -388,10 +388,13 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         num_dependencies = random.randint(1, 3)
         rel_maker = LogicalDataRelationMaker()
 
+        unit_ips = []
+
         for i in range(0, num_dependencies):
             service = self.create_service()
             unit = self.create_unit()
             unit_ip = self.fake.ipv4()
+            unit_ips.append(unit_ip)
 
             rel_maker.add_dependent(self.user, unit, service)
 
@@ -412,6 +415,31 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             peering_group.get_node().set_group_dependency(
                 unit.handle_id, unit_ip
             )
+
+        # add random peering partners
+        num_dependencies = random.randint(0, 3)
+        ppartner_type = NetworkFakeDataGenerator.get_nodetype('Peering Partner')
+        all_ppartners = NodeHandle.objects.filter(node_type=ppartner_type)
+        all_ppartners = list(all_ppartners)
+        ppartners = []
+
+        for i in range(num_dependencies):
+            if all_ppartners:
+                ppartner = random.choice(all_ppartners)
+                all_ppartners.remove(ppartner)
+                ppartners.append(ppartner)
+            else:
+                ppartner = self.create_peering_partner()
+                ppartners.append(ppartner)
+
+        for ppartner in ppartners:
+            ppartner_node = ppartner.get_node()
+            ip = self.fake.ipv4()
+            if unit_ips:
+                ip = random.choice(unit_ips)
+
+            ppartner_node.set_peering_group(peering_group.handle_id,
+                                            ip)
 
         return peering_group
 
