@@ -19,11 +19,11 @@ class Command(BaseCommand):
         'Peering Group', 'Peering Partner',
         # Equipment and cables
         'Cable', 'Port', 'Host', 'Router', 'Switch',
-        'Firewall', 'Host User', 'Optical Node', 'ODF',
+        'Firewall', 'Host User', 'Optical Node', 'ODF', 'Unit',
         # Optical Layers
         'Optical Link', 'Optical Multiplex Section', 'Optical Path',
         # Locations
-        'Site', 'Room',
+        'Site', 'Room', 'Rack',
     ]
 
     option_organizations = 'organizations'

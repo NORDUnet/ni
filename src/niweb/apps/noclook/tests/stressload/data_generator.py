@@ -372,6 +372,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return unit
 
+
     def create_peering_group(self, name=None):
         # create object
         if not name:
@@ -391,12 +392,9 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         unit_ips = []
 
         for i in range(0, num_dependencies):
-            service = self.create_service()
             unit = self.create_unit()
             unit_ip = self.fake.ipv4()
             unit_ips.append(unit_ip)
-
-            rel_maker.add_dependent(self.user, unit, service)
 
             # get an existent router or add one
             router_type = NetworkFakeDataGenerator.get_nodetype('Router')
@@ -409,7 +407,12 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             else:
                 router = self.create_router()
 
-            rel_maker.add_part_of(self.user, unit, router)
+            # get a port from the router
+            ports = router.get_node().get_ports()
+            port = NodeHandle.objects.get(handle_id=\
+                random.choice(ports['Has'])['node'].handle_id)
+
+            rel_maker.add_part_of(self.user, unit, port)
 
             # add dependency
             peering_group.get_node().set_group_dependency(
@@ -664,6 +667,14 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         for key, value in data.items():
             value = self.escape_quotes(value)
             router.get_node().add_property(key, value)
+
+        # add ports
+        num_ports = random.randint(1, 5) # rather small but fine for our purpose
+        relation_maker = PhysicalDataRelationMaker()
+
+        for i in range(num_ports):
+            port = self.create_port()
+            relation_maker.add_has(self.user, router, port)
 
         return router
 
@@ -1127,6 +1138,11 @@ class PhysicalDataRelationMaker(DataRelationMaker):
 
         result = nc.query_to_dict(nc.graphdb.manager, q,
                         handle_id=handle_id, parent_handle_id=parent_handle_id)
+
+    def add_has(self, user, physical_nh, physical_has_nh):
+        helpers.set_has(user, physical_nh.get_node(),
+                                    physical_has_nh.handle_id)
+
 
 class LocationDataRelationMaker(DataRelationMaker):
     def add_parent(self, user, location_nh, parent_nh):
