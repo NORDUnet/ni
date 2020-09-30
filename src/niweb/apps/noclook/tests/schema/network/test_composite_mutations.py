@@ -1511,8 +1511,16 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(update_checkport['description'], port_2_description)
 
         # check ports in router
-        self.assertEqual(updated_router['ports'][1]['id'], port_1_id)
-        self.assertEqual(updated_router['ports'][0]['id'], port_2_id)
+        self.assertEqual(updated_router['ports'][1]['id'], port_1_id,
+            "{} != {}".format(
+                relay.Node.from_global_id(updated_router['ports'][1]['id']),
+                relay.Node.from_global_id(port_1_id))
+        )
+        self.assertEqual(updated_router['ports'][0]['id'], port_2_id,
+            "{} != {}".format(
+                relay.Node.from_global_id(updated_router['ports'][0]['id'],),
+                relay.Node.from_global_id(port_2_id))
+        )
 
         # check location
         self.assertEqual(updated_router['location']['id'], location_id)

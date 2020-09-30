@@ -640,7 +640,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return host
 
-    def create_router(self, name=None):
+    def create_router(self, name=None, add_ports=False):
         # create object
         if not name:
             name = '{}-{}'.format(
@@ -669,12 +669,13 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             router.get_node().add_property(key, value)
 
         # add ports
-        num_ports = random.randint(1, 5) # rather small but fine for our purpose
-        relation_maker = PhysicalDataRelationMaker()
+        if add_ports:
+            num_ports = random.randint(1, 5) # rather small but fine for our purpose
+            relation_maker = PhysicalDataRelationMaker()
 
-        for i in range(num_ports):
-            port = self.create_port()
-            relation_maker.add_has(self.user, router, port)
+            for i in range(num_ports):
+                port = self.create_port()
+                relation_maker.add_has(self.user, router, port)
 
         return router
 
