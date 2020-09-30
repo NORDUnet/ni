@@ -141,13 +141,13 @@ class NISwitchMutationFactory(NIMutationFactory):
 
 class NIUnitMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        form = NewPortForm # use port's form as we're only using the name field
+        form = UnitForm
         request_path = '/'
         graphql_type = Unit
-        form_include = ('name')
 
     class Meta:
         abstract = False
+        property_update = ('name', 'description', 'wlan')
 
 
 class NIRouterMutationFactory(NIMutationFactory):

@@ -5130,6 +5130,8 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         unit1_id = relay.Node.to_global_id(str(unit1_nh.node_type),
                                         str(unit1_nh.handle_id))
         unit1_name = "Test dependency unit"
+        unit1_description = unit1_nh.get_node().data.get("description")
+        unit1_vlan = unit1_nh.get_node().data.get("vlan")
 
         unit2_handle_id = dependencies['Depends_on'][1]['relationship']\
                             .end_node._properties['handle_id']
@@ -5154,6 +5156,8 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
             update_dependencies_unit:{{
               id: "{unit1_id}"
               name: "{unit1_name}"
+              description: "{unit1_description}"
+              vlan: "{unit1_vlan}"
             }}
             deleted_dependencies_unit:{{
               id: "{unit2_id}"
@@ -5189,6 +5193,8 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
                     }}
                   }}
                   ...on Unit{{
+                    description
+                    vlan
                     ip_address
                   }}
                 }}
@@ -5213,6 +5219,8 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
               unit{{
                 id
                 name
+                description
+                vlan
               }}
             }}
             dependencies_unit_deleted{{
@@ -5232,6 +5240,7 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         }}
         """.format(peergroup_id=peergroup_id, peergroup_name=peergroup_name,
                     unit1_id=unit1_id, unit1_name=unit1_name,
+                    unit1_description=unit1_description, unit1_vlan=unit1_vlan,
                     unit2_id=unit2_id, ppartner_id=ppartner_id,
                     ppartner_name=ppartner_name)
 
@@ -5266,6 +5275,8 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
             ['composite_peeringGroup']['dependencies_unit_updated'][0]['unit']
 
         self.assertEquals(check_unit1['name'], unit1_name)
+        self.assertEquals(check_unit1['description'], unit1_description)
+        self.assertEquals(check_unit1['vlan'], unit1_vlan)
 
         is_present = False
         for dep in updated_pgroup['dependencies']:
