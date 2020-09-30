@@ -5123,16 +5123,18 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         peergroup_name = "Peer Group new name"
 
         dependencies = pgroup.get_node().get_dependencies()
-        host_handle_id = dependencies['Depends_on'][0]['relationship'].end_node.\
-                            _properties['handle_id']
-        host_nh = NodeHandle.objects.get(handle_id=host_handle_id)
-        host_type_str = host_nh.node_type.type.replace(' ', '')
-        host_id = relay.Node.to_global_id(str(host_nh.node_type),
-                                        str(host_nh.handle_id))
-        host_name = "Test dependency host"
-        host_description = host_nh.get_node().data['description']
-        host_opstate = random.choice(
-            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+        unit1_handle_id = dependencies['Depends_on'][0]['relationship']\
+                            .end_node._properties['handle_id']
+        unit1_nh = NodeHandle.objects.get(handle_id=unit1_handle_id)
+        unit1_id = relay.Node.to_global_id(str(unit1_nh.node_type),
+                                        str(unit1_nh.handle_id))
+        unit1_name = "Test dependency unit"
+
+        unit2_handle_id = dependencies['Depends_on'][1]['relationship']\
+                            .end_node._properties['handle_id']
+        unit2_nh = NodeHandle.objects.get(handle_id=unit2_handle_id)
+        unit2_id = relay.Node.to_global_id(str(unit2_nh.node_type),
+                                        str(unit2_nh.handle_id))
 
         query = """
         mutation{{
@@ -5141,11 +5143,12 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
               id: "{peergroup_id}"
               name: "{peergroup_name}"
             }}
-            update_dependencies_host:{{
-              id: "{host_id}"
-              name: "{host_name}"
-              description: "{host_description}"
-              operational_state: "{host_opstate}"
+            update_dependencies_unit:{{
+              id: "{unit1_id}"
+              name: "{unit1_name}"
+            }}
+            deleted_dependencies_unit:{{
+              id: "{unit2_id}"
             }}
           }}){{
             updated{{
@@ -5156,28 +5159,58 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
               peeringGroup{{
                 id
                 name
+                dependencies{{
+                  __typename
+                  id
+                  name
+                  relation_id
+                  ...on Logical{{
+                    dependencies{{
+                      __typename
+                      id
+                      name
+                    }}
+                    part_of{{
+                      __typename
+                      id
+                      name
+                    }}
+                  }}
+                  ...on Unit{{
+                    ip_address
+                  }}
+                }}
+                used_by{{
+                  __typename
+                  id
+                  name
+                  relation_id
+                  ...on PeeringPartner{{
+                    ip_address
+                    as_number
+                    peering_link
+                  }}
+                }}
               }}
             }}
-            dependencies_host_updated{{
+            dependencies_unit_updated{{
               errors{{
                 field
                 messages
               }}
-              host{{
+              unit{{
                 id
                 name
-                description
-                operational_state{{
-                  value
-                }}
               }}
+            }}
+            dependencies_unit_deleted{{
+              success
             }}
           }}
         }}
         """.format(peergroup_id=peergroup_id, peergroup_name=peergroup_name,
-                    host_id=host_id, host_name=host_name,
-                    host_description=host_description,
-                    host_opstate=host_opstate)
+                    unit1_id=unit1_id, unit1_name=unit1_name,
+                    unit2_id=unit2_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -5188,25 +5221,34 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         assert not updated_errors, pformat(updated_errors, indent=1)
 
         subupdated_errors = \
-            result.data['composite_peeringGroup']['dependencies_host_updated']\
+            result.data['composite_peeringGroup']['dependencies_unit_updated']\
                         [0]['errors']
         assert not subupdated_errors, pformat(subupdated_errors, indent=1)
 
         # check data
         updated_pgroup = result.data['composite_peeringGroup']['updated']\
                             ['peeringGroup']
-        self.assertEqual(updated_pgroup['id'], peergroup_id,
+        self.assertEquals(updated_pgroup['id'], peergroup_id,
             "{} != {}".format(relay.Node.from_global_id(updated_pgroup['id']),
                 relay.Node.from_global_id(peergroup_id)))
-        self.assertEqual(updated_pgroup['name'], peergroup_name)
+        self.assertEquals(updated_pgroup['name'], peergroup_name)
 
-        # check subentity
-        check_host1 = result.data \
-            ['composite_peeringGroup']['dependencies_host_updated'][0]['host']
+        # check subentities
+        check_unit1 = result.data \
+            ['composite_peeringGroup']['dependencies_unit_updated'][0]['unit']
 
-        self.assertEqual(check_host1['name'], host_name)
-        self.assertEqual(check_host1['description'], host_description)
-        self.assertEqual(check_host1['operational_state']['value'], host_opstate)
+        self.assertEquals(check_unit1['name'], unit1_name)
+
+        is_present = False
+        for dep in updated_pgroup['dependencies']:
+            if dep['id'] == unit1_id:
+                is_present = True
+
+        self.assertTrue(is_present)
+
+        check_unit2_deletion = result.data \
+            ['composite_peeringGroup']['dependencies_unit_deleted'][0]['success']
+        self.assertTrue(check_unit2_deletion)
 
 
 class SiteTest(Neo4jGraphQLNetworkTest):

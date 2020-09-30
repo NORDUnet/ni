@@ -386,7 +386,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         self.add_network_context(peering_group)
 
         # add random dependents
-        num_dependencies = random.randint(1, 3)
+        num_dependencies = random.randint(2, 4)
         rel_maker = LogicalDataRelationMaker()
 
         unit_ips = []
