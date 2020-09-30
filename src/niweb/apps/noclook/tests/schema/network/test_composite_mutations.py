@@ -5122,6 +5122,7 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
                                         str(pgroup.handle_id))
         peergroup_name = "Peer Group new name"
 
+        # modify dependencies
         dependencies = pgroup.get_node().get_dependencies()
         unit1_handle_id = dependencies['Depends_on'][0]['relationship']\
                             .end_node._properties['handle_id']
@@ -5136,6 +5137,13 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         unit2_id = relay.Node.to_global_id(str(unit2_nh.node_type),
                                         str(unit2_nh.handle_id))
 
+        # add new peering partner user
+        peering_partner = data_generator.create_peering_partner()
+        ppartner_id = relay.Node.to_global_id(
+                            str(peering_partner.node_type.type.replace(' ', '')),
+                            str(peering_partner.handle_id))
+        ppartner_name = "Test Peering Partner"
+
         query = """
         mutation{{
           composite_peeringGroup(input:{{
@@ -5149,6 +5157,10 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
             }}
             deleted_dependencies_unit:{{
               id: "{unit2_id}"
+            }}
+            update_used_by_peeringpartner:{{
+              id: "{ppartner_id}"
+              name: "{ppartner_name}"
             }}
           }}){{
             updated{{
@@ -5206,11 +5218,22 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
             dependencies_unit_deleted{{
               success
             }}
+            used_by_peeringpartner_updated{{
+              errors{{
+                field
+                messages
+              }}
+              peeringPartner{{
+                id
+                name
+              }}
+            }}
           }}
         }}
         """.format(peergroup_id=peergroup_id, peergroup_name=peergroup_name,
                     unit1_id=unit1_id, unit1_name=unit1_name,
-                    unit2_id=unit2_id)
+                    unit2_id=unit2_id, ppartner_id=ppartner_id,
+                    ppartner_name=ppartner_name)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -5223,6 +5246,11 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         subupdated_errors = \
             result.data['composite_peeringGroup']['dependencies_unit_updated']\
                         [0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_peeringGroup']\
+                        ['used_by_peeringpartner_updated'][0]['errors']
         assert not subupdated_errors, pformat(subupdated_errors, indent=1)
 
         # check data
@@ -5249,6 +5277,19 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         check_unit2_deletion = result.data \
             ['composite_peeringGroup']['dependencies_unit_deleted'][0]['success']
         self.assertTrue(check_unit2_deletion)
+
+        check_ppartner = result.data \
+            ['composite_peeringGroup']['used_by_peeringpartner_updated']\
+            [0]['peeringPartner']
+
+        self.assertEquals(check_ppartner['name'], ppartner_name)
+
+        is_present = False
+        for dep in updated_pgroup['used_by']:
+            if dep['id'] == ppartner_id:
+                is_present = True
+
+        self.assertTrue(is_present)
 
 
 class SiteTest(Neo4jGraphQLNetworkTest):

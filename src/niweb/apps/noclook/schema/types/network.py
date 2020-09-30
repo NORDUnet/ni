@@ -77,7 +77,7 @@ class Unit(NIObjectType, LogicalMixin):
 
         if hasattr(self, 'relation_id'):
             rel = nc.get_relationship_bundle(nc.graphdb.manager, self.relation_id)
-            ret = rel['data']['ip_address']
+            ret = rel['data'].get('ip_address', None)
 
         return ret
 
@@ -489,7 +489,7 @@ class PeeringPartner(NIObjectType, RelationMixin):
 
         if hasattr(self, 'relation_id'):
             rel = nc.get_relationship_bundle(nc.graphdb.manager, self.relation_id)
-            ret = rel['data']['ip_address']
+            ret = rel['data'].get('ip_address', None)
 
         return ret
 
