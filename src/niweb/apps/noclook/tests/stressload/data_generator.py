@@ -405,7 +405,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             if routers:
                 router = random.choice(routers)
             else:
-                router = self.create_router()
+                router = self.create_router(add_ports=True)
 
             # get a port from the router
             ports = router.get_node().get_ports()

@@ -139,11 +139,22 @@ class NISwitchMutationFactory(NIMutationFactory):
         update_exclude = ('relationship_ports', 'relationship_depends_on')
 
 
+class NIUnitMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form = NewPortForm # use port's form as we're only using the name field
+        request_path = '/'
+        graphql_type = Unit
+        form_include = ('name')
+
+    class Meta:
+        abstract = False
+
+
 class NIRouterMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        form    = EditRouterForm
-        request_path   = '/'
-        graphql_type   = Router
+        form = EditRouterForm
+        request_path = '/'
+        graphql_type = Router
         relations_processors = {
             'relationship_location': get_unique_relation_processor(
                 'Located_in',
