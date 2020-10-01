@@ -397,15 +397,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             unit_ips.append(unit_ip)
 
             # get an existent router or add one
-            router_type = NetworkFakeDataGenerator.get_nodetype('Router')
-            routers = NodeHandle.objects.filter(node_type=router_type)
-
-            router = None
-
-            if routers:
-                router = random.choice(routers)
-            else:
-                router = self.create_router(add_ports=True)
+            router = self.create_router(add_ports=True)
 
             # get a port from the router
             ports = router.get_node().get_ports()
