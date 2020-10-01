@@ -501,6 +501,17 @@ class PeeringPartner(NIObjectType, RelationMixin):
 
 class PeeringGroup(NIObjectType, LogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
+    ip_address = graphene.String() # only for PeeringPartner's "uses" list
+
+    def resolve_ip_address(self, info, **kwargs):
+        '''Manual resolver for the ip field'''
+        ret = None
+
+        if hasattr(self, 'relation_id'):
+            rel = nc.get_relationship_bundle(nc.graphdb.manager, self.relation_id)
+            ret = rel['data'].get('ip_address', None)
+
+        return ret
 
     class NIMetaType:
         ni_type = 'Peering Group'
