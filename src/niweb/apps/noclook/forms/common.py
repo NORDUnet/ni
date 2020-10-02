@@ -1378,3 +1378,10 @@ class TrunkCableForm(forms.Form):
     trunk_num_ports = forms.IntegerField(required=False, min_value=0, initial=0, label='Number of ports', help_text='Also number of cables that is in the trunk cable')
     trunk_prefix = forms.CharField(required=False, help_text='Port prefix e.g. ge-1/0', label='Port prefix')
     trunk_create_missing_ports = forms.BooleanField(required=False, help_text='Force create missing ports', label='Create missing ports')
+
+
+class UnitForm(forms.Form):
+    name = forms.CharField()
+    description = description_field('group')
+    vlan = forms.CharField(required=False)
+    ip_address = forms.CharField(required=False)

@@ -81,7 +81,7 @@ $(document).ready(
                             {% endif %}
                                 <td>{{ item.unit.data.name }}</td>
                                 <td>{{ item.network_address }}</td>
-                                <td>{{ item.unit.data.vlanid }}</td>
+                                <td>{{ item.unit.data.vlan }}</td>
                                 <td><span class="ip-address">{{ relation.user_address }}</span></td>
                                 <td><a href="{% noclook_node_to_url relation.user.handle_id %}">{{ relation.user.data.name }} (AS{{ relation.user.data.as_number }})</a></td>
                             </tr>
@@ -100,7 +100,7 @@ $(document).ready(
                             {% endfor %}
                             <td>{{ item.unit.data.name }}</td>
                             <td>{{ item.network_address }}</td>
-                            <td>{{ item.unit.data.vlanid }}</td>
+                            <td>{{ item.unit.data.vlan }}</td>
                             <td>None</td>
                             <td>None</td>
                         </tr>

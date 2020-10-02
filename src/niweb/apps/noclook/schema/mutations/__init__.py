@@ -79,6 +79,11 @@ class NOCRootMutation(graphene.ObjectType):
     delete_switch = NISwitchMutationFactory.get_delete_mutation().Field()
     composite_switch = CompositeSwitchMutation.Field()
 
+    create_unit = NIUnitMutationFactory.get_create_mutation().Field()
+    update_unit = NIUnitMutationFactory.get_update_mutation().Field()
+    delete_unit = NIUnitMutationFactory.get_delete_mutation().Field()
+    composite_unit = CompositeUnitMutation.Field()
+
     update_router = NIRouterMutationFactory.get_update_mutation().Field()
     delete_router = NIRouterMutationFactory.get_delete_mutation().Field()
     composite_router = CompositeRouterMutation.Field()

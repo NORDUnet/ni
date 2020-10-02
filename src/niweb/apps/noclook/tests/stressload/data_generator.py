@@ -342,6 +342,37 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return peering_partner
 
+    def create_unit(self, name=None):
+        # create object
+        if not name:
+            name = self.fake.isbn10()
+
+        unit = self.get_or_create_node(
+            name, 'Unit', META_TYPES[1]) # Logical
+
+        # add data
+        num_ips = random.randint(0,4)
+        ip_addresses = [self.fake.ipv4()]
+
+        for i in range(num_ips):
+            ip_addresses.append(self.fake.ipv4())
+
+        data = {
+            'description' : self.fake.paragraph(),
+            'vlan' : self.fake.ipv4(),
+            'ip_addresses': ip_addresses,
+        }
+
+        for key, value in data.items():
+            value = self.escape_quotes(value)
+            unit.get_node().add_property(key, value)
+
+        # add context
+        self.add_network_context(unit)
+
+        return unit
+
+
     def create_peering_group(self, name=None):
         # create object
         if not name:
@@ -355,15 +386,55 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         self.add_network_context(peering_group)
 
         # add random dependents
-        num_dependencies = random.randint(1, 3)
+        num_dependencies = random.randint(2, 4)
+        rel_maker = LogicalDataRelationMaker()
+
+        unit_ips = []
 
         for i in range(0, num_dependencies):
-            dependency = random.choice([
-                self.create_host,
-            ])
-            dependency = dependency()
-            rel_maker = PhysicalLogicalDataRelationMaker()
-            rel_maker.add_dependency(self.user, peering_group, dependency)
+            unit = self.create_unit()
+            unit_ip = self.fake.ipv4()
+            unit_ips.append(unit_ip)
+
+            # get an existent router or add one
+            router = self.create_router(add_ports=True)
+
+            # get a port from the router
+            ports = router.get_node().get_ports()
+            port = NodeHandle.objects.get(handle_id=\
+                random.choice(ports['Has'])['node'].handle_id)
+
+            rel_maker.add_part_of(self.user, unit, port)
+
+            # add dependency
+            peering_group.get_node().set_group_dependency(
+                unit.handle_id, unit_ip
+            )
+
+        # add random peering partners
+        num_dependencies = random.randint(0, 3)
+        ppartner_type = NetworkFakeDataGenerator.get_nodetype('Peering Partner')
+        all_ppartners = NodeHandle.objects.filter(node_type=ppartner_type)
+        all_ppartners = list(all_ppartners)
+        ppartners = []
+
+        for i in range(num_dependencies):
+            if all_ppartners:
+                ppartner = random.choice(all_ppartners)
+                all_ppartners.remove(ppartner)
+                ppartners.append(ppartner)
+            else:
+                ppartner = self.create_peering_partner()
+                ppartners.append(ppartner)
+
+        for ppartner in ppartners:
+            ppartner_node = ppartner.get_node()
+            ip = self.fake.ipv4()
+            if unit_ips:
+                ip = random.choice(unit_ips)
+
+            ppartner_node.set_peering_group(peering_group.handle_id,
+                                            ip)
 
         return peering_group
 
@@ -561,7 +632,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         return host
 
-    def create_router(self, name=None):
+    def create_router(self, name=None, add_ports=False):
         # create object
         if not name:
             name = '{}-{}'.format(
@@ -588,6 +659,15 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         for key, value in data.items():
             value = self.escape_quotes(value)
             router.get_node().add_property(key, value)
+
+        # add ports
+        if add_ports:
+            num_ports = random.randint(1, 5) # rather small but fine for our purpose
+            relation_maker = PhysicalDataRelationMaker()
+
+            for i in range(num_ports):
+                port = self.create_port()
+                relation_maker.add_has(self.user, router, port)
 
         return router
 
@@ -928,7 +1008,8 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
     def create_room(self, name=None, add_parent=True):
         # create object
         if not name:
-            name = self.company_name()
+            name = '{}{}'.format(random.randint(1,20), \
+                                    random.choice(string.ascii_letters).upper())
 
         room = self.get_or_create_node(
             name, 'Room', META_TYPES[3]) # Location
@@ -956,7 +1037,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
     def create_rack(self, name=None, add_parent=True):
         # create object
         if not name:
-            name = self.company_name()
+            name = self.escape_quotes(self.fake.license_plate())
 
         rack = self.get_or_create_node(
             name, 'Rack', META_TYPES[3]) # Location
@@ -983,6 +1064,16 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             rel_maker.add_parent(self.user, rack, parent_room)
 
         return rack
+
+    def create_service(self, name=None):
+        # create object
+        if not name:
+            name = self.company_name()
+
+        service = self.get_or_create_node(
+            name, 'Service', META_TYPES[1]) # Logical
+
+        return service
 
 
 class DataRelationMaker:
@@ -1040,6 +1131,11 @@ class PhysicalDataRelationMaker(DataRelationMaker):
 
         result = nc.query_to_dict(nc.graphdb.manager, q,
                         handle_id=handle_id, parent_handle_id=parent_handle_id)
+
+    def add_has(self, user, physical_nh, physical_has_nh):
+        helpers.set_has(user, physical_nh.get_node(),
+                                    physical_has_nh.handle_id)
+
 
 class LocationDataRelationMaker(DataRelationMaker):
     def add_parent(self, user, location_nh, parent_nh):

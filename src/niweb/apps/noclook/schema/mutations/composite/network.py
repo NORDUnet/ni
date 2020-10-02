@@ -56,6 +56,17 @@ class CompositeSwitchMutation(CompositeMutation):
         include_metafields = ('dependents')
 
 
+class CompositeUnitMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Unit
+        main_mutation_f = NIUnitMutationFactory
+        context = sriutils.get_network_context()
+        has_creation = True
+
+
 class CompositeRouterMutation(CompositeMutation):
     class Input:
         pass
@@ -291,7 +302,7 @@ class CompositePeeringGroupMutation(CompositeMutation):
         graphql_type = PeeringGroup
         main_mutation_f = NIPeeringGroupMutationFactory
         context = sriutils.get_network_context()
-        include_metafields = ('dependencies')
+        #include_metafields = ('dependencies')
         has_creation = False
 
 

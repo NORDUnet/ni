@@ -15,7 +15,7 @@ class IPAddr(Scalar):
         if isinstance(value, list):
             return value
         else:
-            return none
+            return None
 
     @staticmethod
     def parse_value(value):
