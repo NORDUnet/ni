@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
 import traceback
+import os
 
 logger = logging.getLogger('noclook.management.datafaker')
 
@@ -24,6 +25,8 @@ class Command(BaseCommand):
         'Optical Link', 'Optical Multiplex Section', 'Optical Path',
         # Locations
         'Site', 'Room', 'Rack',
+        # Services
+        'Service',
     ]
 
     option_organizations = 'organizations'
@@ -31,6 +34,7 @@ class Command(BaseCommand):
     option_peering = 'peering'
     option_optical = 'optical'
     option_location = 'location'
+    option_service = 'service'
     option_deleteall = 'deleteall'
     option_progress = 'progress'
     cmd_name = 'datafaker'
@@ -47,6 +51,8 @@ class Command(BaseCommand):
                     help="Create optical entities", type=int, default=0)
         parser.add_argument("--{}".format(self.option_location),
                     help="Create location entities", type=int, default=0)
+        parser.add_argument("--{}".format(self.option_service),
+                    help="Create service entities", type=int, default=0)
         parser.add_argument("-d", "--{}".format(self.option_deleteall), action='store_true',
                     help="BEWARE: This command deletes information in the database")
         parser.add_argument("-p", "--{}".format(self.option_progress), action='store_true',
@@ -106,6 +112,15 @@ class Command(BaseCommand):
                         .write('Forging fake location nodes: {} for each subtype:'\
                         .format(numnodes))
                 self.create_location(numnodes)
+
+        if options[self.option_service]:
+            numnodes = options[self.option_service]
+            if numnodes > 0:
+                if self.show_progress:
+                    self.stdout\
+                        .write('Forging fake service nodes: {} for each subtype:'\
+                        .format(numnodes))
+                self.create_service(numnodes)
 
         return
 
@@ -184,6 +199,22 @@ class Command(BaseCommand):
             generator.create_site,
             generator.create_room,
             generator.create_rack,
+        ]
+
+        self.create_entities(numnodes, create_funcs)
+
+
+    def create_service(self, numnodes):
+        # import services class / types
+        cmd = 'cd /app/scripts/service_types/; python noclook_service_types_import.py ndn_service_types.csv'
+
+        # try to import the service types
+        os.system(cmd)
+
+        generator = NetworkFakeDataGenerator()
+
+        create_funcs = [
+            generator.create_service,
         ]
 
         self.create_entities(numnodes, create_funcs)
