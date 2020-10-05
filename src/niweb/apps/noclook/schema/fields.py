@@ -6,6 +6,7 @@ from apps.noclook.vakt import utils as sriutils
 from collections import OrderedDict
 from graphene_django import DjangoObjectType
 from .scalars import ChoiceScalar, IPAddr, JSON
+from datetime import date
 
 import graphene
 import types as pytypes
@@ -178,6 +179,36 @@ class NIJSONField(NIBasicField):
                     type_kwargs=None, **kwargs):
         super(NIJSONField, self).__init__(field_type, manual_resolver,
                         type_kwargs, **kwargs)
+
+
+class NIDateField(NIBasicField):
+    '''
+    JSO type
+    '''
+    def __init__(self, field_type=graphene.types.DateTime, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIDateField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_value(instance, info, **kwargs):
+            possible_value = self.get_inner_node(instance).data.get(field_name)
+
+            if possible_value == None:
+                possible_value = self.get_default_value()
+            else:
+                possible_value = date.fromisoformat(possible_value)
+
+            return possible_value
+
+        return resolve_node_value
 
 
 class NISingleRelationField(NIBasicField):
