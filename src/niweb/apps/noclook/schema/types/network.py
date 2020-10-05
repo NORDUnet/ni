@@ -552,8 +552,6 @@ class Service(NIObjectType, LocationMixin):
     service_type = graphene.Field(ServiceType)
     service_class = graphene.Field(ServiceClass)
     operational_state = NIChoiceField(dropdown_name="operational_states")
-    '''provider = NISingleRelationField(field_type=(lambda: Provider), \
-        rel_name="Provides", rel_method="_incoming")'''
     responsible_group = NISingleRelationField(field_type=(lambda: Group),
         rel_name="Takes_responsibility", rel_method="_incoming",
         check_permissions=False)

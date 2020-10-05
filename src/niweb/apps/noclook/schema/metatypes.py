@@ -42,6 +42,7 @@ class NINode(graphene.Node):
 
 class PhysicalLogical(NINode):
     dependents = graphene.List(lambda:Logical)
+    provider = graphene.Field(lambda:Relation)
 
 
 class Logical(PhysicalLogical):
@@ -146,6 +147,16 @@ class PhysicalLogicalMixin:
         logical_node = logical_nh.get_node()
         physical_handle_id = physical_nh.handle_id
         helpers.set_depends_on(user, logical_node, physical_handle_id)
+
+
+    def resolve_provider(self, info, **kwargs):
+        return ResolverUtils.multiple_relation_resolver(
+            info, self.get_node(), '_incoming', 'Provides')
+
+    @classmethod
+    def link_provider(cls, user, phylog_nh, relation_nh):
+        helpers.set_provider(user, logical_node.get_node(),
+                                relation_nh.handle_id)
 
 
 class LogicalMixin(PhysicalLogicalMixin):
