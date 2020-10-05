@@ -549,8 +549,8 @@ def resolve_getServiceTypes(self, info, **kwargs):
 class Service(NIObjectType, LocationMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
-    service_type = NIChoiceField(dropdown_name="operational_states")
-    service_class = graphene.Field(ServiceType)
+    service_type = graphene.Field(ServiceType)
+    service_class = graphene.Field(ServiceClass)
     operational_state = NIChoiceField(dropdown_name="operational_states")
     '''provider = NISingleRelationField(field_type=(lambda: Provider), \
         rel_name="Provides", rel_method="_incoming")'''
@@ -573,7 +573,16 @@ class Service(NIObjectType, LocationMixin):
         service_class_name = self.get_node().data.get("service_class")
 
         if service_class_name:
-            ret = ServiceClass.objects.get(name=service_class_name)
+            ret = ServiceClassModel.objects.get(name=service_class_name)
+
+        return ret
+
+    def resolve_service_type(self, info, **kwargs):
+        ret = None
+        service_type_name = self.get_node().data.get("service_type")
+
+        if service_type_name:
+            ret = ServiceTypeModel.objects.get(name=service_type_name)
 
         return ret
 
