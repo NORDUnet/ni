@@ -242,6 +242,10 @@ class NOCRootQuery(NOCAutoQuery):
     getOpticalPathDependencyTypes = graphene.List(TypeInfo,
             resolver=get_typelist_resolver(optical_path_dependency_types))
 
+    # service types
+    getServiceTypes = graphene.List(ServiceType, resolver=resolve_getServiceTypes)
+
+
     def resolve_getPlainGroups(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
             ret = []
@@ -466,6 +470,8 @@ class NOCRootQuery(NOCAutoQuery):
             Site, Room, Rack,
             ## Other
             HostUser,
+            ## Service
+            Service,
         ]
 
         search_queries = [
