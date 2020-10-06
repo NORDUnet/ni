@@ -33,7 +33,7 @@ def main():
         rows = csv.reader(csv_file)
         #skip header
         if not args.no_header:
-             next(rows, None)
+            next(rows, None)
         for name, service_class in rows:
             insert_service_type(name, service_class)
 

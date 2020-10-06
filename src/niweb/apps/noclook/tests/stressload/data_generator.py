@@ -5,11 +5,15 @@ __author__ = 'ffuentes'
 from collections import OrderedDict
 from faker import Faker
 from apps.nerds.lib.consumer_util import get_user
-from apps.noclook import helpers
-from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, Choice, NodeHandleContext
+from apps.noclook import helpers, unique_ids
+from apps.noclook.forms import NewServiceForm
+from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, \
+                                Choice, NodeHandleContext, UniqueIdGenerator, \
+                                NordunetUniqueId, ServiceType
 from apps.noclook.schema.utils import sunet_forms_enabled
 from django.contrib.auth.models import User
 from django.template.defaultfilters import slugify
+from dynamic_preferences.registries import global_preferences_registry
 import norduniclient as nc
 from norduniclient import META_TYPES
 
@@ -262,7 +266,7 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             'Router': self.create_router,
             'Switch': self.create_switch,
             'OpticalPath': self.create_optical_path,
-            # 'Service': self.create_service
+            'Service': self.create_service
         }
 
     def get_port_name(self):
@@ -1066,11 +1070,6 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         return rack
 
     def create_service(self, name=None):
-        from dynamic_preferences.registries import global_preferences_registry
-        from apps.noclook import unique_ids
-        from apps.noclook.forms import NewServiceForm
-        from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId, ServiceType
-
         default_test_gen_name = "service_id_generator"
 
         service_types = ServiceType.objects.all()
@@ -1155,8 +1154,10 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
                 self.user, service.get_node(), support_group.handle_id)
 
         # add users
+        num_users = str(random.randint(0, 4))
 
         # add dependencies
+        num_dependencies = str(random.randint(0, 4))
 
         return service
 

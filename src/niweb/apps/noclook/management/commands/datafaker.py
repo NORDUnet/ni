@@ -3,10 +3,10 @@ __author__ = 'ffuentes'
 
 from apps.noclook.models import *
 from apps.noclook.tests.stressload.data_generator import NetworkFakeDataGenerator
+from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
-import traceback
 import os
 
 logger = logging.getLogger('noclook.management.datafaker')
@@ -60,6 +60,17 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
+        # import services class / types
+        dirpath = os.path.dirname(os.path.realpath(__file__))
+        csv_file = \
+            '{}/../../../../../scripts/service_types/ndn_service_types.csv'\
+                .format(dirpath)
+
+        call_command(
+            'import_service_types',
+            csv_file=csv_file
+        )
+
         self.show_progress = False
         if options[self.option_progress]:
             self.show_progress = True
@@ -205,12 +216,6 @@ class Command(BaseCommand):
 
 
     def create_service(self, numnodes):
-        # import services class / types
-        cmd = 'cd /app/scripts/service_types/; python noclook_service_types_import.py ndn_service_types.csv'
-
-        # try to import the service types
-        os.system(cmd)
-
         generator = NetworkFakeDataGenerator()
 
         create_funcs = [
