@@ -197,7 +197,7 @@ host_owner_types = [Customer, EndUser, Provider, HostUser]
 optical_path_dependency_types = [
                                     ODF, OpticalLink, OpticalMultiplexSection,
                                     OpticalNode, Router, Switch, OpticalPath,
-                                    #Service,
+                                    Service,
                                 ]
 
 
