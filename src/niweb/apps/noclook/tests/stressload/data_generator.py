@@ -1066,12 +1066,97 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         return rack
 
     def create_service(self, name=None):
-        # create object
-        if not name:
-            name = self.company_name()
+        from dynamic_preferences.registries import global_preferences_registry
+        from apps.noclook import unique_ids
+        from apps.noclook.forms import NewServiceForm
+        from apps.noclook.models import UniqueIdGenerator, NordunetUniqueId, ServiceType
 
+        default_test_gen_name = "service_id_generator"
+
+        service_types = ServiceType.objects.all()
+        service_type = random.choice(service_types)
+
+        # get UniqueIdGenerator if it doesn't exist to get name if it's not given
+        if not name:
+            global_preferences = global_preferences_registry.manager()
+            id_generator_name = global_preferences\
+                                [NewServiceForm.Meta.id_generator_property]
+
+            id_generator = None
+
+            if not id_generator_name:
+                global_preferences[NewServiceForm.Meta.id_generator_property] =\
+                        default_test_gen_name
+
+                id_generator = UniqueIdGenerator.objects.get_or_create(
+                    name=default_test_gen_name,
+                    zfill=False,
+                    creator=self.user,
+                    modifier=self.user,
+                )[0]
+
+            if not id_generator:
+                id_generator = UniqueIdGenerator.objects.get(
+                                name=id_generator_name)
+            # id_collection is always the same so we do not need config
+            name = unique_ids.get_collection_unique_id(
+                                    id_generator, NordunetUniqueId)
+
+        # create object
         service = self.get_or_create_node(
             name, 'Service', META_TYPES[1]) # Logical
+
+        # check if there's any provider or if we should create one
+        provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
+        providers = NodeHandle.objects.filter(node_type=provider_type)
+
+        max_providers = self.max_cable_providers
+        provider = None
+
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        if not providers or len(providers) < max_providers:
+            provider = self.create_provider()
+        else:
+            provider = random.choice(list(providers))
+
+        data = {
+            'service_class': service_type.service_class.name,
+            'service_type': service_type.name,
+            'operational_state': random.choice(operational_states),
+            'description': self.fake.paragraph(),
+            'relationship_provider' : provider.handle_id,
+        }
+
+        if service_type.name == "Project":
+            data['project_end_date'] = self.fake.date_time_this_year()\
+                                        .isoformat()
+
+        if data['operational_state'] == "Decommissioned":
+            data['decommissioned_date'] = self.fake.date_time_this_year()\
+                                            .isoformat()
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                service.get_node().add_property(key, value)
+
+        # set responsible and support groups
+        group_type = NetworkFakeDataGenerator.get_nodetype('Group')
+        groups_nhs = NodeHandle.objects.filter(node_type=group_type)
+
+        if groups_nhs.exists():
+            responsible_group = random.choice(groups_nhs)
+            support_group = random.choice(groups_nhs)
+
+            helpers.set_takes_responsibility(
+                self.user, service.get_node(), responsible_group.handle_id)
+            helpers.set_supports(
+                self.user, service.get_node(), support_group.handle_id)
+
+        # add users
+
+        # add dependencies
 
         return service
 
