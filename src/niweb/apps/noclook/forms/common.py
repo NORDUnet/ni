@@ -826,9 +826,9 @@ class EditServiceForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(EditServiceForm, self).__init__(*args, **kwargs)
+        self.fields['support_group'].choices = get_node_type_tuples('Group')
+        self.fields['responsible_group'].choices = get_node_type_tuples('Group')
         self.fields['operational_state'].choices = Dropdown.get('operational_states').as_choices()
-        self.fields['responsible_group'].choices = Dropdown.get('responsible_groups').as_choices()
-        self.fields['support_group'].choices = Dropdown.get('responsible_groups').as_choices()
         service_types = ServiceType.objects.all().prefetch_related('service_class').order_by('service_class__name','name')
         self.fields['service_type'].choices = [t.as_choice() for t in service_types]
         self.fields['relationship_provider'].choices = get_node_type_tuples('Provider')
