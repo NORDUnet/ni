@@ -704,3 +704,30 @@ class NIRackMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+## Service
+class NIServiceMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form = EditServiceForm
+        graphql_type = Service
+        unique_node = True
+        relations_processors = {
+            'relationship_provider': get_unique_relation_processor(
+                'Provides',
+                helpers.set_provider
+            ),
+            'switch_type': process_switch_type,
+            'responsible_group': get_unique_relation_processor(
+                'Takes_responsibility',
+                helpers.set_takes_responsibility
+            ),
+            'support_group': get_unique_relation_processor(
+                'Supports',
+                helpers.set_supports
+            ),
+        }
+
+    class Meta:
+        abstract = False
+        update_exclude = ('relationship_depends_on', 'relationship_user')
