@@ -730,4 +730,5 @@ class NIServiceMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
-        update_exclude = ('relationship_depends_on', 'relationship_user')
+        exclude = ('service_class', 'relationship_depends_on',
+                    'relationship_user')

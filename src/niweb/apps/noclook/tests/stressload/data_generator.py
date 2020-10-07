@@ -12,6 +12,7 @@ from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, \
                                 NordunetUniqueId, ServiceType
 from apps.noclook.schema.utils import sunet_forms_enabled
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.template.defaultfilters import slugify
 from dynamic_preferences.registries import global_preferences_registry
 import norduniclient as nc
@@ -20,6 +21,7 @@ from norduniclient import META_TYPES
 import apps.noclook.vakt.utils as sriutils
 import random
 import string
+import os
 
 class FakeDataGenerator:
     counties = [
@@ -203,7 +205,7 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
 
     def create_fake_group(self):
         group_dict = {
-            'name': self.fake.sentence(),
+            'name': self.fake.job(),
             'description': self.fake.paragraph(),
         }
 
@@ -1089,6 +1091,18 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         return rack
 
     def create_service(self, name=None):
+        # import services class / types if necesary
+        if not ServiceType.objects.all():
+            dirpath = os.path.dirname(os.path.realpath(__file__))
+            csv_file = \
+                '{}/../../../../../scripts/service_types/ndn_service_types.csv'\
+                    .format(dirpath)
+
+            call_command(
+                'import_service_types',
+                csv_file=csv_file
+            )
+
         default_test_gen_name = "service_id_generator"
 
         service_types = ServiceType.objects.all()
@@ -1133,6 +1147,8 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         else:
             provider = random.choice(list(providers))
 
+        helpers.set_provider(self.user, service.get_node(), provider.handle_id)
+
         data = {
             'service_class': service_type.service_class.name,
             'service_type': service_type.name,
@@ -1158,14 +1174,21 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         group_type = NetworkFakeDataGenerator.get_nodetype('Group')
         groups_nhs = NodeHandle.objects.filter(node_type=group_type)
 
+        responsible_group = None
+        support_group = None
+        community_generator = CommunityFakeDataGenerator()
+
         if groups_nhs.exists():
             responsible_group = random.choice(groups_nhs)
             support_group = random.choice(groups_nhs)
+        else:
+            responsible_group = community_generator.create_group()
+            support_group = community_generator.create_group()
 
-            helpers.set_takes_responsibility(
-                self.user, service.get_node(), responsible_group.handle_id)
-            helpers.set_supports(
-                self.user, service.get_node(), support_group.handle_id)
+        helpers.set_takes_responsibility(
+            self.user, service.get_node(), responsible_group.handle_id)
+        helpers.set_supports(
+            self.user, service.get_node(), support_group.handle_id)
 
         # add users
         num_users = random.randint(0, 4)
