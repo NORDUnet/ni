@@ -269,6 +269,25 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             'Service': self.create_service
         }
 
+        self.service_dependency_types = {
+            'Host': self.create_host,
+            'Firewall': self.create_firewall,
+            'ODF': self.create_odf,
+            'OpticalNode': self.create_optical_node,
+            'OpticalPath': self.create_optical_path,
+            'OpticalLink': self.create_optical_link,
+            #'OpticalFilter': self.create_optical_filter,
+            'Router': self.create_router,
+            'Service': self.create_service,
+            'Switch': self.create_switch,
+            #'ExternalEquipment': self.create_external_equipment,
+        }
+
+        self.service_user_categories = {
+            'Customer': self.create_customer,
+            'EndUser': self.create_end_user,
+        }
+
     def get_port_name(self):
         return str(random.randint(0, 50000))
 
@@ -1154,10 +1173,24 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
                 self.user, service.get_node(), support_group.handle_id)
 
         # add users
-        num_users = str(random.randint(0, 4))
+        num_users = random.randint(0, 4)
+
+        for i in range(0, num_users):
+            user_type = random.choice(list(self.service_dependency_types.keys()))
+            user_f = self.service_dependency_types[user_type]
+            user = user_f()
+            rel_maker = LogicalDataRelationMaker()
+            rel_maker.add_user(self.user, service, user)
 
         # add dependencies
-        num_dependencies = str(random.randint(0, 4))
+        num_dependencies = random.randint(0, 4)
+
+        for i in range(0, num_dependencies):
+            dep_type = random.choice(list(self.service_dependency_types.keys()))
+            dep_f = self.service_dependency_types[dep_type]
+            dependency = dep_f()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, service, dependency)
 
         return service
 
@@ -1184,6 +1217,10 @@ class LogicalDataRelationMaker(DataRelationMaker):
         main_logical_handle_id = main_logical_nh.handle_id
         dep_logical_nh = dep_logical_nh.get_node()
         helpers.set_depends_on(user, dep_logical_nh, main_logical_handle_id)
+
+    def add_user(self, user, main_logical_nh, usr_relation_nh):
+        helpers.set_user(user, main_logical_nh.get_node(),
+                            usr_relation_nh.handle_id)
 
 
 class RelationDataRelationMaker(DataRelationMaker):

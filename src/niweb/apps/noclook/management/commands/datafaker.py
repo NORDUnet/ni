@@ -111,7 +111,7 @@ class Command(BaseCommand):
             if numnodes > 0:
                 if self.show_progress:
                     self.stdout\
-                        .write('Forging fake peering groups & partners: {} for each subtype:'\
+                        .write('Forging fake optical layer elements: {} for each subtype:'\
                         .format(numnodes))
                 self.create_optical(numnodes)
 
