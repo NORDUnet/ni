@@ -162,7 +162,7 @@ class NOCRootMutation(graphene.ObjectType):
     create_service = NIServiceMutationFactory.get_create_mutation().Field()
     update_service = NIServiceMutationFactory.get_update_mutation().Field()
     delete_service = NIServiceMutationFactory.get_delete_mutation().Field()
-    #composite_site = CompositeServiceMutation.Field()
+    composite_service = CompositeServiceMutation.Field()
 
     ## Common mutations
     create_comment = CreateComment.Field()
