@@ -1094,28 +1094,23 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         service_types = ServiceType.objects.all()
         service_type = random.choice(service_types)
 
-        # get UniqueIdGenerator if it doesn't exist to get name if it's not given
+        # get or create a default UniqueIdGenerator
         if not name:
             global_preferences = global_preferences_registry.manager()
             id_generator_name = global_preferences\
                                 [NewServiceForm.Meta.id_generator_property]
 
-            id_generator = None
-
             if not id_generator_name:
                 global_preferences[NewServiceForm.Meta.id_generator_property] =\
                         default_test_gen_name
 
-                id_generator = UniqueIdGenerator.objects.get_or_create(
-                    name=default_test_gen_name,
-                    zfill=False,
-                    creator=self.user,
-                    modifier=self.user,
-                )[0]
+            id_generator = UniqueIdGenerator.objects.get_or_create(
+                name=default_test_gen_name,
+                zfill=False,
+                creator=self.user,
+                modifier=self.user,
+            )[0]
 
-            if not id_generator:
-                id_generator = UniqueIdGenerator.objects.get(
-                                name=id_generator_name)
             # id_collection is always the same so we do not need config
             name = unique_ids.get_collection_unique_id(
                                     id_generator, NordunetUniqueId)
