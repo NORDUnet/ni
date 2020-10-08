@@ -30,12 +30,14 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--csv_file', help='The csv file to import',
-                            type=argparse.FileType('r'))
+                            type=str)
         parser.add_argument('--no_header', action='store_true',
             default=False, help='CSV file has no header')
 
 
     def handle(self, *args, **options):
+        import pdb; pdb.set_trace()
+
         with open(options['csv_file'], 'r') as csv_file:
             rows = csv.reader(csv_file)
 
