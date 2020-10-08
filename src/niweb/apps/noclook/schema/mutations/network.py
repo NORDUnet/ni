@@ -717,7 +717,6 @@ class NIServiceMutationFactory(NIMutationFactory):
                 'Provides',
                 helpers.set_provider
             ),
-            'switch_type': process_switch_type,
             'responsible_group': get_unique_relation_processor(
                 'Takes_responsibility',
                 helpers.set_takes_responsibility

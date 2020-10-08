@@ -150,7 +150,7 @@ class PhysicalLogicalMixin:
 
 
     def resolve_provider(self, info, **kwargs):
-        return ResolverUtils.multiple_relation_resolver(
+        return ResolverUtils.single_relation_resolver(
             info, self.get_node(), '_incoming', 'Provides')
 
     @classmethod

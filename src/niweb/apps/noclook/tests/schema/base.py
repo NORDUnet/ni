@@ -9,6 +9,7 @@ from apps.noclook.models import NodeHandle, Group, GroupContextAuthzAction
 from apps.noclook.tests.neo4j_base import NeoTestCase
 from apps.noclook.tests.testing import nc
 from pprint import pformat
+from graphene import relay
 
 class TestContext():
     def __init__(self, user, *ignore):
@@ -22,9 +23,16 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
                                 )
         self.assertEquals(result.data, expected, fmt_str)
 
+    def assertEqualIds(self, id1, id2):
+        self.assertEqual(id1, id2,
+            "{} != {}".format(
+                relay.Node.from_global_id(id1),
+                relay.Node.from_global_id(id2))
+        )
+
     def setUp(self, group_dict=None):
         super(Neo4jGraphQLGenericTest, self).setUp()
-        
+
         self.context = TestContext(self.user)
 
         # get read aa

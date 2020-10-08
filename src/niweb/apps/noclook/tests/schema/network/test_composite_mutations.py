@@ -1511,16 +1511,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(update_checkport['description'], port_2_description)
 
         # check ports in router
-        self.assertEqual(updated_router['ports'][1]['id'], port_1_id,
-            "{} != {}".format(
-                relay.Node.from_global_id(updated_router['ports'][1]['id']),
-                relay.Node.from_global_id(port_1_id))
-        )
-        self.assertEqual(updated_router['ports'][0]['id'], port_2_id,
-            "{} != {}".format(
-                relay.Node.from_global_id(updated_router['ports'][0]['id'],),
-                relay.Node.from_global_id(port_2_id))
-        )
+        self.assertEqualIds(updated_router['ports'][1]['id'], port_1_id)
+        self.assertEqualIds(updated_router['ports'][0]['id'], port_2_id)
 
         # check location
         self.assertEqual(updated_router['location']['id'], location_id)
@@ -1783,16 +1775,10 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
 
         # check owner and location
         check_owner = updated_firewall['owner']
-        self.assertEqual(check_owner['id'], owner_id, "{} / {} != {} / {}".format(
-            *relay.Node.from_global_id(check_owner['id']),
-            *relay.Node.from_global_id(owner_id),
-        ))
+        self.assertEqualIds(check_owner['id'], owner_id)
 
         check_location = updated_firewall['location']
-        self.assertEqual(check_location['id'], location_id, "{} / {} != {} / {}".format(
-            *relay.Node.from_global_id(check_location['id']),
-            *relay.Node.from_global_id(location_id),
-        ))
+        self.assertEqualIds(check_location['id'], location_id)
 
         # check ports data
 
@@ -5265,9 +5251,7 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         # check data
         updated_pgroup = result.data['composite_peeringGroup']['updated']\
                             ['peeringGroup']
-        self.assertEquals(updated_pgroup['id'], peergroup_id,
-            "{} != {}".format(relay.Node.from_global_id(updated_pgroup['id']),
-                relay.Node.from_global_id(peergroup_id)))
+        self.assertEqualIds(updated_pgroup['id'], peergroup_id)
         self.assertEquals(updated_pgroup['name'], peergroup_name)
 
         # check subentities
@@ -7016,7 +7000,8 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
 
         # create end user
         enduser = data_generator.create_end_user()
-        enduser_id = relay.Node.to_global_id(str(enduser.node_type),
+        enduser_id = relay.Node.to_global_id(str(enduser.node_type.type\
+                                                    .replace(' ', '')),
                                             str(enduser.handle_id))
         enduser_name = enduser.get_node().data.get("name")
         enduser_url = enduser.get_node().data.get("url")
@@ -7046,6 +7031,7 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
               service_type: "{srv_service_type}"
               operational_state: "{srv_operational_state}"
               description: "{srv_description}"
+              relationship_provider: "{provider_id}"
               {project_end_date}
               {decommissioned_date}
             }}
@@ -7087,9 +7073,24 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
                 operational_state{{
                   value
                 }}
+                service_type{{
+                  name
+                }}
                 description
                 project_end_date
                 decommissioned_date
+                dependencies{{
+                  id
+                  name
+                }}
+                used_by{{
+                  id
+                  name
+                }}
+                provider{{
+                  id
+                  name
+                }}
               }}
             }}
             dependencies_firewall_updated{{
@@ -7164,6 +7165,7 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
             enduser_id=enduser_id, enduser_name=enduser_name,
             enduser_url=enduser_url,
             enduser_description=enduser_description,
+            provider_id=provider_id,
         )
 
         a_service.delete()
@@ -7196,3 +7198,53 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
                     item = all_data[k]
                     submutations[k] = item['errors']
                     assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check service data
+        check_service = all_data[main_payload]['service']
+        service_id = check_service['id']
+
+        self.assertEquals(check_service['name'], srv_name)
+        self.assertEquals(check_service['operational_state']['value'],
+                            srv_operational_state)
+        self.assertEquals(check_service['description'], srv_description)
+        self.assertEquals(check_service['service_type']['name'], srv_service_type)
+
+        # check customer
+        check_customer = all_data['used_by_customer_updated'][0]['customer']
+
+        self.assertEqualIds(check_customer['id'], customer_id)
+        self.assertEquals(check_customer['name'], customer_name)
+        self.assertEquals(check_customer['url'], customer_url)
+        self.assertEquals(check_customer['description'], customer_description)
+        self.assertEqualIds(check_service['used_by'][0]['id'], customer_id)
+
+        # check end user
+        check_enduser = all_data['used_by_enduser_updated'][0]['endUser']
+
+        self.assertEqualIds(check_enduser['id'], enduser_id)
+        self.assertEquals(check_enduser['name'], enduser_name)
+        self.assertEquals(check_enduser['url'], enduser_url)
+        self.assertEquals(check_enduser['description'], enduser_description)
+        self.assertEqualIds(check_service['used_by'][1]['id'], enduser_id)
+
+        # check firewall
+        check_firewall = all_data['dependencies_firewall_updated'][0]['firewall']
+
+        self.assertEqualIds(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEqualIds(check_service['dependencies'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['dependencies_switch_updated'][0]['switch']
+
+        self.assertEqualIds(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEqualIds(check_service['dependencies'][1]['id'], switch_id)
+
+        # check provider
+        check_provider = check_service['provider']
+        self.assertEqualIds(check_provider['id'], provider_id)

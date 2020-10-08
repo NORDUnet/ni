@@ -546,7 +546,7 @@ def resolve_getServiceTypes(self, info, **kwargs):
         raise GraphQLAuthException()
 
 
-class Service(NIObjectType, LocationMixin):
+class Service(NIObjectType, LogicalMixin):
     name = NIStringField(type_kwargs={ 'required': True })
     description = NIStringField()
     service_type = graphene.Field(ServiceType)
