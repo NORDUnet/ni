@@ -1133,6 +1133,9 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         service = self.get_or_create_node(
             name, 'Service', META_TYPES[1]) # Logical
 
+        # add context
+        self.add_network_context(service)
+
         # check if there's any provider or if we should create one
         provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
         providers = NodeHandle.objects.filter(node_type=provider_type)
@@ -1197,8 +1200,8 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         num_users = random.randint(0, 4)
 
         for i in range(0, num_users):
-            user_type = random.choice(list(self.service_dependency_types.keys()))
-            user_f = self.service_dependency_types[user_type]
+            user_type = random.choice(list(self.service_user_categories.keys()))
+            user_f = self.service_user_categories[user_type]
             user = user_f()
             rel_maker = LogicalDataRelationMaker()
             rel_maker.add_user(self.user, service, user)
@@ -1207,8 +1210,8 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         num_dependencies = random.randint(0, 4)
 
         for i in range(0, num_dependencies):
-            dep_type = random.choice(list(self.service_user_categories.keys()))
-            dep_f = self.service_user_categories[dep_type]
+            dep_type = random.choice(list(self.service_dependency_types.keys()))
+            dep_f = self.service_dependency_types[dep_type]
             dependency = dep_f()
             rel_maker = PhysicalLogicalDataRelationMaker()
             rel_maker.add_dependency(self.user, service, dependency)
