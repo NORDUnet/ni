@@ -36,8 +36,6 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **options):
-        import pdb; pdb.set_trace()
-
         with open(options['csv_file'], 'r') as csv_file:
             rows = csv.reader(csv_file)
 
