@@ -3,7 +3,6 @@ __author__ = 'ffuentes'
 
 from apps.noclook.models import *
 from apps.noclook.tests.stressload.data_generator import NetworkFakeDataGenerator
-from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
