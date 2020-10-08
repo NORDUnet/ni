@@ -1149,21 +1149,24 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
 
         helpers.set_provider(self.user, service.get_node(), provider.handle_id)
 
+        service_type_name = service_type.name
+        operational_state = random.choice(operational_states)
+
         data = {
             'service_class': service_type.service_class.name,
-            'service_type': service_type.name,
+            'service_type': service_type_name,
             'operational_state': random.choice(operational_states),
             'description': self.fake.paragraph(),
             'relationship_provider' : provider.handle_id,
         }
 
-        if service_type.name == "Project":
+        if service_type_name == "Project":
             data['project_end_date'] = self.fake.date_time_this_year()\
-                                        .isoformat()
+                                        .isoformat().split('T')[0]
 
         if data['operational_state'] == "Decommissioned":
             data['decommissioned_date'] = self.fake.date_time_this_year()\
-                                            .isoformat()
+                                            .isoformat().split('T')[0]
 
         for key, value in data.items():
             if value:
@@ -1204,8 +1207,8 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         num_dependencies = random.randint(0, 4)
 
         for i in range(0, num_dependencies):
-            dep_type = random.choice(list(self.service_dependency_types.keys()))
-            dep_f = self.service_dependency_types[dep_type]
+            dep_type = random.choice(list(self.service_user_categories.keys()))
+            dep_f = self.service_user_categories[dep_type]
             dependency = dep_f()
             rel_maker = PhysicalLogicalDataRelationMaker()
             rel_maker.add_dependency(self.user, service, dependency)
