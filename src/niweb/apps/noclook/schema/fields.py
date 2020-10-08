@@ -204,6 +204,9 @@ class NIDateField(NIBasicField):
             if possible_value == None:
                 possible_value = self.get_default_value()
             else:
+                if 'T' in possible_value:
+                    possible_value = possible_value.split('T')[0]
+
                 possible_value = date.fromisoformat(possible_value)
 
             return possible_value
