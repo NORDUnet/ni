@@ -565,6 +565,10 @@ class Service(NIObjectType, LogicalMixin):
     vrf_target = NIStringField()
     route_distinguisher = NIStringField()
     contract_number = NIStringField()
+    customers = NIListField(type_args=(lambda: Customer,), rel_name='Uses',
+        rel_method='_incoming')
+    end_users = NIListField(type_args=(lambda: EndUser,), rel_name='Uses',
+        rel_method='_incoming')
 
     def resolve_service_class(self, info, **kwargs):
         ret = None

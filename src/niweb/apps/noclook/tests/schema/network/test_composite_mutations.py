@@ -7091,6 +7091,14 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                customers{{
+                  id
+                  name
+                }}
+                end_users{{
+                  id
+                  name
+                }}
               }}
             }}
             dependencies_firewall_updated{{
@@ -7217,6 +7225,7 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_customer['url'], customer_url)
         self.assertEquals(check_customer['description'], customer_description)
         self.assertEqualIds(check_service['used_by'][0]['id'], customer_id)
+        self.assertEqualIds(check_service['customers'][0]['id'], customer_id)
 
         # check end user
         check_enduser = all_data['used_by_enduser_updated'][0]['endUser']
@@ -7226,6 +7235,7 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_enduser['url'], enduser_url)
         self.assertEquals(check_enduser['description'], enduser_description)
         self.assertEqualIds(check_service['used_by'][1]['id'], enduser_id)
+        self.assertEqualIds(check_service['end_users'][0]['id'], enduser_id)
 
         # check firewall
         check_firewall = all_data['dependencies_firewall_updated'][0]['firewall']

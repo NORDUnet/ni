@@ -284,6 +284,24 @@ class NIListField(NIBasicField):
     def get_resolver(self, **kwargs):
         rel_name   = kwargs.get('rel_name')
         rel_method = kwargs.get('rel_method')
+        filter_label = None
+
+        # try to get the label from the type args to filter out unwanted values
+        try:
+            # try to get it from the lambda value:
+            # eg type_args=(lambda: Customer,)
+            filter_label = self.type_args[0]().NIMetaType.ni_type
+        except:
+            try:
+                # get if from a straight value:
+                # eg type_args=(Customer,)
+                filter_label = self.type_args[0].NIMetaType.ni_type
+            except:
+                # if it isn't present, continue
+                pass
+
+        if filter_label:
+            filter_label = filter_label.replace(' ', '_')
 
         def resolve_relationship_list(instance, info, **kwargs):
             neo4jnode = self.get_inner_node(instance)
@@ -299,6 +317,11 @@ class NIListField(NIBasicField):
                     # filter out nodes
                     if self.filter:
                         node_elem = self.filter(node_elem)
+
+                    # if we can get the label from the
+                    if filter_label:
+                        if filter_label not in node_elem.labels:
+                            node_elem = None
 
                     if node_elem:
                         node_id = node_elem.data.get('handle_id')
