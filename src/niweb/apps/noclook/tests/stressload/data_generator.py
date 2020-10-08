@@ -5,17 +5,23 @@ __author__ = 'ffuentes'
 from collections import OrderedDict
 from faker import Faker
 from apps.nerds.lib.consumer_util import get_user
-from apps.noclook import helpers
-from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, Choice, NodeHandleContext
+from apps.noclook import helpers, unique_ids
+from apps.noclook.forms import NewServiceForm
+from apps.noclook.models import NodeHandle, NodeType, Dropdown as DropModel, \
+                                Choice, NodeHandleContext, UniqueIdGenerator, \
+                                NordunetUniqueId, ServiceType
 from apps.noclook.schema.utils import sunet_forms_enabled
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.template.defaultfilters import slugify
+from dynamic_preferences.registries import global_preferences_registry
 import norduniclient as nc
 from norduniclient import META_TYPES
 
 import apps.noclook.vakt.utils as sriutils
 import random
 import string
+import os
 
 class FakeDataGenerator:
     counties = [
@@ -199,7 +205,7 @@ class CommunityFakeDataGenerator(FakeDataGenerator):
 
     def create_fake_group(self):
         group_dict = {
-            'name': self.fake.sentence(),
+            'name': self.fake.job(),
             'description': self.fake.paragraph(),
         }
 
@@ -262,7 +268,26 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
             'Router': self.create_router,
             'Switch': self.create_switch,
             'OpticalPath': self.create_optical_path,
-            # 'Service': self.create_service
+            'Service': self.create_service
+        }
+
+        self.service_dependency_types = {
+            'Host': self.create_host,
+            'Firewall': self.create_firewall,
+            'ODF': self.create_odf,
+            'OpticalNode': self.create_optical_node,
+            'OpticalPath': self.create_optical_path,
+            'OpticalLink': self.create_optical_link,
+            #'OpticalFilter': self.create_optical_filter,
+            'Router': self.create_router,
+            'Service': self.create_service,
+            'Switch': self.create_switch,
+            #'ExternalEquipment': self.create_external_equipment,
+        }
+
+        self.service_user_categories = {
+            'Customer': self.create_customer,
+            'EndUser': self.create_end_user,
         }
 
     def get_port_name(self):
@@ -1066,12 +1091,130 @@ class NetworkFakeDataGenerator(FakeDataGenerator):
         return rack
 
     def create_service(self, name=None):
-        # create object
-        if not name:
-            name = self.company_name()
+        # import services class / types if necesary
+        if not ServiceType.objects.all():
+            dirpath = os.path.dirname(os.path.realpath(__file__))
+            csv_file = \
+                '{}/../../../../../scripts/service_types/ndn_service_types.csv'\
+                    .format(dirpath)
 
+            call_command(
+                'import_service_types',
+                csv_file=csv_file
+            )
+
+        default_test_gen_name = "service_id_generator"
+
+        service_types = ServiceType.objects.all()
+        service_type = random.choice(service_types)
+
+        # get or create a default UniqueIdGenerator
+        if not name:
+            global_preferences = global_preferences_registry.manager()
+            id_generator_name = global_preferences\
+                                [NewServiceForm.Meta.id_generator_property]
+
+            if not id_generator_name:
+                global_preferences[NewServiceForm.Meta.id_generator_property] =\
+                        default_test_gen_name
+
+            id_generator = UniqueIdGenerator.objects.get_or_create(
+                name=default_test_gen_name,
+                zfill=False,
+                creator=self.user,
+                modifier=self.user,
+            )[0]
+
+            # id_collection is always the same so we do not need config
+            name = unique_ids.get_collection_unique_id(
+                                    id_generator, NordunetUniqueId)
+
+        # create object
         service = self.get_or_create_node(
             name, 'Service', META_TYPES[1]) # Logical
+
+        # add context
+        self.add_network_context(service)
+
+        # check if there's any provider or if we should create one
+        provider_type = NetworkFakeDataGenerator.get_nodetype('Provider')
+        providers = NodeHandle.objects.filter(node_type=provider_type)
+
+        max_providers = self.max_cable_providers
+        provider = None
+
+        operational_states = self.get_dropdown_keys('operational_states')
+
+        if not providers or len(providers) < max_providers:
+            provider = self.create_provider()
+        else:
+            provider = random.choice(list(providers))
+
+        helpers.set_provider(self.user, service.get_node(), provider.handle_id)
+
+        service_type_name = service_type.name
+        operational_state = random.choice(operational_states)
+
+        data = {
+            'service_class': service_type.service_class.name,
+            'service_type': service_type_name,
+            'operational_state': random.choice(operational_states),
+            'description': self.fake.paragraph(),
+            'relationship_provider' : provider.handle_id,
+        }
+
+        if service_type_name == "Project":
+            data['project_end_date'] = self.fake.date_time_this_year()\
+                                        .isoformat().split('T')[0]
+
+        if data['operational_state'] == "Decommissioned":
+            data['decommissioned_date'] = self.fake.date_time_this_year()\
+                                            .isoformat().split('T')[0]
+
+        for key, value in data.items():
+            if value:
+                value = self.escape_quotes(value)
+                service.get_node().add_property(key, value)
+
+        # set responsible and support groups
+        group_type = NetworkFakeDataGenerator.get_nodetype('Group')
+        groups_nhs = NodeHandle.objects.filter(node_type=group_type)
+
+        responsible_group = None
+        support_group = None
+        community_generator = CommunityFakeDataGenerator()
+
+        if groups_nhs.exists():
+            responsible_group = random.choice(groups_nhs)
+            support_group = random.choice(groups_nhs)
+        else:
+            responsible_group = community_generator.create_group()
+            support_group = community_generator.create_group()
+
+        helpers.set_takes_responsibility(
+            self.user, service.get_node(), responsible_group.handle_id)
+        helpers.set_supports(
+            self.user, service.get_node(), support_group.handle_id)
+
+        # add users
+        num_users = random.randint(0, 4)
+
+        for i in range(0, num_users):
+            user_type = random.choice(list(self.service_user_categories.keys()))
+            user_f = self.service_user_categories[user_type]
+            user = user_f()
+            rel_maker = LogicalDataRelationMaker()
+            rel_maker.add_user(self.user, service, user)
+
+        # add dependencies
+        num_dependencies = random.randint(0, 4)
+
+        for i in range(0, num_dependencies):
+            dep_type = random.choice(list(self.service_dependency_types.keys()))
+            dep_f = self.service_dependency_types[dep_type]
+            dependency = dep_f()
+            rel_maker = PhysicalLogicalDataRelationMaker()
+            rel_maker.add_dependency(self.user, service, dependency)
 
         return service
 
@@ -1098,6 +1241,10 @@ class LogicalDataRelationMaker(DataRelationMaker):
         main_logical_handle_id = main_logical_nh.handle_id
         dep_logical_nh = dep_logical_nh.get_node()
         helpers.set_depends_on(user, dep_logical_nh, main_logical_handle_id)
+
+    def add_user(self, user, main_logical_nh, usr_relation_nh):
+        helpers.set_user(user, main_logical_nh.get_node(),
+                            usr_relation_nh.handle_id)
 
 
 class RelationDataRelationMaker(DataRelationMaker):

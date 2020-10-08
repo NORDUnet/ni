@@ -4,7 +4,9 @@ __author__ = 'ffuentes'
 import norduniclient as nc
 
 from apps.noclook.schema.core import *
-from apps.noclook.models import SwitchType as SwitchTypeModel
+from apps.noclook.models import SwitchType as SwitchTypeModel, \
+                                ServiceType as ServiceTypeModel, \
+                                ServiceClass as ServiceClassModel
 from apps.noclook.schema.utils import sunet_forms_enabled
 from .community import Group, Address
 
@@ -203,7 +205,6 @@ class SwitchType(DjangoObjectType):
     This class represents a SwitchType for switch's mutations
     '''
     class Meta:
-        #only_fields = ('id', 'name')
         model = SwitchTypeModel
         interfaces = (graphene.relay.Node, )
 
@@ -519,6 +520,84 @@ class PeeringGroup(NIObjectType, LogicalMixin):
         context_method = sriutils.get_network_context
 
 
+# Service
+class ServiceClass(DjangoObjectType):
+    '''
+    This class represents a ServiceType for service's mutations
+    '''
+    class Meta:
+        model = ServiceClassModel
+        interfaces = (graphene.relay.Node, )
+
+
+class ServiceType(DjangoObjectType):
+    '''
+    This class represents a ServiceType for service's mutations
+    '''
+    class Meta:
+        model = ServiceTypeModel
+        interfaces = (graphene.relay.Node, )
+
+
+def resolve_getServiceTypes(self, info, **kwargs):
+    if info.context and info.context.user.is_authenticated:
+        return ServiceTypeModel.objects.all()
+    else:
+        raise GraphQLAuthException()
+
+
+class Service(NIObjectType, LogicalMixin):
+    name = NIStringField(type_kwargs={ 'required': True })
+    description = NIStringField()
+    service_type = graphene.Field(ServiceType)
+    service_class = graphene.Field(ServiceClass)
+    operational_state = NIChoiceField(dropdown_name="operational_states")
+    responsible_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Takes_responsibility", rel_method="_incoming",
+        check_permissions=False)
+    support_group = NISingleRelationField(field_type=(lambda: Group),
+        rel_name="Supports", rel_method="_incoming", check_permissions=False)
+    project_end_date = NIDateField()
+    decommissioned_date = NIDateField()
+    ncs_service_name = NIStringField()
+    vpn_type = NIStringField()
+    vlan = NIStringField()
+    vrf_target = NIStringField()
+    route_distinguisher = NIStringField()
+    contract_number = NIStringField()
+    customers = NIListField(type_args=(lambda: Customer,), rel_name='Uses',
+        rel_method='_incoming')
+    end_users = NIListField(type_args=(lambda: EndUser,), rel_name='Uses',
+        rel_method='_incoming')
+
+    def resolve_service_class(self, info, **kwargs):
+        ret = None
+        service_class_name = self.get_node().data.get("service_class")
+
+        if service_class_name:
+            ret = ServiceClassModel.objects.get(name=service_class_name)
+
+        return ret
+
+    def resolve_service_type(self, info, **kwargs):
+        ret = None
+        service_type_name = self.get_node().data.get("service_type")
+
+        if service_type_name:
+            ret = ServiceTypeModel.objects.get(name=service_type_name)
+
+        return ret
+
+    class NIMetaType:
+        ni_type = 'Service'
+        ni_metatype = NIMETA_LOGICAL
+        context_method = sriutils.get_network_context
+        manual_filter_fields = {
+            "service_type": graphene.types.scalars.String,
+            "service_class": graphene.types.scalars.String,
+        }
+
+
 network_type_resolver = {
     # Organizations
     'Customer': Customer,
@@ -553,4 +632,7 @@ network_type_resolver = {
     'Site': Site,
     'Room': Room,
     'Rack': Rack,
+
+    # Service
+    'Service': Service,
 }

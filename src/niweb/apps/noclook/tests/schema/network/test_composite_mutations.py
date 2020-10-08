@@ -1511,16 +1511,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(update_checkport['description'], port_2_description)
 
         # check ports in router
-        self.assertEqual(updated_router['ports'][1]['id'], port_1_id,
-            "{} != {}".format(
-                relay.Node.from_global_id(updated_router['ports'][1]['id']),
-                relay.Node.from_global_id(port_1_id))
-        )
-        self.assertEqual(updated_router['ports'][0]['id'], port_2_id,
-            "{} != {}".format(
-                relay.Node.from_global_id(updated_router['ports'][0]['id'],),
-                relay.Node.from_global_id(port_2_id))
-        )
+        self.assertEqualIds(updated_router['ports'][1]['id'], port_1_id)
+        self.assertEqualIds(updated_router['ports'][0]['id'], port_2_id)
 
         # check location
         self.assertEqual(updated_router['location']['id'], location_id)
@@ -1783,16 +1775,10 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
 
         # check owner and location
         check_owner = updated_firewall['owner']
-        self.assertEqual(check_owner['id'], owner_id, "{} / {} != {} / {}".format(
-            *relay.Node.from_global_id(check_owner['id']),
-            *relay.Node.from_global_id(owner_id),
-        ))
+        self.assertEqualIds(check_owner['id'], owner_id)
 
         check_location = updated_firewall['location']
-        self.assertEqual(check_location['id'], location_id, "{} / {} != {} / {}".format(
-            *relay.Node.from_global_id(check_location['id']),
-            *relay.Node.from_global_id(location_id),
-        ))
+        self.assertEqualIds(check_location['id'], location_id)
 
         # check ports data
 
@@ -5265,9 +5251,7 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         # check data
         updated_pgroup = result.data['composite_peeringGroup']['updated']\
                             ['peeringGroup']
-        self.assertEquals(updated_pgroup['id'], peergroup_id,
-            "{} != {}".format(relay.Node.from_global_id(updated_pgroup['id']),
-                relay.Node.from_global_id(peergroup_id)))
+        self.assertEqualIds(updated_pgroup['id'], peergroup_id)
         self.assertEquals(updated_pgroup['name'], peergroup_name)
 
         # check subentities
@@ -6952,3 +6936,489 @@ class RackTest(Neo4jGraphQLNetworkTest):
         self.assertEquals(check_switch['operational_state']['value'],
                             switch_opstate)
         self.assertEquals(check_rack['back'][0]['id'], switch_id)
+
+
+class ServiceTest(Neo4jGraphQLNetworkTest):
+    def test_service(self):
+        data_generator = NetworkFakeDataGenerator()
+
+        ## creation
+        # data service
+        a_service = data_generator.create_service()
+        srv_name = a_service.get_node().data.get("name")
+        srv_service_type = a_service.get_node().data\
+            .get("service_type")
+        srv_operational_state = a_service.get_node().data\
+            .get("operational_state")
+        srv_description = a_service.get_node().data.get("description")
+        srv_project_end_date = a_service.get_node().data\
+            .get("project_end_date", None)
+        srv_decommissioned_date = a_service.get_node().data\
+            .get("decommissioned_date", None)
+
+        # get provider
+        incoming = a_service.get_node()._incoming()
+        provider = NodeHandle.objects.get(handle_id=\
+                        incoming['Provides'][0]['node'].handle_id)
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # get support and responsible groups
+        group_s = NodeHandle.objects.get(handle_id=\
+                        incoming['Supports'][0]['node'].handle_id)
+        group_r = NodeHandle.objects.get(handle_id=\
+                        incoming['Takes_responsibility'][0]['node'].handle_id)
+
+        group_support_id = relay.Node.to_global_id(str(group_s.node_type),
+                                            str(group_s.handle_id))
+        group_responsible_id = relay.Node.to_global_id(str(group_r.node_type),
+                                            str(group_r.handle_id))
+
+        # dependencies
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_id = relay.Node.to_global_id(str(switch.node_type),
+                                            str(switch.handle_id))
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+
+        # users
+        # create customer
+        customer = data_generator.create_customer()
+        customer_id = relay.Node.to_global_id(str(customer.node_type),
+                                            str(customer.handle_id))
+        customer_name = customer.get_node().data.get("name")
+        customer_url = customer.get_node().data.get("url")
+        customer_description = customer.get_node().data.get("description")
+
+        # create end user
+        enduser = data_generator.create_end_user()
+        enduser_id = relay.Node.to_global_id(str(enduser.node_type.type\
+                                                    .replace(' ', '')),
+                                            str(enduser.handle_id))
+        enduser_name = enduser.get_node().data.get("name")
+        enduser_url = enduser.get_node().data.get("url")
+        enduser_description = enduser.get_node().data.get("description")
+
+        main_input = "create_input"
+        main_input_id = ""
+        main_payload = 'created'
+
+        if srv_project_end_date:
+            srv_project_end_date = srv_project_end_date.split("T")[0]
+
+        if srv_decommissioned_date:
+            srv_decommissioned_date = srv_decommissioned_date.split("T")[0]
+
+        project_end_date = "" if not srv_project_end_date else \
+                    'project_end_date: "{}"'.format(srv_project_end_date)
+        decommissioned_date = "" if not srv_decommissioned_date else \
+                    'decommissioned_date: "{}"'.format(srv_decommissioned_date)
+
+        query_t = """
+        mutation{{
+          composite_service(input:{{
+            {main_input}:{{
+              {main_input_id}
+              name: "{srv_name}"
+              service_type: "{srv_service_type}"
+              operational_state: "{srv_operational_state}"
+              description: "{srv_description}"
+              relationship_provider: "{provider_id}"
+              {project_end_date}
+              {decommissioned_date}
+            }}
+            update_dependencies_firewall:[
+              {{
+                id: "{firewall_id}"
+                name: "{firewall_name}"
+                operational_state: "{firewall_opstate}"
+              }}
+            ]
+            update_dependencies_switch:[
+              {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                operational_state: "{switch_opstate}"
+              }}
+            ]
+            update_used_by_customer: [{{
+              id: "{customer_id}"
+              name: "{customer_name}"
+              url: "{customer_url}"
+              description: "{customer_description}"
+            }}]
+            update_used_by_enduser: [{{
+              id: "{enduser_id}"
+              name: "{enduser_name}"
+              url: "{enduser_url}"
+              description: "{enduser_description}"
+            }}]
+          }}){{
+            {main_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              service{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                service_type{{
+                  name
+                }}
+                description
+                project_end_date
+                decommissioned_date
+                dependencies{{
+                  id
+                  name
+                }}
+                used_by{{
+                  id
+                  name
+                }}
+                provider{{
+                  id
+                  name
+                }}
+                customers{{
+                  id
+                  name
+                }}
+                end_users{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            dependencies_firewall_updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                rack_back
+              }}
+            }}
+            dependencies_switch_updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                rack_back
+              }}
+            }}
+            used_by_customer_updated{{
+              errors{{
+                field
+                messages
+              }}
+              customer{{
+                id
+                name
+                url
+                description
+              }}
+            }}
+            used_by_enduser_updated{{
+              errors{{
+                field
+                messages
+              }}
+              endUser{{
+                id
+                name
+                url
+                description
+              }}
+            }}
+          }}
+        }}
+        """
+
+        query = query_t.format(main_input=main_input,
+            main_input_id=main_input_id, main_payload=main_payload,
+            srv_name=srv_name, srv_operational_state=srv_operational_state,
+            srv_description=srv_description, srv_service_type=srv_service_type,
+            project_end_date=project_end_date,
+            decommissioned_date=decommissioned_date,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+            customer_id=customer_id, customer_name=customer_name,
+            customer_url=customer_url,
+            customer_description=customer_description,
+            enduser_id=enduser_id, enduser_name=enduser_name,
+            enduser_url=enduser_url,
+            enduser_description=enduser_description,
+            provider_id=provider_id,
+        )
+
+        a_service.delete()
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_service']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'dependencies_firewall_updated': None,
+            'dependencies_switch_updated': None,
+            'used_by_customer_updated': None,
+            'used_by_enduser_updated': None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check service data
+        check_service = all_data[main_payload]['service']
+        service_id = check_service['id']
+
+        self.assertEquals(check_service['name'], srv_name)
+        self.assertEquals(check_service['operational_state']['value'],
+                            srv_operational_state)
+        self.assertEquals(check_service['description'], srv_description)
+        self.assertEquals(check_service['service_type']['name'], srv_service_type)
+
+        # check customer
+        check_customer = all_data['used_by_customer_updated'][0]['customer']
+
+        self.assertEqualIds(check_customer['id'], customer_id)
+        self.assertEquals(check_customer['name'], customer_name)
+        self.assertEquals(check_customer['url'], customer_url)
+        self.assertEquals(check_customer['description'], customer_description)
+        self.assertEqualIds(check_service['used_by'][0]['id'], customer_id)
+        self.assertEqualIds(check_service['customers'][0]['id'], customer_id)
+
+        # check end user
+        check_enduser = all_data['used_by_enduser_updated'][0]['endUser']
+
+        self.assertEqualIds(check_enduser['id'], enduser_id)
+        self.assertEquals(check_enduser['name'], enduser_name)
+        self.assertEquals(check_enduser['url'], enduser_url)
+        self.assertEquals(check_enduser['description'], enduser_description)
+        self.assertEqualIds(check_service['used_by'][1]['id'], enduser_id)
+        self.assertEqualIds(check_service['end_users'][0]['id'], enduser_id)
+
+        # check firewall
+        check_firewall = all_data['dependencies_firewall_updated'][0]['firewall']
+
+        self.assertEqualIds(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEqualIds(check_service['dependencies'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['dependencies_switch_updated'][0]['switch']
+
+        self.assertEqualIds(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEqualIds(check_service['dependencies'][1]['id'], switch_id)
+
+        # check provider
+        check_provider = check_service['provider']
+        self.assertEqualIds(check_provider['id'], provider_id)
+
+        ## update
+        # data service
+        a_service = data_generator.create_service()
+        srv_name = a_service.get_node().data.get("name")
+        srv_service_type = a_service.get_node().data\
+            .get("service_type")
+        srv_operational_state = a_service.get_node().data\
+            .get("operational_state")
+        srv_description = a_service.get_node().data.get("description")
+        srv_project_end_date = a_service.get_node().data\
+            .get("project_end_date", None)
+        srv_decommissioned_date = a_service.get_node().data\
+            .get("decommissioned_date", None)
+
+        # get provider
+        incoming = a_service.get_node()._incoming()
+        provider = NodeHandle.objects.get(handle_id=\
+                        incoming['Provides'][0]['node'].handle_id)
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # get support and responsible groups
+        group_s = NodeHandle.objects.get(handle_id=\
+                        incoming['Supports'][0]['node'].handle_id)
+        group_r = NodeHandle.objects.get(handle_id=\
+                        incoming['Takes_responsibility'][0]['node'].handle_id)
+
+        group_support_id = relay.Node.to_global_id(str(group_s.node_type),
+                                            str(group_s.handle_id))
+        group_responsible_id = relay.Node.to_global_id(str(group_r.node_type),
+                                            str(group_r.handle_id))
+
+        # dependencies
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+        firewall.delete()
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+        switch.delete()
+
+        # users
+        # create customer
+        customer = data_generator.create_customer()
+        customer_name = customer.get_node().data.get("name")
+        customer_url = customer.get_node().data.get("url")
+        customer_description = customer.get_node().data.get("description")
+        customer.delete()
+
+        # create end user
+        enduser = data_generator.create_end_user()
+        enduser_name = enduser.get_node().data.get("name")
+        enduser_url = enduser.get_node().data.get("url")
+        enduser_description = enduser.get_node().data.get("description")
+        enduser.delete()
+
+        main_input = "update_input"
+        main_input_id = 'id: "{}"'.format(service_id)
+        main_payload = 'updated'
+
+        query = query_t.format(main_input=main_input,
+            main_input_id=main_input_id, main_payload=main_payload,
+            srv_name=srv_name, srv_operational_state=srv_operational_state,
+            srv_description=srv_description, srv_service_type=srv_service_type,
+            project_end_date=project_end_date,
+            decommissioned_date=decommissioned_date,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+            customer_id=customer_id, customer_name=customer_name,
+            customer_url=customer_url,
+            customer_description=customer_description,
+            enduser_id=enduser_id, enduser_name=enduser_name,
+            enduser_url=enduser_url,
+            enduser_description=enduser_description,
+            provider_id=provider_id,
+        )
+
+        a_service.delete()
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_service']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'dependencies_firewall_updated': None,
+            'dependencies_switch_updated': None,
+            'used_by_customer_updated': None,
+            'used_by_enduser_updated': None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check service data
+        check_service = all_data[main_payload]['service']
+        service_id = check_service['id']
+
+        self.assertEquals(check_service['name'], srv_name)
+        self.assertEquals(check_service['operational_state']['value'],
+                            srv_operational_state)
+        self.assertEquals(check_service['description'], srv_description)
+        self.assertEquals(check_service['service_type']['name'], srv_service_type)
+
+        # check customer
+        check_customer = all_data['used_by_customer_updated'][0]['customer']
+
+        self.assertEqualIds(check_customer['id'], customer_id)
+        self.assertEquals(check_customer['name'], customer_name)
+        self.assertEquals(check_customer['url'], customer_url)
+        self.assertEquals(check_customer['description'], customer_description)
+        self.assertEqualIds(check_service['used_by'][0]['id'], customer_id)
+
+        # check end user
+        check_enduser = all_data['used_by_enduser_updated'][0]['endUser']
+
+        self.assertEqualIds(check_enduser['id'], enduser_id)
+        self.assertEquals(check_enduser['name'], enduser_name)
+        self.assertEquals(check_enduser['url'], enduser_url)
+        self.assertEquals(check_enduser['description'], enduser_description)
+        self.assertEqualIds(check_service['used_by'][1]['id'], enduser_id)
+
+        # check firewall
+        check_firewall = all_data['dependencies_firewall_updated'][0]['firewall']
+
+        self.assertEqualIds(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEqualIds(check_service['dependencies'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['dependencies_switch_updated'][0]['switch']
+
+        self.assertEqualIds(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEqualIds(check_service['dependencies'][1]['id'], switch_id)
+
+        # check provider
+        check_provider = check_service['provider']
+        self.assertEqualIds(check_provider['id'], provider_id)

@@ -6,6 +6,7 @@ from apps.noclook.vakt import utils as sriutils
 from collections import OrderedDict
 from graphene_django import DjangoObjectType
 from .scalars import ChoiceScalar, IPAddr, JSON
+from datetime import date
 
 import graphene
 import types as pytypes
@@ -180,6 +181,39 @@ class NIJSONField(NIBasicField):
                         type_kwargs, **kwargs)
 
 
+class NIDateField(NIBasicField):
+    '''
+    JSO type
+    '''
+    def __init__(self, field_type=graphene.types.DateTime, manual_resolver=False,
+                    type_kwargs=None, **kwargs):
+        super(NIDateField, self).__init__(field_type, manual_resolver,
+                        type_kwargs, **kwargs)
+
+    def get_resolver(self, **kwargs):
+        field_name = kwargs.get('field_name')
+        if not field_name:
+            raise Exception(
+                'Field name for field {} should not be empty for a {}'.format(
+                    field_name, self.__class__
+                )
+            )
+        def resolve_node_value(instance, info, **kwargs):
+            possible_value = self.get_inner_node(instance).data.get(field_name)
+
+            if possible_value == None:
+                possible_value = self.get_default_value()
+            else:
+                if 'T' in possible_value:
+                    possible_value = possible_value.split('T')[0]
+
+                possible_value = date.fromisoformat(possible_value)
+
+            return possible_value
+
+        return resolve_node_value
+
+
 class NISingleRelationField(NIBasicField):
     '''
     Object list type
@@ -250,6 +284,24 @@ class NIListField(NIBasicField):
     def get_resolver(self, **kwargs):
         rel_name   = kwargs.get('rel_name')
         rel_method = kwargs.get('rel_method')
+        filter_label = None
+
+        # try to get the label from the type args to filter out unwanted values
+        try:
+            # try to get it from the lambda value:
+            # eg type_args=(lambda: Customer,)
+            filter_label = self.type_args[0]().NIMetaType.ni_type
+        except:
+            try:
+                # get if from a straight value:
+                # eg type_args=(Customer,)
+                filter_label = self.type_args[0].NIMetaType.ni_type
+            except:
+                # if it isn't present, continue
+                pass
+
+        if filter_label:
+            filter_label = filter_label.replace(' ', '_')
 
         def resolve_relationship_list(instance, info, **kwargs):
             neo4jnode = self.get_inner_node(instance)
@@ -265,6 +317,11 @@ class NIListField(NIBasicField):
                     # filter out nodes
                     if self.filter:
                         node_elem = self.filter(node_elem)
+
+                    # if we can get the label from the
+                    if filter_label:
+                        if filter_label not in node_elem.labels:
+                            node_elem = None
 
                     if node_elem:
                         node_id = node_elem.data.get('handle_id')

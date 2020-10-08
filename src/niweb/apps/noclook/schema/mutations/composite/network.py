@@ -341,3 +341,14 @@ class CompositeRackMutation(CompositeMutation):
         graphql_type = Rack
         main_mutation_f = NIRackMutationFactory
         context = sriutils.get_network_context()
+
+
+## Service
+class CompositeServiceMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Service
+        main_mutation_f = NIServiceMutationFactory
+        context = sriutils.get_network_context()
