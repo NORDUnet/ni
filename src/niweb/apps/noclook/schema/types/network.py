@@ -588,6 +588,10 @@ class Service(NIObjectType, LocationMixin):
         ni_type = 'Service'
         ni_metatype = NIMETA_LOGICAL
         context_method = sriutils.get_network_context
+        manual_filter_fields = {
+            "service_type": graphene.types.scalars.String,
+            "service_class": graphene.types.scalars.String,
+        }
 
 
 network_type_resolver = {

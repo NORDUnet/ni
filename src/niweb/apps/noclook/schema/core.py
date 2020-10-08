@@ -435,6 +435,7 @@ class NIObjectType(DjangoObjectType):
         ni_metatype    = getattr(cls, 'NIMetaType')
         filter_include = getattr(ni_metatype, 'filter_include', None)
         filter_exclude = getattr(ni_metatype, 'filter_exclude', None)
+        manual_filter_fields = getattr(ni_metatype, 'manual_filter_fields', {})
 
         for name, field in cls.__dict__.items():
             # string or string like fields
@@ -482,6 +483,8 @@ class NIObjectType(DjangoObjectType):
                 elif isinstance(field, graphene.types.field.Field) and\
                     field.type == Choice:
                     input_fields[name] = ChoiceScalar
+                elif name in manual_filter_fields:
+                    input_fields[name] = manual_filter_fields[name]
 
         input_fields['id'] = graphene.ID
 
@@ -2312,7 +2315,7 @@ class CompositeMutation(relay.ClientIDMutation):
 
                 if delete_payload:
                     master_ret[delete_payload] = ret_subdeleted
-        
+
         return master_ret
 
     @classmethod
