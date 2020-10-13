@@ -777,7 +777,7 @@ class NIObjectType(DjangoObjectType):
 
             apply_handle_id_order = False
             revert_default_order = False
-            use_neo4j_query = False
+            neo4j_query_used = False
 
             context = cls.get_type_context()
 
@@ -818,6 +818,7 @@ class NIObjectType(DjangoObjectType):
                                 qs_order_prop  = prop
                                 qs_order_order = order
 
+                        # if filter or order are not empty, query the neo4j db
                         if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
                             # filter queryset with dates and users
                             qs = DateQueryBuilder.filter_queryset(filter, qs)
@@ -839,11 +840,12 @@ class NIObjectType(DjangoObjectType):
                             nodes = nc.query_to_list(nc.graphdb.manager, q)
                             nodes = [ node['n'] for node in nodes]
 
-                            use_neo4j_query = True
+                            neo4j_query_used = True
                         else:
-                            use_neo4j_query = False
+                            # otherwise is not necesary we can use django's qs
+                            neo4j_query_used = False
 
-                        if use_neo4j_query:
+                        if neo4j_query_used:
                             ret = []
 
                             handle_ids = []
