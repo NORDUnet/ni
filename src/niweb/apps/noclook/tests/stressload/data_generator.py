@@ -106,7 +106,7 @@ class FakeDataGenerator:
             name = data.get(name_key, None)
 
         nh = self.get_or_create_node(
-            name, type_name, metatype) # Logical
+            name, type_name, metatype)
 
         # add context
         self.add_community_context(nh)
