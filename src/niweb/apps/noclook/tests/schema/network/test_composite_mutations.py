@@ -7323,6 +7323,17 @@ class ServiceTest(Neo4jGraphQLNetworkTest):
         main_input_id = 'id: "{}"'.format(service_id)
         main_payload = 'updated'
 
+        if srv_project_end_date:
+            srv_project_end_date = srv_project_end_date.split("T")[0]
+
+        if srv_decommissioned_date:
+            srv_decommissioned_date = srv_decommissioned_date.split("T")[0]
+
+        project_end_date = "" if not srv_project_end_date else \
+                    'project_end_date: "{}"'.format(srv_project_end_date)
+        decommissioned_date = "" if not srv_decommissioned_date else \
+                    'decommissioned_date: "{}"'.format(srv_decommissioned_date)
+
         query = query_t.format(main_input=main_input,
             main_input_id=main_input_id, main_payload=main_payload,
             srv_name=srv_name, srv_operational_state=srv_operational_state,
