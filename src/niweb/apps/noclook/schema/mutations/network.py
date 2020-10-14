@@ -16,6 +16,18 @@ from binascii import Error as BinasciiError
 
 logger = logging.getLogger(__name__)
 
+## generic relation_processors
+location_relation_processor = get_unique_relation_processor(
+    'Located_in',
+    helpers.set_location,
+    False,
+)
+
+provider_relation_processor = get_unique_relation_processor(
+    'Provides',
+    helpers.set_provider
+)
+
 ## Organizations
 class NICustomersMutationFactory(NIMutationFactory):
     class NIMetaClass:
@@ -85,10 +97,7 @@ class NICableMutationFactory(NIMutationFactory):
         request_path = '/'
         graphql_type = Cable
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
         }
         create_exclude = ('relationship_end_a', 'relationship_end_b')
         update_exclude = ('relationship_end_a', 'relationship_end_b')
@@ -115,10 +124,7 @@ class NISwitchMutationFactory(NIMutationFactory):
         graphql_type   = Switch
         unique_node    = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
             'switch_type': process_switch_type,
             'responsible_group': get_unique_relation_processor(
                 'Takes_responsibility',
@@ -128,10 +134,7 @@ class NISwitchMutationFactory(NIMutationFactory):
                 'Supports',
                 helpers.set_supports
             ),
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -156,10 +159,7 @@ class NIRouterMutationFactory(NIMutationFactory):
         request_path = '/'
         graphql_type = Router
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
         update_exclude = ('relationship_ports', )
 
@@ -173,10 +173,7 @@ class NIFirewallMutationFactory(NIMutationFactory):
         graphql_type   = Firewall
         unique_node    = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
             'switch_type': process_switch_type,
             'responsible_group': get_unique_relation_processor(
                 'Takes_responsibility',
@@ -190,10 +187,7 @@ class NIFirewallMutationFactory(NIMutationFactory):
                 'Owns',
                 helpers.set_owner
             ),
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -207,10 +201,7 @@ class NIExternalEquipmentMutationFactory(NIMutationFactory):
         graphql_type   = ExternalEquipment
         unique_node    = True
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
             'relationship_owner': get_unique_relation_processor(
                 'Owns',
                 helpers.set_owner
@@ -325,10 +316,7 @@ class CreateHost(CreateNIMutation):
                 'Supports',
                 helpers.set_supports
             ),
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
 
@@ -444,10 +432,7 @@ class EditHost(CreateNIMutation):
                 'Supports',
                 helpers.set_supports
             ),
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
 
@@ -470,10 +455,7 @@ class NIHostMutationFactory(NIMutationFactory):
                 'Supports',
                 helpers.set_supports
             ),
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
         manual_create = CreateHost
@@ -541,10 +523,7 @@ class NIOpticalNodeMutationFactory(NIMutationFactory):
         graphql_type = OpticalNode
         unique_node  = True
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -557,10 +536,7 @@ class NIODFMutationFactory(NIMutationFactory):
         update_form    = EditOdfForm
         graphql_type   = ODF
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -574,10 +550,7 @@ class NIOpticalFilterMutationFactory(NIMutationFactory):
         update_form    = EditOpticalFilterForm
         graphql_type   = OpticalFilter
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -591,10 +564,7 @@ class NIOpticalLinkMutationFactory(NIMutationFactory):
         graphql_type = OpticalLink
         unique_node  = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
         }
 
     class Meta:
@@ -607,10 +577,7 @@ class NIOpticalMultiplexSectionMutationFactory(NIMutationFactory):
         graphql_type = OpticalMultiplexSection
         unique_node  = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
         }
 
     class Meta:
@@ -623,10 +590,7 @@ class NIOpticalPathMutationFactory(NIMutationFactory):
         graphql_type = OpticalPath
         unique_node  = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
         }
         create_exclude = ('relationship_depends_on', )
         update_exclude = ('relationship_depends_on', )
@@ -713,10 +677,7 @@ class NIServiceMutationFactory(NIMutationFactory):
         graphql_type = Service
         unique_node = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
             'responsible_group': get_unique_relation_processor(
                 'Takes_responsibility',
                 helpers.set_takes_responsibility

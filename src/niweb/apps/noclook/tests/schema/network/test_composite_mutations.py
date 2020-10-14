@@ -1203,6 +1203,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 managed_by{{
                   value
                 }}
+                location{{
+                  id
+                  name
+                }}
                 backup
                 os
                 os_version
@@ -1259,6 +1263,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check support group
         check_support = updated_switch['support_group']
         self.assertEqual(check_support['id'], group1_id)
+
+        # check location
+        check_location = updated_switch['location']
+        self.assertEqual(check_location, None)
 
         # set empty group relations
         query = '''
