@@ -96,9 +96,6 @@ class NINode(graphene.Node):
             if filter_name_contains:
                 q_filters.append(Q(name__icontains=filter_name_contains))
 
-            # get order values
-            orderBy = args.get('orderBy', None)
-
             # get filtered and ordered queryset
             if q_filters:
                 full_filter = None
@@ -109,6 +106,16 @@ class NINode(graphene.Node):
                         full_filter = full_filter & q_filter
 
                 ret = NodeHandle.objects.filter(full_filter)
+
+            # get order values
+            orderBy = args.get('orderBy', None)
+
+            if orderBy:
+                order = orderBy.split('_')[1]
+                if order == 'ASC':
+                    ret = ret.order_by('-node_name')
+                elif order == 'DESC':
+                    ret = ret.order_by('node_name')
 
             return ret
 

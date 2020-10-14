@@ -240,11 +240,17 @@ class MetaTypesQueriesTest(Neo4jGraphQLGenericTest):
 
 
     def check_metatype_search(self, query_t, search_string, metatype_name, \
-            types_string, expected_ids):
+            types_string, expected_ids, order):
+
+        order_str = ''
+        if order:
+            order_str = 'orderBy: {}'.format(order)
+
         query = query_t.format(
             search_string=search_string,
             metatype_name=metatype_name,
             types_string=types_string,
+            orderBy=order_str,
         )
 
         result = schema.execute(query, context=self.context)
@@ -255,7 +261,9 @@ class MetaTypesQueriesTest(Neo4jGraphQLGenericTest):
 
         for node in result_nodes:
             node = node['node']
-            self.assertTrue( node['id'] in expected_ids )
+            self.assertTrue(node['id'] in expected_ids, "{} not in {}".format(
+                node, expected_ids
+            ))
 
 
     def test_metatype_connections(self):
@@ -264,7 +272,7 @@ class MetaTypesQueriesTest(Neo4jGraphQLGenericTest):
         metatype_generators = {
             'logical': {
                 "Address": net_generator.create_address,
-                "Service": net_generator.create_service,
+                "Unit": net_generator.create_unit,
             },
             #'relation': {
             #    "Customer": net_generator.create_customer,
@@ -282,10 +290,13 @@ class MetaTypesQueriesTest(Neo4jGraphQLGenericTest):
 
         query_t = '''
         {{
-          {metatype_name}s(filter: {{
-          	name_contains: "{search_string}"
-          	type_in: [{types_string}]
-          }}){{
+          {metatype_name}s(
+            filter: {{
+          	  name_contains: "{search_string}"
+          	  type_in: [{types_string}]
+            }}
+            {orderBy}
+          ){{
             edges{{
               node{{
                 __typename
@@ -297,36 +308,39 @@ class MetaTypesQueriesTest(Neo4jGraphQLGenericTest):
         }}
         '''
 
-        for metatype_name, types_generator in metatype_generators.items():
-            # create entities
-            entities = {}
+        test_orders = [None, 'name_ASC', 'name_DESC']
 
-            idx = 0
-            for type_name, generator_f in types_generator.items():
-                entity = generator_f(name="Test {} - {}".format(idx, type_name))
-                entity_id = relay.Node.to_global_id(str(entity.node_type).\
-                                                        replace(' ', ''),
-                                                    str(entity.handle_id),)
+        for order in test_orders:
+            for metatype_name, types_generator in metatype_generators.items():
+                # create entities
+                entities = {}
 
-                entities[type_name] = {
-                    'id': entity_id,
-                    'entity': entity,
-                }
+                idx = 0
+                for type_name, generator_f in types_generator.items():
+                    entity = generator_f(name="Test {} - {}".format(idx, type_name))
+                    entity_id = relay.Node.to_global_id(str(entity.node_type).\
+                                                            replace(' ', ''),
+                                                        str(entity.handle_id),)
 
-                idx = idx + 1
+                    entities[type_name] = {
+                        'id': entity_id,
+                        'entity': entity,
+                    }
 
-            # perform tests
-            # search: name: "est", type: all: expected both
-            search_string = "est"
-            types_string = ', ' \
-                            .join([ '"{}"'.format(x) for x in entities.keys()])
-            expected_ids = [y['id'] for x, y in entities.items()]
+                    idx = idx + 1
 
-            self.check_metatype_search(query_t, search_string, metatype_name, \
-                    types_string, expected_ids)
+                # perform tests
+                # search: name: "est", type: all: expected both
+                search_string = "est"
+                types_string = ', ' \
+                                .join([ '"{}"'.format(x) for x in entities.keys()])
+                expected_ids = [y['id'] for x, y in entities.items()]
 
-            # search: name: "don't", type: all: expected none
-            # search: name: "est", type: none: expected none
-            # search: name: "don't", type: none: expected none
+                self.check_metatype_search(query_t, search_string, metatype_name, \
+                        types_string, expected_ids, order)
 
-            # delete created entities
+                # search: name: "don't", type: all: expected none
+                # search: name: "est", type: none: expected none
+                # search: name: "don't", type: none: expected none
+
+                # delete created entities
