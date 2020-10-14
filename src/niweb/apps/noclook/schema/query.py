@@ -155,6 +155,20 @@ class NOCAutoQuery(graphene.ObjectType):
             # set resolver
             setattr(cls, field_resolver['resolver'][0], field_resolver['resolver'][1])
 
+        ## add metatype connections
+        metatypes = getattr(_nimeta, 'metatypes', [])
+
+        for metatype in metatypes:
+            connection_name = '{}s'.format(str(metatype).lower())
+            connection_field = relay.ConnectionField(
+                                    metatype.get_connection_class(),
+                                    filter=graphene.Argument(MetatypeFilter),
+                                    orderBy=graphene.Argument(MetatypeOrder),
+                                    resolver=metatype.get_connection_resolver())
+
+            setattr(cls, connection_name, connection_field)
+
+
 def get_typelist_resolver(class_list):
     def resolve_class_list(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
@@ -202,12 +216,6 @@ optical_path_dependency_types = [
 
 
 class NOCRootQuery(NOCAutoQuery):
-    logicals = relay.ConnectionField(Logical.get_connection_class(),
-                    filter=graphene.Argument(MetatypeFilter),
-                    orderBy=graphene.Argument(MetatypeOrder),
-                    resolver=Logical.get_connection_resolver())
-
-
     getAvailableDropdowns = graphene.List(graphene.String)
     getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
@@ -483,4 +491,8 @@ class NOCRootQuery(NOCAutoQuery):
         search_queries = [
             GeneralSearchConnection,
             PortSearchConnection,
+        ]
+
+        metatypes = [
+            PhysicalLogical, Logical, Physical, Relation, Location,
         ]

@@ -91,10 +91,12 @@ class NINode(graphene.Node):
 
             if filter_types:
                 q_filters.append(Q(node_type__in=filter_types))
+            else:
+                q_filters.append(Q(node_type__in=[]))
 
-            filter_name_contains = filter.get('node_name_contains', None)
+            filter_name_contains = filter.get('name_contains', None)
             if filter_name_contains:
-                q_filters.append(Q(name__icontains=filter_name_contains))
+                q_filters.append(Q(node_name__icontains=filter_name_contains))
 
             # get filtered and ordered queryset
             if q_filters:
