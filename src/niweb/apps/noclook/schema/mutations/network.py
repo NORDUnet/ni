@@ -28,6 +28,21 @@ provider_relation_processor = get_unique_relation_processor(
     helpers.set_provider
 )
 
+responsible_relation_processor = get_unique_relation_processor(
+    'Takes_responsibility',
+    helpers.set_takes_responsibility
+)
+
+supports_relation_processor = get_unique_relation_processor(
+    'Supports',
+    helpers.set_supports
+)
+
+owner_relation_processor = get_unique_relation_processor(
+    'Owns',
+    helpers.set_owner
+)
+
 ## Organizations
 class NICustomersMutationFactory(NIMutationFactory):
     class NIMetaClass:
@@ -126,14 +141,8 @@ class NISwitchMutationFactory(NIMutationFactory):
         relations_processors = {
             'relationship_provider': provider_relation_processor,
             'switch_type': process_switch_type,
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
             'relationship_location': location_relation_processor,
         }
 
@@ -175,18 +184,9 @@ class NIFirewallMutationFactory(NIMutationFactory):
         relations_processors = {
             'relationship_provider': provider_relation_processor,
             'switch_type': process_switch_type,
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
+            'relationship_owner': owner_relation_processor,
             'relationship_location': location_relation_processor,
         }
 
@@ -202,10 +202,7 @@ class NIExternalEquipmentMutationFactory(NIMutationFactory):
         unique_node    = True
         relations_processors = {
             'relationship_location': location_relation_processor,
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
+            'relationship_owner': owner_relation_processor,
         }
 
     class Meta:
@@ -304,18 +301,9 @@ class CreateHost(CreateNIMutation):
         is_create = True
 
         relations_processors = {
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'relationship_owner': owner_relation_processor,
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
             'relationship_location': location_relation_processor,
         }
 
@@ -416,22 +404,13 @@ class EditHost(CreateNIMutation):
         exclude = ('relationship_ports', 'relationship_depends_on', )
 
         relations_processors = {
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
+            'relationship_owner': owner_relation_processor,
             'relationship_user': get_unique_relation_processor(
                 'Uses',
                 helpers.set_user
             ),
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
             'relationship_location': location_relation_processor,
         }
 
@@ -443,18 +422,9 @@ class NIHostMutationFactory(NIMutationFactory):
         graphql_type   = Host
         unique_node    = True
         relations_processors = {
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'relationship_owner': owner_relation_processor,
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
             'relationship_location': location_relation_processor,
         }
 
@@ -678,14 +648,8 @@ class NIServiceMutationFactory(NIMutationFactory):
         unique_node = True
         relations_processors = {
             'relationship_provider': provider_relation_processor,
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
         }
 
     class Meta:
