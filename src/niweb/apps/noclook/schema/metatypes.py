@@ -2,8 +2,10 @@
 __author__ = 'ffuentes'
 
 from apps.noclook import helpers
-from apps.noclook.models import NodeHandle
+from apps.noclook.models import NodeHandle, NodeType
 from apps.noclook.vakt import utils as sriutils
+from django.db.models import Q
+
 import graphene
 import logging
 import importlib
@@ -11,9 +13,20 @@ import norduniclient as nc
 
 logger = logging.getLogger(__name__)
 
+
+class MetatypeFilter(graphene.InputObjectType):
+    name_contains = graphene.String()
+    type_in = graphene.List(graphene.String)
+
+
+class MetatypeOrder(graphene.Enum):
+    name_ASC = 'name_ASC'
+    name_DESC = 'name_DESC'
+
+
 ## metatype interfaces
 class NINode(graphene.Node):
-    name = graphene.String(required= True)
+    name = graphene.String(required=True)
     relation_id = graphene.Int()
 
     def resolve_relation_id(self, info, **kwargs):
@@ -38,6 +51,77 @@ class NINode(graphene.Node):
             return network_type_resolver[type_name]
         else:
             super().resolve_type(instance, info)
+
+    @classmethod
+    def get_connection_class(cls):
+        class_name = '{}Connection'.format(cls)
+        meta_class = type('Meta', (object,), dict(node=cls))
+        the_class = type(class_name, (graphene.relay.Connection, ),
+                            dict(Meta=meta_class))
+
+        return the_class
+
+    @classmethod
+    def get_connection_resolver(cls):
+        # do the import here to get it once it's loaded
+        from .core import subclasses_interfaces
+
+        def metatype_list_resolver(self, info, **args):
+            ret = NodeHandle.objects.none()
+            q_filters = []
+
+            # get user's readable id list
+            readable_ids = sriutils.get_ids_user_canread(info.context.user)
+            # get filter
+            filter = args.get('filter', {})
+
+            # remove filter values of non existent nodetypes or
+            # nodetypes that don't belong to this metatype
+            subclasses = subclasses_interfaces[cls]
+            subclasses_names = [str(x) for x in subclasses]
+
+            filter_type_in = filter.get('type_in', [])
+            filter_types = []
+
+            for filter_nodetype in filter_type_in:
+                if filter_nodetype in subclasses_names:
+                    #filter_type_in.remove(filter_nodetype)
+                    node_type = NodeType.get_from_camelcase(filter_nodetype)
+                    filter_types.append(node_type)
+
+            if filter_types:
+                q_filters.append(Q(node_type__in=filter_types))
+            else:
+                q_filters.append(Q(node_type__in=[]))
+
+            filter_name_contains = filter.get('name_contains', None)
+            if filter_name_contains:
+                q_filters.append(Q(node_name__icontains=filter_name_contains))
+
+            # get filtered and ordered queryset
+            if q_filters:
+                full_filter = None
+                for q_filter in q_filters:
+                    if not full_filter:
+                        full_filter = q_filter
+                    else:
+                        full_filter = full_filter & q_filter
+
+                ret = NodeHandle.objects.filter(full_filter)
+
+            # get order values
+            orderBy = args.get('orderBy', None)
+
+            if orderBy:
+                order = orderBy.split('_')[1]
+                if order == 'ASC':
+                    ret = ret.order_by('-node_name')
+                elif order == 'DESC':
+                    ret = ret.order_by('node_name')
+
+            return ret
+
+        return metatype_list_resolver
 
 
 class PhysicalLogical(NINode):

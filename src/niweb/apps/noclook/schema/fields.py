@@ -6,8 +6,8 @@ from apps.noclook.vakt import utils as sriutils
 from collections import OrderedDict
 from graphene_django import DjangoObjectType
 from .scalars import ChoiceScalar, IPAddr, JSON
-from datetime import date
 
+import datetime
 import graphene
 import types as pytypes
 import warnings
@@ -207,7 +207,8 @@ class NIDateField(NIBasicField):
                 if 'T' in possible_value:
                     possible_value = possible_value.split('T')[0]
 
-                possible_value = date.fromisoformat(possible_value)
+                possible_value = datetime.datetime.strptime(possible_value,
+                                    '%Y-%m-%d').date()
 
             return possible_value
 
