@@ -207,7 +207,7 @@ class NIDateField(NIBasicField):
                 if 'T' in possible_value:
                     possible_value = possible_value.split('T')[0]
 
-                possible_value = date.fromisoformat(possible_value)
+                possible_value = date.strptime(possible_value, '%Y-%m-%d')
 
             return possible_value
 
