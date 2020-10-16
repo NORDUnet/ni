@@ -16,6 +16,33 @@ from binascii import Error as BinasciiError
 
 logger = logging.getLogger(__name__)
 
+## generic relation_processors
+location_relation_processor = get_unique_relation_processor(
+    'Located_in',
+    helpers.set_location,
+    False,
+)
+
+provider_relation_processor = get_unique_relation_processor(
+    'Provides',
+    helpers.set_provider
+)
+
+responsible_relation_processor = get_unique_relation_processor(
+    'Takes_responsibility',
+    helpers.set_takes_responsibility
+)
+
+supports_relation_processor = get_unique_relation_processor(
+    'Supports',
+    helpers.set_supports
+)
+
+owner_relation_processor = get_unique_relation_processor(
+    'Owns',
+    helpers.set_owner
+)
+
 ## Organizations
 class NICustomersMutationFactory(NIMutationFactory):
     class NIMetaClass:
@@ -85,10 +112,7 @@ class NICableMutationFactory(NIMutationFactory):
         request_path = '/'
         graphql_type = Cable
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
         }
         create_exclude = ('relationship_end_a', 'relationship_end_b')
         update_exclude = ('relationship_end_a', 'relationship_end_b')
@@ -115,19 +139,11 @@ class NISwitchMutationFactory(NIMutationFactory):
         graphql_type   = Switch
         unique_node    = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
             'switch_type': process_switch_type,
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -135,16 +151,24 @@ class NISwitchMutationFactory(NIMutationFactory):
         update_exclude = ('relationship_ports', 'relationship_depends_on')
 
 
+class NIUnitMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form = UnitForm
+        request_path = '/'
+        graphql_type = Unit
+
+    class Meta:
+        abstract = False
+        property_update = ('name', 'description', 'wlan')
+
+
 class NIRouterMutationFactory(NIMutationFactory):
     class NIMetaClass:
-        form    = EditRouterForm
-        request_path   = '/'
-        graphql_type   = Router
+        form = EditRouterForm
+        request_path = '/'
+        graphql_type = Router
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
         update_exclude = ('relationship_ports', )
 
@@ -158,23 +182,12 @@ class NIFirewallMutationFactory(NIMutationFactory):
         graphql_type   = Firewall
         unique_node    = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
             'switch_type': process_switch_type,
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
+            'relationship_owner': owner_relation_processor,
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -188,14 +201,8 @@ class NIExternalEquipmentMutationFactory(NIMutationFactory):
         graphql_type   = ExternalEquipment
         unique_node    = True
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
+            'relationship_location': location_relation_processor,
+            'relationship_owner': owner_relation_processor,
         }
 
     class Meta:
@@ -294,18 +301,10 @@ class CreateHost(CreateNIMutation):
         is_create = True
 
         relations_processors = {
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'relationship_owner': owner_relation_processor,
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
+            'relationship_location': location_relation_processor,
         }
 
 
@@ -405,22 +404,14 @@ class EditHost(CreateNIMutation):
         exclude = ('relationship_ports', 'relationship_depends_on', )
 
         relations_processors = {
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
+            'relationship_owner': owner_relation_processor,
             'relationship_user': get_unique_relation_processor(
                 'Uses',
                 helpers.set_user
             ),
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
+            'relationship_location': location_relation_processor,
         }
 
 
@@ -431,18 +422,10 @@ class NIHostMutationFactory(NIMutationFactory):
         graphql_type   = Host
         unique_node    = True
         relations_processors = {
-            'relationship_owner': get_unique_relation_processor(
-                'Owns',
-                helpers.set_owner
-            ),
-            'responsible_group': get_unique_relation_processor(
-                'Takes_responsibility',
-                helpers.set_takes_responsibility
-            ),
-            'support_group': get_unique_relation_processor(
-                'Supports',
-                helpers.set_supports
-            ),
+            'relationship_owner': owner_relation_processor,
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
+            'relationship_location': location_relation_processor,
         }
 
         manual_create = CreateHost
@@ -509,6 +492,9 @@ class NIOpticalNodeMutationFactory(NIMutationFactory):
         request_path = '/'
         graphql_type = OpticalNode
         unique_node  = True
+        relations_processors = {
+            'relationship_location': location_relation_processor,
+        }
 
     class Meta:
         abstract = False
@@ -520,10 +506,7 @@ class NIODFMutationFactory(NIMutationFactory):
         update_form    = EditOdfForm
         graphql_type   = ODF
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -537,10 +520,7 @@ class NIOpticalFilterMutationFactory(NIMutationFactory):
         update_form    = EditOpticalFilterForm
         graphql_type   = OpticalFilter
         relations_processors = {
-            'relationship_location': get_unique_relation_processor(
-                'Located_in',
-                helpers.set_location
-            ),
+            'relationship_location': location_relation_processor,
         }
 
     class Meta:
@@ -554,10 +534,7 @@ class NIOpticalLinkMutationFactory(NIMutationFactory):
         graphql_type = OpticalLink
         unique_node  = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
         }
 
     class Meta:
@@ -570,10 +547,7 @@ class NIOpticalMultiplexSectionMutationFactory(NIMutationFactory):
         graphql_type = OpticalMultiplexSection
         unique_node  = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
         }
 
     class Meta:
@@ -586,10 +560,7 @@ class NIOpticalPathMutationFactory(NIMutationFactory):
         graphql_type = OpticalPath
         unique_node  = True
         relations_processors = {
-            'relationship_provider': get_unique_relation_processor(
-                'Provides',
-                helpers.set_provider
-            ),
+            'relationship_provider': provider_relation_processor,
         }
         create_exclude = ('relationship_depends_on', )
         update_exclude = ('relationship_depends_on', )
@@ -619,3 +590,69 @@ class NIPeeringGroupMutationFactory(NIMutationFactory):
 
     class Meta:
         abstract = False
+
+
+## Location
+class NISiteMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = EditSiteForm
+        request_path = '/'
+        graphql_type = Site
+        unique_node  = True
+        form_exclude = ('address', 'floor', 'room', 'postarea', 'postcode',
+                        'country_code')
+        relations_processors = {
+            'relationship_responsible_for': get_unique_relation_processor(
+                'Provides',
+                helpers.set_responsible_for
+            ),
+        }
+
+    class Meta:
+        abstract = False
+
+
+class NIRoomMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = EditRoomForm
+        request_path = '/'
+        graphql_type = Room
+        unique_node  = True
+        # we'll exclude the parent relationship because we'll use the metatype
+        # mutation input on the composite mutation
+        form_exclude = ('relationship_parent')
+
+    class Meta:
+        abstract = False
+
+
+class NIRackMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form         = EditRackForm
+        request_path = '/'
+        graphql_type = Rack
+        unique_node  = False
+        # we'll exclude the parent relationship because we'll use the metatype
+        # mutation input on the composite mutation
+        form_exclude = ('relationship_parent', 'relationship_located_in')
+
+    class Meta:
+        abstract = False
+
+
+## Service
+class NIServiceMutationFactory(NIMutationFactory):
+    class NIMetaClass:
+        form = EditServiceForm
+        graphql_type = Service
+        unique_node = True
+        relations_processors = {
+            'relationship_provider': provider_relation_processor,
+            'responsible_group': responsible_relation_processor,
+            'support_group': supports_relation_processor,
+        }
+
+    class Meta:
+        abstract = False
+        exclude = ('service_class', 'relationship_depends_on',
+                    'relationship_user')

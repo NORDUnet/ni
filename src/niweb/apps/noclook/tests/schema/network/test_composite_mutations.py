@@ -860,6 +860,11 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         provider_id = relay.Node.to_global_id(str(provider.node_type),
                                             str(provider.handle_id))
 
+        # get a location
+        location = generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         # get two groups
         community_generator = CommunityFakeDataGenerator()
         group1 = community_generator.create_group()
@@ -932,6 +937,7 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 contract_number: "{contract_number}"
                 max_number_of_ports: {max_number_of_ports}
                 services_locked: {services_locked}
+                relationship_location: "{location_id}"
               }}
               create_subinputs:[
                 {{
@@ -989,6 +995,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                location{{
+                  id
+                  name
+                }}
               }}
             }}
             subcreated{{
@@ -1036,7 +1046,8 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                     port_2_name=port_2_name, port_2_type=port_2_type,
                     port_2_description=port_2_description, port_2_id=port_2_id,
                     rack_back=str(rack_back).lower(),
-                    services_locked=str(services_locked).lower())
+                    services_locked=str(services_locked).lower(),
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1067,6 +1078,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check provider
         check_provider = created_switch['provider']
         self.assertEqual(check_provider['id'], provider_id)
+
+        # check location
+        check_location = created_switch['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # check responsible group
         check_responsible = created_switch['responsible_group']
@@ -1188,6 +1203,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
                 managed_by{{
                   value
                 }}
+                location{{
+                  id
+                  name
+                }}
                 backup
                 os
                 os_version
@@ -1244,6 +1263,10 @@ class SwitchTest(Neo4jGraphQLNetworkTest):
         # check support group
         check_support = updated_switch['support_group']
         self.assertEqual(check_support['id'], group1_id)
+
+        # check location
+        check_location = updated_switch['location']
+        self.assertEqual(check_location, None)
 
         # set empty group relations
         query = '''
@@ -1350,6 +1373,11 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         )
         port_2_description = generator.escape_quotes(generator.fake.paragraph())
 
+        # location
+        location = generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_router(input:{{
@@ -1360,6 +1388,7 @@ class RouterTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_subinputs:[
               {{
@@ -1445,7 +1474,8 @@ class RouterTest(Neo4jGraphQLNetworkTest):
                     port_1_description=port_1_description,
                     port_2_id=port_2_id, port_2_name=port_2_name,
                     port_2_type=port_2_type,
-                    port_2_description=port_2_description)
+                    port_2_description=port_2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1489,8 +1519,11 @@ class RouterTest(Neo4jGraphQLNetworkTest):
         self.assertEqual(update_checkport['description'], port_2_description)
 
         # check ports in router
-        self.assertEqual(updated_router['ports'][1]['id'], port_1_id)
-        self.assertEqual(updated_router['ports'][0]['id'], port_2_id)
+        self.assertEqualIds(updated_router['ports'][1]['id'], port_1_id)
+        self.assertEqualIds(updated_router['ports'][0]['id'], port_2_id)
+
+        # check location
+        self.assertEqual(updated_router['location']['id'], location_id)
 
 
 class FirewallTest(Neo4jGraphQLNetworkTest):
@@ -1535,11 +1568,33 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         rack_position = 3
         rack_units = 2
         rack_back = bool(random.getrandbits(1))
+        services_locked = bool(random.getrandbits(1))
 
+        # owner and location
         owner = net_generator.create_end_user()
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
-        services_locked = bool(random.getrandbits(1))
+
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
+        # create new port
+        port_1_name = str(random.randint(0, 50000))
+        port_1_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_1_description = net_generator.escape_quotes(net_generator.fake.paragraph())
+
+        # add existent port
+        port = net_generator.create_port()
+        port_2_id = relay.Node.to_global_id(str(port.node_type),
+                                            str(port.handle_id))
+        port_2_name = str(random.randint(0, 50000))
+        port_2_type = random.choice(
+            Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+        )
+        port_2_description = net_generator.escape_quotes(net_generator.fake.paragraph())
 
         query = '''
         mutation{{
@@ -1562,13 +1617,29 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
               service_tag: "{service_tag}"
               end_support: "{end_support}"
               contract_number: "{contract_number}"
-              relationship_owner: "{owner_id}"
               max_number_of_ports: {max_number_of_ports}
               rack_units: {rack_units}
               rack_position: {rack_position}
               services_locked: {services_locked}
               rack_back: {rack_back}
+              relationship_owner: "{owner_id}"
+              relationship_location: "{location_id}"
             }}
+            create_has_port:[
+              {{
+                name: "{port_1_name}"
+                port_type: "{port_1_type}"
+                description: "{port_1_description}"
+              }}
+            ]
+            update_has_port:[
+              {{
+                id: "{port_2_id}"
+                name: "{port_2_name}"
+                port_type: "{port_2_type}"
+                description: "{port_2_description}"
+              }}
+            ]
           }}){{
             updated{{
               errors{{
@@ -1613,6 +1684,10 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                 services_locked
                 services_checked
                 contract_number
+                ports{{
+                  id
+                  name
+                }}
                 location{{
                   id
                   name
@@ -1621,6 +1696,36 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+              }}
+            }}
+            has_port_created{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
+              }}
+            }}
+            has_port_updated{{
+              errors{{
+                field
+                messages
+              }}
+              port{{
+                id
+                name
+                port_type{{
+                  name
+                  value
+                }}
+                description
               }}
             }}
           }}
@@ -1633,9 +1738,14 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
             os=os, os_version=os_version, model=model, vendor=vendor,
             service_tag=service_tag, end_support=end_support,
             contract_number=contract_number, owner_id=owner_id,
+            location_id=location_id,
             max_number_of_ports=max_number_of_ports, rack_units=rack_units,
             rack_position=rack_position, rack_back=str(rack_back).lower(),
-            services_locked=str(services_locked).lower())
+            services_locked=str(services_locked).lower(),
+            port_1_name=port_1_name, port_1_type=port_1_type,
+            port_1_description=port_1_description,
+            port_2_name=port_2_name, port_2_type=port_2_type,
+            port_2_description=port_2_description, port_2_id=port_2_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1671,12 +1781,40 @@ class FirewallTest(Neo4jGraphQLNetworkTest):
         check_support = updated_firewall['support_group']
         self.assertEqual(check_support['id'], group2_id)
 
-        # check support group
+        # check owner and location
         check_owner = updated_firewall['owner']
-        self.assertEqual(check_owner['id'], owner_id, "{} / {} != {} / {}".format(
-            *relay.Node.from_global_id(check_owner['id']),
-            *relay.Node.from_global_id(owner_id),
-        ))
+        self.assertEqualIds(check_owner['id'], owner_id)
+
+        check_location = updated_firewall['location']
+        self.assertEqualIds(check_location['id'], location_id)
+
+        # check ports data
+
+        # check port_1 data
+        created_checkport = result.data['composite_firewall']['has_port_created'][0]
+        created_errors = created_checkport['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        created_checkport = created_checkport['port']
+        port_1_id = created_checkport['id']
+
+        self.assertEqual(created_checkport['name'], port_1_name)
+        self.assertEqual(created_checkport['port_type']['value'], port_1_type)
+        self.assertEqual(created_checkport['description'], port_1_description)
+
+        # check port_2
+        update_checkport = result.data['composite_firewall']['has_port_updated'][0]
+        updated_errors = update_checkport['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        update_checkport = update_checkport['port']
+        self.assertEqual(update_checkport['name'], port_2_name)
+        self.assertEqual(update_checkport['port_type']['value'], port_2_type)
+        self.assertEqual(update_checkport['description'], port_2_description)
+
+        # check ports in router
+        self.assertEqual(updated_firewall['ports'][1]['id'], port_1_id)
+        self.assertEqual(updated_firewall['ports'][0]['id'], port_2_id)
 
         # delete owner submutation test
         query = '''
@@ -1754,6 +1892,11 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
         owner_id = relay.Node.to_global_id(str(owner.node_type).replace(' ', ''),
                                             str(owner.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_externalEquipment(input:{{
@@ -1764,6 +1907,7 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -1798,6 +1942,10 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 has{{
+                  id
+                  name
+                }}
+                location{{
                   id
                   name
                 }}
@@ -1842,7 +1990,8 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name,
                     port1_type=port1_type, port1_description=port1_description,
                     port2_id=port2_id, port2_name=port2_name,
-                    port2_type=port2_type, port2_description=port2_description)
+                    port2_type=port2_type, port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -1893,6 +2042,10 @@ class ExternalEquipmentTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_extequip['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         exteq_name = "External Equipment check"
@@ -2051,12 +2204,31 @@ class HostTest(Neo4jGraphQLNetworkTest):
             },
         ]
 
+        location_queries = [
+            {
+                'input_location': '',
+                'query_location': '',
+            },
+            {
+                'input_location': 'relationship_location: "{location_id}"',
+                'query_location': '''
+                    location {
+                      id
+                      name
+                    }
+                ''',
+            },
+        ]
+
         host_ids = {
             'logical': None,
             'physical': None,
         }
 
-        for owner_query in owner_queries:
+        for i in range(2):
+            owner_query = owner_queries[i]
+            location_query = location_queries[i]
+
             # get two groups
             community_generator = CommunityFakeDataGenerator()
             net_generator = NetworkFakeDataGenerator()
@@ -2090,13 +2262,13 @@ class HostTest(Neo4jGraphQLNetworkTest):
             os = "GNU/Linux"
             os_version = "5.8"
             contract_number = "001"
+            services_locked = bool(random.getrandbits(1))
 
+            # owner
             input_owner = owner_query['input_owner']
             query_owner = owner_query['query_owner']
 
             owner_id = None
-
-            services_locked = bool(random.getrandbits(1))
 
             if input_owner:
                 owner = net_generator.create_customer()
@@ -2105,6 +2277,21 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     str(owner.handle_id)
                 )
                 input_owner = input_owner.format(owner_id=owner_id)
+
+            # location (rack)
+            input_location = location_query['input_location']
+            query_location = location_query['query_location']
+
+            location_id = None
+
+            if input_location:
+                location = net_generator.create_rack()
+                location_id = relay.Node.to_global_id(
+                    str(location.node_type).replace(' ', ''),
+                    str(location.handle_id)
+                )
+                input_location = input_location.format(
+                                        location_id=location_id)
 
             query = '''
             mutation{{
@@ -2127,6 +2314,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     contract_number: "{contract_number}"
                     services_locked: {services_locked}
                     {input_owner}
+                    {input_location}
                   }}
                 }}
               ){{
@@ -2165,6 +2353,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                     services_locked
                     services_checked
                     {query_owner}
+                    {query_location}
                   }}
                 }}
               }}
@@ -2176,9 +2365,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                         group1_id=group1_id, group2_id=group2_id,
                         managed_by=managed_by, backup=backup, os=os,
                         os_version=os_version, contract_number=contract_number,
-                        input_owner=input_owner, query_owner=query_owner,
                         rack_back=str(rack_back).lower(),
-                        services_locked=str(services_locked).lower())
+                        services_locked=str(services_locked).lower(),
+                        input_owner=input_owner, query_owner=query_owner,
+                        input_location=input_location, query_location=query_location)
 
             result = schema.execute(query, context=self.context)
             assert not result.errors, pformat(result.errors, indent=1)
@@ -2228,6 +2418,10 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(host_node.meta_type, "Physical")
                 host_ids['physical'] = host_id
 
+                # check owner and location
+                self.assertEqual(created_host['host_owner']['id'], owner_id)
+                self.assertEqual(created_host['location']['id'], location_id)
+
         edit_query = '''
         mutation{{
           composite_host(input:{{
@@ -2250,6 +2444,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
               services_locked: {services_locked}
               {extra_input}
             }}
+            {subinputs}
           }}){{
             updated{{
               errors{{
@@ -2288,6 +2483,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 {extra_query}
               }}
             }}
+            {subquery}
           }}
         }}
         '''
@@ -2333,6 +2529,11 @@ class HostTest(Neo4jGraphQLNetworkTest):
         }
 
         use_ownerhuser = True
+
+        updated_hosts = {
+            'logical': None,
+            'physical': None,
+        }
 
         for iteration in range(0,2):
             for k, host_id in host_ids.items():
@@ -2386,7 +2587,8 @@ class HostTest(Neo4jGraphQLNetworkTest):
                             managed_by=managed_by, backup=backup, os=os,
                             os_version=os_version, contract_number=contract_number,
                             services_locked=str(services_locked).lower(),
-                            extra_input=extra_input, extra_query=extra_query)
+                            extra_input=extra_input, extra_query=extra_query,
+                            subinputs='', subquery='')
 
                 result = schema.execute(query, context=self.context)
                 assert not result.errors, pformat(result.errors, indent=1)
@@ -2397,6 +2599,7 @@ class HostTest(Neo4jGraphQLNetworkTest):
 
                 # check data
                 updated_host = result.data['composite_host']['updated']['host']
+                updated_hosts[k] = updated_host
 
                 self.assertEqual(updated_host['name'], host_name)
                 self.assertEqual(updated_host['description'], host_description)
@@ -2428,6 +2631,163 @@ class HostTest(Neo4jGraphQLNetworkTest):
                 self.assertEqual(check_support['id'], group2_id)
 
                 use_ownerhuser = False
+
+        # add a port to a physical host
+        # and check that's not possible with a logical host
+        generator = NetworkFakeDataGenerator()
+
+        for k, host_id in host_ids.items():
+            # get old values
+            host_name = updated_hosts[k]['name']
+            host_description = updated_hosts[k]['name']
+            ip_addresses = updated_hosts[k]['ip_addresses']
+            rack_units = updated_hosts[k]['rack_units']
+            rack_position = updated_hosts[k]['rack_position']
+            rack_back = updated_hosts[k]['rack_back']
+            operational_state = updated_hosts[k]['operational_state']['value']
+            rack_back = updated_hosts[k]['rack_back']
+            managed_by = updated_hosts[k]['managed_by']['value']
+            backup = updated_hosts[k]['backup']
+            os = updated_hosts[k]['os']
+            os_version = updated_hosts[k]['os_version']
+            contract_number = updated_hosts[k]['contract_number']
+            services_locked = updated_hosts[k]['services_locked']
+
+            # create new port
+            port_1_name = str(random.randint(0, 50000))
+            port_1_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+            )
+            port_1_description = generator\
+                                    .escape_quotes(generator.fake.paragraph())
+
+            # add existent port
+            port = generator.create_port()
+            port_2_id = relay.Node.to_global_id(str(port.node_type),
+                                                str(port.handle_id))
+            port_2_name = str(random.randint(0, 50000))
+            port_2_type = random.choice(
+                Dropdown.objects.get(name="port_types").as_choices()[1:][1]
+            )
+            port_2_description = generator\
+                                    .escape_quotes(generator.fake.paragraph())
+
+            # count ports present on db to be checked after
+            num_ports = NodeHandle.objects\
+                            .filter(node_type=port.node_type).count()
+
+            subinput = '''
+            create_subinputs:[
+              {{
+                name: "{port_1_name}"
+                port_type: "{port_1_type}"
+                description: "{port_1_description}"
+              }}
+            ]
+            update_subinputs:[
+              {{
+                id: "{port_2_id}"
+                name: "{port_2_name}"
+                port_type: "{port_2_type}"
+                description: "{port_2_description}"
+              }}
+            ]
+            '''.format(
+                port_1_name=port_1_name, port_1_type=port_1_type,
+                port_1_description=port_1_description, port_2_id=port_2_id,
+                port_2_name=port_2_name, port_2_type=port_2_type,
+                port_2_description=port_2_description
+            )
+
+            subquery = '''
+            subcreated{
+              errors{
+                field
+                messages
+              }
+              port{
+                id
+                name
+                port_type{
+                  name
+                  value
+                }
+                description
+                parent{
+                  id
+                  name
+                }
+              }
+            }
+            subupdated{
+              errors{
+                field
+                messages
+              }
+              port{
+                id
+                name
+                port_type{
+                  name
+                  value
+                }
+                description
+                parent{
+                  id
+                  name
+                }
+              }
+            }
+            '''
+
+            query = edit_query.format(
+                        host_id=host_id,
+                        host_name=host_name, host_description=host_description,
+                        ip_address="\\n".join(ip_addresses),
+                        rack_units=rack_units, rack_position=rack_units,
+                        rack_back=str(rack_back).lower(),
+                        operational_state=operational_state,
+                        group1_id=group1_id, group2_id=group2_id,
+                        managed_by=managed_by, backup=backup, os=os,
+                        os_version=os_version, contract_number=contract_number,
+                        services_locked=str(services_locked).lower(),
+                        extra_input='', extra_query='',
+                        subinputs=subinput, subquery=subquery)
+
+            result = schema.execute(query, context=self.context)
+            assert not result.errors, pformat(result.errors, indent=1)
+
+            # check for errors
+            created_errors = result.data['composite_host']['updated']['errors']
+            assert not created_errors, pformat(created_errors, indent=1)
+
+            if k == 'logical':
+                # check that ports are not created
+                new_num_ports = NodeHandle.objects\
+                                .filter(node_type=port.node_type).count()
+                self.assertEquals(num_ports, new_num_ports)
+            else:
+                # check port_1 data
+                created_checkport = result.data['composite_host']['subcreated'][0]
+                created_errors = created_checkport['errors']
+                assert not created_errors, pformat(created_errors, indent=1)
+
+                created_checkport = created_checkport['port']
+                port_1_id = created_checkport['id']
+
+                self.assertEqual(created_checkport['name'], port_1_name)
+                self.assertEqual(created_checkport['port_type']['value'], port_1_type)
+                self.assertEqual(created_checkport['description'], port_1_description)
+
+                # check port_2
+                update_checkport = result.data['composite_host']['subupdated'][0]
+                updated_errors = update_checkport['errors']
+                assert not updated_errors, pformat(updated_errors, indent=1)
+
+                update_checkport = update_checkport['port']
+                self.assertEqual(update_checkport['name'], port_2_name)
+                self.assertEqual(update_checkport['port_type']['value'], port_2_type)
+                self.assertEqual(update_checkport['description'], port_2_description)
 
 
 class OpticalNodeTest(Neo4jGraphQLNetworkTest):
@@ -2469,6 +2829,11 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
         port2_id = relay.Node.to_global_id(str(port2.node_type),
                                             str(port2.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_opticalNode(input:{{
@@ -2480,6 +2845,7 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -2525,6 +2891,10 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
                   id
                   name
                 }}
+                location{{
+                  id
+                  name
+                }}
               }}
             }}
             has_port_created{{
@@ -2566,7 +2936,8 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name, port1_type=port1_type,
                     port1_description=port1_description, port2_id=port2_id,
                     port2_name=port2_name, port2_type=port2_type,
-                    port2_description=port2_description)
+                    port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -2621,6 +2992,10 @@ class OpticalNodeTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_optnode['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         optno_name = "Optical Node check"
@@ -2817,6 +3192,11 @@ class ODFTest(Neo4jGraphQLNetworkTest):
         port2_id = relay.Node.to_global_id(str(port2.node_type),
                                             str(port2.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_oDF(input:{{
@@ -2827,6 +3207,7 @@ class ODFTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -2865,6 +3246,10 @@ class ODFTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 ports{{
+                  id
+                  name
+                }}
+                location{{
                   id
                   name
                 }}
@@ -2909,7 +3294,8 @@ class ODFTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name, port1_type=port1_type,
                     port1_description=port1_description, port2_id=port2_id,
                     port2_name=port2_name, port2_type=port2_type,
-                    port2_description=port2_description)
+                    port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -2963,6 +3349,10 @@ class ODFTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_odf['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         odf_name = "Optical Node check"
@@ -3151,6 +3541,11 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
         port2_id = relay.Node.to_global_id(str(port2.node_type),
                                             str(port2.handle_id))
 
+        # get a location
+        location = net_generator.create_rack()
+        location_id = relay.Node.to_global_id(str(location.node_type),
+                                                str(location.handle_id))
+
         query = '''
         mutation{{
           composite_opticalFilter(input:{{
@@ -3161,6 +3556,7 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
               rack_units: {rack_units}
               rack_position: {rack_position}
               rack_back: {rack_back}
+              relationship_location: "{location_id}"
             }}
             create_has_port:[
               {{
@@ -3199,6 +3595,10 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
                   name
                 }}
                 ports{{
+                  id
+                  name
+                }}
+                location{{
                   id
                   name
                 }}
@@ -3243,7 +3643,8 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
                     port1_name=port1_name, port1_type=port1_type,
                     port1_description=port1_description, port2_id=port2_id,
                     port2_name=port2_name, port2_type=port2_type,
-                    port2_description=port2_description)
+                    port2_description=port2_description,
+                    location_id=location_id)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -3297,6 +3698,10 @@ class OpticalFilterTest(Neo4jGraphQLNetworkTest):
 
         self.assertTrue(port1_id in has_ids)
         self.assertTrue(port2_id in has_ids)
+
+        # check location
+        check_location = created_ofilter['location']
+        self.assertEqual(check_location['id'], location_id)
 
         # update query
         ofilter_name = "Optical Node check"
@@ -4711,17 +5116,29 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
                                         str(pgroup.handle_id))
         peergroup_name = "Peer Group new name"
 
+        # modify dependencies
         dependencies = pgroup.get_node().get_dependencies()
-        host_handle_id = dependencies['Depends_on'][0]['relationship'].end_node.\
-                            _properties['handle_id']
-        host_nh = NodeHandle.objects.get(handle_id=host_handle_id)
-        host_type_str = host_nh.node_type.type.replace(' ', '')
-        host_id = relay.Node.to_global_id(str(host_nh.node_type),
-                                        str(host_nh.handle_id))
-        host_name = "Test dependency host"
-        host_description = host_nh.get_node().data['description']
-        host_opstate = random.choice(
-            Dropdown.objects.get(name="operational_states").as_choices()[1:])[1]
+        unit1_handle_id = dependencies['Depends_on'][0]['relationship']\
+                            .end_node._properties['handle_id']
+        unit1_nh = NodeHandle.objects.get(handle_id=unit1_handle_id)
+        unit1_id = relay.Node.to_global_id(str(unit1_nh.node_type),
+                                        str(unit1_nh.handle_id))
+        unit1_name = "Test dependency unit"
+        unit1_description = unit1_nh.get_node().data.get("description")
+        unit1_vlan = unit1_nh.get_node().data.get("vlan")
+
+        unit2_handle_id = dependencies['Depends_on'][1]['relationship']\
+                            .end_node._properties['handle_id']
+        unit2_nh = NodeHandle.objects.get(handle_id=unit2_handle_id)
+        unit2_id = relay.Node.to_global_id(str(unit2_nh.node_type),
+                                        str(unit2_nh.handle_id))
+
+        # add new peering partner user
+        peering_partner = data_generator.create_peering_partner()
+        ppartner_id = relay.Node.to_global_id(
+                            str(peering_partner.node_type.type.replace(' ', '')),
+                            str(peering_partner.handle_id))
+        ppartner_name = "Test Peering Partner"
 
         query = """
         mutation{{
@@ -4730,11 +5147,18 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
               id: "{peergroup_id}"
               name: "{peergroup_name}"
             }}
-            update_dependencies_host:{{
-              id: "{host_id}"
-              name: "{host_name}"
-              description: "{host_description}"
-              operational_state: "{host_opstate}"
+            update_dependencies_unit:{{
+              id: "{unit1_id}"
+              name: "{unit1_name}"
+              description: "{unit1_description}"
+              vlan: "{unit1_vlan}"
+            }}
+            deleted_dependencies_unit:{{
+              id: "{unit2_id}"
+            }}
+            update_used_by_peeringpartner:{{
+              id: "{ppartner_id}"
+              name: "{ppartner_name}"
             }}
           }}){{
             updated{{
@@ -4745,28 +5169,74 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
               peeringGroup{{
                 id
                 name
+                dependencies{{
+                  __typename
+                  id
+                  name
+                  relation_id
+                  ...on Logical{{
+                    dependencies{{
+                      __typename
+                      id
+                      name
+                    }}
+                    part_of{{
+                      __typename
+                      id
+                      name
+                    }}
+                  }}
+                  ...on Unit{{
+                    description
+                    vlan
+                    ip_address
+                  }}
+                }}
+                used_by{{
+                  __typename
+                  id
+                  name
+                  relation_id
+                  ...on PeeringPartner{{
+                    ip_address
+                    as_number
+                    peering_link
+                  }}
+                }}
               }}
             }}
-            dependencies_host_updated{{
+            dependencies_unit_updated{{
               errors{{
                 field
                 messages
               }}
-              host{{
+              unit{{
                 id
                 name
                 description
-                operational_state{{
-                  value
-                }}
+                vlan
+              }}
+            }}
+            dependencies_unit_deleted{{
+              success
+            }}
+            used_by_peeringpartner_updated{{
+              errors{{
+                field
+                messages
+              }}
+              peeringPartner{{
+                id
+                name
               }}
             }}
           }}
         }}
         """.format(peergroup_id=peergroup_id, peergroup_name=peergroup_name,
-                    host_id=host_id, host_name=host_name,
-                    host_description=host_description,
-                    host_opstate=host_opstate)
+                    unit1_id=unit1_id, unit1_name=unit1_name,
+                    unit1_description=unit1_description, unit1_vlan=unit1_vlan,
+                    unit2_id=unit2_id, ppartner_id=ppartner_id,
+                    ppartner_name=ppartner_name)
 
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
@@ -4777,22 +5247,2197 @@ class PeeringGroupTest(Neo4jGraphQLNetworkTest):
         assert not updated_errors, pformat(updated_errors, indent=1)
 
         subupdated_errors = \
-            result.data['composite_peeringGroup']['dependencies_host_updated']\
+            result.data['composite_peeringGroup']['dependencies_unit_updated']\
                         [0]['errors']
+        assert not subupdated_errors, pformat(subupdated_errors, indent=1)
+
+        subupdated_errors = \
+            result.data['composite_peeringGroup']\
+                        ['used_by_peeringpartner_updated'][0]['errors']
         assert not subupdated_errors, pformat(subupdated_errors, indent=1)
 
         # check data
         updated_pgroup = result.data['composite_peeringGroup']['updated']\
                             ['peeringGroup']
-        self.assertEqual(updated_pgroup['id'], peergroup_id,
-            "{} != {}".format(relay.Node.from_global_id(updated_pgroup['id']),
-                relay.Node.from_global_id(peergroup_id)))
-        self.assertEqual(updated_pgroup['name'], peergroup_name)
+        self.assertEqualIds(updated_pgroup['id'], peergroup_id)
+        self.assertEquals(updated_pgroup['name'], peergroup_name)
 
-        # check subentity
-        check_host1 = result.data \
-            ['composite_peeringGroup']['dependencies_host_updated'][0]['host']
+        # check subentities
+        check_unit1 = result.data \
+            ['composite_peeringGroup']['dependencies_unit_updated'][0]['unit']
 
-        self.assertEqual(check_host1['name'], host_name)
-        self.assertEqual(check_host1['description'], host_description)
-        self.assertEqual(check_host1['operational_state']['value'], host_opstate)
+        self.assertEquals(check_unit1['name'], unit1_name)
+        self.assertEquals(check_unit1['description'], unit1_description)
+        self.assertEquals(check_unit1['vlan'], unit1_vlan)
+
+        is_present = False
+        for dep in updated_pgroup['dependencies']:
+            if dep['id'] == unit1_id:
+                is_present = True
+
+        self.assertTrue(is_present)
+
+        check_unit2_deletion = result.data \
+            ['composite_peeringGroup']['dependencies_unit_deleted'][0]['success']
+        self.assertTrue(check_unit2_deletion)
+
+        check_ppartner = result.data \
+            ['composite_peeringGroup']['used_by_peeringpartner_updated']\
+            [0]['peeringPartner']
+
+        self.assertEquals(check_ppartner['name'], ppartner_name)
+
+        is_present = False
+        for dep in updated_pgroup['used_by']:
+            if dep['id'] == ppartner_id:
+                is_present = True
+
+        self.assertTrue(is_present)
+
+
+class SiteTest(Neo4jGraphQLNetworkTest):
+    def test_site(self):
+        data_generator = NetworkFakeDataGenerator()
+
+        ## creation
+
+        # create responsible for
+        site_owner = data_generator.create_site_owner()
+        responsible_for_id = relay.Node.to_global_id(str(site_owner.node_type),
+                                            str(site_owner.handle_id))
+
+        # create a parent site
+        parent_site = data_generator.create_site()
+        parent_site_id = relay.Node.to_global_id(str(parent_site.node_type),
+                                            str(parent_site.handle_id))
+        parent_site_name = "Parent Site"
+        parent_site_country = parent_site.get_node().data.get("country")
+        parent_site_type = parent_site.get_node().data.get("site_type")
+        parent_site_type = '' if not parent_site_type else parent_site_type
+        parent_site_area = parent_site.get_node().data.get("area")
+        parent_site_longitude = parent_site.get_node().data.get("longitude")
+        parent_site_latitude = parent_site.get_node().data.get("latitude")
+        parent_site_owner_id = parent_site.get_node().data.get("owner_id")
+        parent_site_owner_site_name = parent_site.get_node().data.get("owner_site_name")
+        parent_site_url = parent_site.get_node().data.get("url")
+        parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
+
+        # has data room
+        has_room = data_generator.create_room(add_parent=False)
+        has_room_name = has_room.get_node().data.get("name")
+        has_room_floor = has_room.get_node().data.get("floor")
+        has_room.delete()
+
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_id = relay.Node.to_global_id(str(switch.node_type),
+                                            str(switch.handle_id))
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+
+        # generate test data, we'll remove these later
+        # create a site to use its data
+        a_site = data_generator.create_site()
+        site_name = "Test Site"
+        site_country = a_site.get_node().data.get("country")
+        site_type = a_site.get_node().data.get("site_type")
+        site_type = '' if not site_type else site_type
+        site_area = a_site.get_node().data.get("area")
+        site_longitude = a_site.get_node().data.get("longitude")
+        site_latitude = a_site.get_node().data.get("latitude")
+        site_owner_id = a_site.get_node().data.get("owner_id")
+        site_owner_site_name = a_site.get_node().data.get("owner_site_name")
+        site_url = a_site.get_node().data.get("url")
+        site_telenor_subscription_id = a_site.get_node().data.get("telenor_subscription_id")
+
+        # create two address
+        address1 = data_generator.create_address()
+        address2 = data_generator.create_address()
+
+        address1_name = address1.get_node().data.get("name")
+        address1_phone = address1.get_node().data.get("phone")
+        address1_street = address1.get_node().data.get("street")\
+                            .replace('\n', ' ')
+        address1_floor = address1.get_node().data.get("floor")\
+                            .replace('\n', ' ')
+        address1_room = address1.get_node().data.get("room")
+        address1_postal_code = address1.get_node().data.get("postal_code")
+        address1_postal_area = address1.get_node().data.get("postal_area")
+
+        address2_name = address2.get_node().data.get("name")
+        address2_phone = address2.get_node().data.get("phone")
+        address2_street = address2.get_node().data.get("street")\
+                            .replace('\n', ' ')
+        address2_floor = address2.get_node().data.get("floor")\
+                            .replace('\n', ' ')
+        address2_room = address2.get_node().data.get("room")
+        address2_postal_code = address2.get_node().data.get("postal_code")
+        address2_postal_area = address2.get_node().data.get("postal_area")
+
+        main_input = "create_input"
+        main_input_id = ""
+        subinputs_input = "create_subinputs"
+        subinput1_id = ""
+        subinput2_id = ""
+        has_input = "create_has_room"
+        has_input_id = ""
+        main_payload = "created"
+        subpayload = "subcreated"
+        has_payload = "has_room_created"
+
+        query_t = """
+        mutation{{
+          composite_site(input:{{
+            {main_input}:{{
+              {main_input_id}
+              name: "{site_name}"
+              country: "{site_country}"
+              site_type: "{site_type}"
+              area: "{site_area}"
+              longitude: {site_longitude}
+              latitude: {site_latitude}
+              owner_id: "{site_owner_id}"
+              owner_site_name: "{site_owner_site_name}"
+              url: "{site_url}"
+              telenor_subscription_id: "{site_telenor_subscription_id}"
+              relationship_responsible_for: "{responsible_for_id}"
+            }}
+            {subinputs_input}:[
+              {{
+                {subinput1_id}
+                name: "{address1_name}"
+                phone: "{address1_phone}"
+                street: "{address1_street}"
+                floor: "{address1_floor}"
+                room: "{address1_room}"
+                postal_code: "{address1_postal_code}"
+                postal_area: "{address1_postal_area}"
+              }}
+              {{
+                {subinput2_id}
+                name: "{address2_name}"
+                phone: "{address2_phone}"
+                street: "{address2_street}"
+                floor: "{address2_floor}"
+                room: "{address2_room}"
+                postal_code: "{address2_postal_code}"
+                postal_area: "{address2_postal_area}"
+              }}
+            ]
+            update_parent_site: {{
+              id: "{parent_site_id}"
+              name: "{parent_site_name}"
+              country: "{parent_site_country}"
+              site_type: "{parent_site_type}"
+              area: "{parent_site_area}"
+              longitude: {parent_site_longitude}
+              latitude: {parent_site_latitude}
+              owner_id: "{parent_site_owner_id}"
+              owner_site_name: "{parent_site_owner_site_name}"
+              url: "{parent_site_url}"
+              telenor_subscription_id: "{parent_site_telenor_subscription_id}"
+              relationship_responsible_for: "{responsible_for_id}"
+            }}
+            update_located_in_firewall:[
+              {{
+                id: "{firewall_id}"
+                name: "{firewall_name}"
+                operational_state: "{firewall_opstate}"
+              }}
+            ]
+            update_located_in_switch:[
+              {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                operational_state: "{switch_opstate}"
+              }}
+            ]
+            {has_input}:[ # TODO add has_room instead
+              {{
+                {has_input_id}
+                name: "{has_room_name}"
+                floor: "{has_room_floor}"
+              }}
+            ]
+          }}){{
+            {main_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              site{{
+                id
+                name
+                country_code{{
+                  name
+                  value
+                }}
+                country
+                site_type{{
+                  name
+                  value
+                }}
+                area
+                latitude
+                longitude
+                owner_id
+                owner_site_name
+                url
+                telenor_subscription_id
+                responsible_for{{
+                  __typename
+                  id
+                  name
+                }}
+                addresses{{
+                  id
+                  name
+                  phone
+                  street
+                  floor
+                  room
+                  postal_code
+                  postal_area
+                }}
+                parent{{
+                  __typename
+                  ...on Site{{
+                    id
+                    name
+                    country_code{{
+                      name
+                      value
+                    }}
+                    country
+                    site_type{{
+                      name
+                      value
+                    }}
+                    area
+                    latitude
+                    longitude
+                    owner_id
+                    owner_site_name
+                    url
+                    telenor_subscription_id
+                    responsible_for{{
+                      __typename
+                      id
+                      name
+                    }}
+                  }}
+                }}
+                located_in{{
+                  __typename
+                  id
+                  name
+                  ...on Firewall{{
+                    operational_state{{
+                      value
+                    }}
+                    ip_addresses
+                  }}
+                  ...on Switch{{
+                    operational_state{{
+                      value
+                    }}
+                    ip_addresses
+                  }}
+                }}
+                has{{
+                  __typename
+                  id
+                  name
+                  ...on Site{{
+                    country_code{{
+                      name
+                      value
+                    }}
+                    country
+                    site_type{{
+                      name
+                      value
+                    }}
+                    area
+                    latitude
+                    longitude
+                    owner_id
+                    owner_site_name
+                    url
+                    telenor_subscription_id
+                  }}
+                }}
+              }}
+            }}
+            {subpayload}{{
+              errors{{
+                field
+                messages
+              }}
+              address{{
+                id
+                name
+                phone
+                street
+                floor
+                room
+                postal_code
+                postal_area
+              }}
+            }}
+            parent_site_updated{{
+              errors{{
+                field
+                messages
+              }}
+              site{{
+                id
+                name
+                country_code{{
+                  name
+                  value
+                }}
+                country
+                site_type{{
+                  name
+                  value
+                }}
+                area
+                latitude
+                longitude
+                owner_id
+                owner_site_name
+                url
+                telenor_subscription_id
+              }}
+            }}
+            located_in_firewall_updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+            located_in_switch_updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+            {has_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              room{{
+                id
+                name
+                floor
+              }}
+            }}
+          }}
+        }}
+        """
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            subinputs_input=subinputs_input, subinput1_id=subinput1_id,
+            subinput2_id=subinput2_id,
+            has_input=has_input, has_input_id=has_input_id,
+            main_payload=main_payload, subpayload=subpayload,
+            has_payload=has_payload,
+            site_name=site_name, site_country=site_country,
+            site_type=site_type, site_area=site_area,
+            site_longitude=site_longitude, site_latitude=site_latitude,
+            site_owner_id=site_owner_id,
+            site_owner_site_name=site_owner_site_name,
+            site_url=site_url,
+            site_telenor_subscription_id=site_telenor_subscription_id,
+            responsible_for_id=responsible_for_id,
+            address1_name=address1_name, address1_phone=address1_phone,
+            address1_street=address1_street, address1_floor=address1_floor,
+            address1_room=address1_room,
+            address1_postal_code=address1_postal_code,
+            address1_postal_area=address1_postal_area,
+            address2_name=address2_name, address2_phone=address2_phone,
+            address2_street=address2_street, address2_floor=address2_floor,
+            address2_room=address2_room,
+            address2_postal_code=address2_postal_code,
+            address2_postal_area=address2_postal_area,
+            parent_site_id=parent_site_id,
+            parent_site_name=parent_site_name, parent_site_country=parent_site_country,
+            parent_site_type=parent_site_type, parent_site_area=parent_site_area,
+            parent_site_longitude=parent_site_longitude, parent_site_latitude=parent_site_latitude,
+            parent_site_owner_id=parent_site_owner_id,
+            parent_site_owner_site_name=parent_site_owner_site_name,
+            parent_site_url=parent_site_url,
+            parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
+            has_room_name=has_room_name, has_room_floor=has_room_floor,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+        )
+
+        # delete generated nodes
+        a_site.delete()
+        address1.delete()
+        address2.delete()
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_site']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            subpayload: None,
+            'parent_site_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+            has_payload: None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], \
+                            pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], \
+                        pformat(submutations[k], indent=1)
+
+
+        # check site data
+        check_site = all_data[main_payload]['site']
+        site_id = check_site['id']
+
+        self.assertEquals(check_site['name'], site_name)
+        self.assertEquals(check_site['country_code']['name'], site_country)
+        if site_type:
+            self.assertEquals(check_site['site_type']['value'], site_type)
+        self.assertEquals(check_site['area'], site_area)
+        self.assertEquals(check_site['latitude'], site_latitude)
+        self.assertEquals(check_site['longitude'], site_longitude)
+        self.assertEquals(check_site['owner_id'], site_owner_id)
+        self.assertEquals(check_site['owner_site_name'], site_owner_site_name)
+        self.assertEquals(check_site['url'], site_url)
+        self.assertEquals(check_site['telenor_subscription_id'], \
+            site_telenor_subscription_id)
+
+        # check address
+        check_address1 = all_data[subpayload][0]['address']
+        address1_id = check_address1['id']
+
+        self.assertEquals(check_address1['name'], address1_name)
+        self.assertEquals(check_address1['phone'], address1_phone)
+        self.assertEquals(check_address1['street'], address1_street)
+        self.assertEquals(check_address1['floor'], address1_floor)
+        self.assertEquals(check_address1['room'], address1_room)
+        self.assertEquals(check_address1['postal_code'], address1_postal_code)
+        self.assertEquals(check_address1['postal_area'], address1_postal_area)
+
+        self.assertEquals(check_site['addresses'][0]['id'], address1_id)
+
+        check_address2 = all_data[subpayload][1]['address']
+        address2_id = check_address2['id']
+
+        self.assertEquals(check_address2['name'], address2_name)
+        self.assertEquals(check_address2['phone'], address2_phone)
+        self.assertEquals(check_address2['street'], address2_street)
+        self.assertEquals(check_address2['floor'], address2_floor)
+        self.assertEquals(check_address2['room'], address2_room)
+        self.assertEquals(check_address2['postal_code'], address2_postal_code)
+        self.assertEquals(check_address2['postal_area'], address2_postal_area)
+
+        self.assertEquals(check_site['addresses'][1]['id'], address2_id)
+
+        # check parent site data
+        check_parent_site = all_data\
+                                ['parent_site_updated']['site']
+
+        self.assertEquals(check_parent_site['id'], parent_site_id)
+        self.assertEquals(check_parent_site['name'], parent_site_name)
+        self.assertEquals(check_parent_site['country_code']['name'], parent_site_country)
+        if parent_site_type:
+            self.assertEquals(check_parent_site['site_type']['value'], parent_site_type)
+        self.assertEquals(check_parent_site['area'], parent_site_area)
+        self.assertEquals(check_parent_site['latitude'], parent_site_latitude)
+        self.assertEquals(check_parent_site['longitude'], parent_site_longitude)
+        self.assertEquals(check_parent_site['owner_id'], parent_site_owner_id)
+        self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
+        self.assertEquals(check_parent_site['url'], parent_site_url)
+        self.assertEquals(check_parent_site['telenor_subscription_id'], \
+            parent_site_telenor_subscription_id)
+
+
+        # check firewall
+        check_firewall = all_data\
+                            ['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_site['located_in'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data\
+                            ['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_site['located_in'][1]['id'], switch_id)
+
+        # check has room
+        check_has_room = all_data[has_payload][0]['room']
+        has_room_id = check_has_room['id']
+
+        self.assertEquals(check_has_room['name'], has_room_name)
+        self.assertEquals(check_has_room['floor'], has_room_floor)
+        self.assertEquals(check_site['has'][0]['id'], has_room_id)
+
+        ## edition
+        # create another responsible for
+        site_owner = data_generator.create_site_owner()
+        responsible_for_id = relay.Node.to_global_id(str(site_owner.node_type),
+                                            str(site_owner.handle_id))
+
+        # create another parent site
+        parent_site = data_generator.create_site()
+        parent_site_id = relay.Node.to_global_id(str(parent_site.node_type),
+                                            str(parent_site.handle_id))
+        parent_site_name = "Parent Site"
+        parent_site_country = parent_site.get_node().data.get("country")
+        parent_site_type = parent_site.get_node().data.get("site_type")
+        parent_site_type = '' if not parent_site_type else parent_site_type
+        parent_site_area = parent_site.get_node().data.get("area")
+        parent_site_longitude = parent_site.get_node().data.get("longitude")
+        parent_site_latitude = parent_site.get_node().data.get("latitude")
+        parent_site_owner_id = parent_site.get_node().data.get("owner_id")
+        parent_site_owner_site_name = parent_site.get_node().data.get("owner_site_name")
+        parent_site_url = parent_site.get_node().data.get("url")
+        parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
+
+        # create room node and delete so we can update the has room data
+        has_room = data_generator.create_room(add_parent=False)
+        has_room_name = has_room.get_node().data.get("name")
+        has_room_floor = has_room.get_node().data.get("floor")
+        has_room.delete()
+
+        # create firewall and delete it to get it's generated data
+        firewall = data_generator.create_firewall()
+
+        firewall_name = firewall.get_node().data.get("name")
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+        firewall.delete()
+
+        # create another and delete it to get it's generated data
+        switch = data_generator.create_switch()
+
+        switch_name = switch.get_node().data.get("name")
+        switch_opstate = switch.get_node().data.get("operational_state")
+        switch.delete()
+
+        # generate test data, we'll remove these later
+        # create a site to use its data
+        a_site = data_generator.create_site()
+        site_name = "New test Site"
+        site_country = a_site.get_node().data.get("country")
+        site_type = a_site.get_node().data.get("site_type")
+        site_type = '' if not site_type else site_type
+        site_area = a_site.get_node().data.get("area")
+        site_longitude = a_site.get_node().data.get("longitude")
+        site_latitude = a_site.get_node().data.get("latitude")
+        site_owner_id = a_site.get_node().data.get("owner_id")
+        site_owner_site_name = a_site.get_node().data.get("owner_site_name")
+        site_url = a_site.get_node().data.get("url")
+        site_telenor_subscription_id = a_site.get_node().data.get("telenor_subscription_id")
+
+        # create two address and get its data
+        address1 = data_generator.create_address()
+        address2 = data_generator.create_address()
+
+        address1_name = address1.get_node().data.get("name")
+        address1_phone = address1.get_node().data.get("phone")
+        address1_street = address1.get_node().data.get("street")\
+                            .replace('\n', ' ')
+        address1_floor = address1.get_node().data.get("floor")\
+                            .replace('\n', ' ')
+        address1_room = address1.get_node().data.get("room")
+        address1_postal_code = address1.get_node().data.get("postal_code")
+        address1_postal_area = address1.get_node().data.get("postal_area")
+
+        address2_name = address2.get_node().data.get("name")
+        address2_phone = address2.get_node().data.get("phone")
+        address2_street = address2.get_node().data.get("street")\
+                            .replace('\n', ' ')
+        address2_floor = address2.get_node().data.get("floor")\
+                            .replace('\n', ' ')
+        address2_room = address2.get_node().data.get("room")
+        address2_postal_code = address2.get_node().data.get("postal_code")
+        address2_postal_area = address2.get_node().data.get("postal_area")
+
+        a_site.delete()
+        address1.delete()
+        address2.delete()
+
+        main_input = 'update_input'
+        main_input_id = 'id: "{}"'.format(site_id)
+        subinputs_input = "update_subinputs"
+        subinput1_id = 'id: "{}"'.format(address1_id)
+        subinput2_id = 'id: "{}"'.format(address2_id)
+        has_input = 'update_has_room'
+        has_input_id = 'id: "{}"'.format(has_room_id)
+        main_payload = "updated"
+        subpayload = "subupdated"
+        has_payload = "has_room_updated"
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            subinputs_input=subinputs_input, subinput1_id=subinput1_id,
+            subinput2_id=subinput2_id,
+            has_input=has_input, has_input_id=has_input_id,
+            main_payload=main_payload, subpayload=subpayload,
+            has_payload=has_payload,
+            site_name=site_name, site_country=site_country,
+            site_type=site_type, site_area=site_area,
+            site_longitude=site_longitude, site_latitude=site_latitude,
+            site_owner_id=site_owner_id,
+            site_owner_site_name=site_owner_site_name,
+            site_url=site_url,
+            site_telenor_subscription_id=site_telenor_subscription_id,
+            responsible_for_id=responsible_for_id,
+            address1_name=address1_name, address1_phone=address1_phone,
+            address1_street=address1_street, address1_floor=address1_floor,
+            address1_room=address1_room,
+            address1_postal_code=address1_postal_code,
+            address1_postal_area=address1_postal_area,
+            address2_name=address2_name, address2_phone=address2_phone,
+            address2_street=address2_street, address2_floor=address2_floor,
+            address2_room=address2_room,
+            address2_postal_code=address2_postal_code,
+            address2_postal_area=address2_postal_area,
+            parent_site_id=parent_site_id,
+            parent_site_name=parent_site_name, parent_site_country=parent_site_country,
+            parent_site_type=parent_site_type, parent_site_area=parent_site_area,
+            parent_site_longitude=parent_site_longitude, parent_site_latitude=parent_site_latitude,
+            parent_site_owner_id=parent_site_owner_id,
+            parent_site_owner_site_name=parent_site_owner_site_name,
+            parent_site_url=parent_site_url,
+            parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
+            has_room_name=has_room_name, has_room_floor=has_room_floor,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_site']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            subpayload: None,
+            'parent_site_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+            has_payload: None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check site data
+        check_site = all_data[main_payload]['site']
+        site_id = check_site['id']
+
+        self.assertEquals(check_site['name'], site_name)
+        self.assertEquals(check_site['country_code']['name'], site_country)
+        if site_type:
+            self.assertEquals(check_site['site_type']['value'], site_type)
+        self.assertEquals(check_site['area'], site_area)
+        self.assertEquals(check_site['latitude'], site_latitude)
+        self.assertEquals(check_site['longitude'], site_longitude)
+        self.assertEquals(check_site['owner_id'], site_owner_id)
+        self.assertEquals(check_site['owner_site_name'], site_owner_site_name)
+        self.assertEquals(check_site['url'], site_url)
+        self.assertEquals(check_site['telenor_subscription_id'], \
+            site_telenor_subscription_id)
+
+        # check address
+        check_address1 = all_data[subpayload][0]['address']
+        address1_id = check_address1['id']
+
+        self.assertEquals(check_address1['name'], address1_name)
+        self.assertEquals(check_address1['phone'], address1_phone)
+        self.assertEquals(check_address1['street'], address1_street)
+        self.assertEquals(check_address1['floor'], address1_floor)
+        self.assertEquals(check_address1['room'], address1_room)
+        self.assertEquals(check_address1['postal_code'], address1_postal_code)
+        self.assertEquals(check_address1['postal_area'], address1_postal_area)
+
+        self.assertEquals(check_site['addresses'][0]['id'], address1_id)
+
+        check_address2 = all_data[subpayload][1]['address']
+        address2_id = check_address2['id']
+
+        self.assertEquals(check_address2['name'], address2_name)
+        self.assertEquals(check_address2['phone'], address2_phone)
+        self.assertEquals(check_address2['street'], address2_street)
+        self.assertEquals(check_address2['floor'], address2_floor)
+        self.assertEquals(check_address2['room'], address2_room)
+        self.assertEquals(check_address2['postal_code'], address2_postal_code)
+        self.assertEquals(check_address2['postal_area'], address2_postal_area)
+
+        self.assertEquals(check_site['addresses'][1]['id'], address2_id)
+
+        # check parent site data
+        check_parent_site = all_data['parent_site_updated']['site']
+
+        self.assertEquals(check_parent_site['id'], parent_site_id)
+        self.assertEquals(check_parent_site['name'], parent_site_name)
+        self.assertEquals(check_parent_site['country_code']['name'], parent_site_country)
+        if parent_site_type:
+            self.assertEquals(check_parent_site['site_type']['value'], parent_site_type)
+        self.assertEquals(check_parent_site['area'], parent_site_area)
+        self.assertEquals(check_parent_site['latitude'], parent_site_latitude)
+        self.assertEquals(check_parent_site['longitude'], parent_site_longitude)
+        self.assertEquals(check_parent_site['owner_id'], parent_site_owner_id)
+        self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
+        self.assertEquals(check_parent_site['url'], parent_site_url)
+        self.assertEquals(check_parent_site['telenor_subscription_id'], \
+            parent_site_telenor_subscription_id)
+
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_site['located_in'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_site['located_in'][1]['id'], switch_id)
+
+        # check has room
+        check_has_room = all_data[has_payload][0]['room']
+
+        self.assertEquals(check_has_room['name'], has_room_name)
+        self.assertEquals(check_has_room['floor'], has_room_floor)
+        self.assertEquals(check_site['has'][0]['id'], has_room_id)
+
+
+class RoomTest(Neo4jGraphQLNetworkTest):
+    def test_room(self):
+        data_generator = NetworkFakeDataGenerator()
+
+        ## creation
+        # data room
+        a_room = data_generator.create_room(add_parent=False)
+        room_name = a_room.get_node().data.get("name")
+        room_floor = a_room.get_node().data.get("floor")
+        a_room.delete()
+
+        # has data rack
+        has_rack = data_generator.create_rack(add_parent=False)
+        has_rack_name = has_rack.get_node().data.get("name")
+        has_rack_height = has_rack.get_node().data.get("height")
+        has_rack_depth = has_rack.get_node().data.get("depth")
+        has_rack_width = has_rack.get_node().data.get("width")
+        has_rack_rack_units = has_rack.get_node().data.get("rack_units")
+        has_rack.delete()
+
+        # create responsible for
+        site_owner = data_generator.create_site_owner()
+        responsible_for_id = relay.Node.to_global_id(str(site_owner.node_type),
+                                            str(site_owner.handle_id))
+
+        # create a parent site
+        parent_site = data_generator.create_site()
+        parent_site_id = relay.Node.to_global_id(str(parent_site.node_type),
+                                            str(parent_site.handle_id))
+        parent_site_name = "Parent Site"
+        parent_site_country = parent_site.get_node().data.get("country")
+        parent_site_type = parent_site.get_node().data.get("site_type")
+        parent_site_type = '' if not parent_site_type else parent_site_type
+        parent_site_area = parent_site.get_node().data.get("area")
+        parent_site_longitude = parent_site.get_node().data.get("longitude")
+        parent_site_latitude = parent_site.get_node().data.get("latitude")
+        parent_site_owner_id = parent_site.get_node().data.get("owner_id")
+        parent_site_owner_site_name = parent_site.get_node().data.get("owner_site_name")
+        parent_site_url = parent_site.get_node().data.get("url")
+        parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
+
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_id = relay.Node.to_global_id(str(switch.node_type),
+                                            str(switch.handle_id))
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+
+        main_input = "create_input"
+        main_input_id = ""
+        has_input = "create_has_rack"
+        has_input_id = ""
+        main_payload = "created"
+        has_payload = "has_rack_created"
+
+        query_t = """
+        mutation{{
+          composite_room(input:{{
+            {main_input}: {{
+              {main_input_id}
+              name: "{room_name}"
+              floor: "{room_floor}"
+            }}
+            update_parent_site: {{
+              id: "{parent_site_id}"
+              name: "{parent_site_name}"
+              country: "{parent_site_country}"
+              site_type: "{parent_site_type}"
+              area: "{parent_site_area}"
+              longitude: {parent_site_longitude}
+              latitude: {parent_site_latitude}
+              owner_id: "{parent_site_owner_id}"
+              owner_site_name: "{parent_site_owner_site_name}"
+              url: "{parent_site_url}"
+              telenor_subscription_id: "{parent_site_telenor_subscription_id}"
+              relationship_responsible_for: "{responsible_for_id}"
+            }}
+            update_located_in_firewall:[
+              {{
+                id: "{firewall_id}"
+                name: "{firewall_name}"
+                operational_state: "{firewall_opstate}"
+              }}
+            ]
+            update_located_in_switch:[
+              {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                operational_state: "{switch_opstate}"
+              }}
+            ]
+            {has_input}:{{
+              {has_input_id}
+              name: "{has_rack_name}"
+              height: {has_rack_height}
+              depth: {has_rack_depth}
+              width: {has_rack_width}
+              rack_units: {has_rack_rack_units}
+            }}
+          }}){{
+            {main_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              room{{
+                id
+                name
+                floor
+                parent{{
+                  ...on Site{{
+                    id
+                    name
+                    country_code{{
+                      name
+                      value
+                    }}
+                    country
+                    site_type{{
+                      name
+                      value
+                    }}
+                    area
+                    latitude
+                    longitude
+                    owner_id
+                    owner_site_name
+                    url
+                    telenor_subscription_id
+                    responsible_for{{
+                      __typename
+                      id
+                      name
+                    }}
+                  }}
+                }}
+                located_in{{
+                  __typename
+                  id
+                  name
+                  ...on Firewall{{
+                    operational_state{{
+                      value
+                    }}
+                    ip_addresses
+                  }}
+                  ...on Switch{{
+                    operational_state{{
+                      value
+                    }}
+                    ip_addresses
+                  }}
+                }}
+                has{{
+                  __typename
+                  id
+                  name
+                  ...on Rack{{
+                    height
+                    depth
+                    width
+                    rack_units
+                  }}
+                }}
+              }}
+            }}
+            parent_site_updated{{
+              errors{{
+                field
+                messages
+              }}
+              site{{
+                id
+                name
+                country_code{{
+                  name
+                  value
+                }}
+                country
+                site_type{{
+                  name
+                  value
+                }}
+                area
+                latitude
+                longitude
+                owner_id
+                owner_site_name
+                url
+                telenor_subscription_id
+              }}
+            }}
+            located_in_firewall_updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+            located_in_switch_updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+              }}
+            }}
+            {has_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              rack{{
+                id
+                name
+                height
+                depth
+                width
+                rack_units
+              }}
+            }}
+          }}
+        }}
+        """
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            has_input=has_input, has_input_id=has_input_id,
+            main_payload=main_payload, has_payload=has_payload,
+            room_name=room_name, room_floor=room_floor,
+            has_rack_name=has_rack_name, has_rack_height=has_rack_height,
+            has_rack_depth=has_rack_depth, has_rack_width=has_rack_width,
+            has_rack_rack_units=has_rack_rack_units,
+            parent_site_id=parent_site_id,
+            parent_site_name=parent_site_name, parent_site_country=parent_site_country,
+            parent_site_type=parent_site_type, parent_site_area=parent_site_area,
+            parent_site_longitude=parent_site_longitude, parent_site_latitude=parent_site_latitude,
+            parent_site_owner_id=parent_site_owner_id,
+            parent_site_owner_site_name=parent_site_owner_site_name,
+            parent_site_url=parent_site_url,
+            parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
+            responsible_for_id=responsible_for_id,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_room']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'parent_site_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+            has_payload: None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check room data
+        check_room = all_data[main_payload]['room']
+        room_id = check_room['id']
+
+        self.assertEquals(check_room['name'], room_name)
+        self.assertEquals(check_room['floor'], room_floor)
+
+        # check parent site data
+        check_parent_site = all_data['parent_site_updated']['site']
+
+        self.assertEquals(check_parent_site['id'], parent_site_id)
+        self.assertEquals(check_parent_site['name'], parent_site_name)
+        self.assertEquals(check_parent_site['country_code']['name'], parent_site_country)
+        if parent_site_type:
+            self.assertEquals(check_parent_site['site_type']['value'], parent_site_type)
+        self.assertEquals(check_parent_site['area'], parent_site_area)
+        self.assertEquals(check_parent_site['latitude'], parent_site_latitude)
+        self.assertEquals(check_parent_site['longitude'], parent_site_longitude)
+        self.assertEquals(check_parent_site['owner_id'], parent_site_owner_id)
+        self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
+        self.assertEquals(check_parent_site['url'], parent_site_url)
+        self.assertEquals(check_parent_site['telenor_subscription_id'], \
+            parent_site_telenor_subscription_id)
+
+        self.assertEquals(check_room['parent']['id'], parent_site_id)
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_room['located_in'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_room['located_in'][1]['id'], switch_id)
+
+        # check has rack
+        check_has_rack = all_data[has_payload][0]['rack']
+        has_rack_id = check_has_rack['id']
+
+        self.assertEquals(check_has_rack['name'], has_rack_name)
+        self.assertEquals(check_has_rack['height'], int(has_rack_height))
+        self.assertEquals(check_has_rack['depth'], int(has_rack_depth))
+        self.assertEquals(check_has_rack['width'], int(has_rack_width))
+        self.assertEquals(check_has_rack['rack_units'], int(has_rack_rack_units))
+
+        self.assertEquals(check_room['has'][0]['id'], has_rack_id)
+
+        ## edition
+        # data room
+        a_room = data_generator.create_room(add_parent=False)
+        room_name = a_room.get_node().data.get("name")
+        room_floor = a_room.get_node().data.get("floor")
+        a_room.delete()
+
+        # has data rack
+        has_rack = data_generator.create_rack(add_parent=False)
+        has_rack_name = has_rack.get_node().data.get("name")
+        has_rack_height = has_rack.get_node().data.get("height")
+        has_rack_depth = has_rack.get_node().data.get("depth")
+        has_rack_width = has_rack.get_node().data.get("width")
+        has_rack_rack_units = has_rack.get_node().data.get("rack_units")
+        has_rack.delete()
+
+        # create a parent site
+        parent_site = data_generator.create_site()
+        parent_site_name = "New Parent Site"
+        parent_site_country = parent_site.get_node().data.get("country")
+        parent_site_type = parent_site.get_node().data.get("site_type")
+        parent_site_type = '' if not parent_site_type else parent_site_type
+        parent_site_area = parent_site.get_node().data.get("area")
+        parent_site_longitude = parent_site.get_node().data.get("longitude")
+        parent_site_latitude = parent_site.get_node().data.get("latitude")
+        parent_site_owner_id = parent_site.get_node().data.get("owner_id")
+        parent_site_owner_site_name = parent_site.get_node().data.get("owner_site_name")
+        parent_site_url = parent_site.get_node().data.get("url")
+        parent_site_telenor_subscription_id = parent_site.get_node().data.get("telenor_subscription_id")
+        parent_site.delete()
+
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+        firewall.delete()
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+        switch.delete()
+
+        main_input = 'update_input'
+        main_input_id = 'id: "{}"'.format(room_id)
+        has_input = 'update_has_rack'
+        has_input_id = 'id: "{}"'.format(has_rack_id)
+        main_payload = 'updated'
+        has_payload = 'has_rack_updated'
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            has_input=has_input, has_input_id=has_input_id,
+            main_payload=main_payload, has_payload=has_payload,
+            room_name=room_name, room_floor=room_floor,
+            has_rack_name=has_rack_name, has_rack_height=has_rack_height,
+            has_rack_depth=has_rack_depth, has_rack_width=has_rack_width,
+            has_rack_rack_units=has_rack_rack_units,
+            parent_site_id=parent_site_id,
+            parent_site_name=parent_site_name, parent_site_country=parent_site_country,
+            parent_site_type=parent_site_type, parent_site_area=parent_site_area,
+            parent_site_longitude=parent_site_longitude, parent_site_latitude=parent_site_latitude,
+            parent_site_owner_id=parent_site_owner_id,
+            parent_site_owner_site_name=parent_site_owner_site_name,
+            parent_site_url=parent_site_url,
+            parent_site_telenor_subscription_id=parent_site_telenor_subscription_id,
+            responsible_for_id=responsible_for_id,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_room']
+        updated_errors = all_data[main_payload]['errors']
+        assert not updated_errors, pformat(updated_errors, indent=1)
+
+        submutations = {
+            'parent_site_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+            has_payload: None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check room data
+        check_room = all_data[main_payload]['room']
+        self.assertEquals(check_room['name'], room_name)
+        self.assertEquals(check_room['floor'], room_floor)
+
+        # check parent site data
+        check_parent_site = all_data['parent_site_updated']['site']
+
+        self.assertEquals(check_parent_site['id'], parent_site_id)
+        self.assertEquals(check_parent_site['name'], parent_site_name)
+        self.assertEquals(check_parent_site['country_code']['name'], parent_site_country)
+        if parent_site_type:
+            self.assertEquals(check_parent_site['site_type']['value'], parent_site_type)
+        self.assertEquals(check_parent_site['area'], parent_site_area)
+        self.assertEquals(check_parent_site['latitude'], parent_site_latitude)
+        self.assertEquals(check_parent_site['longitude'], parent_site_longitude)
+        self.assertEquals(check_parent_site['owner_id'], parent_site_owner_id)
+        self.assertEquals(check_parent_site['owner_site_name'], parent_site_owner_site_name)
+        self.assertEquals(check_parent_site['url'], parent_site_url)
+        self.assertEquals(check_parent_site['telenor_subscription_id'], \
+            parent_site_telenor_subscription_id)
+
+        self.assertEquals(check_room['parent']['id'], parent_site_id)
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_room['located_in'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_room['located_in'][1]['id'], switch_id)
+
+        # check has rack
+        check_has_rack = all_data[has_payload][0]['rack']
+        has_rack_id = check_has_rack['id']
+
+        self.assertEquals(check_has_rack['name'], has_rack_name)
+        self.assertEquals(check_has_rack['height'], int(has_rack_height))
+        self.assertEquals(check_has_rack['depth'], int(has_rack_depth))
+        self.assertEquals(check_has_rack['width'], int(has_rack_width))
+        self.assertEquals(check_has_rack['rack_units'], int(has_rack_rack_units))
+
+        self.assertEquals(check_room['has'][0]['id'], has_rack_id)
+
+
+class RackTest(Neo4jGraphQLNetworkTest):
+    def test_rack(self):
+        data_generator = NetworkFakeDataGenerator()
+
+        ## creation
+        # data rack
+        a_rack = data_generator.create_rack(add_parent=False)
+        rack_name = a_rack.get_node().data.get("name")
+        rack_height = a_rack.get_node().data.get("height")
+        rack_depth = a_rack.get_node().data.get("depth")
+        rack_width = a_rack.get_node().data.get("width")
+        rack_rack_units = a_rack.get_node().data.get("rack_units")
+        a_rack.delete()
+
+        # create a parent room
+        parent_room = data_generator.create_room(add_parent=False)
+        parent_room_id = relay.Node.to_global_id(str(parent_room.node_type),
+                                                str(parent_room.handle_id))
+        parent_room_name = parent_room.get_node().data.get("name")
+        parent_room_floor = parent_room.get_node().data.get("floor")
+
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_id = relay.Node.to_global_id(str(switch.node_type),
+                                            str(switch.handle_id))
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+
+        main_input = "create_input"
+        main_input_id = ""
+        main_payload = 'created'
+
+        firewall_rackback = 'true'
+        switch_rackback = 'false'
+
+        query_t = """
+        mutation{{
+          composite_rack(input:{{
+            {main_input}:{{
+              {main_input_id}
+              name: "{rack_name}"
+              height: {rack_height}
+              depth: {rack_depth}
+              width: {rack_width}
+              rack_units: {rack_rack_units}
+            }}
+            update_parent_room:{{
+              id: "{parent_room_id}"
+              name: "{parent_room_name}"
+              floor: "{parent_room_floor}"
+            }}
+            update_located_in_firewall:[
+              {{
+                id: "{firewall_id}"
+                name: "{firewall_name}"
+                operational_state: "{firewall_opstate}"
+                rack_back: {firewall_rackback}
+              }}
+            ]
+            update_located_in_switch:[
+              {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                operational_state: "{switch_opstate}"
+                rack_back: {switch_rackback}
+              }}
+            ]
+          }}){{
+            {main_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              rack{{
+                id
+                name
+                height
+                depth
+                width
+                rack_units
+                parent{{
+                  ...on Room{{
+                    id
+                    name
+                    floor
+                  }}
+                }}
+                front{{
+                  ...on Switch{{
+                    id
+                    name
+                    operational_state{{
+                      value
+                    }}
+                  }}
+                  ...on Firewall{{
+                    id
+                    name
+                    operational_state{{
+                      value
+                    }}
+                  }}
+                }}
+                back{{
+                  ...on Switch{{
+                    id
+                    name
+                    operational_state{{
+                      value
+                    }}
+                  }}
+                  ...on Firewall{{
+                    id
+                    name
+                    operational_state{{
+                      value
+                    }}
+                  }}
+                }}
+              }}
+            }}
+            located_in_firewall_updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                rack_back
+              }}
+            }}
+            located_in_switch_updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                rack_back
+              }}
+            }}
+            parent_room_updated{{
+              errors{{
+                field
+                messages
+              }}
+              room{{
+                id
+                name
+                floor
+              }}
+            }}
+          }}
+        }}
+        """
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            main_payload=main_payload,
+            rack_name=rack_name, rack_height=rack_height, rack_depth=rack_depth,
+            rack_width=rack_width, rack_rack_units=rack_rack_units,
+            parent_room_id=parent_room_id, parent_room_name=parent_room_name,
+            parent_room_floor=parent_room_floor,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            firewall_rackback=firewall_rackback,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+            switch_rackback=switch_rackback,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_rack']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'parent_room_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check rack data
+        check_rack = all_data[main_payload]['rack']
+        rack_id = check_rack['id']
+
+        self.assertEquals(check_rack['name'], rack_name)
+        self.assertEquals(check_rack['height'], int(rack_height))
+        self.assertEquals(check_rack['depth'], int(rack_depth))
+        self.assertEquals(check_rack['width'], int(rack_width))
+        self.assertEquals(check_rack['rack_units'], int(rack_rack_units))
+
+        # check parent room data
+        check_parent_room = all_data['parent_room_updated']['room']
+
+        self.assertEquals(check_parent_room['id'], parent_room_id)
+        self.assertEquals(check_parent_room['name'], parent_room_name)
+        self.assertEquals(check_parent_room['floor'], parent_room_floor)
+
+        self.assertEquals(check_rack['parent']['id'], parent_room_id)
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_rack['back'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_rack['front'][0]['id'], switch_id)
+
+        ## update
+        # data rack
+        a_rack = data_generator.create_rack(add_parent=False)
+        rack_name = a_rack.get_node().data.get("name")
+        rack_height = a_rack.get_node().data.get("height")
+        rack_depth = a_rack.get_node().data.get("depth")
+        rack_width = a_rack.get_node().data.get("width")
+        rack_rack_units = a_rack.get_node().data.get("rack_units")
+        a_rack.delete()
+
+        # create a parent room
+        parent_room = data_generator.create_room(add_parent=False)
+        parent_room_id = relay.Node.to_global_id(str(parent_room.node_type),
+                                                str(parent_room.handle_id))
+        parent_room_name = parent_room.get_node().data.get("name")
+        parent_room_floor = parent_room.get_node().data.get("floor")
+
+        # firewall and switch back reversed
+        firewall_rackback = 'false'
+        switch_rackback = 'true'
+
+        main_input = "update_input"
+        main_input_id = 'id: "{}"'.format(rack_id)
+        main_payload = 'updated'
+
+        query = query_t.format(
+            main_input=main_input, main_input_id=main_input_id,
+            main_payload=main_payload,
+            rack_name=rack_name, rack_height=rack_height, rack_depth=rack_depth,
+            rack_width=rack_width, rack_rack_units=rack_rack_units,
+            parent_room_id=parent_room_id, parent_room_name=parent_room_name,
+            parent_room_floor=parent_room_floor,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            firewall_rackback=firewall_rackback,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+            switch_rackback=switch_rackback,
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_rack']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'parent_room_updated': None,
+            'located_in_firewall_updated': None,
+            'located_in_switch_updated': None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check rack data
+        check_rack = all_data[main_payload]['rack']
+
+        self.assertEquals(check_rack['name'], rack_name)
+        self.assertEquals(check_rack['height'], int(rack_height))
+        self.assertEquals(check_rack['depth'], int(rack_depth))
+        self.assertEquals(check_rack['width'], int(rack_width))
+        self.assertEquals(check_rack['rack_units'], int(rack_rack_units))
+
+        # check parent room data
+        check_parent_room = all_data['parent_room_updated']['room']
+
+        self.assertEquals(check_parent_room['id'], parent_room_id)
+        self.assertEquals(check_parent_room['name'], parent_room_name)
+        self.assertEquals(check_parent_room['floor'], parent_room_floor)
+
+        self.assertEquals(check_rack['parent']['id'], parent_room_id)
+
+        # check firewall
+        check_firewall = all_data['located_in_firewall_updated'][0]['firewall']
+
+        self.assertEquals(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEquals(check_rack['front'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['located_in_switch_updated'][0]['switch']
+
+        self.assertEquals(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEquals(check_rack['back'][0]['id'], switch_id)
+
+
+class ServiceTest(Neo4jGraphQLNetworkTest):
+    def test_service(self):
+        data_generator = NetworkFakeDataGenerator()
+
+        ## creation
+        # data service
+        a_service = data_generator.create_service()
+        srv_name = a_service.get_node().data.get("name")
+        srv_service_type = a_service.get_node().data\
+            .get("service_type")
+        srv_operational_state = a_service.get_node().data\
+            .get("operational_state")
+        srv_description = a_service.get_node().data.get("description")
+        srv_project_end_date = a_service.get_node().data\
+            .get("project_end_date", None)
+        srv_decommissioned_date = a_service.get_node().data\
+            .get("decommissioned_date", None)
+
+        # get provider
+        incoming = a_service.get_node()._incoming()
+        provider = NodeHandle.objects.get(handle_id=\
+                        incoming['Provides'][0]['node'].handle_id)
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # get support and responsible groups
+        group_s = NodeHandle.objects.get(handle_id=\
+                        incoming['Supports'][0]['node'].handle_id)
+        group_r = NodeHandle.objects.get(handle_id=\
+                        incoming['Takes_responsibility'][0]['node'].handle_id)
+
+        group_support_id = relay.Node.to_global_id(str(group_s.node_type),
+                                            str(group_s.handle_id))
+        group_responsible_id = relay.Node.to_global_id(str(group_r.node_type),
+                                            str(group_r.handle_id))
+
+        # dependencies
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_id = relay.Node.to_global_id(str(firewall.node_type),
+                                            str(firewall.handle_id))
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_id = relay.Node.to_global_id(str(switch.node_type),
+                                            str(switch.handle_id))
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+
+        # users
+        # create customer
+        customer = data_generator.create_customer()
+        customer_id = relay.Node.to_global_id(str(customer.node_type),
+                                            str(customer.handle_id))
+        customer_name = customer.get_node().data.get("name")
+        customer_url = customer.get_node().data.get("url")
+        customer_description = customer.get_node().data.get("description")
+
+        # create end user
+        enduser = data_generator.create_end_user()
+        enduser_id = relay.Node.to_global_id(str(enduser.node_type.type\
+                                                    .replace(' ', '')),
+                                            str(enduser.handle_id))
+        enduser_name = enduser.get_node().data.get("name")
+        enduser_url = enduser.get_node().data.get("url")
+        enduser_description = enduser.get_node().data.get("description")
+
+        main_input = "create_input"
+        main_input_id = ""
+        main_payload = 'created'
+
+        if srv_project_end_date:
+            srv_project_end_date = srv_project_end_date.split("T")[0]
+
+        if srv_decommissioned_date:
+            srv_decommissioned_date = srv_decommissioned_date.split("T")[0]
+
+        project_end_date = "" if not srv_project_end_date else \
+                    'project_end_date: "{}"'.format(srv_project_end_date)
+        decommissioned_date = "" if not srv_decommissioned_date else \
+                    'decommissioned_date: "{}"'.format(srv_decommissioned_date)
+
+        query_t = """
+        mutation{{
+          composite_service(input:{{
+            {main_input}:{{
+              {main_input_id}
+              name: "{srv_name}"
+              service_type: "{srv_service_type}"
+              operational_state: "{srv_operational_state}"
+              description: "{srv_description}"
+              relationship_provider: "{provider_id}"
+              {project_end_date}
+              {decommissioned_date}
+            }}
+            update_dependencies_firewall:[
+              {{
+                id: "{firewall_id}"
+                name: "{firewall_name}"
+                operational_state: "{firewall_opstate}"
+              }}
+            ]
+            update_dependencies_switch:[
+              {{
+                id: "{switch_id}"
+                name: "{switch_name}"
+                operational_state: "{switch_opstate}"
+              }}
+            ]
+            update_used_by_customer: [{{
+              id: "{customer_id}"
+              name: "{customer_name}"
+              url: "{customer_url}"
+              description: "{customer_description}"
+            }}]
+            update_used_by_enduser: [{{
+              id: "{enduser_id}"
+              name: "{enduser_name}"
+              url: "{enduser_url}"
+              description: "{enduser_description}"
+            }}]
+          }}){{
+            {main_payload}{{
+              errors{{
+                field
+                messages
+              }}
+              service{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                service_type{{
+                  name
+                }}
+                description
+                project_end_date
+                decommissioned_date
+                dependencies{{
+                  id
+                  name
+                }}
+                used_by{{
+                  id
+                  name
+                }}
+                provider{{
+                  id
+                  name
+                }}
+                customers{{
+                  id
+                  name
+                }}
+                end_users{{
+                  id
+                  name
+                }}
+              }}
+            }}
+            dependencies_firewall_updated{{
+              errors{{
+                field
+                messages
+              }}
+              firewall{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                rack_back
+              }}
+            }}
+            dependencies_switch_updated{{
+              errors{{
+                field
+                messages
+              }}
+              switch{{
+                id
+                name
+                operational_state{{
+                  value
+                }}
+                rack_back
+              }}
+            }}
+            used_by_customer_updated{{
+              errors{{
+                field
+                messages
+              }}
+              customer{{
+                id
+                name
+                url
+                description
+              }}
+            }}
+            used_by_enduser_updated{{
+              errors{{
+                field
+                messages
+              }}
+              endUser{{
+                id
+                name
+                url
+                description
+              }}
+            }}
+          }}
+        }}
+        """
+
+        query = query_t.format(main_input=main_input,
+            main_input_id=main_input_id, main_payload=main_payload,
+            srv_name=srv_name, srv_operational_state=srv_operational_state,
+            srv_description=srv_description, srv_service_type=srv_service_type,
+            project_end_date=project_end_date,
+            decommissioned_date=decommissioned_date,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+            customer_id=customer_id, customer_name=customer_name,
+            customer_url=customer_url,
+            customer_description=customer_description,
+            enduser_id=enduser_id, enduser_name=enduser_name,
+            enduser_url=enduser_url,
+            enduser_description=enduser_description,
+            provider_id=provider_id,
+        )
+
+        a_service.delete()
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_service']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'dependencies_firewall_updated': None,
+            'dependencies_switch_updated': None,
+            'used_by_customer_updated': None,
+            'used_by_enduser_updated': None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check service data
+        check_service = all_data[main_payload]['service']
+        service_id = check_service['id']
+
+        self.assertEquals(check_service['name'], srv_name)
+        self.assertEquals(check_service['operational_state']['value'],
+                            srv_operational_state)
+        self.assertEquals(check_service['description'], srv_description)
+        self.assertEquals(check_service['service_type']['name'], srv_service_type)
+
+        # check customer
+        check_customer = all_data['used_by_customer_updated'][0]['customer']
+
+        self.assertEqualIds(check_customer['id'], customer_id)
+        self.assertEquals(check_customer['name'], customer_name)
+        self.assertEquals(check_customer['url'], customer_url)
+        self.assertEquals(check_customer['description'], customer_description)
+        self.assertEqualIds(check_service['used_by'][0]['id'], customer_id)
+        self.assertEqualIds(check_service['customers'][0]['id'], customer_id)
+
+        # check end user
+        check_enduser = all_data['used_by_enduser_updated'][0]['endUser']
+
+        self.assertEqualIds(check_enduser['id'], enduser_id)
+        self.assertEquals(check_enduser['name'], enduser_name)
+        self.assertEquals(check_enduser['url'], enduser_url)
+        self.assertEquals(check_enduser['description'], enduser_description)
+        self.assertEqualIds(check_service['used_by'][1]['id'], enduser_id)
+        self.assertEqualIds(check_service['end_users'][0]['id'], enduser_id)
+
+        # check firewall
+        check_firewall = all_data['dependencies_firewall_updated'][0]['firewall']
+
+        self.assertEqualIds(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEqualIds(check_service['dependencies'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['dependencies_switch_updated'][0]['switch']
+
+        self.assertEqualIds(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEqualIds(check_service['dependencies'][1]['id'], switch_id)
+
+        # check provider
+        check_provider = check_service['provider']
+        self.assertEqualIds(check_provider['id'], provider_id)
+
+        ## update
+        # data service
+        a_service = data_generator.create_service()
+        srv_name = a_service.get_node().data.get("name")
+        srv_service_type = a_service.get_node().data\
+            .get("service_type")
+        srv_operational_state = a_service.get_node().data\
+            .get("operational_state")
+        srv_description = a_service.get_node().data.get("description")
+        srv_project_end_date = a_service.get_node().data\
+            .get("project_end_date", None)
+        srv_decommissioned_date = a_service.get_node().data\
+            .get("decommissioned_date", None)
+
+        # get provider
+        incoming = a_service.get_node()._incoming()
+        provider = NodeHandle.objects.get(handle_id=\
+                        incoming['Provides'][0]['node'].handle_id)
+        provider_id = relay.Node.to_global_id(str(provider.node_type),
+                                            str(provider.handle_id))
+
+        # get support and responsible groups
+        group_s = NodeHandle.objects.get(handle_id=\
+                        incoming['Supports'][0]['node'].handle_id)
+        group_r = NodeHandle.objects.get(handle_id=\
+                        incoming['Takes_responsibility'][0]['node'].handle_id)
+
+        group_support_id = relay.Node.to_global_id(str(group_s.node_type),
+                                            str(group_s.handle_id))
+        group_responsible_id = relay.Node.to_global_id(str(group_r.node_type),
+                                            str(group_r.handle_id))
+
+        # dependencies
+        # create firewall
+        firewall = data_generator.create_firewall()
+        firewall_name = "Test firewall"
+        firewall_opstate = firewall.get_node().data.get("operational_state")
+        firewall.delete()
+
+        # create switch
+        switch = data_generator.create_switch()
+        switch_name = "Test switch"
+        switch_opstate = switch.get_node().data.get("operational_state")
+        switch.delete()
+
+        # users
+        # create customer
+        customer = data_generator.create_customer()
+        customer_name = customer.get_node().data.get("name")
+        customer_url = customer.get_node().data.get("url")
+        customer_description = customer.get_node().data.get("description")
+        customer.delete()
+
+        # create end user
+        enduser = data_generator.create_end_user()
+        enduser_name = enduser.get_node().data.get("name")
+        enduser_url = enduser.get_node().data.get("url")
+        enduser_description = enduser.get_node().data.get("description")
+        enduser.delete()
+
+        main_input = "update_input"
+        main_input_id = 'id: "{}"'.format(service_id)
+        main_payload = 'updated'
+
+        if srv_project_end_date:
+            srv_project_end_date = srv_project_end_date.split("T")[0]
+
+        if srv_decommissioned_date:
+            srv_decommissioned_date = srv_decommissioned_date.split("T")[0]
+
+        project_end_date = "" if not srv_project_end_date else \
+                    'project_end_date: "{}"'.format(srv_project_end_date)
+        decommissioned_date = "" if not srv_decommissioned_date else \
+                    'decommissioned_date: "{}"'.format(srv_decommissioned_date)
+
+        query = query_t.format(main_input=main_input,
+            main_input_id=main_input_id, main_payload=main_payload,
+            srv_name=srv_name, srv_operational_state=srv_operational_state,
+            srv_description=srv_description, srv_service_type=srv_service_type,
+            project_end_date=project_end_date,
+            decommissioned_date=decommissioned_date,
+            firewall_id=firewall_id, firewall_name=firewall_name,
+            firewall_opstate=firewall_opstate,
+            switch_id=switch_id, switch_name=switch_name,
+            switch_opstate=switch_opstate,
+            customer_id=customer_id, customer_name=customer_name,
+            customer_url=customer_url,
+            customer_description=customer_description,
+            enduser_id=enduser_id, enduser_name=enduser_name,
+            enduser_url=enduser_url,
+            enduser_description=enduser_description,
+            provider_id=provider_id,
+        )
+
+        a_service.delete()
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # check for errors
+        all_data = result.data['composite_service']
+        created_errors = all_data[main_payload]['errors']
+        assert not created_errors, pformat(created_errors, indent=1)
+
+        submutations = {
+            'dependencies_firewall_updated': None,
+            'dependencies_switch_updated': None,
+            'used_by_customer_updated': None,
+            'used_by_enduser_updated': None,
+        }
+
+        for k,v in submutations.items():
+            if all_data[k]:
+                item = None
+
+                try:
+                    all_data[k][0]
+                    for item in all_data[k]:
+                        submutations[k] = item['errors']
+                        assert not submutations[k], pformat(submutations[k], indent=1)
+                except KeyError:
+                    item = all_data[k]
+                    submutations[k] = item['errors']
+                    assert not submutations[k], pformat(submutations[k], indent=1)
+
+        # check service data
+        check_service = all_data[main_payload]['service']
+        service_id = check_service['id']
+
+        self.assertEquals(check_service['name'], srv_name)
+        self.assertEquals(check_service['operational_state']['value'],
+                            srv_operational_state)
+        self.assertEquals(check_service['description'], srv_description)
+        self.assertEquals(check_service['service_type']['name'], srv_service_type)
+
+        # check customer
+        check_customer = all_data['used_by_customer_updated'][0]['customer']
+
+        self.assertEqualIds(check_customer['id'], customer_id)
+        self.assertEquals(check_customer['name'], customer_name)
+        self.assertEquals(check_customer['url'], customer_url)
+        self.assertEquals(check_customer['description'], customer_description)
+        self.assertEqualIds(check_service['used_by'][0]['id'], customer_id)
+
+        # check end user
+        check_enduser = all_data['used_by_enduser_updated'][0]['endUser']
+
+        self.assertEqualIds(check_enduser['id'], enduser_id)
+        self.assertEquals(check_enduser['name'], enduser_name)
+        self.assertEquals(check_enduser['url'], enduser_url)
+        self.assertEquals(check_enduser['description'], enduser_description)
+        self.assertEqualIds(check_service['used_by'][1]['id'], enduser_id)
+
+        # check firewall
+        check_firewall = all_data['dependencies_firewall_updated'][0]['firewall']
+
+        self.assertEqualIds(check_firewall['id'], firewall_id)
+        self.assertEquals(check_firewall['name'], firewall_name)
+        self.assertEquals(check_firewall['operational_state']['value'],
+                            firewall_opstate)
+        self.assertEqualIds(check_service['dependencies'][0]['id'], firewall_id)
+
+        # check switch
+        check_switch = all_data['dependencies_switch_updated'][0]['switch']
+
+        self.assertEqualIds(check_switch['id'], switch_id)
+        self.assertEquals(check_switch['name'], switch_name)
+        self.assertEquals(check_switch['operational_state']['value'],
+                            switch_opstate)
+        self.assertEqualIds(check_service['dependencies'][1]['id'], switch_id)
+
+        # check provider
+        check_provider = check_service['provider']
+        self.assertEqualIds(check_provider['id'], provider_id)

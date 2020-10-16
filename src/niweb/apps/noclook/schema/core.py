@@ -435,6 +435,7 @@ class NIObjectType(DjangoObjectType):
         ni_metatype    = getattr(cls, 'NIMetaType')
         filter_include = getattr(ni_metatype, 'filter_include', None)
         filter_exclude = getattr(ni_metatype, 'filter_exclude', None)
+        manual_filter_fields = getattr(ni_metatype, 'manual_filter_fields', {})
 
         for name, field in cls.__dict__.items():
             # string or string like fields
@@ -482,6 +483,8 @@ class NIObjectType(DjangoObjectType):
                 elif isinstance(field, graphene.types.field.Field) and\
                     field.type == Choice:
                     input_fields[name] = ChoiceScalar
+                elif name in manual_filter_fields:
+                    input_fields[name] = manual_filter_fields[name]
 
         input_fields['id'] = graphene.ID
 
@@ -774,7 +777,7 @@ class NIObjectType(DjangoObjectType):
 
             apply_handle_id_order = False
             revert_default_order = False
-            use_neo4j_query = False
+            neo4j_query_used = False
 
             context = cls.get_type_context()
 
@@ -815,6 +818,7 @@ class NIObjectType(DjangoObjectType):
                                 qs_order_prop  = prop
                                 qs_order_order = order
 
+                        # if filter or order are not empty, query the neo4j db
                         if not cls.filter_is_empty(filter) or not cls.order_is_empty(orderBy):
                             # filter queryset with dates and users
                             qs = DateQueryBuilder.filter_queryset(filter, qs)
@@ -836,11 +840,12 @@ class NIObjectType(DjangoObjectType):
                             nodes = nc.query_to_list(nc.graphdb.manager, q)
                             nodes = [ node['n'] for node in nodes]
 
-                            use_neo4j_query = True
+                            neo4j_query_used = True
                         else:
-                            use_neo4j_query = False
+                            # otherwise is not necesary we can use django's qs
+                            neo4j_query_used = False
 
-                        if use_neo4j_query:
+                        if neo4j_query_used:
                             ret = []
 
                             handle_ids = []
@@ -1544,7 +1549,12 @@ class AbstractNIMutation(relay.ClientIDMutation):
 
         # get input context, otherwise get the type context
         graphql_type = cls.get_graphql_type()
-        input_context = input.get('context', graphql_type.get_type_context())
+        default_context = graphql_type.get_type_context()
+        input_context = input.get('context')
+
+        if not input_context:
+            input_context = default_context
+
         # add it to the dict
         reqinput[1]['input_context'] = input_context
 
@@ -2276,7 +2286,7 @@ class CompositeMutation(relay.ClientIDMutation):
                         if not sub_errors and sub_edited and link_method:
                             link_method(user, master_nh, sub_edited)
 
-                        ret_subcreated = ret
+                        ret_subupdated = ret
 
                 # process delete
                 if delete_subinputs:
@@ -2309,6 +2319,14 @@ class CompositeMutation(relay.ClientIDMutation):
                     master_ret[delete_payload] = ret_subdeleted
 
         return master_ret
+
+    @classmethod
+    def can_process_subentities(cls, master_nh):
+        '''
+        This method can be overrided by subclasses to add conditions
+        on the creation/edition of subentities
+        '''
+        return True
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
@@ -2391,47 +2409,48 @@ class CompositeMutation(relay.ClientIDMutation):
             if graphql_subtype:
                 extract_param = AbstractNIMutation.get_returntype_name(graphql_subtype)
 
-                if create_subinputs:
-                    has_subcreated = True
-                    ret_subcreated = []
+                if cls.can_process_subentities(main_nh):
+                    if create_subinputs:
+                        has_subcreated = True
+                        ret_subcreated = []
 
-                    for subinput in create_subinputs:
-                        subinput['context'] = context
-                        ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
-                        ret_subcreated.append(ret)
+                        for subinput in create_subinputs:
+                            subinput['context'] = context
+                            ret = create_submutation.mutate_and_get_payload(root, info, **subinput)
+                            ret_subcreated.append(ret)
 
-                        # link if it's possible
-                        sub_errors = getattr(ret, 'errors', None)
-                        sub_created = getattr(ret, extract_param, None)
+                            # link if it's possible
+                            sub_errors = getattr(ret, 'errors', None)
+                            sub_created = getattr(ret, extract_param, None)
 
-                        if not sub_errors and sub_created:
-                            link_kwargs = cls.get_link_kwargs(main_input, subinput)
-                            cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
+                            if not sub_errors and sub_created:
+                                link_kwargs = cls.get_link_kwargs(main_input, subinput)
+                                cls.link_slave_to_master(user, main_nh, sub_created, **link_kwargs)
 
-                if update_subinputs:
-                    has_subupdated = True
-                    ret_subupdated = []
+                    if update_subinputs:
+                        has_subupdated = True
+                        ret_subupdated = []
 
-                    for subinput in update_subinputs:
-                        subinput['context'] = context
-                        ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
-                        ret_subupdated.append(ret)
+                        for subinput in update_subinputs:
+                            subinput['context'] = context
+                            ret = update_submutation.mutate_and_get_payload(root, info, **subinput)
+                            ret_subupdated.append(ret)
 
-                        # link if it's possible
-                        sub_errors = getattr(ret, 'errors', None)
-                        sub_edited = getattr(ret, extract_param, None)
+                            # link if it's possible
+                            sub_errors = getattr(ret, 'errors', None)
+                            sub_edited = getattr(ret, extract_param, None)
 
-                        if not sub_errors and sub_edited:
-                            link_kwargs = cls.get_link_kwargs(main_input, subinput)
-                            cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
+                            if not sub_errors and sub_edited:
+                                link_kwargs = cls.get_link_kwargs(main_input, subinput)
+                                cls.link_slave_to_master(user, main_nh, sub_edited, **link_kwargs)
 
-                if delete_subinputs:
-                    has_subdeleted = True
-                    ret_subdeleted = []
+                    if delete_subinputs:
+                        has_subdeleted = True
+                        ret_subdeleted = []
 
-                    for subinput in delete_subinputs:
-                        ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
-                        ret_subdeleted.append(ret)
+                        for subinput in delete_subinputs:
+                            ret = delete_submutation.mutate_and_get_payload(root, info, **subinput)
+                            ret_subdeleted.append(ret)
 
             if unlink_subinputs:
                 ret_unlinked = []
@@ -2504,6 +2523,8 @@ class NIMutationFactory():
         update_form     = getattr(ni_metaclass, 'update_form', None)
         request_path    = getattr(ni_metaclass, 'request_path', None)
         graphql_type    = getattr(ni_metaclass, 'graphql_type', NodeHandler)
+        form_include    = getattr(ni_metaclass, 'form_include', None)
+        form_exclude    = getattr(ni_metaclass, 'form_exclude', None)
         create_include  = getattr(ni_metaclass, 'create_include', None)
         create_exclude  = getattr(ni_metaclass, 'create_exclude', None)
         update_include  = getattr(ni_metaclass, 'update_include', None)
@@ -2533,6 +2554,19 @@ class NIMutationFactory():
         if form:
             create_form = form
             update_form = form
+
+        # include / exclude
+        if not create_include and form_include:
+            create_include = form_include
+
+        if not update_include and form_include:
+            update_include = form_include
+
+        if not create_exclude and form_exclude:
+            create_exclude = form_exclude
+
+        if not update_exclude and form_exclude:
+            update_exclude = form_exclude
 
         # create mutations
         mutation_name_cc = node_type.title().replace(' ', ''  )

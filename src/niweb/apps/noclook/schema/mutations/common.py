@@ -21,7 +21,9 @@ def get_unique_relation_processor(relationship_attr, helper_method,
 
         add_relation = False
 
-        if relation_name in form.cleaned_data and form.cleaned_data[relation_name]:
+        if relation_name in form.cleaned_data \
+            and form.cleaned_data[relation_name]:
+
             subentity_id = form.cleaned_data[relation_name]
 
             if previous_rels:

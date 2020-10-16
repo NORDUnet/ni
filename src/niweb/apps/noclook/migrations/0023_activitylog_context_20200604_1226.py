@@ -14,16 +14,20 @@ def forwards_func(apps, schema_editor):
         if contenttype and contenttype.app_label == 'noclook' and \
             contenttype.model == 'nodehandle':
             # get contexts for action_object
-            action_object = NodeHandle.objects.get(
-                handle_id=action.action_object_object_id
-            )
-            contexts = sriutils.get_nh_named_contexts(action_object)
-            action_data = action.data
+            node_exists = NodeHandle.objects.\
+                filter(handle_id=action.action_object_object_id).exists()
 
-            if action_data and 'noclook' in action_data:
-                action_data['noclook']['contexts'] = contexts
-                action.data = action_data
-                action.save()
+            if node_exists:
+                action_object = NodeHandle.objects.get(
+                    handle_id=action.action_object_object_id
+                )
+                contexts = sriutils.get_nh_named_contexts(action_object)
+                action_data = action.data
+
+                if action_data and 'noclook' in action_data:
+                    action_data['noclook']['contexts'] = contexts
+                    action.data = action_data
+                    action.save()
 
 
 def backwards_func(apps, schema_editor):

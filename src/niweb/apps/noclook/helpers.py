@@ -324,14 +324,14 @@ def neo4j_report_age(item, old, very_old):
     return 'current'
 
 
-def dicts_to_csv_response(dict_list, header=None):
+def dicts_to_csv_response(dict_list, header=None, file_name='result.csv'):
     """
     Takes a list of dicts and returns a comma separated file with all dict keys
     and their values.
     """
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename=result.csv; charset=utf-8;'
+    response['Content-Disposition'] = 'attachment; filename={}; charset=utf-8;'.format(file_name)
     writer = csv.writer(response, dialect=csv.excel, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
     if not header:
         key_set = set()
@@ -381,13 +381,13 @@ def dicts_to_xls(dict_list, header, sheet_name):
     return wb
 
 
-def dicts_to_xls_response(dict_list, header=None):
+def dicts_to_xls_response(dict_list, header=None, file_name='result.xls', sheet_name='NOCLook result'):
     """
     Takes a list of dicts and returns a response object with and Excel file.
     """
     # Create the HttpResponse object with the appropriate Excel header.
     response = HttpResponse(content_type='application/excel')
-    response['Content-Disposition'] = 'attachment; filename=result.xls;'
+    response['Content-Disposition'] = 'attachment; filename={};'.format(file_name)
 
     if not header:
         key_set = set()
@@ -396,7 +396,7 @@ def dicts_to_xls_response(dict_list, header=None):
         key_set = sorted(key_set)
     else:
         key_set = header
-    wb = dicts_to_xls(dict_list, key_set, 'NOCLook result')
+    wb = dicts_to_xls(dict_list, key_set, sheet_name)
     wb.save(response)
     return response
 
@@ -859,6 +859,7 @@ def paginate(full_list, page=None, per_page=250):
         paginated_list = paginator.page(paginator.num_pages)
     return paginated_list
 
+
 def app_enabled(appname):
     return appname in django_settings.INSTALLED_APPS
 
@@ -871,6 +872,7 @@ def sort_nicely(l, key=None):
         l.sort(key=lambda x: alphanum_key(x.get(key)))
     else:
         l.sort(key=alphanum_key)
+
 
 def attach_as_file(handle_id, name, content, user, overwrite=False):
     """
@@ -897,11 +899,13 @@ def attach_as_file(handle_id, name, content, user, overwrite=False):
     attachment.attachment_file = _file
     return attachment.save()
 
+
 def find_attachments(handle_id, name=None):
     attachments = Attachment.objects.filter(object_id=handle_id)
     if name:
         attachments.filter(attachment_file__endswith=name)
     return attachments
+
 
 def attachment_content(attachment):
     if not attachment:
@@ -910,6 +914,7 @@ def attachment_content(attachment):
     with open(file_name, 'r') as f:
         content = f.read()
     return content
+
 
 def set_parent_of(user, node, parent_org_id):
     """
@@ -926,6 +931,7 @@ def set_parent_of(user, node, parent_org_id):
         activitylog.create_relationship(user, relationship)
     return relationship, created
 
+
 def set_uses_a(user, node, procedure_id):
     """
     :param user: Django user
@@ -940,6 +946,7 @@ def set_uses_a(user, node, procedure_id):
     if created:
         activitylog.create_relationship(user, relationship)
     return relationship, created
+
 
 def set_works_for(user, node, organization_id, role_name):
     """
@@ -961,6 +968,7 @@ def set_works_for(user, node, organization_id, role_name):
     if created:
         activitylog.create_relationship(user, relationship)
     return relationship, created
+
 
 def set_member_of(user, node, group_id):
     """
@@ -1054,6 +1062,7 @@ def unlink_contact_with_role_from_org(user, organization, role):
         activitylog.delete_relationship(user, relationship)
         relationship.delete()
 
+
 def unlink_contact_and_role_from_org(user, organization, contact_id, role):
     relationship = nc.models.RoleRelationship.get_role_relation_from_contact_organization(
         organization.handle_id,
@@ -1106,7 +1115,6 @@ def add_phone_contact(user, phone, contact_id):
     return relationship, created
 
 
-
 def add_email_contact(user, email, contact_id):
     """
     :param user: Django user
@@ -1125,6 +1133,7 @@ def add_email_contact(user, email, contact_id):
         activitylog.create_relationship(user, relationship)
 
     return relationship, created
+
 
 def add_address_organization(user, address, organization_id):
     """
@@ -1145,6 +1154,7 @@ def add_address_organization(user, address, organization_id):
 
     return relationship, created
 
+
 def relationship_to_str(relationship):
     """
     Takes a relationship and returns a string representation of the relationship:
@@ -1163,6 +1173,7 @@ def relationship_to_str(relationship):
         b_handle_id=rel.end['handle_id'],
     )
 
+
 def set_supports(user, node, group_id):
     """
     :param user: Django user
@@ -1180,6 +1191,7 @@ def set_supports(user, node, group_id):
         activitylog.create_relationship(user, relationship)
     return relationship, created
 
+
 def set_takes_responsibility(user, node, group_id):
     """
     :param user: Django user
@@ -1193,6 +1205,22 @@ def set_takes_responsibility(user, node, group_id):
     relationship_id = result.get('Takes_responsibility')[0].get('relationship_id')
     relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
     created = result.get('Takes_responsibility')[0].get('created')
+    if created:
+        activitylog.create_relationship(user, relationship)
+    return relationship, created
+
+
+def set_has_address(user, site, has_id):
+    """
+    :param user: Django user
+    :param site: norduniclient Site model
+    :param has_address_id: unique id for an Address node
+    :return: norduniclient model, boolean
+    """
+    result = site.set_has_address(has_id)
+    relationship_id = result.get('Has_address')[0].get('relationship_id')
+    relationship = nc.get_relationship_model(nc.graphdb.manager, relationship_id)
+    created = result.get('Has_address')[0].get('created')
     if created:
         activitylog.create_relationship(user, relationship)
     return relationship, created

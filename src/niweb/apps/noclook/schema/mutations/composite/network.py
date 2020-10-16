@@ -2,6 +2,7 @@
 __author__ = 'ffuentes'
 
 from ..network import *
+from ..community import *
 
 
 ## Equipment and cables
@@ -53,6 +54,17 @@ class CompositeSwitchMutation(CompositeMutation):
         secondary_mutation_f = NIPortMutationFactory
         context = sriutils.get_network_context()
         include_metafields = ('dependents')
+
+
+class CompositeUnitMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Unit
+        main_mutation_f = NIUnitMutationFactory
+        context = sriutils.get_network_context()
+        has_creation = True
 
 
 class CompositeRouterMutation(CompositeMutation):
@@ -143,7 +155,7 @@ class CompositeFirewallMutation(CompositeMutation):
         graphql_type = Firewall
         main_mutation_f = NIFirewallMutationFactory
         context = sriutils.get_network_context()
-        include_metafields = ('dependents')
+        include_metafields = ('dependents', 'has')
         has_creation = False
 
 
@@ -174,10 +186,30 @@ class CompositeHostMutation(CompositeMutation):
     class Input:
         pass
 
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh):
+        helpers.set_has(user, master_nh.get_node(), slave_nh.handle_id)
+
+    @classmethod
+    def can_process_subentities(cls, master_nh):
+        '''
+        Add ports only for physical hosts
+        '''
+        ret = False
+        meta_type = master_nh.get_node().meta_type
+
+        # check that the host is physical or do nothing
+        if meta_type == 'Physical':
+            ret = True
+
+        return ret
+
     class NIMetaClass:
         graphql_type = Host
+        graphql_subtype = Port
         main_mutation_f = NIHostMutationFactory
-        context = sriutils.get_network_context()
+        secondary_mutation_f = NIPortMutationFactory
+        ontext = sriutils.get_network_context()
         include_metafields = ('dependents')
 
 
@@ -270,5 +302,53 @@ class CompositePeeringGroupMutation(CompositeMutation):
         graphql_type = PeeringGroup
         main_mutation_f = NIPeeringGroupMutationFactory
         context = sriutils.get_network_context()
-        include_metafields = ('dependencies')
+        #include_metafields = ('dependencies')
         has_creation = False
+
+
+## Location
+class CompositeSiteMutation(CompositeMutation):
+    class Input:
+        pass
+
+    @classmethod
+    def link_slave_to_master(cls, user, master_nh, slave_nh):
+        helpers.set_has_address(user, master_nh.get_node(), slave_nh.handle_id)
+
+    class NIMetaClass:
+        graphql_type = Site
+        graphql_subtype = Address
+        main_mutation_f = NISiteMutationFactory
+        secondary_mutation_f = NIAddressMutationFactory
+        context = sriutils.get_network_context()
+
+
+class CompositeRoomMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Room
+        main_mutation_f = NIRoomMutationFactory
+        context = sriutils.get_network_context()
+
+
+class CompositeRackMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Rack
+        main_mutation_f = NIRackMutationFactory
+        context = sriutils.get_network_context()
+
+
+## Service
+class CompositeServiceMutation(CompositeMutation):
+    class Input:
+        pass
+
+    class NIMetaClass:
+        graphql_type = Service
+        main_mutation_f = NIServiceMutationFactory
+        context = sriutils.get_network_context()

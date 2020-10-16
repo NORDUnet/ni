@@ -54,9 +54,9 @@ $(document).ready(
             <span class="badge badge-important">Expired</span>
             {% table_search "services" %}
         </div>
-    <h3>Services used</h3>
+    <h3>Peering Groups used</h3>
     {% blockvar th %}
-                    <th>{{ node.data.name }} IP Address</th><th>Service</th><th>Interface Network</th><th>Unit</th><th>PIC</th><th>Router</th>
+                    <th>{{ node.data.name }} IP Address</th><th>Peering Group</th><th>Interface Network</th><th>Unit</th><th>PIC</th><th>Router</th>
     {% endblockvar %}
     {% blockvar tbody %}
                 {% for item in user_dependencies %}
