@@ -259,6 +259,44 @@ class NOCRootQuery(NOCAutoQuery):
     # service types
     getServiceTypes = graphene.List(ServiceType, resolver=resolve_getServiceTypes)
 
+    # user permissions
+    getUserPermissions = graphene.Field(UserPermissions)
+
+    def resolve_getUserPermissions(self, info, **kwargs):
+        ret = None
+
+        if info.context and info.context.user.is_authenticated:
+            current_user = info.context.user
+
+            contexts = dict(
+                community = sriutils.get_community_context(),
+                network = sriutils.get_network_context(),
+                contracts = sriutils.get_contracts_context(),
+            )
+
+            attrs = dict()
+
+            for name, context in contexts.items():
+                attrs[name] = dict(
+                    read=sriutils.authorize_read_module(
+                        current_user, context
+                    ),
+                    write=sriutils.authorize_create_resource(
+                        current_user, context
+                    ),
+                    list=sriutils.authorize_list_module(
+                        current_user, context
+                    ),
+                    admin=sriutils.authorize_admin_module(
+                        current_user, context
+                    ),
+                )
+            ret = UserPermissions(**attrs)
+
+            return ret
+        else:
+            raise GraphQLAuthException()
+
 
     def resolve_getPlainGroups(self, info, **kwargs):
         if info.context and info.context.user.is_authenticated:
