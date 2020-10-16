@@ -83,6 +83,7 @@ GOOGLE_MAPS_API_KEY = environ.get('GOOGLE_MAPS_API_KEY', 'no-apikey')
 
 ########## GRAPHQL CONFIGURATION
 USE_GRAPHIQL = True
+INSPECT_SCHEMA = environ.get('INSPECT_SCHEMA', 'False') == 'True'
 ########## END GRAPHQL CONFIGURATION
 
 ########## GRAPHQL JWT CONFIGURATION
