@@ -174,6 +174,16 @@ def authorize_aa_operation(user, context, get_aa_func):
     return ret
 
 
+def authorize_read_module(user, context):
+    '''
+    This function authorizes the read operation on a resource within a defined
+    context, it checks if the user can read objects from this SRI module
+    '''
+    logger.debug('Authorizing user to read a node within the module {}'\
+        .format(context.name))
+    return authorize_aa_operation(user, context, get_read_authaction)
+
+
 def authorize_create_resource(user, context):
     '''
     This function authorizes the creation of a resource within a particular
