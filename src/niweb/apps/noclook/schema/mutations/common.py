@@ -93,6 +93,7 @@ class CreateComment(relay.ClientIDMutation):
 
         return CreateComment(comment=comment)
 
+
 class UpdateComment(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
@@ -119,6 +120,7 @@ class UpdateComment(relay.ClientIDMutation):
         comment.save()
 
         return UpdateComment(comment=comment)
+
 
 class DeleteComment(relay.ClientIDMutation):
     class Input:
