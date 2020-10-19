@@ -35,7 +35,7 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
     def setUp(self, group_dict=None):
         super(Neo4jGraphQLGenericTest, self).setUp()
 
-        self.setUser(self.user)
+        self.context = TestContext(self.user)
 
         # get read aa
         self.get_read_authaction  = sriutils.get_read_authaction()
