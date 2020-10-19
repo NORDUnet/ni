@@ -59,10 +59,82 @@ subclasses_interfaces = OrderedDict([
     (Location, []),
 ])
 
+
+class ModulePermissions(graphene.ObjectType):
+    read = graphene.Boolean(required=True)
+    list = graphene.Boolean(required=True)
+    write = graphene.Boolean(required=True)
+    admin = graphene.Boolean(required=True)
+
+
+class UserPermissions(graphene.ObjectType):
+    community = graphene.Field(ModulePermissions)
+    network = graphene.Field(ModulePermissions)
+    contracts = graphene.Field(ModulePermissions)
+
+
+def get_user_permissions(from_user):
+    contexts = sriutils.get_all_contexts()
+
+    attrs = dict()
+
+    for name, context in contexts.items():
+        attrs[name] = dict(
+            read=sriutils.authorize_read_module(
+                from_user, context
+            ),
+            write=sriutils.authorize_create_resource(
+                from_user, context
+            ),
+            list=sriutils.authorize_list_module(
+                from_user, context
+            ),
+            admin=sriutils.authorize_admin_module(
+                from_user, context
+            ),
+        )
+    ret = UserPermissions(**attrs)
+
+    return ret
+
+
 class User(DjangoObjectType):
     '''
     The django user type
     '''
+    user_permissions = graphene.Field(UserPermissions)
+
+    def resolve_user_permissions(self, info, **kwargs):
+        ret = None
+
+        if info.context and info.context.user.is_authenticated:
+            the_user = info.context.user
+
+            # we'll show permissions only:
+            authorized = False
+
+            # to the user itself
+            if self == the_user:
+                authorized = True
+
+            # to any user who has an admin permission on any context
+            if not authorized:
+                if sriutils.authorize_superadmin(the_user):
+                    authorized = True
+
+                if not authorized:
+                    contexts = sriutils.get_all_contexts()
+
+                    for context_name, context in contexts.items():
+                        if sriutils.authorize_admin_module(the_user, context):
+                            authorized = True
+                            break
+
+            if authorized:
+                ret = get_user_permissions(the_user)
+
+        return ret
+
     class Meta:
         model = DjangoUser
         only_fields = ['id', 'username', 'first_name', 'last_name', 'email']

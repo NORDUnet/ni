@@ -11,13 +11,15 @@ from apps.noclook.tests.testing import nc
 from pprint import pformat
 from graphene import relay
 
+
 class TestContext():
     def __init__(self, user, *ignore):
         self.user = user
 
+
 class Neo4jGraphQLGenericTest(NeoTestCase):
     def assert_correct(self, result, expected):
-        fmt_str = '{} \n != {}'.format(
+        fmt_str = '\n{} \n != \n{}'.format(
                                     pformat(result.data, indent=1),
                                     pformat(expected, indent=1)
                                 )
@@ -33,7 +35,7 @@ class Neo4jGraphQLGenericTest(NeoTestCase):
     def setUp(self, group_dict=None):
         super(Neo4jGraphQLGenericTest, self).setUp()
 
-        self.context = TestContext(self.user)
+        self.setUser(self.user)
 
         # get read aa
         self.get_read_authaction  = sriutils.get_read_authaction()

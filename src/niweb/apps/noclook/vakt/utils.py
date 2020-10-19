@@ -107,6 +107,16 @@ def get_default_context(cmodel=Context):
     return get_community_context(cmodel)
 
 
+def get_all_contexts(cmodel=Context):
+    contexts = dict(
+        community = get_community_context(cmodel),
+        network = get_network_context(cmodel),
+        contracts = get_contracts_context(cmodel),
+    )
+
+    return contexts
+
+
 def authorize_aa_resource(user, handle_id, get_aa_func):
     '''
     This function checks if an user is authorized to do a specific action over
