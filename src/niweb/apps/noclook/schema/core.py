@@ -108,7 +108,7 @@ class User(DjangoObjectType):
         ret = None
 
         if info.context and info.context.user.is_authenticated:
-            the_user = info.context.user
+            the_user = self
 
             # we'll show permissions only:
             authorized = False
