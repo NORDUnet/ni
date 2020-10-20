@@ -221,9 +221,10 @@ def authorize_list_module(user, context):
         .format(context.name))
     return authorize_aa_operation(user, context, get_list_authaction)
 
+
 def authorize_superadmin(user, cmodel=Context):
     '''
-    This function checks if the user can perform admin actions inside a module
+    This function checks if the user can perform super admin actions
     '''
     logger.debug('Authorizing user {} as a superadmin'.format(user.username))
 
@@ -271,3 +272,23 @@ def get_nh_contexts(nh):
 
 def get_nh_named_contexts(nh):
     return [ { 'context_name': c } for c in get_nh_contexts(nh) ]
+
+
+def edit_aaction_context_user(auth_action, context, user, remove=False):
+    # get the relation between the authorized action and the context
+    # to get the user group
+    groupctxaa = GroupContextAuthzAction.objects.filter(
+        authzprofile=auth_action, context=context)
+
+    if groupctxaa:
+        groupctxaa = GroupContextAuthzAction.objects.get(
+            authzprofile=auth_action, context=context)
+
+        # add user to group
+        group = groupctxaa.group
+
+        if user not in group.user_set:
+            if not remove:
+                group.user_set.add(user)
+            else:
+                group.user_set.remove(user)
