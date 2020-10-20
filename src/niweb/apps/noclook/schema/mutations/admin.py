@@ -4,9 +4,12 @@ __author__ = 'ffuentes'
 from apps.noclook.schema.core import CommentType
 from apps.noclook.schema.types import *
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import User as DjangoUser
 from django.contrib.sites.shortcuts import get_current_site
 from graphene import relay
 from graphene import Field
+
+from ..core import User
 
 import graphene
 
@@ -16,7 +19,7 @@ import graphene
 # to grant or revoke permissions from users
 class GrantUserPermission(relay.ClientIDMutation):
     class Input:
-        user = graphene.ID(required=True)
+        user_id = graphene.ID(required=True)
         context = graphene.String(required=True)
         read = graphene.Boolean()
         write = graphene.Boolean()
@@ -25,15 +28,17 @@ class GrantUserPermission(relay.ClientIDMutation):
 
     success = graphene.Boolean()
     errors = graphene.List(ErrorType)
-    user_permissions = graphene.Field(UserPermissions)
+    user = graphene.Field(User)
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
         # get user
-        user_id = input.get("user")
-        user_id = graphene.relay.Node.from_global_id(user_id)[1]
+        user_id = input.get("user_id")
 
-        edit_user = User.objects.get(id=user_id)
+        # we'll enable this line once we've changed id to the relay format
+        #user_id = graphene.relay.Node.from_global_id(user_id)[1]
+
+        edit_user = DjangoUser.objects.get(id=user_id)
 
         # get context
         context_name = input.get("context")
@@ -43,13 +48,16 @@ class GrantUserPermission(relay.ClientIDMutation):
         # check if the user is admin for the specified module
         success=False
         errors=None
-        user_permissions = None
+
+        import pdb; pdb.set_trace()
 
         try:
             if info.context and info.context.user.is_authenticated:
-                if user and context:
-                    if sriutils.authorize_superadmin(user) or \
-                        sriutils.authorize_admin_module(user, context):
+                logged_user = info.context.user
+
+                if edit_user and context:
+                    if sriutils.authorize_superadmin(logged_user) or \
+                        sriutils.authorize_admin_module(logged_user, context):
 
                         read = input.get("read", None)
                         write = input.get("write", None)
@@ -59,7 +67,7 @@ class GrantUserPermission(relay.ClientIDMutation):
                         # only superadmins can grant admin permission
                         if admin != None:
                             aaction = sriutils.get_admin_authaction()
-                            if sriutils.authorize_superadmin(user):
+                            if sriutils.authorize_superadmin(logged_user):
                                 sriutils.edit_aaction_context_user(
                                     aaction, context, edit_user, admin)
                                 success=True
@@ -93,7 +101,7 @@ class GrantUserPermission(relay.ClientIDMutation):
                                     aaction, context, edit_user, list)
                                 success=True
 
-                        user_permissions = sriutils.get_user_permissions(edit_user)
+                        user = edit_user
         except:
             errors = [
                 ErrorType(
@@ -103,7 +111,7 @@ class GrantUserPermission(relay.ClientIDMutation):
             ]
 
         ret = GrantUserPermission(success=success, errors=errors,
-                user_permissions=user_permissions)
+                user=user)
 
         return ret
 
