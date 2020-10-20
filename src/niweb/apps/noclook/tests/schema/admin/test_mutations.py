@@ -14,7 +14,7 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
         super().setUp(group_dict=group_dict)
 
         # create another user
-        another_user = User.objects.create_user(username='another user',
+        another_user = User.objects.create_user(username='another_user',
             email='another@localhost', password='test')
         another_user.is_staff = True
         another_user.save()
@@ -84,7 +84,7 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
                                     'write': False
                                 }
                             },
-                            'username': 'another user'
+                            'username': 'another_user'
                         }
                     }
 
@@ -157,7 +157,7 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
                     'success': True,
                     'errors': None,
                     'user': {
-                        'id': '3',
+                        'id': str(another_user_id),
                         'user_permissions': {
                             'network': {
                                 'admin': False,
@@ -166,7 +166,7 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
                                 'write': True
                             }
                         },
-                        'username': 'another user'
+                        'username': 'another_user'
                     }
                 }
             )

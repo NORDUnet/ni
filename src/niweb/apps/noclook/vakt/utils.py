@@ -274,21 +274,30 @@ def get_nh_named_contexts(nh):
     return [ { 'context_name': c } for c in get_nh_contexts(nh) ]
 
 
-def edit_aaction_context_user(auth_action, context, user, remove=False):
-    # get the relation between the authorized action and the context
-    # to get the user group
-    groupctxaa = GroupContextAuthzAction.objects.filter(
+def get_aaction_context_group(auth_action, context):
+    groupctxaa = None
+    groupctxaa_f = GroupContextAuthzAction.objects.filter(
         authzprofile=auth_action, context=context)
 
-    if groupctxaa:
-        groupctxaa = GroupContextAuthzAction.objects.get(
-            authzprofile=auth_action, context=context)
+    if groupctxaa_f:
+        groupctxaa = groupctxaa_f.first()
 
+    return groupctxaa.group
+
+
+def edit_aaction_context_user(auth_action, context, user, add=False):
+    # get the relation between the authorized action and the context
+    # to get the user group
+    group = get_aaction_context_group(auth_action, context)
+
+    if group:
         # add user to group
-        group = groupctxaa.group
+        group_users = group.user_set.all()
 
-        if user not in group.user_set:
-            if not remove:
-                group.user_set.add(user)
-            else:
-                group.user_set.remove(user)
+        if add and user not in group_users:
+            group.user_set.add(user)
+
+        if not add and user in group_users:
+            group.user_set.remove(user)
+        
+        group.save()

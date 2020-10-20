@@ -46,10 +46,8 @@ class GrantUserPermission(relay.ClientIDMutation):
         context = contexts.get(context_name, None)
 
         # check if the user is admin for the specified module
-        success=False
+        success=True
         errors=None
-
-        import pdb; pdb.set_trace()
 
         try:
             if info.context and info.context.user.is_authenticated:
@@ -75,8 +73,7 @@ class GrantUserPermission(relay.ClientIDMutation):
                                 errors = [
                                     ErrorType(field="_",
                                         messages=[ \
-                                        "Only superadmins can grant admin rights" \
-                                            .format(node_type)])
+                                        "Only superadmins can grant admin rights"])
                                 ]
                                 success=False
 
@@ -87,31 +84,33 @@ class GrantUserPermission(relay.ClientIDMutation):
                                 aaction = sriutils.get_read_authaction()
                                 sriutils.edit_aaction_context_user(
                                     aaction, context, edit_user, read)
-                                success=True
 
                             if write != None:
                                 aaction = sriutils.get_write_authaction()
                                 sriutils.edit_aaction_context_user(
                                     aaction, context, edit_user, write)
-                                success=True
 
                             if list != None:
                                 aaction = sriutils.get_list_authaction()
                                 sriutils.edit_aaction_context_user(
                                     aaction, context, edit_user, list)
-                                success=True
+                    else:
+                        success = False
+                else:
+                    success = False
+        except Exception as e:
+            import traceback
 
-                        user = edit_user
-        except:
             errors = [
                 ErrorType(
                     field="_",
-                    messages=["A {} with that name already exists." \
-                        .format(node_type)])
+                    messages=\
+                        ["An error occurred while processing your request"])
             ]
+            success = False
 
         ret = GrantUserPermission(success=success, errors=errors,
-                user=user)
+                user=edit_user)
 
         return ret
 
