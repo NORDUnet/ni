@@ -80,19 +80,19 @@ class GenericUserPermissionTest(Neo4jGraphQLGenericTest):
                         'modifier': {
                             'user_permissions': {
                                 'community': {
-                                    'read': True,
-                                    'list': True,
-                                    'write': True,
+                                    'read': False,
+                                    'list': False,
+                                    'write': False,
                                 },
                                 'network': {
-                                    'read': True,
-                                    'list': True,
-                                    'write': True,
+                                    'read': False,
+                                    'list': False,
+                                    'write': False,
                                 },
                                 'contracts': {
-                                    'read': True,
-                                    'list': True,
-                                    'write': True,
+                                    'read': False,
+                                    'list': False,
+                                    'write': False,
                                 },
                             }
                         }

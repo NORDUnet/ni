@@ -109,24 +109,25 @@ class User(DjangoObjectType):
 
         if info.context and info.context.user.is_authenticated:
             the_user = self
+            logged_user = info.context.user
 
             # we'll show permissions only:
             authorized = False
 
             # to the user itself
-            if self == the_user:
+            if logged_user == the_user:
                 authorized = True
 
             # to any user who has an admin permission on any context
             if not authorized:
-                if sriutils.authorize_superadmin(the_user):
+                if sriutils.authorize_superadmin(logged_user):
                     authorized = True
 
                 if not authorized:
                     contexts = sriutils.get_all_contexts()
 
                     for context_name, context in contexts.items():
-                        if sriutils.authorize_admin_module(the_user, context):
+                        if sriutils.authorize_admin_module(logged_user, context):
                             authorized = True
                             break
 
