@@ -299,5 +299,10 @@ def edit_aaction_context_user(auth_action, context, user, add=False):
 
         if not add and user in group_users:
             group.user_set.remove(user)
-        
+
         group.save()
+
+
+def set_nodehandle_context(context, nh):
+    # set new context
+    NodeHandleContext.objects.get_or_create(context=context, nodehandle=nh)

@@ -3,11 +3,13 @@ __author__ = 'ffuentes'
 
 from apps.noclook.schema.core import CommentType
 from apps.noclook.schema.types import *
+from apps.noclook.models import Context as DjangoContext
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User as DjangoUser
 from django.contrib.sites.shortcuts import get_current_site
 from graphene import relay
 from graphene import Field
+from binascii import Error as BinasciiError
 
 from ..core import User
 
@@ -49,8 +51,8 @@ class GrantUserPermission(relay.ClientIDMutation):
         success=True
         errors=None
 
-        try:
-            if info.context and info.context.user.is_authenticated:
+        if info.context and info.context.user.is_authenticated:
+            try:
                 logged_user = info.context.user
 
                 if edit_user and context:
@@ -98,16 +100,18 @@ class GrantUserPermission(relay.ClientIDMutation):
                         success = False
                 else:
                     success = False
-        except Exception as e:
-            import traceback
+            except Exception as e:
+                import traceback
 
-            errors = [
-                ErrorType(
-                    field="_",
-                    messages=\
-                        ["An error occurred while processing your request"])
-            ]
-            success = False
+                errors = [
+                    ErrorType(
+                        field="_",
+                        messages=\
+                            ["An error occurred while processing your request"])
+                ]
+                success = False
+        else:
+            raise GraphQLAuthException()
 
         ret = GrantUserPermission(success=success, errors=errors,
                 user=edit_user)
@@ -127,4 +131,85 @@ class SetNodesContext(relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, root, info, **input):
-        return SetNodesContext(success=False, errors=None, nodes=[])
+        success = False
+        nodes = []
+        errors = []
+
+        nodes_ids = input.get("nodes", [])
+        context_name = input.get("context")
+
+        if not context_name:
+            errors.append(
+                ErrorType(
+                    field=node_id,
+                    messages=\
+                        ["The id {} ".format(node_id)]
+                    )
+                )
+            return SetNodesContext(success=success, errors=errors, nodes=nodes)
+
+        if not DjangoContext.objects.filter(name=context_name).exists():
+            errors.append(
+                ErrorType(
+                    field=node_id,
+                    messages=\
+                        ["The context {} doesn't exists".format(context_name)]
+                    )
+                )
+            return SetNodesContext(success=success, errors=errors, nodes=nodes)
+
+        context = DjangoContext.objects.get(name=context_name)
+
+        if info.context and info.context.user.is_authenticated:
+            # check if we have rights over the context
+            authorized = sriutils.authorize_admin_module(info.context.user,
+                            context)
+
+            if not authorized:
+                errors.append(
+                    ErrorType(
+                        field=node_id,
+                        messages=\
+                            ["Only administrators can perform this operation" \
+                                .format(context_name)]
+                        )
+                    )
+                return SetNodesContext(success=success, errors=errors,
+                        nodes=nodes)
+
+            success = True
+            
+            for node_id in nodes_ids:
+                # get node
+                try:
+                    handle_id = graphene.relay.Node.from_global_id(node_id)[1]
+
+                    # check that the user have write rights over the
+                    if sriutils.authorice_write_resource(info.context.user,
+                        handle_id):
+
+                        nh = NodeHandle.objects.get(handle_id=handle_id)
+                        sriutils.set_nodehandle_context(context, nh)
+                        nodes.append(nh)
+                    else:
+                        errors.append(
+                            ErrorType(
+                                field=node_id,
+                                messages=\
+                                    ["You don't have write rights for node id {}"
+                                        .format(node_id)]
+                                )
+                            )
+
+                except BinasciiError:
+                    errors.append(
+                        ErrorType(
+                            field=node_id,
+                            messages=\
+                                ["The id {} ".format(node_id)]
+                            )
+                        )
+        else:
+            raise GraphQLAuthException()
+
+        return SetNodesContext(success=success, errors=errors, nodes=nodes)

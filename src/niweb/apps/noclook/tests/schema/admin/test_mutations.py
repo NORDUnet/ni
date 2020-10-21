@@ -8,8 +8,9 @@ from niweb.schema import schema
 from pprint import pformat
 
 import apps.noclook.vakt.utils as sriutils
+import graphene
 
-class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
+class AdminMutationsTest(Neo4jGraphQLGenericTest):
     def setUp(self, group_dict=None):
         super().setUp(group_dict=group_dict)
 
@@ -20,7 +21,126 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
         another_user.save()
         self.another_user = another_user
 
-    def test_mutations(self):
+        # create some nodes
+        self.organization = self.create_node(
+                                'organization1', 'organization', meta='Relation')
+        self.host = self.create_node(
+                                'host1', 'host', meta='Logical')
+        self.address = self.create_node(
+                                'address1', 'address', meta='Logical')
+
+        # set contexts
+        sriutils.set_nodehandle_context(self.community_ctxt, self.organization)
+        sriutils.set_nodehandle_context(self.network_ctxt, self.host)
+        sriutils.set_nodehandle_context(self.contracts_ctxt, self.address)
+
+    def test_set_node_context(self):
+        # only run mutations if we have set this value
+        if not hasattr(self, 'test_type'):
+            return
+
+        query_t = """
+        mutation{{
+          set_nodes_context(input:{{
+            context: "{context_name}"
+            nodes:[ {nodes_ids} ]
+          }}){{
+            success
+            errors{{
+              field
+              messages
+            }}
+            nodes{{
+              __typename
+              id
+              name
+            }}
+          }}
+        }}
+        """
+
+        # test fully successful mutation:
+        context_name = self.network_ctxt.name
+        nodes_ids = []
+
+        for nh in [self.organization, self.host]:
+            nodes_ids.append( graphene.relay.Node.to_global_id(
+                str(nh.node_type), str(nh.handle_id)) )
+
+        nodes_ids_str = ", ".join([ '"{}"'.format(x) for x in nodes_ids])
+
+        query = query_t.format(
+            context_name=context_name, nodes_ids=nodes_ids_str)
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected = OrderedDict([('set_nodes_context',
+                      {'errors': [],
+                       'nodes': [{'__typename': 'Organization',
+                                  'id': nodes_ids[0],
+                                  'name': 'organization1'},
+                                 {'__typename': 'Host',
+                                  'id': nodes_ids[1],
+                                  'name': 'host1'}],
+                       'success': True})])
+
+        self.assert_correct(result, expected)
+
+        # admin test: Has network admin rights and write rights network and
+        # contacts so it must be able to do it
+        # superadmin: Since the user has every right no problem it should do it
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        # test partial successful mutation:
+        nodes_ids = []
+
+        for nh in [self.organization, self.host, self.address]:
+            nodes_ids.append( graphene.relay.Node.to_global_id(
+                str(nh.node_type), str(nh.handle_id)) )
+
+        nodes_ids_str = ", ".join([ '"{}"'.format(x) for x in nodes_ids])
+
+        query = query_t.format(
+            context_name=context_name, nodes_ids=nodes_ids_str)
+
+        if self.test_type == "admin":
+            # admin test: It should be able to change only the contexts of
+            # the organization and the host, but not the address
+            expected = OrderedDict([('set_nodes_context',
+              {'errors': [{'field': nodes_ids[2],
+                           'messages': ["You don't have write rights for node "
+                                        'id {}'.format(nodes_ids[2])]}],
+               'nodes': [{'__typename': 'Organization',
+                          'id': nodes_ids[0],
+                          'name': 'organization1'},
+                         {'__typename': 'Host',
+                          'id': nodes_ids[1],
+                          'name': 'host1'}],
+               'success': True})])
+        elif self.test_type == "superadmin":
+            # superadmin: Since the user has every right no problem it should
+            # do it
+            expected = OrderedDict([('set_nodes_context',
+              {'errors': [],
+               'nodes': [{'__typename': 'Organization',
+                          'id': nodes_ids[0],
+                          'name': 'organization1'},
+                         {'__typename': 'Host',
+                          'id': nodes_ids[1],
+                          'name': 'host1'},
+                         {'__typename': 'Address',
+                          'id': nodes_ids[2],
+                          'name': 'address1'}],
+               'success': True})])
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        self.assert_correct(result, expected)
+
+
+    def test_grant_user_permissions(self):
         # only run mutations if we have set this value
         if not hasattr(self, 'test_type'):
             return
@@ -279,7 +399,7 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
 
 
 
-class AdminGrantUserPermissionTest(GrantUserPermissionTest):
+class AdminAdminMutationsTestTest(AdminMutationsTest):
     def setUp(self, group_dict=None):
         group_dict = {
             'community': {
@@ -298,7 +418,7 @@ class AdminGrantUserPermissionTest(GrantUserPermissionTest):
                 'admin': False,
                 'read': True,
                 'list': True,
-                'write': True,
+                'write': False,
             },
         }
 
@@ -307,7 +427,7 @@ class AdminGrantUserPermissionTest(GrantUserPermissionTest):
         super().setUp(group_dict=group_dict)
 
 
-class SuperAdminGrantUserPermissionTest(GrantUserPermissionTest):
+class SuperAdminAdminMutationsTestTest(AdminMutationsTest):
     def setUp(self, group_dict=None):
         group_dict = {
             'community': {
