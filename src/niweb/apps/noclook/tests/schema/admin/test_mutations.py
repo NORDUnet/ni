@@ -71,6 +71,7 @@ class AdminMutationsTest(Neo4jGraphQLGenericTest):
 
         query = query_t.format(
             context_name=context_name, nodes_ids=nodes_ids_str)
+
         result = schema.execute(query, context=self.context)
         assert not result.errors, pformat(result.errors, indent=1)
 
@@ -246,7 +247,7 @@ class AdminMutationsTest(Neo4jGraphQLGenericTest):
 
         # check the user permissions query
         net_ctxt = sriutils.get_network_context()
-        context_name = net_ctxt.name.lower()
+        context_name = net_ctxt.name
         read = str(True).lower()
         list = str(True).lower()
         write = str(True).lower()

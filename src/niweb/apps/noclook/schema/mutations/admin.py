@@ -43,7 +43,7 @@ class GrantUserPermission(relay.ClientIDMutation):
         edit_user = DjangoUser.objects.get(id=user_id)
 
         # get context
-        context_name = input.get("context")
+        context_name = input.get("context").lower()
         contexts = sriutils.get_all_contexts()
         context = contexts.get(context_name, None)
 
@@ -178,7 +178,7 @@ class SetNodesContext(relay.ClientIDMutation):
                         nodes=nodes)
 
             success = True
-            
+
             for node_id in nodes_ids:
                 # get node
                 try:
