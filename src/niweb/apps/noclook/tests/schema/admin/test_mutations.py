@@ -101,6 +101,7 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
             read: {read}
             list: {list}
             write: {write}
+            {admin}
           }}){{
             success
             errors{{
@@ -132,10 +133,10 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
 
         query = query_t.format(
             user_id=another_user_id, context_name=context_name,
-            read=read, list=list, write=write,
+            read=read, list=list, write=write, admin=""
         )
 
-        # test vakt functions
+        # test vakt functions before
         can_read = sriutils.authorize_read_module(self.another_user, net_ctxt)
         can_list = sriutils.authorize_list_module(self.another_user, net_ctxt)
         can_write = sriutils.authorize_create_resource(self.another_user,
@@ -144,8 +145,6 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
         self.assertFalse(can_read)
         self.assertFalse(can_list)
         self.assertFalse(can_write)
-
-        # before
 
         # run mutation and check response
         result = schema.execute(query, context=self.context)
@@ -185,12 +184,99 @@ class GrantUserPermissionTest(Neo4jGraphQLGenericTest):
         self.assertTrue(can_write)
 
         # revoke write permission
+        write = str(False).lower()
+
+        query = query_t.format(
+            user_id=another_user_id, context_name=context_name,
+            read=read, list=list, write=write, admin=""
+        )
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected = OrderedDict([
+            (
+                'grant_user_permission', {
+                    'success': True,
+                    'errors': None,
+                    'user': {
+                        'id': str(another_user_id),
+                        'user_permissions': {
+                            'network': {
+                                'admin': False,
+                                'list': True,
+                                'read': True,
+                                'write': False
+                            }
+                        },
+                        'username': 'another_user'
+                    }
+                }
+            )
+        ])
+
         # check the user permissions query
+        self.assert_correct(result, expected)
+
         # test vakt functions
+        can_write = sriutils.authorize_create_resource(self.another_user,
+                        net_ctxt)
+        self.assertFalse(can_write)
 
         # grand admin rights
-        # if it's superadmin test it should be possible
-        # if it's not check the error
+        admin = "admin: true"
+        query = query_t.format(
+            user_id=another_user_id, context_name=context_name,
+            read=read, list=list, write=write, admin=admin
+        )
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+        expected = None
+
+        if self.test_type == "admin":
+            # if it's superadmin test it should be possible
+            expected = OrderedDict([
+                ('grant_user_permission', {
+                    'success': False,
+                    'errors': [{
+                        'field': '_', 'messages': \
+                            ['Only superadmins can grant admin rights']
+                    }],
+                    'user': {
+                        'id': str(another_user_id),
+                        'username': 'another_user',
+                        'user_permissions': {
+                            'network': {
+                                'read': True,
+                                'list': True,
+                                'write': False,
+                                'admin': False
+                            }
+                        }
+                    }
+                })])
+        elif self.test_type == "superadmin":
+            # if it's not check the error
+            expected = OrderedDict([
+                ('grant_user_permission', {
+                    'success': True,
+                    'errors': None,
+                    'user': {
+                        'id': str(another_user_id),
+                        'username': 'another_user',
+                        'user_permissions': {
+                            'network': {
+                                'read': True,
+                                'list': True,
+                                'write': False,
+                                'admin': True
+                            }}
+                        }}
+                    )
+                ])
+
+        self.assert_correct(result, expected)
+
 
 
 class AdminGrantUserPermissionTest(GrantUserPermissionTest):
