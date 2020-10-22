@@ -18,8 +18,69 @@ class GenericUserPermissionTest(Neo4jGraphQLGenericTest):
         another_user.save()
         self.another_user = another_user
 
-    def test_user_permissions(self):
+    def test_user_list(self):
+        if not hasattr(self, 'test_type'):
+            return
 
+        query_t = """
+        {{
+          users( filter:{{ username_contains: "{name_contains}" }} ){{
+            edges{{
+              node{{
+                id
+                username
+              }}
+            }}
+          }}
+        }}
+        """
+
+        # get both users
+        name_contains = "user"
+        query = query_t.format(name_contains=name_contains)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected = {
+            'users': {
+                'edges': [
+                    {'node': {
+                        'id': str(self.user.id),
+                        'username': 'test user'
+                    }},
+                    {'node': {
+                        'id': str(self.another_user.id),
+                        'username': 'another user'
+                    }}
+                ]
+            }
+        }
+
+        self.assert_correct(result, expected)
+
+        # get only one
+        name_contains = "test"
+        query = query_t.format(name_contains=name_contains)
+
+        result = schema.execute(query, context=self.context)
+        assert not result.errors, pformat(result.errors, indent=1)
+
+        expected = {
+            'users': {
+                'edges': [
+                    {'node': {
+                        'id': str(self.user.id),
+                        'username': 'test user'
+                    }},
+                ]
+            }
+        }
+
+        self.assert_correct(result, expected)
+
+
+    def test_user_permissions(self):
         # create a simple group with another user
         test_user = self.user
         self.user = self.another_user

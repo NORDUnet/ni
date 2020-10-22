@@ -14,7 +14,7 @@ class UserConnection(graphene.relay.Connection):
 
 
 class UserFilter(graphene.InputObjectType):
-    name_contains = graphene.String()
+    username_contains = graphene.String()
 
 
 class UserOrder(graphene.Enum):
