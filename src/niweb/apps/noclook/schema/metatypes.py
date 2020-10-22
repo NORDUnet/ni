@@ -108,6 +108,7 @@ class NINode(graphene.Node):
                         full_filter = full_filter & q_filter
 
                 ret = NodeHandle.objects.filter(full_filter)
+                ret = sriutils.trim_readable_queryset(ret, info.context.user)
 
             # get order values
             orderBy = args.get('orderBy', None)
