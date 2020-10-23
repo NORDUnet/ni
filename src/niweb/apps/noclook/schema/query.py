@@ -216,6 +216,11 @@ optical_path_dependency_types = [
 
 
 class NOCRootQuery(NOCAutoQuery):
+    ninodes = relay.ConnectionField(NINode.get_connection_class(),
+        filter=graphene.Argument(GenericNodeFilter),
+        orderBy=graphene.Argument(GenericNodeOrder),
+        resolver=NINode.get_connection_resolver())
+
     getAvailableDropdowns = graphene.List(graphene.String)
     getChoicesForDropdown = graphene.List(Choice, name=graphene.String(required=True))
     roles = relay.ConnectionField(RoleConnection, filter=graphene.Argument(RoleFilter), orderBy=graphene.Argument(RoleOrderBy))
